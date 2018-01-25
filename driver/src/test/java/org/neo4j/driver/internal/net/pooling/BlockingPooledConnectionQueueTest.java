@@ -28,14 +28,11 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -302,139 +299,6 @@ public class BlockingPooledConnectionQueueTest
         verify( connection ).dispose();
     }
 
-    @Test
-    public void shouldFailToAcquireConnectionWhenDeactivated()
-    {
-        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
-        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.deactivate();
-
-        try
-        {
-            queue.acquire( connectionSupplier );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Pool is deactivated" ) );
-        }
-    }
-
-    @Test
-    public void shouldTerminateOfferedConnectionWhenDeactivated()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.deactivate();
-
-        PooledConnection connection = mock( PooledConnection.class );
-        queue.offer( connection );
-
-        verify( connection ).dispose();
-    }
-
-    @Test
-    public void shouldBeActiveWhenNotDeactivatedAndNotTerminated()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
-        assertTrue( queue.isActive() );
-    }
-
-    @Test
-    public void shouldNotBeActiveWhenDeactivated()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
-        assertTrue( queue.isActive() );
-        queue.deactivate();
-        assertFalse( queue.isActive() );
-    }
-
-    @Test
-    public void shouldNotBeActiveWhenTerminated()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
-        assertTrue( queue.isActive() );
-        queue.terminate();
-        assertFalse( queue.isActive() );
-    }
-
-    @Test
-    public void shouldBeActiveAfterDeactivationAndActivation()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
-        assertTrue( queue.isActive() );
-        queue.deactivate();
-        assertFalse( queue.isActive() );
-        queue.activate();
-        assertTrue( queue.isActive() );
-    }
-
-    @Test
-    public void shouldNotBeActiveAfterTerminationAndActivation()
-    {
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 1 );
-        assertTrue( queue.isActive() );
-        queue.terminate();
-        assertFalse( queue.isActive() );
-        queue.activate();
-        assertFalse( queue.isActive() );
-    }
-
-    @Test
-    public void shouldBePossibleToAcquireFromActivatedQueue()
-    {
-        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
-        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.deactivate();
-
-        try
-        {
-            queue.acquire( connectionSupplier );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Pool is deactivated" ) );
-        }
-
-        queue.activate();
-
-        assertNotNull( queue.acquire( connectionSupplier ) );
-    }
-
-    @Test
-    public void shouldNotBePossibleToActivateTerminatedQueue()
-    {
-        Supplier<PooledConnection> connectionSupplier = connectionSupplierMock();
-        when( connectionSupplier.get() ).thenReturn( mock( PooledConnection.class ) );
-        BlockingPooledConnectionQueue queue = newConnectionQueue( 3 );
-        queue.terminate();
-
-        try
-        {
-            queue.acquire( connectionSupplier );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Pool is terminated" ) );
-        }
-
-        queue.activate();
-
-        try
-        {
-            queue.acquire( connectionSupplier );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Pool is terminated" ) );
-        }
-        assertFalse( queue.isActive() );
-    }
-
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity )
     {
         return newConnectionQueue( capacity, mock( Logging.class, RETURNS_MOCKS ) );
@@ -443,11 +307,5 @@ public class BlockingPooledConnectionQueueTest
     private static BlockingPooledConnectionQueue newConnectionQueue( int capacity, Logging logging )
     {
         return new BlockingPooledConnectionQueue( LOCAL_DEFAULT, capacity, logging );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static Supplier<PooledConnection> connectionSupplierMock()
-    {
-        return mock( Supplier.class );
     }
 }

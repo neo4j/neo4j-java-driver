@@ -20,7 +20,9 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -230,5 +232,26 @@ public class ClusterRoutingTableTest
         assertThat( change.added(), containsInAnyOrder( D, E ) );
         assertEquals( 2, change.removed().size() );
         assertThat( change.removed(), containsInAnyOrder( A, C ) );
+    }
+
+    @Test
+    public void shouldReturnNoServersWhenEmpty()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+
+        Set<BoltServerAddress> servers = routingTable.servers();
+
+        assertEquals( 0, servers.size() );
+    }
+
+    @Test
+    public void shouldReturnAllServers()
+    {
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
+        routingTable.update( createClusterComposition( asList( A, B, C ), asList( B, C, D ), asList( C, D, E, F ) ) );
+
+        Set<BoltServerAddress> servers = routingTable.servers();
+
+        assertEquals( new HashSet<>( asList( A, B, C, D, E, F ) ), servers );
     }
 }

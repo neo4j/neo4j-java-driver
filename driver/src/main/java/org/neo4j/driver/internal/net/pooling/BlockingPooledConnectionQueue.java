@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.logging.DelegatingLogger;
 import org.neo4j.driver.internal.net.BoltServerAddress;
@@ -40,15 +40,11 @@ public class BlockingPooledConnectionQueue
 {
     public static final String LOG_NAME = "ConnectionQueue";
 
-    private static final int ACTIVE = 1;
-    private static final int INACTIVE = 2;
-    private static final int TERMINATED = 3;
-
     /** The backing queue, keeps track of connections currently in queue */
     private final BlockingQueue<PooledConnection> queue;
     private final Logger logger;
 
-    private final AtomicInteger state = new AtomicInteger( ACTIVE );
+    private final AtomicBoolean terminated = new AtomicBoolean();
 
     /** Keeps track of acquired connections */
     private final Set<PooledConnection> acquiredConnections =
@@ -75,7 +71,7 @@ public class BlockingPooledConnectionQueue
         {
             disposeSafely( pooledConnection );
         }
-        if ( state.get() != ACTIVE )
+        if ( terminated.get() )
         {
             terminateIdleConnections();
         }
@@ -96,13 +92,11 @@ public class BlockingPooledConnectionQueue
         }
         acquiredConnections.add( connection );
 
-        int poolState = state.get();
-        if ( poolState != ACTIVE )
+        if ( terminated.get() )
         {
             acquiredConnections.remove( connection );
             disposeSafely( connection );
-            throw new IllegalStateException( "Pool is " + (poolState == INACTIVE ? "deactivated" : "terminated") +
-                                             ", new connections can't be acquired" );
+            throw new IllegalStateException( "Pool is terminated, new connections can't be acquired" );
         }
         else
         {
@@ -131,24 +125,6 @@ public class BlockingPooledConnectionQueue
         return queue.contains( pooledConnection );
     }
 
-    public void activate()
-    {
-        state.compareAndSet( INACTIVE, ACTIVE );
-    }
-
-    public void deactivate()
-    {
-        if ( state.compareAndSet( ACTIVE, INACTIVE ) )
-        {
-            terminateIdleConnections();
-        }
-    }
-
-    public boolean isActive()
-    {
-        return state.get() == ACTIVE;
-    }
-
     /**
      * Terminates all connections, both those that are currently in the queue as well
      * as those that have been acquired.
@@ -157,7 +133,7 @@ public class BlockingPooledConnectionQueue
      */
     public void terminate()
     {
-        if ( state.getAndSet( TERMINATED ) != TERMINATED )
+        if ( terminated.compareAndSet( false, true ) )
         {
             terminateIdleConnections();
             terminateAcquiredConnections();

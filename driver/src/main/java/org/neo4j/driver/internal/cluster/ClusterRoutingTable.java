@@ -64,7 +64,8 @@ public class ClusterRoutingTable implements RoutingTable
                mode == AccessMode.WRITE && writers.size() == 0;
     }
 
-    private Set<BoltServerAddress> servers()
+    @Override
+    public Set<BoltServerAddress> servers()
     {
         Set<BoltServerAddress> servers = new HashSet<>();
         servers.addAll( readers.servers() );

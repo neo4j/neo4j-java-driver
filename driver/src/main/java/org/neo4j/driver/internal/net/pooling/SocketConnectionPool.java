@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.net.pooling;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +32,7 @@ import org.neo4j.driver.internal.spi.Connector;
 import org.neo4j.driver.internal.spi.PooledConnection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Supplier;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 /**
@@ -61,6 +61,7 @@ public class SocketConnectionPool implements ConnectionPool
     private final ConnectionValidator<PooledConnection> connectionValidator;
     private final Clock clock;
     private final Logging logging;
+    private final Logger log;
 
     public SocketConnectionPool( PoolSettings poolSettings, Connector connector, Clock clock, Logging logging )
     {
@@ -69,6 +70,7 @@ public class SocketConnectionPool implements ConnectionPool
         this.connectionValidator = new PooledConnectionValidator( this );
         this.clock = clock;
         this.logging = logging;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
@@ -93,37 +95,25 @@ public class SocketConnectionPool implements ConnectionPool
     }
 
     @Override
-    public void activate( BoltServerAddress address )
-    {
-        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
-        if ( connectionQueue != null )
-        {
-            connectionQueue.activate();
-        }
-    }
-
-    @Override
-    public void deactivate( BoltServerAddress address )
-    {
-        BlockingPooledConnectionQueue connections = pools.get( address );
-        if ( connections != null )
-        {
-            connections.deactivate();
-        }
-    }
-
-    @Override
-    public void compact()
+    public void retainAll( Set<BoltServerAddress> addressesToRetain )
     {
         for ( Map.Entry<BoltServerAddress,BlockingPooledConnectionQueue> entry : pools.entrySet() )
         {
             BoltServerAddress address = entry.getKey();
-            BlockingPooledConnectionQueue queue = entry.getValue();
+            BlockingPooledConnectionQueue pool = entry.getValue();
 
-            if ( !queue.isActive() && queue.activeConnections() == 0 )
+            if ( !addressesToRetain.contains( address ) && pool.activeConnections() == 0 )
             {
-                // queue has been in deactivated state and has no open connections by now
-                pools.remove( address );
+                // address is not present in the updated routing table and has no active connections
+                // it's now safe to terminate corresponding connection pool and forget about it
+
+                BlockingPooledConnectionQueue removedPool = pools.remove( address );
+                if ( removedPool != null )
+                {
+                    log.info( "Closing connection pool towards %s, it has no active connections " +
+                              "and is not in the routing table", address );
+                    removedPool.terminate();
+                }
             }
         }
     }
@@ -131,8 +121,7 @@ public class SocketConnectionPool implements ConnectionPool
     @Override
     public boolean hasAddress( BoltServerAddress address )
     {
-        BlockingPooledConnectionQueue connectionQueue = pools.get( address );
-        return connectionQueue != null && connectionQueue.isActive();
+        return pools.containsKey( address );
     }
 
     @Override
@@ -152,17 +141,7 @@ public class SocketConnectionPool implements ConnectionPool
     public int activeConnections( BoltServerAddress address )
     {
         BlockingPooledConnectionQueue connectionQueue = pools.get( address );
-        if ( connectionQueue == null || !connectionQueue.isActive() )
-        {
-            return 0;
-        }
-        return connectionQueue.activeConnections();
-    }
-
-    // test-only accessor
-    Set<BoltServerAddress> addresses()
-    {
-        return Collections.unmodifiableSet( pools.keySet() );
+        return connectionQueue == null ? 0 : connectionQueue.activeConnections();
     }
 
     private BlockingPooledConnectionQueue pool( BoltServerAddress address )

@@ -23,11 +23,14 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +50,6 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.instanceOf;
@@ -79,6 +81,7 @@ public class SocketConnectionPoolTest
     private static final BoltServerAddress ADDRESS_1 = LOCAL_DEFAULT;
     private static final BoltServerAddress ADDRESS_2 = new BoltServerAddress( "localhost", DEFAULT_PORT + 42 );
     private static final BoltServerAddress ADDRESS_3 = new BoltServerAddress( "localhost", DEFAULT_PORT + 4242 );
+    private static final BoltServerAddress ADDRESS_4 = new BoltServerAddress( "localhost", DEFAULT_PORT + 424242 );
 
     @Test
     public void acquireCreatesNewConnectionWhenPoolIsEmpty()
@@ -108,55 +111,6 @@ public class SocketConnectionPoolTest
         assertThat( acquiredConnection2, instanceOf( PooledConnection.class ) );
 
         verify( connector ).connect( ADDRESS_1 );
-    }
-
-    @Test
-    public void deactivateDoesNothingForNonExistingAddress()
-    {
-        Connection connection = newConnectionMock( ADDRESS_1 );
-        SocketConnectionPool pool = newPool( newMockConnector( connection ) );
-
-        pool.acquire( ADDRESS_1 ).close();
-
-        assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.deactivate( ADDRESS_2 );
-        assertTrue( pool.hasAddress( ADDRESS_1 ) );
-    }
-
-    @Test
-    public void deactivateRemovesAddress()
-    {
-        Connection connection = newConnectionMock( ADDRESS_1 );
-        SocketConnectionPool pool = newPool( newMockConnector( connection ) );
-
-        pool.acquire( ADDRESS_1 ).close();
-
-        assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        pool.deactivate( ADDRESS_1 );
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-    }
-
-    @Test
-    public void deactivateTerminatesIdleConnectionsInThePoolCorrespondingToTheAddress()
-    {
-        Connection connection1 = newConnectionMock( ADDRESS_1 );
-        Connection connection2 = newConnectionMock( ADDRESS_1 );
-        Connection connection3 = newConnectionMock( ADDRESS_1 );
-        SocketConnectionPool pool = newPool( newMockConnector( connection1, connection2, connection3 ) );
-
-        Connection pooledConnection1 = pool.acquire( ADDRESS_1 );
-        Connection pooledConnection2 = pool.acquire( ADDRESS_1 );
-        pool.acquire( ADDRESS_1 );
-
-        // return two connections to the pool
-        pooledConnection1.close();
-        pooledConnection2.close();
-
-        pool.deactivate( ADDRESS_1 );
-
-        verify( connection1 ).close();
-        verify( connection2 ).close();
-        verify( connection3, never() ).close();
     }
 
     @Test
@@ -591,85 +545,37 @@ public class SocketConnectionPoolTest
     }
 
     @Test
-    public void shouldDeactivateExistingPool()
+    public void shouldRetainAllGivenAddresses()
     {
-        SocketConnectionPool pool = newPool( newMockConnector() );
+        SocketConnectionPool pool = newPool( newMockConnector(), new FakeClock(), 42 );
 
-        assertNotNull( pool.acquire( ADDRESS_1 ) );
-        assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
+        pool.acquire( ADDRESS_1 ).close();
+        pool.acquire( ADDRESS_2 ).close();
+        pool.acquire( ADDRESS_3 );
 
-        pool.deactivate( ADDRESS_1 );
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
-    }
-
-    @Test
-    public void shouldDeactivateNothingWhenPoolDoesNotExist()
-    {
-        SocketConnectionPool pool = newPool( newMockConnector() );
-
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
-
-        pool.deactivate( ADDRESS_1 );
-
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
-    }
-
-    @Test
-    public void shouldActivateExistingPool()
-    {
-        SocketConnectionPool pool = newPool( newMockConnector() );
-        assertNotNull( pool.acquire( ADDRESS_1 ) );
-
-        pool.deactivate( ADDRESS_1 );
-        pool.activate( ADDRESS_1 );
+        pool.retainAll( new HashSet<BoltServerAddress>( Arrays.asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ) );
 
         assertTrue( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 1, pool.activeConnections( ADDRESS_1 ) );
+        assertTrue( pool.hasAddress( ADDRESS_2 ) );
+        assertTrue( pool.hasAddress( ADDRESS_3 ) );
     }
 
     @Test
-    public void shouldActivateNothingWhenPoolDoesNotExist()
+    public void shouldRemoveAllNonRetainedAddressesWithoutActiveConnections()
     {
-        SocketConnectionPool pool = newPool( newMockConnector() );
+        SocketConnectionPool pool = newPool( newMockConnector(), new FakeClock(), 42 );
 
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
+        pool.acquire( ADDRESS_1 ).close();
+        pool.acquire( ADDRESS_2 ).close();
+        pool.acquire( ADDRESS_3 );
+        pool.acquire( ADDRESS_4 ).close();
 
-        pool.activate( ADDRESS_1 );
+        pool.retainAll( singleton( ADDRESS_1 ) );
 
-        assertFalse( pool.hasAddress( ADDRESS_1 ) );
-        assertEquals( 0, pool.activeConnections( ADDRESS_1 ) );
-    }
-
-    @Test
-    public void shouldRemoveDeactivatedPoolsWithoutConnectionsWhenCompacting()
-    {
-        SocketConnectionPool pool = newPool( newMockConnector( newConnectionMock( ADDRESS_1 ),
-                newConnectionMock( ADDRESS_1 ), newConnectionMock( ADDRESS_2 ), newConnectionMock( ADDRESS_3 ) ) );
-
-        PooledConnection connection1 = pool.acquire( ADDRESS_1 );
-        PooledConnection connection2 = pool.acquire( ADDRESS_1 );
-        PooledConnection connection3 = pool.acquire( ADDRESS_2 );
-        PooledConnection connection4 = pool.acquire( ADDRESS_3 );
-
-        assertEquals( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ), pool.addresses() );
-
-        pool.deactivate( ADDRESS_1 );
-        pool.deactivate( ADDRESS_3 );
-
-        connection1.close();
-        connection2.close();
-        connection4.close();
-
-        assertEquals( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ), pool.addresses() );
-
-        pool.compact();
-
-        assertEquals( singleton( ADDRESS_2 ), pool.addresses() );
+        assertTrue( pool.hasAddress( ADDRESS_1 ) );
+        assertFalse( pool.hasAddress( ADDRESS_2 ) );
+        assertTrue( pool.hasAddress( ADDRESS_3 ) );
+        assertFalse( pool.hasAddress( ADDRESS_4 ) );
     }
 
     private static Answer<Connection> createConnectionAnswer( final Set<Connection> createdConnections )
@@ -711,7 +617,23 @@ public class SocketConnectionPoolTest
     private static Connector newMockConnector( Connection connection, Connection... otherConnections )
     {
         Connector connector = mock( Connector.class );
-        when( connector.connect( any( BoltServerAddress.class ) ) ).thenReturn( connection, otherConnections );
+
+        final Queue<Connection> connectionsToReturn = new ArrayDeque<>();
+        connectionsToReturn.add( connection );
+        Collections.addAll( connectionsToReturn, otherConnections );
+
+        when( connector.connect( any( BoltServerAddress.class ) ) ).thenAnswer( new Answer<Connection>()
+        {
+            @Override
+            public Connection answer( InvocationOnMock invocation ) throws Throwable
+            {
+                BoltServerAddress address = invocation.getArgumentAt( 0, BoltServerAddress.class );
+                Connection connectionToReturn = connectionsToReturn.size() == 1 ? connectionsToReturn.peek() : connectionsToReturn.poll();
+                when( connectionToReturn.boltServerAddress() ).thenReturn( address );
+                return connectionToReturn;
+            }
+        } );
+
         return connector;
     }
 

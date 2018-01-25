@@ -92,7 +92,7 @@ public class LocalOrRemoteClusterRule extends ExternalResource
         }
         if ( uri != null && !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
         {
-            throw new IllegalStateException( "CLuster uri should have bolt+routing scheme: '" + uri + "'" );
+            throw new IllegalStateException( "Cluster uri should have bolt+routing scheme: '" + uri + "'" );
         }
     }
 

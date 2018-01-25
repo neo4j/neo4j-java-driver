@@ -372,6 +372,8 @@ public class TLSSocketChannel implements ByteChannel
                 cipherOut.compact();
             }
             break;
+        case CLOSED:
+            throw new IOException( "TLS socket channel is closed" );
         default:
             throw new ClientException( "Got unexpected status " + status );
         }

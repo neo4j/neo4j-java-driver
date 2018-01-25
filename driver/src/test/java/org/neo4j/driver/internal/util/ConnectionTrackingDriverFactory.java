@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.util;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,8 +31,7 @@ import org.neo4j.driver.v1.Logging;
 
 public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
 {
-    private final Set<Connection> connections =
-            Collections.newSetFromMap( new ConcurrentHashMap<Connection,Boolean>() );
+    private final Set<Connection> connections = Collections.newSetFromMap( new ConcurrentHashMap<Connection,Boolean>() );
 
     public ConnectionTrackingDriverFactory( Clock clock )
     {
@@ -39,8 +39,7 @@ public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
     }
 
     @Override
-    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            Logging logging )
+    protected Connector createConnector( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging )
     {
         Connector connector = super.createConnector( connectionSettings, securityPlan, logging );
         return new ConnectionTrackingConnector( connector, connections );
@@ -48,10 +47,11 @@ public class ConnectionTrackingDriverFactory extends DriverFactoryWithClock
 
     public void closeConnections()
     {
-        for ( Connection connection : connections )
+        Set<Connection> connectionsSnapshot = new HashSet<>( connections );
+        connections.clear();
+        for ( Connection connection : connectionsSnapshot )
         {
             connection.close();
         }
-        connections.clear();
     }
 }
