@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.integration;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -94,6 +95,12 @@ public class CausalClusteringIT
         {
             executor.shutdownNow();
         }
+    }
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
     }
 
     @Test

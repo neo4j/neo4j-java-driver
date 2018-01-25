@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1.stress;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,6 +58,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
+import org.neo4j.driver.v1.util.cc.ClusterRule;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
 
 import static java.util.Collections.newSetFromMap;
@@ -106,6 +108,12 @@ public class CausalClusteringStressIT
         {
             driver.close();
         }
+    }
+
+    @AfterClass
+    public static void stopSharedCluster()
+    {
+        ClusterRule.stopSharedCluster();
     }
 
     @Test
