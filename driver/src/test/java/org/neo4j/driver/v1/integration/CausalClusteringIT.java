@@ -642,7 +642,7 @@ public class CausalClusteringIT
             // launch writers and readers that use transaction functions and thus should never fail
             for ( int i = 0; i < 3; i++ )
             {
-                results.add( executor.submit( countNodesCallable( driver, label, property, value, stop ) ) );
+                results.add( executor.submit( readNodesCallable( driver, label, property, value, stop ) ) );
             }
             for ( int i = 0; i < 2; i++ )
             {
@@ -965,7 +965,7 @@ public class CausalClusteringIT
         };
     }
 
-    private static Callable<Void> countNodesCallable( final Driver driver, final String label, final String property, final String value,
+    private static Callable<Void> readNodesCallable( final Driver driver, final String label, final String property, final String value,
             final AtomicBoolean stop )
     {
         return new Callable<Void>()
@@ -977,7 +977,7 @@ public class CausalClusteringIT
                 {
                     try ( Session session = driver.session( AccessMode.READ ) )
                     {
-                        countNodes( session, label, property, value );
+                        readNodeIds( session, label, property, value );
                     }
                     catch ( Throwable t )
                     {
@@ -999,6 +999,26 @@ public class CausalClusteringIT
             {
                 runCreateNode( tx, label, property, value );
                 return null;
+            }
+        } );
+    }
+
+    private static List<Long> readNodeIds( final Session session, final String label, final String property, final String value )
+    {
+        return session.readTransaction( new TransactionWork<List<Long>>()
+        {
+            @Override
+            public List<Long> execute( Transaction tx )
+            {
+                StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN n LIMIT 5",
+                        parameters( "value", value ) );
+
+                List<Long> ids = new ArrayList<>();
+                while ( result.hasNext() )
+                {
+                    ids.add( result.next().get( 0 ).asNode().id() );
+                }
+                return ids;
             }
         } );
     }
