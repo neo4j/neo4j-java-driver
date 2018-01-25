@@ -89,6 +89,7 @@ public class GraphDatabaseTest
     }
 
     @Test
+    @SuppressWarnings( "deprecation" )
     public void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
     {
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
