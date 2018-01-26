@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.util;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -71,23 +70,25 @@ public final class TestUtil
 
     public static <T> List<T> awaitAll( List<CompletionStage<T>> stages )
     {
-        List<T> result = new ArrayList<>();
-        for ( CompletionStage<T> stage : stages )
-        {
-            result.add( await( stage ) );
-        }
-        return result;
+        return stages.stream().map( TestUtil::await ).collect( toList() );
     }
 
     public static <T> T await( CompletionStage<T> stage )
     {
-        Future<T> future = stage.toCompletableFuture();
-        return await( future );
+        return await( (Future<T>) stage.toCompletableFuture() );
     }
 
     public static <T> T await( CompletableFuture<T> future )
     {
         return await( (Future<T>) future );
+    }
+
+    public static void awaitAllFutures( List<Future<?>> futures )
+    {
+        for ( Future<?> future : futures )
+        {
+            await( future );
+        }
     }
 
     public static <T, U extends Future<T>> T await( U future )
@@ -155,22 +156,21 @@ public final class TestUtil
         return new LinkedHashSet<>( Arrays.asList( elements ) );
     }
 
-    public static void cleanDb( Driver driver )
+    public static long countNodes( Driver driver, String bookmark )
+    {
+        try ( Session session = driver.session( bookmark ) )
+        {
+            return session.readTransaction( tx -> tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asLong() );
+        }
+    }
+
+    public static String cleanDb( Driver driver )
     {
         try ( Session session = driver.session() )
         {
             cleanDb( session );
+            return session.lastBookmark();
         }
-    }
-
-    public static void cleanDb( Session session )
-    {
-        int nodesDeleted;
-        do
-        {
-            nodesDeleted = deleteBatchOfNodes( session );
-        }
-        while ( nodesDeleted > 0 );
     }
 
     public static Connection connectionMock()
@@ -267,10 +267,23 @@ public final class TestUtil
         } ).when( connection ).runAndFlush( eq( statement ), any(), any(), any() );
     }
 
+    private static void cleanDb( Session session )
+    {
+        int nodesDeleted;
+        do
+        {
+            nodesDeleted = deleteBatchOfNodes( session );
+        }
+        while ( nodesDeleted > 0 );
+    }
+
     private static int deleteBatchOfNodes( Session session )
     {
-        StatementResult result = session.run( "MATCH (n) WITH n LIMIT 10000 DETACH DELETE n RETURN count(n)" );
-        return result.single().get( 0 ).asInt();
+        return session.writeTransaction( tx ->
+        {
+            StatementResult result = tx.run( "MATCH (n) WITH n LIMIT 10000 DETACH DELETE n RETURN count(n)" );
+            return result.single().get( 0 ).asInt();
+        } );
     }
 
     private static Number read( ByteBuf buf, Class<? extends Number> type )

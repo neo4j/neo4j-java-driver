@@ -37,10 +37,11 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.Consumer;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.unmodifiableSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
@@ -83,19 +84,23 @@ public class Cluster
 
     public void deleteData()
     {
-        leaderTx( TestUtil::cleanDb );
-    }
-
-    public ClusterMember leaderTx( Consumer<Session> tx )
-    {
-        ClusterMember leader = leader();
-        try ( Driver driver = createDriver( leader.getBoltUri(), password );
-              Session session = driver.session() )
+        // execute write query to remove all nodes and retrieve bookmark
+        String bookmark;
+        try ( Driver driver = createDriver( leader().getBoltUri(), password ) )
         {
-            tx.accept( session );
+            bookmark = TestUtil.cleanDb( driver );
+            assertNotNull( "Cleanup of the database did not produce a bookmark", bookmark );
         }
 
-        return leader;
+        // ensure that every cluster member is up-to-date and contains no nodes
+        for ( ClusterMember member : members )
+        {
+            try ( Driver driver = createDriver( member.getBoltUri(), password ) )
+            {
+                long nodeCount = TestUtil.countNodes( driver, bookmark );
+                assertEquals( "Not all nodes have been deleted. " + nodeCount + " still there somehow ", 0L, nodeCount );
+            }
+        }
     }
 
     public Set<ClusterMember> members()

@@ -73,7 +73,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -86,6 +85,7 @@ import static org.neo4j.driver.v1.util.Neo4jSettings.IMPORT_DIR;
 import static org.neo4j.driver.v1.util.Neo4jSettings.TEST_SETTINGS;
 import static org.neo4j.driver.v1.util.TestUtil.activeQueryCount;
 import static org.neo4j.driver.v1.util.TestUtil.activeQueryNames;
+import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.v1.util.TestUtil.awaitCondition;
 
 @SuppressWarnings( "deprecation" )
@@ -714,7 +714,7 @@ public class SessionResetIT
             MILLISECONDS.sleep( 30 );
         }
 
-        awaitAll( futures );
+        awaitAllFutures( futures );
         awaitNoActiveQueries();
     }
 
@@ -888,14 +888,6 @@ public class SessionResetIT
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-    }
-
-    private static void awaitAll( List<Future<?>> futures ) throws Exception
-    {
-        for ( Future<?> future : futures )
-        {
-            assertNull( future.get( 1, MINUTES ) );
         }
     }
 

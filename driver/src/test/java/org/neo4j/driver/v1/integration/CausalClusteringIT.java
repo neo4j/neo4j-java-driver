@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,12 +36,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
@@ -49,6 +53,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
+import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
@@ -64,12 +69,15 @@ import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
 import org.neo4j.driver.v1.util.cc.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -78,7 +86,9 @@ import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 
 public class CausalClusteringIT
 {
@@ -86,6 +96,17 @@ public class CausalClusteringIT
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule();
+
+    private ExecutorService executor;
+
+    @After
+    public void tearDown()
+    {
+        if ( executor != null )
+        {
+            executor.shutdownNow();
+        }
+    }
 
     @AfterClass
     public static void stopSharedCluster()
@@ -232,7 +253,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldDropBrokenOldSessions() throws Exception
+    public void shouldDropBrokenOldConnections() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -240,8 +261,8 @@ public class CausalClusteringIT
         int livenessCheckTimeoutMinutes = 2;
 
         Config config = Config.build()
-                .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES )
-                .withoutEncryption()
+                .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, MINUTES )
+                .withLogging( DEV_NULL_LOGGING )
                 .toConfig();
 
         FakeClock clock = new FakeClock();
@@ -249,26 +270,37 @@ public class CausalClusteringIT
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1, SECONDS.toMillis( 5 ), null );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
 
-        try ( Driver driver = driverFactory.newInstance( routingUri, auth, routingSettings, retrySettings, config ) )
+        try ( Driver driver = driverFactory.newInstance( routingUri, auth, defaultRoutingSettings(), retrySettings, config ) )
         {
-            // create nodes in different threads using different sessions
+            // create nodes in different threads using different sessions and connections
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
 
-            // now pool contains many sessions, make them all invalid
-            driverFactory.closeChannels();
-            // move clock forward more than configured liveness check timeout
-            clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
+            // now pool contains many channels, make them all invalid
+            List<Channel> oldChannels = driverFactory.channels();
+            for ( Channel oldChannel : oldChannels )
+            {
+                RuntimeException error = new ServiceUnavailableException( "Unable to reset" );
+                oldChannel.pipeline().addLast( ThrowingMessageEncoder.forResetMessage( error ) );
+            }
 
-            // now all idle connections should be considered too old and will be verified during acquisition
+            // move clock forward more than configured liveness check timeout
+            clock.progress( MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
+
+            // now all idle channels should be considered too old and will be verified during acquisition
             // they will appear broken because they were closed and new valid connection will be created
             try ( Session session = driver.session( AccessMode.WRITE ) )
             {
                 List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
                 assertEquals( 1, records.size() );
                 assertEquals( concurrentSessionsCount, records.get( 0 ).get( 0 ).asInt() );
+            }
+
+            // all old channels failed to reset and should be closed
+            for ( Channel oldChannel : oldChannels )
+            {
+                assertFalse( oldChannel.isActive() );
             }
         }
     }
@@ -475,7 +507,7 @@ public class CausalClusteringIT
 
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
-        ExecutorService executor = Executors.newCachedThreadPool();
+        executor = newExecutor();
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
@@ -587,11 +619,9 @@ public class CausalClusteringIT
         ClusterMember leader = cluster.leader();
 
         FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
-        RoutingSettings routingSettings = new RoutingSettings( 1, SECONDS.toMillis( 5 ), null );
-        Config config = Config.build().toConfig();
 
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                routingSettings, RetrySettings.DEFAULT, config ) )
+                defaultRoutingSettings(), RetrySettings.DEFAULT, configWithoutLogging() ) )
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
@@ -625,6 +655,123 @@ public class CausalClusteringIT
         }
     }
 
+    @Test
+    public void shouldRediscoverWhenConnectionsToAllCoresBreak()
+    {
+        Cluster cluster = clusterRule.getCluster();
+        ClusterMember leader = cluster.leader();
+
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
+        try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
+                defaultRoutingSettings(), RetrySettings.DEFAULT, configWithoutLogging() ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                createNode( session, "Person", "name", "Vision" );
+
+                // force driver to connect to every cluster member
+                for ( int i = 0; i < cluster.members().size(); i++ )
+                {
+                    assertEquals( 1, countNodes( session, "Person", "name", "Vision" ) );
+                }
+            }
+
+            // now driver should have connections towards every cluster member
+            // make all those connections throw and seem broken
+            for ( Channel channel : driverFactory.channels() )
+            {
+                RuntimeException error = new ServiceUnavailableException( "Disconnected" );
+                channel.pipeline().addLast( ThrowingMessageEncoder.forRunMessage( error ) );
+            }
+
+            // observe that connection towards writer is broken
+            try ( Session session = driver.session( AccessMode.WRITE ) )
+            {
+                try
+                {
+                    runCreateNode( session, "Person", "name", "Vision" ).consume();
+                    fail( "Exception expected" );
+                }
+                catch ( SessionExpiredException e )
+                {
+                    assertEquals( "Disconnected", e.getCause().getMessage() );
+                }
+            }
+
+            // probe connections to all readers
+            int readersCount = cluster.followers().size() + cluster.readReplicas().size();
+            for ( int i = 0; i < readersCount; i++ )
+            {
+                try ( Session session = driver.session( AccessMode.READ ) )
+                {
+                    runCountNodes( session, "Person", "name", "Vision" );
+                }
+                catch ( Throwable ignore )
+                {
+                }
+            }
+
+            try ( Session session = driver.session() )
+            {
+                updateNode( session, "Person", "name", "Vision", "Thanos" );
+                assertEquals( 0, countNodes( session, "Person", "name", "Vision" ) );
+                assertEquals( 1, countNodes( session, "Person", "name", "Thanos" ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldKeepOperatingWhenConnectionsBreak() throws Exception
+    {
+        long testRunTimeMs = MINUTES.toMillis( 1 );
+        String label = "Person";
+        String property = "name";
+        String value = "Tony Stark";
+        Cluster cluster = clusterRule.getCluster();
+
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
+        AtomicBoolean stop = new AtomicBoolean();
+        executor = newExecutor();
+
+        Config config = Config.build()
+                .withLogging( DEV_NULL_LOGGING )
+                .withMaxTransactionRetryTime( testRunTimeMs, MILLISECONDS )
+                .toConfig();
+
+        try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
+                defaultRoutingSettings(), RetrySettings.DEFAULT, config ) )
+        {
+            List<Future<?>> results = new ArrayList<>();
+
+            // launch writers and readers that use transaction functions and thus should never fail
+            for ( int i = 0; i < 3; i++ )
+            {
+                results.add( executor.submit( readNodesCallable( driver, label, property, value, stop ) ) );
+            }
+            for ( int i = 0; i < 2; i++ )
+            {
+                results.add( executor.submit( createNodesCallable( driver, label, property, value, stop ) ) );
+            }
+
+            // make connections throw while reads and writes are in progress
+            long deadline = System.currentTimeMillis() + MINUTES.toMillis( 1 );
+            while ( System.currentTimeMillis() < deadline && !stop.get() )
+            {
+                List<Channel> channels = driverFactory.pollChannels();
+                for ( Channel channel : channels )
+                {
+                    RuntimeException error = new ServiceUnavailableException( "Unable to execute query" );
+                    channel.pipeline().addLast( ThrowingMessageEncoder.forRunMessage( error ) );
+                }
+                SECONDS.sleep( 10 ); // sleep a bit to allow readers and writers to progress
+            }
+            stop.set( true );
+
+            awaitAllFutures( results ); // readers and writers should stop
+            assertThat( countNodes( driver.session(), label, property, value ), greaterThan( 0 ) ); // some nodes should be created
+        }
+    }
+
     private static void closeTx( Transaction tx )
     {
         tx.success();
@@ -655,12 +802,6 @@ public class CausalClusteringIT
     {
         return cursor.singleAsync().thenCompose( record ->
                 cursor.summaryAsync().thenApply( summary -> new RecordAndSummary( record, summary ) ) );
-    }
-
-    private CompletionStage<Integer> sumRecordsFrom( StatementResultCursor cursor1, StatementResultCursor cursor2 )
-    {
-        return cursor1.singleAsync().thenCombine( cursor2.singleAsync(),
-                ( record1, record2 ) -> record1.get( 0 ).asInt() + record2.get( 0 ).asInt() );
     }
 
     private int executeWriteAndReadThroughBolt( ClusterMember member ) throws TimeoutException, InterruptedException
@@ -814,11 +955,7 @@ public class CausalClusteringIT
 
     private Driver createDriver( URI boltUri )
     {
-        Config config = Config.build()
-                .withLogging( DEV_NULL_LOGGING )
-                .toConfig();
-
-        return createDriver( boltUri, config );
+        return createDriver( boltUri, configWithoutLogging() );
     }
 
     private Driver createDriver( URI boltUri, Config config )
@@ -828,18 +965,14 @@ public class CausalClusteringIT
 
     private Driver discoverDriver( List<URI> routingUris )
     {
-        Config config = Config.build()
-                .withLogging( DEV_NULL_LOGGING )
-                .toConfig();
-
-        return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), config );
+        return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), configWithoutLogging() );
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception
     {
         final CountDownLatch beforeRunLatch = new CountDownLatch( count );
         final CountDownLatch runQueryLatch = new CountDownLatch( 1 );
-        final ExecutorService executor = Executors.newCachedThreadPool();
+        final ExecutorService executor = newExecutor();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -879,14 +1012,80 @@ public class CausalClusteringIT
         }
     }
 
-    private static int countNodes( Session session, String label, String property, String value )
+    private static Callable<Void> createNodesCallable( Driver driver, String label, String property, String value, AtomicBoolean stop )
+    {
+        return () ->
+        {
+            while ( !stop.get() )
+            {
+                try ( Session session = driver.session( AccessMode.WRITE ) )
+                {
+                    createNode( session, label, property, value );
+                }
+                catch ( Throwable t )
+                {
+                    stop.set( true );
+                    throw t;
+                }
+            }
+            return null;
+        };
+    }
+
+    private static Callable<Void> readNodesCallable( Driver driver, String label, String property, String value, AtomicBoolean stop )
+    {
+        return () ->
+        {
+            while ( !stop.get() )
+            {
+                try ( Session session = driver.session( AccessMode.READ ) )
+                {
+                    List<Long> ids = readNodeIds( session, label, property, value );
+                    assertNotNull( ids );
+                }
+                catch ( Throwable t )
+                {
+                    stop.set( true );
+                    throw t;
+                }
+            }
+            return null;
+        };
+    }
+
+    private static List<Long> readNodeIds( final Session session, final String label, final String property, final String value )
     {
         return session.readTransaction( tx ->
         {
-            String query = "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)";
-            StatementResult result = tx.run( query, parameters( "value", value ) );
-            return result.single().get( 0 ).asInt();
+            StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN n LIMIT 10",
+                    parameters( "value", value ) );
+
+            return result.list( record -> record.get( 0 ).asNode().id() );
         } );
+    }
+
+    private static void createNode( Session session, String label, String property, String value )
+    {
+        session.writeTransaction( tx ->
+        {
+            runCreateNode( tx, label, property, value );
+            return null;
+        } );
+    }
+
+    private static void updateNode( Session session, String label, String property, String oldValue, String newValue )
+    {
+        session.writeTransaction( tx ->
+        {
+            tx.run( "MATCH (n: " + label + '{' + property + ": $oldValue}) SET n." + property + " = $newValue",
+                    parameters( "oldValue", oldValue, "newValue", newValue ) );
+            return null;
+        } );
+    }
+
+    private static int countNodes( Session session, String label, String property, String value )
+    {
+        return session.readTransaction( tx -> runCountNodes( tx, label, property, value ) );
     }
 
     private static Callable<String> createNodeAndGetBookmark( Driver driver, String label, String property,
@@ -901,11 +1100,37 @@ public class CausalClusteringIT
         {
             localSession.writeTransaction( tx ->
             {
-                tx.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
+                runCreateNode( tx, label, property, value );
                 return null;
             } );
             return localSession.lastBookmark();
         }
+    }
+
+    private static StatementResult runCreateNode( StatementRunner statementRunner, String label, String property, String value )
+    {
+        return statementRunner.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
+    }
+
+    private static int runCountNodes( StatementRunner statementRunner, String label, String property, String value )
+    {
+        StatementResult result = statementRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
+        return result.single().get( 0 ).asInt();
+    }
+
+    private static RoutingSettings defaultRoutingSettings()
+    {
+        return new RoutingSettings( 1, SECONDS.toMillis( 1 ), null );
+    }
+
+    private static Config configWithoutLogging()
+    {
+        return Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+    }
+
+    private static ExecutorService newExecutor()
+    {
+        return Executors.newCachedThreadPool( daemon( CausalClusteringIT.class.getSimpleName() + "-thread-" ) );
     }
 
     private static class RecordAndSummary
