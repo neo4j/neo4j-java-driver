@@ -20,9 +20,6 @@ package org.neo4j.driver.internal.net;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.util.Queue;
@@ -30,9 +27,7 @@ import java.util.Queue;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.security.TLSSocketChannel;
 import org.neo4j.driver.internal.util.BytePrinter;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -123,15 +118,12 @@ public class SocketClient
 
     public void start()
     {
-        Socket socket = null;
-        boolean connected = false;
         try
         {
             logger.debug( "Connecting to %s, secure: %s", address, securityPlan.requiresEncryption() );
             if( channel == null )
             {
-                socket = newSocket( timeoutMillis );
-                setChannel( ChannelFactory.create( socket, address, securityPlan, timeoutMillis, logger ) );
+                setChannel( ChannelFactory.create( address, securityPlan, timeoutMillis, logger ) );
                 logger.debug( "Connected to %s, secure: %s", address, securityPlan.requiresEncryption() );
             }
 
@@ -139,15 +131,9 @@ public class SocketClient
             SocketProtocol protocol = negotiateProtocol();
             setProtocol( protocol );
             logger.debug( "Selected protocol %s with %s", protocol.getClass(), address );
-
-            // reset read timeout (SO_TIMEOUT) to the original value of zero
-            // we do not want to permanently limit amount of time driver waits for database to execute query
-            socket.setSoTimeout( 0 );
-            connected = true;
         }
-        catch ( ConnectException | SocketTimeoutException e )
+        catch ( ConnectException e )
         {
-            // unable to connect socket or TLS/Bolt handshake took too much time
             throw new ServiceUnavailableException( format(
                     "Unable to connect to %s, ensure the database is running and that there is a " +
                     "working network connection to it.", address ), e );
@@ -155,19 +141,6 @@ public class SocketClient
         catch ( IOException e )
         {
             throw new ServiceUnavailableException( "Unable to process request: " + e.getMessage(), e );
-        }
-        finally
-        {
-            if ( !connected && socket != null )
-            {
-                try
-                {
-                    socket.close();
-                }
-                catch ( Throwable ignore )
-                {
-                }
-            }
         }
     }
 
@@ -327,36 +300,5 @@ public class SocketClient
     public BoltServerAddress address()
     {
         return address;
-    }
-
-    /**
-     * Creates new {@link Socket} object with {@link Socket#setSoTimeout(int) read timeout} set to the given value.
-     * Connection to bolt server includes:
-     * <ol>
-     * <li>TCP connect via {@link Socket#connect(SocketAddress, int)}</li>
-     * <li>Optional TLS handshake using {@link TLSSocketChannel}</li>
-     * <li>Bolt handshake</li>
-     * </ol>
-     * We do not want any of these steps to hang infinitely if server does not respond and thus:
-     * <ol>
-     * <li>Use {@link Socket#connect(SocketAddress, int)} with timeout, as configured in
-     * {@link Config#connectionTimeoutMillis()}</li>
-     * <li>Initially set {@link Socket#setSoTimeout(int) read timeout} on the socket. Same connection-timeout value
-     * from {@link Config#connectionTimeoutMillis()} is used. This way blocking reads during TLS and Bolt handshakes
-     * have limited waiting time</li>
-     * </ol>
-     *
-     * @param configuredConnectTimeout user-defined connection timeout to be initially used as read timeout.
-     * @return new socket.
-     * @throws IOException when creation or configuration of the socket fails.
-     */
-    private static Socket newSocket( int configuredConnectTimeout ) throws IOException
-    {
-        Socket socket = new Socket();
-        socket.setReuseAddress( true );
-        socket.setKeepAlive( true );
-        // set read timeout initially
-        socket.setSoTimeout( configuredConnectTimeout );
-        return socket;
     }
 }
