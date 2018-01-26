@@ -167,24 +167,23 @@ public class NetworkSession implements Session
         {
             return resultCursorStage.thenCompose( cursor ->
             {
-                if ( cursor == null )
+                if ( cursor != null )
                 {
-                    return completedWithNull();
+                    // there exists a cursor with potentially unconsumed error, try to extract and propagate it
+                    return cursor.failureAsync();
                 }
-                return cursor.failureAsync();
-            } ).thenCompose( error -> releaseResources().thenApply( ignore ->
+                // no result cursor exists so no error exists
+                return completedWithNull();
+            } ).thenCompose( cursorError -> closeTransactionAndReleaseConnection().thenApply( txCloseError ->
             {
-                if ( error != null )
+                // now we have cursor error, active transaction has been closed and connection has been released
+                // back to the pool; try to propagate cursor and transaction close errors, if any
+                CompletionException combinedError = Futures.combineErrors( cursorError, txCloseError );
+                if ( combinedError != null )
                 {
-                    // connection has been acquired and there is an unconsumed error in result cursor
-                    throw Futures.asCompletionException( error );
+                    throw combinedError;
                 }
-                else
-                {
-                    // either connection acquisition failed or
-                    // there are no unconsumed errors in the result cursor
-                    return null;
-                }
+                return null;
             } ) );
         }
         return completedWithNull();
@@ -250,6 +249,7 @@ public class NetworkSession implements Session
     }
 
     @Override
+    @SuppressWarnings( "deprecation" )
     public void reset()
     {
         Futures.blockingGet( resetAsync(),
@@ -520,26 +520,22 @@ public class NetworkSession implements Session
         return newConnectionStage;
     }
 
-    private CompletionStage<Void> releaseResources()
-    {
-        return rollbackTransaction().thenCompose( ignore -> releaseConnection() );
-    }
-
-    private CompletionStage<Void> rollbackTransaction()
+    private CompletionStage<Throwable> closeTransactionAndReleaseConnection()
     {
         return existingTransactionOrNull().thenCompose( tx ->
         {
             if ( tx != null )
             {
-                return tx.rollbackAsync();
+                // there exists an open transaction, let's close it and propagate the error, if any
+                return tx.closeAsync()
+                        .thenApply( ignore -> (Throwable) null )
+                        .exceptionally( error -> error );
             }
+            // no open transaction so nothing to close
             return completedWithNull();
-        } ).exceptionally( error ->
-        {
-            Throwable cause = Futures.completionExceptionCause( error );
-            logger.warn( "Active transaction rolled back with an error", cause );
-            return null;
-        } );
+        } ).thenCompose( txCloseError ->
+                // then release the connection and propagate transaction close error, if any
+                releaseConnection().thenApply( ignore -> txCloseError ) );
     }
 
     private CompletionStage<Void> releaseConnection()
@@ -548,8 +544,10 @@ public class NetworkSession implements Session
         {
             if ( connection != null )
             {
+                // there exists connection, try to release it back to the pool
                 return connection.release();
             }
+            // no connection so return null
             return completedWithNull();
         } );
     }

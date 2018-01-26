@@ -172,6 +172,40 @@ public final class Futures
         return new CompletionException( error );
     }
 
+    /**
+     * Combine given errors into a single {@link CompletionException} to be rethrown from inside a
+     * {@link CompletionStage} chain.
+     *
+     * @param error1 the first error or {@code null}.
+     * @param error2 the second error or {@code null}.
+     * @return {@code null} if both errors are null, {@link CompletionException} otherwise.
+     */
+    public static CompletionException combineErrors( Throwable error1, Throwable error2 )
+    {
+        if ( error1 != null && error2 != null )
+        {
+            Throwable cause1 = completionExceptionCause( error1 );
+            Throwable cause2 = completionExceptionCause( error2 );
+            if ( cause1 != cause2 )
+            {
+                cause1.addSuppressed( cause2 );
+            }
+            return asCompletionException( cause1 );
+        }
+        else if ( error1 != null )
+        {
+            return asCompletionException( error1 );
+        }
+        else if ( error2 != null )
+        {
+            return asCompletionException( error2 );
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     private static void safeRun( Runnable runnable )
     {
         try

@@ -420,7 +420,6 @@ public class Cluster
                 .withTrustStrategy( trustAllCertificates() )
                 .withEncryption()
                 .withMaxConnectionPoolSize( 1 )
-                .withMaxIdleConnections( 1 )
                 .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
                 .toConfig();
     }

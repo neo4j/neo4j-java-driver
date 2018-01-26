@@ -1,11 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>1.8</java.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <rootDir>${project.basedir}</rootDir>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -47,6 +50,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Compile dependencies -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>4.1.16.Final</version>
+      </dependency>
+
       <!-- Test dependencies -->
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -72,8 +82,80 @@
         <version>4.12</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.rauschig</groupId>
+        <artifactId>jarchivelib</artifactId>
+        <version>0.7.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>1.59</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+        <version>1.59</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>info.cukes</groupId>
+        <artifactId>cucumber-junit</artifactId>
+        <version>1.2.5</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>info.cukes</groupId>
+        <artifactId>cucumber-java</artifactId>
+        <version>1.2.5</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.9.3</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <!-- If a revision has not been explicitly set, sort it out by looking at git metadata -->
+    <profile>
+      <id>determine-revision</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>!build.revision</name>
+        </property>
+      </activation>
+      <properties>
+        <build.revision>${git.commit.id.abbrev}</build.revision>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>pl.project13.maven</groupId>
+            <artifactId>git-commit-id-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>java9</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>9</jdk>
+      </activation>
+      <properties>
+        <maven.compiler.source>9</maven.compiler.source>
+        <maven.compiler.target>9</maven.compiler.target>
+      </properties>
+    </profile>
+  </profiles>
 
   <build>
     <pluginManagement>
@@ -91,20 +173,73 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>2.2.4</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>revision</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.0.0</version>
+          <configuration>
+            <charset>UTF-8</charset>
+            <docencoding>UTF-8</docencoding>
+            <encoding>UTF-8</encoding>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.0.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>3.5.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.1.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>2.11</version>
+        <version>3.0</version>
         <configuration>
-          <header>driver/src/main/resources/license-header.txt</header>
+          <header>${rootDir}/build/license-header.txt</header>
           <mapping>
             <java>SLASHSTAR_STYLE</java>
           </mapping>
           <properties>
-              <thisYear>2018</thisYear>
+            <thisYear>2018</thisYear>
           </properties>
           <includes>
             <include>**/*.java</include>
@@ -123,17 +258,18 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
+        <version>3.7.0</version>
         <configuration>
-            <source>${java.version}</source>
-            <target>${java.version}</target>
+          <showDeprecation>true</showDeprecation>
+          <showWarnings>true</showWarnings>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.4</version>
+        <version>3.0.1</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -146,7 +282,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.9.1</version>
+        <version>3.0.0</version>
         <configuration>
           <charset>UTF-8</charset>
           <docencoding>UTF-8</docencoding>
@@ -157,7 +293,7 @@
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
           <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
-          <additionalparam>--allow-script-in-comments</additionalparam>
+          <additionalOptions>--allow-script-in-comments</additionalOptions>
         </configuration>
         <executions>
           <execution>
@@ -172,6 +308,30 @@
               <goal>aggregate</goal>
             </goals>
             <phase>site</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.20.1</version>
+        <configuration>
+          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.20.1</version>
+        <configuration>
+          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

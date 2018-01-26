@@ -30,7 +30,7 @@ import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import javax.xml.bind.DatatypeConverter;
+import java.util.Base64;
 
 /**
  * A tool related to save, load certs, etc.
@@ -89,7 +89,7 @@ public class CertificateTool
 
         for ( Certificate cert : certs )
         {
-            String certStr = DatatypeConverter.printBase64Binary( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
+            String certStr = Base64.getEncoder().encodeToString( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
 
             writer.write( BEGIN_CERT );
             writer.newLine();
