@@ -890,15 +890,15 @@ public class CausalClusteringIT
     {
         for ( ClusterMember member : cluster.members() )
         {
-            int count = countNodesUsingDirectDriver( member.getBoltUri(), name, bookmark );
+            int count = countNodesUsingDirectDriver( member, name, bookmark );
             assertEquals( 1, count );
         }
     }
 
-    private int countNodesUsingDirectDriver( URI boltUri, final String name, String bookmark )
+    private int countNodesUsingDirectDriver( ClusterMember member, final String name, String bookmark )
     {
-        try ( Driver driver = createDriver( boltUri );
-              Session session = driver.session( bookmark ) )
+        Driver driver = clusterRule.getCluster().getDirectDriver( member );
+        try ( Session session = driver.session( bookmark ) )
         {
             return session.readTransaction( new TransactionWork<Integer>()
             {

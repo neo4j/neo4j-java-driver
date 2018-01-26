@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.util.cc;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,52 +28,48 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.TestUtil;
 
+import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
-import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.v1.util.TestUtil.sleep;
 
-public class Cluster
+public class Cluster implements AutoCloseable
 {
     private static final String ADMIN_USER = "neo4j";
     private static final int STARTUP_TIMEOUT_SECONDS = 120;
     private static final int ONLINE_MEMBERS_CHECK_SLEEP_MS = 500;
 
     private final Path path;
-    private final String password;
     private final Set<ClusterMember> members;
     private final Set<ClusterMember> offlineMembers;
+    private final ClusterDrivers clusterDrivers;
 
     public Cluster( Path path, String password )
     {
-        this( path, password, Collections.<ClusterMember>emptySet() );
+        this( path, emptySet(), new ClusterDrivers( ADMIN_USER, password ) );
     }
 
-    private Cluster( Path path, String password, Set<ClusterMember> members )
+    private Cluster( Path path, Set<ClusterMember> members, ClusterDrivers clusterDrivers )
     {
         this.path = path;
-        this.password = password;
         this.members = members;
         this.offlineMembers = new HashSet<>();
+        this.clusterDrivers = clusterDrivers;
     }
 
     Cluster withMembers( Set<ClusterMember> newMembers ) throws ClusterUnavailableException
     {
-        waitForMembersToBeOnline( newMembers, password );
-        return new Cluster( path, password, newMembers );
+        waitForMembersToBeOnline( newMembers, clusterDrivers );
+        return new Cluster( path, newMembers, clusterDrivers );
     }
 
     public Path getPath()
@@ -85,21 +80,16 @@ public class Cluster
     public void deleteData()
     {
         // execute write query to remove all nodes and retrieve bookmark
-        String bookmark;
-        try ( Driver driver = createDriver( leader().getBoltUri(), password ) )
-        {
-            bookmark = TestUtil.cleanDb( driver );
-            assertNotNull( "Cleanup of the database did not produce a bookmark", bookmark );
-        }
+        Driver driverToLeader = clusterDrivers.getDriver( leader() );
+        String bookmark = TestUtil.cleanDb( driverToLeader );
+        assertNotNull( "Cleanup of the database did not produce a bookmark", bookmark );
 
         // ensure that every cluster member is up-to-date and contains no nodes
         for ( ClusterMember member : members )
         {
-            try ( Driver driver = createDriver( member.getBoltUri(), password ) )
-            {
-                long nodeCount = TestUtil.countNodes( driver, bookmark );
-                assertEquals( "Not all nodes have been deleted. " + nodeCount + " still there somehow ", 0L, nodeCount );
-            }
+            Driver driver = clusterDrivers.getDriver( member );
+            long nodeCount = TestUtil.countNodes( driver, bookmark );
+            assertEquals( "Not all nodes have been deleted. " + nodeCount + " still there somehow ", 0L, nodeCount );
         }
     }
 
@@ -169,6 +159,17 @@ public class Cluster
         waitForMembersToBeOnline();
     }
 
+    public Driver getDirectDriver( ClusterMember member )
+    {
+        return clusterDrivers.getDriver( member );
+    }
+
+    @Override
+    public void close()
+    {
+        clusterDrivers.close();
+    }
+
     @Override
     public String toString()
     {
@@ -206,8 +207,8 @@ public class Cluster
     {
         Set<ClusterMember> membersWithRole = new HashSet<>();
 
-        try ( Driver driver = createDriver( members, password );
-              Session session = driver.session( AccessMode.READ ) )
+        Driver driver = driverToAnyCore( members, clusterDrivers );
+        try ( Session session = driver.session( AccessMode.READ ) )
         {
             List<Record> records = findClusterOverview( session );
             for ( Record record : records )
@@ -237,7 +238,7 @@ public class Cluster
     {
         try
         {
-            waitForMembersToBeOnline( members, password );
+            waitForMembersToBeOnline( members, clusterDrivers );
         }
         catch ( ClusterUnavailableException e )
         {
@@ -245,7 +246,7 @@ public class Cluster
         }
     }
 
-    private static void waitForMembersToBeOnline( Set<ClusterMember> members, String password )
+    private static void waitForMembersToBeOnline( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
             throws ClusterUnavailableException
     {
         if ( members.isEmpty() )
@@ -254,7 +255,7 @@ public class Cluster
         }
 
         Set<BoltServerAddress> expectedOnlineAddresses = extractBoltAddresses( members );
-        Set<BoltServerAddress> actualOnlineAddresses = Collections.emptySet();
+        Set<BoltServerAddress> actualOnlineAddresses = emptySet();
 
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
         Throwable error = null;
@@ -264,8 +265,8 @@ public class Cluster
             sleep( ONLINE_MEMBERS_CHECK_SLEEP_MS );
             assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
 
-            try ( Driver driver = createDriver( members, password );
-                  Session session = driver.session( AccessMode.READ ) )
+            Driver driver = driverToAnyCore( members, clusterDrivers );
+            try ( Session session = driver.session( AccessMode.READ ) )
             {
                 List<Record> records = findClusterOverview( session );
                 actualOnlineAddresses = extractBoltAddresses( records );
@@ -286,7 +287,7 @@ public class Cluster
         }
     }
 
-    private static Driver createDriver( Set<ClusterMember> members, String password )
+    private static Driver driverToAnyCore( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
     {
         if ( members.isEmpty() )
         {
@@ -295,22 +296,13 @@ public class Cluster
 
         for ( ClusterMember member : members )
         {
-            Driver driver = createDriver( member.getBoltUri(), password );
+            Driver driver = clusterDrivers.getDriver( member );
             try ( Session session = driver.session( AccessMode.READ ) )
             {
                 if ( isCoreMember( session ) )
                 {
                     return driver;
                 }
-                else
-                {
-                    driver.close();
-                }
-            }
-            catch ( Exception e )
-            {
-                driver.close();
-                throw e;
             }
         }
 
@@ -409,24 +401,6 @@ public class Cluster
             }
         }
         return null;
-    }
-
-    private static Driver createDriver( URI boltUri, String password )
-    {
-        DriverFactoryWithOneEventLoopThread factory = new DriverFactoryWithOneEventLoopThread();
-        return factory.newInstance( boltUri, AuthTokens.basic( ADMIN_USER, password ), driverConfig() );
-    }
-
-    private static Config driverConfig()
-    {
-        // try to build config for a very lightweight driver
-        return Config.build()
-                .withLogging( DEV_NULL_LOGGING )
-                .withTrustStrategy( trustAllCertificates() )
-                .withEncryption()
-                .withMaxConnectionPoolSize( 1 )
-                .withConnectionLivenessCheckTimeout( 1, TimeUnit.HOURS )
-                .toConfig();
     }
 
     private static ClusterMember randomOf( Set<ClusterMember> members )
