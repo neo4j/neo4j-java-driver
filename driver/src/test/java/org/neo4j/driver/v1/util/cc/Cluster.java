@@ -29,7 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.net.BoltServerAddress;
-import org.neo4j.driver.internal.util.Consumer;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -38,8 +37,11 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.unmodifiableSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
 
@@ -80,26 +82,23 @@ public class Cluster
 
     public void deleteData()
     {
-        leaderTx( new Consumer<Session>()
+        // execute write query to remove all nodes and retreive bookmark
+        String bookmark;
+        try ( Driver driver = createDriver( leader().getBoltUri(), password ) )
         {
-            @Override
-            public void accept( Session session )
-            {
-                session.run( "MATCH (n) DETACH DELETE n" ).consume();
-            }
-        } );
-    }
-
-    public ClusterMember leaderTx( Consumer<Session> tx )
-    {
-        ClusterMember leader = leader();
-        try ( Driver driver = createDriver( leader.getBoltUri(), password );
-              Session session = driver.session() )
-        {
-            tx.accept( session );
+            bookmark = TestUtil.cleanDb( driver );
+            assertNotNull( "Cleanup of the database did not produce a bookmark", bookmark );
         }
 
-        return leader;
+        // ensure that every cluster member is up-to-date and contains no nodes
+        for ( ClusterMember member : members )
+        {
+            try ( Driver driver = createDriver( member.getBoltUri(), password ) )
+            {
+                long nodeCount = TestUtil.countNodes( driver, bookmark );
+                assertEquals( "Not all nodes have been deleted. " + nodeCount + " still there somehow ", 0L, nodeCount );
+            }
+        }
     }
 
     public Set<ClusterMember> members()
@@ -314,13 +313,13 @@ public class Cluster
 
     private static List<Record> findClusterOverview( Session session )
     {
-        StatementResult result = session.run( "call dbms.cluster.overview" );
+        StatementResult result = session.run( "CALL dbms.cluster.overview()" );
         return result.list();
     }
 
     private static boolean isCoreMember( Session session )
     {
-        Record record = single( session.run( "call dbms.cluster.role" ).list() );
+        Record record = single( session.run( "CALL dbms.cluster.role()" ).list() );
         ClusterMemberRole role = extractRole( record );
         return role != ClusterMemberRole.READ_REPLICA;
     }

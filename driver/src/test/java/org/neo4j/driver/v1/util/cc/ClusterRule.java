@@ -133,7 +133,10 @@ public class ClusterRule extends ExternalResource
             {
                 try
                 {
-                    SharedCluster.kill();
+                    if ( SharedCluster.exists() )
+                    {
+                        SharedCluster.kill();
+                    }
                 }
                 catch ( Throwable t )
                 {

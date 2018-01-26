@@ -632,6 +632,7 @@ public class CausalClusteringIT
     @Test
     public void shouldKeepOperatingWhenConnectionsBreak() throws Exception
     {
+        long testRunTimeMs = MINUTES.toMillis( 1 );
         String label = "Person";
         String property = "name";
         String value = "Tony Stark";
@@ -641,8 +642,13 @@ public class CausalClusteringIT
         AtomicBoolean stop = new AtomicBoolean();
         executor = newExecutor();
 
+        Config config = Config.build()
+                .withLogging( DEV_NULL_LOGGING )
+                .withMaxTransactionRetryTime( testRunTimeMs, MILLISECONDS )
+                .toConfig();
+
         try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                defaultRoutingSettings(), RetrySettings.DEFAULT, configWithoutLogging() ) )
+                defaultRoutingSettings(), RetrySettings.DEFAULT, config ) )
         {
             List<Future<?>> results = new ArrayList<>();
 
@@ -665,7 +671,7 @@ public class CausalClusteringIT
                 {
                     connection.setNextRunError( new ServiceUnavailableException( "Unable to execute query" ) );
                 }
-                SECONDS.sleep( 5 ); // sleep a bit to allow readers and writers to progress
+                SECONDS.sleep( 10 ); // sleep a bit to allow readers and writers to progress
             }
             stop.set( true );
 
