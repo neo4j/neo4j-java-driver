@@ -38,6 +38,9 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
+import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
+import org.neo4j.driver.internal.metrics.InternalAbstractDriverMetrics;
+import org.neo4j.driver.internal.metrics.InternalDriverMetrics;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -56,6 +59,8 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.metrics.InternalAbstractDriverMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.metrics.spi.DriverMetrics.isDriverMetricsEnabled;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 
 public class DriverFactory
@@ -77,18 +82,19 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, config );
+        InternalAbstractDriverMetrics metrics = createDriverMetrics( config );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
 
         InternalDriver driver = createDriver( uri, address, connectionPool, config, newRoutingSettings,
                 eventExecutorGroup, securityPlan, retryLogic );
 
+        driver.driverMetrics( metrics );
         verifyConnectivity( driver, connectionPool, config );
 
         return driver;
     }
 
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-            Bootstrap bootstrap, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
@@ -97,7 +103,19 @@ public class DriverFactory
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest()
         );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, config.logging(), clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metrics, config.logging(), clock );
+    }
+
+    protected static InternalAbstractDriverMetrics createDriverMetrics( Config config )
+    {
+        if( isDriverMetricsEnabled() )
+        {
+            return new InternalDriverMetrics( config );
+        }
+        else
+        {
+            return DEV_NULL_METRICS;
+        }
     }
 
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,

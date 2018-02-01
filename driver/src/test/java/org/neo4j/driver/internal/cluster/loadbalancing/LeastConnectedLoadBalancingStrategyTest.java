@@ -85,7 +85,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     public void shouldHandleSingleReaderWithActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
-        when( connectionPool.activeConnections( address ) ).thenReturn( 42 );
+        when( connectionPool.inUseConnections( address ) ).thenReturn( 42 );
 
         assertEquals( address, strategy.selectReader( new BoltServerAddress[]{address} ) );
     }
@@ -94,7 +94,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     public void shouldHandleSingleWriterWithActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
-        when( connectionPool.activeConnections( address ) ).thenReturn( 24 );
+        when( connectionPool.inUseConnections( address ) ).thenReturn( 24 );
 
         assertEquals( address, strategy.selectWriter( new BoltServerAddress[]{address} ) );
     }
@@ -106,9 +106,9 @@ public class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
         BoltServerAddress address3 = new BoltServerAddress( "reader", 3 );
 
-        when( connectionPool.activeConnections( address1 ) ).thenReturn( 3 );
-        when( connectionPool.activeConnections( address2 ) ).thenReturn( 4 );
-        when( connectionPool.activeConnections( address3 ) ).thenReturn( 1 );
+        when( connectionPool.inUseConnections( address1 ) ).thenReturn( 3 );
+        when( connectionPool.inUseConnections( address2 ) ).thenReturn( 4 );
+        when( connectionPool.inUseConnections( address3 ) ).thenReturn( 1 );
 
         assertEquals( address3, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
     }
@@ -121,10 +121,10 @@ public class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address3 = new BoltServerAddress( "writer", 3 );
         BoltServerAddress address4 = new BoltServerAddress( "writer", 4 );
 
-        when( connectionPool.activeConnections( address1 ) ).thenReturn( 5 );
-        when( connectionPool.activeConnections( address2 ) ).thenReturn( 6 );
-        when( connectionPool.activeConnections( address3 ) ).thenReturn( 0 );
-        when( connectionPool.activeConnections( address4 ) ).thenReturn( 1 );
+        when( connectionPool.inUseConnections( address1 ) ).thenReturn( 5 );
+        when( connectionPool.inUseConnections( address2 ) ).thenReturn( 6 );
+        when( connectionPool.inUseConnections( address3 ) ).thenReturn( 0 );
+        when( connectionPool.inUseConnections( address4 ) ).thenReturn( 1 );
 
         assertEquals( address3,
                 strategy.selectWriter( new BoltServerAddress[]{address1, address2, address3, address4} ) );
@@ -182,7 +182,7 @@ public class LeastConnectedLoadBalancingStrategyTest
         Logger logger = mock( Logger.class );
         when( logging.getLog( anyString() ) ).thenReturn( logger );
 
-        when( connectionPool.activeConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
+        when( connectionPool.inUseConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
 

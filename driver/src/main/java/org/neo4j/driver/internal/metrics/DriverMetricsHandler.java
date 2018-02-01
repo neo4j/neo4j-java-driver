@@ -16,24 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
-
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
+package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
-public interface ConnectionPool
+public interface DriverMetricsHandler
 {
-    CompletionStage<Connection> acquire( BoltServerAddress address );
+    void addPoolMetrics(BoltServerAddress serverAddress, ConnectionPool pool);
 
-    void retainAll( Set<BoltServerAddress> addressesToRetain );
+    void beforeCreating(BoltServerAddress serverAddress);
 
-    int inUseConnections( BoltServerAddress address );
+    void afterCreatedSuccessfully(BoltServerAddress serverAddress);
 
-    int idleConnections( BoltServerAddress address );
+    void afterFailedToCreate(BoltServerAddress serverAddress);
 
-    CompletionStage<Void> close();
+    void afterClosed(BoltServerAddress serverAddress);
 
-    boolean isOpen();
+    void beforeAcquiring( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
+
+    void afterAcquired( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
 }

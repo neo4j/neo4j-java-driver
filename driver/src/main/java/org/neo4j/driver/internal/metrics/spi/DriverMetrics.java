@@ -16,24 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.metrics.spi;
 
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
+import java.util.Map;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-
-public interface ConnectionPool
+public interface DriverMetrics
 {
-    CompletionStage<Connection> acquire( BoltServerAddress address );
+    // TODO Once this interface because public, find a better way to enable metrics
+    String DRIVER_METRICS_ENABLED_KEY = "driver.metrics.enabled";
 
-    void retainAll( Set<BoltServerAddress> addressesToRetain );
+    Map<String, ConnectionPoolMetrics> connectionPoolMetrics();
+    Map<String,ConnectionMetrics> connectionMetrics();
 
-    int inUseConnections( BoltServerAddress address );
-
-    int idleConnections( BoltServerAddress address );
-
-    CompletionStage<Void> close();
-
-    boolean isOpen();
+    public static boolean isDriverMetricsEnabled()
+    {
+        return Boolean.valueOf( System.getProperty( DRIVER_METRICS_ENABLED_KEY, "false" ) );
+    }
 }

@@ -171,9 +171,9 @@ public class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
 
-        when( connectionPool.activeConnections( A ) ).thenReturn( 0 );
-        when( connectionPool.activeConnections( B ) ).thenReturn( 20 );
-        when( connectionPool.activeConnections( C ) ).thenReturn( 0 );
+        when( connectionPool.inUseConnections( A ) ).thenReturn( 0 );
+        when( connectionPool.inUseConnections( B ) ).thenReturn( 20 );
+        when( connectionPool.inUseConnections( C ) ).thenReturn( 0 );
 
         RoutingTable routingTable = mock( RoutingTable.class );
         AddressSet readerAddresses = mock( AddressSet.class );

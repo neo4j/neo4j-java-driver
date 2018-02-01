@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async.pool;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
-import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.util.concurrent.Future;
 import org.junit.After;
 import org.junit.Before;
@@ -58,6 +57,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.metrics.InternalAbstractDriverMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Values.value;
 
 public class NettyChannelPoolTest
@@ -66,14 +66,14 @@ public class NettyChannelPoolTest
     public final TestNeo4j neo4j = new TestNeo4j();
 
     private Bootstrap bootstrap;
-    private ChannelPoolHandler poolHandler;
+    private NettyChannelTracker poolHandler;
     private NettyChannelPool pool;
 
     @Before
     public void setUp()
     {
         bootstrap = BootstrapFactory.newBootstrap( 1 );
-        poolHandler = mock( ChannelPoolHandler.class );
+        poolHandler = mock( NettyChannelTracker.class );
     }
 
     @After
@@ -183,24 +183,24 @@ public class NettyChannelPoolTest
     @Test
     public void shouldTrackActiveChannels() throws Exception
     {
-        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker( DEV_NULL_LOGGING );
+        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, DEV_NULL_LOGGING );
 
-        poolHandler = activeChannelTracker;
+        poolHandler = tracker;
         pool = newPool( neo4j.authToken() );
 
         Channel channel1 = acquire( pool );
         Channel channel2 = acquire( pool );
         Channel channel3 = acquire( pool );
-        assertEquals( 3, activeChannelTracker.activeChannelCount( neo4j.address() ) );
+        assertEquals( 3, tracker.inUseChannelCount( neo4j.address() ) );
 
         release( channel1 );
         release( channel2 );
         release( channel3 );
-        assertEquals( 0, activeChannelTracker.activeChannelCount( neo4j.address() ) );
+        assertEquals( 0, tracker.inUseChannelCount( neo4j.address() ) );
 
         assertNotNull( acquire( pool ) );
         assertNotNull( acquire( pool ) );
-        assertEquals( 2, activeChannelTracker.activeChannelCount( neo4j.address() ) );
+        assertEquals( 2, tracker.inUseChannelCount( neo4j.address() ) );
     }
 
     private NettyChannelPool newPool( AuthToken authToken )

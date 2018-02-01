@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -40,10 +41,9 @@ public class FailingConnectionDriverFactory extends DriverFactory
     private final AtomicReference<Throwable> nextRunFailure = new AtomicReference<>();
 
     @Override
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
     {
-        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, config );
+        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );
     }
 
@@ -77,15 +77,27 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public int activeConnections( BoltServerAddress address )
+        public int inUseConnections( BoltServerAddress address )
         {
-            return delegate.activeConnections( address );
+            return delegate.inUseConnections( address );
+        }
+
+        @Override
+        public int idleConnections( BoltServerAddress address )
+        {
+            return delegate.idleConnections( address );
         }
 
         @Override
         public CompletionStage<Void> close()
         {
             return delegate.close();
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return delegate.isOpen();
         }
     }
 

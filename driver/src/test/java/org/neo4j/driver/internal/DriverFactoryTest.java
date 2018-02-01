@@ -33,6 +33,8 @@ import java.util.List;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
+import org.neo4j.driver.internal.metrics.InternalDriverMetrics;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -47,6 +49,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -56,6 +59,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.metrics.InternalAbstractDriverMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
@@ -175,6 +179,29 @@ public class DriverFactoryTest
         }
     }
 
+    @Test
+    public void shouldNotCreateDriverMetrics() throws Throwable
+    {
+        // Given
+        Config config = mock( Config.class );
+        // When
+        DriverMetricsHandler handler = DriverFactory.createDriverMetrics( config );
+        // Then
+        assertThat( handler, is( DEV_NULL_METRICS ) );
+    }
+
+    @Test
+    public void shouldCreateDriverMetricsIfMonitoringEnabled() throws Throwable
+    {
+        // Given
+        System.setProperty( "driver.metrics.enabled", "True" );
+        Config config = mock( Config.class );
+        // When
+        DriverMetricsHandler handler = DriverFactory.createDriverMetrics( config );
+        // Then
+        assertThat( handler instanceof InternalDriverMetrics, is( true ) );
+    }
+
     private Driver createDriver( DriverFactory driverFactory )
     {
         return createDriver( driverFactory, defaultConfig() );
@@ -220,8 +247,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
         {
             return connectionPool;
         }
@@ -256,8 +282,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
         {
             return connectionPoolMock();
         }
@@ -279,8 +304,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
         {
             return connectionPoolMock();
         }

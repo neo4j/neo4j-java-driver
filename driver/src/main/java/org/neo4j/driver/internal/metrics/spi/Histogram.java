@@ -16,24 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.metrics.spi;
 
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-
-public interface ConnectionPool
+public interface Histogram
 {
-    CompletionStage<Connection> acquire( BoltServerAddress address );
+    long max();
+    double mean();
+    double stdDeviation();
 
-    void retainAll( Set<BoltServerAddress> addressesToRetain );
+    long totalCount();
+    long valueAtPercentile(double percentile);
 
-    int inUseConnections( BoltServerAddress address );
-
-    int idleConnections( BoltServerAddress address );
-
-    CompletionStage<Void> close();
-
-    boolean isOpen();
+    void reset();
 }

@@ -77,7 +77,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
         do
         {
             BoltServerAddress address = addresses[index];
-            int activeConnections = connectionPool.activeConnections( address );
+            int activeConnections = connectionPool.inUseConnections( address );
 
             if ( activeConnections < leastActiveConnections )
             {
