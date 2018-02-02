@@ -143,7 +143,7 @@ public class NettyChannelPoolTest
         {
             try
             {
-                pool.acquire().get( 5, TimeUnit.SECONDS );
+                acquire( pool );
                 fail( "Exception expected" );
             }
             catch ( ExecutionException e )
@@ -154,8 +154,7 @@ public class NettyChannelPoolTest
 
         authTokenMap.put( "credentials", value( Neo4jRunner.PASSWORD ) );
 
-        Channel channel = pool.acquire().get( 5, TimeUnit.SECONDS );
-        assertNotNull( channel );
+        assertNotNull( acquire( pool ) );
     }
 
     @Test
@@ -166,13 +165,12 @@ public class NettyChannelPoolTest
 
         for ( int i = 0; i < maxConnections; i++ )
         {
-            Channel channel = pool.acquire().get( 5, TimeUnit.SECONDS );
-            assertNotNull( channel );
+            assertNotNull( acquire( pool ) );
         }
 
         try
         {
-            pool.acquire().get( 5, TimeUnit.SECONDS );
+            acquire( pool );
             fail( "Exception expected" );
         }
         catch ( ExecutionException e )
@@ -180,6 +178,29 @@ public class NettyChannelPoolTest
             assertThat( e.getCause(), instanceOf( TimeoutException.class ) );
             assertEquals( e.getCause().getMessage(), "Acquire operation took longer then configured maximum time" );
         }
+    }
+
+    @Test
+    public void shouldTrackActiveChannels() throws Exception
+    {
+        ActiveChannelTracker activeChannelTracker = new ActiveChannelTracker( DEV_NULL_LOGGING );
+
+        poolHandler = activeChannelTracker;
+        pool = newPool( neo4j.authToken() );
+
+        Channel channel1 = acquire( pool );
+        Channel channel2 = acquire( pool );
+        Channel channel3 = acquire( pool );
+        assertEquals( 3, activeChannelTracker.activeChannelCount( neo4j.address() ) );
+
+        release( channel1 );
+        release( channel2 );
+        release( channel3 );
+        assertEquals( 0, activeChannelTracker.activeChannelCount( neo4j.address() ) );
+
+        assertNotNull( acquire( pool ) );
+        assertNotNull( acquire( pool ) );
+        assertEquals( 2, activeChannelTracker.activeChannelCount( neo4j.address() ) );
     }
 
     private NettyChannelPool newPool( AuthToken authToken )
@@ -194,5 +215,15 @@ public class NettyChannelPoolTest
                 new FakeClock() );
         return new NettyChannelPool( neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE,
                 1_000, maxConnections );
+    }
+
+    private static Channel acquire( NettyChannelPool pool ) throws Exception
+    {
+        return pool.acquire().get( 5, TimeUnit.SECONDS );
+    }
+
+    private void release( Channel channel ) throws Exception
+    {
+        pool.release( channel ).get( 5, TimeUnit.SECONDS );
     }
 }
