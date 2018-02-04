@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.util.cc;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
@@ -63,12 +64,34 @@ public class ClusterMember
     }
 
     @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        ClusterMember that = (ClusterMember) o;
+        return Objects.equals( boltAddress, that.boltAddress );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( boltAddress );
+    }
+
+    @Override
     public String toString()
     {
         return "ClusterMember{" +
                "boltUri=" + boltUri +
+               ", boltAddress=" + boltAddress +
                ", path=" + path +
-               "}";
+               '}';
     }
 
     private static BoltServerAddress newBoltServerAddress( URI uri )

@@ -40,6 +40,11 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
     private final int eventLoopThreads;
     private ConnectionPool pool;
 
+    public ChannelTrackingDriverFactory()
+    {
+        this( 0, Clock.SYSTEM );
+    }
+
     public ChannelTrackingDriverFactory( Clock clock )
     {
         this( 0, clock );
@@ -88,13 +93,11 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
         return new ArrayList<>( channels );
     }
 
-    public void closeChannels()
+    public List<Channel> pollChannels()
     {
-        for ( Channel channel : channels )
-        {
-            channel.close().syncUninterruptibly();
-        }
+        List<Channel> result = new ArrayList<>( channels );
         channels.clear();
+        return result;
     }
 
     public int activeChannels( BoltServerAddress address )

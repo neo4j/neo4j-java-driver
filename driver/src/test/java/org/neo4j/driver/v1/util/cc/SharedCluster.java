@@ -45,6 +45,7 @@ final class SharedCluster
     static void remove()
     {
         assertClusterExists();
+        clusterInstance.close();
         clusterInstance = null;
     }
 
