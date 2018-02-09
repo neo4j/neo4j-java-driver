@@ -159,7 +159,7 @@ public class PackStream
             this.out = out;
         }
 
-        public void packRaw( byte[] data ) throws IOException
+        private void packRaw( byte[] data ) throws IOException
         {
             out.writeBytes( data );
         }
@@ -172,11 +172,6 @@ public class PackStream
         public void pack( boolean value ) throws IOException
         {
             out.writeByte( value ? TRUE : FALSE );
-        }
-
-        public void pack( char value ) throws IOException
-        {
-            pack( String.valueOf(value) );
         }
 
         public void pack( long value ) throws IOException
@@ -234,17 +229,7 @@ public class PackStream
             }
         }
 
-        public void packString( byte[] utf8 ) throws IOException
-        {
-            if ( utf8 == null ) { packNull(); }
-            else
-            {
-                packStringHeader( utf8.length );
-                packRaw( utf8 );
-            }
-        }
-
-        public void pack( List values ) throws IOException
+        private void pack( List<?> values ) throws IOException
         {
             if ( values == null ) { packNull(); }
             else
@@ -257,7 +242,7 @@ public class PackStream
             }
         }
 
-        public void pack( Map values ) throws IOException
+        private void pack( Map<?,?> values ) throws IOException
         {
             if ( values == null ) { packNull(); }
             else
@@ -316,7 +301,7 @@ public class PackStream
             }
         }
 
-        public void packStringHeader( int size ) throws IOException
+        private void packStringHeader( int size ) throws IOException
         {
             if ( size < 0x10 )
             {
@@ -662,17 +647,17 @@ public class PackStream
         }
     }
 
-    public static class PackstreamException extends IOException
+    public static class PackStreamException extends IOException
     {
         private static final long serialVersionUID = -1491422133282345421L;
 
-        protected PackstreamException( String message )
+        protected PackStreamException( String message )
         {
             super( message );
         }
     }
 
-    public static class EndOfStream extends PackstreamException
+    public static class EndOfStream extends PackStreamException
     {
         private static final long serialVersionUID = 5102836237108105603L;
 
@@ -682,7 +667,7 @@ public class PackStream
         }
     }
 
-    public static class Overflow extends PackstreamException
+    public static class Overflow extends PackStreamException
     {
         private static final long serialVersionUID = -923071934446993659L;
 
@@ -692,7 +677,7 @@ public class PackStream
         }
     }
 
-    public static class Unexpected extends PackstreamException
+    public static class Unexpected extends PackStreamException
     {
         private static final long serialVersionUID = 5004685868740125469L;
 
@@ -702,7 +687,7 @@ public class PackStream
         }
     }
 
-    public static class UnPackable extends PackstreamException
+    public static class UnPackable extends PackStreamException
     {
         private static final long serialVersionUID = 2408740707769711365L;
 

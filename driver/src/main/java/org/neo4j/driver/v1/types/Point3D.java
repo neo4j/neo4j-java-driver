@@ -21,11 +21,13 @@ package org.neo4j.driver.v1.types;
 import org.neo4j.driver.v1.util.Experimental;
 
 @Experimental
-public interface Point
+public interface Point3D
 {
-    long crsTableId();
+    long srid();
 
-    long crsCode();
+    double x();
 
-    Coordinate coordinate();
+    double y();
+
+    double z();
 }

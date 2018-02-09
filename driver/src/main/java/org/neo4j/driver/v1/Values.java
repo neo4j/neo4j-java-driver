@@ -26,11 +26,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.DoubleStream;
 
 import org.neo4j.driver.internal.AsValue;
-import org.neo4j.driver.internal.InternalCoordinate;
-import org.neo4j.driver.internal.InternalPoint;
+import org.neo4j.driver.internal.InternalPoint2D;
+import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -38,18 +37,19 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.internal.value.PointValue;
+import org.neo4j.driver.internal.value.Point2DValue;
+import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
 
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 /**
@@ -263,11 +263,14 @@ public abstract class Values
         return new MapValue( asValues );
     }
 
-    public static Value point( long crsTableId, long crsCode, double... coordinates )
+    public static Value point2D( int srid, double x, double y )
     {
-        InternalCoordinate coordinate = new InternalCoordinate( DoubleStream.of( coordinates ).boxed().collect( toList() ) );
-        InternalPoint point = new InternalPoint( crsTableId, crsCode, coordinate );
-        return new PointValue( point );
+        return new Point2DValue( new InternalPoint2D( srid, x, y ) );
+    }
+
+    public static Value point3D( int srid, double x, double y, double z )
+    {
+        return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
     }
 
     /**
@@ -485,9 +488,14 @@ public abstract class Values
         return PATH;
     }
 
-    public static Function<Value,Point> ofPoint()
+    public static Function<Value,Point2D> ofPoint2D()
     {
-        return POINT;
+        return POINT_2D;
+    }
+
+    public static Function<Value,Point3D> ofPoint3D()
+    {
+        return POINT_3D;
     }
 
     /**
@@ -637,11 +645,18 @@ public abstract class Values
             return val.asPath();
         }
     };
-    private static final Function<Value,Point> POINT = new Function<Value,Point>()
+    private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()
     {
-        public Point apply( Value val )
+        public Point2D apply( Value val )
         {
-            return val.asPoint();
+            return val.asPoint2D();
+        }
+    };
+    private static final Function<Value,Point3D> POINT_3D = new Function<Value,Point3D>()
+    {
+        public Point3D apply( Value val )
+        {
+            return val.asPoint3D();
         }
     };
 

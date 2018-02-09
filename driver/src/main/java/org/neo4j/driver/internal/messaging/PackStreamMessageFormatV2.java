@@ -19,24 +19,26 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.neo4j.driver.internal.InternalCoordinate;
-import org.neo4j.driver.internal.InternalPoint;
+import org.neo4j.driver.internal.InternalPoint2D;
+import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.value.InternalValue;
-import org.neo4j.driver.internal.value.PointValue;
+import org.neo4j.driver.internal.value.Point2DValue;
+import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point3D;
 
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
 
 public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 {
-    private static final byte POINT_STRUCT_TYPE = 'X';
-    private static final int POINT_STRUCT_SIZE = 3;
+    private static final byte POINT_2D_STRUCT_TYPE = 'X';
+    private static final byte POINT_3D_STRUCT_TYPE = 'Y';
+    private static final int POINT_STRUCT_SIZE = 2;
 
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
@@ -64,9 +66,13 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         @Override
         void packInternalValue( InternalValue value ) throws IOException
         {
-            if ( value.typeConstructor() == POINT_TyCon )
+            if ( value.typeConstructor() == POINT_2D_TyCon )
             {
-                packPoint( value.asPoint() );
+                packPoint2D( value.asPoint2D() );
+            }
+            else if ( value.typeConstructor() == POINT_3D_TyCon )
+            {
+                packPoint3D( value.asPoint3D() );
             }
             else
             {
@@ -74,12 +80,18 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             }
         }
 
-        private void packPoint( Point point ) throws IOException
+        private void packPoint2D( Point2D point ) throws IOException
         {
-            packer.packStructHeader( POINT_STRUCT_SIZE, POINT_STRUCT_TYPE );
-            packer.pack( point.crsTableId() );
-            packer.pack( point.crsCode() );
-            packer.pack( point.coordinate().values() );
+            packer.packStructHeader( POINT_STRUCT_SIZE, POINT_2D_STRUCT_TYPE );
+            packer.pack( point.srid() );
+//            packer.pack( point.x(), point.y() );
+        }
+
+        private void packPoint3D( Point3D point ) throws IOException
+        {
+            packer.packStructHeader( POINT_STRUCT_SIZE, POINT_3D_STRUCT_TYPE );
+            packer.pack( point.srid() );
+//            packer.pack( point.x(), point.y(), point.z() );
         }
     }
 
@@ -93,10 +105,15 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         @Override
         Value unpackStruct( long size, byte type ) throws IOException
         {
-            if ( type == POINT_STRUCT_TYPE )
+            if ( type == POINT_2D_STRUCT_TYPE )
             {
-                ensureCorrectStructSize( POINT_TyCon.typeName(), POINT_STRUCT_SIZE, size );
-                return unpackPoint();
+                ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_STRUCT_SIZE, size );
+                return unpackPoint2D();
+            }
+            else if ( type == POINT_3D_STRUCT_TYPE )
+            {
+                ensureCorrectStructSize( POINT_3D_TyCon.typeName(), POINT_STRUCT_SIZE, size );
+                return unpackPoint3D();
             }
             else
             {
@@ -104,20 +121,16 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             }
         }
 
-        private Value unpackPoint() throws IOException
+        private Value unpackPoint2D() throws IOException
         {
-            long crsTableId = unpacker.unpackLong();
-            long crsCode = unpacker.unpackLong();
+            long srid = unpacker.unpackLong();
+            return new Point2DValue( new InternalPoint2D( srid, 0.0, 0.0 ) );
+        }
 
-            int coordinateSize = (int) unpacker.unpackListHeader();
-            List<Double> coordinate = new ArrayList<>( coordinateSize );
-            for ( int i = 0; i < coordinateSize; i++ )
-            {
-                coordinate.add( unpacker.unpackDouble() );
-            }
-
-            Point point = new InternalPoint( crsTableId, crsCode, new InternalCoordinate( coordinate ) );
-            return new PointValue( point );
+        private Value unpackPoint3D() throws IOException
+        {
+            long srid = unpacker.unpackLong();
+            return new Point3DValue( new InternalPoint3D( srid, 0.0, 0.0, 0.0 ) );
         }
     }
 }

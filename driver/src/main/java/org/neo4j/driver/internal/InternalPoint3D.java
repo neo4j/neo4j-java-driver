@@ -18,51 +18,44 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.List;
+import org.neo4j.driver.v1.types.Point3D;
 
-import org.neo4j.driver.v1.types.Coordinate;
-
-import static java.util.Collections.unmodifiableList;
-
-public class InternalCoordinate implements Coordinate
+public class InternalPoint3D implements Point3D
 {
-    private final List<Double> values;
+    private final long srid;
+    private final double x;
+    private final double y;
+    private final double z;
 
-    public InternalCoordinate( List<Double> values )
+    public InternalPoint3D( long srid, double x, double y, double z )
     {
-        this.values = unmodifiableList( values );
+        this.srid = srid;
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     @Override
-    public List<Double> values()
+    public long srid()
     {
-        return values;
+        return srid;
     }
 
     @Override
-    public boolean equals( Object o )
+    public double x()
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        InternalCoordinate that = (InternalCoordinate) o;
-        return values.equals( that.values );
+        return x;
     }
 
     @Override
-    public int hashCode()
+    public double y()
     {
-        return values.hashCode();
+        return y;
     }
 
     @Override
-    public String toString()
+    public double z()
     {
-        return String.format( "Coordinate<%s>", values );
+        return z;
     }
 }

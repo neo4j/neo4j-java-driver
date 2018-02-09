@@ -19,20 +19,20 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Type;
 
-public class PointValue extends ValueAdapter
+public class Point3DValue extends ValueAdapter
 {
-    private final Point point;
+    private final Point3D point;
 
-    public PointValue( Point point )
+    public Point3DValue( Point3D point )
     {
         this.point = point;
     }
 
     @Override
-    public Point asPoint()
+    public Point3D asPoint3D()
     {
         return point;
     }
@@ -52,6 +52,6 @@ public class PointValue extends ValueAdapter
     @Override
     public Type type()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.POINT();
+        return InternalTypeSystem.TYPE_SYSTEM.POINT_3D();
     }
 }

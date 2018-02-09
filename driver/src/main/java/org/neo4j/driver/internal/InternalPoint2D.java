@@ -16,14 +16,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.types;
+package org.neo4j.driver.internal;
 
-import java.util.List;
+import org.neo4j.driver.v1.types.Point2D;
 
-import org.neo4j.driver.v1.util.Experimental;
-
-@Experimental
-public interface Coordinate
+public class InternalPoint2D implements Point2D
 {
-    List<Double> values();
+    private final long srid;
+    private final double x;
+    private final double y;
+
+    public InternalPoint2D( long srid, double x, double y )
+    {
+        this.srid = srid;
+        this.x = x;
+        this.y = y;
+    }
+
+    @Override
+    public long srid()
+    {
+        return srid;
+    }
+
+    @Override
+    public double x()
+    {
+        return x;
+    }
+
+    @Override
+    public double y()
+    {
+        return y;
+    }
 }

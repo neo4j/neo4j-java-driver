@@ -16,21 +16,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.packstream;
+package org.neo4j.driver.internal.value;
 
-import java.io.IOException;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Type;
 
-public class ByteArrayIncompatiblePacker extends PackStream.Packer
+public class Point2DValue extends ValueAdapter
 {
-    public ByteArrayIncompatiblePacker( PackOutput out )
+    private final Point2D point;
+
+    public Point2DValue( Point2D point )
     {
-        super( out );
+        this.point = point;
     }
 
     @Override
-    public void packBytesHeader( int size ) throws IOException
+    public Point2D asPoint2D()
     {
-        throw new PackStream.UnPackable( "Packing bytes is not supported " +
-                                         "as the current server this driver connected to does not support unpack bytes." );
+        return point;
+    }
+
+    @Override
+    public Object asObject()
+    {
+        return point;
+    }
+
+    @Override
+    public String toString( Format valueFormat )
+    {
+        return maybeWithType( valueFormat.includeType(), point.toString() );
+    }
+
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.POINT_2D();
     }
 }

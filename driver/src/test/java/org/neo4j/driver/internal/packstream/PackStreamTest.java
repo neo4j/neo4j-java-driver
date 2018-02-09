@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.util.Iterables;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -376,25 +375,6 @@ public class PackStreamTest
     }
 
     @Test
-    public void testCanPackAndUnpackChar() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.pack( 'A' );
-
-        // Then
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-        PackType packType = unpacker.peekNextType();
-
-        // Then
-        assertThat( packType, equalTo( PackType.STRING ) );
-        assertThat( unpacker.unpackString(), equalTo( "A" ));
-    }
-
-    @Test
     public void testCanPackAndUnpackString() throws Throwable
     {
         // Given
@@ -424,49 +404,6 @@ public class PackStreamTest
         // When
         PackStream.Packer packer = machine.packer();
         packer.pack( code );
-
-        // Then
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-        PackType packType = unpacker.peekNextType();
-
-        // Then
-        assertThat( packType, equalTo( PackType.STRING ) );
-        assertThat( unpacker.unpackString(), equalTo( code ));
-    }
-
-    @Test
-    public void testCanPackAndUnpackStringFromBytes() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-
-        // When
-        PackStream.Packer packer = machine.packer();
-        packer.packString( "ABCDEFGHIJ".getBytes() );
-
-        // Then
-        PackStream.Unpacker unpacker = newUnpacker( machine.output() );
-        PackType packType = unpacker.peekNextType();
-
-        // Then
-        assertThat( packType, equalTo( PackType.STRING ) );
-        assertThat( unpacker.unpackString(), equalTo( "ABCDEFGHIJ" ));
-
-    }
-
-    @Test
-    public void testCanPackAndUnpackSpecialStringFromBytes() throws Throwable
-    {
-        // Given
-        Machine machine = new Machine();
-        String code = "Mjölnir"; // UTF-8 `c3 b6` for ö
-
-        // When
-        PackStream.Packer packer = machine.packer();
-
-        byte[] bytes = code.getBytes( UTF_8 );
-
-        packer.packString( bytes );
 
         // Then
         PackStream.Unpacker unpacker = newUnpacker( machine.output() );
