@@ -40,14 +40,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private AtomicInteger toCreate = new AtomicInteger();
     private AtomicLong failedToCreate = new AtomicLong();
 
-    // TODO
-    private Histogram histogram;
+    private InternalHistogram histogram;
 
     public InternalConnectionPoolMetrics(BoltServerAddress address, ConnectionPool pool, long connAcquisitionTimeoutMs)
     {
         this.address = address;
         this.pool = pool;
-        this.histogram = null;
+        this.histogram = new InternalHistogram( connAcquisitionTimeoutMs );
     }
 
     @Override
@@ -86,7 +85,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     public void afterAcquire( ListenerEvent listenerEvent )
     {
         long elapsed = listenerEvent.elapsed();
-        // TODO register in histogram
+        histogram.recordValue( elapsed );
     }
 
     @Override
@@ -147,13 +146,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public Histogram acquisitionTimeHistogram()
     {
-        return null;
+        return this.histogram.snapshot();
     }
 
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, toCreate=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s]",
-                created(), closed(), toCreate(), failedToCreate(), inUse(), idle(), poolStatus() );
+        return format( "[created=%s, closed=%s, toCreate=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%n%s]",
+                created(), closed(), toCreate(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }
