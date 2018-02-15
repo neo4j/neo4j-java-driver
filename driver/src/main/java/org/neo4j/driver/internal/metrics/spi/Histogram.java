@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.metrics.spi;
 
 public interface Histogram
 {
+    long min();
     long max();
     double mean();
     double stdDeviation();

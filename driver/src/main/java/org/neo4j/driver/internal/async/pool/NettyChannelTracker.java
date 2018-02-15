@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
+import org.neo4j.driver.internal.metrics.DriverMetricsListener;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -37,9 +37,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Map<BoltServerAddress,AtomicInteger> addressToInUseChannelCount = new ConcurrentHashMap<>();
     private final Map<BoltServerAddress,AtomicInteger> addressToIdleChannelCount = new ConcurrentHashMap<>();
     private final Logger log;
-    private DriverMetricsHandler metricsHandler;
+    private DriverMetricsListener metricsHandler;
 
-    public NettyChannelTracker( DriverMetricsHandler metricsHandler, Logging logging )
+    public NettyChannelTracker( DriverMetricsListener metricsHandler, Logging logging )
     {
         this.metricsHandler = metricsHandler;
         this.log = logging.getLog( getClass().getSimpleName() );

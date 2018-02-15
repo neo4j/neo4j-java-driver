@@ -36,9 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.NettyConnection;
-import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
+import org.neo4j.driver.internal.metrics.DriverMetricsListener;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
-import org.neo4j.driver.internal.metrics.SimpleTimerListenerEvent;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -56,19 +55,19 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final PoolSettings settings;
     private final Clock clock;
     private final Logger log;
-    private DriverMetricsHandler driverMetrics;
+    private DriverMetricsListener driverMetrics;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
-            DriverMetricsHandler metricsHandler, Logging logging, Clock clock )
+            DriverMetricsListener metricsHandler, Logging logging, Clock clock )
     {
         this( connector, bootstrap, new NettyChannelTracker( metricsHandler, logging ), settings, metricsHandler, logging, clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
-            PoolSettings settings, DriverMetricsHandler driverMetrics, Logging logging, Clock clock )
+            PoolSettings settings, DriverMetricsListener driverMetrics, Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
@@ -85,11 +84,10 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         log.trace( "Acquiring a connection from pool towards %s", address );
 
-        // TODO no need to init if no driver metrics
-        ListenerEvent acquireEvent = new SimpleTimerListenerEvent();
-
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
+
+        ListenerEvent acquireEvent = driverMetrics.createListenerEvent();
         driverMetrics.beforeAcquiring( address, acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 

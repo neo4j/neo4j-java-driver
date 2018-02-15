@@ -152,7 +152,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, toCreate=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%n%s]",
+        return format( "[created=%s, closed=%s, toCreate=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]",
                 created(), closed(), toCreate(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }

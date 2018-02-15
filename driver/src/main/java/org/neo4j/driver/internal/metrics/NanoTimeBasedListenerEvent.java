@@ -16,24 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
-public interface DriverMetricsHandler
+public class NanoTimeBasedListenerEvent implements ListenerEvent
 {
-    void addPoolMetrics(BoltServerAddress serverAddress, ConnectionPool pool);
+    private long startNanoTime;
 
-    void beforeCreating(BoltServerAddress serverAddress);
+    @Override
+    public void start()
+    {
+        startNanoTime = System.nanoTime();
+    }
 
-    void afterCreatedSuccessfully(BoltServerAddress serverAddress);
-
-    void afterFailedToCreate(BoltServerAddress serverAddress);
-
-    void afterClosed(BoltServerAddress serverAddress);
-
-    void beforeAcquiring( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
-
-    void afterAcquired( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
+    @Override
+    public long elapsed()
+    {
+        return System.nanoTime() - startNanoTime;
+    }
 }

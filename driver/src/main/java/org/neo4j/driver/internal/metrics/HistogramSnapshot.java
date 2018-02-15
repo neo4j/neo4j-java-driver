@@ -20,15 +20,21 @@ package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.internal.metrics.spi.Histogram;
 
-public class HistogramSanpshot implements Histogram
+public class HistogramSnapshot implements Histogram
 {
     private Histogram copy;
     private Histogram origin;
 
-    public HistogramSanpshot( Histogram copy, Histogram origin )
+    public HistogramSnapshot( Histogram copy, Histogram origin )
     {
         this.copy = copy;
         this.origin = origin;
+    }
+
+    @Override
+    public long min()
+    {
+        return copy.min();
     }
 
     @Override

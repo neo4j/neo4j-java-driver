@@ -26,7 +26,7 @@ import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.metrics.spi.DriverMetrics;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
-public abstract class InternalAbstractDriverMetrics implements DriverMetrics, DriverMetricsHandler
+public abstract class InternalAbstractDriverMetrics implements DriverMetrics, DriverMetricsListener
 {
     public static final InternalAbstractDriverMetrics DEV_NULL_METRICS = new InternalAbstractDriverMetrics()
     {
@@ -70,6 +70,12 @@ public abstract class InternalAbstractDriverMetrics implements DriverMetrics, Dr
         public void afterAcquired( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
         {
 
+        }
+
+        @Override
+        public ListenerEvent createListenerEvent()
+        {
+            return null;
         }
 
         @Override

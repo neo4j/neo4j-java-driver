@@ -93,6 +93,12 @@ public class InternalDriverMetrics extends InternalAbstractDriverMetrics
     }
 
     @Override
+    public ListenerEvent createListenerEvent()
+    {
+        return new NanoTimeBasedListenerEvent();
+    }
+
+    @Override
     public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
     {
         return this.connectionPoolMetrics;

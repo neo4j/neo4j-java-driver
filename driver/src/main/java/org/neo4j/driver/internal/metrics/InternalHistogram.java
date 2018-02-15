@@ -27,9 +27,11 @@ import java.time.Duration;
 
 import org.neo4j.driver.internal.metrics.spi.Histogram;
 
+import static java.lang.String.format;
+
 public class InternalHistogram implements Histogram
 {
-    private static final long DEFAULT_HIGHEST_TRACKABLE_MS = Duration.ofMinutes( 10 ).toMillis();
+    private static final long DEFAULT_HIGHEST_TRACKABLE_MS = Duration.ofMinutes( 10 ).toNanos();
 
     private final AbstractHistogram delegate;
 
@@ -52,6 +54,12 @@ public class InternalHistogram implements Histogram
     {
         long newValue = truncateValue( value, delegate );
         this.delegate.recordValue( newValue );
+    }
+
+    @Override
+    public long min()
+    {
+        return delegate.getMinValue();
     }
 
     @Override
@@ -109,11 +117,17 @@ public class InternalHistogram implements Histogram
 
     public Histogram snapshot()
     {
-        return new HistogramSanpshot( new InternalHistogram( this.delegate.copy() ), this );
+        return new HistogramSnapshot( new InternalHistogram( this.delegate.copy() ), this );
     }
 
     @Override
     public String toString()
+    {
+        return format("[min=%sns, max=%sns, mean=%sns, stdDeviation=%s, totalCount=%s]",
+                min(), max(), mean(), stdDeviation(), totalCount());
+    }
+
+    public String printDistribution()
     {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         PrintStream writer = new PrintStream( stream );

@@ -16,22 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal.metrics;
 
-public class SimpleTimerListenerEvent implements ListenerEvent
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+
+public interface DriverMetricsListener
 {
-    private long startTimestamp;
+    void addPoolMetrics(BoltServerAddress serverAddress, ConnectionPool pool);
 
-    @Override
-    public void start()
-    {
-        startTimestamp = System.currentTimeMillis();
-    }
+    void beforeCreating(BoltServerAddress serverAddress);
 
-    @Override
-    public long elapsed()
-    {
-        return System.currentTimeMillis() - startTimestamp;
-    }
+    void afterCreatedSuccessfully(BoltServerAddress serverAddress);
+
+    void afterFailedToCreate(BoltServerAddress serverAddress);
+
+    void afterClosed(BoltServerAddress serverAddress);
+
+    void beforeAcquiring( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
+
+    void afterAcquired( BoltServerAddress serverAddress, ListenerEvent listenerEvent );
+
+    ListenerEvent createListenerEvent();
 }

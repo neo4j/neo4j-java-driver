@@ -33,7 +33,7 @@ import java.util.List;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.metrics.DriverMetricsHandler;
+import org.neo4j.driver.internal.metrics.DriverMetricsListener;
 import org.neo4j.driver.internal.metrics.InternalDriverMetrics;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -185,7 +185,7 @@ public class DriverFactoryTest
         // Given
         Config config = mock( Config.class );
         // When
-        DriverMetricsHandler handler = DriverFactory.createDriverMetrics( config );
+        DriverMetricsListener handler = DriverFactory.createDriverMetrics( config );
         // Then
         assertThat( handler, is( DEV_NULL_METRICS ) );
     }
@@ -197,7 +197,7 @@ public class DriverFactoryTest
         System.setProperty( "driver.metrics.enabled", "True" );
         Config config = mock( Config.class );
         // When
-        DriverMetricsHandler handler = DriverFactory.createDriverMetrics( config );
+        DriverMetricsListener handler = DriverFactory.createDriverMetrics( config );
         // Then
         assertThat( handler instanceof InternalDriverMetrics, is( true ) );
     }
@@ -247,7 +247,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsListener metrics, Config config )
         {
             return connectionPool;
         }
@@ -282,7 +282,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }
@@ -304,7 +304,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsHandler metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }
