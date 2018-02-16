@@ -20,4 +20,21 @@ package org.neo4j.driver.internal.metrics.spi;
 
 public interface ConnectionMetrics
 {
+    /**
+     * The unique name of this connection metrics among all connection metrics
+     * @return An unique name of this connection metrics among all connection metrics
+     */
+    String uniqueName();
+
+    /**
+     * The connection time histogram describes how long it takes to establish a connection
+     * @return The connection time histogram
+     */
+    Histogram connectionTimeHistogram ();
+
+    /**
+     * The in-use time histogram records how long each connection is borrowed out of the pool
+     * @return The in-use time histogram
+     */
+    Histogram inUseTimeHistogram();
 }

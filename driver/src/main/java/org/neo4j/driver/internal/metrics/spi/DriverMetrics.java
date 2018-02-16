@@ -22,14 +22,25 @@ import java.util.Map;
 
 public interface DriverMetrics
 {
-    // TODO Once this interface because public, find a better way to enable metrics
+    // TODO Once this interface become public, find a better way to enable metrics and detect metrics availability.
     String DRIVER_METRICS_ENABLED_KEY = "driver.metrics.enabled";
-
-    Map<String, ConnectionPoolMetrics> connectionPoolMetrics();
-    Map<String,ConnectionMetrics> connectionMetrics();
-
-    public static boolean isDriverMetricsEnabled()
+    static boolean isDriverMetricsEnabled()
     {
         return Boolean.valueOf( System.getProperty( DRIVER_METRICS_ENABLED_KEY, "false" ) );
     }
+
+    /**
+     * A map of connection pool metrics.
+     * The {@link ConnectionPoolMetrics#uniqueName()} are used as the keys of the map.
+     * @return The connection pool metrics.
+     */
+    Map<String, ConnectionPoolMetrics> connectionPoolMetrics();
+
+    /***
+     * A map of connection metrics.
+     * The {@link ConnectionMetrics#uniqueName()} are used as the keys of the map.
+     * @return The connection metrics.
+     */
+    Map<String,ConnectionMetrics> connectionMetrics();
+
 }

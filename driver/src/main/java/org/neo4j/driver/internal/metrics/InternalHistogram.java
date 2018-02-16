@@ -31,18 +31,18 @@ import static java.lang.String.format;
 
 public class InternalHistogram implements Histogram
 {
-    private static final long DEFAULT_HIGHEST_TRACKABLE_MS = Duration.ofMinutes( 10 ).toNanos();
+    private static final long DEFAULT_HIGHEST_TRACKABLE_NS = Duration.ofMinutes( 10 ).toNanos();
 
     private final AbstractHistogram delegate;
 
     public InternalHistogram()
     {
-        this( DEFAULT_HIGHEST_TRACKABLE_MS );
+        this( DEFAULT_HIGHEST_TRACKABLE_NS );
     }
 
-    public InternalHistogram( long highestTrackableValue )
+    public InternalHistogram( long highestTrackableValueNS )
     {
-        this.delegate = createHdrHistogram( highestTrackableValue );
+        this.delegate = createHdrHistogram( highestTrackableValueNS );
     }
 
     public InternalHistogram( AbstractHistogram histogram )

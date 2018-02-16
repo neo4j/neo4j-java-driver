@@ -16,25 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 
-public class NanoTimeBasedListenerEvent implements PoolListenerEvent, ConnectionListenerEvent
+public interface ConnectionMetricsListener
 {
-    private long startNanoTime;
+    void beforeCreating( ListenerEvent listenerEvent );
 
-    @Override
-    public void start()
-    {
-        startNanoTime = System.nanoTime();
-    }
+    void afterCreating( ListenerEvent listenerEvent );
 
-    @Override
-    public long elapsed()
-    {
-        return System.nanoTime() - startNanoTime;
-    }
+    void acquiredOrCreated( ListenerEvent listenerEvent );
+
+    void released(ListenerEvent listenerEvent);
 }

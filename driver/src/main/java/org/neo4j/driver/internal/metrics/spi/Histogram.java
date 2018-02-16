@@ -20,13 +20,45 @@ package org.neo4j.driver.internal.metrics.spi;
 
 public interface Histogram
 {
+    /**
+     * The minimum value recorded in this histogram.
+     * @return The minimum value recorded in this histogram.
+     */
     long min();
+
+    /**
+     * The maximum value recorded in this histogram.
+     * @return The maximum value recorded in this histogram.
+     */
     long max();
+
+    /**
+     * The mean value of this histogram.
+     * @return The mean value.
+     */
     double mean();
+
+    /**
+     * The standard deviation of this histogram.
+     * @return The standard deviation.
+     */
     double stdDeviation();
 
+    /**
+     * The total count of the values recorded in this histogram.
+     * @return The total number of values.
+     */
     long totalCount();
+
+    /**
+     * Returns the value at the given percentile.
+     * @param percentile The interested percentile such as 50 (mean value), 80 etc.
+     * @return The value at the given percentile.
+     */
     long valueAtPercentile(double percentile);
 
+    /**
+     * Reset cleans all the values recorded in this histogram.
+     */
     void reset();
 }

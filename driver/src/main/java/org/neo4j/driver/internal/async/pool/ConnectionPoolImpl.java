@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.metrics.DriverMetricsListener;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -55,26 +55,26 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final PoolSettings settings;
     private final Clock clock;
     private final Logger log;
-    private DriverMetricsListener driverMetrics;
+    private DriverMetricsListener driverMetricsListener;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
-            DriverMetricsListener metricsHandler, Logging logging, Clock clock )
+            DriverMetricsListener metricsListener, Logging logging, Clock clock )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsHandler, logging ), settings, metricsHandler, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, logging ), settings, metricsListener, logging, clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
-            PoolSettings settings, DriverMetricsListener driverMetrics, Logging logging, Clock clock )
+            PoolSettings settings, DriverMetricsListener metricsListener, Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
         this.nettyChannelTracker = nettyChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
-        this.driverMetrics = driverMetrics;
+        this.driverMetricsListener = metricsListener;
         this.clock = clock;
         this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
     }
@@ -87,8 +87,8 @@ public class ConnectionPoolImpl implements ConnectionPool
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
 
-        ListenerEvent acquireEvent = driverMetrics.createListenerEvent();
-        driverMetrics.beforeAcquiring( address, acquireEvent );
+        PoolListenerEvent acquireEvent = driverMetricsListener.createPoolListenerEvent();
+        driverMetricsListener.beforeAcquiringOrCreating( address, acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
@@ -97,11 +97,11 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 processAcquisitionError( error );
                 assertNotClosed( address, channel, pool );
-                return new NettyConnection( channel, pool, clock );
+                return new NettyConnection( channel, pool, clock, driverMetricsListener );
             }
             finally
             {
-                driverMetrics.afterAcquired( address, acquireEvent );
+                driverMetricsListener.afterAcquiringOrCreating( address, acquireEvent );
             }
         } );
     }
@@ -192,7 +192,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             else
             {
                 // We added a new pool as a result we add a new metrics for the pool too
-                driverMetrics.addPoolMetrics( address, this );
+                driverMetricsListener.addMetrics( address, this );
             }
         }
 

@@ -194,10 +194,11 @@ public class DriverFactoryTest
     public void shouldCreateDriverMetricsIfMonitoringEnabled() throws Throwable
     {
         // Given
-        System.setProperty( "driver.metrics.enabled", "True" );
         Config config = mock( Config.class );
+        System.setProperty( "driver.metrics.enabled", "True" );
         // When
         DriverMetricsListener handler = DriverFactory.createDriverMetrics( config );
+        System.setProperty( "driver.metrics.enabled", "False" );
         // Then
         assertThat( handler instanceof InternalDriverMetrics, is( true ) );
     }

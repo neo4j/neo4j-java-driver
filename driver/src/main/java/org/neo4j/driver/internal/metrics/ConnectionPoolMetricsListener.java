@@ -18,18 +18,18 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-public interface ConnectionPoolListener
+public interface ConnectionPoolMetricsListener
 {
     void beforeCreating();
 
-    void afterCreatedSuccessfully();
+    void afterCreated();
 
     void afterFailedToCreate();
 
     void afterClosed();
 
-    void beforeAcquire( ListenerEvent listenerEvent );
+    void beforeAcquiringOrCreating( ListenerEvent listenerEvent );
 
-    void afterAcquire( ListenerEvent listenerEvent );
+    void afterAcquiringOrCreating( ListenerEvent listenerEvent );
 }
 

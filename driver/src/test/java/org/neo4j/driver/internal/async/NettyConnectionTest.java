@@ -60,6 +60,7 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispat
 import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
+import static org.neo4j.driver.internal.metrics.InternalAbstractDriverMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
@@ -497,7 +498,7 @@ public class NettyConnectionTest
 
     private static NettyConnection newConnection( Channel channel, ChannelPool pool )
     {
-        return new NettyConnection( channel, pool, new FakeClock() );
+        return new NettyConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
     }
 
     private static void assertConnectionReleasedError( IllegalStateException e )

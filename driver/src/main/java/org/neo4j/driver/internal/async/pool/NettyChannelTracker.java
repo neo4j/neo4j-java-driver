@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.metrics.DriverMetricsListener;
+import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -37,11 +38,11 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Map<BoltServerAddress,AtomicInteger> addressToInUseChannelCount = new ConcurrentHashMap<>();
     private final Map<BoltServerAddress,AtomicInteger> addressToIdleChannelCount = new ConcurrentHashMap<>();
     private final Logger log;
-    private DriverMetricsListener metricsHandler;
+    private DriverMetricsListener metricsListener;
 
-    public NettyChannelTracker( DriverMetricsListener metricsHandler, Logging logging )
+    public NettyChannelTracker( DriverMetricsListener metricsListener, Logging logging )
     {
-        this.metricsHandler = metricsHandler;
+        this.metricsListener = metricsListener;
         this.log = logging.getLog( getClass().getSimpleName() );
     }
 
@@ -49,14 +50,16 @@ public class NettyChannelTracker implements ChannelPoolHandler
     public void channelReleased( Channel channel )
     {
         log.debug( "Channel %s released back to the pool", channel );
-        channelInactive( channel );
+        decrementInUse( channel );
+        incrementIdle( channel );
     }
 
     @Override
     public void channelAcquired( Channel channel )
     {
         log.debug( "Channel %s acquired from the pool", channel );
-        channelActive( channel );
+        incrementInUse( channel );
+        decrementIdle( channel );
     }
 
     @Override
@@ -64,23 +67,30 @@ public class NettyChannelTracker implements ChannelPoolHandler
     {
         log.debug( "Channel %s created", channel );
         incrementInUse( channel );
-        metricsHandler.afterCreatedSuccessfully( serverAddress( channel ) );
+        metricsListener.afterCreated( serverAddress( channel ) );
     }
 
     public void channelFailedToCreate( BoltServerAddress address )
     {
-        metricsHandler.afterFailedToCreate( address );
+        metricsListener.afterFailedToCreate( address );
     }
 
-    public void channelCreating( BoltServerAddress address )
+    public ConnectionListenerEvent beforeChannelCreating( BoltServerAddress address )
     {
-        metricsHandler.beforeCreating( address );
+        ConnectionListenerEvent creatingEvent = metricsListener.createConnectionListenerEvent();
+        metricsListener.beforeCreating( address, creatingEvent );
+        return creatingEvent;
+    }
+
+    public void afterChannelCreating( BoltServerAddress address, ConnectionListenerEvent creatingEvent )
+    {
+        metricsListener.afterCreating( address, creatingEvent );
     }
 
     public void channelClosed( Channel channel )
     {
         decrementIdle( channel );
-        metricsHandler.afterClosed( serverAddress( channel ) );
+        metricsListener.afterClosed( serverAddress( channel ) );
     }
 
     public int inUseChannelCount( BoltServerAddress address )
@@ -93,18 +103,6 @@ public class NettyChannelTracker implements ChannelPoolHandler
     {
         AtomicInteger count = addressToIdleChannelCount.get( address );
         return count == null ? 0 : count.get();
-    }
-
-    private void channelActive( Channel channel )
-    {
-        incrementInUse( channel );
-        decrementIdle( channel );
-    }
-
-    private void channelInactive( Channel channel )
-    {
-        decrementInUse( channel );
-        incrementIdle( channel );
     }
 
     private void incrementInUse( Channel channel )
