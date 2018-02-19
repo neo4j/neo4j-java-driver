@@ -113,7 +113,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         @Override
         public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException
         {
-            packer.packStructHeader( 1, MSG_INIT );
+            packer.packStructHeader( 2, MSG_INIT );
             packer.pack( clientNameAndVersion );
             packRawMap( authToken );
         }
