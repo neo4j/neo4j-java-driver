@@ -42,7 +42,7 @@ public interface PackInput
     double readDouble() throws IOException;
 
     /** Consume a specified number of bytes */
-    PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException;
+    void readBytes( byte[] into, int offset, int toRead ) throws IOException;
 
     /** Get the next byte without forwarding the internal pointer */
     byte peekByte() throws IOException;

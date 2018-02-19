@@ -263,12 +263,12 @@ public abstract class Values
         return new MapValue( asValues );
     }
 
-    public static Value point2D( int srid, double x, double y )
+    public static Value point2D( long srid, double x, double y )
     {
         return new Point2DValue( new InternalPoint2D( srid, x, y ) );
     }
 
-    public static Value point3D( int srid, double x, double y, double z )
+    public static Value point3D( long srid, double x, double y, double z )
     {
         return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
     }

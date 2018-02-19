@@ -38,7 +38,9 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 {
     private static final byte POINT_2D_STRUCT_TYPE = 'X';
     private static final byte POINT_3D_STRUCT_TYPE = 'Y';
-    private static final int POINT_STRUCT_SIZE = 2;
+
+    private static final int POINT_2D_STRUCT_SIZE = 3;
+    private static final int POINT_3D_STRUCT_SIZE = 4;
 
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
@@ -82,16 +84,19 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private void packPoint2D( Point2D point ) throws IOException
         {
-            packer.packStructHeader( POINT_STRUCT_SIZE, POINT_2D_STRUCT_TYPE );
+            packer.packStructHeader( POINT_2D_STRUCT_SIZE, POINT_2D_STRUCT_TYPE );
             packer.pack( point.srid() );
-//            packer.pack( point.x(), point.y() );
+            packer.pack( point.x() );
+            packer.pack( point.y() );
         }
 
         private void packPoint3D( Point3D point ) throws IOException
         {
-            packer.packStructHeader( POINT_STRUCT_SIZE, POINT_3D_STRUCT_TYPE );
+            packer.packStructHeader( POINT_3D_STRUCT_SIZE, POINT_3D_STRUCT_TYPE );
             packer.pack( point.srid() );
-//            packer.pack( point.x(), point.y(), point.z() );
+            packer.pack( point.x() );
+            packer.pack( point.y() );
+            packer.pack( point.z() );
         }
     }
 
@@ -107,12 +112,12 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         {
             if ( type == POINT_2D_STRUCT_TYPE )
             {
-                ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_STRUCT_SIZE, size );
+                ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
             }
             else if ( type == POINT_3D_STRUCT_TYPE )
             {
-                ensureCorrectStructSize( POINT_3D_TyCon.typeName(), POINT_STRUCT_SIZE, size );
+                ensureCorrectStructSize( POINT_3D_TyCon.typeName(), POINT_3D_STRUCT_SIZE, size );
                 return unpackPoint3D();
             }
             else
@@ -124,13 +129,18 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         private Value unpackPoint2D() throws IOException
         {
             long srid = unpacker.unpackLong();
-            return new Point2DValue( new InternalPoint2D( srid, 0.0, 0.0 ) );
+            double x = unpacker.unpackDouble();
+            double y = unpacker.unpackDouble();
+            return new Point2DValue( new InternalPoint2D( srid, x, y ) );
         }
 
         private Value unpackPoint3D() throws IOException
         {
             long srid = unpacker.unpackLong();
-            return new Point3DValue( new InternalPoint3D( srid, 0.0, 0.0, 0.0 ) );
+            double x = unpacker.unpackDouble();
+            double y = unpacker.unpackDouble();
+            double z = unpacker.unpackDouble();
+            return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
         }
     }
 }

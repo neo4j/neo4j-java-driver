@@ -70,10 +70,9 @@ public class ByteBufInput implements PackInput
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int offset, int toRead )
+    public void readBytes( byte[] into, int offset, int toRead )
     {
         buf.readBytes( into, offset, toRead );
-        return this;
     }
 
     @Override

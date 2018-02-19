@@ -80,7 +80,7 @@ public class BufferedChannelInput implements PackInput
     }
 
     @Override
-    public PackInput readBytes( byte[] into, int index, int toRead ) throws IOException
+    public void readBytes( byte[] into, int index, int toRead ) throws IOException
     {
         int endIndex = index + toRead;
         while ( index < endIndex)
@@ -98,7 +98,6 @@ public class BufferedChannelInput implements PackInput
                 }
             }
         }
-        return this;
     }
 
     @Override

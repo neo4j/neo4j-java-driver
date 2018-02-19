@@ -27,23 +27,20 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
-import static org.neo4j.driver.v1.Values.point;
+import static org.neo4j.driver.v1.Values.point2D;
 
-public class PointTypeIT
+public class PointsIT
 {
-    private static final int EPSG_TABLE_ID = 1;
-    private static final int WGS_84_CRS_CODE = 4326;
-
-    private static final int SR_ORG_TABLE_ID = 2;
-    private static final int CARTESIAN_CRS_CODE = 7203;
+    private static final long WGS_84_CRS_CODE = 4326;
+    private static final long CARTESIAN_CRS_CODE = 7203;
+    private static final double DELTA = 0.00001;
 
     @Rule
     public final TestNeo4jSession session = new TestNeo4jSession();
@@ -59,33 +56,33 @@ public class PointTypeIT
     {
         Record record = session.run( "RETURN point({x: 39.111748, y:-76.775635})" ).single();
 
-        Point point = record.get( 0 ).asPoint();
+        Point2D point = record.get( 0 ).asPoint2D();
 
-        assertEquals( SR_ORG_TABLE_ID, point.crsTableId() );
-        assertEquals( CARTESIAN_CRS_CODE, point.crsCode() );
-        assertEquals( asList( 39.111748, -76.775635 ), point.coordinate().values() );
+        assertEquals( CARTESIAN_CRS_CODE, point.srid() );
+        assertEquals( 39.111748, point.x(), DELTA );
+        assertEquals( -76.775635, point.y(), DELTA );
     }
 
     @Test
     public void shouldSendPoint()
     {
-        Value pointValue = point( EPSG_TABLE_ID, WGS_84_CRS_CODE, 38.8719, 77.0563 );
+        Value pointValue = point2D( WGS_84_CRS_CODE, 38.8719, 77.0563 );
         Record record1 = session.run( "CREATE (n:Node {location: $point}) RETURN 42", singletonMap( "point", pointValue ) ).single();
 
         assertEquals( 42, record1.get( 0 ).asInt() );
 
         Record record2 = session.run( "MATCH (n:Node) RETURN n.location" ).single();
-        Point point = record2.get( 0 ).asPoint();
+        Point2D point = record2.get( 0 ).asPoint2D();
 
-        assertEquals( EPSG_TABLE_ID, point.crsTableId() );
-        assertEquals( WGS_84_CRS_CODE, point.crsCode() );
-        assertEquals( asList( 38.8719, 77.0563 ), point.coordinate().values() );
+        assertEquals( WGS_84_CRS_CODE, point.srid() );
+        assertEquals( 38.8719, point.x(), DELTA );
+        assertEquals( 77.0563, point.y(), DELTA );
     }
 
     @Test
     public void shouldSendAndReceivePoint()
     {
-        testPointSendAndReceive( SR_ORG_TABLE_ID, CARTESIAN_CRS_CODE, 40.7624, 73.9738 );
+        testPointSendAndReceive( point2D( CARTESIAN_CRS_CODE, 40.7624, 73.9738 ) );
     }
 
     @Test
@@ -94,34 +91,27 @@ public class PointTypeIT
         Stream<Value> randomPoints = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
                 .mapToObj( idx -> idx % 2 == 0
-                                  ? point( EPSG_TABLE_ID, WGS_84_CRS_CODE, randomCoordinate() )
-                                  : point( SR_ORG_TABLE_ID, CARTESIAN_CRS_CODE, randomCoordinate() ) );
+                                  ? point2D( WGS_84_CRS_CODE, randomDouble(), randomDouble() )
+                                  : point2D( CARTESIAN_CRS_CODE, randomDouble(), randomDouble() ) );
 
         randomPoints.forEach( this::testPointSendAndReceive );
     }
 
-    private void testPointSendAndReceive( long crsTableId, long crsCode, double... coordinate )
-    {
-        testPointSendAndReceive( point( crsTableId, crsCode, coordinate ) );
-    }
-
     private void testPointSendAndReceive( Value pointValue )
     {
-        Point originalPoint = pointValue.asPoint();
+        Point2D originalPoint = pointValue.asPoint2D();
 
         Record record = session.run( "CREATE (n {p:$point}) return n.p", singletonMap( "point", pointValue ) ).single();
-        Point receivedPoint = record.get( 0 ).asPoint();
+        Point2D receivedPoint = record.get( 0 ).asPoint2D();
 
         String message = "Failed for " + originalPoint;
-        assertEquals( message, originalPoint.crsTableId(), receivedPoint.crsTableId() );
-        assertEquals( message, originalPoint.crsCode(), receivedPoint.crsCode() );
-        assertEquals( message, originalPoint.coordinate().values(), receivedPoint.coordinate().values() );
+        assertEquals( message, originalPoint.srid(), receivedPoint.srid() );
+        assertEquals( message, originalPoint.x(), receivedPoint.x(), DELTA );
+        assertEquals( message, originalPoint.y(), receivedPoint.y(), DELTA );
     }
 
-    private static double[] randomCoordinate()
+    private static double randomDouble()
     {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        int count = random.nextInt( 2, 4 ); // either 2D or 3D point
-        return random.doubles( count, -180.0, 180 ).toArray();
+        return ThreadLocalRandom.current().nextDouble( -180.0, 180 );
     }
 }
