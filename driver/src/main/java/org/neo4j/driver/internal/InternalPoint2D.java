@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Objects;
+
 import org.neo4j.driver.v1.types.Point2D;
 
 public class InternalPoint2D implements Point2D
@@ -49,5 +51,28 @@ public class InternalPoint2D implements Point2D
     public double y()
     {
         return y;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        InternalPoint2D that = (InternalPoint2D) o;
+        return srid == that.srid &&
+               Double.compare( that.x, x ) == 0 &&
+               Double.compare( that.y, y ) == 0;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( srid, x, y );
     }
 }

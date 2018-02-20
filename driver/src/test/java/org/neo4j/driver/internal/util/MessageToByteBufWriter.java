@@ -25,7 +25,6 @@ import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.packstream.PackOutput;
 
 public class MessageToByteBufWriter
 {
@@ -48,58 +47,6 @@ public class MessageToByteBufWriter
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-
-    private static class ByteBufOutput implements PackOutput
-    {
-        final ByteBuf buf;
-
-        ByteBufOutput( ByteBuf buf )
-        {
-            this.buf = buf;
-        }
-
-        @Override
-        public PackOutput writeByte( byte value )
-        {
-            buf.writeByte( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeBytes( byte[] data )
-        {
-            buf.writeBytes( data );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeShort( short value )
-        {
-            buf.writeShort( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeInt( int value )
-        {
-            buf.writeInt( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeLong( long value )
-        {
-            buf.writeLong( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeDouble( double value )
-        {
-            buf.writeDouble( value );
-            return this;
         }
     }
 }

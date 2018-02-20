@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Objects;
+
 import org.neo4j.driver.v1.types.Point3D;
 
 public class InternalPoint3D implements Point3D
@@ -57,5 +59,29 @@ public class InternalPoint3D implements Point3D
     public double z()
     {
         return z;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        InternalPoint3D that = (InternalPoint3D) o;
+        return srid == that.srid &&
+               Double.compare( that.x, x ) == 0 &&
+               Double.compare( that.y, y ) == 0 &&
+               Double.compare( that.z, z ) == 0;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( srid, x, y, z );
     }
 }
