@@ -84,4 +84,15 @@ public class InternalPoint3D implements Point3D
     {
         return Objects.hash( srid, x, y, z );
     }
+
+    @Override
+    public String toString()
+    {
+        return "Point3D{" +
+               "srid=" + srid +
+               ", x=" + x +
+               ", y=" + y +
+               ", z=" + z +
+               '}';
+    }
 }

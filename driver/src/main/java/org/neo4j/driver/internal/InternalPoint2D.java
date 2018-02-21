@@ -75,4 +75,14 @@ public class InternalPoint2D implements Point2D
     {
         return Objects.hash( srid, x, y );
     }
+
+    @Override
+    public String toString()
+    {
+        return "Point2D{" +
+               "srid=" + srid +
+               ", x=" + x +
+               ", y=" + y +
+               '}';
+    }
 }
