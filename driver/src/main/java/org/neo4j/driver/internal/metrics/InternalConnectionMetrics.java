@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.time.Duration;
+import java.util.Objects;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
@@ -33,6 +34,7 @@ public class InternalConnectionMetrics implements ConnectionMetrics, ConnectionM
 
     public InternalConnectionMetrics( BoltServerAddress serverAddress, int connectionTimeoutMillis )
     {
+        Objects.requireNonNull( serverAddress );
         this.serverAddress = serverAddress;
         connHistogram = new InternalHistogram( Duration.ofMillis( connectionTimeoutMillis ).toNanos() );
         inUseHistogram = new InternalHistogram();

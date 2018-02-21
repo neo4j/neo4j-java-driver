@@ -20,6 +20,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,6 +46,9 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
 
     public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, long connAcquisitionTimeoutMs )
     {
+        Objects.requireNonNull( address );
+        Objects.requireNonNull( pool );
+
         this.address = address;
         this.pool = pool;
         this.acquisitionTimeHistogram = new InternalHistogram( Duration.ofMillis( connAcquisitionTimeoutMs ).toNanos() );

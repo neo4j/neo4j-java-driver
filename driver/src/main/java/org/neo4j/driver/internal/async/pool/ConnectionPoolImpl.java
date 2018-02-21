@@ -179,23 +179,23 @@ public class ConnectionPoolImpl implements ConnectionPool
     private ChannelPool getOrCreatePool( BoltServerAddress address )
     {
         ChannelPool pool = pools.get( address );
-        if ( pool == null )
+        if ( pool != null )
         {
-            pool = newPool( address );
-
-            if ( pools.putIfAbsent( address, pool ) != null )
-            {
-                // We lost a race to create the pool, dispose of the one we created, and recurse
-                pool.close();
-                return getOrCreatePool( address );
-            }
-            else
-            {
-                // We added a new pool as a result we add a new metrics for the pool too
-                driverMetricsListener.addMetrics( address, this );
-            }
+            return pool;
         }
 
+        synchronized ( this )
+        {
+            pool = pools.get( address );
+            if ( pool != null )
+            {
+                return pool;
+            }
+
+            driverMetricsListener.addMetrics( address, this );
+            pool = newPool( address );
+            pools.put( address, pool );
+        }
         return pool;
     }
 

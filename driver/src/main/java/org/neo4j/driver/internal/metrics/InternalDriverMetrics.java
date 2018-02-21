@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -41,6 +42,7 @@ public class InternalDriverMetrics extends InternalAbstractDriverMetrics
 
     public InternalDriverMetrics( Config config )
     {
+        Objects.requireNonNull( config );
         this.config = config;
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.connectionMetrics = new ConcurrentHashMap<>();
