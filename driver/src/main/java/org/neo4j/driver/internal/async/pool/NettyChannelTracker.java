@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.DriverMetricsListener;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -38,9 +38,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Map<BoltServerAddress,AtomicInteger> addressToInUseChannelCount = new ConcurrentHashMap<>();
     private final Map<BoltServerAddress,AtomicInteger> addressToIdleChannelCount = new ConcurrentHashMap<>();
     private final Logger log;
-    private DriverMetricsListener metricsListener;
+    private final MetricsListener metricsListener;
 
-    public NettyChannelTracker( DriverMetricsListener metricsListener, Logging logging )
+    public NettyChannelTracker( MetricsListener metricsListener, Logging logging )
     {
         this.metricsListener = metricsListener;
         this.log = logging.getLog( getClass().getSimpleName() );
@@ -75,14 +75,14 @@ public class NettyChannelTracker implements ChannelPoolHandler
         metricsListener.afterFailedToCreate( address );
     }
 
-    public ConnectionListenerEvent beforeChannelCreating( BoltServerAddress address )
+    public ListenerEvent beforeChannelCreating( BoltServerAddress address )
     {
-        ConnectionListenerEvent creatingEvent = metricsListener.createConnectionListenerEvent();
+        ListenerEvent creatingEvent = metricsListener.createListenerEvent();
         metricsListener.beforeCreating( address, creatingEvent );
         return creatingEvent;
     }
 
-    public void afterChannelCreating( BoltServerAddress address, ConnectionListenerEvent creatingEvent )
+    public void afterChannelCreating( BoltServerAddress address, ListenerEvent creatingEvent )
     {
         metricsListener.afterCreating( address, creatingEvent );
     }

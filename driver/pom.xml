@@ -212,7 +212,7 @@
               <artifactSet>
                 <includes>
                   <include>io.netty:*</include>
-                  <include>org.HdrHistogram:*</include>
+                  <include>org.hdrhistogram:*</include>
                 </includes>
               </artifactSet>
               <relocations>

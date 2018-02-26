@@ -16,12 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.internal.metrics.spi;
 
-
-public interface ListenerEvent
+public enum PoolStatus
 {
-    void start();
-    long elapsed();
+    Open, Closed
 }
-

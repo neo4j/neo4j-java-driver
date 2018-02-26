@@ -27,10 +27,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.metrics.spi.Histogram;
+import org.neo4j.driver.internal.metrics.spi.PoolStatus;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.metrics.InternalDriverMetrics.serverAddressToUniqueName;
+import static org.neo4j.driver.internal.metrics.InternalMetrics.serverAddressToUniqueName;
 
 public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
 {
@@ -39,7 +40,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
 
     private AtomicLong created = new AtomicLong();
     private AtomicLong closed = new AtomicLong();
-    private AtomicInteger toCreate = new AtomicInteger();
+    private AtomicInteger creating = new AtomicInteger();
     private AtomicLong failedToCreate = new AtomicLong();
 
     private InternalHistogram acquisitionTimeHistogram;
@@ -57,21 +58,21 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public void beforeCreating()
     {
-        toCreate.incrementAndGet();
+        creating.incrementAndGet();
     }
 
     @Override
     public void afterFailedToCreate()
     {
         failedToCreate.incrementAndGet();
-        toCreate.decrementAndGet();
+        creating.decrementAndGet();
     }
 
     @Override
     public void afterCreated()
     {
         created.incrementAndGet();
-        toCreate.decrementAndGet();
+        creating.decrementAndGet();
     }
 
     @Override
@@ -100,15 +101,15 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public String poolStatus()
+    public PoolStatus poolStatus()
     {
         if ( pool.isOpen() )
         {
-            return "\"Open\"";
+            return PoolStatus.Open;
         }
         else
         {
-            return "\"Closed\"";
+            return PoolStatus.Closed;
         }
     }
 
@@ -125,9 +126,9 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public int toCreate()
+    public int creating()
     {
-        return toCreate.get();
+        return creating.get();
     }
 
     @Override
@@ -157,7 +158,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, toCreate=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]", created(),
-                closed(), toCreate(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
+        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]", created(),
+                closed(), creating(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }

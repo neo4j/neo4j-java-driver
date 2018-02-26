@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.metrics.DriverMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.AuthToken;
@@ -71,7 +71,7 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
     }
 
     @Override
-    protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsListener metrics,
+    protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics,
             Config config )
     {
         pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );

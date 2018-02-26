@@ -21,35 +21,33 @@ package org.neo4j.driver.internal.metrics;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.NettyConnection;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 
-public interface DriverMetricsListener
+public interface MetricsListener
 {
     /**
      * Before creating a netty channel
      * @param serverAddress the server the netty channel binds to.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
-    void beforeCreating( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent );
+    void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
 
     /**
      * After creating a netty channel regardless succeeded or failed.
      * @param serverAddress the server the netty channel binds to.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
-    void afterCreating( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent );
+    void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
 
     /**
      * After a netty channel is created successfully
-     * This method will not invoke {@link this#afterCreating(BoltServerAddress, ConnectionListenerEvent)}
+     * This method will not invoke {@link this#afterCreating(BoltServerAddress, ListenerEvent)}
      * @param serverAddress the server the netty channel binds to
      */
     void afterCreated( BoltServerAddress serverAddress );
 
     /**
      * After a netty channel is created with failure
-     * This method will not invoke {@link this#afterCreating(BoltServerAddress, ConnectionListenerEvent)}
+     * This method will not invoke {@link this#afterCreating(BoltServerAddress, ListenerEvent)}
      * @param serverAddress the server the netty channel binds to
      */
     void afterFailedToCreate( BoltServerAddress serverAddress );
@@ -65,33 +63,31 @@ public interface DriverMetricsListener
      * @param serverAddress the server the netty channel binds to
      * @param acquireEvent a pool listener event registered in pool for this acquire event
      */
-    void beforeAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent acquireEvent );
+    void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
 
     /**
      * After acquiring or creating a new netty channel from pool regardless succeeded or failed
      * @param serverAddress the server the netty channel binds to
      * @param acquireEvent a pool listener event registered in pool for this acquire event
      */
-    void afterAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent acquireEvent );
+    void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * This method will not invoke {@link this#afterAcquiringOrCreating(BoltServerAddress, PoolListenerEvent)}
+     * This method will not invoke {@link this#afterAcquiringOrCreating(BoltServerAddress, ListenerEvent)}
      * @param serverAddress the server the netty channel binds to
      * @param inUseEvent a connection listener registered with a {@link NettyConnection} when created
      */
-    void afterAcquiredOrCreated( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent );
+    void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 
     /**
      * After releasing a netty channel back to pool successfully
      * @param serverAddress the server the netty channel binds to
      * @param inUseEvent a connection listener registered with a {@link NettyConnection} when destroyed
      */
-    void afterReleased( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent );
+    void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 
-    ConnectionListenerEvent createConnectionListenerEvent();
-
-    PoolListenerEvent createPoolListenerEvent();
+    ListenerEvent createListenerEvent();
 
     void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool );
 }

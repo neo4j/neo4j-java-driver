@@ -20,13 +20,13 @@ package org.neo4j.driver.internal.metrics.spi;
 
 import java.util.Map;
 
-public interface DriverMetrics
+public interface Metrics
 {
     // TODO Once this interface become public, find a better way to enable metrics and detect metrics availability.
     String DRIVER_METRICS_ENABLED_KEY = "driver.metrics.enabled";
-    static boolean isDriverMetricsEnabled()
+    static boolean isMetricsEnabled()
     {
-        return Boolean.valueOf( System.getProperty( DRIVER_METRICS_ENABLED_KEY, "false" ) );
+        return Boolean.getBoolean( DRIVER_METRICS_ENABLED_KEY );
     }
 
     /**

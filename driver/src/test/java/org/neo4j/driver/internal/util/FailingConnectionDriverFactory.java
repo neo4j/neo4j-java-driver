@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.metrics.DriverMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -41,7 +41,7 @@ public class FailingConnectionDriverFactory extends DriverFactory
     private final AtomicReference<Throwable> nextRunFailure = new AtomicReference<>();
 
     @Override
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, DriverMetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
     {
         ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );

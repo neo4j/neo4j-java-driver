@@ -74,7 +74,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.driver.internal.metrics.spi.DriverMetrics.DRIVER_METRICS_ENABLED_KEY;
+import static org.neo4j.driver.internal.metrics.spi.Metrics.DRIVER_METRICS_ENABLED_KEY;
 
 public abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -113,12 +113,12 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     @After
     public void tearDown()
     {
-        System.out.println( driver.driverMetrics() );
+        System.out.println( driver.metrics() );
         executor.shutdownNow();
         if ( driver != null )
         {
             driver.close();
-            System.out.println( driver.driverMetrics() );
+            System.out.println( driver.metrics() );
         }
     }
 

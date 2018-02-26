@@ -25,20 +25,20 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.DriverMetrics;
+import org.neo4j.driver.internal.metrics.spi.Metrics;
 
-public abstract class InternalAbstractDriverMetrics implements DriverMetrics, DriverMetricsListener
+public abstract class InternalAbstractMetrics implements Metrics, MetricsListener
 {
-    public static final InternalAbstractDriverMetrics DEV_NULL_METRICS = new InternalAbstractDriverMetrics()
+    public static final InternalAbstractMetrics DEV_NULL_METRICS = new InternalAbstractMetrics()
     {
 
         @Override
-        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
+        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
         }
 
         @Override
-        public void afterCreating( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
+        public void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
         }
 
@@ -58,36 +58,31 @@ public abstract class InternalAbstractDriverMetrics implements DriverMetrics, Dr
         }
 
         @Override
-        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
+        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
         }
 
         @Override
-        public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
+        public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
+        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
         {
         }
 
         @Override
-        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
+        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
         {
         }
 
         @Override
-        public ListenerEvent.ConnectionListenerEvent createConnectionListenerEvent()
+        public ListenerEvent createListenerEvent()
         {
             return null;
         }
 
-        @Override
-        public ListenerEvent.PoolListenerEvent createPoolListenerEvent()
-        {
-            return null;
-        }
 
         @Override
         public void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )

@@ -34,8 +34,8 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.metrics.DriverMetricsListener;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
@@ -56,10 +56,10 @@ public class NettyConnection implements Connection
     private final Clock clock;
 
     private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
-    private final DriverMetricsListener metricsListener;
-    private final ConnectionListenerEvent inUseEvent;
+    private final MetricsListener metricsListener;
+    private final ListenerEvent inUseEvent;
 
-    public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock, DriverMetricsListener driverMetricsListener )
+    public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
@@ -68,9 +68,9 @@ public class NettyConnection implements Connection
         this.channelPool = channelPool;
         this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
-        this.metricsListener = driverMetricsListener;
-        this.inUseEvent = driverMetricsListener.createConnectionListenerEvent();
-        driverMetricsListener.afterAcquiredOrCreated( this.serverAddress, this.inUseEvent );
+        this.metricsListener = metricsListener;
+        this.inUseEvent = metricsListener.createListenerEvent();
+        metricsListener.afterAcquiredOrCreated( this.serverAddress, this.inUseEvent );
     }
 
     @Override

@@ -30,6 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -72,7 +73,7 @@ public class InternalDriverTest
 
     private static InternalDriver newDriver( SessionFactory sessionFactory )
     {
-        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, DEV_NULL_LOGGING );
+        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, DEV_NULL_METRICS, DEV_NULL_LOGGING );
     }
 
     private static SessionFactory sessionFactoryMock()

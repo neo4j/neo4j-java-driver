@@ -24,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -34,13 +32,13 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
 
-public class InternalDriverMetrics extends InternalAbstractDriverMetrics
+public class InternalMetrics extends InternalAbstractMetrics
 {
     private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
     private final Map<String,ConnectionMetrics> connectionMetrics;
     private final Config config;
 
-    public InternalDriverMetrics( Config config )
+    public InternalMetrics( Config config )
     {
         Objects.requireNonNull( config );
         this.config = config;
@@ -56,14 +54,14 @@ public class InternalDriverMetrics extends InternalAbstractDriverMetrics
     }
 
     @Override
-    public void beforeCreating( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent )
+    public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
     {
         poolMetrics( serverAddress ).beforeCreating();
         connectionMetrics( serverAddress ).beforeCreating( creatingEvent );
     }
 
     @Override
-    public void afterCreating( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent )
+    public void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
     {
         connectionMetrics( serverAddress ).afterCreating( creatingEvent );
     }
@@ -87,37 +85,31 @@ public class InternalDriverMetrics extends InternalAbstractDriverMetrics
     }
 
     @Override
-    public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent listenerEvent )
+    public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
     {
         poolMetrics( serverAddress ).beforeAcquiringOrCreating( listenerEvent );
     }
 
     @Override
-    public void afterAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent listenerEvent )
+    public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
     {
         poolMetrics( serverAddress ).afterAcquiringOrCreating( listenerEvent );
     }
 
     @Override
-    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent )
+    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).acquiredOrCreated( inUseEvent );
     }
 
     @Override
-    public void afterReleased( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent )
+    public void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).released( inUseEvent );
     }
 
     @Override
-    public ConnectionListenerEvent createConnectionListenerEvent()
-    {
-        return new NanoTimeBasedListenerEvent();
-    }
-
-    @Override
-    public PoolListenerEvent createPoolListenerEvent()
+    public ListenerEvent createListenerEvent()
     {
         return new NanoTimeBasedListenerEvent();
     }

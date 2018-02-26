@@ -30,7 +30,7 @@ public interface ConnectionPoolMetrics
      * The status of the pool
      * @return The status of the pool in a string
      */
-    String poolStatus();
+    PoolStatus poolStatus();
 
     /**
      * The amount of connections that is in-use (borrowed out of the pool).
@@ -51,9 +51,9 @@ public interface ConnectionPoolMetrics
      * The amount is increased by one when the pool noticed a request to create a new connection.
      * The amount is decreased by one when the pool noticed a new connection is created regardless successfully or not.
      * The number is changing up and down from time to time.
-     * @return The amount of connection that is to be created.
+     * @return The amount of connection that is creating.
      */
-    int toCreate();
+    int creating();
 
     /**
      * An increasing-only number to record how many connections have been created by this pool successfully.

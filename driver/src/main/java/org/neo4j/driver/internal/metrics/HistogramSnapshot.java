@@ -22,8 +22,8 @@ import org.neo4j.driver.internal.metrics.spi.Histogram;
 
 public class HistogramSnapshot implements Histogram
 {
-    private Histogram copy;
-    private Histogram origin;
+    private final Histogram copy;
+    private final Histogram origin;
 
     public HistogramSnapshot( Histogram copy, Histogram origin )
     {

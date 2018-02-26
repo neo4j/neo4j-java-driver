@@ -21,8 +21,6 @@ package org.neo4j.driver.internal.metrics;
 import org.HdrHistogram.AbstractHistogram;
 import org.HdrHistogram.ConcurrentHistogram;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.time.Duration;
 
 import org.neo4j.driver.internal.metrics.spi.Histogram;
@@ -32,6 +30,7 @@ import static java.lang.String.format;
 public class InternalHistogram implements Histogram
 {
     private static final long DEFAULT_HIGHEST_TRACKABLE_NS = Duration.ofMinutes( 10 ).toNanos();
+    private static final int DEFAULT_NUMBER_OF_SIGNIFICANT_VALUE_DIGITS = 3;
 
     private final AbstractHistogram delegate;
 
@@ -100,7 +99,7 @@ public class InternalHistogram implements Histogram
 
     public static ConcurrentHistogram createHdrHistogram( long highestTrackableValue )
     {
-        return new ConcurrentHistogram( highestTrackableValue, 3 );
+        return new ConcurrentHistogram( highestTrackableValue, DEFAULT_NUMBER_OF_SIGNIFICANT_VALUE_DIGITS );
     }
 
     private static long truncateValue( long value, AbstractHistogram histogram )
@@ -125,15 +124,5 @@ public class InternalHistogram implements Histogram
     {
         return format("[min=%sns, max=%sns, mean=%sns, stdDeviation=%s, totalCount=%s]",
                 min(), max(), mean(), stdDeviation(), totalCount());
-    }
-
-    public String printDistribution()
-    {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        PrintStream writer = new PrintStream( stream );
-        delegate.outputPercentileDistribution( writer,  1.0 );
-        String content = new String( stream.toByteArray() );
-        writer.close();
-        return content;
     }
 }
