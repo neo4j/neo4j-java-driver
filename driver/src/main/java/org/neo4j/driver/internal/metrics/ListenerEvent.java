@@ -18,10 +18,18 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-
 public interface ListenerEvent
 {
     void start();
+
     long elapsed();
+
+    interface PoolListenerEvent extends ListenerEvent
+    {
+    }
+
+    interface ConnectionListenerEvent extends ListenerEvent
+    {
+    }
 }
 

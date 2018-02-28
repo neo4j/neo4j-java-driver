@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -57,7 +57,7 @@ public class NettyConnection implements Connection
 
     private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
     private final MetricsListener metricsListener;
-    private final ListenerEvent inUseEvent;
+    private final ConnectionListenerEvent inUseEvent;
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
@@ -69,7 +69,7 @@ public class NettyConnection implements Connection
         this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
         this.metricsListener = metricsListener;
-        this.inUseEvent = metricsListener.createListenerEvent();
+        this.inUseEvent = metricsListener.createConnectionListenerEvent();
         metricsListener.afterAcquiredOrCreated( this.serverAddress, this.inUseEvent );
     }
 

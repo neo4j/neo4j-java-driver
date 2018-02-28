@@ -87,22 +87,18 @@ public class ConnectionPoolImpl implements ConnectionPool
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
 
-        ListenerEvent acquireEvent = metricsListener.createListenerEvent();
+        ListenerEvent.PoolListenerEvent acquireEvent = metricsListener.createPoolListenerEvent();
         metricsListener.beforeAcquiringOrCreating( address, acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
         {
-            try
-            {
-                processAcquisitionError( error );
-                assertNotClosed( address, channel, pool );
-                return new NettyConnection( channel, pool, clock, metricsListener );
-            }
-            finally
-            {
-                metricsListener.afterAcquiringOrCreating( address, acquireEvent );
-            }
+            processAcquisitionError( address, error );
+            assertNotClosed( address, channel, pool );
+            NettyConnection nettyConnection = new NettyConnection( channel, pool, clock, metricsListener );
+
+            metricsListener.afterAcquiredOrCreated( address, acquireEvent );
+            return nettyConnection;
         } );
     }
 
@@ -210,7 +206,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return bootstrap.config().group();
     }
 
-    private void processAcquisitionError( Throwable error )
+    private void processAcquisitionError( BoltServerAddress serverAddress, Throwable error )
     {
         Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
@@ -219,6 +215,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
                 // configured time, translate this exception to a prettier one and re-throw
+                metricsListener.afterTimedOutToAcquireOrCreate( serverAddress );
                 throw new ClientException(
                         "Unable to acquire connection from the pool within configured maximum time of " +
                         settings.connectionAcquisitionTimeout() + "ms" );

@@ -62,7 +62,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ConnectionPoolImplTest
+public class ConnectionPoolImplIT
 {
     private static final BoltServerAddress ADDRESS_1 = new BoltServerAddress( "server:1" );
     private static final BoltServerAddress ADDRESS_2 = new BoltServerAddress( "server:2" );

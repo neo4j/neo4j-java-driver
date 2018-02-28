@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -65,26 +65,27 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelCreated( Channel channel )
     {
+        throw new IllegalStateException( "A fatal error happened in this driver as this method should never be called. " +
+                "Contact the driver developer." );
+    }
+
+    public void channelCreated( Channel channel, ConnectionListenerEvent creatingEvent )
+    {
         log.debug( "Channel %s created", channel );
         incrementInUse( channel );
-        metricsListener.afterCreated( serverAddress( channel ) );
+        metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
+    }
+
+    public ConnectionListenerEvent channelCreating( BoltServerAddress address )
+    {
+        ConnectionListenerEvent creatingEvent = metricsListener.createConnectionListenerEvent();
+        metricsListener.beforeCreating( address, creatingEvent );
+        return creatingEvent;
     }
 
     public void channelFailedToCreate( BoltServerAddress address )
     {
         metricsListener.afterFailedToCreate( address );
-    }
-
-    public ListenerEvent beforeChannelCreating( BoltServerAddress address )
-    {
-        ListenerEvent creatingEvent = metricsListener.createListenerEvent();
-        metricsListener.beforeCreating( address, creatingEvent );
-        return creatingEvent;
-    }
-
-    public void afterChannelCreating( BoltServerAddress address, ListenerEvent creatingEvent )
-    {
-        metricsListener.afterCreating( address, creatingEvent );
     }
 
     public void channelClosed( Channel channel )

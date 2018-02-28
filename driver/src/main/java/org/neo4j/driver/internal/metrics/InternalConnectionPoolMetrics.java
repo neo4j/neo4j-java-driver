@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.metrics.spi.Histogram;
 import org.neo4j.driver.internal.metrics.spi.PoolStatus;
@@ -38,10 +39,14 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final BoltServerAddress address;
     private final ConnectionPool pool;
 
-    private AtomicLong created = new AtomicLong();
-    private AtomicLong closed = new AtomicLong();
-    private AtomicInteger creating = new AtomicInteger();
-    private AtomicLong failedToCreate = new AtomicLong();
+    private final AtomicLong closed = new AtomicLong();
+
+    private final AtomicInteger creating = new AtomicInteger();
+    private final AtomicLong created = new AtomicLong();
+    private final AtomicLong failedToCreate = new AtomicLong();
+
+    private final AtomicLong acquired = new AtomicLong();
+    private final AtomicLong timedOutToAcquire = new AtomicLong();
 
     private InternalHistogram acquisitionTimeHistogram;
 
@@ -82,16 +87,24 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent listenerEvent )
+    public void beforeAcquiringOrCreating( PoolListenerEvent listenerEvent )
     {
         listenerEvent.start();
     }
 
     @Override
-    public void afterAcquiringOrCreating( ListenerEvent listenerEvent )
+    public void afterAcquiredOrCreated( PoolListenerEvent listenerEvent )
     {
         long elapsed = listenerEvent.elapsed();
         acquisitionTimeHistogram.recordValue( elapsed );
+
+        this.acquired.incrementAndGet();
+    }
+
+    @Override
+    public void afterTimedOutToAcquireOrCreate()
+    {
+        this.timedOutToAcquire.incrementAndGet();
     }
 
     @Override
@@ -144,9 +157,21 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
+    public long timedOutToAcquire()
+    {
+        return timedOutToAcquire.get();
+    }
+
+    @Override
     public long closed()
     {
         return closed.get();
+    }
+
+    @Override
+    public long acquired()
+    {
+        return this.acquired.get();
     }
 
     @Override
@@ -158,7 +183,8 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]", created(),
-                closed(), creating(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
+        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquired=%s, " +
+                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]",
+                created(), closed(), creating(), failedToCreate(), acquired(), timedOutToAcquire(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }

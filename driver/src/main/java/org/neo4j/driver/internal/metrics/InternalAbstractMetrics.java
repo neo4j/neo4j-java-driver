@@ -33,56 +33,70 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
     {
 
         @Override
-        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
         {
+
         }
 
         @Override
-        public void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+        public void afterCreated( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
         {
-        }
 
-        @Override
-        public void afterCreated( BoltServerAddress serverAddress )
-        {
         }
 
         @Override
         public void afterFailedToCreate( BoltServerAddress serverAddress )
         {
+
         }
 
         @Override
         public void afterClosed( BoltServerAddress serverAddress )
         {
+
         }
 
         @Override
-        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+        public void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress )
         {
+
         }
 
         @Override
-        public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
         {
+
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
         {
+
         }
 
         @Override
-        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
         {
+
         }
 
         @Override
-        public ListenerEvent createListenerEvent()
+        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
+        {
+
+        }
+
+        @Override
+        public ListenerEvent.PoolListenerEvent createPoolListenerEvent()
         {
             return null;
         }
 
+        @Override
+        public ListenerEvent.ConnectionListenerEvent createConnectionListenerEvent()
+        {
+            return null;
+        }
 
         @Override
         public void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )

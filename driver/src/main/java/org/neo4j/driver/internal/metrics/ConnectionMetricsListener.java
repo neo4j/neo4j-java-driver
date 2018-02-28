@@ -23,7 +23,7 @@ public interface ConnectionMetricsListener
 {
     void beforeCreating( ListenerEvent listenerEvent );
 
-    void afterCreating( ListenerEvent listenerEvent );
+    void afterCreated( ListenerEvent listenerEvent );
 
     void acquiredOrCreated( ListenerEvent listenerEvent );
 
