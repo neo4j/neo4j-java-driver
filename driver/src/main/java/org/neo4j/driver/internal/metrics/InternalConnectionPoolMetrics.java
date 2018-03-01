@@ -126,11 +126,11 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     {
         if ( pool.isOpen( address ) )
         {
-            return PoolStatus.Open;
+            return PoolStatus.OPEN;
         }
         else
         {
-            return PoolStatus.Closed;
+            return PoolStatus.CLOSED;
         }
     }
 

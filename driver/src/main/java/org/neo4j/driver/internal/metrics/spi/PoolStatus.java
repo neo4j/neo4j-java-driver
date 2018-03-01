@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.metrics.spi;
 
 public enum PoolStatus
 {
-    Open( 0 ),
-    Closed( 1 );
+    OPEN( 0 ),
+    CLOSED( 1 );
 
     private final int value;
 
