@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.internal.metrics.spi.Metrics;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
@@ -38,11 +39,13 @@ public class InternalDriver implements Driver
     private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
+    private final Metrics metrics;
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
+        this.metrics = metrics;
         this.log = logging.getLog( Driver.class.getSimpleName() );
         log.info( "Driver instance %s created", this );
     }
@@ -142,6 +145,11 @@ public class InternalDriver implements Driver
         {
             throw driverCloseException();
         }
+    }
+
+    public Metrics metrics()
+    {
+        return this.metrics;
     }
 
     private static RuntimeException driverCloseException()

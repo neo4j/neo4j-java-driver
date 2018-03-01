@@ -16,24 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
 
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
+package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-
-public interface ConnectionPool
+public class NanoTimeBasedListenerEvent implements ListenerEvent
 {
-    CompletionStage<Connection> acquire( BoltServerAddress address );
+    private long startNanoTime;
 
-    void retainAll( Set<BoltServerAddress> addressesToRetain );
+    @Override
+    public void start()
+    {
+        startNanoTime = System.nanoTime();
+    }
 
-    int inUseConnections( BoltServerAddress address );
-
-    int idleConnections( BoltServerAddress address );
-
-    CompletionStage<Void> close();
-
-    boolean isOpen();
+    @Override
+    public long elapsed()
+    {
+        return System.nanoTime() - startNanoTime;
+    }
 }

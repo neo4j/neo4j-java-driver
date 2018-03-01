@@ -59,6 +59,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 public class ConnectionPoolImplTest
@@ -146,19 +147,19 @@ public class ConnectionPoolImplTest
     @Test
     public void shouldDoNothingWhenRetainOnEmptyPool()
     {
-        ActiveChannelTracker activeChannelTracker = mock( ActiveChannelTracker.class );
-        TestConnectionPool pool = new TestConnectionPool( activeChannelTracker );
+        NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
+        TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
 
         pool.retainAll( singleton( LOCAL_DEFAULT ) );
 
-        verifyZeroInteractions( activeChannelTracker );
+        verifyZeroInteractions( nettyChannelTracker );
     }
 
     @Test
     public void shouldRetainSpecifiedAddresses()
     {
-        ActiveChannelTracker activeChannelTracker = mock( ActiveChannelTracker.class );
-        TestConnectionPool pool = new TestConnectionPool( activeChannelTracker );
+        NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
+        TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
 
         pool.acquire( ADDRESS_1 );
         pool.acquire( ADDRESS_2 );
@@ -174,16 +175,16 @@ public class ConnectionPoolImplTest
     @Test
     public void shouldClosePoolsWhenRetaining()
     {
-        ActiveChannelTracker activeChannelTracker = mock( ActiveChannelTracker.class );
-        TestConnectionPool pool = new TestConnectionPool( activeChannelTracker );
+        NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
+        TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
 
         pool.acquire( ADDRESS_1 );
         pool.acquire( ADDRESS_2 );
         pool.acquire( ADDRESS_3 );
 
-        when( activeChannelTracker.activeChannelCount( ADDRESS_1 ) ).thenReturn( 2 );
-        when( activeChannelTracker.activeChannelCount( ADDRESS_2 ) ).thenReturn( 0 );
-        when( activeChannelTracker.activeChannelCount( ADDRESS_3 ) ).thenReturn( 3 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_1 ) ).thenReturn( 2 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_2 ) ).thenReturn( 0 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_3 ) ).thenReturn( 3 );
 
         pool.retainAll( new HashSet<>( asList( ADDRESS_1, ADDRESS_3 ) ) );
         verify( pool.getPool( ADDRESS_1 ), never() ).close();
@@ -194,16 +195,16 @@ public class ConnectionPoolImplTest
     @Test
     public void shouldNotClosePoolsWithActiveConnectionsWhenRetaining()
     {
-        ActiveChannelTracker activeChannelTracker = mock( ActiveChannelTracker.class );
-        TestConnectionPool pool = new TestConnectionPool( activeChannelTracker );
+        NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
+        TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
 
         pool.acquire( ADDRESS_1 );
         pool.acquire( ADDRESS_2 );
         pool.acquire( ADDRESS_3 );
 
-        when( activeChannelTracker.activeChannelCount( ADDRESS_1 ) ).thenReturn( 1 );
-        when( activeChannelTracker.activeChannelCount( ADDRESS_2 ) ).thenReturn( 42 );
-        when( activeChannelTracker.activeChannelCount( ADDRESS_3 ) ).thenReturn( 0 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_1 ) ).thenReturn( 1 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_2 ) ).thenReturn( 42 );
+        when( nettyChannelTracker.inUseChannelCount( ADDRESS_3 ) ).thenReturn( 0 );
 
         pool.retainAll( singleton( ADDRESS_2 ) );
         verify( pool.getPool( ADDRESS_1 ), never() ).close();
@@ -219,7 +220,7 @@ public class ConnectionPoolImplTest
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_LOGGING, clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock );
     }
 
     private static PoolSettings newSettings()
@@ -231,10 +232,10 @@ public class ConnectionPoolImplTest
     {
         final Map<BoltServerAddress,ChannelPool> channelPoolsByAddress = new HashMap<>();
 
-        TestConnectionPool( ActiveChannelTracker activeChannelTracker )
+        TestConnectionPool( NettyChannelTracker nettyChannelTracker )
         {
-            super( mock( ChannelConnector.class ), mock( Bootstrap.class ), activeChannelTracker, newSettings(),
-                    DEV_NULL_LOGGING, new FakeClock() );
+            super( mock( ChannelConnector.class ), mock( Bootstrap.class ), nettyChannelTracker, newSettings(),
+                    DEV_NULL_METRICS, DEV_NULL_LOGGING, new FakeClock() );
         }
 
         ChannelPool getPool( BoltServerAddress address )

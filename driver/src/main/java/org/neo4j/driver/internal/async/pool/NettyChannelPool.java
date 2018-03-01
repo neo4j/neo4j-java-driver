@@ -19,13 +19,14 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.pool.ChannelHealthChecker;
-import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.channel.pool.FixedChannelPool;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,9 +43,10 @@ public class NettyChannelPool extends FixedChannelPool
 
     private final BoltServerAddress address;
     private final ChannelConnector connector;
+    private final NettyChannelTracker handler;
 
     public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap,
-            ChannelPoolHandler handler, ChannelHealthChecker healthCheck, long acquireTimeoutMillis,
+            NettyChannelTracker handler, ChannelHealthChecker healthCheck, long acquireTimeoutMillis,
             int maxConnections )
     {
         super( bootstrap, handler, healthCheck, AcquireTimeoutAction.FAIL, acquireTimeoutMillis, maxConnections,
@@ -52,19 +54,28 @@ public class NettyChannelPool extends FixedChannelPool
 
         this.address = requireNonNull( address );
         this.connector = requireNonNull( connector );
+        this.handler = requireNonNull( handler );
     }
 
     @Override
     protected ChannelFuture connectChannel( Bootstrap bootstrap )
     {
+        ListenerEvent creatingEvent = handler.beforeChannelCreating( address );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.addListener( future ->
         {
             if ( future.isSuccess() )
             {
                 // notify pool handler about a successful connection
-                handler().channelCreated( channelFuture.channel() );
+                Channel channel = channelFuture.channel();
+                handler.channelCreated( channel );
+                channel.closeFuture().addListener( closeFuture -> handler.channelClosed( channel ) );
             }
+            else
+            {
+                handler.channelFailedToCreate( address );
+            }
+            handler.afterChannelCreating( address, creatingEvent );
         } );
         return channelFuture;
     }

@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.Futures;
@@ -73,6 +74,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.internal.metrics.spi.Metrics.DRIVER_METRICS_ENABLED_KEY;
 
 public abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -87,11 +89,12 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
 
-    Driver driver;
+    InternalDriver driver;
 
     @Before
     public void setUp()
     {
+        System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
 
         Config config = Config.build()
@@ -100,7 +103,8 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
                 .withConnectionAcquisitionTimeout( 1, MINUTES )
                 .toConfig();
 
-        driver = GraphDatabase.driver( databaseUri(), authToken(), config );
+        driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config );
+        System.setProperty( DRIVER_METRICS_ENABLED_KEY, "false" );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
         executor = Executors.newCachedThreadPool( threadFactory );
@@ -109,10 +113,12 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     @After
     public void tearDown()
     {
+        System.out.println( driver.metrics() );
         executor.shutdownNow();
         if ( driver != null )
         {
             driver.close();
+            System.out.println( driver.metrics() );
         }
     }
 

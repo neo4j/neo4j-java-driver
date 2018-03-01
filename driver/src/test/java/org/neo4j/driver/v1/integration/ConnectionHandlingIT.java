@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -64,6 +65,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -294,8 +296,7 @@ public class ConnectionHandlingIT
         MemorizingConnectionPool connectionPool;
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
@@ -317,7 +318,7 @@ public class ConnectionHandlingIT
         MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
                 Logging logging, Clock clock )
         {
-            super( connector, bootstrap, settings, logging, clock );
+            super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock );
         }
 
 

@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.NettyConnection;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -48,29 +50,31 @@ public class ConnectionPoolImpl implements ConnectionPool
 {
     private final ChannelConnector connector;
     private final Bootstrap bootstrap;
-    private final ActiveChannelTracker activeChannelTracker;
+    private final NettyChannelTracker nettyChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
     private final PoolSettings settings;
     private final Clock clock;
     private final Logger log;
+    private MetricsListener metricsListener;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
-            Logging logging, Clock clock )
+            MetricsListener metricsListener, Logging logging, Clock clock )
     {
-        this( connector, bootstrap, new ActiveChannelTracker( logging ), settings, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, logging ), settings, metricsListener, logging, clock );
     }
 
-    ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, ActiveChannelTracker activeChannelTracker,
-            PoolSettings settings, Logging logging, Clock clock )
+    ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
+            PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
-        this.activeChannelTracker = activeChannelTracker;
+        this.nettyChannelTracker = nettyChannelTracker;
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
+        this.metricsListener = metricsListener;
         this.clock = clock;
         this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
     }
@@ -82,13 +86,23 @@ public class ConnectionPoolImpl implements ConnectionPool
 
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
+
+        ListenerEvent acquireEvent = metricsListener.createListenerEvent();
+        metricsListener.beforeAcquiringOrCreating( address, acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
         {
-            processAcquisitionError( error );
-            assertNotClosed( address, channel, pool );
-            return new NettyConnection( channel, pool, clock );
+            try
+            {
+                processAcquisitionError( error );
+                assertNotClosed( address, channel, pool );
+                return new NettyConnection( channel, pool, clock, metricsListener );
+            }
+            finally
+            {
+                metricsListener.afterAcquiringOrCreating( address, acquireEvent );
+            }
         } );
     }
 
@@ -99,7 +113,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         {
             if ( !addressesToRetain.contains( address ) )
             {
-                int activeChannels = activeChannelTracker.activeChannelCount( address );
+                int activeChannels = nettyChannelTracker.inUseChannelCount( address );
                 if ( activeChannels == 0 )
                 {
                     // address is not present in updated routing table and has no active connections
@@ -118,9 +132,15 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public int activeConnections( BoltServerAddress address )
+    public int inUseConnections( BoltServerAddress address )
     {
-        return activeChannelTracker.activeChannelCount( address );
+        return nettyChannelTracker.inUseChannelCount( address );
+    }
+
+    @Override
+    public int idleConnections( BoltServerAddress address )
+    {
+        return nettyChannelTracker.idleChannelCount( address );
     }
 
     @Override
@@ -150,26 +170,38 @@ public class ConnectionPoolImpl implements ConnectionPool
                 .thenApply( ignore -> null );
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        return !closed.get();
+    }
+
     private ChannelPool getOrCreatePool( BoltServerAddress address )
     {
         ChannelPool pool = pools.get( address );
-        if ( pool == null )
+        if ( pool != null )
         {
-            pool = newPool( address );
+            return pool;
+        }
 
-            if ( pools.putIfAbsent( address, pool ) != null )
+        synchronized ( this )
+        {
+            pool = pools.get( address );
+            if ( pool != null )
             {
-                // We lost a race to create the pool, dispose of the one we created, and recurse
-                pool.close();
-                return getOrCreatePool( address );
+                return pool;
             }
+
+            metricsListener.addMetrics( address, this );
+            pool = newPool( address );
+            pools.put( address, pool );
         }
         return pool;
     }
 
     ChannelPool newPool( BoltServerAddress address )
     {
-        return new NettyChannelPool( address, connector, bootstrap, activeChannelTracker, channelHealthChecker,
+        return new NettyChannelPool( address, connector, bootstrap, nettyChannelTracker, channelHealthChecker,
                 settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
     }
 
@@ -216,5 +248,11 @@ public class ConnectionPoolImpl implements ConnectionPool
             pools.remove( address );
             assertNotClosed();
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ConnectionPoolImpl{" + "pools=" + pools + '}';
     }
 }

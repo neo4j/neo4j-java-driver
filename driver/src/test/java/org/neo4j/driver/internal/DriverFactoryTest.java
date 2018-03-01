@@ -33,6 +33,9 @@ import java.util.List;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.metrics.InternalMetrics;
+import org.neo4j.driver.internal.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.spi.Metrics;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -47,6 +50,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -56,6 +60,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
@@ -175,6 +180,30 @@ public class DriverFactoryTest
         }
     }
 
+    @Test
+    public void shouldNotCreateDriverMetrics() throws Throwable
+    {
+        // Given
+        Config config = mock( Config.class );
+        // When
+        MetricsListener handler = DriverFactory.createDriverMetrics( config );
+        // Then
+        assertThat( handler, is( DEV_NULL_METRICS ) );
+    }
+
+    @Test
+    public void shouldCreateDriverMetricsIfMonitoringEnabled() throws Throwable
+    {
+        // Given
+        Config config = mock( Config.class );
+        System.setProperty( "driver.metrics.enabled", "True" );
+        // When
+        MetricsListener handler = DriverFactory.createDriverMetrics( config );
+        System.setProperty( "driver.metrics.enabled", "False" );
+        // Then
+        assertThat( handler instanceof InternalMetrics, is( true ) );
+    }
+
     private Driver createDriver( DriverFactory driverFactory )
     {
         return createDriver( driverFactory, defaultConfig() );
@@ -206,22 +235,20 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Config config )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
-        protected InternalDriver createRoutingDriver( BoltServerAddress address, ConnectionPool connectionPool,
-                Config config, RoutingSettings routingSettings, SecurityPlan securityPlan, RetryLogic retryLogic,
-                EventExecutorGroup eventExecutorGroup )
+        protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
+                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, Metrics metrics, Config config )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
         {
             return connectionPool;
         }
@@ -232,7 +259,7 @@ public class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( SessionFactory sessionFactory, SecurityPlan securityPlan, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
             when( driver.verifyConnectivity() ).thenReturn( completedWithNull() );
@@ -256,8 +283,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }
@@ -279,8 +305,7 @@ public class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan,
-                Bootstrap bootstrap, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }

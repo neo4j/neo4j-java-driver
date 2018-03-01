@@ -16,24 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.spi;
+package org.neo4j.driver.internal.metrics.spi;
 
-import java.util.Set;
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-
-public interface ConnectionPool
+public interface ConnectionMetrics
 {
-    CompletionStage<Connection> acquire( BoltServerAddress address );
+    /**
+     * The unique name of this connection metrics among all connection metrics
+     * @return An unique name of this connection metrics among all connection metrics
+     */
+    String uniqueName();
 
-    void retainAll( Set<BoltServerAddress> addressesToRetain );
+    /**
+     * The connection time histogram describes how long it takes to establish a connection
+     * @return The connection time histogram
+     */
+    Histogram connectionTimeHistogram ();
 
-    int inUseConnections( BoltServerAddress address );
-
-    int idleConnections( BoltServerAddress address );
-
-    CompletionStage<Void> close();
-
-    boolean isOpen();
+    /**
+     * The in-use time histogram records how long each connection is borrowed out of the pool
+     * @return The in-use time histogram
+     */
+    Histogram inUseTimeHistogram();
 }
