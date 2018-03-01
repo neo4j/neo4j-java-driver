@@ -16,26 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.v1.types;
 
-import java.io.IOException;
+import org.neo4j.driver.v1.util.Experimental;
 
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
-
-public interface MessageFormat
+@Experimental
+public interface Point2D
 {
-    interface Writer
-    {
-        void write( Message msg ) throws IOException;
-    }
+    long srid();
 
-    interface Reader
-    {
-        void read( MessageHandler handler ) throws IOException;
-    }
+    double x();
 
-    Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );
-
-    Reader newReader( PackInput input );
+    double y();
 }

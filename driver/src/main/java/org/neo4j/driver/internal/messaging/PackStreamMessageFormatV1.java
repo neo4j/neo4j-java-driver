@@ -68,37 +68,29 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static final byte UNBOUND_RELATIONSHIP = 'r';
     public static final byte PATH = 'P';
 
-    public static final int VERSION = 1;
-
     public static final int NODE_FIELDS = 3;
 
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
-        return new Writer( output, byteArraySupportEnabled );
+        return new WriterV1( output, byteArraySupportEnabled );
     }
 
     @Override
     public MessageFormat.Reader newReader( PackInput input )
     {
-        return new Reader( input );
+        return new ReaderV1( input );
     }
 
-    @Override
-    public int version()
+    static class WriterV1 implements MessageFormat.Writer, MessageHandler
     {
-        return VERSION;
-    }
-
-    public static class Writer implements MessageFormat.Writer, MessageHandler
-    {
-        private final PackStream.Packer packer;
+        final PackStream.Packer packer;
 
         /**
          * @param output interface to write messages to
          * @param byteArraySupportEnabled specify if support to pack/write byte array to server
          */
-        public Writer( PackOutput output, boolean byteArraySupportEnabled )
+        WriterV1( PackOutput output, boolean byteArraySupportEnabled )
         {
             if( byteArraySupportEnabled )
             {
@@ -204,7 +196,19 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
         private void packValue( Value value ) throws IOException
         {
-            switch ( ( (InternalValue) value ).typeConstructor() )
+            if ( value instanceof InternalValue )
+            {
+                packInternalValue( ((InternalValue) value) );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unable to pack: " + value );
+            }
+        }
+
+        void packInternalValue( InternalValue value ) throws IOException
+        {
+            switch ( value.typeConstructor() )
             {
                 case NULL_TyCon:
                     packer.packNull();
@@ -324,10 +328,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
-        public Writer write( Message msg ) throws IOException
+        public void write( Message msg ) throws IOException
         {
             msg.dispatch( this );
-            return this;
         }
 
         private void packNode( Node node ) throws IOException
@@ -357,11 +360,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
     }
 
-    public static class Reader implements MessageFormat.Reader
+    static class ReaderV1 implements MessageFormat.Reader
     {
-        private final PackStream.Unpacker unpacker;
+        final PackStream.Unpacker unpacker;
 
-        public Reader( PackInput input )
+        ReaderV1( PackInput input )
         {
             unpacker = new PackStream.Unpacker( input );
         }
@@ -499,22 +502,30 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case STRUCT:
             {
                 long size = unpacker.unpackStructHeader();
-                switch ( unpacker.unpackStructSignature() )
-                {
-                case NODE:
-                    ensureCorrectStructSize( "NODE", NODE_FIELDS, size );
-                    InternalNode adapted = unpackNode();
-                    return new NodeValue( adapted );
-                case RELATIONSHIP:
-                    ensureCorrectStructSize( "RELATIONSHIP", 5, size );
-                    return unpackRelationship();
-                case PATH:
-                    ensureCorrectStructSize( "PATH", 3, size );
-                    return unpackPath();
-                }
+                byte structType = unpacker.unpackStructSignature();
+                return unpackStruct( size, structType );
             }
             }
             throw new IOException( "Unknown value type: " + type );
+        }
+
+        Value unpackStruct( long size, byte type ) throws IOException
+        {
+            switch ( type )
+            {
+            case NODE:
+                ensureCorrectStructSize( "NODE", NODE_FIELDS, size );
+                InternalNode adapted = unpackNode();
+                return new NodeValue( adapted );
+            case RELATIONSHIP:
+                ensureCorrectStructSize( "RELATIONSHIP", 5, size );
+                return unpackRelationship();
+            case PATH:
+                ensureCorrectStructSize( "PATH", 3, size );
+                return unpackPath();
+            default:
+                throw new IOException( "Unknown struct type: " + type );
+            }
         }
 
         private Value unpackRelationship() throws IOException
@@ -608,7 +619,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return new PathValue( new InternalPath( Arrays.asList( segments ), Arrays.asList( nodes ), Arrays.asList( rels ) ) );
         }
 
-        private void ensureCorrectStructSize( String structName, int expected, long actual )
+        void ensureCorrectStructSize( String structName, int expected, long actual )
         {
             if ( expected != actual )
             {

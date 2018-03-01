@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.InternalPoint2D;
+import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.FloatValue;
@@ -35,11 +37,15 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.internal.value.Point2DValue;
+import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
@@ -257,6 +263,16 @@ public abstract class Values
         return new MapValue( asValues );
     }
 
+    public static Value point2D( long srid, double x, double y )
+    {
+        return new Point2DValue( new InternalPoint2D( srid, x, y ) );
+    }
+
+    public static Value point3D( long srid, double x, double y, double z )
+    {
+        return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
+    }
+
     /**
      * Helper function for creating a map of parameters, this can be used when you {@link
      * StatementRunner#run(String, Value) run} statements.
@@ -472,6 +488,16 @@ public abstract class Values
         return PATH;
     }
 
+    public static Function<Value,Point2D> ofPoint2D()
+    {
+        return POINT_2D;
+    }
+
+    public static Function<Value,Point3D> ofPoint3D()
+    {
+        return POINT_3D;
+    }
+
     /**
      * Converts values to {@link List} of {@link Object}.
      * @return a function that returns {@link Value#asList()} of a {@link Value}
@@ -617,6 +643,20 @@ public abstract class Values
         public Path apply( Value val )
         {
             return val.asPath();
+        }
+    };
+    private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()
+    {
+        public Point2D apply( Value val )
+        {
+            return val.asPoint2D();
+        }
+    };
+    private static final Function<Value,Point3D> POINT_3D = new Function<Value,Point3D>()
+    {
+        public Point3D apply( Value val )
+        {
+            return val.asPoint3D();
         }
     };
 

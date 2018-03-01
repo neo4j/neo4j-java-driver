@@ -23,31 +23,32 @@ import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.BOLT_MAGIC_PREAMBLE;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeBuf;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeString;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.writeChunkHeader;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.writeEmptyChunkHeader;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.writeMessageBoundary;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.BOLT_MAGIC_PREAMBLE;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_2;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeBuf;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeString;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeChunkHeader;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeEmptyChunkHeader;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeMessageBoundary;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
-public class BoltProtocolV1UtilTest
+public class BoltProtocolUtilTest
 {
     @Test
     public void shouldReturnHandshakeBuf()
     {
         assertByteBufContains(
                 handshakeBuf(),
-                BOLT_MAGIC_PREAMBLE, PROTOCOL_VERSION_1, NO_PROTOCOL_VERSION, NO_PROTOCOL_VERSION, NO_PROTOCOL_VERSION
+                BOLT_MAGIC_PREAMBLE, PROTOCOL_VERSION_2, PROTOCOL_VERSION_1, NO_PROTOCOL_VERSION, NO_PROTOCOL_VERSION
         );
     }
 
     @Test
     public void shouldReturnHandshakeString()
     {
-        assertEquals( "[0x6060B017, 1, 0, 0, 0]", handshakeString() );
+        assertEquals( "[0x6060b017, 2, 1, 0, 0]", handshakeString() );
     }
 
     @Test

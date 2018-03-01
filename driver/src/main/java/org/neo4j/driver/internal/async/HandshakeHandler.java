@@ -31,6 +31,7 @@ import javax.net.ssl.SSLHandshakeException;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -38,9 +39,10 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_2;
 
 public class HandshakeHandler extends ReplayingDecoder<Void>
 {
@@ -121,9 +123,10 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         switch ( serverSuggestedVersion )
         {
         case PROTOCOL_VERSION_1:
-            MessageFormat messageFormat = new PackStreamMessageFormatV1();
-            pipelineBuilder.build( messageFormat, pipeline, logging );
-            handshakeCompletedPromise.setSuccess();
+            protocolSelected( new PackStreamMessageFormatV1(), pipeline );
+            break;
+        case PROTOCOL_VERSION_2:
+            protocolSelected( new PackStreamMessageFormatV2(), pipeline );
             break;
         case NO_PROTOCOL_VERSION:
             fail( ctx, protocolNoSupportedByServerError() );
@@ -135,6 +138,12 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
             fail( ctx, protocolNoSupportedByDriverError( serverSuggestedVersion ) );
             break;
         }
+    }
+
+    private void protocolSelected( MessageFormat messageFormat, ChannelPipeline pipeline )
+    {
+        pipelineBuilder.build( messageFormat, pipeline, logging );
+        handshakeCompletedPromise.setSuccess();
     }
 
     private void fail( ChannelHandlerContext ctx, Throwable error )

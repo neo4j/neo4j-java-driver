@@ -27,9 +27,10 @@ public class ByteArrayIncompatiblePacker extends PackStream.Packer
         super( out );
     }
 
+    @Override
     public void packBytesHeader( int size ) throws IOException
     {
         throw new PackStream.UnPackable( "Packing bytes is not supported " +
-                "as the current server this driver connected to does not support unpack bytes." );
+                                         "as the current server this driver connected to does not support unpack bytes." );
     }
 }

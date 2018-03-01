@@ -32,7 +32,7 @@ import java.util.List;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.internal.async.BoltProtocolV1Util;
+import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
@@ -121,7 +121,7 @@ public class MessageFormatTest
         packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
 
         output.stop();
-        BoltProtocolV1Util.writeMessageBoundary( buf );
+        BoltProtocolUtil.writeMessageBoundary( buf );
 
         // Expect
         exception.expect( ClientException.class );

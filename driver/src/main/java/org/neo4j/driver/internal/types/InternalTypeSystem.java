@@ -24,6 +24,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
@@ -32,8 +33,9 @@ import static org.neo4j.driver.internal.types.TypeConstructor.NODE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NULL_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.PATH_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING_TyCon;
 
 /**
@@ -58,6 +60,8 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation nodeType = constructType( NODE_TyCon );
     private final TypeRepresentation relationshipType = constructType( RELATIONSHIP_TyCon );
     private final TypeRepresentation pathType = constructType( PATH_TyCon );
+    private final TypeRepresentation point2dType = constructType( POINT_2D_TyCon );
+    private final TypeRepresentation point3dType = constructType( POINT_3D_TyCon );
     private final TypeRepresentation nullType = constructType( NULL_TyCon );
 
     private InternalTypeSystem()
@@ -146,6 +150,18 @@ public class InternalTypeSystem implements TypeSystem
     public Type PATH()
     {
         return pathType;
+    }
+
+    @Override
+    public Type POINT_2D()
+    {
+        return point2dType;
+    }
+
+    @Override
+    public Type POINT_3D()
+    {
+        return point3dType;
     }
 
     /** the Cypher type NULL */

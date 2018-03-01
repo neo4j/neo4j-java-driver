@@ -16,26 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.util;
 
-import java.io.IOException;
-
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
-
-public interface MessageFormat
+@FunctionalInterface
+public interface ThrowingConsumer<T>
 {
-    interface Writer
-    {
-        void write( Message msg ) throws IOException;
-    }
-
-    interface Reader
-    {
-        void read( MessageHandler handler ) throws IOException;
-    }
-
-    Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );
-
-    Reader newReader( PackInput input );
+    void accept( T t ) throws Exception;
 }

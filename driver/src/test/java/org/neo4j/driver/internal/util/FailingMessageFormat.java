@@ -75,12 +75,6 @@ public class FailingMessageFormat implements MessageFormat
         return new ThrowingReader( delegate.newReader( input ), readerThrowableRef, readerFailureRef );
     }
 
-    @Override
-    public int version()
-    {
-        return delegate.version();
-    }
-
     private static class ThrowingWriter implements MessageFormat.Writer
     {
         final MessageFormat.Writer delegate;
@@ -93,7 +87,7 @@ public class FailingMessageFormat implements MessageFormat
         }
 
         @Override
-        public Writer write( Message msg ) throws IOException
+        public void write( Message msg ) throws IOException
         {
             Throwable error = throwableRef.getAndSet( null );
             if ( error != null )
@@ -102,9 +96,8 @@ public class FailingMessageFormat implements MessageFormat
             }
             else
             {
-                return delegate.write( msg );
+                delegate.write( msg );
             }
-            return this;
         }
     }
 

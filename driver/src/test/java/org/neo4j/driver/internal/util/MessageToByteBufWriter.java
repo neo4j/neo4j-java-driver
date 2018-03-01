@@ -24,79 +24,29 @@ import io.netty.buffer.Unpooled;
 import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.messaging.MessageFormat;
 
-public final class MessageToByteBufWriter
+public class MessageToByteBufWriter
 {
-    private MessageToByteBufWriter()
+    private final MessageFormat messageFormat;
+
+    public MessageToByteBufWriter( MessageFormat messageFormat )
     {
+        this.messageFormat = messageFormat;
     }
 
-    public static ByteBuf asByteBuf( Message message )
+    public ByteBuf asByteBuf( Message message )
     {
         try
         {
             ByteBuf buf = Unpooled.buffer();
             ByteBufOutput output = new ByteBufOutput( buf );
-            new PackStreamMessageFormatV1.Writer( output, true ).write( message );
+            messageFormat.newWriter( output, true ).write( message );
             return buf;
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-
-    private static class ByteBufOutput implements PackOutput
-    {
-        final ByteBuf buf;
-
-        ByteBufOutput( ByteBuf buf )
-        {
-            this.buf = buf;
-        }
-
-        @Override
-        public PackOutput writeByte( byte value )
-        {
-            buf.writeByte( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeBytes( byte[] data )
-        {
-            buf.writeBytes( data );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeShort( short value )
-        {
-            buf.writeShort( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeInt( int value )
-        {
-            buf.writeInt( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeLong( long value )
-        {
-            buf.writeLong( value );
-            return this;
-        }
-
-        @Override
-        public PackOutput writeDouble( double value )
-        {
-            buf.writeDouble( value );
-            return this;
         }
     }
 }

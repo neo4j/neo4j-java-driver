@@ -31,8 +31,8 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeBuf;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeString;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeBuf;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeString;
 
 public class ChannelConnectedListener implements ChannelFutureListener
 {

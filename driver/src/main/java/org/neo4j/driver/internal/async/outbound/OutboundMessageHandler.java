@@ -25,7 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.async.BoltProtocolV1Util;
+import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -95,7 +95,7 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
             log.trace( "C: %s", hexDump( messageBuf ) );
         }
 
-        BoltProtocolV1Util.writeMessageBoundary( messageBuf );
+        BoltProtocolUtil.writeMessageBoundary( messageBuf );
         out.add( messageBuf );
     }
 

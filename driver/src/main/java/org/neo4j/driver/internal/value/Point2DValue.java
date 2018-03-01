@@ -16,26 +16,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.value;
 
-import java.io.IOException;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Type;
 
-import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.packstream.PackOutput;
-
-public interface MessageFormat
+public class Point2DValue extends ValueAdapter
 {
-    interface Writer
+    private final Point2D point;
+
+    public Point2DValue( Point2D point )
     {
-        void write( Message msg ) throws IOException;
+        this.point = point;
     }
 
-    interface Reader
+    @Override
+    public Point2D asPoint2D()
     {
-        void read( MessageHandler handler ) throws IOException;
+        return point;
     }
 
-    Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );
+    @Override
+    public Object asObject()
+    {
+        return point;
+    }
 
-    Reader newReader( PackInput input );
+    @Override
+    public String toString( Format valueFormat )
+    {
+        return maybeWithType( valueFormat.includeType(), point.toString() );
+    }
+
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.POINT_2D();
+    }
 }

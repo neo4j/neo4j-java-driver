@@ -34,7 +34,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.handshakeBuf;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeBuf;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 

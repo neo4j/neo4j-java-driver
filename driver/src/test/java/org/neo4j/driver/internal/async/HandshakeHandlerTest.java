@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
@@ -33,7 +34,11 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
@@ -46,10 +51,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_2;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -184,25 +190,13 @@ public class HandshakeHandlerTest
     @Test
     public void shouldSelectProtocolV1WhenServerSuggests()
     {
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
-        channel.pipeline().addLast( handler );
+        testProtocolSelection( PROTOCOL_VERSION_1, PackStreamMessageFormatV1.class );
+    }
 
-        channel.pipeline().fireChannelRead( copyInt( PROTOCOL_VERSION_1 ) );
-
-        // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
-
-        // all inbound handlers should be set
-        assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
-        assertNotNull( channel.pipeline().get( MessageDecoder.class ) );
-        assertNotNull( channel.pipeline().get( InboundMessageHandler.class ) );
-
-        // all outbound handlers should be set
-        assertNotNull( channel.pipeline().get( OutboundMessageHandler.class ) );
-
-        // promise should be successful
-        assertNull( await( handshakeCompletedPromise ) );
+    @Test
+    public void shouldSelectProtocolV2WhenServerSuggests()
+    {
+        testProtocolSelection( PROTOCOL_VERSION_2, PackStreamMessageFormatV2.class );
     }
 
     @Test
@@ -274,9 +268,52 @@ public class HandshakeHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
+    private void testProtocolSelection( int protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        MemorizingChannelPipelineBuilder pipelineBuilder = new MemorizingChannelPipelineBuilder();
+        HandshakeHandler handler = newHandler( pipelineBuilder, handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        channel.pipeline().fireChannelRead( copyInt( protocolVersion ) );
+
+        // expected message format should've been used
+        assertThat( pipelineBuilder.usedMessageFormat, instanceOf( expectedMessageFormatClass ) );
+
+        // handshake handler itself should be removed
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
+
+        // all inbound handlers should be set
+        assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
+        assertNotNull( channel.pipeline().get( MessageDecoder.class ) );
+        assertNotNull( channel.pipeline().get( InboundMessageHandler.class ) );
+
+        // all outbound handlers should be set
+        assertNotNull( channel.pipeline().get( OutboundMessageHandler.class ) );
+
+        // promise should be successful
+        assertNull( await( handshakeCompletedPromise ) );
+    }
+
     private static HandshakeHandler newHandler( ChannelPromise handshakeCompletedPromise )
     {
-        return new HandshakeHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise,
-                DEV_NULL_LOGGING );
+        return newHandler( new ChannelPipelineBuilderImpl(), handshakeCompletedPromise );
+    }
+
+    private static HandshakeHandler newHandler( ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise )
+    {
+        return new HandshakeHandler( pipelineBuilder, handshakeCompletedPromise, DEV_NULL_LOGGING );
+    }
+
+    private static class MemorizingChannelPipelineBuilder extends ChannelPipelineBuilderImpl
+    {
+        MessageFormat usedMessageFormat;
+
+        @Override
+        public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
+        {
+            usedMessageFormat = messageFormat;
+            super.build( messageFormat, pipeline, logging );
+        }
     }
 }

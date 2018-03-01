@@ -31,6 +31,8 @@ import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.util.Function;
@@ -38,8 +40,8 @@ import org.neo4j.driver.v1.util.Function;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.ofObject;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue implements InternalValue
 {
@@ -184,6 +186,18 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public Relationship asRelationship()
     {
         throw new Uncoercible( type().name(), "Relationship" );
+    }
+
+    @Override
+    public Point2D asPoint2D()
+    {
+        throw new Uncoercible( type().name(), "Point2D" );
+    }
+
+    @Override
+    public Point3D asPoint3D()
+    {
+        throw new Uncoercible( type().name(), "Point3D" );
     }
 
     @Override
