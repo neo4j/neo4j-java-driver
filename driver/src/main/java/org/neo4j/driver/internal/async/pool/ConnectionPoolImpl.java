@@ -93,12 +93,19 @@ public class ConnectionPoolImpl implements ConnectionPool
 
         return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
         {
-            processAcquisitionError( address, error );
-            assertNotClosed( address, channel, pool );
-            NettyConnection nettyConnection = new NettyConnection( channel, pool, clock, metricsListener );
+            try
+            {
+                processAcquisitionError( address, error );
+                assertNotClosed( address, channel, pool );
+                NettyConnection nettyConnection = new NettyConnection( channel, pool, clock, metricsListener );
 
-            metricsListener.afterAcquiredOrCreated( address, acquireEvent );
-            return nettyConnection;
+                metricsListener.afterAcquiredOrCreated( address, acquireEvent );
+                return nettyConnection;
+            }
+            finally
+            {
+                metricsListener.afterAcquiringOrCreating( address );
+            }
         } );
     }
 
@@ -167,9 +174,9 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public boolean isOpen()
+    public boolean isOpen( BoltServerAddress address )
     {
-        return !closed.get();
+        return pools.containsKey( address );
     }
 
     private ChannelPool getOrCreatePool( BoltServerAddress address )

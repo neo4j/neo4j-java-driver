@@ -35,5 +35,5 @@ public interface ConnectionPool
 
     CompletionStage<Void> close();
 
-    boolean isOpen();
+    boolean isOpen( BoltServerAddress address );
 }

@@ -95,9 +95,9 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public boolean isOpen()
+        public boolean isOpen( BoltServerAddress address )
         {
-            return delegate.isOpen();
+            return delegate.isOpen( address );
         }
     }
 

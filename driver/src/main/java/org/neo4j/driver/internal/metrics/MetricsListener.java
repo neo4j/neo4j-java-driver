@@ -69,6 +69,12 @@ public interface MetricsListener
     void beforeAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent acquireEvent );
 
     /**
+     * After acquiring or creating a new netty channel from pool regardless successfully or not.
+     * @param serverAddress the server the netty channel binds to
+     */
+    void afterAcquiringOrCreating( BoltServerAddress serverAddress );
+
+    /**
      * After acquiring or creating a new netty channel from pool successfully.
      * @param serverAddress the server the netty channel binds to
      * @param acquireEvent a pool listener event registered in pool for this acquire event

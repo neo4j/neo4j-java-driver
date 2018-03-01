@@ -45,6 +45,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final AtomicLong created = new AtomicLong();
     private final AtomicLong failedToCreate = new AtomicLong();
 
+    private final AtomicInteger acquiring = new AtomicInteger();
     private final AtomicLong acquired = new AtomicLong();
     private final AtomicLong timedOutToAcquire = new AtomicLong();
 
@@ -90,6 +91,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     public void beforeAcquiringOrCreating( PoolListenerEvent listenerEvent )
     {
         listenerEvent.start();
+        acquiring.incrementAndGet();
+    }
+
+    @Override
+    public void afterAcquiringOrCreating()
+    {
+        acquiring.decrementAndGet();
     }
 
     @Override
@@ -116,7 +124,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public PoolStatus poolStatus()
     {
-        if ( pool.isOpen() )
+        if ( pool.isOpen( address ) )
         {
             return PoolStatus.Open;
         }
@@ -169,6 +177,12 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
+    public int acquiring()
+    {
+        return acquiring.get();
+    }
+
+    @Override
     public long acquired()
     {
         return this.acquired.get();
@@ -183,8 +197,9 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquired=%s, " +
+        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
                         "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]",
-                created(), closed(), creating(), failedToCreate(), acquired(), timedOutToAcquire(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
+                created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
+                timedOutToAcquire(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }

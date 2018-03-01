@@ -69,6 +69,12 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
+        public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
+        {
+
+        }
+
+        @Override
         public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
         {
 

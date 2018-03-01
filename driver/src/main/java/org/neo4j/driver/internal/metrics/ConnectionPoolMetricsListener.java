@@ -32,6 +32,8 @@ public interface ConnectionPoolMetricsListener
 
     void beforeAcquiringOrCreating( PoolListenerEvent listenerEvent );
 
+    void afterAcquiringOrCreating();
+
     void afterAcquiredOrCreated( PoolListenerEvent listenerEvent );
 
     void afterTimedOutToAcquireOrCreate();

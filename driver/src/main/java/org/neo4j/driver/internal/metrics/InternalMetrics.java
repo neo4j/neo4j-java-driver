@@ -88,6 +88,12 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
+    public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
+    {
+        poolMetrics( serverAddress ).afterAcquiringOrCreating();
+    }
+
+    @Override
     public void afterAcquiredOrCreated( BoltServerAddress serverAddress, PoolListenerEvent listenerEvent )
     {
         poolMetrics( serverAddress ).afterAcquiredOrCreated( listenerEvent );
