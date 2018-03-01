@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.metrics.spi.Histogram;
 import org.neo4j.driver.internal.metrics.spi.PoolStatus;
@@ -88,7 +87,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeAcquiringOrCreating( PoolListenerEvent listenerEvent )
+    public void beforeAcquiringOrCreating( ListenerEvent listenerEvent )
     {
         listenerEvent.start();
         acquiring.incrementAndGet();
@@ -101,7 +100,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterAcquiredOrCreated( PoolListenerEvent listenerEvent )
+    public void afterAcquiredOrCreated( ListenerEvent listenerEvent )
     {
         long elapsed = listenerEvent.elapsed();
         acquisitionTimeHistogram.recordValue( elapsed );

@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.PullAllMessage;
 import org.neo4j.driver.internal.messaging.ResetMessage;
 import org.neo4j.driver.internal.messaging.RunMessage;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -57,7 +57,7 @@ public class NettyConnection implements Connection
 
     private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
     private final MetricsListener metricsListener;
-    private final ConnectionListenerEvent inUseEvent;
+    private final ListenerEvent inUseEvent;
 
     public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
@@ -69,8 +69,8 @@ public class NettyConnection implements Connection
         this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
         this.metricsListener = metricsListener;
-        this.inUseEvent = metricsListener.createConnectionListenerEvent();
-        metricsListener.afterAcquiredOrCreated( this.serverAddress, this.inUseEvent );
+        this.inUseEvent = metricsListener.createListenerEvent();
+        metricsListener.afterConnectionCreated( this.serverAddress, this.inUseEvent );
     }
 
     @Override
@@ -131,11 +131,11 @@ public class NettyConnection implements Connection
     {
         if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
         {
-            metricsListener.afterReleased( this.serverAddress, this.inUseEvent );
             ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler( channel,
                     channelPool, messageDispatcher, clock, releaseFuture );
 
             writeResetMessageIfNeeded( handler, false );
+            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
         }
         return releaseFuture;
     }
@@ -145,11 +145,11 @@ public class NettyConnection implements Connection
     {
         if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
         {
-            metricsListener.afterReleased( this.serverAddress, this.inUseEvent );
             setTerminationReason( channel, reason );
             channel.close();
             channelPool.release( channel );
             releaseFuture.complete( null );
+            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
         }
     }
 

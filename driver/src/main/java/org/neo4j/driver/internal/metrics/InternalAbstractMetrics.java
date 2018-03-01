@@ -33,13 +33,13 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
     {
 
         @Override
-        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
+        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
 
         }
 
         @Override
-        public void afterCreated( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent creatingEvent )
+        public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
 
         }
@@ -63,7 +63,7 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
+        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
 
         }
@@ -75,31 +75,25 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.PoolListenerEvent acquireEvent )
+        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
 
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
+        public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
         {
 
         }
 
         @Override
-        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent.ConnectionListenerEvent inUseEvent )
+        public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
         {
 
         }
 
         @Override
-        public ListenerEvent.PoolListenerEvent createPoolListenerEvent()
-        {
-            return null;
-        }
-
-        @Override
-        public ListenerEvent.ConnectionListenerEvent createConnectionListenerEvent()
+        public ListenerEvent createListenerEvent()
         {
             return null;
         }

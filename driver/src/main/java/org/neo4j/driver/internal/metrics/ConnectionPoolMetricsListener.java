@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
-
 public interface ConnectionPoolMetricsListener
 {
     void beforeCreating();
@@ -30,11 +28,11 @@ public interface ConnectionPoolMetricsListener
 
     void afterClosed();
 
-    void beforeAcquiringOrCreating( PoolListenerEvent listenerEvent );
+    void beforeAcquiringOrCreating( ListenerEvent listenerEvent );
 
     void afterAcquiringOrCreating();
 
-    void afterAcquiredOrCreated( PoolListenerEvent listenerEvent );
+    void afterAcquiredOrCreated( ListenerEvent listenerEvent );
 
     void afterTimedOutToAcquireOrCreate();
 }

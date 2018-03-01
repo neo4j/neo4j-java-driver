@@ -87,7 +87,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         assertNotClosed();
         ChannelPool pool = getOrCreatePool( address );
 
-        ListenerEvent.PoolListenerEvent acquireEvent = metricsListener.createPoolListenerEvent();
+        ListenerEvent acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating( address, acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 

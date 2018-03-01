@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -65,20 +65,19 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelCreated( Channel channel )
     {
-        throw new IllegalStateException( "A fatal error happened in this driver as this method should never be called. " +
-                "Contact the driver developer." );
+        throw new IllegalStateException( "Untraceable channel created." );
     }
 
-    public void channelCreated( Channel channel, ConnectionListenerEvent creatingEvent )
+    public void channelCreated( Channel channel, ListenerEvent creatingEvent )
     {
         log.debug( "Channel %s created", channel );
         incrementInUse( channel );
         metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
     }
 
-    public ConnectionListenerEvent channelCreating( BoltServerAddress address )
+    public ListenerEvent channelCreating( BoltServerAddress address )
     {
-        ConnectionListenerEvent creatingEvent = metricsListener.createConnectionListenerEvent();
+        ListenerEvent creatingEvent = metricsListener.createListenerEvent();
         metricsListener.beforeCreating( address, creatingEvent );
         return creatingEvent;
     }

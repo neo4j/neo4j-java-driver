@@ -19,10 +19,7 @@
 
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
-
-public class NanoTimeBasedListenerEvent implements PoolListenerEvent, ConnectionListenerEvent
+public class NanoTimeBasedListenerEvent implements ListenerEvent
 {
     private long startNanoTime;
 

@@ -26,7 +26,7 @@ import io.netty.channel.pool.FixedChannelPool;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
 
@@ -60,7 +60,7 @@ public class NettyChannelPool extends FixedChannelPool
     @Override
     protected ChannelFuture connectChannel( Bootstrap bootstrap )
     {
-        ConnectionListenerEvent creatingEvent = handler.channelCreating( address );
+        ListenerEvent creatingEvent = handler.channelCreating( address );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.addListener( future ->
         {

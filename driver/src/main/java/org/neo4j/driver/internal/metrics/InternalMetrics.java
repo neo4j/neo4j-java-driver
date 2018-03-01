@@ -24,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.metrics.ListenerEvent.ConnectionListenerEvent;
-import org.neo4j.driver.internal.metrics.ListenerEvent.PoolListenerEvent;
 import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -33,6 +31,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
+import static java.util.Collections.unmodifiableMap;
 
 public class InternalMetrics extends InternalAbstractMetrics
 {
@@ -56,14 +55,14 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void beforeCreating( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent )
+    public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
     {
         poolMetrics( serverAddress ).beforeCreating();
         connectionMetrics( serverAddress ).beforeCreating( creatingEvent );
     }
 
     @Override
-    public void afterCreated( BoltServerAddress serverAddress, ConnectionListenerEvent creatingEvent )
+    public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
     {
         poolMetrics( serverAddress ).afterCreated();
         connectionMetrics( serverAddress ).afterCreated( creatingEvent );
@@ -82,7 +81,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, PoolListenerEvent listenerEvent )
+    public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
     {
         poolMetrics( serverAddress ).beforeAcquiringOrCreating( listenerEvent );
     }
@@ -94,19 +93,19 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, PoolListenerEvent listenerEvent )
+    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
     {
         poolMetrics( serverAddress ).afterAcquiredOrCreated( listenerEvent );
     }
 
     @Override
-    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent )
+    public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).acquiredOrCreated( inUseEvent );
     }
 
     @Override
-    public void afterReleased( BoltServerAddress serverAddress, ConnectionListenerEvent inUseEvent )
+    public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).released( inUseEvent );
     }
@@ -118,13 +117,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public PoolListenerEvent createPoolListenerEvent()
-    {
-        return new NanoTimeBasedListenerEvent();
-    }
-
-    @Override
-    public ConnectionListenerEvent createConnectionListenerEvent()
+    public ListenerEvent createListenerEvent()
     {
         return new NanoTimeBasedListenerEvent();
     }
@@ -132,13 +125,13 @@ public class InternalMetrics extends InternalAbstractMetrics
     @Override
     public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
     {
-        return this.connectionPoolMetrics;
+        return unmodifiableMap( this.connectionPoolMetrics );
     }
 
     @Override
     public Map<String,ConnectionMetrics> connectionMetrics()
     {
-        return this.connectionMetrics;
+        return unmodifiableMap( this.connectionMetrics );
     }
 
     @Override
