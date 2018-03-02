@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.value;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Type;
 
-public abstract class BooleanValue extends ScalarValueAdapter
+public abstract class BooleanValue extends ValueAdapter
 {
     private BooleanValue()
     {
@@ -86,7 +86,7 @@ public abstract class BooleanValue extends ScalarValueAdapter
         }
 
         @Override
-        public String asLiteralString()
+        public String toString()
         {
             return "TRUE";
         }
@@ -126,7 +126,7 @@ public abstract class BooleanValue extends ScalarValueAdapter
         }
 
         @Override
-        public String asLiteralString()
+        public String toString()
         {
             return "FALSE";
         }

@@ -295,15 +295,12 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
 
     Point3D asPoint3D();
 
-    // Force implementation
     @Override
     boolean equals( Object other );
 
-    // Force implementation
     @Override
     int hashCode();
 
-    //Force implementation
     @Override
     String toString();
 }

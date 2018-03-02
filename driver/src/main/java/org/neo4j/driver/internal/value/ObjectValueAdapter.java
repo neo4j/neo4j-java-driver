@@ -18,13 +18,15 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.Objects;
+
 import static java.lang.String.format;
 
-public abstract class GraphValueAdapter<V> extends ValueAdapter
+public abstract class ObjectValueAdapter<V> extends ValueAdapter
 {
     private final V adapted;
 
-    protected GraphValueAdapter( V adapted )
+    protected ObjectValueAdapter( V adapted )
     {
         if ( adapted == null )
         {
@@ -34,15 +36,9 @@ public abstract class GraphValueAdapter<V> extends ValueAdapter
     }
 
     @Override
-    public V asObject()
+    public final V asObject()
     {
         return adapted;
-    }
-
-    @Override
-    public String toString( Format valueFormat )
-    {
-        return maybeWithType( valueFormat.includeType(), adapted.toString() );
     }
 
     @Override
@@ -56,15 +52,19 @@ public abstract class GraphValueAdapter<V> extends ValueAdapter
         {
             return false;
         }
-
-        GraphValueAdapter<?> values = (GraphValueAdapter<?>) o;
-        return adapted.equals( values.adapted );
-
+        ObjectValueAdapter<?> that = (ObjectValueAdapter<?>) o;
+        return Objects.equals( adapted, that.adapted );
     }
 
     @Override
     public int hashCode()
     {
         return adapted.hashCode();
+    }
+
+    @Override
+    public String toString()
+    {
+        return adapted.toString();
     }
 }

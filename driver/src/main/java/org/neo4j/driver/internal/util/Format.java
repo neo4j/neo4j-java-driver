@@ -22,8 +22,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.neo4j.driver.v1.util.Function;
-
 public abstract class Format
 {
     private Format()
@@ -31,8 +29,8 @@ public abstract class Format
         throw new UnsupportedOperationException();
     }
 
-    public static <V> String formatPairs( Function<V, String> printValue,
-                                          Map<String, V> entries )
+    // formats map using ':' as key-value separator instead of default '='
+    public static <V> String formatPairs( Map<String,V> entries )
     {
         Iterator<Entry<String,V>> iterator = entries.entrySet().iterator();
         switch ( entries.size() ) {
@@ -41,19 +39,19 @@ public abstract class Format
 
             case 1:
             {
-                return String.format( "{%s}", keyValueString( iterator.next(), printValue ) );
+                return String.format( "{%s}", keyValueString( iterator.next() ) );
             }
 
             default:
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append( "{" );
-                builder.append( keyValueString( iterator.next(), printValue ) );
+                builder.append( keyValueString( iterator.next() ) );
                 while ( iterator.hasNext() )
                 {
                     builder.append( ',' );
                     builder.append( ' ' );
-                    builder.append( keyValueString( iterator.next(), printValue ) );
+                    builder.append( keyValueString( iterator.next() ) );
                 }
                 builder.append( "}" );
                 return builder.toString();
@@ -61,33 +59,8 @@ public abstract class Format
         }
     }
 
-    private static <V> String keyValueString( Entry<String, V> entry, Function<V, String> printValue )
+    private static <V> String keyValueString( Entry<String,V> entry )
     {
-        return String.format("%s: %s", entry.getKey(), printValue.apply( entry.getValue() ));
-    }
-
-    public static <V> String formatElements( Function<V, String> printValue, V[] elements )
-    {
-        int elementCount = elements.length;
-        switch ( elementCount ) {
-            case 0:
-                return "[]";
-
-            case 1:
-                return String.format( "[%s]", printValue.apply( elements[0] ) );
-
-            default:
-                StringBuilder builder = new StringBuilder();
-                builder.append("[");
-                builder.append( printValue.apply( elements[0] ) );
-                for (int i = 1; i < elementCount; i++ )
-                {
-                    builder.append( ',' );
-                    builder.append( ' ' );
-                    builder.append( printValue.apply( elements[i] ) );
-                }
-                builder.append("]");
-                return builder.toString();
-        }
+        return String.format( "%s: %s", entry.getKey(), String.valueOf( entry.getValue() ) );
     }
 }

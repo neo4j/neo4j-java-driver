@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-public abstract class NumberValueAdapter<V extends Number> extends ScalarValueAdapter
+public abstract class NumberValueAdapter<V extends Number> extends ValueAdapter
 {
     @Override
     public final V asObject()

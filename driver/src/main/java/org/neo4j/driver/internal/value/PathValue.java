@@ -22,13 +22,14 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Type;
 
-public class PathValue extends GraphValueAdapter<Path>
+public class PathValue extends ObjectValueAdapter<Path>
 {
     public PathValue( Path adapted )
     {
         super( adapted );
     }
 
+    @Override
     public Path asPath()
     {
         return asObject();

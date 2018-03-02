@@ -24,13 +24,11 @@ import java.util.List;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Type;
+import org.neo4j.driver.v1.util.Function;
 
-import static org.neo4j.driver.internal.util.Format.formatElements;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.ofObject;
 
 public class ListValue extends ValueAdapter
@@ -116,24 +114,15 @@ public class ListValue extends ValueAdapter
     }
 
     @Override
-    public String asLiteralString()
-    {
-        return toString( VALUE_ONLY );
-    }
-
-    @Override
     public Type type()
     {
         return InternalTypeSystem.TYPE_SYSTEM.LIST();
     }
 
     @Override
-    public String toString( Format valueFormat )
+    public String toString()
     {
-        return maybeWithType(
-            valueFormat.includeType(),
-            formatElements( valueFormat.inner(), values )
-        );
+        return Arrays.toString( values );
     }
 
     @Override

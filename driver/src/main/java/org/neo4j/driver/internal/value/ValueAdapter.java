@@ -37,9 +37,7 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.util.Function;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.ofObject;
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -85,11 +83,6 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public String asString()
     {
         throw new Uncoercible( type().name(), "Java String" );
-    }
-
-    public String asLiteralString()
-    {
-        throw new Uncoercible( type().name(), "Java String representation of Cypher literal" );
     }
 
     @Override
@@ -242,26 +235,23 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
         throw new NotMultiValued( type().name() + " is not iterable" );
     }
 
-    public String toString()
-    {
-        return toString( VALUE_ONLY );
-    }
-
-    protected String maybeWithType( boolean includeType, String text )
-    {
-        return includeType ? withType( text ) : text;
-    }
-
-    private String withType( String text )
-    {
-        return format( "%s :: %s", text, type().name() );
-    }
-
     @Override
     public final TypeConstructor typeConstructor()
     {
         return ( (TypeRepresentation) type() ).constructor();
     }
+
+    // Force implementation
+    @Override
+    public abstract boolean equals( Object obj );
+
+    // Force implementation
+    @Override
+    public abstract int hashCode();
+
+    // Force implementation
+    @Override
+    public abstract String toString();
 }
 
 

@@ -22,31 +22,17 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Type;
 
-public class Point3DValue extends ValueAdapter
+public class Point3DValue extends ObjectValueAdapter<Point3D>
 {
-    private final Point3D point;
-
     public Point3DValue( Point3D point )
     {
-        this.point = point;
+        super( point );
     }
 
     @Override
     public Point3D asPoint3D()
     {
-        return point;
-    }
-
-    @Override
-    public Object asObject()
-    {
-        return point;
-    }
-
-    @Override
-    public String toString( Format valueFormat )
-    {
-        return maybeWithType( valueFormat.includeType(), point.toString() );
+        return asObject();
     }
 
     @Override
