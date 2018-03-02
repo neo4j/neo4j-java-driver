@@ -35,46 +35,61 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         @Override
         public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
+
         }
 
         @Override
-        public void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+        public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
-        }
 
-        @Override
-        public void afterCreated( BoltServerAddress serverAddress )
-        {
         }
 
         @Override
         public void afterFailedToCreate( BoltServerAddress serverAddress )
         {
+
         }
 
         @Override
         public void afterClosed( BoltServerAddress serverAddress )
         {
+
+        }
+
+        @Override
+        public void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress )
+        {
+
         }
 
         @Override
         public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
+
         }
 
         @Override
-        public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+        public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
         {
+
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
         {
+
         }
 
         @Override
-        public void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
         {
+
+        }
+
+        @Override
+        public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        {
+
         }
 
         @Override
@@ -82,7 +97,6 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         {
             return null;
         }
-
 
         @Override
         public void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )

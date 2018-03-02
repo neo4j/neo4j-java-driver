@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-
 public interface ListenerEvent
 {
     void start();

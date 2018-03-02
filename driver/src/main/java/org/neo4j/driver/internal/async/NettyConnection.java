@@ -70,7 +70,7 @@ public class NettyConnection implements Connection
         this.clock = clock;
         this.metricsListener = metricsListener;
         this.inUseEvent = metricsListener.createListenerEvent();
-        metricsListener.afterAcquiredOrCreated( this.serverAddress, this.inUseEvent );
+        metricsListener.afterConnectionCreated( this.serverAddress, this.inUseEvent );
     }
 
     @Override
@@ -131,11 +131,11 @@ public class NettyConnection implements Connection
     {
         if ( status.compareAndSet( Status.OPEN, Status.RELEASED ) )
         {
-            metricsListener.afterReleased( this.serverAddress, this.inUseEvent );
             ChannelReleasingResetResponseHandler handler = new ChannelReleasingResetResponseHandler( channel,
                     channelPool, messageDispatcher, clock, releaseFuture );
 
             writeResetMessageIfNeeded( handler, false );
+            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
         }
         return releaseFuture;
     }
@@ -145,11 +145,11 @@ public class NettyConnection implements Connection
     {
         if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
         {
-            metricsListener.afterReleased( this.serverAddress, this.inUseEvent );
             setTerminationReason( channel, reason );
             channel.close();
             channelPool.release( channel );
             releaseFuture.complete( null );
+            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
         }
     }
 

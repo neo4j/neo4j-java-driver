@@ -47,12 +47,14 @@ import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,7 +62,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Values.value;
 
-public class NettyChannelPoolTest
+public class NettyChannelPoolIT
 {
     @Rule
     public final TestNeo4j neo4j = new TestNeo4j();
@@ -100,7 +102,7 @@ public class NettyChannelPoolTest
         assertTrue( acquireFuture.isSuccess() );
         Channel channel = acquireFuture.getNow();
         assertNotNull( channel );
-        verify( poolHandler ).channelCreated( channel );
+        verify( poolHandler ).channelCreated( argThat( is( channel ) ), any() );
         verify( poolHandler, never() ).channelReleased( channel );
 
         Future<Void> releaseFuture = pool.release( channel );

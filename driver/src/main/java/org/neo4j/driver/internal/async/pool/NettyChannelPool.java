@@ -60,7 +60,7 @@ public class NettyChannelPool extends FixedChannelPool
     @Override
     protected ChannelFuture connectChannel( Bootstrap bootstrap )
     {
-        ListenerEvent creatingEvent = handler.beforeChannelCreating( address );
+        ListenerEvent creatingEvent = handler.channelCreating( address );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.addListener( future ->
         {
@@ -68,14 +68,13 @@ public class NettyChannelPool extends FixedChannelPool
             {
                 // notify pool handler about a successful connection
                 Channel channel = channelFuture.channel();
-                handler.channelCreated( channel );
+                handler.channelCreated( channel, creatingEvent );
                 channel.closeFuture().addListener( closeFuture -> handler.channelClosed( channel ) );
             }
             else
             {
                 handler.channelFailedToCreate( address );
             }
-            handler.afterChannelCreating( address, creatingEvent );
         } );
         return channelFuture;
     }

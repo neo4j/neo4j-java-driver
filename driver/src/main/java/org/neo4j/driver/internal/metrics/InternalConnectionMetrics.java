@@ -66,7 +66,7 @@ public class InternalConnectionMetrics implements ConnectionMetrics, ConnectionM
     }
 
     @Override
-    public void afterCreating( ListenerEvent connEvent )
+    public void afterCreated( ListenerEvent connEvent )
     {
         // finished conn creation
         long elapsed = connEvent.elapsed();

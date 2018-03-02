@@ -65,26 +65,26 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelCreated( Channel channel )
     {
+        throw new IllegalStateException( "Untraceable channel created." );
+    }
+
+    public void channelCreated( Channel channel, ListenerEvent creatingEvent )
+    {
         log.debug( "Channel %s created", channel );
         incrementInUse( channel );
-        metricsListener.afterCreated( serverAddress( channel ) );
+        metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
     }
 
-    public void channelFailedToCreate( BoltServerAddress address )
-    {
-        metricsListener.afterFailedToCreate( address );
-    }
-
-    public ListenerEvent beforeChannelCreating( BoltServerAddress address )
+    public ListenerEvent channelCreating( BoltServerAddress address )
     {
         ListenerEvent creatingEvent = metricsListener.createListenerEvent();
         metricsListener.beforeCreating( address, creatingEvent );
         return creatingEvent;
     }
 
-    public void afterChannelCreating( BoltServerAddress address, ListenerEvent creatingEvent )
+    public void channelFailedToCreate( BoltServerAddress address )
     {
-        metricsListener.afterCreating( address, creatingEvent );
+        metricsListener.afterFailedToCreate( address );
     }
 
     public void channelClosed( Channel channel )

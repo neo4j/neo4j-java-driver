@@ -95,13 +95,16 @@ public class ConnectionPoolImpl implements ConnectionPool
         {
             try
             {
-                processAcquisitionError( error );
+                processAcquisitionError( address, error );
                 assertNotClosed( address, channel, pool );
-                return new NettyConnection( channel, pool, clock, metricsListener );
+                NettyConnection nettyConnection = new NettyConnection( channel, pool, clock, metricsListener );
+
+                metricsListener.afterAcquiredOrCreated( address, acquireEvent );
+                return nettyConnection;
             }
             finally
             {
-                metricsListener.afterAcquiringOrCreating( address, acquireEvent );
+                metricsListener.afterAcquiringOrCreating( address );
             }
         } );
     }
@@ -171,9 +174,9 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public boolean isOpen()
+    public boolean isOpen( BoltServerAddress address )
     {
-        return !closed.get();
+        return pools.containsKey( address );
     }
 
     private ChannelPool getOrCreatePool( BoltServerAddress address )
@@ -210,7 +213,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return bootstrap.config().group();
     }
 
-    private void processAcquisitionError( Throwable error )
+    private void processAcquisitionError( BoltServerAddress serverAddress, Throwable error )
     {
         Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
@@ -219,6 +222,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
                 // configured time, translate this exception to a prettier one and re-throw
+                metricsListener.afterTimedOutToAcquireOrCreate( serverAddress );
                 throw new ClientException(
                         "Unable to acquire connection from the pool within configured maximum time of " +
                         settings.connectionAcquisitionTimeout() + "ms" );

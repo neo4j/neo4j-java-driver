@@ -44,7 +44,7 @@ public class NettyChannelTrackerTest
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
-        tracker.channelCreated( channel );
+        tracker.channelCreated( channel, null );
         assertEquals( 1, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
     }
@@ -56,7 +56,7 @@ public class NettyChannelTrackerTest
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
-        tracker.channelCreated( channel );
+        tracker.channelCreated( channel, null );
         assertEquals( 1, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
@@ -77,11 +77,11 @@ public class NettyChannelTrackerTest
         Channel channel3 = newChannel();
 
         assertEquals( 0, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel1 );
+        tracker.channelCreated( channel1, null );
         assertEquals( 1, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel2 );
+        tracker.channelCreated( channel2, null );
         assertEquals( 2, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel3 );
+        tracker.channelCreated( channel3, null );
         assertEquals( 3, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
     }
@@ -93,9 +93,9 @@ public class NettyChannelTrackerTest
         Channel channel2 = newChannel();
         Channel channel3 = newChannel();
 
-        tracker.channelCreated( channel1 );
-        tracker.channelCreated( channel2 );
-        tracker.channelCreated( channel3 );
+        tracker.channelCreated( channel1, null );
+        tracker.channelCreated( channel2, null );
+        tracker.channelCreated( channel3, null );
         assertEquals( 3, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 

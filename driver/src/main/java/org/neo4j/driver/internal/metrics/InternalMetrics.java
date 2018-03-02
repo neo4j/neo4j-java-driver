@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.lang.String.format;
+import static java.util.Collections.unmodifiableMap;
 
 public class InternalMetrics extends InternalAbstractMetrics
 {
@@ -61,15 +62,10 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void afterCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
-    {
-        connectionMetrics( serverAddress ).afterCreating( creatingEvent );
-    }
-
-    @Override
-    public void afterCreated( BoltServerAddress serverAddress )
+    public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
     {
         poolMetrics( serverAddress ).afterCreated();
+        connectionMetrics( serverAddress ).afterCreated( creatingEvent );
     }
 
     @Override
@@ -91,21 +87,33 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void afterAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
+    public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
     {
-        poolMetrics( serverAddress ).afterAcquiringOrCreating( listenerEvent );
+        poolMetrics( serverAddress ).afterAcquiringOrCreating();
     }
 
     @Override
-    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent listenerEvent )
+    {
+        poolMetrics( serverAddress ).afterAcquiredOrCreated( listenerEvent );
+    }
+
+    @Override
+    public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).acquiredOrCreated( inUseEvent );
     }
 
     @Override
-    public void afterReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+    public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
     {
         connectionMetrics( serverAddress ).released( inUseEvent );
+    }
+
+    @Override
+    public void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress )
+    {
+        poolMetrics( serverAddress ).afterTimedOutToAcquireOrCreate();
     }
 
     @Override
@@ -117,13 +125,13 @@ public class InternalMetrics extends InternalAbstractMetrics
     @Override
     public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
     {
-        return this.connectionPoolMetrics;
+        return unmodifiableMap( this.connectionPoolMetrics );
     }
 
     @Override
     public Map<String,ConnectionMetrics> connectionMetrics()
     {
-        return this.connectionMetrics;
+        return unmodifiableMap( this.connectionMetrics );
     }
 
     @Override

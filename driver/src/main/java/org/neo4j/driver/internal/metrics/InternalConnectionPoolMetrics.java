@@ -38,10 +38,15 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final BoltServerAddress address;
     private final ConnectionPool pool;
 
-    private AtomicLong created = new AtomicLong();
-    private AtomicLong closed = new AtomicLong();
-    private AtomicInteger creating = new AtomicInteger();
-    private AtomicLong failedToCreate = new AtomicLong();
+    private final AtomicLong closed = new AtomicLong();
+
+    private final AtomicInteger creating = new AtomicInteger();
+    private final AtomicLong created = new AtomicLong();
+    private final AtomicLong failedToCreate = new AtomicLong();
+
+    private final AtomicInteger acquiring = new AtomicInteger();
+    private final AtomicLong acquired = new AtomicLong();
+    private final AtomicLong timedOutToAcquire = new AtomicLong();
 
     private InternalHistogram acquisitionTimeHistogram;
 
@@ -85,13 +90,28 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     public void beforeAcquiringOrCreating( ListenerEvent listenerEvent )
     {
         listenerEvent.start();
+        acquiring.incrementAndGet();
     }
 
     @Override
-    public void afterAcquiringOrCreating( ListenerEvent listenerEvent )
+    public void afterAcquiringOrCreating()
+    {
+        acquiring.decrementAndGet();
+    }
+
+    @Override
+    public void afterAcquiredOrCreated( ListenerEvent listenerEvent )
     {
         long elapsed = listenerEvent.elapsed();
         acquisitionTimeHistogram.recordValue( elapsed );
+
+        this.acquired.incrementAndGet();
+    }
+
+    @Override
+    public void afterTimedOutToAcquireOrCreate()
+    {
+        this.timedOutToAcquire.incrementAndGet();
     }
 
     @Override
@@ -103,13 +123,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public PoolStatus poolStatus()
     {
-        if ( pool.isOpen() )
+        if ( pool.isOpen( address ) )
         {
-            return PoolStatus.Open;
+            return PoolStatus.OPEN;
         }
         else
         {
-            return PoolStatus.Closed;
+            return PoolStatus.CLOSED;
         }
     }
 
@@ -144,9 +164,27 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
+    public long timedOutToAcquire()
+    {
+        return timedOutToAcquire.get();
+    }
+
+    @Override
     public long closed()
     {
         return closed.get();
+    }
+
+    @Override
+    public int acquiring()
+    {
+        return acquiring.get();
+    }
+
+    @Override
+    public long acquired()
+    {
+        return this.acquired.get();
     }
 
     @Override
@@ -158,7 +196,9 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]", created(),
-                closed(), creating(), failedToCreate(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
+        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
+                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]",
+                created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
+                timedOutToAcquire(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
     }
 }
