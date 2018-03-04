@@ -40,7 +40,7 @@ public class DriverEqualitySteps
     HashMap<String,Value> savedValues = new HashMap<>();
 
     @And( "^`(.*)` is single value result of: (.*)$" )
-    public void valueIsSingleValueResultOfMATCHNLabelRETURNN( String key, String statement ) throws Throwable
+    public void valueIsSingleValueResultOfMATCHNLabelRETURN( String key, String statement ) throws Throwable
     {
         try ( Session session = driver.session())
         {
