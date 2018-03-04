@@ -137,7 +137,7 @@
               <packageName>org/neo4j/driver</packageName>
             </manifest>
             <manifestEntries>
-              <!-- This is used to programatically determine the driver version -->
+              <!-- This is used to programmatically determine the driver version -->
               <Implementation-Version>${project.version}-${build.revision}</Implementation-Version>
               <!-- Stable module name for JDK9 automatic modules -->
               <Automatic-Module-Name>${moduleName}</Automatic-Module-Name>
