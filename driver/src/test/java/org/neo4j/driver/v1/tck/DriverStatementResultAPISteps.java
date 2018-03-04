@@ -66,7 +66,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Single` on `Statement Result` throws exception:$" )
-    public void usingSingleOnStatmentResultThrowsException( DataTable table ) throws Throwable
+    public void usingSingleOnStatementResultThrowsException( DataTable table ) throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
@@ -89,7 +89,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Peek` on `Statement Result` fails$" )
-    public void usingPeekOnStatmentResultGivesNull() throws Throwable
+    public void usingPeekOnStatementResultGivesNull() throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
@@ -105,7 +105,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Peek` on `Statement Result` gives a `Record` containing:$" )
-    public void usingPeekOnStatmentResultGivesARecord( DataTable table ) throws Throwable
+    public void usingPeekOnStatementResultGivesARecord( DataTable table ) throws Throwable
     {
         List<String> keys = table.diffableRows().get( 0 ).convertedRow;
         List<String> values = table.diffableRows().get( 1 ).convertedRow;
