@@ -91,8 +91,8 @@ public class ChannelErrorHandlerTest
     @Test
     public void shouldHandleChannelInactiveWhenTerminationReasonSet()
     {
-        String terminationReson = "Something really bad happened";
-        setTerminationReason( channel, terminationReson );
+        String terminationReason = "Something really bad happened";
+        setTerminationReason( channel, terminationReason );
 
         channel.pipeline().fireChannelInactive();
 
@@ -100,7 +100,7 @@ public class ChannelErrorHandlerTest
 
         assertThat( error, instanceOf( ServiceUnavailableException.class ) );
         assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
-        assertThat( error.getMessage(), containsString( terminationReson ) );
+        assertThat( error.getMessage(), containsString( terminationReason ) );
         assertFalse( channel.isOpen() );
     }
 
