@@ -376,7 +376,7 @@ public class DriverResultApiSteps
                 }
                 break;
             default:
-                throw new IllegalArgumentException( "There is no case for handeling method type: " + key );
+                throw new IllegalArgumentException( "There is no case for handling method type: " + key );
             }
         }
     }
