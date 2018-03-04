@@ -634,7 +634,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             if ( expected != actual )
             {
                 throw new ClientException( String.format(
-                        "Invalid message received, expected a `%s`, signature 0x%s. Recieved signature was 0x%s.",
+                        "Invalid message received, expected a `%s`, signature 0x%s. Received signature was 0x%s.",
                         structName, Integer.toHexString( expected ), Integer.toHexString( actual ) ) );
             }
         }
