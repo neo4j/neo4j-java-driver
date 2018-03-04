@@ -173,7 +173,7 @@ public class DriverResultApiSteps
     }
 
     @And( "^the `Result Summary` does not have a `Profile`$" )
-    public void theSummaryDoesNotHaveAPriofile() throws Throwable
+    public void theSummaryDoesNotHaveAProfile() throws Throwable
     {
         for ( ResultSummary summary : summaries )
         {
