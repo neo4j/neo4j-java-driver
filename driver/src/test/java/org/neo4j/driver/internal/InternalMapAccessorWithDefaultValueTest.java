@@ -181,10 +181,10 @@ public class InternalMapAccessorWithDefaultValueTest
     {
         Record record = createRecord();
 
-        List<Object> defalutValue = new ArrayList<>();
+        List<Object> defaultValue = new ArrayList<>();
         // List of java objects, therefore IntegerValue will be converted to Long
-        assertThat( record.get( "ListValue", defalutValue ), equalTo( asList( (Object) 1L, 2L ) ) );
-        assertThat( record.get( wrongKey, defalutValue ), equalTo( defalutValue ) );
+        assertThat( record.get( "ListValue", defaultValue ), equalTo( asList( (Object) 1L, 2L ) ) );
+        assertThat( record.get( wrongKey, defaultValue ), equalTo( defaultValue ) );
     }
 
     @Test
