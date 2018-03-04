@@ -83,7 +83,7 @@ public class DriverStatementResultAPISteps
             }
             if ( success )
             {
-                throw new Exception( "Excpected exception to be thrown but was not! Got: " + single );
+                throw new Exception( "Expected exception to be thrown but was not! Got: " + single );
             }
         }
     }
