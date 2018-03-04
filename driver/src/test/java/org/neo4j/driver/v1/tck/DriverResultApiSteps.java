@@ -58,7 +58,7 @@ public class DriverResultApiSteps
     List<Statement> statements;
 
     @When( "^the `Statement Result` is consumed a `Result Summary` is returned$" )
-    public void the_result_is_summerized() throws Throwable
+    public void the_result_is_summarized() throws Throwable
     {
         summaries = new ArrayList<>();
         for ( CypherStatementRunner runner : runners )
