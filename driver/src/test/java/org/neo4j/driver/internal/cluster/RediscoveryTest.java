@@ -335,7 +335,7 @@ public class RediscoveryTest
     }
 
     @Test
-    public void shouldNotLogWhenSingleRetryAttemtFails()
+    public void shouldNotLogWhenSingleRetryAttemptFails()
     {
         int maxRoutingFailures = 1;
         long retryTimeoutDelay = 10;
