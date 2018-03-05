@@ -20,18 +20,5 @@ package org.neo4j.driver.internal.metrics.spi;
 
 public enum PoolStatus
 {
-    OPEN( 0 ),
-    CLOSED( 1 );
-
-    private final int value;
-
-    PoolStatus( int value )
-    {
-        this.value = value;
-    }
-
-    public int value()
-    {
-        return value;
-    }
+    OPEN, CLOSED
 }
