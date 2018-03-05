@@ -40,7 +40,7 @@ import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.v1.Values.ofPoint2D;
 import static org.neo4j.driver.v1.Values.point2D;
 
-public class PointsIT
+public class SpatialTypesIT
 {
     private static final long WGS_84_CRS_CODE = 4326;
     private static final long CARTESIAN_CRS_CODE = 7203;
@@ -106,7 +106,7 @@ public class PointsIT
     {
         Stream<List<Value>> randomPointLists = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
-                .mapToObj( PointsIT::randomPoint2DList );
+                .mapToObj( SpatialTypesIT::randomPoint2DList );
 
         randomPointLists.forEach( this::testPoint2DListSendAndReceive );
     }
