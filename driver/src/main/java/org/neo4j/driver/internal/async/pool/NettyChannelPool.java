@@ -69,7 +69,6 @@ public class NettyChannelPool extends FixedChannelPool
                 // notify pool handler about a successful connection
                 Channel channel = channelFuture.channel();
                 handler.channelCreated( channel, creatingEvent );
-                channel.closeFuture().addListener( closeFuture -> handler.channelClosed( channel ) );
             }
             else
             {
