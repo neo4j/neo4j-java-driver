@@ -29,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +56,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ChannelConnectorImplTest
+public class ChannelConnectorImplIT
 {
     @Rule
     public final TestNeo4j neo4j = new TestNeo4j();
@@ -170,7 +169,6 @@ public class ChannelConnectorImplTest
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getCause(), instanceOf( ConnectException.class ) );
         }
     }
 
