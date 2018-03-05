@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.v1.types;
 
-import org.neo4j.driver.v1.util.Experimental;
-
-@Experimental
 public interface Point2D
 {
     long srid();
