@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -290,6 +291,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     Path asPath();
+
+    LocalDate asLocalDate();
 
     Point2D asPoint2D();
 

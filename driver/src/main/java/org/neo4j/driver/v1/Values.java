@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,6 +33,7 @@ import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
+import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -87,6 +89,7 @@ public abstract class Values
         if ( value instanceof Integer ) { return value( (int) value ); }
         if ( value instanceof Double ) { return value( (double) value ); }
         if ( value instanceof Float ) { return value( (float) value ); }
+        if ( value instanceof LocalDate ) { return value( (LocalDate) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
@@ -261,6 +264,11 @@ public abstract class Values
             asValues.put( entry.getKey(), value( entry.getValue() ) );
         }
         return new MapValue( asValues );
+    }
+
+    public static Value value( LocalDate localDate )
+    {
+        return new DateValue( localDate );
     }
 
     public static Value point2D( long srid, double x, double y )
@@ -488,6 +496,11 @@ public abstract class Values
         return PATH;
     }
 
+    public static Function<Value,LocalDate> ofLocalDate()
+    {
+        return LOCAL_DATE;
+    }
+
     public static Function<Value,Point2D> ofPoint2D()
     {
         return POINT_2D;
@@ -643,6 +656,13 @@ public abstract class Values
         public Path apply( Value val )
         {
             return val.asPath();
+        }
+    };
+    private static final Function<Value,LocalDate> LOCAL_DATE = new Function<Value,LocalDate>()
+    {
+        public LocalDate apply( Value val )
+        {
+            return val.asLocalDate();
         }
     };
     private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()

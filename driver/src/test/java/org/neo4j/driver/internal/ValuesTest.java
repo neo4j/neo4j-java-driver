@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.LocalDate;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Value;
@@ -40,10 +42,11 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
 import static org.neo4j.driver.v1.Values.ofInteger;
@@ -286,5 +289,25 @@ public class ValuesTest
 
         // When/Then
         assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
+    }
+
+    @Test
+    public void shouldCreateDateValueFromLocalDate()
+    {
+        LocalDate localDate = LocalDate.now();
+        Value value = value( localDate );
+
+        assertThat( value, instanceOf( DateValue.class ) );
+        assertEquals( localDate, value.asLocalDate() );
+    }
+
+    @Test
+    public void shouldCreateDateValue()
+    {
+        Object localDate = LocalDate.now();
+        Value value = value( localDate );
+
+        assertThat( value, instanceOf( DateValue.class ) );
+        assertEquals( localDate, value.asObject() );
     }
 }

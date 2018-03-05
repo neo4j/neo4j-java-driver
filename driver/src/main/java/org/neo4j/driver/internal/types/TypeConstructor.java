@@ -157,6 +157,15 @@ public enum TypeConstructor
                 }
             },
 
+    DATE_TyCon
+            {
+                @Override
+                public String typeName()
+                {
+                    return "DATE";
+                }
+            },
+
     NULL_TyCon {
         @Override
         public String typeName()

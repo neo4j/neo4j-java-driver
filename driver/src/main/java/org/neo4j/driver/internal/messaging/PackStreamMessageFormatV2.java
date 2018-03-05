@@ -19,11 +19,14 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.value.Point2DValue;
 import org.neo4j.driver.internal.value.Point3DValue;
@@ -31,11 +34,15 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Point3D;
 
+import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
 
 public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 {
+    private static final byte DATE = 'D';
+    private static final int DATE_STRUCT_SIZE = 1;
+
     private static final byte POINT_2D_STRUCT_TYPE = 'X';
     private static final byte POINT_3D_STRUCT_TYPE = 'Y';
 
@@ -68,18 +75,27 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         @Override
         void packInternalValue( InternalValue value ) throws IOException
         {
-            if ( value.typeConstructor() == POINT_2D_TyCon )
+            TypeConstructor typeConstructor = value.typeConstructor();
+            switch ( typeConstructor )
             {
+            case DATE_TyCon:
+                packDate( value.asLocalDate() );
+                break;
+            case POINT_2D_TyCon:
                 packPoint2D( value.asPoint2D() );
-            }
-            else if ( value.typeConstructor() == POINT_3D_TyCon )
-            {
+                break;
+            case POINT_3D_TyCon:
                 packPoint3D( value.asPoint3D() );
-            }
-            else
-            {
+                break;
+            default:
                 super.packInternalValue( value );
             }
+        }
+
+        private void packDate( LocalDate localDate ) throws IOException
+        {
+            packer.packStructHeader( DATE_STRUCT_SIZE, DATE );
+            packer.pack( localDate.toEpochDay() );
         }
 
         private void packPoint2D( Point2D point ) throws IOException
@@ -110,20 +126,26 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         @Override
         Value unpackStruct( long size, byte type ) throws IOException
         {
-            if ( type == POINT_2D_STRUCT_TYPE )
+            switch ( type )
             {
+            case DATE:
+                ensureCorrectStructSize( DATE_TyCon.typeName(), DATE_STRUCT_SIZE, size );
+                return unpackDate();
+            case POINT_2D_STRUCT_TYPE:
                 ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
-            }
-            else if ( type == POINT_3D_STRUCT_TYPE )
-            {
+            case POINT_3D_STRUCT_TYPE:
                 ensureCorrectStructSize( POINT_3D_TyCon.typeName(), POINT_3D_STRUCT_SIZE, size );
                 return unpackPoint3D();
-            }
-            else
-            {
+            default:
                 return super.unpackStruct( size, type );
             }
+        }
+
+        private Value unpackDate() throws IOException
+        {
+            long epochDay = unpacker.unpackLong();
+            return new DateValue( LocalDate.ofEpochDay( epochDay ) );
         }
 
         private Value unpackPoint2D() throws IOException
