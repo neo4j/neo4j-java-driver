@@ -208,10 +208,10 @@ public class SessionIT
 
             fail( "Should have got an exception about streaming get killed." );
         }
-        catch ( ClientException e )
+        catch ( Neo4jException e )
         {
             endTime = System.currentTimeMillis();
-            assertThat( e.code(), equalTo( "Neo.ClientError.Procedure.ProcedureCallFailed" ) );
+            assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
             assertThat( recordCount, greaterThan( 1 ) );
 
             assertTrue( startTime > 0 );
