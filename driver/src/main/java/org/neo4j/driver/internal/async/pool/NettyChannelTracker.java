@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.pool.ChannelPoolHandler;
 
 import java.util.Map;
@@ -39,6 +40,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Map<BoltServerAddress,AtomicInteger> addressToIdleChannelCount = new ConcurrentHashMap<>();
     private final Logger log;
     private final MetricsListener metricsListener;
+    private final ChannelFutureListener closeListener = future -> channelClosed( future.channel() );
 
     public NettyChannelTracker( MetricsListener metricsListener, Logging logging )
     {
@@ -52,6 +54,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
         log.debug( "Channel %s released back to the pool", channel );
         decrementInUse( channel );
         incrementIdle( channel );
+        channel.closeFuture().addListener( closeListener );
     }
 
     @Override
@@ -60,6 +63,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
         log.debug( "Channel %s acquired from the pool", channel );
         incrementInUse( channel );
         decrementIdle( channel );
+        channel.closeFuture().removeListener( closeListener );
     }
 
     @Override

@@ -111,6 +111,48 @@ public class NettyChannelTrackerTest
     }
 
     @Test
+    public void shouldDecreaseIdleWhenClosedOutsidePool() throws Throwable
+    {
+        // Given
+        Channel channel = newChannel();
+        tracker.channelCreated( channel, null );
+        assertEquals( 1, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+        // When closed before session.close
+        channel.close().sync();
+
+        // Then
+        assertEquals( 1, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+        tracker.channelReleased( channel );
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+    }
+
+    @Test
+    public void shouldDecreaseIdleWhenClosedInsidePool() throws Throwable
+    {
+        // Given
+        Channel channel = newChannel();
+        tracker.channelCreated( channel, null );
+        assertEquals( 1, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+        tracker.channelReleased( channel );
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 1, tracker.idleChannelCount( address ) );
+
+        // When closed before acquire
+        channel.close().sync();
+        // Then
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+    }
+
+    @Test
     public void shouldThrowWhenDecrementingForUnknownAddress()
     {
         Channel channel = newChannel();
