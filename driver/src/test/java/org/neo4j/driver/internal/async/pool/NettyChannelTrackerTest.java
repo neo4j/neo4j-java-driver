@@ -120,7 +120,7 @@ public class NettyChannelTrackerTest
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
         // When closed before session.close
-        channel.close();
+        channel.close().sync();
 
         // Then
         assertEquals( 1, tracker.inUseChannelCount( address ) );
@@ -145,7 +145,7 @@ public class NettyChannelTrackerTest
         assertEquals( 1, tracker.idleChannelCount( address ) );
 
         // When closed before acquire
-        channel.close();
+        channel.close().sync();
         // Then
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
