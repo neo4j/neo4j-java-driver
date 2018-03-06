@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
@@ -39,7 +40,9 @@ import org.neo4j.driver.internal.util.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
 
+import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
+import static java.time.Month.DECEMBER;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +52,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1.MSG_RECORD;
 import static org.neo4j.driver.internal.packstream.PackStream.FLOAT_64;
+import static org.neo4j.driver.internal.packstream.PackStream.INT_16;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
@@ -225,6 +229,36 @@ public class PackStreamMessageFormatV2Test
         } );
 
         assertEquals( time, unpacked );
+    }
+
+    @Test
+    public void shouldWriteLocalDateTime() throws Exception
+    {
+        LocalDateTime dateTime = LocalDateTime.of( 2049, DECEMBER, 12, 17, 25, 49, 199 );
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $dateTime", singletonMap( "dateTime", value( dateTime ) ) ) );
+
+        int index = buf.readableBytes() - Long.BYTES - Byte.BYTES - Short.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        assertByteBufContains( tailSlice, INT_64, dateTime.toEpochSecond( UTC ), INT_16, (short) dateTime.getNano() );
+    }
+
+    @Test
+    public void shouldReadLocalDateTime() throws Exception
+    {
+        LocalDateTime dateTime = LocalDateTime.of( 1999, APRIL, 3, 19, 5, 5, 100_200_300 );
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 2, (byte) 'd' );
+            packer.pack( dateTime.toEpochSecond( UTC ) );
+            packer.pack( dateTime.getNano() );
+        } );
+
+        assertEquals( dateTime, unpacked );
     }
 
     private Object packAndUnpackValue( ThrowingConsumer<Packer> packAction ) throws Exception

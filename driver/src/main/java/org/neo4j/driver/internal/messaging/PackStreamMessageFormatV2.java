@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
@@ -32,6 +33,7 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.Point2DValue;
 import org.neo4j.driver.internal.value.Point3DValue;
@@ -42,6 +44,7 @@ import org.neo4j.driver.v1.types.Point3D;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_DATE_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
@@ -57,6 +60,9 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
     private static final byte LOCAL_TIME = 't';
     private static final int LOCAL_TIME_STRUCT_SIZE = 1;
+
+    private static final byte LOCAL_DATE_TIME = 'd';
+    private static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
 
     private static final byte POINT_2D_STRUCT_TYPE = 'X';
     private static final byte POINT_3D_STRUCT_TYPE = 'Y';
@@ -102,6 +108,9 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             case LOCAL_TIME_TyCon:
                 packLocalTime( value.asLocalTime() );
                 break;
+            case LOCAL_DATE_TIME_TyCon:
+                packLocalDateTime( value.asLocalDateTime() );
+                break;
             case POINT_2D_TyCon:
                 packPoint2D( value.asPoint2D() );
                 break;
@@ -134,6 +143,16 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         {
             packer.packStructHeader( LOCAL_TIME_STRUCT_SIZE, LOCAL_TIME );
             packer.pack( localTime.toNanoOfDay() );
+        }
+
+        private void packLocalDateTime( LocalDateTime localDateTime ) throws IOException
+        {
+            long epochSecondUtc = localDateTime.toEpochSecond( UTC );
+            int nano = localDateTime.getNano();
+
+            packer.packStructHeader( LOCAL_DATE_TIME_STRUCT_SIZE, LOCAL_DATE_TIME );
+            packer.pack( epochSecondUtc );
+            packer.pack( nano );
         }
 
         private void packPoint2D( Point2D point ) throws IOException
@@ -175,6 +194,9 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             case LOCAL_TIME:
                 ensureCorrectStructSize( LOCAL_TIME_TyCon.typeName(), LOCAL_TIME_STRUCT_SIZE, size );
                 return unpackLocalTime();
+            case LOCAL_DATE_TIME:
+                ensureCorrectStructSize( LOCAL_DATE_TIME_TyCon.typeName(), LOCAL_DATE_TIME_STRUCT_SIZE, size );
+                return unpackLocalDateTime();
             case POINT_2D_STRUCT_TYPE:
                 ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
@@ -206,6 +228,13 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         {
             long nanoOfDay = unpacker.unpackLong();
             return new LocalTimeValue( LocalTime.ofNanoOfDay( nanoOfDay ) );
+        }
+
+        private Value unpackLocalDateTime() throws IOException
+        {
+            long epochSecondUtc = unpacker.unpackLong();
+            int nano = Math.toIntExact( unpacker.unpackLong() );
+            return new LocalDateTimeValue( LocalDateTime.ofEpochSecond( epochSecondUtc, nano, UTC ) );
         }
 
         private Value unpackPoint2D() throws IOException

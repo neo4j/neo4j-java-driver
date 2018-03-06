@@ -184,6 +184,15 @@ public enum TypeConstructor
                 }
             },
 
+    LOCAL_DATE_TIME_TyCon
+            {
+                @Override
+                public String typeName()
+                {
+                    return "LOCAL_DATE_TIME";
+                }
+            },
+
     NULL_TyCon {
         @Override
         public String typeName()

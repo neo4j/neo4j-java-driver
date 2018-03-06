@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
@@ -30,6 +31,7 @@ import java.time.ZoneOffset;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
+import static java.time.Month.MARCH;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -128,5 +130,33 @@ public class TemporalTypesIT
 
         Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", localTime ) ).single();
         assertEquals( localTime, record.get( 0 ).asLocalTime() );
+    }
+
+    @Test
+    public void shouldSendLocalDateTime()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        Record record1 = session.run( "CREATE (n:Node {dateTime: $dateTime}) RETURN 42", singletonMap( "dateTime", localDateTime ) ).single();
+        assertEquals( 42, record1.get( 0 ).asInt() );
+
+        Record record2 = session.run( "MATCH (n:Node) RETURN n.dateTime" ).single();
+        assertEquals( localDateTime, record2.get( 0 ).asLocalDateTime() );
+    }
+
+    @Test
+    public void shouldReceiveLocalDateTime()
+    {
+        Record record = session.run( "RETURN localdatetime({year: 1899, month: 3, day: 20, hour: 12, minute: 17, second: 13, nanosecond: 999})" ).single();
+        assertEquals( LocalDateTime.of( 1899, MARCH, 20, 12, 17, 13, 999 ), record.get( 0 ).asLocalDateTime() );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLocalDateTime()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+
+        Record record = session.run( "CREATE (n:Node {dateTime: $dateTime}) RETURN n.dateTime", singletonMap( "dateTime", localDateTime ) ).single();
+        assertEquals( localDateTime, record.get( 0 ).asLocalDateTime() );
     }
 }

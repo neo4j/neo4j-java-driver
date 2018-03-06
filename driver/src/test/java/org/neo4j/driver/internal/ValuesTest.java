@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.util.ArrayDeque;
@@ -37,6 +38,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.TimeValue;
@@ -353,5 +355,25 @@ public class ValuesTest
 
         assertThat( value, instanceOf( LocalTimeValue.class ) );
         assertEquals( localTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateLocalDateTimeValueFromLocalDateTime()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        Value value = value( localDateTime );
+
+        assertThat( value, instanceOf( LocalDateTimeValue.class ) );
+        assertEquals( localDateTime, value.asLocalDateTime() );
+    }
+
+    @Test
+    public void shouldCreateLocalDateTimeValue()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        Value value = value( localDateTime );
+
+        assertThat( value, instanceOf( LocalDateTimeValue.class ) );
+        assertEquals( localDateTime, value.asObject() );
     }
 }

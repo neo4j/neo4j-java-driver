@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
@@ -96,6 +98,7 @@ public abstract class Values
         if ( value instanceof LocalDate ) { return value( (LocalDate) value ); }
         if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
         if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
+        if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
@@ -285,6 +288,11 @@ public abstract class Values
     public static Value value( LocalTime localTime )
     {
         return new LocalTimeValue( localTime );
+    }
+
+    public static Value value( LocalDateTime localDateTime )
+    {
+        return new LocalDateTimeValue( localDateTime );
     }
 
     public static Value point2D( long srid, double x, double y )
@@ -527,6 +535,11 @@ public abstract class Values
         return LOCAL_TIME;
     }
 
+    public static Function<Value,LocalDateTime> ofLocalDateTime()
+    {
+        return LOCAL_DATE_TIME;
+    }
+
     public static Function<Value,Point2D> ofPoint2D()
     {
         return POINT_2D;
@@ -703,6 +716,13 @@ public abstract class Values
         public LocalTime apply( Value val )
         {
             return val.asLocalTime();
+        }
+    };
+    private static final Function<Value,LocalDateTime> LOCAL_DATE_TIME = new Function<Value,LocalDateTime>()
+    {
+        public LocalDateTime apply( Value val )
+        {
+            return val.asLocalDateTime();
         }
     };
     private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()

@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.util.List;
@@ -299,6 +300,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     OffsetTime asOffsetTime();
 
     LocalTime asLocalTime();
+
+    LocalDateTime asLocalDateTime();
 
     Point2D asPoint2D();
 
