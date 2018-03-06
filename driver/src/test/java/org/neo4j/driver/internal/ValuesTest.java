@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
@@ -375,5 +377,25 @@ public class ValuesTest
 
         assertThat( value, instanceOf( LocalDateTimeValue.class ) );
         assertEquals( localDateTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateDateTimeValueFromZonedDateTime()
+    {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Value value = value( zonedDateTime );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( zonedDateTime, value.asZonedDateTime() );
+    }
+
+    @Test
+    public void shouldCreateDateTimeValue()
+    {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Value value = value( zonedDateTime );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( zonedDateTime, value.asObject() );
     }
 }

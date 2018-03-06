@@ -25,6 +25,7 @@ import org.neo4j.driver.v1.types.TypeSystem;
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
@@ -70,6 +71,7 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation timeType = constructType( TIME_TyCon );
     private final TypeRepresentation localTimeType = constructType( LOCAL_TIME_TyCon );
     private final TypeRepresentation localDateTimeType = constructType( LOCAL_DATE_TIME_TyCon );
+    private final TypeRepresentation dateTimeType = constructType( DATE_TIME_TyCon );
     private final TypeRepresentation nullType = constructType( NULL_TyCon );
 
     private InternalTypeSystem()
@@ -194,6 +196,12 @@ public class InternalTypeSystem implements TypeSystem
     public Type LOCAL_DATE_TIME()
     {
         return localDateTimeType;
+    }
+
+    @Override
+    public Type DATE_TIME()
+    {
+        return dateTimeType;
     }
 
     /** the Cypher type NULL */

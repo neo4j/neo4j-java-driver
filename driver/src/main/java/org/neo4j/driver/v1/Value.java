@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -302,6 +303,8 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     LocalTime asLocalTime();
 
     LocalDateTime asLocalDateTime();
+
+    ZonedDateTime asZonedDateTime();
 
     Point2D asPoint2D();
 

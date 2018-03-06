@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -207,6 +208,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public LocalDateTime asLocalDateTime()
     {
         throw new Uncoercible( type().name(), "LocalDateTime" );
+    }
+
+    @Override
+    public ZonedDateTime asZonedDateTime()
+    {
+        throw new Uncoercible( type().name(), "ZonedDateTime" );
     }
 
     @Override

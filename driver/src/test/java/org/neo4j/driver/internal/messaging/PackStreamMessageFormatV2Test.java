@@ -27,7 +27,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +46,7 @@ import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
 import static java.time.Month.DECEMBER;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -56,6 +59,7 @@ import static org.neo4j.driver.internal.packstream.PackStream.INT_16;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
+import static org.neo4j.driver.internal.packstream.PackStream.STRING_8;
 import static org.neo4j.driver.v1.Values.point2D;
 import static org.neo4j.driver.v1.Values.point3D;
 import static org.neo4j.driver.v1.Values.value;
@@ -256,6 +260,84 @@ public class PackStreamMessageFormatV2Test
             packer.packStructHeader( 2, (byte) 'd' );
             packer.pack( dateTime.toEpochSecond( UTC ) );
             packer.pack( dateTime.getNano() );
+        } );
+
+        assertEquals( dateTime, unpacked );
+    }
+
+    @Test
+    public void shouldWriteZonedDateTimeWithOffset() throws Exception
+    {
+        ZoneOffset zoneOffset = ZoneOffset.ofHoursMinutes( 9, 30 );
+        ZonedDateTime dateTime = ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, zoneOffset );
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $dateTime", singletonMap( "dateTime", value( dateTime ) ) ) );
+
+        int index = buf.readableBytes() - Integer.BYTES - Byte.BYTES - Short.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        assertByteBufContains( tailSlice, INT_32, (int) dateTime.toEpochSecond(), INT_16, (short) dateTime.getNano(), INT_32, zoneOffset.getTotalSeconds() );
+    }
+
+    @Test
+    public void shouldReadZonedDateTimeWithOffset() throws Exception
+    {
+        ZoneOffset zoneOffset = ZoneOffset.ofHoursMinutes( -7, -15 );
+        ZonedDateTime dateTime = ZonedDateTime.of( 1823, 1, 12, 23, 59, 59, 999_999_999, zoneOffset );
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 3, (byte) 'F' );
+            packer.pack( dateTime.toInstant().getEpochSecond() );
+            packer.pack( dateTime.toInstant().getNano() );
+            packer.pack( zoneOffset.getTotalSeconds() );
+        } );
+
+        assertEquals( dateTime, unpacked );
+    }
+
+    @Test
+    public void shouldWriteZonedDateTimeWithZoneId() throws Exception
+    {
+        String zoneName = "Europe/Stockholm";
+        byte[] zoneNameBytes = zoneName.getBytes();
+        ZonedDateTime dateTime = ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneId.of( zoneName ) );
+
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $dateTime", singletonMap( "dateTime", value( dateTime ) ) ) );
+
+        int index = buf.readableBytes() - zoneNameBytes.length - Byte.BYTES - Byte.BYTES - Short.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        List<Number> expectedBuf = new ArrayList<>( asList(
+                INT_32, (int) dateTime.toInstant().getEpochSecond(),
+                INT_16, (short) dateTime.toInstant().getNano(),
+                STRING_8, (byte) zoneNameBytes.length ) );
+
+        for ( byte b : zoneNameBytes )
+        {
+            expectedBuf.add( b );
+        }
+
+        assertByteBufContains( tailSlice, expectedBuf.toArray( new Number[0] ) );
+    }
+
+    @Test
+    public void shouldReadZonedDateTimeWithZoneId() throws Exception
+    {
+        String zoneName = "Europe/Stockholm";
+        ZonedDateTime dateTime = ZonedDateTime.of( 1823, 1, 12, 23, 59, 59, 999_999_999, ZoneId.of( zoneName ) );
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 3, (byte) 'f' );
+            packer.pack( dateTime.toInstant().getEpochSecond() );
+            packer.pack( dateTime.toInstant().getNano() );
+            packer.pack( zoneName );
         } );
 
         assertEquals( dateTime, unpacked );

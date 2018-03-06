@@ -16,56 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.types;
+package org.neo4j.driver.internal.value;
 
-import org.neo4j.driver.v1.util.Experimental;
-import org.neo4j.driver.v1.util.Immutable;
+import java.time.ZonedDateTime;
 
-/**
- * A listing of all database types this driver can handle.
- * @since 1.0
- */
-@Immutable
-@Experimental
-public interface TypeSystem
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.types.Type;
+
+public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime>
 {
-    Type ANY();
+    public DateTimeValue( ZonedDateTime zonedDateTime )
+    {
+        super( zonedDateTime );
+    }
 
-    Type BOOLEAN();
+    @Override
+    public ZonedDateTime asZonedDateTime()
+    {
+        return asObject();
+    }
 
-    Type BYTES();
-
-    Type STRING();
-
-    Type NUMBER();
-
-    Type INTEGER();
-
-    Type FLOAT();
-
-    Type LIST();
-
-    Type MAP();
-
-    Type NODE();
-
-    Type RELATIONSHIP();
-
-    Type PATH();
-
-    Type POINT_2D();
-
-    Type POINT_3D();
-
-    Type DATE();
-
-    Type TIME();
-
-    Type LOCAL_TIME();
-
-    Type LOCAL_DATE_TIME();
-
-    Type DATE_TIME();
-
-    Type NULL();
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.DATE_TIME();
+    }
 }

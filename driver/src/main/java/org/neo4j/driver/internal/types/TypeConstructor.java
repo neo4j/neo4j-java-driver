@@ -193,6 +193,15 @@ public enum TypeConstructor
                 }
             },
 
+    DATE_TIME_TyCon
+            {
+                @Override
+                public String typeName()
+                {
+                    return "DATE_TIME";
+                }
+            },
+
     NULL_TyCon {
         @Override
         public String typeName()

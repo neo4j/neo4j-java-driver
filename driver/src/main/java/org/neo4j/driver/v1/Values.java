@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
+import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -99,6 +101,7 @@ public abstract class Values
         if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
         if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
+        if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
@@ -293,6 +296,11 @@ public abstract class Values
     public static Value value( LocalDateTime localDateTime )
     {
         return new LocalDateTimeValue( localDateTime );
+    }
+
+    public static Value value( ZonedDateTime zonedDateTime )
+    {
+        return new DateTimeValue( zonedDateTime );
     }
 
     public static Value point2D( long srid, double x, double y )
@@ -540,6 +548,11 @@ public abstract class Values
         return LOCAL_DATE_TIME;
     }
 
+    public static Function<Value,ZonedDateTime> ofZonedDateTime()
+    {
+        return ZONED_DATE_TIME;
+    }
+
     public static Function<Value,Point2D> ofPoint2D()
     {
         return POINT_2D;
@@ -723,6 +736,13 @@ public abstract class Values
         public LocalDateTime apply( Value val )
         {
             return val.asLocalDateTime();
+        }
+    };
+    private static final Function<Value,ZonedDateTime> ZONED_DATE_TIME = new Function<Value,ZonedDateTime>()
+    {
+        public ZonedDateTime apply( Value val )
+        {
+            return val.asZonedDateTime();
         }
     };
     private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()

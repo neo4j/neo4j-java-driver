@@ -24,13 +24,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
@@ -43,6 +46,7 @@ import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Point3D;
 
 import static java.time.ZoneOffset.UTC;
+import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_DATE_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_TIME_TyCon;
@@ -63,6 +67,10 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
     private static final byte LOCAL_DATE_TIME = 'd';
     private static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
+
+    private static final byte DATE_TIME_WITH_ZONE_OFFSET = 'F';
+    private static final byte DATE_TIME_WITH_ZONE_ID = 'f';
+    private static final int DATE_TIME_STRUCT_SIZE = 3;
 
     private static final byte POINT_2D_STRUCT_TYPE = 'X';
     private static final byte POINT_3D_STRUCT_TYPE = 'Y';
@@ -111,6 +119,9 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             case LOCAL_DATE_TIME_TyCon:
                 packLocalDateTime( value.asLocalDateTime() );
                 break;
+            case DATE_TIME_TyCon:
+                packZonedDateTime( value.asZonedDateTime() );
+                break;
             case POINT_2D_TyCon:
                 packPoint2D( value.asPoint2D() );
                 break;
@@ -155,6 +166,31 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             packer.pack( nano );
         }
 
+        private void packZonedDateTime( ZonedDateTime zonedDateTime ) throws IOException
+        {
+            Instant instant = zonedDateTime.toInstant();
+            ZoneId zone = zonedDateTime.getZone();
+
+            if ( zone instanceof ZoneOffset )
+            {
+                int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+
+                packer.packStructHeader( DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_OFFSET );
+                packer.pack( instant.getEpochSecond() );
+                packer.pack( instant.getNano() );
+                packer.pack( offsetSeconds );
+            }
+            else
+            {
+                String zoneId = zone.getId();
+
+                packer.packStructHeader( DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_ID );
+                packer.pack( instant.getEpochSecond() );
+                packer.pack( instant.getNano() );
+                packer.pack( zoneId );
+            }
+        }
+
         private void packPoint2D( Point2D point ) throws IOException
         {
             packer.packStructHeader( POINT_2D_STRUCT_SIZE, POINT_2D_STRUCT_TYPE );
@@ -197,6 +233,12 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             case LOCAL_DATE_TIME:
                 ensureCorrectStructSize( LOCAL_DATE_TIME_TyCon.typeName(), LOCAL_DATE_TIME_STRUCT_SIZE, size );
                 return unpackLocalDateTime();
+            case DATE_TIME_WITH_ZONE_OFFSET:
+                ensureCorrectStructSize( DATE_TIME_TyCon.typeName(), DATE_TIME_STRUCT_SIZE, size );
+                return unpackDateTimeWithZoneOffset();
+            case DATE_TIME_WITH_ZONE_ID:
+                ensureCorrectStructSize( DATE_TIME_TyCon.typeName(), DATE_TIME_STRUCT_SIZE, size );
+                return unpackDateTimeWithZoneId();
             case POINT_2D_STRUCT_TYPE:
                 ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
@@ -235,6 +277,28 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             long epochSecondUtc = unpacker.unpackLong();
             int nano = Math.toIntExact( unpacker.unpackLong() );
             return new LocalDateTimeValue( LocalDateTime.ofEpochSecond( epochSecondUtc, nano, UTC ) );
+        }
+
+        private Value unpackDateTimeWithZoneOffset() throws IOException
+        {
+            long epochSecondUtc = unpacker.unpackLong();
+            int nano = Math.toIntExact( unpacker.unpackLong() );
+            int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
+
+            Instant instant = Instant.ofEpochSecond( epochSecondUtc, nano );
+            ZoneOffset zoneOffset = ZoneOffset.ofTotalSeconds( offsetSeconds );
+            return new DateTimeValue( ZonedDateTime.ofInstant( instant, zoneOffset ) );
+        }
+
+        private Value unpackDateTimeWithZoneId() throws IOException
+        {
+            long epochSecondUtc = unpacker.unpackLong();
+            int nano = Math.toIntExact( unpacker.unpackLong() );
+            String zoneIdString = unpacker.unpackString();
+
+            Instant instant = Instant.ofEpochSecond( epochSecondUtc, nano );
+            ZoneId zoneId = ZoneId.of( zoneIdString );
+            return new DateTimeValue( ZonedDateTime.ofInstant( instant, zoneId ) );
         }
 
         private Value unpackPoint2D() throws IOException
