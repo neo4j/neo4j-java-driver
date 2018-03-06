@@ -19,6 +19,7 @@
 package org.neo4j.driver.v1;
 
 import java.time.LocalDate;
+import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +43,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.Point2DValue;
 import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
@@ -90,6 +92,7 @@ public abstract class Values
         if ( value instanceof Double ) { return value( (double) value ); }
         if ( value instanceof Float ) { return value( (float) value ); }
         if ( value instanceof LocalDate ) { return value( (LocalDate) value ); }
+        if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
@@ -269,6 +272,11 @@ public abstract class Values
     public static Value value( LocalDate localDate )
     {
         return new DateValue( localDate );
+    }
+
+    public static Value value( OffsetTime offsetTime )
+    {
+        return new TimeValue( offsetTime );
     }
 
     public static Value point2D( long srid, double x, double y )
@@ -501,6 +509,11 @@ public abstract class Values
         return LOCAL_DATE;
     }
 
+    public static Function<Value,OffsetTime> ofOffsetTime()
+    {
+        return OFFSET_TIME;
+    }
+
     public static Function<Value,Point2D> ofPoint2D()
     {
         return POINT_2D;
@@ -663,6 +676,13 @@ public abstract class Values
         public LocalDate apply( Value val )
         {
             return val.asLocalDate();
+        }
+    };
+    private static final Function<Value,OffsetTime> OFFSET_TIME = new Function<Value,OffsetTime>()
+    {
+        public OffsetTime apply( Value val )
+        {
+            return val.asOffsetTime();
         }
     };
     private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()

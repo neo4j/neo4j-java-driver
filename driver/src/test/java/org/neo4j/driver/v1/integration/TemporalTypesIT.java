@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.LocalDate;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -69,5 +71,33 @@ public class TemporalTypesIT
 
         Record record = session.run( "CREATE (n:Node {date: $date}) RETURN n.date", singletonMap( "date", localDate ) ).single();
         assertEquals( localDate, record.get( 0 ).asLocalDate() );
+    }
+
+    @Test
+    public void shouldSendTime()
+    {
+        OffsetTime offsetTime = OffsetTime.now();
+
+        Record record1 = session.run( "CREATE (n:Node {time: $time}) RETURN 42", singletonMap( "time", offsetTime ) ).single();
+        assertEquals( 42, record1.get( 0 ).asInt() );
+
+        Record record2 = session.run( "MATCH (n:Node) RETURN n.time" ).single();
+        assertEquals( offsetTime, record2.get( 0 ).asOffsetTime() );
+    }
+
+    @Test
+    public void shouldReceiveTime()
+    {
+        Record record = session.run( "RETURN time({hour: 23, minute: 19, second: 55, timezone:'-07:00'})" ).single();
+        assertEquals( OffsetTime.of( 23, 19, 55, 0, ZoneOffset.ofHours( -7 ) ), record.get( 0 ).asOffsetTime() );
+    }
+
+    @Test
+    public void shouldSendAndReceiveTime()
+    {
+        OffsetTime offsetTime = OffsetTime.now();
+
+        Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", offsetTime ) ).single();
+        assertEquals( offsetTime, record.get( 0 ).asOffsetTime() );
     }
 }

@@ -38,6 +38,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.TIME_TyCon;
 
 /**
  * Utility class for determining and working with the Cypher types of values
@@ -64,6 +65,7 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation point2dType = constructType( POINT_2D_TyCon );
     private final TypeRepresentation point3dType = constructType( POINT_3D_TyCon );
     private final TypeRepresentation dateType = constructType( DATE_TyCon );
+    private final TypeRepresentation timeType = constructType( TIME_TyCon );
     private final TypeRepresentation nullType = constructType( NULL_TyCon );
 
     private InternalTypeSystem()
@@ -170,6 +172,12 @@ public class InternalTypeSystem implements TypeSystem
     public Type DATE()
     {
         return dateType;
+    }
+
+    @Override
+    public Type TIME()
+    {
+        return timeType;
     }
 
     /** the Cypher type NULL */

@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +39,7 @@ import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
 
 import static java.time.Month.AUGUST;
+import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -45,6 +48,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1.MSG_RECORD;
 import static org.neo4j.driver.internal.packstream.PackStream.FLOAT_64;
+import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
 import static org.neo4j.driver.v1.Values.point2D;
@@ -161,6 +165,36 @@ public class PackStreamMessageFormatV2Test
         } );
 
         assertEquals( date, unpacked );
+    }
+
+    @Test
+    public void shouldWriteTime() throws Exception
+    {
+        OffsetTime time = OffsetTime.of( 4, 16, 20, 999, ZoneOffset.MIN );
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $time", singletonMap( "time", value( time ) ) ) );
+
+        int index = buf.readableBytes() - Long.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        assertByteBufContains( tailSlice, INT_64, time.withOffsetSameInstant( UTC ).toLocalTime().toNanoOfDay(), INT_32, time.getOffset().getTotalSeconds() );
+    }
+
+    @Test
+    public void shouldReadTime() throws Exception
+    {
+        OffsetTime time = OffsetTime.of( 23, 59, 59, 999, ZoneOffset.MAX );
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 2, (byte) 'T' );
+            packer.pack( time.withOffsetSameInstant( UTC ).toLocalTime().toNanoOfDay() );
+            packer.pack( time.getOffset().getTotalSeconds() );
+        } );
+
+        assertEquals( time, unpacked );
     }
 
     private Object packAndUnpackValue( ThrowingConsumer<Packer> packAction ) throws Exception
