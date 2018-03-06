@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -192,6 +193,35 @@ public class PackStreamMessageFormatV2Test
             packer.packStructHeader( 2, (byte) 'T' );
             packer.pack( time.withOffsetSameInstant( UTC ).toLocalTime().toNanoOfDay() );
             packer.pack( time.getOffset().getTotalSeconds() );
+        } );
+
+        assertEquals( time, unpacked );
+    }
+
+    @Test
+    public void shouldWriteLocalTime() throws Exception
+    {
+        LocalTime time = LocalTime.of( 12, 9, 18, 999_888 );
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $time", singletonMap( "time", value( time ) ) ) );
+
+        int index = buf.readableBytes() - Long.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        assertByteBufContains( tailSlice, INT_64, time.toNanoOfDay() );
+    }
+
+    @Test
+    public void shouldReadLocalTime() throws Exception
+    {
+        LocalTime time = LocalTime.of( 12, 25 );
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 1, (byte) 't' );
+            packer.pack( time.toNanoOfDay() );
         } );
 
         assertEquals( time, unpacked );

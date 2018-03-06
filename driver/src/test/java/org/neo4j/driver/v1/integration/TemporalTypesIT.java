@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 
@@ -99,5 +100,33 @@ public class TemporalTypesIT
 
         Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", offsetTime ) ).single();
         assertEquals( offsetTime, record.get( 0 ).asOffsetTime() );
+    }
+
+    @Test
+    public void shouldSendLocalTime()
+    {
+        LocalTime localTime = LocalTime.now();
+
+        Record record1 = session.run( "CREATE (n:Node {time: $time}) RETURN 42", singletonMap( "time", localTime ) ).single();
+        assertEquals( 42, record1.get( 0 ).asInt() );
+
+        Record record2 = session.run( "MATCH (n:Node) RETURN n.time" ).single();
+        assertEquals( localTime, record2.get( 0 ).asLocalTime() );
+    }
+
+    @Test
+    public void shouldReceiveLocalTime()
+    {
+        Record record = session.run( "RETURN localtime({hour: 22, minute: 59, second: 10, nanosecond: 999999})" ).single();
+        assertEquals( LocalTime.of( 22, 59, 10, 999_999 ), record.get( 0 ).asLocalTime() );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLocalTime()
+    {
+        LocalTime localTime = LocalTime.now();
+
+        Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", localTime ) ).single();
+        assertEquals( localTime, record.get( 0 ).asLocalTime() );
     }
 }

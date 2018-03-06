@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +194,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public OffsetTime asOffsetTime()
     {
         throw new Uncoercible( type().name(), "OffsetTime" );
+    }
+
+    @Override
+    public LocalTime asLocalTime()
+    {
+        throw new Uncoercible( type().name(), "LocalTime" );
     }
 
     @Override

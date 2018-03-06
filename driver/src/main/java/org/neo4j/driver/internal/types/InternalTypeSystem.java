@@ -29,6 +29,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_TIME_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.MAP_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NODE_TyCon;
 import static org.neo4j.driver.internal.types.TypeConstructor.NULL_TyCon;
@@ -66,6 +67,7 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation point3dType = constructType( POINT_3D_TyCon );
     private final TypeRepresentation dateType = constructType( DATE_TyCon );
     private final TypeRepresentation timeType = constructType( TIME_TyCon );
+    private final TypeRepresentation localTimeType = constructType( LOCAL_TIME_TyCon );
     private final TypeRepresentation nullType = constructType( NULL_TyCon );
 
     private InternalTypeSystem()
@@ -178,6 +180,12 @@ public class InternalTypeSystem implements TypeSystem
     public Type TIME()
     {
         return timeType;
+    }
+
+    @Override
+    public Type LOCAL_TIME()
+    {
+        return localTimeType;
     }
 
     /** the Cypher type NULL */
