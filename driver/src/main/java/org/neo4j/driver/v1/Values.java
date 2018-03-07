@@ -105,6 +105,9 @@ public abstract class Values
         if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
         if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
+        if ( value instanceof Duration ) { return value( (Duration) value ); }
+        if ( value instanceof Point2D ) { return value( (Point2D) value ); }
+        if ( value instanceof Point3D ) { return value( (Point3D) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
@@ -308,17 +311,32 @@ public abstract class Values
 
     public static Value duration( long months, long days, long seconds, long nanoseconds )
     {
-        return new DurationValue( new InternalDuration( months, days, seconds, nanoseconds ) );
+        return value( new InternalDuration( months, days, seconds, nanoseconds ) );
+    }
+
+    private static Value value( Duration duration )
+    {
+        return new DurationValue( duration );
     }
 
     public static Value point2D( long srid, double x, double y )
     {
-        return new Point2DValue( new InternalPoint2D( srid, x, y ) );
+        return value( new InternalPoint2D( srid, x, y ) );
+    }
+
+    private static Value value( Point2D point2D )
+    {
+        return new Point2DValue( point2D );
     }
 
     public static Value point3D( long srid, double x, double y, double z )
     {
-        return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
+        return value( new InternalPoint3D( srid, x, y, z ) );
+    }
+
+    private static Value value( Point3D point3D )
+    {
+        return new Point3DValue( point3D );
     }
 
     /**
