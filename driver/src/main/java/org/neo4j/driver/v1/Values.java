@@ -55,6 +55,7 @@ import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point2D;
@@ -384,7 +385,7 @@ public abstract class Values
      */
     public static Function<Value,Value> ofValue()
     {
-        return VALUE;
+        return val -> val;
     }
 
     /**
@@ -393,7 +394,7 @@ public abstract class Values
      */
     public static Function<Value,Object> ofObject()
     {
-        return OBJECT;
+        return Value::asObject;
     }
 
     /**
@@ -402,7 +403,7 @@ public abstract class Values
      */
     public static Function<Value,Number> ofNumber()
     {
-        return NUMBER;
+        return Value::asNumber;
     }
 
     /**
@@ -416,7 +417,7 @@ public abstract class Values
      */
     public static Function<Value,String> ofString()
     {
-        return STRING;
+        return Value::asString;
     }
 
     /**
@@ -434,7 +435,7 @@ public abstract class Values
      */
     public static Function<Value,String> ofToString()
     {
-        return TO_STRING;
+        return Value::toString;
     }
 
     /**
@@ -443,7 +444,7 @@ public abstract class Values
      */
     public static Function<Value,Integer> ofInteger()
     {
-        return INTEGER;
+        return Value::asInt;
     }
 
     /**
@@ -452,7 +453,7 @@ public abstract class Values
      */
     public static Function<Value,Long> ofLong()
     {
-        return LONG;
+        return Value::asLong;
     }
 
     /**
@@ -461,7 +462,7 @@ public abstract class Values
      */
     public static Function<Value,Float> ofFloat()
     {
-        return FLOAT;
+        return Value::asFloat;
     }
 
     /**
@@ -470,7 +471,7 @@ public abstract class Values
      */
     public static Function<Value,Double> ofDouble()
     {
-        return DOUBLE;
+        return Value::asDouble;
     }
 
     /**
@@ -479,7 +480,7 @@ public abstract class Values
      */
     public static Function<Value,Boolean> ofBoolean()
     {
-        return BOOLEAN;
+        return Value::asBoolean;
     }
 
     /**
@@ -488,7 +489,7 @@ public abstract class Values
      */
     public static Function<Value, Map<String, Object>> ofMap()
     {
-        return MAP;
+        return MapAccessor::asMap;
     }
 
     /**
@@ -500,13 +501,7 @@ public abstract class Values
      */
     public static <T> Function<Value, Map<String, T>> ofMap( final Function<Value, T> valueConverter)
     {
-        return new Function<Value,Map<String,T>>()
-        {
-            public Map<String,T> apply( Value val )
-            {
-                return val.asMap(valueConverter);
-            }
-        };
+        return val -> val.asMap( valueConverter );
     }
 
     /**
@@ -515,7 +510,7 @@ public abstract class Values
      */
     public static Function<Value,Entity> ofEntity()
     {
-        return ENTITY;
+        return Value::asEntity;
     }
 
     /**
@@ -524,7 +519,7 @@ public abstract class Values
      */
     public static Function<Value, Long> ofEntityId()
     {
-        return ENTITY_ID;
+        return val -> val.asEntity().id();
     }
 
     /**
@@ -533,7 +528,7 @@ public abstract class Values
      */
     public static Function<Value,Node> ofNode()
     {
-        return NODE;
+        return Value::asNode;
     }
 
     /**
@@ -542,7 +537,7 @@ public abstract class Values
      */
     public static Function<Value,Relationship> ofRelationship()
     {
-        return RELATIONSHIP;
+        return Value::asRelationship;
     }
 
     /**
@@ -551,47 +546,47 @@ public abstract class Values
      */
     public static Function<Value,Path> ofPath()
     {
-        return PATH;
+        return Value::asPath;
     }
 
     public static Function<Value,LocalDate> ofLocalDate()
     {
-        return LOCAL_DATE;
+        return Value::asLocalDate;
     }
 
     public static Function<Value,OffsetTime> ofOffsetTime()
     {
-        return OFFSET_TIME;
+        return Value::asOffsetTime;
     }
 
     public static Function<Value,LocalTime> ofLocalTime()
     {
-        return LOCAL_TIME;
+        return Value::asLocalTime;
     }
 
     public static Function<Value,LocalDateTime> ofLocalDateTime()
     {
-        return LOCAL_DATE_TIME;
+        return Value::asLocalDateTime;
     }
 
     public static Function<Value,ZonedDateTime> ofZonedDateTime()
     {
-        return ZONED_DATE_TIME;
+        return Value::asZonedDateTime;
     }
 
     public static Function<Value,Duration> ofDuration()
     {
-        return DURATION;
+        return Value::asDuration;
     }
 
     public static Function<Value,Point2D> ofPoint2D()
     {
-        return POINT_2D;
+        return Value::asPoint2D;
     }
 
     public static Function<Value,Point3D> ofPoint3D()
     {
-        return POINT_3D;
+        return Value::asPoint3D;
     }
 
     /**
@@ -600,14 +595,7 @@ public abstract class Values
      */
     public static Function<Value,List<Object>> ofList()
     {
-        return new Function<Value,List<Object>>()
-        {
-            @Override
-            public List<Object> apply( Value value )
-            {
-                return value.asList();
-            }
-        };
+        return value -> value.asList();
     }
 
     /**
@@ -618,185 +606,8 @@ public abstract class Values
      */
     public static <T> Function<Value,List<T>> ofList( final Function<Value, T> innerMap )
     {
-        return new Function<Value,List<T>>()
-        {
-            @Override
-            public List<T> apply( Value value )
-            {
-                return value.asList( innerMap );
-            }
-        };
+        return value -> value.asList( innerMap );
     }
-
-    private static final Function<Value,Object> OBJECT = new Function<Value,Object>()
-    {
-        public Object apply( Value val )
-        {
-            return val.asObject();
-        }
-    };
-    private static final Function<Value,Value> VALUE = new Function<Value,Value>()
-    {
-        public Value apply( Value val )
-        {
-            return val;
-        }
-    };
-    private static final Function<Value,Number> NUMBER = new Function<Value,Number>()
-    {
-        public Number apply( Value val )
-        {
-            return val.asNumber();
-        }
-    };
-    private static final Function<Value,String> STRING = new Function<Value,String>()
-    {
-        public String apply( Value val )
-        {
-            return val.asString();
-        }
-    };
-
-    private static final Function<Value,String> TO_STRING = new Function<Value,String>()
-    {
-        public String apply( Value val )
-        {
-            return val.toString();
-        }
-    };
-    private static final Function<Value,Integer> INTEGER = new Function<Value,Integer>()
-    {
-        public Integer apply( Value val )
-        {
-            return val.asInt();
-        }
-    };
-    private static final Function<Value,Long> LONG = new Function<Value,Long>()
-    {
-        public Long apply( Value val )
-        {
-            return val.asLong();
-        }
-    };
-    private static final Function<Value,Float> FLOAT = new Function<Value,Float>()
-    {
-        public Float apply( Value val )
-        {
-            return val.asFloat();
-        }
-    };
-    private static final Function<Value,Double> DOUBLE = new Function<Value,Double>()
-    {
-        public Double apply( Value val )
-        {
-            return val.asDouble();
-        }
-    };
-    private static final Function<Value,Boolean> BOOLEAN = new Function<Value,Boolean>()
-    {
-        public Boolean apply( Value val )
-        {
-            return val.asBoolean();
-        }
-    };
-    private static final Function<Value,Map<String,Object>> MAP = new Function<Value,Map<String,Object>>()
-    {
-        public Map<String,Object> apply( Value val )
-        {
-            return val.asMap();
-        }
-    };
-    private static final Function<Value,Long> ENTITY_ID = new Function<Value,Long>()
-    {
-        public Long apply( Value val )
-        {
-            return val.asEntity().id();
-        }
-    };
-    private static final Function<Value,Entity> ENTITY = new Function<Value,Entity>()
-    {
-        public Entity apply( Value val )
-        {
-            return val.asEntity();
-        }
-    };
-    private static final Function<Value,Node> NODE = new Function<Value,Node>()
-    {
-        public Node apply( Value val )
-        {
-            return val.asNode();
-        }
-    };
-    private static final Function<Value,Relationship> RELATIONSHIP = new Function<Value,Relationship>()
-    {
-        public Relationship apply( Value val )
-        {
-            return val.asRelationship();
-        }
-    };
-    private static final Function<Value,Path> PATH = new Function<Value,Path>()
-    {
-        public Path apply( Value val )
-        {
-            return val.asPath();
-        }
-    };
-    private static final Function<Value,LocalDate> LOCAL_DATE = new Function<Value,LocalDate>()
-    {
-        public LocalDate apply( Value val )
-        {
-            return val.asLocalDate();
-        }
-    };
-    private static final Function<Value,OffsetTime> OFFSET_TIME = new Function<Value,OffsetTime>()
-    {
-        public OffsetTime apply( Value val )
-        {
-            return val.asOffsetTime();
-        }
-    };
-    private static final Function<Value,LocalTime> LOCAL_TIME = new Function<Value,LocalTime>()
-    {
-        public LocalTime apply( Value val )
-        {
-            return val.asLocalTime();
-        }
-    };
-    private static final Function<Value,LocalDateTime> LOCAL_DATE_TIME = new Function<Value,LocalDateTime>()
-    {
-        public LocalDateTime apply( Value val )
-        {
-            return val.asLocalDateTime();
-        }
-    };
-    private static final Function<Value,ZonedDateTime> ZONED_DATE_TIME = new Function<Value,ZonedDateTime>()
-    {
-        public ZonedDateTime apply( Value val )
-        {
-            return val.asZonedDateTime();
-        }
-    };
-    private static final Function<Value,Duration> DURATION = new Function<Value,Duration>()
-    {
-        public Duration apply( Value val )
-        {
-            return val.asDuration();
-        }
-    };
-    private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()
-    {
-        public Point2D apply( Value val )
-        {
-            return val.asPoint2D();
-        }
-    };
-    private static final Function<Value,Point3D> POINT_3D = new Function<Value,Point3D>()
-    {
-        public Point3D apply( Value val )
-        {
-            return val.asPoint3D();
-        }
-    };
 
     private static void assertParameter( Object value )
     {
