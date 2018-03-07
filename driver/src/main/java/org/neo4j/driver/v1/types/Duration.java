@@ -18,56 +18,15 @@
  */
 package org.neo4j.driver.v1.types;
 
-import org.neo4j.driver.v1.util.Experimental;
-import org.neo4j.driver.v1.util.Immutable;
+import java.time.temporal.TemporalAmount;
 
-/**
- * A listing of all database types this driver can handle.
- * @since 1.0
- */
-@Immutable
-@Experimental
-public interface TypeSystem
+public interface Duration extends TemporalAmount
 {
-    Type ANY();
+    long months();
 
-    Type BOOLEAN();
+    long days();
 
-    Type BYTES();
+    long seconds();
 
-    Type STRING();
-
-    Type NUMBER();
-
-    Type INTEGER();
-
-    Type FLOAT();
-
-    Type LIST();
-
-    Type MAP();
-
-    Type NODE();
-
-    Type RELATIONSHIP();
-
-    Type PATH();
-
-    Type POINT_2D();
-
-    Type POINT_3D();
-
-    Type DATE();
-
-    Type TIME();
-
-    Type LOCAL_TIME();
-
-    Type LOCAL_DATE_TIME();
-
-    Type DATE_TIME();
-
-    Type DURATION();
-
-    Type NULL();
+    long nanoseconds();
 }

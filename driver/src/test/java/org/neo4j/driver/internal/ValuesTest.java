@@ -39,6 +39,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
+import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
@@ -47,6 +48,7 @@ import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.types.Duration;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,6 +57,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.duration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
 import static org.neo4j.driver.v1.Values.ofInteger;
@@ -397,5 +400,19 @@ public class ValuesTest
 
         assertThat( value, instanceOf( DateTimeValue.class ) );
         assertEquals( zonedDateTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateDurationValue()
+    {
+        Value value = duration( 42_1, 42_2, 42_3, 42_4 );
+
+        assertThat( value, instanceOf( DurationValue.class ) );
+        Duration duration = value.asDuration();
+
+        assertEquals( 42_1, duration.months() );
+        assertEquals( 42_2, duration.days() );
+        assertEquals( 42_3, duration.seconds() );
+        assertEquals( 42_4, duration.nanoseconds() );
     }
 }

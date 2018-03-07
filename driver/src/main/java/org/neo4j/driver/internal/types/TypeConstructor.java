@@ -202,6 +202,15 @@ public enum TypeConstructor
                 }
             },
 
+    DURATION_TyCon
+            {
+                @Override
+                public String typeName()
+                {
+                    return "DURATION";
+                }
+            },
+
     NULL_TyCon {
         @Override
         public String typeName()

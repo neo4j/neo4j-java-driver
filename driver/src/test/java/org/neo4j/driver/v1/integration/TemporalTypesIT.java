@@ -29,6 +29,8 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.time.Month.MARCH;
@@ -158,5 +160,34 @@ public class TemporalTypesIT
 
         Record record = session.run( "CREATE (n:Node {dateTime: $dateTime}) RETURN n.dateTime", singletonMap( "dateTime", localDateTime ) ).single();
         assertEquals( localDateTime, record.get( 0 ).asLocalDateTime() );
+    }
+
+    @Test
+    public void shouldSendDuration()
+    {
+        Value durationValue = Values.duration( 8, 12, 90, 8 );
+
+        Record record1 = session.run( "CREATE (n:Node {duration: $duration}) RETURN 42", singletonMap( "duration", durationValue ) ).single();
+        assertEquals( 42, record1.get( 0 ).asInt() );
+
+        Record record2 = session.run( "MATCH (n:Node) RETURN n.duration" ).single();
+        assertEquals( durationValue.asDuration(), record2.get( 0 ).asDuration() );
+    }
+
+    @Test
+    public void shouldReceiveDuration()
+    {
+        Value durationValue = Values.duration( 13, 40, 12, 999 );
+        Record record = session.run( "RETURN duration({months: 13, days: 40, seconds: 12, nanoseconds: 999})" ).single();
+        assertEquals( durationValue.asDuration(), record.get( 0 ).asDuration() );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDuration()
+    {
+        Value durationValue = Values.duration( 7, 7, 88, 999_999 );
+
+        Record record = session.run( "CREATE (n:Node {duration: $duration}) RETURN n.duration", singletonMap( "duration", durationValue ) ).single();
+        assertEquals( durationValue.asDuration(), record.get( 0 ).asDuration() );
     }
 }

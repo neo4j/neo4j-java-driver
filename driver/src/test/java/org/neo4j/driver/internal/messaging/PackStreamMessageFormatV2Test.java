@@ -41,6 +41,8 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.util.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Duration;
 
 import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
@@ -341,6 +343,42 @@ public class PackStreamMessageFormatV2Test
         } );
 
         assertEquals( dateTime, unpacked );
+    }
+
+    @Test
+    public void shouldWriteDuration() throws Exception
+    {
+        Value durationValue = Values.duration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
+        Duration duration = durationValue.asDuration();
+
+        ByteBuf buf = Unpooled.buffer();
+        MessageFormat.Writer writer = newWriter( buf );
+
+        writer.write( new RunMessage( "RETURN $duration", singletonMap( "duration", durationValue ) ) );
+
+        int index = buf.readableBytes() - Long.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES - Short.BYTES - Byte.BYTES - Byte.BYTES;
+        ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
+
+        assertByteBufContains( tailSlice,
+                INT_64, duration.months(), INT_32, (int) duration.days(), INT_16, (short) duration.seconds(), (byte) duration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldReadDuration() throws Exception
+    {
+        Value durationValue = Values.duration( 17, 22, 99, 15 );
+        Duration duration = durationValue.asDuration();
+
+        Object unpacked = packAndUnpackValue( packer ->
+        {
+            packer.packStructHeader( 4, (byte) 'E' );
+            packer.pack( duration.months() );
+            packer.pack( duration.days() );
+            packer.pack( duration.seconds() );
+            packer.pack( duration.nanoseconds() );
+        } );
+
+        assertEquals( duration, unpacked );
     }
 
     private Object packAndUnpackValue( ThrowingConsumer<Packer> packAction ) throws Exception

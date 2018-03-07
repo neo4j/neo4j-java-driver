@@ -33,12 +33,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.InternalDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
 import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
+import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -51,6 +53,7 @@ import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
@@ -303,6 +306,11 @@ public abstract class Values
         return new DateTimeValue( zonedDateTime );
     }
 
+    public static Value duration( long months, long days, long seconds, long nanoseconds )
+    {
+        return new DurationValue( new InternalDuration( months, days, seconds, nanoseconds ) );
+    }
+
     public static Value point2D( long srid, double x, double y )
     {
         return new Point2DValue( new InternalPoint2D( srid, x, y ) );
@@ -553,6 +561,11 @@ public abstract class Values
         return ZONED_DATE_TIME;
     }
 
+    public static Function<Value,Duration> ofDuration()
+    {
+        return DURATION;
+    }
+
     public static Function<Value,Point2D> ofPoint2D()
     {
         return POINT_2D;
@@ -743,6 +756,13 @@ public abstract class Values
         public ZonedDateTime apply( Value val )
         {
             return val.asZonedDateTime();
+        }
+    };
+    private static final Function<Value,Duration> DURATION = new Function<Value,Duration>()
+    {
+        public Duration apply( Value val )
+        {
+            return val.asDuration();
         }
     };
     private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()

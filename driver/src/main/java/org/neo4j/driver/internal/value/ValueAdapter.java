@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
+import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
@@ -214,6 +215,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public ZonedDateTime asZonedDateTime()
     {
         throw new Uncoercible( type().name(), "ZonedDateTime" );
+    }
+
+    @Override
+    public Duration asDuration()
+    {
+        throw new Uncoercible( type().name(), "Duration" );
     }
 
     @Override
