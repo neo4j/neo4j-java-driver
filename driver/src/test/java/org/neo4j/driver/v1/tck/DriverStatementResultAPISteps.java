@@ -54,7 +54,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Single` on `Statement Result` gives a `Record` containing:$" )
-    public void usingSingleOnStatementReslutGivesARecordContaining( DataTable table ) throws Throwable
+    public void usingSingleOnStatementResultGivesARecordContaining( DataTable table ) throws Throwable
     {
         List<String> keys = table.diffableRows().get( 0 ).convertedRow;
         List<String> values = table.diffableRows().get( 1 ).convertedRow;
@@ -66,7 +66,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Single` on `Statement Result` throws exception:$" )
-    public void usingSingleOnStatmentReslutThrowsException( DataTable table ) throws Throwable
+    public void usingSingleOnStatementResultThrowsException( DataTable table ) throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
@@ -83,13 +83,13 @@ public class DriverStatementResultAPISteps
             }
             if ( success )
             {
-                throw new Exception( "Excpected exception to be thrown but was not! Got: " + single );
+                throw new Exception( "Expected exception to be thrown but was not! Got: " + single );
             }
         }
     }
 
     @Then( "^using `Peek` on `Statement Result` fails$" )
-    public void usingPeekOnStatmentReslutGivesNull() throws Throwable
+    public void usingPeekOnStatementResultGivesNull() throws Throwable
     {
         for ( CypherStatementRunner runner : runners )
         {
@@ -105,7 +105,7 @@ public class DriverStatementResultAPISteps
     }
 
     @Then( "^using `Peek` on `Statement Result` gives a `Record` containing:$" )
-    public void usingPeekOnStatmentReslutGivesARecord( DataTable table ) throws Throwable
+    public void usingPeekOnStatementResultGivesARecord( DataTable table ) throws Throwable
     {
         List<String> keys = table.diffableRows().get( 0 ).convertedRow;
         List<String> values = table.diffableRows().get( 1 ).convertedRow;

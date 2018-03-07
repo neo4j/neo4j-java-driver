@@ -58,7 +58,7 @@ public class DriverResultApiSteps
     List<Statement> statements;
 
     @When( "^the `Statement Result` is consumed a `Result Summary` is returned$" )
-    public void the_result_is_summerized() throws Throwable
+    public void the_result_is_summarized() throws Throwable
     {
         summaries = new ArrayList<>();
         for ( CypherStatementRunner runner : runners )
@@ -173,7 +173,7 @@ public class DriverResultApiSteps
     }
 
     @And( "^the `Result Summary` does not have a `Profile`$" )
-    public void theSummaryDoesNotHaveAPriofile() throws Throwable
+    public void theSummaryDoesNotHaveAProfile() throws Throwable
     {
         for ( ResultSummary summary : summaries )
         {
@@ -376,7 +376,7 @@ public class DriverResultApiSteps
                 }
                 break;
             default:
-                throw new IllegalArgumentException( "There is no case for handeling method type: " + key );
+                throw new IllegalArgumentException( "There is no case for handling method type: " + key );
             }
         }
     }

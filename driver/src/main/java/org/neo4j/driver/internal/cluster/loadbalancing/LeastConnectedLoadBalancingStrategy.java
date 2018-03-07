@@ -66,7 +66,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
             return null;
         }
 
-        // choose start index for iteration in round-rodin fashion
+        // choose start index for iteration in round-robin fashion
         int startIndex = addressesIndex.next( size );
         int index = startIndex;
 
