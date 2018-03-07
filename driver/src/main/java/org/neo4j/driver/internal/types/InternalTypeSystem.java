@@ -80,84 +80,72 @@ public class InternalTypeSystem implements TypeSystem
     {
     }
 
-    /** the Cypher type ANY */
     @Override
     public Type ANY()
     {
         return anyType;
     }
 
-    /** the Cypher type BOOLEAN */
     @Override
     public Type BOOLEAN()
     {
         return booleanType;
     }
 
-    /** the Cypher type BYTES */
     @Override
     public Type BYTES()
     {
         return bytesType;
     }
 
-    /** the Cypher type STRING */
     @Override
     public Type STRING()
     {
         return stringType;
     }
 
-    /** the Cypher type NUMBER */
     @Override
     public Type NUMBER()
     {
         return numberType;
     }
 
-    /** the Cypher type INTEGER */
     @Override
     public Type INTEGER()
     {
         return integerType;
     }
 
-    /** the Cypher type FLOAT */
     @Override
     public Type FLOAT()
     {
         return floatType;
     }
 
-    /** the Cypher type LIST */
     @Override
     public Type LIST()
     {
         return listType;
     }
 
-    /** the Cypher type MAP */
     @Override
     public Type MAP()
     {
         return mapType;
     }
 
-    /** the Cypher type NODE */
     @Override
     public Type NODE()
     {
         return nodeType;
     }
 
-    /** the Cypher type RELATIONSHIP */
     @Override
     public Type RELATIONSHIP()
     {
         return relationshipType;
     }
 
-    /** the Cypher type PATH */
     @Override
     public Type PATH()
     {
@@ -212,7 +200,6 @@ public class InternalTypeSystem implements TypeSystem
         return durationType;
     }
 
-    /** the Cypher type NULL */
     @Override
     public Type NULL()
     {

@@ -18,13 +18,42 @@
  */
 package org.neo4j.driver.v1.types;
 
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.Immutable;
+
+/**
+ * Represents a single tree-dimensional point in a particular coordinate reference system.
+ * <p>
+ * Value that represents a 3D point can be created using {@link Values#point3D(long, double, double, double)} method.
+ */
+@Immutable
 public interface Point3D
 {
+    /**
+     * Retrieve identifier of the coordinate reference system for this point.
+     *
+     * @return coordinate reference system identifier.
+     */
     long srid();
 
+    /**
+     * Retrieve {@code x} coordinate of this point.
+     *
+     * @return the {@code x} coordinate value.
+     */
     double x();
 
+    /**
+     * Retrieve {@code y} coordinate of this point.
+     *
+     * @return the {@code y} coordinate value.
+     */
     double y();
 
+    /**
+     * Retrieve {@code z} coordinate of this point.
+     *
+     * @return the {@code z} coordinate value.
+     */
     double z();
 }

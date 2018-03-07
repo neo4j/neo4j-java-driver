@@ -20,13 +20,42 @@ package org.neo4j.driver.v1.types;
 
 import java.time.temporal.TemporalAmount;
 
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.Immutable;
+
+/**
+ * Represents temporal amount containing months, days, seconds and nanoseconds of the second. A duration¬ can be negative.
+ * <p>
+ * Value that represents a duration can be created using {@link Values#duration(long, long, long, long)} method.
+ */
+@Immutable
 public interface Duration extends TemporalAmount
 {
+    /**
+     * Retrieve amount of months in this duration.
+     *
+     * @return number of months.
+     */
     long months();
 
+    /**
+     * Retrieve amount of days in this duration.
+     *
+     * @return number of days.
+     */
     long days();
 
+    /**
+     * Retrieve amount of seconds in this duration.
+     *
+     * @return number of seconds.
+     */
     long seconds();
 
+    /**
+     * Retrieve amount of nanoseconds of the second in this duration.
+     *
+     * @return number of nanoseconds.
+     */
     long nanoseconds();
 }

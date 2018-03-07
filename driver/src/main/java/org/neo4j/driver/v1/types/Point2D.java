@@ -18,11 +18,35 @@
  */
 package org.neo4j.driver.v1.types;
 
+import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.Immutable;
+
+/**
+ * Represents a single two-dimensional point in a particular coordinate reference system.
+ * <p>
+ * Value that represents a 2D point can be created using {@link Values#point2D(long, double, double)} method.
+ */
+@Immutable
 public interface Point2D
 {
+    /**
+     * Retrieve identifier of the coordinate reference system for this point.
+     *
+     * @return coordinate reference system identifier.
+     */
     long srid();
 
+    /**
+     * Retrieve {@code x} coordinate of this point.
+     *
+     * @return the {@code x} coordinate value.
+     */
     double x();
 
+    /**
+     * Retrieve {@code y} coordinate of this point.
+     *
+     * @return the {@code y} coordinate value.
+     */
     double y();
 }
