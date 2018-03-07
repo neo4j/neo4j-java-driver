@@ -26,7 +26,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.function.Function;
 
 import org.neo4j.driver.v1.Record;
@@ -130,6 +132,52 @@ public class TemporalTypesIT
     public void shouldSendAndReceiveLocalDateTime()
     {
         testSendAndReceiveValue( LocalDateTime.now(), Value::asLocalDateTime );
+    }
+
+    @Test
+    public void shouldSendDateTimeWithZoneOffset()
+    {
+        ZoneOffset offset = ZoneOffset.ofHoursMinutes( -4, -15 );
+        testSendValue( ZonedDateTime.of( 1845, 3, 25, 19, 15, 45, 22, offset ), Value::asZonedDateTime );
+    }
+
+    @Test
+    public void shouldReceiveDateTimeWithZoneOffset()
+    {
+        ZoneOffset offset = ZoneOffset.ofHoursMinutes( 3, 30 );
+        testReceiveValue( "RETURN datetime({year:1984, month:10, day:11, hour:21, minute:30, second:34, timezone:'+03:30'})",
+                ZonedDateTime.of( 1984, 10, 11, 21, 30, 34, 0, offset ),
+                Value::asZonedDateTime );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDateTimeWithZoneOffset()
+    {
+        ZoneOffset offset = ZoneOffset.ofHoursMinutes( -7, -15 );
+        testSendAndReceiveValue( ZonedDateTime.of( 2017, 3, 9, 11, 12, 13, 14, offset ), Value::asZonedDateTime );
+    }
+
+    @Test
+    public void shouldSendDateTimeWithZoneId()
+    {
+        ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
+        testSendValue( ZonedDateTime.of( 2049, 9, 11, 19, 10, 40, 20, zoneId ), Value::asZonedDateTime );
+    }
+
+    @Test
+    public void shouldReceiveDateTimeWithZoneId()
+    {
+        ZoneId zoneId = ZoneId.of( "Europe/London" );
+        testReceiveValue( "RETURN datetime({year:2000, month:1, day:1, hour:9, minute:5, second:1, timezone:'Europe/London'})",
+                ZonedDateTime.of( 2000, 1, 1, 9, 5, 1, 0, zoneId ),
+                Value::asZonedDateTime );
+    }
+
+    @Test
+    public void shouldSendAndReceiveDateTimeWithZoneId()
+    {
+        ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
+        testSendAndReceiveValue( ZonedDateTime.of( 2099, 12, 29, 12, 59, 59, 59, zoneId ), Value::asZonedDateTime );
     }
 
     @Test
