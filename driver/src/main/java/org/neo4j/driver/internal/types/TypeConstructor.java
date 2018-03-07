@@ -23,208 +23,55 @@ import org.neo4j.driver.v1.Value;
 
 public enum TypeConstructor
 {
-    ANY_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "ANY";
-        }
-
-        @Override
-        public boolean covers( Value value )
-        {
-            return ! value.isNull();
-        }
-    },
-    BOOLEAN_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "BOOLEAN";
-        }
-    },
-
-    BYTES_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "BYTES";
-        }
-    },
-
-    STRING_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "STRING";
-        }
-    },
-
-    NUMBER_TyCon {
-        @Override
-        public boolean covers( Value value )
-        {
-            TypeConstructor valueType = typeConstructorOf( value );
-            return valueType == this || valueType == INTEGER_TyCon || valueType == FLOAT_TyCon;
-        }
-
-        @Override
-        public String typeName()
-        {
-            return "NUMBER";
-        }
-    },
-
-    INTEGER_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "INTEGER";
-        }
-    },
-
-    FLOAT_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "FLOAT";
-        }
-    },
-
-    LIST_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "LIST";
-        }
-    },
-
-    MAP_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "MAP";
-        }
-
-        @Override
-        public boolean covers( Value value )
-        {
-            TypeConstructor valueType = typeConstructorOf( value );
-            return valueType == MAP_TyCon || valueType == NODE_TyCon || valueType == RELATIONSHIP_TyCon;
-        }
-    },
-
-    NODE_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "NODE";
-        }
-    },
-
-    RELATIONSHIP_TyCon
-            {
-        @Override
-        public String typeName()
-        {
-            return "RELATIONSHIP";
-        }
-    },
-
-    PATH_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "PATH";
-        }
-    },
-
-    POINT_2D_TyCon
+    ANY
             {
                 @Override
-                public String typeName()
+                public boolean covers( Value value )
                 {
-                    return "POINT";
+                    return !value.isNull();
                 }
             },
-
-    POINT_3D_TyCon
+    BOOLEAN,
+    BYTES,
+    STRING,
+    NUMBER
             {
                 @Override
-                public String typeName()
+                public boolean covers( Value value )
                 {
-                    return "POINT";
+                    TypeConstructor valueType = typeConstructorOf( value );
+                    return valueType == this || valueType == INTEGER || valueType == FLOAT;
                 }
             },
-
-    DATE_TyCon
+    INTEGER,
+    FLOAT,
+    LIST,
+    MAP
             {
                 @Override
-                public String typeName()
+                public boolean covers( Value value )
                 {
-                    return "DATE";
+                    TypeConstructor valueType = typeConstructorOf( value );
+                    return valueType == MAP || valueType == NODE || valueType == RELATIONSHIP;
                 }
             },
-
-    TIME_TyCon
-            {
-                @Override
-                public String typeName()
-                {
-                    return "TIME";
-                }
-            },
-
-    LOCAL_TIME_TyCon
-            {
-                @Override
-                public String typeName()
-                {
-                    return "LOCAL_TIME";
-                }
-            },
-
-    LOCAL_DATE_TIME_TyCon
-            {
-                @Override
-                public String typeName()
-                {
-                    return "LOCAL_DATE_TIME";
-                }
-            },
-
-    DATE_TIME_TyCon
-            {
-                @Override
-                public String typeName()
-                {
-                    return "DATE_TIME";
-                }
-            },
-
-    DURATION_TyCon
-            {
-                @Override
-                public String typeName()
-                {
-                    return "DURATION";
-                }
-            },
-
-    NULL_TyCon {
-        @Override
-        public String typeName()
-        {
-            return "NULL";
-        }
-    };
+    NODE,
+    RELATIONSHIP,
+    PATH,
+    POINT_2D,
+    POINT_3D,
+    DATE,
+    TIME,
+    LOCAL_TIME,
+    LOCAL_DATE_TIME,
+    DATE_TIME,
+    DURATION,
+    NULL;
 
     private static TypeConstructor typeConstructorOf( Value value )
     {
-        return ( (InternalValue) value ).typeConstructor();
+        return ((InternalValue) value).typeConstructor();
     }
-
-    public abstract String typeName();
 
     public boolean covers( Value value )
     {

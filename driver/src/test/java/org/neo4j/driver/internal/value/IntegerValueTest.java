@@ -24,9 +24,9 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -110,7 +110,7 @@ public class IntegerValueTest
     public void shouldTypeAsInteger()
     {
         InternalValue value = new IntegerValue( 1L );
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER_TyCon ) );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER ) );
     }
 
     @Test

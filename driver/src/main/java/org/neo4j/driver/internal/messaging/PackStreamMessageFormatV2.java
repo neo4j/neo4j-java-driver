@@ -49,14 +49,6 @@ import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Point3D;
 
 import static java.time.ZoneOffset.UTC;
-import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TIME_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.DURATION_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_DATE_TIME_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_TIME_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.TIME_TyCon;
 
 public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 {
@@ -114,28 +106,28 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             TypeConstructor typeConstructor = value.typeConstructor();
             switch ( typeConstructor )
             {
-            case DATE_TyCon:
+            case DATE:
                 packDate( value.asLocalDate() );
                 break;
-            case TIME_TyCon:
+            case TIME:
                 packTime( value.asOffsetTime() );
                 break;
-            case LOCAL_TIME_TyCon:
+            case LOCAL_TIME:
                 packLocalTime( value.asLocalTime() );
                 break;
-            case LOCAL_DATE_TIME_TyCon:
+            case LOCAL_DATE_TIME:
                 packLocalDateTime( value.asLocalDateTime() );
                 break;
-            case DATE_TIME_TyCon:
+            case DATE_TIME:
                 packZonedDateTime( value.asZonedDateTime() );
                 break;
-            case DURATION_TyCon:
+            case DURATION:
                 packDuration( value.asDuration() );
                 break;
-            case POINT_2D_TyCon:
+            case POINT_2D:
                 packPoint2D( value.asPoint2D() );
                 break;
-            case POINT_3D_TyCon:
+            case POINT_3D:
                 packPoint3D( value.asPoint3D() );
                 break;
             default:
@@ -241,31 +233,31 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             switch ( type )
             {
             case DATE:
-                ensureCorrectStructSize( DATE_TyCon.typeName(), DATE_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.DATE, DATE_STRUCT_SIZE, size );
                 return unpackDate();
             case TIME:
-                ensureCorrectStructSize( TIME_TyCon.typeName(), TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.TIME, TIME_STRUCT_SIZE, size );
                 return unpackTime();
             case LOCAL_TIME:
-                ensureCorrectStructSize( LOCAL_TIME_TyCon.typeName(), LOCAL_TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.LOCAL_TIME, LOCAL_TIME_STRUCT_SIZE, size );
                 return unpackLocalTime();
             case LOCAL_DATE_TIME:
-                ensureCorrectStructSize( LOCAL_DATE_TIME_TyCon.typeName(), LOCAL_DATE_TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size );
                 return unpackLocalDateTime();
             case DATE_TIME_WITH_ZONE_OFFSET:
-                ensureCorrectStructSize( DATE_TIME_TyCon.typeName(), DATE_TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
                 return unpackDateTimeWithZoneOffset();
             case DATE_TIME_WITH_ZONE_ID:
-                ensureCorrectStructSize( DATE_TIME_TyCon.typeName(), DATE_TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
                 return unpackDateTimeWithZoneId();
             case DURATION:
-                ensureCorrectStructSize( DURATION_TyCon.typeName(), DURATION_TIME_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size );
                 return unpackDuration();
             case POINT_2D_STRUCT_TYPE:
-                ensureCorrectStructSize( POINT_2D_TyCon.typeName(), POINT_2D_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.POINT_2D, POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
             case POINT_3D_STRUCT_TYPE:
-                ensureCorrectStructSize( POINT_3D_TyCon.typeName(), POINT_3D_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.POINT_3D, POINT_3D_STRUCT_SIZE, size );
                 return unpackPoint3D();
             default:
                 return super.unpackStruct( size, type );

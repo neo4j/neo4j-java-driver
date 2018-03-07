@@ -29,7 +29,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.driver.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.internal.value.BooleanValue.TRUE;
 
@@ -102,8 +101,8 @@ public class BooleanValueTest
     @Test
     public void shouldTypeAsBoolean()
     {
-        assertThat( TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
-        assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN_TyCon ) );
+        assertThat( TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
+        assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
     }
 
     @Test

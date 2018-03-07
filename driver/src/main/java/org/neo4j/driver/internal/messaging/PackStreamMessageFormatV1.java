@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.packstream.PackType;
+import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.value.ListValue;
@@ -210,120 +211,120 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             switch ( value.typeConstructor() )
             {
-                case NULL_TyCon:
-                    packer.packNull();
-                    break;
+            case NULL:
+                packer.packNull();
+                break;
 
-                case BYTES_TyCon:
-                    packer.pack( value.asByteArray() );
-                    break;
+            case BYTES:
+                packer.pack( value.asByteArray() );
+                break;
 
-                case STRING_TyCon:
-                    packer.pack( value.asString() );
-                    break;
+            case STRING:
+                packer.pack( value.asString() );
+                break;
 
-                case BOOLEAN_TyCon:
-                    packer.pack( value.asBoolean() );
-                    break;
+            case BOOLEAN:
+                packer.pack( value.asBoolean() );
+                break;
 
-                case INTEGER_TyCon:
-                    packer.pack( value.asLong() );
-                    break;
+            case INTEGER:
+                packer.pack( value.asLong() );
+                break;
 
-                case FLOAT_TyCon:
-                    packer.pack( value.asDouble() );
-                    break;
+            case FLOAT:
+                packer.pack( value.asDouble() );
+                break;
 
-                case MAP_TyCon:
-                    packer.packMapHeader( value.size() );
-                    for ( String s : value.keys() )
+            case MAP:
+                packer.packMapHeader( value.size() );
+                for ( String s : value.keys() )
+                {
+                    packer.pack( s );
+                    packValue( value.get( s ) );
+                }
+                break;
+
+            case LIST:
+                packer.packListHeader( value.size() );
+                for ( Value item : value.values() )
+                {
+                    packValue( item );
+                }
+                break;
+
+            case NODE:
+            {
+                Node node = value.asNode();
+                packNode( node );
+            }
+            break;
+
+            case RELATIONSHIP:
+            {
+                Relationship rel = value.asRelationship();
+                packer.packStructHeader( 5, RELATIONSHIP );
+                packer.pack( rel.id() );
+                packer.pack( rel.startNodeId() );
+                packer.pack( rel.endNodeId() );
+
+                packer.pack( rel.type() );
+
+                packProperties( rel );
+            }
+            break;
+
+            case PATH:
+                Path path = value.asPath();
+                packer.packStructHeader( 3, PATH );
+
+                // Unique nodes
+                Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
+                for ( Node node : path.nodes() )
+                {
+                    if ( !nodeIdx.containsKey( node ) )
                     {
-                        packer.pack( s );
-                        packValue( value.get( s ) );
+                        nodeIdx.put( node, nodeIdx.size() );
                     }
-                    break;
+                }
+                packer.packListHeader( nodeIdx.size() );
+                for ( Node node : nodeIdx.keySet() )
+                {
+                    packNode( node );
+                }
 
-                case LIST_TyCon:
-                    packer.packListHeader( value.size() );
-                    for ( Value item : value.values() )
+                // Unique rels
+                Map<Relationship,Integer> relIdx = Iterables.newLinkedHashMapWithSize( path.length() );
+                for ( Relationship rel : path.relationships() )
+                {
+                    if ( !relIdx.containsKey( rel ) )
                     {
-                        packValue( item );
+                        relIdx.put( rel, relIdx.size() + 1 );
                     }
-                    break;
+                }
+                packer.packListHeader( relIdx.size() );
+                for ( Relationship rel : relIdx.keySet() )
+                {
+                    packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
+                    packer.pack( rel.id() );
+                    packer.pack( rel.type() );
+                    packProperties( rel );
+                }
 
-                case NODE_TyCon:
-                    {
-                        Node node = value.asNode();
-                        packNode( node );
-                    }
-                    break;
+                // Sequence
+                packer.packListHeader( path.length() * 2 );
+                for ( Path.Segment seg : path )
+                {
+                    Relationship rel = seg.relationship();
+                    long relEndId = rel.endNodeId();
+                    long segEndId = seg.end().id();
+                    int size = relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel );
+                    packer.pack( size );
+                    packer.pack( nodeIdx.get( seg.end() ) );
+                }
+                break;
 
-                case RELATIONSHIP_TyCon:
-                    {
-                        Relationship rel = value.asRelationship();
-                        packer.packStructHeader( 5, RELATIONSHIP );
-                        packer.pack( rel.id() );
-                        packer.pack( rel.startNodeId() );
-                        packer.pack( rel.endNodeId() );
-
-                        packer.pack( rel.type() );
-
-                        packProperties( rel );
-                    }
-                    break;
-
-                case PATH_TyCon:
-                    Path path = value.asPath();
-                    packer.packStructHeader( 3, PATH );
-
-                    // Unique nodes
-                    Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
-                    for ( Node node : path.nodes() )
-                    {
-                        if ( !nodeIdx.containsKey( node ) )
-                        {
-                            nodeIdx.put( node, nodeIdx.size() );
-                        }
-                    }
-                    packer.packListHeader( nodeIdx.size() );
-                    for ( Node node : nodeIdx.keySet() )
-                    {
-                        packNode( node );
-                    }
-
-                    // Unique rels
-                    Map<Relationship,Integer> relIdx = Iterables.newLinkedHashMapWithSize( path.length() );
-                    for ( Relationship rel : path.relationships() )
-                    {
-                        if ( !relIdx.containsKey( rel ) )
-                        {
-                            relIdx.put( rel, relIdx.size() + 1 );
-                        }
-                    }
-                    packer.packListHeader( relIdx.size() );
-                    for ( Relationship rel : relIdx.keySet() )
-                    {
-                        packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-                        packer.pack( rel.id() );
-                        packer.pack( rel.type() );
-                        packProperties( rel );
-                    }
-
-                    // Sequence
-                    packer.packListHeader( path.length() * 2 );
-                    for ( Path.Segment seg : path )
-                    {
-                        Relationship rel = seg.relationship();
-                        long relEndId = rel.endNodeId();
-                        long segEndId = seg.end().id();
-                        int size = relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel );
-                        packer.pack( size );
-                        packer.pack( nodeIdx.get( seg.end() ) );
-                    }
-                    break;
-
-                default:
-                    throw new IOException( "Unknown type: " + value );
+            default:
+                throw new IOException( "Unknown type: " + value );
             }
         }
 
@@ -514,14 +515,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             switch ( type )
             {
             case NODE:
-                ensureCorrectStructSize( "NODE", NODE_FIELDS, size );
+                ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, size );
                 InternalNode adapted = unpackNode();
                 return new NodeValue( adapted );
             case RELATIONSHIP:
-                ensureCorrectStructSize( "RELATIONSHIP", 5, size );
+                ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 5, size );
                 return unpackRelationship();
             case PATH:
-                ensureCorrectStructSize( "PATH", 3, size );
+                ensureCorrectStructSize( TypeConstructor.PATH, 3, size );
                 return unpackPath();
             default:
                 throw new IOException( "Unknown struct type: " + type );
@@ -567,7 +568,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
             for ( int i = 0; i < uniqNodes.length; i++ )
             {
-                ensureCorrectStructSize( "NODE", NODE_FIELDS, unpacker.unpackStructHeader() );
+                ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, unpacker.unpackStructHeader() );
                 ensureCorrectStructSignature( "NODE", NODE, unpacker.unpackStructSignature() );
                 uniqNodes[i] = unpackNode();
             }
@@ -576,7 +577,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             InternalRelationship[] uniqRels = new InternalRelationship[(int) unpacker.unpackListHeader()];
             for ( int i = 0; i < uniqRels.length; i++ )
             {
-                ensureCorrectStructSize( "RELATIONSHIP", 3, unpacker.unpackStructHeader() );
+                ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 3, unpacker.unpackStructHeader() );
                 ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
                 long id = unpacker.unpackLong();
                 String relType = unpacker.unpackString();
@@ -619,10 +620,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             return new PathValue( new InternalPath( Arrays.asList( segments ), Arrays.asList( nodes ), Arrays.asList( rels ) ) );
         }
 
-        void ensureCorrectStructSize( String structName, int expected, long actual )
+        void ensureCorrectStructSize( TypeConstructor typeConstructor, int expected, long actual )
         {
             if ( expected != actual )
             {
+                String structName = typeConstructor.toString();
                 throw new ClientException( String.format(
                         "Invalid message received, serialized %s structures should have %d fields, "
                                 + "received %s structure has %d fields.", structName, expected, structName, actual ) );
