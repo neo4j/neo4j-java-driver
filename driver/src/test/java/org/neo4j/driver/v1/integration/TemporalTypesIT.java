@@ -27,10 +27,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import java.util.function.Function;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.time.Month.MARCH;
@@ -53,141 +55,126 @@ public class TemporalTypesIT
     @Test
     public void shouldSendDate()
     {
-        LocalDate localDate = LocalDate.now();
-
-        Record record1 = session.run( "CREATE (n:Node {date: $date}) RETURN 42", singletonMap( "date", localDate ) ).single();
-        assertEquals( 42, record1.get( 0 ).asInt() );
-
-        Record record2 = session.run( "MATCH (n:Node) RETURN n.date" ).single();
-        assertEquals( localDate, record2.get( 0 ).asLocalDate() );
+        testSendValue( LocalDate.now(), Value::asLocalDate );
     }
 
     @Test
     public void shouldReceiveDate()
     {
-        Record record = session.run( "RETURN date({year: 1995, month: 12, day: 4})" ).single();
-        assertEquals( LocalDate.of( 1995, 12, 4 ), record.get( 0 ).asLocalDate() );
+        testReceiveValue( "RETURN date({year: 1995, month: 12, day: 4})",
+                LocalDate.of( 1995, 12, 4 ),
+                Value::asLocalDate );
     }
 
     @Test
     public void shouldSendAndReceiveDate()
     {
-        LocalDate localDate = LocalDate.now();
-
-        Record record = session.run( "CREATE (n:Node {date: $date}) RETURN n.date", singletonMap( "date", localDate ) ).single();
-        assertEquals( localDate, record.get( 0 ).asLocalDate() );
+        testSendAndReceiveValue( LocalDate.now(), Value::asLocalDate );
     }
 
     @Test
     public void shouldSendTime()
     {
-        OffsetTime offsetTime = OffsetTime.now();
-
-        Record record1 = session.run( "CREATE (n:Node {time: $time}) RETURN 42", singletonMap( "time", offsetTime ) ).single();
-        assertEquals( 42, record1.get( 0 ).asInt() );
-
-        Record record2 = session.run( "MATCH (n:Node) RETURN n.time" ).single();
-        assertEquals( offsetTime, record2.get( 0 ).asOffsetTime() );
+        testSendValue( OffsetTime.now(), Value::asOffsetTime );
     }
 
     @Test
     public void shouldReceiveTime()
     {
-        Record record = session.run( "RETURN time({hour: 23, minute: 19, second: 55, timezone:'-07:00'})" ).single();
-        assertEquals( OffsetTime.of( 23, 19, 55, 0, ZoneOffset.ofHours( -7 ) ), record.get( 0 ).asOffsetTime() );
+        testReceiveValue( "RETURN time({hour: 23, minute: 19, second: 55, timezone:'-07:00'})",
+                OffsetTime.of( 23, 19, 55, 0, ZoneOffset.ofHours( -7 ) ),
+                Value::asOffsetTime );
     }
 
     @Test
     public void shouldSendAndReceiveTime()
     {
-        OffsetTime offsetTime = OffsetTime.now();
-
-        Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", offsetTime ) ).single();
-        assertEquals( offsetTime, record.get( 0 ).asOffsetTime() );
+        testSendAndReceiveValue( OffsetTime.now(), Value::asOffsetTime );
     }
 
     @Test
     public void shouldSendLocalTime()
     {
-        LocalTime localTime = LocalTime.now();
-
-        Record record1 = session.run( "CREATE (n:Node {time: $time}) RETURN 42", singletonMap( "time", localTime ) ).single();
-        assertEquals( 42, record1.get( 0 ).asInt() );
-
-        Record record2 = session.run( "MATCH (n:Node) RETURN n.time" ).single();
-        assertEquals( localTime, record2.get( 0 ).asLocalTime() );
+        testSendValue( LocalTime.now(), Value::asLocalTime );
     }
 
     @Test
     public void shouldReceiveLocalTime()
     {
-        Record record = session.run( "RETURN localtime({hour: 22, minute: 59, second: 10, nanosecond: 999999})" ).single();
-        assertEquals( LocalTime.of( 22, 59, 10, 999_999 ), record.get( 0 ).asLocalTime() );
+        testReceiveValue( "RETURN localtime({hour: 22, minute: 59, second: 10, nanosecond: 999999})",
+                LocalTime.of( 22, 59, 10, 999_999 ),
+                Value::asLocalTime );
     }
 
     @Test
     public void shouldSendAndReceiveLocalTime()
     {
-        LocalTime localTime = LocalTime.now();
-
-        Record record = session.run( "CREATE (n:Node {time: $time}) RETURN n.time", singletonMap( "time", localTime ) ).single();
-        assertEquals( localTime, record.get( 0 ).asLocalTime() );
+        testSendAndReceiveValue( LocalTime.now(), Value::asLocalTime );
     }
 
     @Test
     public void shouldSendLocalDateTime()
     {
-        LocalDateTime localDateTime = LocalDateTime.now();
-
-        Record record1 = session.run( "CREATE (n:Node {dateTime: $dateTime}) RETURN 42", singletonMap( "dateTime", localDateTime ) ).single();
-        assertEquals( 42, record1.get( 0 ).asInt() );
-
-        Record record2 = session.run( "MATCH (n:Node) RETURN n.dateTime" ).single();
-        assertEquals( localDateTime, record2.get( 0 ).asLocalDateTime() );
+        testSendValue( LocalDateTime.now(), Value::asLocalDateTime );
     }
 
     @Test
     public void shouldReceiveLocalDateTime()
     {
-        Record record = session.run( "RETURN localdatetime({year: 1899, month: 3, day: 20, hour: 12, minute: 17, second: 13, nanosecond: 999})" ).single();
-        assertEquals( LocalDateTime.of( 1899, MARCH, 20, 12, 17, 13, 999 ), record.get( 0 ).asLocalDateTime() );
+        testReceiveValue( "RETURN localdatetime({year: 1899, month: 3, day: 20, hour: 12, minute: 17, second: 13, nanosecond: 999})",
+                LocalDateTime.of( 1899, MARCH, 20, 12, 17, 13, 999 ),
+                Value::asLocalDateTime );
     }
 
     @Test
     public void shouldSendAndReceiveLocalDateTime()
     {
-        LocalDateTime localDateTime = LocalDateTime.now();
-
-        Record record = session.run( "CREATE (n:Node {dateTime: $dateTime}) RETURN n.dateTime", singletonMap( "dateTime", localDateTime ) ).single();
-        assertEquals( localDateTime, record.get( 0 ).asLocalDateTime() );
+        testSendAndReceiveValue( LocalDateTime.now(), Value::asLocalDateTime );
     }
 
     @Test
     public void shouldSendDuration()
     {
-        Value durationValue = Values.duration( 8, 12, 90, 8 );
-
-        Record record1 = session.run( "CREATE (n:Node {duration: $duration}) RETURN 42", singletonMap( "duration", durationValue ) ).single();
-        assertEquals( 42, record1.get( 0 ).asInt() );
-
-        Record record2 = session.run( "MATCH (n:Node) RETURN n.duration" ).single();
-        assertEquals( durationValue.asDuration(), record2.get( 0 ).asDuration() );
+        testSendValue( newDuration( 8, 12, 90, 8 ), Value::asDuration );
     }
 
     @Test
     public void shouldReceiveDuration()
     {
-        Value durationValue = Values.duration( 13, 40, 12, 999 );
-        Record record = session.run( "RETURN duration({months: 13, days: 40, seconds: 12, nanoseconds: 999})" ).single();
-        assertEquals( durationValue.asDuration(), record.get( 0 ).asDuration() );
+        testReceiveValue( "RETURN duration({months: 13, days: 40, seconds: 12, nanoseconds: 999})",
+                newDuration( 13, 40, 12, 999 ),
+                Value::asDuration );
     }
 
     @Test
     public void shouldSendAndReceiveDuration()
     {
-        Value durationValue = Values.duration( 7, 7, 88, 999_999 );
+        testSendAndReceiveValue( newDuration( 7, 7, 88, 999_999 ), Value::asDuration );
+    }
 
-        Record record = session.run( "CREATE (n:Node {duration: $duration}) RETURN n.duration", singletonMap( "duration", durationValue ) ).single();
-        assertEquals( durationValue.asDuration(), record.get( 0 ).asDuration() );
+    private <T> void testSendValue( T value, Function<Value,T> converter )
+    {
+        Record record1 = session.run( "CREATE (n:Node {value: $value}) RETURN 42", singletonMap( "value", value ) ).single();
+        assertEquals( 42, record1.get( 0 ).asInt() );
+
+        Record record2 = session.run( "MATCH (n:Node) RETURN n.value" ).single();
+        assertEquals( value, converter.apply( record2.get( 0 ) ) );
+    }
+
+    private <T> void testReceiveValue( String query, T expectedValue, Function<Value,T> converter )
+    {
+        Record record = session.run( query ).single();
+        assertEquals( expectedValue, converter.apply( record.get( 0 ) ) );
+    }
+
+    private <T> void testSendAndReceiveValue( T value, Function<Value,T> converter )
+    {
+        Record record = session.run( "CREATE (n:Node {value: $value}) RETURN n.value", singletonMap( "value", value ) ).single();
+        assertEquals( value, converter.apply( record.get( 0 ) ) );
+    }
+
+    private static Duration newDuration( long months, long days, long seconds, long nanoseconds )
+    {
+        return Values.duration( months, days, seconds, nanoseconds ).asDuration();
     }
 }
