@@ -29,12 +29,13 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.TemporalUtil;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.time.Month.MARCH;
@@ -42,9 +43,12 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
+import static org.neo4j.driver.v1.Values.duration;
 
 public class TemporalTypesIT
 {
+    private static final int RANDOM_VALUES_TO_TEST = 1_000;
+
     @Rule
     public final TestNeo4jSession session = new TestNeo4jSession();
 
@@ -75,6 +79,12 @@ public class TemporalTypesIT
     }
 
     @Test
+    public void shouldSendAndReceiveRandomDate()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomLocalDate, Value::asLocalDate );
+    }
+
+    @Test
     public void shouldSendTime()
     {
         testSendValue( OffsetTime.now(), Value::asOffsetTime );
@@ -92,6 +102,12 @@ public class TemporalTypesIT
     public void shouldSendAndReceiveTime()
     {
         testSendAndReceiveValue( OffsetTime.now(), Value::asOffsetTime );
+    }
+
+    @Test
+    public void shouldSendAndReceiveRandomTime()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomOffsetTime, Value::asOffsetTime );
     }
 
     @Test
@@ -115,6 +131,12 @@ public class TemporalTypesIT
     }
 
     @Test
+    public void shouldSendAndReceiveRandomLocalTime()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomLocalTime, Value::asLocalTime );
+    }
+
+    @Test
     public void shouldSendLocalDateTime()
     {
         testSendValue( LocalDateTime.now(), Value::asLocalDateTime );
@@ -132,6 +154,12 @@ public class TemporalTypesIT
     public void shouldSendAndReceiveLocalDateTime()
     {
         testSendAndReceiveValue( LocalDateTime.now(), Value::asLocalDateTime );
+    }
+
+    @Test
+    public void shouldSendAndReceiveRandomLocalDateTime()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomLocalDateTime, Value::asLocalDateTime );
     }
 
     @Test
@@ -158,6 +186,12 @@ public class TemporalTypesIT
     }
 
     @Test
+    public void shouldSendAndReceiveRandomDateTimeWithZoneOffset()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomZonedDateTimeWithOffset, Value::asZonedDateTime );
+    }
+
+    @Test
     public void shouldSendDateTimeWithZoneId()
     {
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
@@ -181,6 +215,12 @@ public class TemporalTypesIT
     }
 
     @Test
+    public void shouldSendAndReceiveRandomDateTimeWithZoneId()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomZonedDateTimeWithZoneId, Value::asZonedDateTime );
+    }
+
+    @Test
     public void shouldSendDuration()
     {
         testSendValue( newDuration( 8, 12, 90, 8 ), Value::asDuration );
@@ -198,6 +238,20 @@ public class TemporalTypesIT
     public void shouldSendAndReceiveDuration()
     {
         testSendAndReceiveValue( newDuration( 7, 7, 88, 999_999 ), Value::asDuration );
+    }
+
+    @Test
+    public void shouldSendAndReceiveRandomDuration()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asDuration );
+    }
+
+    private <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
+    {
+        for ( int i = 0; i < RANDOM_VALUES_TO_TEST; i++ )
+        {
+            testSendAndReceiveValue( supplier.get(), converter );
+        }
     }
 
     private <T> void testSendValue( T value, Function<Value,T> converter )
@@ -223,6 +277,6 @@ public class TemporalTypesIT
 
     private static Duration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return Values.duration( months, days, seconds, nanoseconds ).asDuration();
+        return duration( months, days, seconds, nanoseconds ).asDuration();
     }
 }
