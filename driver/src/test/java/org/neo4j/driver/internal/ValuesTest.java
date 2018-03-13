@@ -48,7 +48,7 @@ import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Point3D;
 
@@ -59,7 +59,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.Values.duration;
+import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
 import static org.neo4j.driver.v1.Values.ofInteger;
@@ -407,12 +407,12 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateDurationValue()
+    public void shouldCreateIsoDurationValue()
     {
-        Value value = duration( 42_1, 42_2, 42_3, 42_4 );
+        Value value = isoDuration( 42_1, 42_2, 42_3, 42_4 );
 
         assertThat( value, instanceOf( DurationValue.class ) );
-        Duration duration = value.asDuration();
+        IsoDuration duration = value.asIsoDuration();
 
         assertEquals( 42_1, duration.months() );
         assertEquals( 42_2, duration.days() );
@@ -421,14 +421,14 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromDuration()
+    public void shouldCreateValueFromIsoDuration()
     {
-        Value durationValue1 = duration( 1, 2, 3, 4 );
-        Duration duration = durationValue1.asDuration();
+        Value durationValue1 = isoDuration( 1, 2, 3, 4 );
+        IsoDuration duration = durationValue1.asIsoDuration();
         Value durationValue2 = value( duration );
 
-        assertEquals( duration, durationValue1.asDuration() );
-        assertEquals( duration, durationValue2.asDuration() );
+        assertEquals( duration, durationValue1.asIsoDuration() );
+        assertEquals( duration, durationValue2.asIsoDuration() );
         assertEquals( durationValue1, durationValue2 );
     }
 

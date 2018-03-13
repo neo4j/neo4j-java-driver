@@ -24,7 +24,7 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
@@ -33,7 +33,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
-public class InternalDuration implements Duration
+public class InternalIsoDuration implements IsoDuration
 {
     private static final List<TemporalUnit> SUPPORTED_UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
 
@@ -42,7 +42,7 @@ public class InternalDuration implements Duration
     private final long seconds;
     private final long nanoseconds;
 
-    public InternalDuration( long months, long days, long seconds, long nanoseconds )
+    public InternalIsoDuration( long months, long days, long seconds, long nanoseconds )
     {
         this.months = months;
         this.days = days;
@@ -160,7 +160,7 @@ public class InternalDuration implements Duration
         {
             return false;
         }
-        InternalDuration that = (InternalDuration) o;
+        InternalIsoDuration that = (InternalIsoDuration) o;
         return months == that.months &&
                days == that.days &&
                seconds == that.seconds &&

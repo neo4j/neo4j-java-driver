@@ -42,7 +42,7 @@ import org.neo4j.driver.internal.util.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 
 import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
@@ -348,8 +348,8 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldWriteDuration() throws Exception
     {
-        Value durationValue = Values.duration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
-        Duration duration = durationValue.asDuration();
+        Value durationValue = Values.isoDuration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
+        IsoDuration duration = durationValue.asIsoDuration();
 
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
@@ -366,8 +366,8 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldReadDuration() throws Exception
     {
-        Value durationValue = Values.duration( 17, 22, 99, 15 );
-        Duration duration = durationValue.asDuration();
+        Value durationValue = Values.isoDuration( 17, 22, 99, 15 );
+        IsoDuration duration = durationValue.asIsoDuration();
 
         Object unpacked = packAndUnpackValue( packer ->
         {

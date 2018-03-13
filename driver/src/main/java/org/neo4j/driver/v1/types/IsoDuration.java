@@ -24,12 +24,12 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Represents temporal amount containing months, days, seconds and nanoseconds of the second. A duration¬ can be negative.
+ * Represents temporal amount containing months, days, seconds and nanoseconds of the second. A duration can be negative.
  * <p>
- * Value that represents a duration can be created using {@link Values#duration(long, long, long, long)} method.
+ * Value that represents a duration can be created using {@link Values#isoDuration(long, long, long, long)} method.
  */
 @Immutable
-public interface Duration extends TemporalAmount
+public interface IsoDuration extends TemporalAmount
 {
     /**
      * Retrieve amount of months in this duration.

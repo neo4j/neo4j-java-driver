@@ -33,12 +33,12 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Point3D;
 
 import static java.time.ZoneOffset.UTC;
-import static org.neo4j.driver.v1.Values.duration;
+import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.point2D;
 import static org.neo4j.driver.v1.Values.point3D;
 import static org.neo4j.driver.v1.Values.value;
@@ -115,7 +115,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
                 packZonedDateTime( value.asZonedDateTime() );
                 break;
             case DURATION:
-                packDuration( value.asDuration() );
+                packDuration( value.asIsoDuration() );
                 break;
             case POINT_2D:
                 packPoint2D( value.asPoint2D() );
@@ -186,7 +186,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             }
         }
 
-        private void packDuration( Duration duration ) throws IOException
+        private void packDuration( IsoDuration duration ) throws IOException
         {
             packer.packStructHeader( DURATION_TIME_STRUCT_SIZE, DURATION );
             packer.pack( duration.months() );
@@ -314,7 +314,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             long days = unpacker.unpackLong();
             long seconds = unpacker.unpackLong();
             long nanoseconds = unpacker.unpackLong();
-            return duration( months, days, seconds, nanoseconds );
+            return isoDuration( months, days, seconds, nanoseconds );
         }
 
         private Value unpackPoint2D() throws IOException

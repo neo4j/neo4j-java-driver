@@ -19,18 +19,18 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Type;
 
-public class DurationValue extends ObjectValueAdapter<Duration>
+public class DurationValue extends ObjectValueAdapter<IsoDuration>
 {
-    public DurationValue( Duration duration )
+    public DurationValue( IsoDuration duration )
     {
         super( duration );
     }
 
     @Override
-    public Duration asDuration()
+    public IsoDuration asIsoDuration()
     {
         return asObject();
     }

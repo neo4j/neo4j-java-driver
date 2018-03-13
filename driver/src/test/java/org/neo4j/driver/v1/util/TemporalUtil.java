@@ -30,8 +30,8 @@ import java.time.temporal.ValueRange;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.driver.internal.InternalDuration;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.internal.InternalIsoDuration;
+import org.neo4j.driver.v1.types.IsoDuration;
 
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -79,10 +79,10 @@ public final class TemporalUtil
         return randomZonedDateTime( randomZoneId() );
     }
 
-    public static Duration randomDuration()
+    public static IsoDuration randomDuration()
     {
         int sign = random().nextBoolean() ? 1 : -1; // duration can be negative
-        return new InternalDuration( sign * randomInt(), sign * randomInt(), sign * randomInt(), sign * Math.abs( random( NANO_OF_SECOND ) ) );
+        return new InternalIsoDuration( sign * randomInt(), sign * randomInt(), sign * randomInt(), sign * Math.abs( random( NANO_OF_SECOND ) ) );
     }
 
     private static ZonedDateTime randomZonedDateTime( ZoneId zoneId )

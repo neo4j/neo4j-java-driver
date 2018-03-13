@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.TemporalUtil;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
@@ -43,7 +43,7 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
-import static org.neo4j.driver.v1.Values.duration;
+import static org.neo4j.driver.v1.Values.isoDuration;
 
 public class TemporalTypesIT
 {
@@ -223,7 +223,7 @@ public class TemporalTypesIT
     @Test
     public void shouldSendDuration()
     {
-        testSendValue( newDuration( 8, 12, 90, 8 ), Value::asDuration );
+        testSendValue( newDuration( 8, 12, 90, 8 ), Value::asIsoDuration );
     }
 
     @Test
@@ -231,19 +231,19 @@ public class TemporalTypesIT
     {
         testReceiveValue( "RETURN duration({months: 13, days: 40, seconds: 12, nanoseconds: 999})",
                 newDuration( 13, 40, 12, 999 ),
-                Value::asDuration );
+                Value::asIsoDuration );
     }
 
     @Test
     public void shouldSendAndReceiveDuration()
     {
-        testSendAndReceiveValue( newDuration( 7, 7, 88, 999_999 ), Value::asDuration );
+        testSendAndReceiveValue( newDuration( 7, 7, 88, 999_999 ), Value::asIsoDuration );
     }
 
     @Test
     public void shouldSendAndReceiveRandomDuration()
     {
-        testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asDuration );
+        testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asIsoDuration );
     }
 
     private <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
@@ -275,8 +275,8 @@ public class TemporalTypesIT
         assertEquals( value, converter.apply( record.get( 0 ) ) );
     }
 
-    private static Duration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return duration( months, days, seconds, nanoseconds ).asDuration();
+        return isoDuration( months, days, seconds, nanoseconds ).asIsoDuration();
     }
 }

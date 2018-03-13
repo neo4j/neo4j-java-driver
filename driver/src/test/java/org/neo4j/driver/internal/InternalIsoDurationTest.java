@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
@@ -35,12 +35,12 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class InternalDurationTest
+public class InternalIsoDurationTest
 {
     @Test
     public void shouldExposeMonths()
     {
-        Duration duration = newDuration( 42, 1, 2, 3 );
+        IsoDuration duration = newDuration( 42, 1, 2, 3 );
         assertEquals( 42, duration.months() );
         assertEquals( 42, duration.get( MONTHS ) );
     }
@@ -48,7 +48,7 @@ public class InternalDurationTest
     @Test
     public void shouldExposeDays()
     {
-        Duration duration = newDuration( 1, 42, 2, 3 );
+        IsoDuration duration = newDuration( 1, 42, 2, 3 );
         assertEquals( 42, duration.days() );
         assertEquals( 42, duration.get( DAYS ) );
     }
@@ -56,7 +56,7 @@ public class InternalDurationTest
     @Test
     public void shouldExposeSeconds()
     {
-        Duration duration = newDuration( 1, 2, 42, 3 );
+        IsoDuration duration = newDuration( 1, 2, 42, 3 );
         assertEquals( 42, duration.seconds() );
         assertEquals( 42, duration.get( SECONDS ) );
     }
@@ -64,7 +64,7 @@ public class InternalDurationTest
     @Test
     public void shouldExposeNanoseconds()
     {
-        Duration duration = newDuration( 1, 2, 3, 42 );
+        IsoDuration duration = newDuration( 1, 2, 3, 42 );
         assertEquals( 42, duration.nanoseconds() );
         assertEquals( 42, duration.get( NANOS ) );
     }
@@ -72,7 +72,7 @@ public class InternalDurationTest
     @Test
     public void shouldFailToGetUnsupportedTemporalUnit()
     {
-        Duration duration = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration = newDuration( 1, 2, 3, 4 );
 
         try
         {
@@ -87,14 +87,14 @@ public class InternalDurationTest
     @Test
     public void shouldExposeSupportedTemporalUnits()
     {
-        Duration duration = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration = newDuration( 1, 2, 3, 4 );
         assertEquals( asList( MONTHS, DAYS, SECONDS, NANOS ), duration.getUnits() );
     }
 
     @Test
     public void shouldAddTo()
     {
-        Duration duration = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration = newDuration( 1, 2, 3, 4 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 1, 1, 0, 0, 0, 0 );
 
         Temporal result = duration.addTo( dateTime );
@@ -105,7 +105,7 @@ public class InternalDurationTest
     @Test
     public void shouldSubtractFrom()
     {
-        Duration duration = newDuration( 4, 3, 2, 1 );
+        IsoDuration duration = newDuration( 4, 3, 2, 1 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 7, 19, 0, 0, 59, 999 );
 
         Temporal result = duration.subtractFrom( dateTime );
@@ -116,15 +116,15 @@ public class InternalDurationTest
     @Test
     public void shouldImplementEqualsAndHashCode()
     {
-        Duration duration1 = newDuration( 1, 2, 3, 4 );
-        Duration duration2 = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration1 = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration2 = newDuration( 1, 2, 3, 4 );
 
         assertEquals( duration1, duration2 );
         assertEquals( duration1.hashCode(), duration2.hashCode() );
     }
 
-    private static Duration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return new InternalDuration( months, days, seconds, nanoseconds );
+        return new InternalIsoDuration( months, days, seconds, nanoseconds );
     }
 }

@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.AsValue;
-import org.neo4j.driver.internal.InternalDuration;
+import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
@@ -53,8 +53,8 @@ import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
@@ -106,7 +106,7 @@ public abstract class Values
         if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
         if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
-        if ( value instanceof Duration ) { return value( (Duration) value ); }
+        if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
         if ( value instanceof Point2D ) { return value( (Point2D) value ); }
         if ( value instanceof Point3D ) { return value( (Point3D) value ); }
 
@@ -312,12 +312,12 @@ public abstract class Values
         return new DateTimeValue( zonedDateTime );
     }
 
-    public static Value duration( long months, long days, long seconds, long nanoseconds )
+    public static Value isoDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return value( new InternalDuration( months, days, seconds, nanoseconds ) );
+        return value( new InternalIsoDuration( months, days, seconds, nanoseconds ) );
     }
 
-    private static Value value( Duration duration )
+    private static Value value( IsoDuration duration )
     {
         return new DurationValue( duration );
     }
@@ -617,13 +617,13 @@ public abstract class Values
     }
 
     /**
-     * Converts values to {@link Duration}.
+     * Converts values to {@link IsoDuration}.
      *
-     * @return a function that returns {@link Value#asDuration()} of a {@link Value}
+     * @return a function that returns {@link Value#asIsoDuration()} of a {@link Value}
      */
-    public static Function<Value,Duration> ofDuration()
+    public static Function<Value,IsoDuration> ofIsoDuration()
     {
-        return Value::asDuration;
+        return Value::asIsoDuration;
     }
 
     /**

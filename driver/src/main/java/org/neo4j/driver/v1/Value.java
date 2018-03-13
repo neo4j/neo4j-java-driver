@@ -29,8 +29,8 @@ import java.util.Map;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
-import org.neo4j.driver.v1.types.Duration;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.types.Node;
@@ -328,10 +328,10 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     ZonedDateTime asZonedDateTime();
 
     /**
-     * @return the value as a {@link Duration}, if possible.
+     * @return the value as a {@link IsoDuration}, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
-    Duration asDuration();
+    IsoDuration asIsoDuration();
 
     /**
      * @return the value as a {@link Point2D}, if possible.

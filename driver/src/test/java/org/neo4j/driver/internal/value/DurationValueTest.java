@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalDuration;
+import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
-import org.neo4j.driver.v1.types.Duration;
+import org.neo4j.driver.v1.types.IsoDuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -33,7 +33,7 @@ public class DurationValueTest
     @Test
     public void shouldHaveCorrectType()
     {
-        Duration duration = newDuration( 1, 2, 3, 4 );
+        IsoDuration duration = newDuration( 1, 2, 3, 4 );
         DurationValue durationValue = new DurationValue( duration );
         assertEquals( InternalTypeSystem.TYPE_SYSTEM.DURATION(), durationValue.type() );
     }
@@ -41,7 +41,7 @@ public class DurationValueTest
     @Test
     public void shouldSupportAsObject()
     {
-        Duration duration = newDuration( 11, 22, 33, 44 );
+        IsoDuration duration = newDuration( 11, 22, 33, 44 );
         DurationValue durationValue = new DurationValue( duration );
         assertEquals( duration, durationValue.asObject() );
     }
@@ -49,15 +49,15 @@ public class DurationValueTest
     @Test
     public void shouldSupportAsOffsetTime()
     {
-        Duration duration = newDuration( 111, 222, 333, 444 );
+        IsoDuration duration = newDuration( 111, 222, 333, 444 );
         DurationValue durationValue = new DurationValue( duration );
-        assertEquals( duration, durationValue.asDuration() );
+        assertEquals( duration, durationValue.asIsoDuration() );
     }
 
     @Test
     public void shouldNotSupportAsLong()
     {
-        Duration duration = newDuration( 1111, 2222, 3333, 4444 );
+        IsoDuration duration = newDuration( 1111, 2222, 3333, 4444 );
         DurationValue durationValue = new DurationValue( duration );
 
         try
@@ -70,8 +70,8 @@ public class DurationValueTest
         }
     }
 
-    private static Duration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return new InternalDuration( months, days, seconds, nanoseconds );
+        return new InternalIsoDuration( months, days, seconds, nanoseconds );
     }
 }
