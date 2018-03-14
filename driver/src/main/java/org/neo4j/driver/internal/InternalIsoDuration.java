@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.time.Duration;
+import java.time.Period;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
@@ -41,6 +43,16 @@ public class InternalIsoDuration implements IsoDuration
     private final long days;
     private final long seconds;
     private final long nanoseconds;
+
+    public InternalIsoDuration( Period period )
+    {
+        this( period.toTotalMonths(), period.getDays(), 0, 0 );
+    }
+
+    public InternalIsoDuration( Duration duration )
+    {
+        this( 0, 0, duration.getSeconds(), duration.getNano() );
+    }
 
     public InternalIsoDuration( long months, long days, long seconds, long nanoseconds )
     {

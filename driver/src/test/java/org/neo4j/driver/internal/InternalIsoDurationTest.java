@@ -20,7 +20,9 @@ package org.neo4j.driver.internal;
 
 import org.junit.Test;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.temporal.Temporal;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
@@ -121,6 +123,32 @@ public class InternalIsoDurationTest
 
         assertEquals( duration1, duration2 );
         assertEquals( duration1.hashCode(), duration2.hashCode() );
+    }
+
+    @Test
+    public void shouldCreateFromPeriod()
+    {
+        Period period = Period.of( 3, 5, 12 );
+
+        InternalIsoDuration duration = new InternalIsoDuration( period );
+
+        assertEquals( period.toTotalMonths(), duration.months() );
+        assertEquals( period.getDays(), duration.days() );
+        assertEquals( 0, duration.seconds() );
+        assertEquals( 0, duration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldCreateFromDuration()
+    {
+        Duration duration = Duration.ofSeconds( 391784, 4879173 );
+
+        InternalIsoDuration isoDuration = new InternalIsoDuration( duration );
+
+        assertEquals( 0, isoDuration.months() );
+        assertEquals( 0, isoDuration.days() );
+        assertEquals( duration.getSeconds(), isoDuration.seconds() );
+        assertEquals( duration.getNano(), isoDuration.nanoseconds() );
     }
 
     private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )

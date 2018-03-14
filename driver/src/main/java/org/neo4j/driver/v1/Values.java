@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.v1;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,6 +109,8 @@ public abstract class Values
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
         if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
         if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
+        if ( value instanceof Period ) { return value( (Period) value ); }
+        if ( value instanceof Duration ) { return value( (Duration) value ); }
         if ( value instanceof Point2D ) { return value( (Point2D) value ); }
         if ( value instanceof Point3D ) { return value( (Point3D) value ); }
 
@@ -310,6 +314,16 @@ public abstract class Values
     public static Value value( ZonedDateTime zonedDateTime )
     {
         return new DateTimeValue( zonedDateTime );
+    }
+
+    public static Value value( Period period )
+    {
+        return value( new InternalIsoDuration( period ) );
+    }
+
+    public static Value value( Duration duration )
+    {
+        return value( new InternalIsoDuration( duration ) );
     }
 
     public static Value isoDuration( long months, long days, long seconds, long nanoseconds )

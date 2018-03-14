@@ -23,10 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -430,6 +432,34 @@ public class ValuesTest
         assertEquals( duration, durationValue1.asIsoDuration() );
         assertEquals( duration, durationValue2.asIsoDuration() );
         assertEquals( durationValue1, durationValue2 );
+    }
+
+    @Test
+    public void shouldCreateValueFromPeriod()
+    {
+        Period period = Period.of( 5, 11, 190 );
+
+        Value value = value( period );
+        IsoDuration isoDuration = value.asIsoDuration();
+
+        assertEquals( period.toTotalMonths(), isoDuration.months() );
+        assertEquals( period.getDays(), isoDuration.days() );
+        assertEquals( 0, isoDuration.seconds() );
+        assertEquals( 0, isoDuration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldCreateValueFromDuration()
+    {
+        Duration duration = Duration.ofSeconds( 183951, 4384718937L );
+
+        Value value = value( duration );
+        IsoDuration isoDuration = value.asIsoDuration();
+
+        assertEquals( 0, isoDuration.months() );
+        assertEquals( 0, isoDuration.days() );
+        assertEquals( duration.getSeconds(), isoDuration.seconds() );
+        assertEquals( duration.getNano(), isoDuration.nanoseconds() );
     }
 
     @Test
