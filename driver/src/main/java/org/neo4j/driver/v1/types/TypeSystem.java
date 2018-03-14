@@ -53,9 +53,7 @@ public interface TypeSystem
 
     Type PATH();
 
-    Type POINT_2D();
-
-    Type POINT_3D();
+    Type POINT();
 
     Type DATE();
 

@@ -28,19 +28,19 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
+import org.neo4j.driver.internal.InternalPoint2D;
+import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.IsoDuration;
-import org.neo4j.driver.v1.types.Point2D;
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.Point;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.driver.v1.Values.isoDuration;
-import static org.neo4j.driver.v1.Values.point2D;
-import static org.neo4j.driver.v1.Values.point3D;
+import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 
 public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
@@ -117,11 +117,8 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             case DURATION:
                 packDuration( value.asIsoDuration() );
                 break;
-            case POINT_2D:
-                packPoint2D( value.asPoint2D() );
-                break;
-            case POINT_3D:
-                packPoint3D( value.asPoint3D() );
+            case POINT:
+                packPoint( value.asPoint() );
                 break;
             default:
                 super.packInternalValue( value );
@@ -195,7 +192,23 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             packer.pack( duration.nanoseconds() );
         }
 
-        private void packPoint2D( Point2D point ) throws IOException
+        private void packPoint( Point point ) throws IOException
+        {
+            if ( point instanceof InternalPoint2D )
+            {
+                packPoint2D( point );
+            }
+            else if ( point instanceof InternalPoint3D )
+            {
+                packPoint3D( point );
+            }
+            else
+            {
+                throw new IOException( String.format( "Unknown type: type: %s, value: %s",  point.getClass(), point.toString() ) );
+            }
+        }
+
+        private void packPoint2D ( Point point ) throws IOException
         {
             packer.packStructHeader( POINT_2D_STRUCT_SIZE, POINT_2D_STRUCT_TYPE );
             packer.pack( point.srid() );
@@ -203,7 +216,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             packer.pack( point.y() );
         }
 
-        private void packPoint3D( Point3D point ) throws IOException
+        private void packPoint3D( Point point ) throws IOException
         {
             packer.packStructHeader( POINT_3D_STRUCT_SIZE, POINT_3D_STRUCT_TYPE );
             packer.pack( point.srid() );
@@ -247,10 +260,10 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
                 ensureCorrectStructSize( TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size );
                 return unpackDuration();
             case POINT_2D_STRUCT_TYPE:
-                ensureCorrectStructSize( TypeConstructor.POINT_2D, POINT_2D_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.POINT, POINT_2D_STRUCT_SIZE, size );
                 return unpackPoint2D();
             case POINT_3D_STRUCT_TYPE:
-                ensureCorrectStructSize( TypeConstructor.POINT_3D, POINT_3D_STRUCT_SIZE, size );
+                ensureCorrectStructSize( TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size );
                 return unpackPoint3D();
             default:
                 return super.unpackStruct( size, type );
@@ -319,19 +332,19 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private Value unpackPoint2D() throws IOException
         {
-            long srid = unpacker.unpackLong();
+            int srid = Math.toIntExact( unpacker.unpackLong() );
             double x = unpacker.unpackDouble();
             double y = unpacker.unpackDouble();
-            return point2D( srid, x, y );
+            return point( srid, x, y );
         }
 
         private Value unpackPoint3D() throws IOException
         {
-            long srid = unpacker.unpackLong();
+            int srid = Math.toIntExact( unpacker.unpackLong() );
             double x = unpacker.unpackDouble();
             double y = unpacker.unpackDouble();
             double z = unpacker.unpackDouble();
-            return point3D( srid, x, y, z );
+            return point( srid, x, y, z );
         }
     }
 }

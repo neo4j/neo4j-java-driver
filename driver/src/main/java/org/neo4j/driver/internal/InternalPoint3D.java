@@ -20,16 +20,21 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.Point;
 
-public class InternalPoint3D implements Point3D
+public class InternalPoint3D implements Point
 {
-    private final long srid;
+    private final int srid;
     private final double x;
     private final double y;
     private final double z;
 
-    public InternalPoint3D( long srid, double x, double y, double z )
+    public InternalPoint3D( int srid, double x, double y )
+    {
+        this( srid, x, y, Double.NaN );
+    }
+
+    public InternalPoint3D( int srid, double x, double y, double z )
     {
         this.srid = srid;
         this.x = x;
@@ -38,7 +43,7 @@ public class InternalPoint3D implements Point3D
     }
 
     @Override
-    public long srid()
+    public int srid()
     {
         return srid;
     }
@@ -88,11 +93,11 @@ public class InternalPoint3D implements Point3D
     @Override
     public String toString()
     {
-        return "Point3D{" +
+        return "Point({" +
                "srid=" + srid +
                ", x=" + x +
                ", y=" + y +
                ", z=" + z +
-               '}';
+               "})";
     }
 }

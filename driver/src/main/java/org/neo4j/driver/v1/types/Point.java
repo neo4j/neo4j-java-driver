@@ -22,19 +22,20 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Represents a single two-dimensional point in a particular coordinate reference system.
+ * Represents a single point in a particular coordinate reference system.
  * <p>
- * Value that represents a 2D point can be created using {@link Values#point2D(long, double, double)} method.
+ * Value that represents a point can be created using {@link Values#point(int, double, double)} method.
  */
 @Immutable
-public interface Point2D
+
+public interface Point
 {
     /**
      * Retrieve identifier of the coordinate reference system for this point.
      *
      * @return coordinate reference system identifier.
      */
-    long srid();
+    int srid();
 
     /**
      * Retrieve {@code x} coordinate of this point.
@@ -49,4 +50,12 @@ public interface Point2D
      * @return the {@code y} coordinate value.
      */
     double y();
+
+    /**
+     * Retrieve {@code z} coordinate of this point.
+     *
+     * @return the {@code z} coordinate value or {@link Double#NaN} if not applicable
+     */
+    double z();
+
 }

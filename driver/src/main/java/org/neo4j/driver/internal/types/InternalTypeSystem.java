@@ -38,8 +38,7 @@ import static org.neo4j.driver.internal.types.TypeConstructor.NODE;
 import static org.neo4j.driver.internal.types.TypeConstructor.NULL;
 import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER;
 import static org.neo4j.driver.internal.types.TypeConstructor.PATH;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT;
 import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP;
 import static org.neo4j.driver.internal.types.TypeConstructor.STRING;
 import static org.neo4j.driver.internal.types.TypeConstructor.TIME;
@@ -66,8 +65,7 @@ public class InternalTypeSystem implements TypeSystem
     private final TypeRepresentation nodeType = constructType( NODE );
     private final TypeRepresentation relationshipType = constructType( RELATIONSHIP );
     private final TypeRepresentation pathType = constructType( PATH );
-    private final TypeRepresentation point2dType = constructType( POINT_2D );
-    private final TypeRepresentation point3dType = constructType( POINT_3D );
+    private final TypeRepresentation pointType = constructType( POINT );
     private final TypeRepresentation dateType = constructType( DATE );
     private final TypeRepresentation timeType = constructType( TIME );
     private final TypeRepresentation localTimeType = constructType( LOCAL_TIME );
@@ -153,15 +151,9 @@ public class InternalTypeSystem implements TypeSystem
     }
 
     @Override
-    public Type POINT_2D()
+    public Type POINT()
     {
-        return point2dType;
-    }
-
-    @Override
-    public Type POINT_3D()
-    {
-        return point3dType;
+        return pointType;
     }
 
     @Override

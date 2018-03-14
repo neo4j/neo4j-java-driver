@@ -51,8 +51,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.IsoDuration;
-import org.neo4j.driver.v1.types.Point2D;
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.Point;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -72,8 +71,7 @@ import static org.neo4j.driver.v1.Values.ofNumber;
 import static org.neo4j.driver.v1.Values.ofObject;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.ofToString;
-import static org.neo4j.driver.v1.Values.point2D;
-import static org.neo4j.driver.v1.Values.point3D;
+import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -465,24 +463,24 @@ public class ValuesTest
     @Test
     public void shouldCreateValueFromPoint2D()
     {
-        Value point2DValue1 = point2D( 1, 2, 3 );
-        Point2D point2D = point2DValue1.asPoint2D();
+        Value point2DValue1 = point( 1, 2, 3 );
+        Point point2D = point2DValue1.asPoint();
         Value point2DValue2 = value( point2D );
 
-        assertEquals( point2D, point2DValue1.asPoint2D() );
-        assertEquals( point2D, point2DValue2.asPoint2D() );
+        assertEquals( point2D, point2DValue1.asPoint() );
+        assertEquals( point2D, point2DValue2.asPoint() );
         assertEquals( point2DValue1, point2DValue2 );
     }
 
     @Test
     public void shouldCreateValueFromPoint3D()
     {
-        Value point3DValue1 = point3D( 1, 2, 3, 4 );
-        Point3D point3D = point3DValue1.asPoint3D();
+        Value point3DValue1 = point( 1, 2, 3, 4 );
+        Point point3D = point3DValue1.asPoint();
         Value point3DValue2 = value( point3D );
 
-        assertEquals( point3D, point3DValue1.asPoint3D() );
-        assertEquals( point3D, point3DValue2.asPoint3D() );
+        assertEquals( point3D, point3DValue1.asPoint() );
+        assertEquals( point3D, point3DValue2.asPoint() );
         assertEquals( point3DValue1, point3DValue2 );
     }
 }
