@@ -18,6 +18,11 @@
  */
 package org.neo4j.driver.v1;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +30,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.types.Node;
@@ -291,19 +297,60 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      */
     Path asPath();
 
+    /**
+     * @return the value as a {@link LocalDate}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalDate asLocalDate();
+
+    /**
+     * @return the value as a {@link OffsetTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    OffsetTime asOffsetTime();
+
+    /**
+     * @return the value as a {@link LocalTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalTime asLocalTime();
+
+    /**
+     * @return the value as a {@link LocalDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalDateTime asLocalDateTime();
+
+    /**
+     * @return the value as a {@link ZonedDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    ZonedDateTime asZonedDateTime();
+
+    /**
+     * @return the value as a {@link IsoDuration}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    IsoDuration asIsoDuration();
+
+    /**
+     * @return the value as a {@link Point2D}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Point2D asPoint2D();
 
+    /**
+     * @return the value as a {@link Point3D}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
     Point3D asPoint3D();
 
-    // Force implementation
     @Override
     boolean equals( Object other );
 
-    // Force implementation
     @Override
     int hashCode();
 
-    //Force implementation
     @Override
     String toString();
 }

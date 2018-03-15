@@ -28,9 +28,8 @@ import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.neo4j.driver.internal.util.Format.formatPairs;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.ofObject;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class MapValue extends ValueAdapter
 {
@@ -107,18 +106,9 @@ public class MapValue extends ValueAdapter
     }
 
     @Override
-    public String asLiteralString()
+    public String toString()
     {
-        return toString( VALUE_ONLY );
-    }
-
-    @Override
-    public String toString( Format valueFormat )
-    {
-        return maybeWithType(
-            valueFormat.includeType(),
-            formatPairs( valueFormat.inner(), asMap( ofValue()) )
-        );
+        return formatPairs( asMap( ofValue() ) );
     }
 
     @Override

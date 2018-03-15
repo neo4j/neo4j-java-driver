@@ -22,8 +22,8 @@ import org.junit.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -86,7 +86,7 @@ public class StringValueTest
     public void shouldTypeAsString()
     {
         InternalValue value = new StringValue( "Spongebob" );
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING_TyCon ) );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING ) );
     }
 
     @Test

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
+
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
@@ -87,7 +88,7 @@ public class BytesValueTest
     public void shouldTypeAsString()
     {
         InternalValue value = new BytesValue( TEST_BYTES );
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.BYTES_TyCon ) );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.BYTES ) );
     }
 
     @Test

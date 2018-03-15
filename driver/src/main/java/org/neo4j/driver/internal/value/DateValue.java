@@ -18,14 +18,27 @@
  */
 package org.neo4j.driver.internal.value;
 
-public abstract class ScalarValueAdapter extends ValueAdapter
+import java.time.LocalDate;
+
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.v1.types.Type;
+
+public class DateValue extends ObjectValueAdapter<LocalDate>
 {
-    @Override
-    public abstract String asLiteralString();
+    public DateValue( LocalDate date )
+    {
+        super( date );
+    }
 
     @Override
-    public String toString( Format valueFormat )
+    public LocalDate asLocalDate()
     {
-        return maybeWithType( valueFormat.includeType(), asLiteralString() );
+        return asObject();
+    }
+
+    @Override
+    public Type type()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM.DATE();
     }
 }

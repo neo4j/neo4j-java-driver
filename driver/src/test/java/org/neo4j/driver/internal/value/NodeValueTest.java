@@ -67,7 +67,7 @@ public class NodeValueTest
     public void shouldTypeAsNode()
     {
         InternalValue value = emptyNodeValue();
-        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE_TyCon ) );
+        assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE ) );
     }
 
     private NodeValue emptyNodeValue()

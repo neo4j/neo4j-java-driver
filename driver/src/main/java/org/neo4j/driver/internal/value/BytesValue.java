@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.Arrays;
+
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Type;
-
-import java.util.Arrays;
 
 public class BytesValue extends ValueAdapter
 {
@@ -89,7 +89,7 @@ public class BytesValue extends ValueAdapter
     }
 
     @Override
-    public String toString(Format valueFormat)
+    public String toString()
     {
         StringBuilder s = new StringBuilder("#");
         for (byte b : val)
@@ -100,9 +100,6 @@ public class BytesValue extends ValueAdapter
             }
             s.append(Integer.toHexString(b));
         }
-        return maybeWithType(
-                valueFormat.includeType(),
-                s.toString()
-        );
+        return s.toString();
     }
 }

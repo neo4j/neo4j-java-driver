@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
+import org.neo4j.driver.v1.types.Type;
 
 public class IntegerValue extends NumberValueAdapter<Long>
 {
@@ -78,7 +78,7 @@ public class IntegerValue extends NumberValueAdapter<Long>
     }
 
     @Override
-    public String asLiteralString()
+    public String toString()
     {
         return Long.toString( val );
     }

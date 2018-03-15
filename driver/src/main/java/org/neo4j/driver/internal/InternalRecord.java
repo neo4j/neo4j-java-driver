@@ -23,9 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
+import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -129,7 +128,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     @Override
     public String toString()
     {
-        return format( "Record<%s>", formatPairs( InternalValue.Format.VALUE_ONLY, asMap( ofValue() ) ) );
+        return format( "Record<%s>", formatPairs( asMap( ofValue() ) ) );
     }
 
     @Override

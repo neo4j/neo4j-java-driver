@@ -43,6 +43,6 @@ public class NullValueTest
     @Test
     public void shouldTypeAsNull()
     {
-        assertThat( ( (InternalValue) NullValue.NULL ).typeConstructor(), equalTo( TypeConstructor.NULL_TyCon ) );
+        assertThat( ((InternalValue) NullValue.NULL).typeConstructor(), equalTo( TypeConstructor.NULL ) );
     }
 }

@@ -57,5 +57,17 @@ public interface TypeSystem
 
     Type POINT_3D();
 
+    Type DATE();
+
+    Type TIME();
+
+    Type LOCAL_TIME();
+
+    Type LOCAL_DATE_TIME();
+
+    Type DATE_TIME();
+
+    Type DURATION();
+
     Type NULL();
 }

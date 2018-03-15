@@ -18,35 +18,44 @@
  */
 package org.neo4j.driver.v1.types;
 
+import java.time.temporal.TemporalAmount;
+
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**
- * Represents a single two-dimensional point in a particular coordinate reference system.
+ * Represents temporal amount containing months, days, seconds and nanoseconds of the second. A duration can be negative.
  * <p>
- * Value that represents a 2D point can be created using {@link Values#point2D(long, double, double)} method.
+ * Value that represents a duration can be created using {@link Values#isoDuration(long, long, long, long)} method.
  */
 @Immutable
-public interface Point2D
+public interface IsoDuration extends TemporalAmount
 {
     /**
-     * Retrieve identifier of the coordinate reference system for this point.
+     * Retrieve amount of months in this duration.
      *
-     * @return coordinate reference system identifier.
+     * @return number of months.
      */
-    long srid();
+    long months();
 
     /**
-     * Retrieve {@code x} coordinate of this point.
+     * Retrieve amount of days in this duration.
      *
-     * @return the {@code x} coordinate value.
+     * @return number of days.
      */
-    double x();
+    long days();
 
     /**
-     * Retrieve {@code y} coordinate of this point.
+     * Retrieve amount of seconds in this duration.
      *
-     * @return the {@code y} coordinate value.
+     * @return number of seconds.
      */
-    double y();
+    long seconds();
+
+    /**
+     * Retrieve amount of nanoseconds of the second in this duration.
+     *
+     * @return number of nanoseconds.
+     */
+    long nanoseconds();
 }

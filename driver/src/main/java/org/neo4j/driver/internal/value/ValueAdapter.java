@@ -18,6 +18,11 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +34,7 @@ import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point2D;
@@ -37,9 +43,7 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.util.Function;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.internal.value.InternalValue.Format.VALUE_ONLY;
 import static org.neo4j.driver.v1.Values.ofObject;
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -85,11 +89,6 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public String asString()
     {
         throw new Uncoercible( type().name(), "Java String" );
-    }
-
-    public String asLiteralString()
-    {
-        throw new Uncoercible( type().name(), "Java String representation of Cypher literal" );
     }
 
     @Override
@@ -189,6 +188,42 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public LocalDate asLocalDate()
+    {
+        throw new Uncoercible( type().name(), "LocalDate" );
+    }
+
+    @Override
+    public OffsetTime asOffsetTime()
+    {
+        throw new Uncoercible( type().name(), "OffsetTime" );
+    }
+
+    @Override
+    public LocalTime asLocalTime()
+    {
+        throw new Uncoercible( type().name(), "LocalTime" );
+    }
+
+    @Override
+    public LocalDateTime asLocalDateTime()
+    {
+        throw new Uncoercible( type().name(), "LocalDateTime" );
+    }
+
+    @Override
+    public ZonedDateTime asZonedDateTime()
+    {
+        throw new Uncoercible( type().name(), "ZonedDateTime" );
+    }
+
+    @Override
+    public IsoDuration asIsoDuration()
+    {
+        throw new Uncoercible( type().name(), "Duration" );
+    }
+
+    @Override
     public Point2D asPoint2D()
     {
         throw new Uncoercible( type().name(), "Point2D" );
@@ -242,26 +277,23 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
         throw new NotMultiValued( type().name() + " is not iterable" );
     }
 
-    public String toString()
-    {
-        return toString( VALUE_ONLY );
-    }
-
-    protected String maybeWithType( boolean includeType, String text )
-    {
-        return includeType ? withType( text ) : text;
-    }
-
-    private String withType( String text )
-    {
-        return format( "%s :: %s", text, type().name() );
-    }
-
     @Override
     public final TypeConstructor typeConstructor()
     {
         return ( (TypeRepresentation) type() ).constructor();
     }
+
+    // Force implementation
+    @Override
+    public abstract boolean equals( Object obj );
+
+    // Force implementation
+    @Override
+    public abstract int hashCode();
+
+    // Force implementation
+    @Override
+    public abstract String toString();
 }
 
 

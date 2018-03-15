@@ -22,31 +22,17 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Point2D;
 import org.neo4j.driver.v1.types.Type;
 
-public class Point2DValue extends ValueAdapter
+public class Point2DValue extends ObjectValueAdapter<Point2D>
 {
-    private final Point2D point;
-
     public Point2DValue( Point2D point )
     {
-        this.point = point;
+        super( point );
     }
 
     @Override
     public Point2D asPoint2D()
     {
-        return point;
-    }
-
-    @Override
-    public Object asObject()
-    {
-        return point;
-    }
-
-    @Override
-    public String toString( Format valueFormat )
-    {
-        return maybeWithType( valueFormat.includeType(), point.toString() );
+        return asObject();
     }
 
     @Override

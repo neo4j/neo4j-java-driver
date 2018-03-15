@@ -22,21 +22,27 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-import static org.neo4j.driver.internal.types.TypeConstructor.ANY_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.BYTES_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.LIST_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.MAP_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.NODE_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.NULL_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.PATH_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP_TyCon;
-import static org.neo4j.driver.internal.types.TypeConstructor.STRING_TyCon;
+import static org.neo4j.driver.internal.types.TypeConstructor.ANY;
+import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN;
+import static org.neo4j.driver.internal.types.TypeConstructor.BYTES;
+import static org.neo4j.driver.internal.types.TypeConstructor.DATE;
+import static org.neo4j.driver.internal.types.TypeConstructor.DATE_TIME;
+import static org.neo4j.driver.internal.types.TypeConstructor.DURATION;
+import static org.neo4j.driver.internal.types.TypeConstructor.FLOAT;
+import static org.neo4j.driver.internal.types.TypeConstructor.INTEGER;
+import static org.neo4j.driver.internal.types.TypeConstructor.LIST;
+import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_DATE_TIME;
+import static org.neo4j.driver.internal.types.TypeConstructor.LOCAL_TIME;
+import static org.neo4j.driver.internal.types.TypeConstructor.MAP;
+import static org.neo4j.driver.internal.types.TypeConstructor.NODE;
+import static org.neo4j.driver.internal.types.TypeConstructor.NULL;
+import static org.neo4j.driver.internal.types.TypeConstructor.NUMBER;
+import static org.neo4j.driver.internal.types.TypeConstructor.PATH;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_2D;
+import static org.neo4j.driver.internal.types.TypeConstructor.POINT_3D;
+import static org.neo4j.driver.internal.types.TypeConstructor.RELATIONSHIP;
+import static org.neo4j.driver.internal.types.TypeConstructor.STRING;
+import static org.neo4j.driver.internal.types.TypeConstructor.TIME;
 
 /**
  * Utility class for determining and working with the Cypher types of values
@@ -48,104 +54,98 @@ public class InternalTypeSystem implements TypeSystem
 {
     public static InternalTypeSystem TYPE_SYSTEM = new InternalTypeSystem();
 
-    private final TypeRepresentation anyType = constructType( ANY_TyCon );
-    private final TypeRepresentation booleanType = constructType( BOOLEAN_TyCon );
-    private final TypeRepresentation bytesType = constructType( BYTES_TyCon );
-    private final TypeRepresentation stringType = constructType( STRING_TyCon );
-    private final TypeRepresentation numberType = constructType( NUMBER_TyCon );
-    private final TypeRepresentation integerType = constructType( INTEGER_TyCon );
-    private final TypeRepresentation floatType = constructType( FLOAT_TyCon );
-    private final TypeRepresentation listType = constructType( LIST_TyCon );
-    private final TypeRepresentation mapType = constructType( MAP_TyCon );
-    private final TypeRepresentation nodeType = constructType( NODE_TyCon );
-    private final TypeRepresentation relationshipType = constructType( RELATIONSHIP_TyCon );
-    private final TypeRepresentation pathType = constructType( PATH_TyCon );
-    private final TypeRepresentation point2dType = constructType( POINT_2D_TyCon );
-    private final TypeRepresentation point3dType = constructType( POINT_3D_TyCon );
-    private final TypeRepresentation nullType = constructType( NULL_TyCon );
+    private final TypeRepresentation anyType = constructType( ANY );
+    private final TypeRepresentation booleanType = constructType( BOOLEAN );
+    private final TypeRepresentation bytesType = constructType( BYTES );
+    private final TypeRepresentation stringType = constructType( STRING );
+    private final TypeRepresentation numberType = constructType( NUMBER );
+    private final TypeRepresentation integerType = constructType( INTEGER );
+    private final TypeRepresentation floatType = constructType( FLOAT );
+    private final TypeRepresentation listType = constructType( LIST );
+    private final TypeRepresentation mapType = constructType( MAP );
+    private final TypeRepresentation nodeType = constructType( NODE );
+    private final TypeRepresentation relationshipType = constructType( RELATIONSHIP );
+    private final TypeRepresentation pathType = constructType( PATH );
+    private final TypeRepresentation point2dType = constructType( POINT_2D );
+    private final TypeRepresentation point3dType = constructType( POINT_3D );
+    private final TypeRepresentation dateType = constructType( DATE );
+    private final TypeRepresentation timeType = constructType( TIME );
+    private final TypeRepresentation localTimeType = constructType( LOCAL_TIME );
+    private final TypeRepresentation localDateTimeType = constructType( LOCAL_DATE_TIME );
+    private final TypeRepresentation dateTimeType = constructType( DATE_TIME );
+    private final TypeRepresentation durationType = constructType( DURATION );
+    private final TypeRepresentation nullType = constructType( NULL );
 
     private InternalTypeSystem()
     {
     }
 
-    /** the Cypher type ANY */
     @Override
     public Type ANY()
     {
         return anyType;
     }
 
-    /** the Cypher type BOOLEAN */
     @Override
     public Type BOOLEAN()
     {
         return booleanType;
     }
 
-    /** the Cypher type BYTES */
     @Override
     public Type BYTES()
     {
         return bytesType;
     }
 
-    /** the Cypher type STRING */
     @Override
     public Type STRING()
     {
         return stringType;
     }
 
-    /** the Cypher type NUMBER */
     @Override
     public Type NUMBER()
     {
         return numberType;
     }
 
-    /** the Cypher type INTEGER */
     @Override
     public Type INTEGER()
     {
         return integerType;
     }
 
-    /** the Cypher type FLOAT */
     @Override
     public Type FLOAT()
     {
         return floatType;
     }
 
-    /** the Cypher type LIST */
     @Override
     public Type LIST()
     {
         return listType;
     }
 
-    /** the Cypher type MAP */
     @Override
     public Type MAP()
     {
         return mapType;
     }
 
-    /** the Cypher type NODE */
     @Override
     public Type NODE()
     {
         return nodeType;
     }
 
-    /** the Cypher type RELATIONSHIP */
     @Override
     public Type RELATIONSHIP()
     {
         return relationshipType;
     }
 
-    /** the Cypher type PATH */
     @Override
     public Type PATH()
     {
@@ -164,7 +164,42 @@ public class InternalTypeSystem implements TypeSystem
         return point3dType;
     }
 
-    /** the Cypher type NULL */
+    @Override
+    public Type DATE()
+    {
+        return dateType;
+    }
+
+    @Override
+    public Type TIME()
+    {
+        return timeType;
+    }
+
+    @Override
+    public Type LOCAL_TIME()
+    {
+        return localTimeType;
+    }
+
+    @Override
+    public Type LOCAL_DATE_TIME()
+    {
+        return localDateTimeType;
+    }
+
+    @Override
+    public Type DATE_TIME()
+    {
+        return dateTimeType;
+    }
+
+    @Override
+    public Type DURATION()
+    {
+        return durationType;
+    }
+
     @Override
     public Type NULL()
     {

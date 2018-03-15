@@ -19,18 +19,18 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Type;
 
-public class Point3DValue extends ObjectValueAdapter<Point3D>
+public class DurationValue extends ObjectValueAdapter<IsoDuration>
 {
-    public Point3DValue( Point3D point )
+    public DurationValue( IsoDuration duration )
     {
-        super( point );
+        super( duration );
     }
 
     @Override
-    public Point3D asPoint3D()
+    public IsoDuration asIsoDuration()
     {
         return asObject();
     }
@@ -38,6 +38,6 @@ public class Point3DValue extends ObjectValueAdapter<Point3D>
     @Override
     public Type type()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.POINT_3D();
+        return InternalTypeSystem.TYPE_SYSTEM.DURATION();
     }
 }

@@ -18,6 +18,13 @@
  */
 package org.neo4j.driver.v1;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,20 +35,29 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.AsValue;
+import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.BytesValue;
+import org.neo4j.driver.internal.value.DateTimeValue;
+import org.neo4j.driver.internal.value.DateValue;
+import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.LocalDateTimeValue;
+import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.Point2DValue;
 import org.neo4j.driver.internal.value.Point3DValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.Entity;
+import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point2D;
@@ -55,7 +71,7 @@ import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 /**
  * Utility for wrapping regular Java types and exposing them as {@link Value}
  * objects, and vice versa.
- *
+ * <p>
  * The long set of {@code ofXXX} methods in this class are meant to be used as
  * arguments for methods like {@link Value#asList(Function)}, {@link Value#asMap(Function)},
  * {@link Record#asMap(Function)} and so on.
@@ -72,12 +88,12 @@ public abstract class Values
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     public static Value value( Object value )
     {
         if ( value == null ) { return NullValue.NULL; }
 
-        if ( value instanceof AsValue ) { return ( (AsValue) value ).asValue(); }
+        if ( value instanceof AsValue ) { return ((AsValue) value).asValue(); }
         if ( value instanceof Boolean ) { return value( (boolean) value ); }
         if ( value instanceof String ) { return value( (String) value ); }
         if ( value instanceof Character ) { return value( (char) value ); }
@@ -87,9 +103,19 @@ public abstract class Values
         if ( value instanceof Integer ) { return value( (int) value ); }
         if ( value instanceof Double ) { return value( (double) value ); }
         if ( value instanceof Float ) { return value( (float) value ); }
+        if ( value instanceof LocalDate ) { return value( (LocalDate) value ); }
+        if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
+        if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
+        if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
+        if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
+        if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
+        if ( value instanceof Period ) { return value( (Period) value ); }
+        if ( value instanceof Duration ) { return value( (Duration) value ); }
+        if ( value instanceof Point2D ) { return value( (Point2D) value ); }
+        if ( value instanceof Point3D ) { return value( (Point3D) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
-        if ( value instanceof Map<?, ?> ) { return value( (Map<String,Object>) value ); }
+        if ( value instanceof Map<?,?> ) { return value( (Map<String,Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
 
@@ -101,11 +127,10 @@ public abstract class Values
         if ( value instanceof double[] ) { return value( (double[]) value ); }
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof Value[] ) { return value( (Value[]) value ); }
-        if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value )); }
+        if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value ) ); }
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
     }
-
 
     public static Value[] values( final Object... input )
     {
@@ -226,7 +251,10 @@ public abstract class Values
         return new ListValue( values.toArray( new Value[values.size()] ) );
     }
 
-    public static Value value (final char val ) { return new StringValue( String.valueOf( val ) ); }
+    public static Value value( final char val )
+    {
+        return new StringValue( String.valueOf( val ) );
+    }
 
     public static Value value( final String val )
     {
@@ -263,14 +291,69 @@ public abstract class Values
         return new MapValue( asValues );
     }
 
+    public static Value value( LocalDate localDate )
+    {
+        return new DateValue( localDate );
+    }
+
+    public static Value value( OffsetTime offsetTime )
+    {
+        return new TimeValue( offsetTime );
+    }
+
+    public static Value value( LocalTime localTime )
+    {
+        return new LocalTimeValue( localTime );
+    }
+
+    public static Value value( LocalDateTime localDateTime )
+    {
+        return new LocalDateTimeValue( localDateTime );
+    }
+
+    public static Value value( ZonedDateTime zonedDateTime )
+    {
+        return new DateTimeValue( zonedDateTime );
+    }
+
+    public static Value value( Period period )
+    {
+        return value( new InternalIsoDuration( period ) );
+    }
+
+    public static Value value( Duration duration )
+    {
+        return value( new InternalIsoDuration( duration ) );
+    }
+
+    public static Value isoDuration( long months, long days, long seconds, long nanoseconds )
+    {
+        return value( new InternalIsoDuration( months, days, seconds, nanoseconds ) );
+    }
+
+    private static Value value( IsoDuration duration )
+    {
+        return new DurationValue( duration );
+    }
+
     public static Value point2D( long srid, double x, double y )
     {
-        return new Point2DValue( new InternalPoint2D( srid, x, y ) );
+        return value( new InternalPoint2D( srid, x, y ) );
+    }
+
+    private static Value value( Point2D point2D )
+    {
+        return new Point2DValue( point2D );
     }
 
     public static Value point3D( long srid, double x, double y, double z )
     {
-        return new Point3DValue( new InternalPoint3D( srid, x, y, z ) );
+        return value( new InternalPoint3D( srid, x, y, z ) );
+    }
+
+    private static Value value( Point3D point3D )
+    {
+        return new Point3DValue( point3D );
     }
 
     /**
@@ -279,14 +362,14 @@ public abstract class Values
      * <p>
      * Allowed parameter types are:
      * <ul>
-     *     <li>{@link Integer}</li>
-     *     <li>{@link Long}</li>
-     *     <li>{@link Boolean}</li>
-     *     <li>{@link Double}</li>
-     *     <li>{@link Float}</li>
-     *     <li>{@link String}</li>
-     *     <li>{@link Map} with String keys and values being any type in this list</li>
-     *     <li>{@link Collection} of any type in this list</li>
+     * <li>{@link Integer}</li>
+     * <li>{@link Long}</li>
+     * <li>{@link Boolean}</li>
+     * <li>{@link Double}</li>
+     * <li>{@link Float}</li>
+     * <li>{@link String}</li>
+     * <li>{@link Map} with String keys and values being any type in this list</li>
+     * <li>{@link Collection} of any type in this list</li>
      * </ul>
      *
      * @param keysAndValues alternating sequence of keys and values
@@ -309,39 +392,42 @@ public abstract class Values
             assertParameter( value );
             map.put( keysAndValues[i].toString(), value( value ) );
         }
-        return value(map);
+        return value( map );
     }
 
     /**
      * The identity function for value conversion - returns the value untouched.
+     *
      * @return a function that returns the value passed into it - the identity function
      */
     public static Function<Value,Value> ofValue()
     {
-        return VALUE;
+        return val -> val;
     }
 
     /**
      * Converts values to objects using {@link Value#asObject()}.
+     *
      * @return a function that returns {@link Value#asObject()} of a {@link Value}
      */
     public static Function<Value,Object> ofObject()
     {
-        return OBJECT;
+        return Value::asObject;
     }
 
     /**
      * Converts values to {@link Number}.
+     *
      * @return a function that returns {@link Value#asNumber()} of a {@link Value}
      */
     public static Function<Value,Number> ofNumber()
     {
-        return NUMBER;
+        return Value::asNumber;
     }
 
     /**
      * Converts values to {@link String}.
-     *
+     * <p>
      * If you want to access a string you've retrieved from the database, this is
      * the right choice. If you want to print any value for human consumption, for
      * instance in a log, {@link #ofToString()} is the right choice.
@@ -350,16 +436,16 @@ public abstract class Values
      */
     public static Function<Value,String> ofString()
     {
-        return STRING;
+        return Value::asString;
     }
 
     /**
      * Converts values using {@link Value#toString()}, a human-readable string
      * description of any value.
-     *
+     * <p>
      * This is different from {@link #ofString()}, which returns a java
      * {@link String} value from a database {@link TypeSystem#STRING()}.
-     *
+     * <p>
      * If you are wanting to print any value for human consumption, this is the
      * right choice. If you are wanting to access a string value stored in the
      * database, you should use {@link #ofString()}.
@@ -368,297 +454,233 @@ public abstract class Values
      */
     public static Function<Value,String> ofToString()
     {
-        return TO_STRING;
+        return Value::toString;
     }
 
     /**
      * Converts values to {@link Integer}.
+     *
      * @return a function that returns {@link Value#asInt()} of a {@link Value}
      */
     public static Function<Value,Integer> ofInteger()
     {
-        return INTEGER;
+        return Value::asInt;
     }
 
     /**
      * Converts values to {@link Long}.
+     *
      * @return a function that returns {@link Value#asLong()} of a {@link Value}
      */
     public static Function<Value,Long> ofLong()
     {
-        return LONG;
+        return Value::asLong;
     }
 
     /**
      * Converts values to {@link Float}.
+     *
      * @return a function that returns {@link Value#asFloat()} of a {@link Value}
      */
     public static Function<Value,Float> ofFloat()
     {
-        return FLOAT;
+        return Value::asFloat;
     }
 
     /**
      * Converts values to {@link Double}.
+     *
      * @return a function that returns {@link Value#asDouble()} of a {@link Value}
      */
     public static Function<Value,Double> ofDouble()
     {
-        return DOUBLE;
+        return Value::asDouble;
     }
 
     /**
      * Converts values to {@link Boolean}.
+     *
      * @return a function that returns {@link Value#asBoolean()} of a {@link Value}
      */
     public static Function<Value,Boolean> ofBoolean()
     {
-        return BOOLEAN;
+        return Value::asBoolean;
     }
 
     /**
      * Converts values to {@link Map}.
+     *
      * @return a function that returns {@link Value#asMap()} of a {@link Value}
      */
-    public static Function<Value, Map<String, Object>> ofMap()
+    public static Function<Value,Map<String,Object>> ofMap()
     {
-        return MAP;
+        return MapAccessor::asMap;
     }
 
     /**
      * Converts values to {@link Map}, with the map values further converted using
      * the provided converter.
+     *
      * @param valueConverter converter to use for the values of the map
      * @param <T> the type of values in the returned map
      * @return a function that returns {@link Value#asMap(Function)} of a {@link Value}
      */
-    public static <T> Function<Value, Map<String, T>> ofMap( final Function<Value, T> valueConverter)
+    public static <T> Function<Value,Map<String,T>> ofMap( final Function<Value,T> valueConverter )
     {
-        return new Function<Value,Map<String,T>>()
-        {
-            public Map<String,T> apply( Value val )
-            {
-                return val.asMap(valueConverter);
-            }
-        };
+        return val -> val.asMap( valueConverter );
     }
 
     /**
      * Converts values to {@link Entity}.
+     *
      * @return a function that returns {@link Value#asEntity()} of a {@link Value}
      */
     public static Function<Value,Entity> ofEntity()
     {
-        return ENTITY;
+        return Value::asEntity;
     }
 
     /**
      * Converts values to {@link Long entity id}.
+     *
      * @return a function that returns the id an entity {@link Value}
      */
-    public static Function<Value, Long> ofEntityId()
+    public static Function<Value,Long> ofEntityId()
     {
-        return ENTITY_ID;
+        return val -> val.asEntity().id();
     }
 
     /**
      * Converts values to {@link Node}.
+     *
      * @return a function that returns {@link Value#asNode()} of a {@link Value}
      */
     public static Function<Value,Node> ofNode()
     {
-        return NODE;
+        return Value::asNode;
     }
 
     /**
      * Converts values to {@link Relationship}.
+     *
      * @return a function that returns {@link Value#asRelationship()} of a {@link Value}
      */
     public static Function<Value,Relationship> ofRelationship()
     {
-        return RELATIONSHIP;
+        return Value::asRelationship;
     }
 
     /**
      * Converts values to {@link Path}.
+     *
      * @return a function that returns {@link Value#asPath()} of a {@link Value}
      */
     public static Function<Value,Path> ofPath()
     {
-        return PATH;
+        return Value::asPath;
     }
 
+    /**
+     * Converts values to {@link LocalDate}.
+     *
+     * @return a function that returns {@link Value#asLocalDate()} of a {@link Value}
+     */
+    public static Function<Value,LocalDate> ofLocalDate()
+    {
+        return Value::asLocalDate;
+    }
+
+    /**
+     * Converts values to {@link OffsetTime}.
+     *
+     * @return a function that returns {@link Value#asOffsetTime()} of a {@link Value}
+     */
+    public static Function<Value,OffsetTime> ofOffsetTime()
+    {
+        return Value::asOffsetTime;
+    }
+
+    /**
+     * Converts values to {@link LocalTime}.
+     *
+     * @return a function that returns {@link Value#asLocalTime()} of a {@link Value}
+     */
+    public static Function<Value,LocalTime> ofLocalTime()
+    {
+        return Value::asLocalTime;
+    }
+
+    /**
+     * Converts values to {@link LocalDateTime}.
+     *
+     * @return a function that returns {@link Value#asLocalDateTime()} of a {@link Value}
+     */
+    public static Function<Value,LocalDateTime> ofLocalDateTime()
+    {
+        return Value::asLocalDateTime;
+    }
+
+    /**
+     * Converts values to {@link ZonedDateTime}.
+     *
+     * @return a function that returns {@link Value#asZonedDateTime()} of a {@link Value}
+     */
+    public static Function<Value,ZonedDateTime> ofZonedDateTime()
+    {
+        return Value::asZonedDateTime;
+    }
+
+    /**
+     * Converts values to {@link IsoDuration}.
+     *
+     * @return a function that returns {@link Value#asIsoDuration()} of a {@link Value}
+     */
+    public static Function<Value,IsoDuration> ofIsoDuration()
+    {
+        return Value::asIsoDuration;
+    }
+
+    /**
+     * Converts values to {@link Point2D}.
+     *
+     * @return a function that returns {@link Value#asPoint2D()} of a {@link Value}
+     */
     public static Function<Value,Point2D> ofPoint2D()
     {
-        return POINT_2D;
+        return Value::asPoint2D;
     }
 
+    /**
+     * Converts values to {@link Point3D}.
+     *
+     * @return a function that returns {@link Value#asPoint3D()} of a {@link Value}
+     */
     public static Function<Value,Point3D> ofPoint3D()
     {
-        return POINT_3D;
+        return Value::asPoint3D;
     }
 
     /**
      * Converts values to {@link List} of {@link Object}.
+     *
      * @return a function that returns {@link Value#asList()} of a {@link Value}
      */
     public static Function<Value,List<Object>> ofList()
     {
-        return new Function<Value,List<Object>>()
-        {
-            @Override
-            public List<Object> apply( Value value )
-            {
-                return value.asList();
-            }
-        };
+        return Value::asList;
     }
 
     /**
      * Converts values to {@link List} of <tt>T</tt>.
+     *
      * @param innerMap converter for the values inside the list
      * @param <T> the type of values inside the list
      * @return a function that returns {@link Value#asList(Function)} of a {@link Value}
      */
-    public static <T> Function<Value,List<T>> ofList( final Function<Value, T> innerMap )
+    public static <T> Function<Value,List<T>> ofList( final Function<Value,T> innerMap )
     {
-        return new Function<Value,List<T>>()
-        {
-            @Override
-            public List<T> apply( Value value )
-            {
-                return value.asList( innerMap );
-            }
-        };
+        return value -> value.asList( innerMap );
     }
-
-    private static final Function<Value,Object> OBJECT = new Function<Value,Object>()
-    {
-        public Object apply( Value val )
-        {
-            return val.asObject();
-        }
-    };
-    private static final Function<Value,Value> VALUE = new Function<Value,Value>()
-    {
-        public Value apply( Value val )
-        {
-            return val;
-        }
-    };
-    private static final Function<Value,Number> NUMBER = new Function<Value,Number>()
-    {
-        public Number apply( Value val )
-        {
-            return val.asNumber();
-        }
-    };
-    private static final Function<Value,String> STRING = new Function<Value,String>()
-    {
-        public String apply( Value val )
-        {
-            return val.asString();
-        }
-    };
-
-    private static final Function<Value,String> TO_STRING = new Function<Value,String>()
-    {
-        public String apply( Value val )
-        {
-            return val.toString();
-        }
-    };
-    private static final Function<Value,Integer> INTEGER = new Function<Value,Integer>()
-    {
-        public Integer apply( Value val )
-        {
-            return val.asInt();
-        }
-    };
-    private static final Function<Value,Long> LONG = new Function<Value,Long>()
-    {
-        public Long apply( Value val )
-        {
-            return val.asLong();
-        }
-    };
-    private static final Function<Value,Float> FLOAT = new Function<Value,Float>()
-    {
-        public Float apply( Value val )
-        {
-            return val.asFloat();
-        }
-    };
-    private static final Function<Value,Double> DOUBLE = new Function<Value,Double>()
-    {
-        public Double apply( Value val )
-        {
-            return val.asDouble();
-        }
-    };
-    private static final Function<Value,Boolean> BOOLEAN = new Function<Value,Boolean>()
-    {
-        public Boolean apply( Value val )
-        {
-            return val.asBoolean();
-        }
-    };
-    private static final Function<Value,Map<String,Object>> MAP = new Function<Value,Map<String,Object>>()
-    {
-        public Map<String,Object> apply( Value val )
-        {
-            return val.asMap();
-        }
-    };
-    private static final Function<Value,Long> ENTITY_ID = new Function<Value,Long>()
-    {
-        public Long apply( Value val )
-        {
-            return val.asEntity().id();
-        }
-    };
-    private static final Function<Value,Entity> ENTITY = new Function<Value,Entity>()
-    {
-        public Entity apply( Value val )
-        {
-            return val.asEntity();
-        }
-    };
-    private static final Function<Value,Node> NODE = new Function<Value,Node>()
-    {
-        public Node apply( Value val )
-        {
-            return val.asNode();
-        }
-    };
-    private static final Function<Value,Relationship> RELATIONSHIP = new Function<Value,Relationship>()
-    {
-        public Relationship apply( Value val )
-        {
-            return val.asRelationship();
-        }
-    };
-    private static final Function<Value,Path> PATH = new Function<Value,Path>()
-    {
-        public Path apply( Value val )
-        {
-            return val.asPath();
-        }
-    };
-    private static final Function<Value,Point2D> POINT_2D = new Function<Value,Point2D>()
-    {
-        public Point2D apply( Value val )
-        {
-            return val.asPoint2D();
-        }
-    };
-    private static final Function<Value,Point3D> POINT_3D = new Function<Value,Point3D>()
-    {
-        public Point3D apply( Value val )
-        {
-            return val.asPoint3D();
-        }
-    };
 
     private static void assertParameter( Object value )
     {

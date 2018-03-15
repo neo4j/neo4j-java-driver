@@ -18,19 +18,20 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.time.ZonedDateTime;
+
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Point3D;
 import org.neo4j.driver.v1.types.Type;
 
-public class Point3DValue extends ObjectValueAdapter<Point3D>
+public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime>
 {
-    public Point3DValue( Point3D point )
+    public DateTimeValue( ZonedDateTime zonedDateTime )
     {
-        super( point );
+        super( zonedDateTime );
     }
 
     @Override
-    public Point3D asPoint3D()
+    public ZonedDateTime asZonedDateTime()
     {
         return asObject();
     }
@@ -38,6 +39,6 @@ public class Point3DValue extends ObjectValueAdapter<Point3D>
     @Override
     public Type type()
     {
-        return InternalTypeSystem.TYPE_SYSTEM.POINT_3D();
+        return InternalTypeSystem.TYPE_SYSTEM.DATE_TIME();
     }
 }

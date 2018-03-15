@@ -24,7 +24,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.util.Function;
 
-public abstract class EntityValueAdapter<V extends Entity> extends GraphValueAdapter<V>
+public abstract class EntityValueAdapter<V extends Entity> extends ObjectValueAdapter<V>
 {
     protected EntityValueAdapter( V adapted )
     {

@@ -23,6 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,18 +39,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.internal.value.DateTimeValue;
+import org.neo4j.driver.internal.value.DateValue;
+import org.neo4j.driver.internal.value.DurationValue;
 import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.LocalDateTimeValue;
+import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point3D;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
 import static org.neo4j.driver.v1.Values.ofInteger;
@@ -54,6 +72,8 @@ import static org.neo4j.driver.v1.Values.ofNumber;
 import static org.neo4j.driver.v1.Values.ofObject;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.ofToString;
+import static org.neo4j.driver.v1.Values.point2D;
+import static org.neo4j.driver.v1.Values.point3D;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -286,5 +306,183 @@ public class ValuesTest
 
         // When/Then
         assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
+    }
+
+    @Test
+    public void shouldCreateDateValueFromLocalDate()
+    {
+        LocalDate localDate = LocalDate.now();
+        Value value = value( localDate );
+
+        assertThat( value, instanceOf( DateValue.class ) );
+        assertEquals( localDate, value.asLocalDate() );
+    }
+
+    @Test
+    public void shouldCreateDateValue()
+    {
+        Object localDate = LocalDate.now();
+        Value value = value( localDate );
+
+        assertThat( value, instanceOf( DateValue.class ) );
+        assertEquals( localDate, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateTimeValueFromOffsetTime()
+    {
+        OffsetTime offsetTime = OffsetTime.now();
+        Value value = value( offsetTime );
+
+        assertThat( value, instanceOf( TimeValue.class ) );
+        assertEquals( offsetTime, value.asOffsetTime() );
+    }
+
+    @Test
+    public void shouldCreateTimeValue()
+    {
+        OffsetTime offsetTime = OffsetTime.now();
+        Value value = value( offsetTime );
+
+        assertThat( value, instanceOf( TimeValue.class ) );
+        assertEquals( offsetTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateLocalTimeValueFromLocalTime()
+    {
+        LocalTime localTime = LocalTime.now();
+        Value value = value( localTime );
+
+        assertThat( value, instanceOf( LocalTimeValue.class ) );
+        assertEquals( localTime, value.asLocalTime() );
+    }
+
+    @Test
+    public void shouldCreateLocalTimeValue()
+    {
+        LocalTime localTime = LocalTime.now();
+        Value value = value( localTime );
+
+        assertThat( value, instanceOf( LocalTimeValue.class ) );
+        assertEquals( localTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateLocalDateTimeValueFromLocalDateTime()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        Value value = value( localDateTime );
+
+        assertThat( value, instanceOf( LocalDateTimeValue.class ) );
+        assertEquals( localDateTime, value.asLocalDateTime() );
+    }
+
+    @Test
+    public void shouldCreateLocalDateTimeValue()
+    {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        Value value = value( localDateTime );
+
+        assertThat( value, instanceOf( LocalDateTimeValue.class ) );
+        assertEquals( localDateTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateDateTimeValueFromZonedDateTime()
+    {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Value value = value( zonedDateTime );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( zonedDateTime, value.asZonedDateTime() );
+    }
+
+    @Test
+    public void shouldCreateDateTimeValue()
+    {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Value value = value( zonedDateTime );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( zonedDateTime, value.asObject() );
+    }
+
+    @Test
+    public void shouldCreateIsoDurationValue()
+    {
+        Value value = isoDuration( 42_1, 42_2, 42_3, 42_4 );
+
+        assertThat( value, instanceOf( DurationValue.class ) );
+        IsoDuration duration = value.asIsoDuration();
+
+        assertEquals( 42_1, duration.months() );
+        assertEquals( 42_2, duration.days() );
+        assertEquals( 42_3, duration.seconds() );
+        assertEquals( 42_4, duration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldCreateValueFromIsoDuration()
+    {
+        Value durationValue1 = isoDuration( 1, 2, 3, 4 );
+        IsoDuration duration = durationValue1.asIsoDuration();
+        Value durationValue2 = value( duration );
+
+        assertEquals( duration, durationValue1.asIsoDuration() );
+        assertEquals( duration, durationValue2.asIsoDuration() );
+        assertEquals( durationValue1, durationValue2 );
+    }
+
+    @Test
+    public void shouldCreateValueFromPeriod()
+    {
+        Period period = Period.of( 5, 11, 190 );
+
+        Value value = value( period );
+        IsoDuration isoDuration = value.asIsoDuration();
+
+        assertEquals( period.toTotalMonths(), isoDuration.months() );
+        assertEquals( period.getDays(), isoDuration.days() );
+        assertEquals( 0, isoDuration.seconds() );
+        assertEquals( 0, isoDuration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldCreateValueFromDuration()
+    {
+        Duration duration = Duration.ofSeconds( 183951, 4384718937L );
+
+        Value value = value( duration );
+        IsoDuration isoDuration = value.asIsoDuration();
+
+        assertEquals( 0, isoDuration.months() );
+        assertEquals( 0, isoDuration.days() );
+        assertEquals( duration.getSeconds(), isoDuration.seconds() );
+        assertEquals( duration.getNano(), isoDuration.nanoseconds() );
+    }
+
+    @Test
+    public void shouldCreateValueFromPoint2D()
+    {
+        Value point2DValue1 = point2D( 1, 2, 3 );
+        Point2D point2D = point2DValue1.asPoint2D();
+        Value point2DValue2 = value( point2D );
+
+        assertEquals( point2D, point2DValue1.asPoint2D() );
+        assertEquals( point2D, point2DValue2.asPoint2D() );
+        assertEquals( point2DValue1, point2DValue2 );
+    }
+
+    @Test
+    public void shouldCreateValueFromPoint3D()
+    {
+        Value point3DValue1 = point3D( 1, 2, 3, 4 );
+        Point3D point3D = point3DValue1.asPoint3D();
+        Value point3DValue2 = value( point3D );
+
+        assertEquals( point3D, point3DValue1.asPoint3D() );
+        assertEquals( point3D, point3DValue2.asPoint3D() );
+        assertEquals( point3DValue1, point3DValue2 );
     }
 }

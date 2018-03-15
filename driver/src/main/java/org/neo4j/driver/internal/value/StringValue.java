@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.util.Objects;
+
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.types.Type;
 
-public class StringValue extends ScalarValueAdapter
+public class StringValue extends ValueAdapter
 {
     private final String val;
 
@@ -59,7 +61,7 @@ public class StringValue extends ScalarValueAdapter
     }
 
     @Override
-    public String asLiteralString()
+    public String toString()
     {
         return String.format( "\"%s\"", val.replace( "\"", "\\\"" ) );
     }
@@ -70,7 +72,6 @@ public class StringValue extends ScalarValueAdapter
         return InternalTypeSystem.TYPE_SYSTEM.STRING();
     }
 
-    @SuppressWarnings("StringEquality")
     @Override
     public boolean equals( Object o )
     {
@@ -82,9 +83,8 @@ public class StringValue extends ScalarValueAdapter
         {
             return false;
         }
-
-        StringValue values = (StringValue) o;
-        return val == values.val || val.equals( values.val );
+        StringValue that = (StringValue) o;
+        return Objects.equals( val, that.val );
     }
 
     @Override

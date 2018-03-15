@@ -19,12 +19,12 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.types.Type;
 
-public final class NullValue extends ScalarValueAdapter
+public final class NullValue extends ValueAdapter
 {
-    public static Value NULL = new NullValue();
+    public static final Value NULL = new NullValue();
 
     private NullValue()
     {
@@ -68,7 +68,7 @@ public final class NullValue extends ScalarValueAdapter
     }
 
     @Override
-    public String asLiteralString()
+    public String toString()
     {
         return "NULL";
     }
