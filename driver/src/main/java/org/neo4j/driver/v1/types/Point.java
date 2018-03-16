@@ -24,7 +24,8 @@ import org.neo4j.driver.v1.util.Immutable;
 /**
  * Represents a single point in a particular coordinate reference system.
  * <p>
- * Value that represents a point can be created using {@link Values#point(int, double, double)} method.
+ * Value that represents a point can be created using {@link Values#point(int, double, double)}
+ * or {@link Values#point(int, double, double, double)} method.
  */
 @Immutable
 

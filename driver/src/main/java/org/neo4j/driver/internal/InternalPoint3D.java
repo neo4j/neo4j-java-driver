@@ -29,11 +29,6 @@ public class InternalPoint3D implements Point
     private final double y;
     private final double z;
 
-    public InternalPoint3D( int srid, double x, double y )
-    {
-        this( srid, x, y, Double.NaN );
-    }
-
     public InternalPoint3D( int srid, double x, double y, double z )
     {
         this.srid = srid;
