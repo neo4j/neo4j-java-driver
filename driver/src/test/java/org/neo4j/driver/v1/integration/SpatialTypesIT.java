@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.util.Collections.singletonMap;
@@ -37,13 +37,13 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
-import static org.neo4j.driver.v1.Values.ofPoint2D;
-import static org.neo4j.driver.v1.Values.point2D;
+import static org.neo4j.driver.v1.Values.ofPoint;
+import static org.neo4j.driver.v1.Values.point;
 
 public class SpatialTypesIT
 {
-    private static final long WGS_84_CRS_CODE = 4326;
-    private static final long CARTESIAN_CRS_CODE = 7203;
+    private static final int WGS_84_CRS_CODE = 4326;
+    private static final int CARTESIAN_CRS_CODE = 7203;
     private static final double DELTA = 0.00001;
 
     @Rule
@@ -56,11 +56,11 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldReceivePoint2D()
+    public void shouldReceivePoint()
     {
         Record record = session.run( "RETURN point({x: 39.111748, y:-76.775635})" ).single();
 
-        Point2D point = record.get( 0 ).asPoint2D();
+        Point point = record.get( 0 ).asPoint();
 
         assertEquals( CARTESIAN_CRS_CODE, point.srid() );
         assertEquals( 39.111748, point.x(), DELTA );
@@ -68,15 +68,15 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldSendPoint2D()
+    public void shouldSendPoint()
     {
-        Value pointValue = point2D( WGS_84_CRS_CODE, 38.8719, 77.0563 );
+        Value pointValue = point( WGS_84_CRS_CODE, 38.8719, 77.0563 );
         Record record1 = session.run( "CREATE (n:Node {location: $point}) RETURN 42", singletonMap( "point", pointValue ) ).single();
 
         assertEquals( 42, record1.get( 0 ).asInt() );
 
         Record record2 = session.run( "MATCH (n:Node) RETURN n.location" ).single();
-        Point2D point = record2.get( 0 ).asPoint2D();
+        Point point = record2.get( 0 ).asPoint();
 
         assertEquals( WGS_84_CRS_CODE, point.srid() );
         assertEquals( 38.8719, point.x(), DELTA );
@@ -84,9 +84,9 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldSendAndReceivePoint2D()
+    public void shouldSendAndReceivePoint()
     {
-        testPoint2DSendAndReceive( point2D( CARTESIAN_CRS_CODE, 40.7624, 73.9738 ) );
+        testPointSendAndReceive( point( CARTESIAN_CRS_CODE, 40.7624, 73.9738 ) );
     }
 
     @Test
@@ -95,10 +95,10 @@ public class SpatialTypesIT
         Stream<Value> randomPoints = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
                 .mapToObj( idx -> idx % 2 == 0
-                                  ? point2D( WGS_84_CRS_CODE, randomDouble(), randomDouble() )
-                                  : point2D( CARTESIAN_CRS_CODE, randomDouble(), randomDouble() ) );
+                                  ? point( WGS_84_CRS_CODE, randomDouble(), randomDouble() )
+                                  : point( CARTESIAN_CRS_CODE, randomDouble(), randomDouble() ) );
 
-        randomPoints.forEach( this::testPoint2DSendAndReceive );
+        randomPoints.forEach( this::testPointSendAndReceive );
     }
 
     @Test
@@ -106,39 +106,39 @@ public class SpatialTypesIT
     {
         Stream<List<Value>> randomPointLists = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
-                .mapToObj( SpatialTypesIT::randomPoint2DList );
+                .mapToObj( SpatialTypesIT::randomPointList );
 
-        randomPointLists.forEach( this::testPoint2DListSendAndReceive );
+        randomPointLists.forEach( this::testPointListSendAndReceive );
     }
 
-    private void testPoint2DSendAndReceive( Value pointValue )
+    private void testPointSendAndReceive( Value pointValue )
     {
-        Point2D originalPoint = pointValue.asPoint2D();
+        Point originalPoint = pointValue.asPoint();
 
         Record record = session.run( "CREATE (n {point: $point}) return n.point", singletonMap( "point", pointValue ) ).single();
-        Point2D receivedPoint = record.get( 0 ).asPoint2D();
+        Point receivedPoint = record.get( 0 ).asPoint();
 
         assertPoints2DEqual( originalPoint, receivedPoint );
     }
 
-    private void testPoint2DListSendAndReceive( List<Value> points )
+    private void testPointListSendAndReceive( List<Value> points )
     {
         Record record = session.run( "CREATE (n {points: $points}) return n.points", singletonMap( "points", points ) ).single();
-        List<Point2D> receivedPoints = record.get( 0 ).asList( ofPoint2D() );
+        List<Point> receivedPoints = record.get( 0 ).asList( ofPoint() );
 
         assertEquals( points.size(), receivedPoints.size() );
         for ( int i = 0; i < points.size(); i++ )
         {
-            assertPoints2DEqual( points.get( i ).asPoint2D(), receivedPoints.get( i ) );
+            assertPoints2DEqual( points.get( i ).asPoint(), receivedPoints.get( i ) );
         }
     }
 
-    private static List<Value> randomPoint2DList( int index )
+    private static List<Value> randomPointList( int index )
     {
         int size = ThreadLocalRandom.current().nextInt( 1, 100 );
-        long srid = index % 2 == 0 ? CARTESIAN_CRS_CODE : WGS_84_CRS_CODE;
+        int srid = index % 2 == 0 ? CARTESIAN_CRS_CODE : WGS_84_CRS_CODE;
         return IntStream.range( 0, size )
-                .mapToObj( i -> point2D( srid, randomDouble(), randomDouble() ) )
+                .mapToObj( i -> point( srid, randomDouble(), randomDouble() ) )
                 .collect( toList() );
     }
 
@@ -147,7 +147,7 @@ public class SpatialTypesIT
         return ThreadLocalRandom.current().nextDouble( -180.0, 180 );
     }
 
-    private static void assertPoints2DEqual( Point2D expected, Point2D actual )
+    private static void assertPoints2DEqual( Point expected, Point actual )
     {
         String message = "Expected: " + expected + " but was: " + actual;
         assertEquals( message, expected.srid(), actual.srid() );

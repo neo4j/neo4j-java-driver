@@ -20,15 +20,15 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.types.Point2D;
+import org.neo4j.driver.v1.types.Point;
 
-public class InternalPoint2D implements Point2D
+public class InternalPoint2D implements Point
 {
-    private final long srid;
+    private final int srid;
     private final double x;
     private final double y;
 
-    public InternalPoint2D( long srid, double x, double y )
+    public InternalPoint2D( int srid, double x, double y )
     {
         this.srid = srid;
         this.x = x;
@@ -36,7 +36,7 @@ public class InternalPoint2D implements Point2D
     }
 
     @Override
-    public long srid()
+    public int srid()
     {
         return srid;
     }
@@ -51,6 +51,12 @@ public class InternalPoint2D implements Point2D
     public double y()
     {
         return y;
+    }
+
+    @Override
+    public double z()
+    {
+        return Double.NaN;
     }
 
     @Override
@@ -79,7 +85,7 @@ public class InternalPoint2D implements Point2D
     @Override
     public String toString()
     {
-        return "Point2D{" +
+        return "Point{" +
                "srid=" + srid +
                ", x=" + x +
                ", y=" + y +

@@ -37,8 +37,7 @@ import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Point2D;
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.util.Function;
@@ -224,15 +223,9 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
-    public Point2D asPoint2D()
+    public Point asPoint()
     {
-        throw new Uncoercible( type().name(), "Point2D" );
-    }
-
-    @Override
-    public Point3D asPoint3D()
-    {
-        throw new Uncoercible( type().name(), "Point3D" );
+        throw new Uncoercible( type().name(), "Point" );
     }
 
     @Override

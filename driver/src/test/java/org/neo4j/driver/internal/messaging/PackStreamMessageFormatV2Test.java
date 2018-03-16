@@ -43,6 +43,7 @@ import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.Point;
 
 import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
@@ -62,8 +63,7 @@ import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
 import static org.neo4j.driver.internal.packstream.PackStream.STRING_8;
-import static org.neo4j.driver.v1.Values.point2D;
-import static org.neo4j.driver.v1.Values.point3D;
+import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
@@ -92,7 +92,7 @@ public class PackStreamMessageFormatV2Test
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
 
-        writer.write( new RunMessage( "RETURN $point", singletonMap( "point", point2D( 42, 12.99, -180.0 ) ) ) );
+        writer.write( new RunMessage( "RETURN $point", singletonMap( "point", point( 42, 12.99, -180.0 ) ) ) );
 
         // point should be encoded as (byte SRID, FLOAT_64 header byte + double X, FLOAT_64 header byte + double Y)
         int index = buf.readableBytes() - Double.BYTES - Byte.BYTES - Double.BYTES - Byte.BYTES - Byte.BYTES;
@@ -107,7 +107,7 @@ public class PackStreamMessageFormatV2Test
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
 
-        writer.write( new RunMessage( "RETURN $point", singletonMap( "point", point3D( 42, 0.51, 2.99, 100.123 ) ) ) );
+        writer.write( new RunMessage( "RETURN $point", singletonMap( "point", point( 42, 0.51, 2.99, 100.123 ) ) ) );
 
         // point should be encoded as (byte SRID, FLOAT_64 header byte + double X, FLOAT_64 header byte + double Y, FLOAT_64 header byte + double Z)
         int index = buf.readableBytes() - Double.BYTES - Byte.BYTES - Double.BYTES - Byte.BYTES - Double.BYTES - Byte.BYTES - Byte.BYTES;
@@ -119,7 +119,7 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldReadPoint2D() throws Exception
     {
-        InternalPoint2D point = new InternalPoint2D( 42, 120.65, -99.2 );
+        Point point = new InternalPoint2D( 42, 120.65, -99.2 );
 
         Object unpacked = packAndUnpackValue( packer ->
         {
@@ -135,7 +135,7 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldReadPoint3D() throws Exception
     {
-        InternalPoint3D point = new InternalPoint3D( 42, 85.391, 98.8, 11.1 );
+        Point point = new InternalPoint3D( 42, 85.391, 98.8, 11.1 );
 
         Object unpacked = packAndUnpackValue( packer ->
         {

@@ -50,8 +50,7 @@ import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.internal.value.Point2DValue;
-import org.neo4j.driver.internal.value.Point3DValue;
+import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -60,8 +59,7 @@ import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Point2D;
-import org.neo4j.driver.v1.types.Point3D;
+import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Function;
@@ -111,8 +109,7 @@ public abstract class Values
         if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
         if ( value instanceof Period ) { return value( (Period) value ); }
         if ( value instanceof Duration ) { return value( (Duration) value ); }
-        if ( value instanceof Point2D ) { return value( (Point2D) value ); }
-        if ( value instanceof Point3D ) { return value( (Point3D) value ); }
+        if ( value instanceof Point ) { return value( (Point) value ); }
 
         if ( value instanceof List<?> ) { return value( (List<Object>) value ); }
         if ( value instanceof Map<?,?> ) { return value( (Map<String,Object>) value ); }
@@ -336,24 +333,19 @@ public abstract class Values
         return new DurationValue( duration );
     }
 
-    public static Value point2D( long srid, double x, double y )
+    public static Value point( int srid, double x, double y )
     {
         return value( new InternalPoint2D( srid, x, y ) );
     }
 
-    private static Value value( Point2D point2D )
+    private static Value value( Point point )
     {
-        return new Point2DValue( point2D );
+        return new PointValue( point );
     }
 
-    public static Value point3D( long srid, double x, double y, double z )
+    public static Value point( int srid, double x, double y, double z )
     {
         return value( new InternalPoint3D( srid, x, y, z ) );
-    }
-
-    private static Value value( Point3D point3D )
-    {
-        return new Point3DValue( point3D );
     }
 
     /**
@@ -641,23 +633,13 @@ public abstract class Values
     }
 
     /**
-     * Converts values to {@link Point2D}.
+     * Converts values to {@link Point}.
      *
-     * @return a function that returns {@link Value#asPoint2D()} of a {@link Value}
+     * @return a function that returns {@link Value#asPoint()} of a {@link Value}
      */
-    public static Function<Value,Point2D> ofPoint2D()
+    public static Function<Value,Point> ofPoint()
     {
-        return Value::asPoint2D;
-    }
-
-    /**
-     * Converts values to {@link Point3D}.
-     *
-     * @return a function that returns {@link Value#asPoint3D()} of a {@link Value}
-     */
-    public static Function<Value,Point3D> ofPoint3D()
-    {
-        return Value::asPoint3D;
+        return Value::asPoint;
     }
 
     /**
