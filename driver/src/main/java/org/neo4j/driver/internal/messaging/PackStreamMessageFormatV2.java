@@ -133,12 +133,11 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private void packTime( OffsetTime offsetTime ) throws IOException
         {
-            OffsetTime offsetTimeUtc = offsetTime.withOffsetSameInstant( UTC );
-            long nanoOfDayUtc = offsetTimeUtc.toLocalTime().toNanoOfDay();
+            long nanoOfDayLocal = offsetTime.toLocalTime().toNanoOfDay();
             int offsetSeconds = offsetTime.getOffset().getTotalSeconds();
 
             packer.packStructHeader( TIME_STRUCT_SIZE, TIME );
-            packer.pack( nanoOfDayUtc );
+            packer.pack( nanoOfDayLocal );
             packer.pack( offsetSeconds );
         }
 

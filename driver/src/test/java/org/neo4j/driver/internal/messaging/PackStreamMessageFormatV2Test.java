@@ -190,7 +190,7 @@ public class PackStreamMessageFormatV2Test
         int index = buf.readableBytes() - Long.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES;
         ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
 
-        assertByteBufContains( tailSlice, INT_64, time.withOffsetSameInstant( UTC ).toLocalTime().toNanoOfDay(), INT_32, time.getOffset().getTotalSeconds() );
+        assertByteBufContains( tailSlice, INT_64, time.toLocalTime().toNanoOfDay(), INT_32, time.getOffset().getTotalSeconds() );
     }
 
     @Test
