@@ -278,12 +278,12 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private Value unpackTime() throws IOException
         {
-            long nanoOfDayUtc = unpacker.unpackLong();
+            long nanoOfDayLocal = unpacker.unpackLong();
             int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
 
-            Instant instant = Instant.ofEpochSecond( 0, nanoOfDayUtc );
+            LocalTime localTime = LocalTime.ofNanoOfDay( nanoOfDayLocal );
             ZoneOffset offset = ZoneOffset.ofTotalSeconds( offsetSeconds );
-            return value( OffsetTime.ofInstant( instant, offset ) );
+            return value( OffsetTime.of( localTime, offset ) );
         }
 
         private Value unpackLocalTime() throws IOException

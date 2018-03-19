@@ -52,7 +52,7 @@ public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
 
-    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.2.7";
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.3.4";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
