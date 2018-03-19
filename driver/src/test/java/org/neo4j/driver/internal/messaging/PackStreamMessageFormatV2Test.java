@@ -201,7 +201,7 @@ public class PackStreamMessageFormatV2Test
         Object unpacked = packAndUnpackValue( packer ->
         {
             packer.packStructHeader( 2, (byte) 'T' );
-            packer.pack( time.withOffsetSameInstant( UTC ).toLocalTime().toNanoOfDay() );
+            packer.pack( time.toLocalTime().toNanoOfDay() );
             packer.pack( time.getOffset().getTotalSeconds() );
         } );
 
