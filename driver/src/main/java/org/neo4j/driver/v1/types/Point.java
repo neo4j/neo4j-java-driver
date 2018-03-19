@@ -28,7 +28,6 @@ import org.neo4j.driver.v1.util.Immutable;
  * or {@link Values#point(int, double, double, double)} method.
  */
 @Immutable
-
 public interface Point
 {
     /**
@@ -55,8 +54,7 @@ public interface Point
     /**
      * Retrieve {@code z} coordinate of this point.
      *
-     * @return the {@code z} coordinate value or {@link Double#NaN} if not applicable
+     * @return the {@code z} coordinate value or {@link Double#NaN} if not applicable.
      */
     double z();
-
 }

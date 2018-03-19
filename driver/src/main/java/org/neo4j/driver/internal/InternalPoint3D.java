@@ -88,11 +88,11 @@ public class InternalPoint3D implements Point
     @Override
     public String toString()
     {
-        return "Point({" +
+        return "Point{" +
                "srid=" + srid +
                ", x=" + x +
                ", y=" + y +
                ", z=" + z +
-               "})";
+               '}';
     }
 }
