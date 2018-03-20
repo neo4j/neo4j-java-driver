@@ -34,7 +34,7 @@ import org.neo4j.driver.v1.exceptions.value.NotMultiValued;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.exceptions.value.Unsizable;
 import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point;
@@ -217,7 +217,7 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
-    public IsoDuration asIsoDuration()
+    public CypherDuration asCypherDuration()
     {
         throw new Uncoercible( type().name(), "Duration" );
     }

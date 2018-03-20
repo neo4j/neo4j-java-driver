@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalIsoDuration;
+import org.neo4j.driver.internal.InternalCypherDuration;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -33,7 +33,7 @@ public class DurationValueTest
     @Test
     public void shouldHaveCorrectType()
     {
-        IsoDuration duration = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration = newDuration( 1, 2, 3, 4 );
         DurationValue durationValue = new DurationValue( duration );
         assertEquals( InternalTypeSystem.TYPE_SYSTEM.DURATION(), durationValue.type() );
     }
@@ -41,7 +41,7 @@ public class DurationValueTest
     @Test
     public void shouldSupportAsObject()
     {
-        IsoDuration duration = newDuration( 11, 22, 33, 44 );
+        CypherDuration duration = newDuration( 11, 22, 33, 44 );
         DurationValue durationValue = new DurationValue( duration );
         assertEquals( duration, durationValue.asObject() );
     }
@@ -49,15 +49,15 @@ public class DurationValueTest
     @Test
     public void shouldSupportAsOffsetTime()
     {
-        IsoDuration duration = newDuration( 111, 222, 333, 444 );
+        CypherDuration duration = newDuration( 111, 222, 333, 444 );
         DurationValue durationValue = new DurationValue( duration );
-        assertEquals( duration, durationValue.asIsoDuration() );
+        assertEquals( duration, durationValue.asCypherDuration() );
     }
 
     @Test
     public void shouldNotSupportAsLong()
     {
-        IsoDuration duration = newDuration( 1111, 2222, 3333, 4444 );
+        CypherDuration duration = newDuration( 1111, 2222, 3333, 4444 );
         DurationValue durationValue = new DurationValue( duration );
 
         try
@@ -70,8 +70,8 @@ public class DurationValueTest
         }
     }
 
-    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static CypherDuration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return new InternalIsoDuration( months, days, seconds, nanoseconds );
+        return new InternalCypherDuration( months, days, seconds, nanoseconds );
     }
 }

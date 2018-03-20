@@ -26,7 +26,7 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
@@ -35,7 +35,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
-public class InternalIsoDuration implements IsoDuration
+public class InternalCypherDuration implements CypherDuration
 {
     private static final List<TemporalUnit> SUPPORTED_UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
 
@@ -44,17 +44,17 @@ public class InternalIsoDuration implements IsoDuration
     private final long seconds;
     private final long nanoseconds;
 
-    public InternalIsoDuration( Period period )
+    public InternalCypherDuration( Period period )
     {
         this( period.toTotalMonths(), period.getDays(), 0, 0 );
     }
 
-    public InternalIsoDuration( Duration duration )
+    public InternalCypherDuration( Duration duration )
     {
         this( 0, 0, duration.getSeconds(), duration.getNano() );
     }
 
-    public InternalIsoDuration( long months, long days, long seconds, long nanoseconds )
+    public InternalCypherDuration( long months, long days, long seconds, long nanoseconds )
     {
         this.months = months;
         this.days = days;
@@ -172,7 +172,7 @@ public class InternalIsoDuration implements IsoDuration
         {
             return false;
         }
-        InternalIsoDuration that = (InternalIsoDuration) o;
+        InternalCypherDuration that = (InternalCypherDuration) o;
         return months == that.months &&
                days == that.days &&
                seconds == that.seconds &&

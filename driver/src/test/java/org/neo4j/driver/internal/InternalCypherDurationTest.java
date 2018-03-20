@@ -26,7 +26,7 @@ import java.time.Period;
 import java.time.temporal.Temporal;
 import java.time.temporal.UnsupportedTemporalTypeException;
 
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MONTHS;
@@ -37,12 +37,12 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class InternalIsoDurationTest
+public class InternalCypherDurationTest
 {
     @Test
     public void shouldExposeMonths()
     {
-        IsoDuration duration = newDuration( 42, 1, 2, 3 );
+        CypherDuration duration = newDuration( 42, 1, 2, 3 );
         assertEquals( 42, duration.months() );
         assertEquals( 42, duration.get( MONTHS ) );
     }
@@ -50,7 +50,7 @@ public class InternalIsoDurationTest
     @Test
     public void shouldExposeDays()
     {
-        IsoDuration duration = newDuration( 1, 42, 2, 3 );
+        CypherDuration duration = newDuration( 1, 42, 2, 3 );
         assertEquals( 42, duration.days() );
         assertEquals( 42, duration.get( DAYS ) );
     }
@@ -58,7 +58,7 @@ public class InternalIsoDurationTest
     @Test
     public void shouldExposeSeconds()
     {
-        IsoDuration duration = newDuration( 1, 2, 42, 3 );
+        CypherDuration duration = newDuration( 1, 2, 42, 3 );
         assertEquals( 42, duration.seconds() );
         assertEquals( 42, duration.get( SECONDS ) );
     }
@@ -66,7 +66,7 @@ public class InternalIsoDurationTest
     @Test
     public void shouldExposeNanoseconds()
     {
-        IsoDuration duration = newDuration( 1, 2, 3, 42 );
+        CypherDuration duration = newDuration( 1, 2, 3, 42 );
         assertEquals( 42, duration.nanoseconds() );
         assertEquals( 42, duration.get( NANOS ) );
     }
@@ -74,7 +74,7 @@ public class InternalIsoDurationTest
     @Test
     public void shouldFailToGetUnsupportedTemporalUnit()
     {
-        IsoDuration duration = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration = newDuration( 1, 2, 3, 4 );
 
         try
         {
@@ -89,14 +89,14 @@ public class InternalIsoDurationTest
     @Test
     public void shouldExposeSupportedTemporalUnits()
     {
-        IsoDuration duration = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration = newDuration( 1, 2, 3, 4 );
         assertEquals( asList( MONTHS, DAYS, SECONDS, NANOS ), duration.getUnits() );
     }
 
     @Test
     public void shouldAddTo()
     {
-        IsoDuration duration = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration = newDuration( 1, 2, 3, 4 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 1, 1, 0, 0, 0, 0 );
 
         Temporal result = duration.addTo( dateTime );
@@ -107,7 +107,7 @@ public class InternalIsoDurationTest
     @Test
     public void shouldSubtractFrom()
     {
-        IsoDuration duration = newDuration( 4, 3, 2, 1 );
+        CypherDuration duration = newDuration( 4, 3, 2, 1 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 7, 19, 0, 0, 59, 999 );
 
         Temporal result = duration.subtractFrom( dateTime );
@@ -118,8 +118,8 @@ public class InternalIsoDurationTest
     @Test
     public void shouldImplementEqualsAndHashCode()
     {
-        IsoDuration duration1 = newDuration( 1, 2, 3, 4 );
-        IsoDuration duration2 = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration1 = newDuration( 1, 2, 3, 4 );
+        CypherDuration duration2 = newDuration( 1, 2, 3, 4 );
 
         assertEquals( duration1, duration2 );
         assertEquals( duration1.hashCode(), duration2.hashCode() );
@@ -130,7 +130,7 @@ public class InternalIsoDurationTest
     {
         Period period = Period.of( 3, 5, 12 );
 
-        InternalIsoDuration duration = new InternalIsoDuration( period );
+        InternalCypherDuration duration = new InternalCypherDuration( period );
 
         assertEquals( period.toTotalMonths(), duration.months() );
         assertEquals( period.getDays(), duration.days() );
@@ -143,7 +143,7 @@ public class InternalIsoDurationTest
     {
         Duration duration = Duration.ofSeconds( 391784, 4879173 );
 
-        InternalIsoDuration isoDuration = new InternalIsoDuration( duration );
+        InternalCypherDuration isoDuration = new InternalCypherDuration( duration );
 
         assertEquals( 0, isoDuration.months() );
         assertEquals( 0, isoDuration.days() );
@@ -151,8 +151,8 @@ public class InternalIsoDurationTest
         assertEquals( duration.getNano(), isoDuration.nanoseconds() );
     }
 
-    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static CypherDuration newDuration( long months, long days, long seconds, long nanoseconds )
     {
-        return new InternalIsoDuration( months, days, seconds, nanoseconds );
+        return new InternalCypherDuration( months, days, seconds, nanoseconds );
     }
 }

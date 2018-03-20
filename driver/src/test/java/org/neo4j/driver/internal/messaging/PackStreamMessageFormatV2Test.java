@@ -42,7 +42,7 @@ import org.neo4j.driver.internal.util.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 import org.neo4j.driver.v1.types.Point;
 
 import static java.time.Month.APRIL;
@@ -348,8 +348,8 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldWriteDuration() throws Exception
     {
-        Value durationValue = Values.isoDuration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
-        IsoDuration duration = durationValue.asIsoDuration();
+        Value durationValue = Values.cypherDuration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
+        CypherDuration duration = durationValue.asCypherDuration();
 
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
@@ -366,8 +366,8 @@ public class PackStreamMessageFormatV2Test
     @Test
     public void shouldReadDuration() throws Exception
     {
-        Value durationValue = Values.isoDuration( 17, 22, 99, 15 );
-        IsoDuration duration = durationValue.asIsoDuration();
+        Value durationValue = Values.cypherDuration( 17, 22, 99, 15 );
+        CypherDuration duration = durationValue.asCypherDuration();
 
         Object unpacked = packAndUnpackValue( packer ->
         {

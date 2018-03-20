@@ -50,7 +50,7 @@ import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 import org.neo4j.driver.v1.types.Point;
 
 import static java.util.Arrays.asList;
@@ -60,7 +60,7 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.Values.isoDuration;
+import static org.neo4j.driver.v1.Values.cypherDuration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
 import static org.neo4j.driver.v1.Values.ofInteger;
@@ -409,10 +409,10 @@ public class ValuesTest
     @Test
     public void shouldCreateIsoDurationValue()
     {
-        Value value = isoDuration( 42_1, 42_2, 42_3, 42_4 );
+        Value value = cypherDuration( 42_1, 42_2, 42_3, 42_4 );
 
         assertThat( value, instanceOf( DurationValue.class ) );
-        IsoDuration duration = value.asIsoDuration();
+        CypherDuration duration = value.asCypherDuration();
 
         assertEquals( 42_1, duration.months() );
         assertEquals( 42_2, duration.days() );
@@ -423,12 +423,12 @@ public class ValuesTest
     @Test
     public void shouldCreateValueFromIsoDuration()
     {
-        Value durationValue1 = isoDuration( 1, 2, 3, 4 );
-        IsoDuration duration = durationValue1.asIsoDuration();
+        Value durationValue1 = cypherDuration( 1, 2, 3, 4 );
+        CypherDuration duration = durationValue1.asCypherDuration();
         Value durationValue2 = value( duration );
 
-        assertEquals( duration, durationValue1.asIsoDuration() );
-        assertEquals( duration, durationValue2.asIsoDuration() );
+        assertEquals( duration, durationValue1.asCypherDuration() );
+        assertEquals( duration, durationValue2.asCypherDuration() );
         assertEquals( durationValue1, durationValue2 );
     }
 
@@ -438,12 +438,12 @@ public class ValuesTest
         Period period = Period.of( 5, 11, 190 );
 
         Value value = value( period );
-        IsoDuration isoDuration = value.asIsoDuration();
+        CypherDuration cypherDuration = value.asCypherDuration();
 
-        assertEquals( period.toTotalMonths(), isoDuration.months() );
-        assertEquals( period.getDays(), isoDuration.days() );
-        assertEquals( 0, isoDuration.seconds() );
-        assertEquals( 0, isoDuration.nanoseconds() );
+        assertEquals( period.toTotalMonths(), cypherDuration.months() );
+        assertEquals( period.getDays(), cypherDuration.days() );
+        assertEquals( 0, cypherDuration.seconds() );
+        assertEquals( 0, cypherDuration.nanoseconds() );
     }
 
     @Test
@@ -452,12 +452,12 @@ public class ValuesTest
         Duration duration = Duration.ofSeconds( 183951, 4384718937L );
 
         Value value = value( duration );
-        IsoDuration isoDuration = value.asIsoDuration();
+        CypherDuration cypherDuration = value.asCypherDuration();
 
-        assertEquals( 0, isoDuration.months() );
-        assertEquals( 0, isoDuration.days() );
-        assertEquals( duration.getSeconds(), isoDuration.seconds() );
-        assertEquals( duration.getNano(), isoDuration.nanoseconds() );
+        assertEquals( 0, cypherDuration.months() );
+        assertEquals( 0, cypherDuration.days() );
+        assertEquals( duration.getSeconds(), cypherDuration.seconds() );
+        assertEquals( duration.getNano(), cypherDuration.nanoseconds() );
     }
 
     @Test
