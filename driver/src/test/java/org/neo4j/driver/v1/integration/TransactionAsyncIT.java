@@ -577,7 +577,7 @@ public class TransactionAsyncIT
     @Test
     public void shouldForEachWithNonEmptyCursor()
     {
-        testForEach( "UNWIND range(1, 12555) AS x CREATE (n:Node {id: x}) RETURN n", 12555 );
+        testForEach( "UNWIND range(1, 1255) AS x CREATE (n:Node {id: x}) RETURN n", 1255 );
     }
 
     @Test
