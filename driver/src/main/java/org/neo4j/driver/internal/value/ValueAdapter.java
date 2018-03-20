@@ -91,6 +91,42 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public boolean asBoolean( boolean defaultValue )
+    {
+        return computeOrDefault( Value:: asBoolean, defaultValue );
+    }
+
+    @Override
+    public String asString( String defaultValue )
+    {
+        return computeOrDefault( (Value::asString), defaultValue );
+    }
+
+    @Override
+    public long asLong( long defaultValue )
+    {
+        return computeOrDefault( Value::asLong, defaultValue );
+    }
+
+    @Override
+    public int asInt( int defaultValue )
+    {
+        return computeOrDefault( Value::asInt, defaultValue );
+    }
+
+    @Override
+    public double asDouble( double defaultValue )
+    {
+        return computeOrDefault( Value::asDouble, defaultValue );
+    }
+
+    @Override
+    public float asFloat( float defaultValue )
+    {
+        return computeOrDefault( Value::asFloat, defaultValue );
+    }
+
+    @Override
     public long asLong()
     {
         throw new Uncoercible( type().name(), "Java long" );
@@ -148,6 +184,22 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public Object asObject()
     {
         throw new Uncoercible( type().name(), "Java Object" );
+    }
+
+    @Override
+    public <T> T computeOrDefault( Function<Value,T> mapper, T defaultValue )
+    {
+        if ( isNull() )
+        {
+            return defaultValue;
+        }
+        return mapper.apply( this );
+    }
+
+    @Override
+    public <T> T computeOrNull( Function<Value,T> mapper )
+    {
+        return computeOrDefault( mapper, null );
     }
 
     @Override

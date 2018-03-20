@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
@@ -195,10 +196,34 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     Object asObject();
 
     /**
+     * Apply the mapping function on the value if the value is not a {@link NullValue}, or the default value if the value is a {@link NullValue}.
+     * @param mapper The mapping function defines how to map a {@link Value} to T.
+     * @param defaultValue the value to return if the value is a {@link NullValue}
+     * @param <T> The return type
+     * @return The value after applying the given mapping function or the default value if the value is {@link NullValue}.
+     */
+    <T>T computeOrDefault( Function<Value, T> mapper, T defaultValue );
+
+    /**
+     * Apply the mapping function on the value if the value is not a {@link NullValue}, or null if the value is a {@link NullValue}.
+     * @param mapper The mapping function defines how to map a {@link Value} to T.
+     * @param <T> The return type
+     * @return The value after applying the given mapping function or null if the value is {@link NullValue}.
+     */
+    <T>T computeOrNull( Function<Value, T> mapper );
+
+    /**
      * @return the value as a Java boolean, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
     boolean asBoolean();
+
+    /**
+     * @param defaultValue return this value if the value is a {@link NullValue}.
+     * @return the value as a Java boolean, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    boolean asBoolean( boolean defaultValue );
 
     /**
      *  @return the value as a Java byte array, if possible.
@@ -211,6 +236,12 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      *  @throws Uncoercible if value types are incompatible.
      */
     String asString();
+
+    /**
+     * @param defaultValue return this value if the value is null.
+     * @return the value as a Java String, if possible
+     */
+    String asString( String defaultValue );
 
     /**
      * @return the value as a Java Number, if possible.
@@ -228,6 +259,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     long asLong();
 
     /**
+     * Returns a Java long if no precision is lost in the conversion.
+     * @param defaultValue return this default value if the value is a {@link NullValue}.
+     * @return the value as a Java long.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    long asLong( long defaultValue );
+
+    /**
      * Returns a Java int if no precision is lost in the conversion.
      *
      * @return the value as a Java int.
@@ -235,6 +275,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     int asInt();
+
+    /**
+     * Returns a Java int if no precision is lost in the conversion.
+     * @param defaultValue return this default value if the value is a {@link NullValue}.
+     * @return the value as a Java int.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    int asInt( int defaultValue );
 
     /**
      * Returns a Java double if no precision is lost in the conversion.
@@ -246,6 +295,16 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     double asDouble();
 
     /**
+     * Returns a Java double if no precision is lost in the conversion.
+     * @param defaultValue default to this value if the value is a {@link NullValue}.
+     * @return the value as a Java double.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+
+     */
+    double asDouble( double defaultValue );
+
+    /**
      * Returns a Java float if no precision is lost in the conversion.
      *
      * @return the value as a Java float.
@@ -253,6 +312,16 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     float asFloat();
+
+    /**
+     * Returns a Java float if no precision is lost in the conversion.
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a Java float.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+
+     */
+    float asFloat( float defaultValue );
 
     /**
      * If the underlying type can be viewed as a list, returns a java list of
