@@ -918,6 +918,7 @@ public class CausalClusteringIT
         int leadersCount;
         int followersCount;
         int readReplicasCount;
+        boolean isLeaderDown;
         do
         {
             try ( Session session = driver.session() )
@@ -948,9 +949,15 @@ public class CausalClusteringIT
                 leadersCount = newLeadersCount;
                 followersCount = newFollowersCount;
                 readReplicasCount = newReadReplicasCount;
+                isLeaderDown = leadersCount == 0 && followersCount == 1 && readReplicasCount <= 3;
+            }
+            catch( SessionExpiredException e )
+            {
+                // we failed to get a valid routing table due to leader down
+                isLeaderDown = true;
             }
         }
-        while ( !(leadersCount == 0 && followersCount == 1 && readReplicasCount == 2) );
+        while ( !isLeaderDown );
     }
 
     private Driver createDriver( URI boltUri )
