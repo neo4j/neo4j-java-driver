@@ -61,12 +61,12 @@ public class RelationshipValueTest
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.RELATIONSHIP ) );
     }
 
-    private RelationshipValue emptyRelationshipValue()
+    public static RelationshipValue emptyRelationshipValue()
     {
         return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS" ) );
     }
 
-    private RelationshipValue filledRelationshipValue()
+    private static RelationshipValue filledRelationshipValue()
     {
         return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
     }

@@ -49,8 +49,11 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -91,6 +94,10 @@ public abstract class Values
     {
         if ( value == null ) { return NullValue.NULL; }
 
+        if ( value instanceof NodeValue || value instanceof RelationshipValue || value instanceof PathValue )
+        {
+            throw new ClientException( "Unsupported param type " + ((AsValue) value).asValue().type().name() );
+        }
         if ( value instanceof AsValue ) { return ((AsValue) value).asValue(); }
         if ( value instanceof Boolean ) { return value( (boolean) value ); }
         if ( value instanceof String ) { return value( (String) value ); }

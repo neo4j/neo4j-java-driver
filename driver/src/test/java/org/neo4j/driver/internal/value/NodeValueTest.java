@@ -70,12 +70,12 @@ public class NodeValueTest
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE ) );
     }
 
-    private NodeValue emptyNodeValue()
+    public static NodeValue emptyNodeValue()
     {
         return new NodeValue( new InternalNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
     }
 
-    private NodeValue filledNodeValue()
+    private static NodeValue filledNodeValue()
     {
         return new NodeValue( new InternalNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
     }

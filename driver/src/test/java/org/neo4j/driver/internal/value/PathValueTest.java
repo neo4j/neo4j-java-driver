@@ -54,7 +54,7 @@ public class PathValueTest
         assertThat(pathValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.PATH() ));
     }
 
-    private PathValue pathValue()
+    public static PathValue pathValue()
     {
         return new PathValue( new InternalPath( new InternalNode(42L), new InternalRelationship( 43L, 42L, 44L, "T" ), new InternalNode( 44L ) ) );
     }
