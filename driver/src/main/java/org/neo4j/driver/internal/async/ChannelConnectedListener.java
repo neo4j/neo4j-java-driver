@@ -63,15 +63,7 @@ public class ChannelConnectedListener implements ChannelFutureListener
             ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast( new HandshakeHandler( pipelineBuilder, handshakeCompletedPromise, logging ) );
             log.debug( "C: [Bolt Handshake] %s", handshakeString() );
-            ChannelFuture handshakeFuture = channel.writeAndFlush( handshakeBuf() );
-
-            handshakeFuture.addListener( channelFuture ->
-            {
-                if ( !channelFuture.isSuccess() )
-                {
-                    handshakeCompletedPromise.setFailure( channelFuture.cause() );
-                }
-            } );
+            channel.writeAndFlush( handshakeBuf(), channel.voidPromise() );
         }
         else
         {
