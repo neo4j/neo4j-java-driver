@@ -159,16 +159,17 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private void packZonedDateTime( ZonedDateTime zonedDateTime ) throws IOException
         {
-            Instant instant = zonedDateTime.toInstant();
-            ZoneId zone = zonedDateTime.getZone();
+            long epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond( UTC );
+            int nano = zonedDateTime.getNano();
 
+            ZoneId zone = zonedDateTime.getZone();
             if ( zone instanceof ZoneOffset )
             {
                 int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
 
                 packer.packStructHeader( DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_OFFSET );
-                packer.pack( instant.getEpochSecond() );
-                packer.pack( instant.getNano() );
+                packer.pack( epochSecondLocal );
+                packer.pack( nano );
                 packer.pack( offsetSeconds );
             }
             else
@@ -176,8 +177,8 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
                 String zoneId = zone.getId();
 
                 packer.packStructHeader( DATE_TIME_STRUCT_SIZE, DATE_TIME_WITH_ZONE_ID );
-                packer.pack( instant.getEpochSecond() );
-                packer.pack( instant.getNano() );
+                packer.pack( epochSecondLocal );
+                packer.pack( nano );
                 packer.pack( zoneId );
             }
         }
@@ -287,8 +288,8 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private Value unpackLocalTime() throws IOException
         {
-            long nanoOfDay = unpacker.unpackLong();
-            return value( LocalTime.ofNanoOfDay( nanoOfDay ) );
+            long nanoOfDayLocal = unpacker.unpackLong();
+            return value( LocalTime.ofNanoOfDay( nanoOfDayLocal ) );
         }
 
         private Value unpackLocalDateTime() throws IOException
@@ -300,24 +301,18 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
 
         private Value unpackDateTimeWithZoneOffset() throws IOException
         {
-            long epochSecondUtc = unpacker.unpackLong();
+            long epochSecondLocal = unpacker.unpackLong();
             int nano = Math.toIntExact( unpacker.unpackLong() );
             int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
-
-            Instant instant = Instant.ofEpochSecond( epochSecondUtc, nano );
-            ZoneOffset zoneOffset = ZoneOffset.ofTotalSeconds( offsetSeconds );
-            return value( ZonedDateTime.ofInstant( instant, zoneOffset ) );
+            return value( newZonedDateTime( epochSecondLocal, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
         }
 
         private Value unpackDateTimeWithZoneId() throws IOException
         {
-            long epochSecondUtc = unpacker.unpackLong();
+            long epochSecondLocal = unpacker.unpackLong();
             int nano = Math.toIntExact( unpacker.unpackLong() );
             String zoneIdString = unpacker.unpackString();
-
-            Instant instant = Instant.ofEpochSecond( epochSecondUtc, nano );
-            ZoneId zoneId = ZoneId.of( zoneIdString );
-            return value( ZonedDateTime.ofInstant( instant, zoneId ) );
+            return value( newZonedDateTime( epochSecondLocal, nano, ZoneId.of( zoneIdString ) ) );
         }
 
         private Value unpackDuration() throws IOException
@@ -344,6 +339,13 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             double y = unpacker.unpackDouble();
             double z = unpacker.unpackDouble();
             return point( srid, x, y, z );
+        }
+
+        private static ZonedDateTime newZonedDateTime( long epochSecondLocal, long nano, ZoneId zoneId )
+        {
+            Instant instant = Instant.ofEpochSecond( epochSecondLocal, nano );
+            LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
+            return ZonedDateTime.of( localDateTime, zoneId );
         }
     }
 }
