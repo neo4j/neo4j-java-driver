@@ -19,18 +19,18 @@
 package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.CypherDuration;
 import org.neo4j.driver.v1.types.Type;
 
-public class DurationValue extends ObjectValueAdapter<IsoDuration>
+public class DurationValue extends ObjectValueAdapter<CypherDuration>
 {
-    public DurationValue( IsoDuration duration )
+    public DurationValue( CypherDuration duration )
     {
         super( duration );
     }
 
     @Override
-    public IsoDuration asIsoDuration()
+    public CypherDuration asCypherDuration()
     {
         return asObject();
     }
