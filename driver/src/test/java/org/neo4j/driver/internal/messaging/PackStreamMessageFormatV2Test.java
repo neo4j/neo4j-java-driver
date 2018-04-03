@@ -280,7 +280,10 @@ public class PackStreamMessageFormatV2Test
         int index = buf.readableBytes() - Integer.BYTES - Byte.BYTES - Short.BYTES - Byte.BYTES - Integer.BYTES - Byte.BYTES;
         ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
 
-        assertByteBufContains( tailSlice, INT_32, (int) dateTime.toEpochSecond(), INT_16, (short) dateTime.getNano(), INT_32, zoneOffset.getTotalSeconds() );
+        assertByteBufContains( tailSlice,
+                INT_32, (int) localEpochSecondOf( dateTime ),
+                INT_16, (short) dateTime.getNano(),
+                INT_32, zoneOffset.getTotalSeconds() );
     }
 
     @Test
@@ -292,7 +295,7 @@ public class PackStreamMessageFormatV2Test
         Object unpacked = packAndUnpackValue( packer ->
         {
             packer.packStructHeader( 3, (byte) 'F' );
-            packer.pack( dateTime.toInstant().getEpochSecond() );
+            packer.pack( localEpochSecondOf( dateTime ) );
             packer.pack( dateTime.toInstant().getNano() );
             packer.pack( zoneOffset.getTotalSeconds() );
         } );
@@ -316,7 +319,7 @@ public class PackStreamMessageFormatV2Test
         ByteBuf tailSlice = buf.slice( index, buf.readableBytes() - index );
 
         List<Number> expectedBuf = new ArrayList<>( asList(
-                INT_32, (int) dateTime.toInstant().getEpochSecond(),
+                INT_32, (int) localEpochSecondOf( dateTime ),
                 INT_16, (short) dateTime.toInstant().getNano(),
                 STRING_8, (byte) zoneNameBytes.length ) );
 
@@ -337,7 +340,7 @@ public class PackStreamMessageFormatV2Test
         Object unpacked = packAndUnpackValue( packer ->
         {
             packer.packStructHeader( 3, (byte) 'f' );
-            packer.pack( dateTime.toInstant().getEpochSecond() );
+            packer.pack( localEpochSecondOf( dateTime ) );
             packer.pack( dateTime.toInstant().getNano() );
             packer.pack( zoneName );
         } );
@@ -424,5 +427,10 @@ public class PackStreamMessageFormatV2Test
     private MessageFormat.Writer newWriter( ByteBuf buf )
     {
         return messageFormat.newWriter( new ByteBufOutput( buf ), true );
+    }
+
+    private static long localEpochSecondOf( ZonedDateTime dateTime )
+    {
+        return dateTime.toLocalDateTime().toEpochSecond( UTC );
     }
 }
