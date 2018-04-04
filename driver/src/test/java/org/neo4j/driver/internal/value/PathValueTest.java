@@ -20,9 +20,6 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 
@@ -30,6 +27,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.util.ValueFactory.pathValue;
 
 public class PathValueTest
 {
@@ -52,10 +50,5 @@ public class PathValueTest
     {
 
         assertThat(pathValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.PATH() ));
-    }
-
-    public static PathValue pathValue()
-    {
-        return new PathValue( new InternalPath( new InternalNode(42L), new InternalRelationship( 43L, 42L, 44L, "T" ), new InternalNode( 44L ) ) );
     }
 }

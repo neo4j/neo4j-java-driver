@@ -43,7 +43,6 @@ import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.Entity;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
@@ -252,79 +251,8 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 }
                 break;
 
-            case NODE:
-            {
-                Node node = value.asNode();
-                packNode( node );
-            }
-            break;
-
-            case RELATIONSHIP:
-            {
-                Relationship rel = value.asRelationship();
-                packer.packStructHeader( 5, RELATIONSHIP );
-                packer.pack( rel.id() );
-                packer.pack( rel.startNodeId() );
-                packer.pack( rel.endNodeId() );
-
-                packer.pack( rel.type() );
-
-                packProperties( rel );
-            }
-            break;
-
-            case PATH:
-                Path path = value.asPath();
-                packer.packStructHeader( 3, PATH );
-
-                // Unique nodes
-                Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
-                for ( Node node : path.nodes() )
-                {
-                    if ( !nodeIdx.containsKey( node ) )
-                    {
-                        nodeIdx.put( node, nodeIdx.size() );
-                    }
-                }
-                packer.packListHeader( nodeIdx.size() );
-                for ( Node node : nodeIdx.keySet() )
-                {
-                    packNode( node );
-                }
-
-                // Unique rels
-                Map<Relationship,Integer> relIdx = Iterables.newLinkedHashMapWithSize( path.length() );
-                for ( Relationship rel : path.relationships() )
-                {
-                    if ( !relIdx.containsKey( rel ) )
-                    {
-                        relIdx.put( rel, relIdx.size() + 1 );
-                    }
-                }
-                packer.packListHeader( relIdx.size() );
-                for ( Relationship rel : relIdx.keySet() )
-                {
-                    packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
-                    packer.pack( rel.id() );
-                    packer.pack( rel.type() );
-                    packProperties( rel );
-                }
-
-                // Sequence
-                packer.packListHeader( path.length() * 2 );
-                for ( Path.Segment seg : path )
-                {
-                    Relationship rel = seg.relationship();
-                    long relEndId = rel.endNodeId();
-                    long segEndId = seg.end().id();
-                    int size = relEndId == segEndId ? relIdx.get( rel ) : -relIdx.get( rel );
-                    packer.pack( size );
-                    packer.pack( nodeIdx.get( seg.end() ) );
-                }
-                break;
-
             default:
-                throw new IOException( "Unknown type: " + value );
+                throw new IOException( "Unknown type: " + value.type().name() );
             }
         }
 
@@ -332,32 +260,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public void write( Message msg ) throws IOException
         {
             msg.dispatch( this );
-        }
-
-        private void packNode( Node node ) throws IOException
-        {
-            packer.packStructHeader( NODE_FIELDS, NODE );
-            packer.pack( node.id() );
-
-            Iterable<String> labels = node.labels();
-            packer.packListHeader( Iterables.count( labels ) );
-            for ( String label : labels )
-            {
-                packer.pack( label );
-            }
-
-            packProperties( node );
-        }
-
-        private void packProperties( Entity entity ) throws IOException
-        {
-            Iterable<String> keys = entity.keys();
-            packer.packMapHeader( entity.size() );
-            for ( String propKey : keys )
-            {
-                packer.pack( propKey );
-                packValue( entity.get( propKey ) );
-            }
         }
     }
 

@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Immutable;
 
@@ -52,7 +54,18 @@ public class Statement
     public Statement( String text, Value parameters )
     {
         this.text = text;
-        this.parameters = parameters == null ? Values.EmptyMap : parameters;
+        if( parameters == null )
+        {
+            this.parameters = Values.EmptyMap;
+        }
+        else if ( parameters instanceof MapValue )
+        {
+            this.parameters = parameters;
+        }
+        else
+        {
+            throw new ClientException( "The parameters should be provided as Map type. Unsupported parameters type: " + parameters.type().name() );
+        }
     }
 
     /**

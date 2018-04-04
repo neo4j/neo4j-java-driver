@@ -20,16 +20,15 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
 
 public class RelationshipValueTest
 {
@@ -59,15 +58,5 @@ public class RelationshipValueTest
     {
         InternalValue value = emptyRelationshipValue();
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.RELATIONSHIP ) );
-    }
-
-    public static RelationshipValue emptyRelationshipValue()
-    {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS" ) );
-    }
-
-    private static RelationshipValue filledRelationshipValue()
-    {
-        return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
     }
 }
