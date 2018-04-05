@@ -57,5 +57,5 @@ public interface IsoDuration extends TemporalAmount
      *
      * @return number of nanoseconds.
      */
-    long nanoseconds();
+    int nanoseconds();
 }

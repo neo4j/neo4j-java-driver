@@ -320,7 +320,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
             long months = unpacker.unpackLong();
             long days = unpacker.unpackLong();
             long seconds = unpacker.unpackLong();
-            long nanoseconds = unpacker.unpackLong();
+            int nanoseconds = Math.toIntExact( unpacker.unpackLong() );
             return isoDuration( months, days, seconds, nanoseconds );
         }
 

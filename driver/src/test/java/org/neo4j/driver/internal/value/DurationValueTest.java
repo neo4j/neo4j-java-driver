@@ -70,7 +70,7 @@ public class DurationValueTest
         }
     }
 
-    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
+    private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )
     {
         return new InternalIsoDuration( months, days, seconds, nanoseconds );
     }
