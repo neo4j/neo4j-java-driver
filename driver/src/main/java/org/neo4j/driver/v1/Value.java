@@ -240,6 +240,7 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     /**
      * @param defaultValue return this value if the value is null.
      * @return the value as a Java String, if possible
+     * @throws Uncoercible if value types are incompatible.
      */
     String asString( String defaultValue );
 
@@ -300,7 +301,6 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @return the value as a Java double.
      * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
      * @throws Uncoercible if value types are incompatible.
-
      */
     double asDouble( double defaultValue );
 
@@ -319,7 +319,6 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @return the value as a Java float.
      * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
      * @throws Uncoercible if value types are incompatible.
-
      */
     float asFloat( float defaultValue );
 
