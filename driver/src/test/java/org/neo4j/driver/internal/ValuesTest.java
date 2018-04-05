@@ -68,7 +68,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
-import static org.neo4j.driver.internal.util.ValueFactory.pathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
@@ -549,7 +549,7 @@ public class ValuesTest
         exception.expectMessage( "Paths can't be used as parameters." );
 
         // When
-        PathValue path = pathValue();
+        PathValue path = filledPathValue();
         value( path );
     }
 
@@ -561,7 +561,7 @@ public class ValuesTest
         exception.expectMessage( "Paths can't be used as parameters." );
 
         // When
-        Path path = pathValue().asPath();
+        Path path = filledPathValue().asPath();
         value( path );
     }
 }

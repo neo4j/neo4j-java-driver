@@ -27,20 +27,20 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.internal.util.ValueFactory.pathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
 public class PathValueTest
 {
     @Test
     public void shouldHaveSensibleToString() throws Throwable
     {
-        assertEquals("path[(42)-[43:T]->(44)]", pathValue().toString());
+        assertEquals("path[(42)-[43:T]->(44)]", filledPathValue().toString());
     }
 
     @Test
     public void shouldNotBeNull()
     {
-        Value value = pathValue();
+        Value value = filledPathValue();
         assertFalse( value.isNull() );
     }
 
@@ -49,6 +49,6 @@ public class PathValueTest
     public void shouldHaveCorrectType() throws Throwable
     {
 
-        assertThat(pathValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.PATH() ));
+        assertThat( filledPathValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.PATH() ));
     }
 }

@@ -32,6 +32,9 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.not;
@@ -48,10 +51,10 @@ public class TypeSystemTest
     private Value integerValue = value( 13 );
     private Value floatValue = value( 13.1 );
     private Value stringValue = value( "Lalala " );
-    private Value nodeValue = value( node );
-    private Value relationshipValue = value( relationship );
+    private Value nodeValue = new NodeValue( node );
+    private Value relationshipValue = new RelationshipValue( relationship );
     private Value mapValue = value( Collections.singletonMap( "type", "r" ) );
-    private Value pathValue = value( new InternalPath( Arrays.<Entity>asList( node, relationship, node ) ) );
+    private Value pathValue = new PathValue( new InternalPath( Arrays.<Entity>asList( node, relationship, node ) ) );
     private Value booleanValue = value( true );
     private Value listValue = value( Arrays.asList( 1, 2, 3 ) );
     private Value nullValue = value( (Object) null );

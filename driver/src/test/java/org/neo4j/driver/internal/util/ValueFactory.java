@@ -54,8 +54,13 @@ public class ValueFactory
         return new RelationshipValue( new InternalRelationship( 1234, 1, 2, "KNOWS", singletonMap( "name", value( "Dodo" ) ) ) );
     }
 
-    public static PathValue pathValue()
+    public static PathValue filledPathValue()
     {
         return new PathValue( new InternalPath( new InternalNode(42L), new InternalRelationship( 43L, 42L, 44L, "T" ), new InternalNode( 44L ) ) );
+    }
+
+    public static PathValue emptyPathValue()
+    {
+        return new PathValue( new InternalPath( new InternalNode( 1 ) ) );
     }
 }

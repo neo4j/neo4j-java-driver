@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
-import static org.neo4j.driver.internal.util.ValueFactory.pathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
 @RunWith(Parameterized.class)
@@ -66,8 +66,8 @@ public class ParametersTest
                 {emptyRelationshipValue().asRelationship(), "Relationships can't be used as parameters."},
 
                 // Path
-                {pathValue(), "Paths can't be used as parameters."},
-                {pathValue().asPath(), "Paths can't be used as parameters."},
+                {filledPathValue(), "Paths can't be used as parameters."},
+                {filledPathValue().asPath(), "Paths can't be used as parameters."},
         };
     }
 

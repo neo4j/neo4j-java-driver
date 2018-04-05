@@ -46,7 +46,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
-import static org.neo4j.driver.internal.util.ValueFactory.pathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -442,7 +442,7 @@ public class ParametersIT
     public void shouldNotBePossibleToUsePathAsParameterViaMapValue()
     {
         // GIVEN
-        Value path = pathValue();
+        Value path = filledPathValue();
         Map<String,Value> params = new HashMap<>();
         params.put( "a", path );
         MapValue mapValue = new MapValue( params );
