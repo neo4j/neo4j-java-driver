@@ -196,7 +196,7 @@ public class InternalIsoDuration implements IsoDuration
     public String toString()
     {
         // print the duration in iso standard format.
-        if ( this == ZERO )
+        if ( this.equals( ZERO ) )
         {
             return "PT0S"; // no need to allocate a string builder if we know the result
         }

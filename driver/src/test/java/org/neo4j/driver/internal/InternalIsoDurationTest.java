@@ -156,6 +156,7 @@ public class InternalIsoDurationTest
     @Test
     public void toStringShouldPrintInIsoStandardFormat() throws Throwable
     {
+        assertThat( new InternalIsoDuration( 0, 0, 0, 0 ).toString(), equalTo( "PT0S" ) );
         assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P50W6D" ) );
         assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "PT45S" ) );
 
