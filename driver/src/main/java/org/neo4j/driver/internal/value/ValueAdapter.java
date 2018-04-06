@@ -197,9 +197,75 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
-    public <T> T computeOrNull( Function<Value,T> mapper )
+    public Map<String,Object> asMap( Map<String,Object> defaultValue )
     {
-        return computeOrDefault( mapper, null );
+        return computeOrDefault( Value::asMap, defaultValue );
+    }
+
+    @Override
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction, Map<String,T> defaultValue )
+    {
+        return computeOrDefault( value -> value.asMap( mapFunction ), defaultValue );
+    }
+
+    @Override
+    public byte[] asByteArray( byte[] defaultValue )
+    {
+        return computeOrDefault( Value::asByteArray, defaultValue );
+    }
+
+    @Override
+    public List<Object> asList( List<Object> defaultValue )
+    {
+        return computeOrDefault( Value::asList, defaultValue );
+    }
+
+    @Override
+    public <T> List<T> asList( Function<Value,T> mapFunction, List<T> defaultValue )
+    {
+        return computeOrDefault( value -> value.asList( mapFunction ), defaultValue );
+    }
+
+    @Override
+    public LocalDate asLocalDate( LocalDate defaultValue )
+    {
+        return computeOrDefault( Value::asLocalDate, defaultValue );
+    }
+
+    @Override
+    public OffsetTime asOffsetTime( OffsetTime defaultValue )
+    {
+        return computeOrDefault( Value::asOffsetTime, defaultValue );
+    }
+
+    @Override
+    public LocalTime asLocalTime( LocalTime defaultValue )
+    {
+        return computeOrDefault( Value::asLocalTime, defaultValue );
+    }
+
+    @Override
+    public LocalDateTime asLocalDateTime( LocalDateTime defaultValue )
+    {
+        return computeOrDefault( Value::asLocalDateTime, defaultValue );
+    }
+
+    @Override
+    public ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue )
+    {
+        return computeOrDefault( Value::asZonedDateTime, defaultValue );
+    }
+
+    @Override
+    public IsoDuration asIsoDuration( IsoDuration defaultValue )
+    {
+        return computeOrDefault( Value::asIsoDuration, defaultValue );
+    }
+
+    @Override
+    public Point asPoint( Point defaultValue )
+    {
+        return computeOrDefault( Value::asPoint, defaultValue );
     }
 
     @Override

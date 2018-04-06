@@ -25,17 +25,18 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.util.Function;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.Values.isoDuration;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.point;
 
 public class NullValueTest
@@ -62,73 +63,84 @@ public class NullValueTest
     public void shouldReturnNativeTypesAsDefaultValue() throws Throwable
     {
         Value value = NullValue.NULL;
+        // string
+        assertThat( value.asString( "string value" ), equalTo( "string value" ) );
+
+        // primitives
         assertThat( value.asBoolean( false ), equalTo( false ) );
         assertThat( value.asBoolean( true ), equalTo( true ) );
-        assertThat( value.asString( "string value" ), equalTo( "string value" ) );
         assertThat( value.asInt( 10 ), equalTo( 10 ) );
         assertThat( value.asLong( 100L ), equalTo( 100L ) );
         assertThat( value.asFloat( 10.4f ), equalTo( 10.4f ) );
         assertThat( value.asDouble( 10.10 ), equalTo( 10.10 ) );
+
+        //array, list, map
+        assertThat( value.asByteArray( new byte[]{1, 2} ), equalTo( new byte[]{1, 2} ) );
+        assertThat( value.asList( emptyList() ), equalTo( emptyList() ) );
+        assertThat( value.asList( ofValue(), emptyList() ), equalTo( emptyList() ) );
+        assertThat( value.asMap( emptyMap() ), equalTo( emptyMap() ) );
+        assertThat( value.asMap( ofValue(), emptyMap() ), equalTo( emptyMap() ) );
+
+        // spatial, temporal
+        assertAsWithDefaultValueReturnDefault( value::asPoint, point( 1234, 1, 2 ).asPoint() );
+
+        assertAsWithDefaultValueReturnDefault( value::asLocalDate, LocalDate.now() );
+        assertAsWithDefaultValueReturnDefault( value::asOffsetTime, OffsetTime.now() );
+        assertAsWithDefaultValueReturnDefault( value::asLocalTime, LocalTime.now() );
+        assertAsWithDefaultValueReturnDefault( value::asLocalDateTime, LocalDateTime.now() );
+        assertAsWithDefaultValueReturnDefault( value::asZonedDateTime, ZonedDateTime.now() );
+        assertAsWithDefaultValueReturnDefault( value::asIsoDuration,
+                isoDuration( 1, 2, 3, 4 ).asIsoDuration() );
     }
 
     @Test
     public void shouldReturnAsNull() throws Throwable
     {
-        Value value = NullValue.NULL;
+        assertComputeOrDefaultReturnNull( Value::asObject );
+        assertComputeOrDefaultReturnNull( Value::asNumber );
 
-        assertThat( value.computeOrNull( Value::asObject ), nullValue() );
-        assertThat( value.computeOrNull( Value::asNumber ), nullValue() );
-        assertThat( value.computeOrNull( Value::asByteArray ), nullValue() );
+        assertComputeOrDefaultReturnNull( Value::asEntity );
+        assertComputeOrDefaultReturnNull( Value::asNode );
+        assertComputeOrDefaultReturnNull( Value::asRelationship );
+        assertComputeOrDefaultReturnNull( Value::asPath );
 
-        assertThat( value.computeOrNull( Value::asEntity ), nullValue() );
-        assertThat( value.computeOrNull( Value::asNode ), nullValue() );
-        assertThat( value.computeOrNull( Value::asRelationship ), nullValue() );
-        assertThat( value.computeOrNull( Value::asPath ), nullValue() );
+        assertComputeOrDefaultReturnNull( Value::asString );
+        assertComputeOrDefaultReturnNull( Value::asByteArray );
+        assertComputeOrDefaultReturnNull( Value::asList );
+        assertComputeOrDefaultReturnNull( v -> v.asList( ofValue() ) );
+        assertComputeOrDefaultReturnNull( Value::asMap );
+        assertComputeOrDefaultReturnNull( v -> v.asMap( ofValue() ) );
 
-        assertThat( value.computeOrNull( Value::asPoint ), nullValue() );
+        assertComputeOrDefaultReturnNull( Value::asPoint );
 
-        assertThat( value.computeOrNull( Value::asLocalDate ), nullValue() );
-        assertThat( value.computeOrNull( Value::asOffsetTime ), nullValue() );
-        assertThat( value.computeOrNull( Value::asLocalTime ), nullValue() );
-        assertThat( value.computeOrNull( Value::asLocalDateTime ), nullValue() );
-        assertThat( value.computeOrNull( Value::asZonedDateTime ), nullValue() );
-        assertThat( value.computeOrNull( Value::asIsoDuration ), nullValue() );
-
-        assertThat( value.computeOrNull( Value::asList ), nullValue() );
-        assertThat( value.computeOrNull( Value::asMap ), nullValue() );
+        assertComputeOrDefaultReturnNull( Value::asLocalDate );
+        assertComputeOrDefaultReturnNull( Value::asOffsetTime );
+        assertComputeOrDefaultReturnNull( Value::asLocalTime );
+        assertComputeOrDefaultReturnNull( Value::asLocalDateTime );
+        assertComputeOrDefaultReturnNull( Value::asZonedDateTime );
+        assertComputeOrDefaultReturnNull( Value::asIsoDuration );
     }
 
     @Test
     public void shouldReturnAsDefaultValue() throws Throwable
     {
-        Value value = NullValue.NULL;
-
-        assertThat( value.computeOrDefault( Value::asObject, "null" ), equalTo( "null" ) );
-        assertThat( value.computeOrDefault( Value::asNumber, 10 ), equalTo( 10 ) );
-        assertThat( value.computeOrDefault( Value::asByteArray, new byte[0] ), equalTo( new byte[0] ) );
-
-        assertThat( value.computeOrDefault( Value::asEntity, null ), nullValue() );
-        assertThat( value.computeOrDefault( Value::asNode, null ), nullValue() );
-        assertThat( value.computeOrDefault( Value::asRelationship, null ), nullValue() );
-        assertThat( value.computeOrDefault( Value::asPath, null ), nullValue() );
-
-        assertComputeOrDefaultReturnsDefaultValue( Value::asPoint, point( 1234, 1, 2 ) );
-
-        assertComputeOrDefaultReturnsDefaultValue( Value::asLocalDate, LocalDate.now() );
-        assertComputeOrDefaultReturnsDefaultValue( Value::asOffsetTime, OffsetTime.now() );
-        assertComputeOrDefaultReturnsDefaultValue( Value::asLocalTime, LocalTime.now() );
-        assertComputeOrDefaultReturnsDefaultValue( Value::asLocalDateTime, LocalDateTime.now() );
-        assertComputeOrDefaultReturnsDefaultValue( Value::asZonedDateTime, ZonedDateTime.now() );
-        assertComputeOrDefaultReturnsDefaultValue( Value::asIsoDuration, Values.isoDuration( 1, 2, 3, 4 ) );
-
-        assertThat( value.computeOrDefault( Value::asList, Collections.emptyList() ), equalTo( Collections.emptyList() ) );
-        assertThat( value.computeOrDefault( Value::asMap, Collections.emptyMap() ), equalTo( Collections.emptyMap() ) );
+        assertComputeOrDefaultReturnDefault( Value::asObject, "null string" );
+        assertComputeOrDefaultReturnDefault( Value::asNumber, 10 );
     }
 
-    private <T> void assertComputeOrDefaultReturnsDefaultValue( Function<Value, T> f, T defaultAndExpectedValue )
+    private <T> void assertComputeOrDefaultReturnDefault( Function<Value,T> f, T defaultAndExpectedValue )
     {
         Value value = NullValue.NULL;
-        T returned = value.computeOrDefault( f, defaultAndExpectedValue );
-        assertThat( returned, equalTo( defaultAndExpectedValue ) );
+        assertThat( value.computeOrDefault( f, defaultAndExpectedValue ), equalTo( defaultAndExpectedValue ) );
+    }
+
+    private <T> void assertComputeOrDefaultReturnNull( Function<Value,T> f )
+    {
+        assertComputeOrDefaultReturnDefault( f, null );
+    }
+
+    private <T> void assertAsWithDefaultValueReturnDefault( Function<T,T> map, T defaultValue )
+    {
+        assertThat( map.apply( defaultValue ), equalTo( defaultValue ) );
     }
 }
