@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.value.LossyCoercion;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
@@ -195,10 +196,26 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     Object asObject();
 
     /**
+     * Apply the mapping function on the value if the value is not a {@link NullValue}, or the default value if the value is a {@link NullValue}.
+     * @param mapper The mapping function defines how to map a {@link Value} to T.
+     * @param defaultValue the value to return if the value is a {@link NullValue}
+     * @param <T> The return type
+     * @return The value after applying the given mapping function or the default value if the value is {@link NullValue}.
+     */
+    <T>T computeOrDefault( Function<Value, T> mapper, T defaultValue );
+
+    /**
      * @return the value as a Java boolean, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
     boolean asBoolean();
+
+    /**
+     * @param defaultValue return this value if the value is a {@link NullValue}.
+     * @return the value as a Java boolean, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    boolean asBoolean( boolean defaultValue );
 
     /**
      *  @return the value as a Java byte array, if possible.
@@ -207,10 +224,24 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     byte[] asByteArray();
 
     /**
+     *  @param defaultValue default to this value if the original value is a {@link NullValue}
+     *  @return the value as a Java byte array, if possible.
+     *  @throws Uncoercible if value types are incompatible.
+     */
+    byte[] asByteArray( byte[] defaultValue );
+
+    /**
      *  @return the value as a Java String, if possible.
      *  @throws Uncoercible if value types are incompatible.
      */
     String asString();
+
+    /**
+     * @param defaultValue return this value if the value is null.
+     * @return the value as a Java String, if possible
+     * @throws Uncoercible if value types are incompatible.
+     */
+    String asString( String defaultValue );
 
     /**
      * @return the value as a Java Number, if possible.
@@ -228,6 +259,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     long asLong();
 
     /**
+     * Returns a Java long if no precision is lost in the conversion.
+     * @param defaultValue return this default value if the value is a {@link NullValue}.
+     * @return the value as a Java long.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    long asLong( long defaultValue );
+
+    /**
      * Returns a Java int if no precision is lost in the conversion.
      *
      * @return the value as a Java int.
@@ -235,6 +275,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     int asInt();
+
+    /**
+     * Returns a Java int if no precision is lost in the conversion.
+     * @param defaultValue return this default value if the value is a {@link NullValue}.
+     * @return the value as a Java int.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    int asInt( int defaultValue );
 
     /**
      * Returns a Java double if no precision is lost in the conversion.
@@ -246,6 +295,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     double asDouble();
 
     /**
+     * Returns a Java double if no precision is lost in the conversion.
+     * @param defaultValue default to this value if the value is a {@link NullValue}.
+     * @return the value as a Java double.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    double asDouble( double defaultValue );
+
+    /**
      * Returns a Java float if no precision is lost in the conversion.
      *
      * @return the value as a Java float.
@@ -253,6 +311,15 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     float asFloat();
+
+    /**
+     * Returns a Java float if no precision is lost in the conversion.
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a Java float.
+     * @throws LossyCoercion if it is not possible to convert the value without loosing precision.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    float asFloat( float defaultValue );
 
     /**
      * If the underlying type can be viewed as a list, returns a java list of
@@ -263,6 +330,17 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      */
     List<Object> asList();
 
+
+    /**
+     * If the underlying type can be viewed as a list, returns a java list of
+     * values, where each value has been converted using {@link #asObject()}.
+     *
+     * @see #asObject()
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a Java list of values, if possible
+     */
+    List<Object> asList( List<Object> defaultValue );
+
     /**
      * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
      * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
@@ -270,7 +348,17 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @see Values for a long list of built-in conversion functions
      * @return the value as a list of T obtained by mapping from the list elements, if possible
      */
-    <T> List<T> asList( Function<Value, T> mapFunction );
+    <T> List<T> asList( Function<Value,T> mapFunction );
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
+     * @param <T> the type of target list elements
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @see Values for a long list of built-in conversion functions
+     * @return the value as a list of T obtained by mapping from the list elements, if possible
+     */
+    <T> List<T> asList( Function<Value,T> mapFunction, List<T> defaultValue );
 
     /**
      * @return the value as a {@link Entity}, if possible.
@@ -337,6 +425,76 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     Point asPoint();
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link LocalDate}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalDate asLocalDate( LocalDate defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link OffsetTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    OffsetTime asOffsetTime( OffsetTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link LocalTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalTime asLocalTime( LocalTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link LocalDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    LocalDateTime asLocalDateTime( LocalDateTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link ZonedDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link IsoDuration}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    IsoDuration asIsoDuration( IsoDuration defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link Point}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Point asPoint( Point defaultValue );
+
+    /**
+     * Return as a map of string keys and values converted using
+     * {@link Value#asObject()}.
+     *
+     * This is equivalent to calling {@link #asMap(Function, Map)} with {@link Values#ofObject()}.
+     *
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a Java map
+     */
+    Map<String, Object> asMap( Map<String,Object> defaultValue );
+
+    /**
+     * @param mapFunction a function to map from Value to T. See {@link Values} for some predefined functions, such
+     * as {@link Values#ofBoolean()}, {@link Values#ofList(Function)}.
+     * @param <T> the type of map values
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @see Values for a long list of built-in conversion functions
+     * @return the value as a map from string keys to values of type T obtained from mapping he original map values, if possible
+     */
+    <T> Map<String, T> asMap( Function<Value, T> mapFunction, Map<String, T> defaultValue );
 
     @Override
     boolean equals( Object other );

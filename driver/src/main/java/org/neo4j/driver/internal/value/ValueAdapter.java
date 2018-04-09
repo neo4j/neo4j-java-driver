@@ -91,6 +91,42 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public boolean asBoolean( boolean defaultValue )
+    {
+        return computeOrDefault( Value:: asBoolean, defaultValue );
+    }
+
+    @Override
+    public String asString( String defaultValue )
+    {
+        return computeOrDefault( (Value::asString), defaultValue );
+    }
+
+    @Override
+    public long asLong( long defaultValue )
+    {
+        return computeOrDefault( Value::asLong, defaultValue );
+    }
+
+    @Override
+    public int asInt( int defaultValue )
+    {
+        return computeOrDefault( Value::asInt, defaultValue );
+    }
+
+    @Override
+    public double asDouble( double defaultValue )
+    {
+        return computeOrDefault( Value::asDouble, defaultValue );
+    }
+
+    @Override
+    public float asFloat( float defaultValue )
+    {
+        return computeOrDefault( Value::asFloat, defaultValue );
+    }
+
+    @Override
     public long asLong()
     {
         throw new Uncoercible( type().name(), "Java long" );
@@ -148,6 +184,88 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public Object asObject()
     {
         throw new Uncoercible( type().name(), "Java Object" );
+    }
+
+    @Override
+    public <T> T computeOrDefault( Function<Value,T> mapper, T defaultValue )
+    {
+        if ( isNull() )
+        {
+            return defaultValue;
+        }
+        return mapper.apply( this );
+    }
+
+    @Override
+    public Map<String,Object> asMap( Map<String,Object> defaultValue )
+    {
+        return computeOrDefault( Value::asMap, defaultValue );
+    }
+
+    @Override
+    public <T> Map<String,T> asMap( Function<Value,T> mapFunction, Map<String,T> defaultValue )
+    {
+        return computeOrDefault( value -> value.asMap( mapFunction ), defaultValue );
+    }
+
+    @Override
+    public byte[] asByteArray( byte[] defaultValue )
+    {
+        return computeOrDefault( Value::asByteArray, defaultValue );
+    }
+
+    @Override
+    public List<Object> asList( List<Object> defaultValue )
+    {
+        return computeOrDefault( Value::asList, defaultValue );
+    }
+
+    @Override
+    public <T> List<T> asList( Function<Value,T> mapFunction, List<T> defaultValue )
+    {
+        return computeOrDefault( value -> value.asList( mapFunction ), defaultValue );
+    }
+
+    @Override
+    public LocalDate asLocalDate( LocalDate defaultValue )
+    {
+        return computeOrDefault( Value::asLocalDate, defaultValue );
+    }
+
+    @Override
+    public OffsetTime asOffsetTime( OffsetTime defaultValue )
+    {
+        return computeOrDefault( Value::asOffsetTime, defaultValue );
+    }
+
+    @Override
+    public LocalTime asLocalTime( LocalTime defaultValue )
+    {
+        return computeOrDefault( Value::asLocalTime, defaultValue );
+    }
+
+    @Override
+    public LocalDateTime asLocalDateTime( LocalDateTime defaultValue )
+    {
+        return computeOrDefault( Value::asLocalDateTime, defaultValue );
+    }
+
+    @Override
+    public ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue )
+    {
+        return computeOrDefault( Value::asZonedDateTime, defaultValue );
+    }
+
+    @Override
+    public IsoDuration asIsoDuration( IsoDuration defaultValue )
+    {
+        return computeOrDefault( Value::asIsoDuration, defaultValue );
+    }
+
+    @Override
+    public Point asPoint( Point defaultValue )
+    {
+        return computeOrDefault( Value::asPoint, defaultValue );
     }
 
     @Override
