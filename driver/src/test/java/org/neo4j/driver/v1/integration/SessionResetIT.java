@@ -183,8 +183,7 @@ public class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            tx1.run( "CALL test.driver.longRunningStatement({seconds})",
-                    parameters( "seconds", 10 ) );
+            StatementResult result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
@@ -209,6 +208,17 @@ public class SessionResetIT
             {
                 assertThat( e.getMessage(),
                         containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
+            }
+
+            // Make sure failure from the terminated long running statement is propagated
+            try
+            {
+                result.consume();
+                fail( "Exception expected" );
+            }
+            catch ( Neo4jException e )
+            {
+                assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
             }
         }
     }
@@ -584,25 +594,33 @@ public class SessionResetIT
         CountDownLatch beforeCommit = new CountDownLatch( 1 );
         CountDownLatch afterReset = new CountDownLatch( 1 );
 
-        executor.submit( () ->
+        Future<Void> txFuture = executor.submit( () ->
         {
-            try ( Transaction tx1 = session.beginTransaction() )
+            Transaction tx1 = session.beginTransaction();
+            tx1.run( "CREATE (n:FirstNode)" );
+            beforeCommit.countDown();
+            afterReset.await();
+
+            // session has been reset, it should not be possible to commit the transaction
+            try
             {
-                tx1.run( "CREATE (n:FirstNode)" );
-                beforeCommit.countDown();
-                afterReset.await();
+                tx1.success();
+                tx1.close();
+            }
+            catch ( Neo4jException ignore )
+            {
             }
 
             try ( Transaction tx2 = session.beginTransaction() )
             {
-                tx2.run( "CREATE (n:FirstNode)" );
+                tx2.run( "CREATE (n:SecondNode)" );
                 tx2.success();
             }
 
             return null;
         } );
 
-        executor.submit( () ->
+        Future<Void> resetFuture = executor.submit( () ->
         {
             beforeCommit.await();
             session.reset();
@@ -611,12 +629,13 @@ public class SessionResetIT
         } );
 
         executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
+        executor.awaitTermination( 20, SECONDS );
 
-        // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
-        long nodes = result.single().get( "count(n)" ).asLong();
-        assertThat( nodes, equalTo( 1L ) );
+        txFuture.get( 20, SECONDS );
+        resetFuture.get( 20, SECONDS );
+
+        assertEquals( 0, countNodes( "FirstNode" ) );
+        assertEquals( 1, countNodes( "SecondNode" ) );
     }
 
     private void testResetOfQueryWaitingForLock( NodeIdUpdater nodeIdUpdater ) throws Exception
@@ -813,9 +832,14 @@ public class SessionResetIT
 
     private long countNodes()
     {
+        return countNodes( null );
+    }
+
+    private long countNodes( String label )
+    {
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n) RETURN count(n) AS result" );
+            StatementResult result = session.run( "MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result" );
             return result.single().get( 0 ).asLong();
         }
     }
