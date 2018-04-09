@@ -46,10 +46,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.BoltProtocolV1Util.HTTP;
 import static org.neo4j.driver.internal.async.BoltProtocolV1Util.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.BoltProtocolV1Util.PROTOCOL_VERSION_1;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -85,9 +85,34 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( cause, e );
+            assertEquals( cause, e.getCause() );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
+    public void shouldFailGivenPromiseWhenServiceUnavailableExceptionCaught()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        ServiceUnavailableException error = new ServiceUnavailableException( "Bad error" );
+        channel.pipeline().fireExceptionCaught( error );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( error, e );
         }
 
         // channel should be closed
@@ -112,9 +137,9 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( RuntimeException e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( error1, e );
+            assertEquals( error1, e.getCause() );
         }
 
         // channel should be closed
@@ -147,9 +172,9 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( cause, e );
+            assertEquals( cause, e.getCause() );
         }
 
         // channel should be closed

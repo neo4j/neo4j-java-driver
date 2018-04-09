@@ -101,7 +101,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
         ctx.close();
     }
 
-    private Throwable transformError( Throwable error )
+    private static Throwable transformError( Throwable error )
     {
         if ( error instanceof CodecException )
         {
