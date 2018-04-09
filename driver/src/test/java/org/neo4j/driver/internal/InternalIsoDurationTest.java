@@ -34,7 +34,9 @@ import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class InternalIsoDurationTest
@@ -151,7 +153,19 @@ public class InternalIsoDurationTest
         assertEquals( duration.getNano(), isoDuration.nanoseconds() );
     }
 
-    private static IsoDuration newDuration( long months, long days, long seconds, long nanoseconds )
+    @Test
+    public void toStringShouldPrintInIsoStandardFormat() throws Throwable
+    {
+        assertThat( new InternalIsoDuration( 0, 0, 0, 0 ).toString(), equalTo( "PT0S" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P50W6D" ) );
+        assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "PT45S" ) );
+
+        assertThat( new InternalIsoDuration( Period.parse( "P14D" ), Duration.parse( "PT16H12M" ) ).toString(), equalTo( "P2WT16H12M" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P5M1D" ), Duration.parse( "PT12H" ) ).toString(), equalTo( "P5M1DT12H" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P2W3D" ), Duration.parse( "PT12H" ) ).toString(), equalTo( "P2W3DT12H" ) );
+    }
+
+    private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )
     {
         return new InternalIsoDuration( months, days, seconds, nanoseconds );
     }

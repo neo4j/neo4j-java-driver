@@ -323,7 +323,7 @@ public abstract class Values
         return value( new InternalIsoDuration( duration ) );
     }
 
-    public static Value isoDuration( long months, long days, long seconds, long nanoseconds )
+    public static Value isoDuration( long months, long days, long seconds, int nanoseconds )
     {
         return value( new InternalIsoDuration( months, days, seconds, nanoseconds ) );
     }

@@ -38,11 +38,13 @@ import static java.util.Collections.unmodifiableList;
 public class InternalIsoDuration implements IsoDuration
 {
     private static final List<TemporalUnit> SUPPORTED_UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
+    private static final InternalIsoDuration ZERO = new InternalIsoDuration( 0, 0, 0, 0 );
+    public static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final long months;
     private final long days;
     private final long seconds;
-    private final long nanoseconds;
+    private final int nanoseconds;
 
     public InternalIsoDuration( Period period )
     {
@@ -54,12 +56,17 @@ public class InternalIsoDuration implements IsoDuration
         this( 0, 0, duration.getSeconds(), duration.getNano() );
     }
 
-    public InternalIsoDuration( long months, long days, long seconds, long nanoseconds )
+    public InternalIsoDuration( long months, long days, long seconds, int nanoseconds )
     {
         this.months = months;
         this.days = days;
         this.seconds = seconds;
         this.nanoseconds = nanoseconds;
+    }
+
+    public InternalIsoDuration( Period period, Duration duration )
+    {
+        this( period.toTotalMonths(), period.getDays(), duration.getSeconds(), duration.getNano() );
     }
 
     @Override
@@ -81,7 +88,7 @@ public class InternalIsoDuration implements IsoDuration
     }
 
     @Override
-    public long nanoseconds()
+    public int nanoseconds()
     {
         return nanoseconds;
     }
@@ -188,11 +195,65 @@ public class InternalIsoDuration implements IsoDuration
     @Override
     public String toString()
     {
-        return "Duration{" +
-               "months=" + months +
-               ", days=" + days +
-               ", seconds=" + seconds +
-               ", nanoseconds=" + nanoseconds +
-               '}';
+        // print the duration in iso standard format.
+        if ( this.equals( ZERO ) )
+        {
+            return "PT0S"; // no need to allocate a string builder if we know the result
+        }
+        StringBuilder str = new StringBuilder().append( "P" );
+        append( str, months / 12, 'Y' );
+        append( str, months % 12, 'M' );
+        append( str, days / 7, 'W' );
+        append( str, days % 7, 'D' );
+        if ( seconds != 0 || nanoseconds != 0 )
+        {
+            str.append( 'T' );
+            long s = seconds % 3600;
+            append( str, seconds / 3600, 'H' );
+            append( str, s / 60, 'M' );
+            s %= 60;
+            if ( s != 0 )
+            {
+                str.append( s );
+                if ( nanoseconds != 0 )
+                {
+                    nanos( str );
+                }
+                str.append( 'S' );
+            }
+            else if ( nanoseconds != 0 )
+            {
+                if ( nanoseconds < 0 )
+                {
+                    str.append( '-' );
+                }
+                str.append( '0' );
+                nanos( str );
+                str.append( 'S' );
+            }
+        }
+        if ( str.length() == 1 )
+        { // this was all zeros (but not ZERO for some reason), ensure well formed output:
+            str.append( "T0S" );
+        }
+        return str.toString();
+    }
+
+    private static void append( StringBuilder str, long quantity, char unit )
+    {
+        if ( quantity != 0 )
+        {
+            str.append( quantity ).append( unit );
+        }
+    }
+
+    private void nanos( StringBuilder str )
+    {
+        str.append( '.' );
+        int n = nanoseconds < 0 ? -nanoseconds : nanoseconds;
+        for ( int mod = (int)NANOS_PER_SECOND; mod > 1 && n > 0; n %= mod )
+        {
+            str.append( n / (mod /= 10) );
+        }
     }
 }
