@@ -22,26 +22,31 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -397,48 +402,53 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldNotBePossibleToUseNodeAsParameter()
+    public void settingInvalidParameterTypeDirectlyShouldThrowHelpfulError() throws Throwable
     {
-        // GIVEN
-        StatementResult cursor = session.run( "CREATE (a:Node) RETURN a" );
-        Node node = cursor.single().get( 0 ).asNode();
-
-        //Expect
+        // Expect
         exception.expect( ClientException.class );
-        exception.expectMessage( "Nodes can't be used as parameters" );
+        exception.expectMessage( "The parameters should be provided as Map type. Unsupported parameters type: NODE" );
 
-        // WHEN
-        session.run( "RETURN {a}", parameters( "a", node ) );
+        // When
+        session.run( "anything", emptyNodeValue() );
     }
 
     @Test
-    public void shouldNotBePossibleToUseRelationshipAsParameter()
+    public void shouldNotBePossibleToUseNodeAsParameterInMapValue()
     {
         // GIVEN
-        StatementResult cursor = session.run( "CREATE (a:Node), (b:Node), (a)-[r:R]->(b) RETURN r" );
-        Relationship relationship = cursor.single().get( 0 ).asRelationship();
-
-        //Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Relationships can't be used as parameters" );
+        Value node = emptyNodeValue();
+        Map<String,Value> params = new HashMap<>();
+        params.put( "a", node );
+        MapValue mapValue = new MapValue( params );
 
         // WHEN
-        session.run( "RETURN {a}", parameters( "a", relationship ) );
+        expectIOExceptionWithMessage( mapValue, "Unknown type: NODE" );
     }
 
     @Test
-    public void shouldNotBePossibleToUsePathAsParameter()
+    public void shouldNotBePossibleToUseRelationshipAsParameterViaMapValue()
     {
         // GIVEN
-        StatementResult cursor = session.run( "CREATE (a:Node), (b:Node), p=(a)-[r:R]->(b) RETURN p" );
-        Path path = cursor.single().get( 0 ).asPath();
-
-        //Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Paths can't be used as parameters" );
+        Value relationship = emptyRelationshipValue();
+        Map<String,Value> params = new HashMap<>();
+        params.put( "a", relationship );
+        MapValue mapValue = new MapValue( params );
 
         // WHEN
-        session.run( "RETURN {a}", parameters( "a", path ) );
+        expectIOExceptionWithMessage( mapValue, "Unknown type: RELATIONSHIP" );
+    }
+
+    @Test
+    public void shouldNotBePossibleToUsePathAsParameterViaMapValue()
+    {
+        // GIVEN
+        Value path = filledPathValue();
+        Map<String,Value> params = new HashMap<>();
+        params.put( "a", path );
+        MapValue mapValue = new MapValue( params );
+
+        // WHEN
+        expectIOExceptionWithMessage( mapValue, "Unknown type: PATH" );
     }
 
     private void testBytesProperty( byte[] array )
@@ -479,5 +489,24 @@ public class ParametersIT
         byte[] result = new byte[length];
         ThreadLocalRandom.current().nextBytes( result );
         return result;
+    }
+
+    private void expectIOExceptionWithMessage( Value value, String message )
+    {
+        try
+        {
+            session.run( "RETURN {a}", value ).consume();
+            fail( "Expecting a ServiceUnavailableException" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            Throwable cause = e.getCause();
+            assertThat( cause, instanceOf( IOException.class ) );
+            assertThat( cause.getMessage(), equalTo( message ) );
+        }
+        catch ( Exception e )
+        {
+            fail( "Expecting a ServiceUnavailableException but got " + e );
+        }
     }
 }

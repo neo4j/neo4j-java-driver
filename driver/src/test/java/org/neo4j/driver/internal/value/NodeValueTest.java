@@ -20,20 +20,15 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-
-import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.Value;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 
 public class NodeValueTest
 {
@@ -68,15 +63,5 @@ public class NodeValueTest
     {
         InternalValue value = emptyNodeValue();
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE ) );
-    }
-
-    private NodeValue emptyNodeValue()
-    {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), new HashMap<String, Value>() ) );
-    }
-
-    private NodeValue filledNodeValue()
-    {
-        return new NodeValue( new InternalNode( 1234, singletonList( "User" ), singletonMap( "name", value( "Dodo" ) ) ) );
     }
 }

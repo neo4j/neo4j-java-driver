@@ -21,17 +21,15 @@ package org.neo4j.driver.internal.messaging;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.EncoderException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import org.neo4j.driver.internal.InternalNode;
-import org.neo4j.driver.internal.InternalPath;
-import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -41,13 +39,22 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.v1.Values.EmptyMap;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyPathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
@@ -80,32 +87,50 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldUnpackAllValues() throws Throwable
+    public void shouldPackUnpackValidValues() throws Throwable
     {
         assertSerializesValue( value( parameters( "cat", null, "dog", null ) ) );
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
         assertSerializesValue( value( asList( "k", 12, "a", "banana" ) ) );
-        assertSerializesValue( value(
-                new InternalNode( 1, Collections.singletonList( "User" ), parameters( "name", "Bob", "age", 45 ).asMap(
-                        ofValue() ) )
-        ) );
-        assertSerializesValue( value( new InternalNode( 1 ) ) );
-        assertSerializesValue( value(
-                new InternalRelationship( 1, 1, 1,
-                        "KNOWS",
-                        parameters( "name", "Bob", "age", 45 ).asMap( ofValue() ) ) ) );
-        assertSerializesValue( value(
-                new InternalPath(
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 1, 3,
-                                "KNOWS", EmptyMap.asMap( ofValue() ) ),
-                        new InternalNode( 3 ),
-                        new InternalRelationship( 4, 3, 5,
-                                "LIKES", EmptyMap.asMap( ofValue() ) ),
-                        new InternalNode( 5 )
-                ) ) );
-        assertSerializesValue( value( new InternalPath( new InternalNode( 1 ) ) ) );
     }
+
+    @Test
+    public void shouldUnpackNodeRelationshipAndPath() throws Throwable
+    {
+        // Given
+        assertOnlyDeserializesValue( emptyNodeValue() );
+        assertOnlyDeserializesValue( filledNodeValue() );
+        assertOnlyDeserializesValue( emptyRelationshipValue() );
+        assertOnlyDeserializesValue( filledRelationshipValue() );
+        assertOnlyDeserializesValue( emptyPathValue() );
+        assertOnlyDeserializesValue( filledPathValue() );
+    }
+
+
+    @Test
+    public void shouldErrorPackingNode() throws Throwable
+    {
+        // Given
+        Value value = filledNodeValue();
+        expectIOExceptionWithMessage( value, "Unknown type: NODE" );
+    }
+
+    @Test
+    public void shouldErrorPackingRelationship() throws Throwable
+    {
+        // Given
+        Value value = filledRelationshipValue();
+        expectIOExceptionWithMessage( value, "Unknown type: RELATIONSHIP" );
+    }
+
+    @Test
+    public void shouldErrorPackingPath() throws Throwable
+    {
+        // Given
+        Value value = filledPathValue();
+        expectIOExceptionWithMessage( value, "Unknown type: PATH" );
+    }
+
 
     @Test
     public void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
@@ -150,6 +175,11 @@ public class MessageFormatTest
 
     private EmbeddedChannel newEmbeddedChannel()
     {
+        return newEmbeddedChannel( format );
+    }
+
+    private EmbeddedChannel newEmbeddedChannel( MessageFormat format )
+    {
         EmbeddedChannel channel = new EmbeddedChannel();
         setMessageDispatcher( channel, new MemorizingInboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
         new ChannelPipelineBuilderImpl().build( format, channel.pipeline(), DEV_NULL_LOGGING );
@@ -186,4 +216,51 @@ public class MessageFormatTest
         assertEquals( 1, unpackedMessages.size() );
         return unpackedMessages.get( 0 );
     }
+
+    private void assertOnlyDeserializesValue( Value value ) throws Throwable
+    {
+        RecordMessage message = new RecordMessage( new Value[]{value} );
+        ByteBuf packed = knowledgeablePack( message );
+
+        EmbeddedChannel channel = newEmbeddedChannel();
+        Message unpackedMessage = unpack( packed, channel );
+
+        assertEquals( message, unpackedMessage );
+    }
+
+    private ByteBuf knowledgeablePack( Message message ) throws IOException
+    {
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeablePackStreamMessageFormat() );
+        assertTrue( channel.writeOutbound( message ) );
+
+        ByteBuf[] packedMessages = channel.outboundMessages()
+                .stream()
+                .map( msg -> (ByteBuf) msg )
+                .toArray( ByteBuf[]::new );
+
+        return Unpooled.wrappedBuffer( packedMessages );
+    }
+
+    private void expectIOExceptionWithMessage( Value value, String errorMessage )
+    {
+        RecordMessage message = new RecordMessage( new Value[]{value} );
+        EmbeddedChannel channel = newEmbeddedChannel();
+
+        try
+        {
+            pack( message, channel );
+            fail( "Expecting a EncoderException" );
+        }
+        catch ( EncoderException e )
+        {
+            Throwable cause = e.getCause();
+            assertThat( cause, instanceOf( IOException.class ) );
+            assertThat( cause.getMessage(), equalTo( errorMessage ) );
+        }
+        catch ( Exception e )
+        {
+            fail( "Expecting a EncoderException but got " + e );
+        }
+    }
+
 }

@@ -86,7 +86,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         return new ReaderV2( input );
     }
 
-    private static class WriterV2 extends WriterV1
+    static class WriterV2 extends WriterV1
     {
         WriterV2( PackOutput output )
         {
@@ -226,7 +226,7 @@ public class PackStreamMessageFormatV2 extends PackStreamMessageFormatV1
         }
     }
 
-    private static class ReaderV2 extends ReaderV1
+    static class ReaderV2 extends ReaderV1
     {
         ReaderV2( PackInput input )
         {

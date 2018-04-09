@@ -49,8 +49,11 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.NullValue;
+import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -91,6 +94,7 @@ public abstract class Values
     {
         if ( value == null ) { return NullValue.NULL; }
 
+        assertParameter( value );
         if ( value instanceof AsValue ) { return ((AsValue) value).asValue(); }
         if ( value instanceof Boolean ) { return value( (boolean) value ); }
         if ( value instanceof String ) { return value( (String) value ); }
@@ -381,7 +385,6 @@ public abstract class Values
         for ( int i = 0; i < keysAndValues.length; i += 2 )
         {
             Object value = keysAndValues[i + 1];
-            assertParameter( value );
             map.put( keysAndValues[i].toString(), value( value ) );
         }
         return value( map );
@@ -666,15 +669,15 @@ public abstract class Values
 
     private static void assertParameter( Object value )
     {
-        if ( value instanceof Node )
+        if ( value instanceof Node || value instanceof NodeValue )
         {
             throw new ClientException( "Nodes can't be used as parameters." );
         }
-        if ( value instanceof Relationship )
+        if ( value instanceof Relationship || value instanceof RelationshipValue )
         {
             throw new ClientException( "Relationships can't be used as parameters." );
         }
-        if ( value instanceof Path )
+        if ( value instanceof Path || value instanceof PathValue )
         {
             throw new ClientException( "Paths can't be used as parameters." );
         }

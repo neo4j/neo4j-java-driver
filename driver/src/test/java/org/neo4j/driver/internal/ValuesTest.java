@@ -46,12 +46,18 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.LocalDateTimeValue;
 import org.neo4j.driver.internal.value.LocalTimeValue;
 import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.types.Relationship;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -60,6 +66,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.ofDouble;
 import static org.neo4j.driver.v1.Values.ofFloat;
@@ -482,5 +491,77 @@ public class ValuesTest
         assertEquals( point3D, point3DValue1.asPoint() );
         assertEquals( point3D, point3DValue2.asPoint() );
         assertEquals( point3DValue1, point3DValue2 );
+    }
+
+    @Test
+    public void shouldComplainAboutNodeValueType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Nodes can't be used as parameters." );
+
+        // When
+        NodeValue node = emptyNodeValue();
+        value( node );
+    }
+
+    @Test
+    public void shouldComplainAboutNodeType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Nodes can't be used as parameters." );
+
+        // When
+        Node node = emptyNodeValue().asNode();
+        value( node );
+    }
+
+    @Test
+    public void shouldComplainAboutRelationshipValueType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Relationships can't be used as parameters." );
+
+        // When
+        RelationshipValue rel = emptyRelationshipValue();
+        value( rel );
+    }
+
+    @Test
+    public void shouldComplainAboutRelationshipType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Relationships can't be used as parameters." );
+
+        // When
+        Relationship rel = emptyRelationshipValue().asRelationship();
+        value( rel );
+    }
+
+    @Test
+    public void shouldComplainAboutPathValueType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Paths can't be used as parameters." );
+
+        // When
+        PathValue path = filledPathValue();
+        value( path );
+    }
+
+    @Test
+    public void shouldComplainAboutPathType() throws Throwable
+    {
+        // Expect
+        exception.expect( ClientException.class );
+        exception.expectMessage( "Paths can't be used as parameters." );
+
+        // When
+        Path path = filledPathValue().asPath();
+        value( path );
     }
 }
