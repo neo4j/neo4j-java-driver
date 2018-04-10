@@ -277,7 +277,7 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
      * {@code
      *
-     * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
+     * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
      * StatementResult cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
@@ -303,7 +303,7 @@ public interface StatementRunner
      * <pre>
      * {@code
      *
-     * Statement statement = new Statement( "MATCH (n) WHERE n.name={myNameParam} RETURN n.age" );
+     * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
      * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement);
      * }
      * </pre>
