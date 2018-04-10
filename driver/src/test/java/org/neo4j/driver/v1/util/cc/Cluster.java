@@ -123,6 +123,14 @@ public class Cluster implements AutoCloseable
         return randomOf( readReplicas() );
     }
 
+    public Set<ClusterMember> cores()
+    {
+        Set<ClusterMember> readReplicas = membersWithRole( ClusterMemberRole.READ_REPLICA );
+        Set<ClusterMember> cores = new HashSet<>( members );
+        cores.removeAll( readReplicas );
+        return cores;
+    }
+
     public Set<ClusterMember> readReplicas()
     {
         return membersWithRole( ClusterMemberRole.READ_REPLICA );

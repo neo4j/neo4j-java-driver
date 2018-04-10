@@ -28,6 +28,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +59,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -413,11 +415,12 @@ public class CausalClusteringIT
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
+            Set<ClusterMember> cores = cluster.cores();
             for ( ClusterMember follower : cluster.followers() )
             {
                 cluster.kill( follower );
             }
-            awaitLeaderToStepDown( driver );
+            awaitLeaderToStepDown( cores );
 
             // now we should be unable to write because majority of cores is down
             for ( int i = 0; i < 10; i++ )
@@ -462,11 +465,12 @@ public class CausalClusteringIT
 
             ensureNodeVisible( cluster, "Star Lord", bookmark );
 
+            Set<ClusterMember> cores = cluster.cores();
             for ( ClusterMember follower : cluster.followers() )
             {
                 cluster.kill( follower );
             }
-            awaitLeaderToStepDown( driver );
+            awaitLeaderToStepDown( cores );
 
             // now we should be unable to write because majority of cores is down
             try ( Session session = driver.session( AccessMode.WRITE ) )
@@ -913,44 +917,27 @@ public class CausalClusteringIT
         }
     }
 
-    private void awaitLeaderToStepDown( Driver driver )
+    private void awaitLeaderToStepDown( Set<ClusterMember> cores )
     {
-        int leadersCount;
-        int followersCount;
-        int readReplicasCount;
+        long deadline = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
+        ClusterOverview overview = null;
         do
         {
-            try ( Session session = driver.session() )
+            for ( ClusterMember core : cores )
             {
-                int newLeadersCount = 0;
-                int newFollowersCount = 0;
-                int newReadReplicasCount = 0;
-                for ( Record record : session.run( "CALL dbms.cluster.overview()" ).list() )
+                overview = fetchClusterOverview( core );
+                if ( overview != null )
                 {
-                    ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
-                    if ( role == ClusterMemberRole.LEADER )
-                    {
-                        newLeadersCount++;
-                    }
-                    else if ( role == ClusterMemberRole.FOLLOWER )
-                    {
-                        newFollowersCount++;
-                    }
-                    else if ( role == ClusterMemberRole.READ_REPLICA )
-                    {
-                        newReadReplicasCount++;
-                    }
-                    else
-                    {
-                        throw new AssertionError( "Unknown role: " + role );
-                    }
+                    break;
                 }
-                leadersCount = newLeadersCount;
-                followersCount = newFollowersCount;
-                readReplicasCount = newReadReplicasCount;
             }
         }
-        while ( !(leadersCount == 0 && followersCount == 1 && readReplicasCount == 2) );
+        while ( !isSingleFollowerWithReadReplicas( overview ) && System.currentTimeMillis() <= deadline );
+
+        if ( System.currentTimeMillis() > deadline )
+        {
+            throw new IllegalStateException( "Leader did not step down in " + DEFAULT_TIMEOUT_MS + "ms. Last seen cluster overview: " + overview );
+        }
     }
 
     private Driver createDriver( URI boltUri )
@@ -966,6 +953,43 @@ public class CausalClusteringIT
     private Driver discoverDriver( List<URI> routingUris )
     {
         return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), configWithoutLogging() );
+    }
+
+    private ClusterOverview fetchClusterOverview( ClusterMember member )
+    {
+        int leaderCount = 0;
+        int followerCount = 0;
+        int readReplicaCount = 0;
+
+        Driver driver = clusterRule.getCluster().getDirectDriver( member );
+        try ( Session session = driver.session() )
+        {
+            for ( Record record : session.run( "CALL dbms.cluster.overview()" ).list() )
+            {
+                ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
+                if ( role == ClusterMemberRole.LEADER )
+                {
+                    leaderCount++;
+                }
+                else if ( role == ClusterMemberRole.FOLLOWER )
+                {
+                    followerCount++;
+                }
+                else if ( role == ClusterMemberRole.READ_REPLICA )
+                {
+                    readReplicaCount++;
+                }
+                else
+                {
+                    throw new AssertionError( "Unknown role: " + role );
+                }
+            }
+            return new ClusterOverview( leaderCount, followerCount, readReplicaCount );
+        }
+        catch ( Neo4jException ignore )
+        {
+            return null;
+        }
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception
@@ -1133,6 +1157,17 @@ public class CausalClusteringIT
         return Executors.newCachedThreadPool( daemon( CausalClusteringIT.class.getSimpleName() + "-thread-" ) );
     }
 
+    private static boolean isSingleFollowerWithReadReplicas( ClusterOverview overview )
+    {
+        if ( overview == null )
+        {
+            return false;
+        }
+        return overview.leaderCount == 0 &&
+               overview.followerCount == 1 &&
+               overview.readReplicaCount == ClusterRule.READ_REPLICA_COUNT;
+    }
+
     private static class RecordAndSummary
     {
         final Record record;
@@ -1142,6 +1177,30 @@ public class CausalClusteringIT
         {
             this.record = record;
             this.summary = summary;
+        }
+    }
+
+    private static class ClusterOverview
+    {
+        final int leaderCount;
+        final int followerCount;
+        final int readReplicaCount;
+
+        ClusterOverview( int leaderCount, int followerCount, int readReplicaCount )
+        {
+            this.leaderCount = leaderCount;
+            this.followerCount = followerCount;
+            this.readReplicaCount = readReplicaCount;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ClusterOverview{" +
+                   "leaderCount=" + leaderCount +
+                   ", followerCount=" + followerCount +
+                   ", readReplicaCount=" + readReplicaCount +
+                   '}';
         }
     }
 }
