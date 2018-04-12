@@ -1,11 +1,11 @@
 # Neo4j Java Driver
 
-This is the official Neo4j java driver for connecting to Neo4j databases via in-house binary protocol BOLT.
+This is the official Neo4j java driver for connecting to a Neo4j database or a Neo4j cluster via in-house binary protocol BOLT.
 
 ## For Driver Users
 
 This section provides some useful information for application developers
-who would like to use this driver in their projects for connecting to and running queries on a single Neo4j database and/or a cluster.
+who would like to use this driver in their projects to send queries to their Neo4j database and/or Neo4j cluster.
 
 ### Java Runtime
 
@@ -72,7 +72,7 @@ Before contributing to this project, please take a few minutes and read our [Con
 
 ### Java Version
 
-Starting from 1.5 series the driver is compiled on Java 8. For previous series, the source code compilation requires Java 7.
+Starting from 1.5 series the driver is compiled on Java 8. For previous series, the code compilation requires Java 7.
 
 ### Building
 
@@ -82,16 +82,21 @@ If you want to use the driver in your project, please use the released driver vi
 #### Running Tests and Creating a Package
 
 The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-contrib/boltkit) installed on your local machine. 
-If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and not be executed.
+If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and will not be executed.
 
-Then execute the following Maven command to run all tests and build the source code:
+The following Maven command shows how to run all tests and build the source code:
 ```
 mvn clean install
 ```
-When running integration tests, the driver would start a driver instance and a driver cluster on your local machine.
+When running integration tests, the driver would start a Neo4j instance and a Neo4j cluster on your local machine.
 Your tests might fail due to
-* a server instance is already running on your machine and occupied default server ports,
+* a Neo4j server instance is already running on your machine and occupied default server ports,
 * missing the right to download neo4j enterprise artifacts.
+
+If you do not wish to run integration tests, then use the following command to run without integration tests:
+```
+mvn clean install -DskipITs
+```
 
 #### Windows
 
