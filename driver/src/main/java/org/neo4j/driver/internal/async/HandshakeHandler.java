@@ -97,16 +97,8 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         else
         {
             failed = true;
-
-            Throwable cause = error instanceof DecoderException ? error.getCause() : error;
-            if ( cause instanceof SSLHandshakeException )
-            {
-                fail( ctx, new SecurityException( "Failed to establish secured connection with the server", cause ) );
-            }
-            else
-            {
-                fail( ctx, cause );
-            }
+            Throwable cause = transformError( error );
+            fail( ctx, cause );
         }
     }
 
@@ -169,5 +161,22 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     {
         return new ClientException(
                 "Protocol error, server suggested unexpected protocol version: " + suggestedProtocolVersion );
+    }
+
+    private static Throwable transformError( Throwable error )
+    {
+        Throwable cause = error instanceof DecoderException ? error.getCause() : error;
+        if ( cause instanceof ServiceUnavailableException )
+        {
+            return cause;
+        }
+        else if ( cause instanceof SSLHandshakeException )
+        {
+            return new SecurityException( "Failed to establish secured connection with the server", cause );
+        }
+        else
+        {
+            return new ServiceUnavailableException( "Failed to establish connection with the server", cause );
+        }
     }
 }

@@ -29,7 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +46,7 @@ import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -184,6 +187,42 @@ public class ChannelConnectorImplIT
     {
         // run with TLS so that TLS handshake is the very first operation after connection is established
         testReadTimeoutOnConnect( SecurityPlan.forAllCertificates() );
+    }
+
+    @Test
+    public void shouldThrowServiceUnavailableExceptionOnFailureDuringConnect() throws Exception
+    {
+        ServerSocket server = new ServerSocket( 0 );
+        BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
+
+        runAsync( () ->
+        {
+            try
+            {
+                // wait for a connection
+                Socket socket = server.accept();
+                // and terminate it immediately so that client gets a "reset by peer" IOException
+                socket.close();
+                server.close();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
+
+        ChannelConnector connector = newConnector( neo4j.authToken() );
+        ChannelFuture channelFuture = connector.connect( address, bootstrap );
+
+        // connect operation should fail with ServiceUnavailableException
+        try
+        {
+            await( channelFuture );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException ignore )
+        {
+        }
     }
 
     private void testReadTimeoutOnConnect( SecurityPlan securityPlan ) throws IOException

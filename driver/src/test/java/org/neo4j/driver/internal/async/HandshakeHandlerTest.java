@@ -91,9 +91,34 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( cause, e );
+            assertEquals( cause, e.getCause() );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
+    public void shouldFailGivenPromiseWhenServiceUnavailableExceptionCaught()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        ServiceUnavailableException error = new ServiceUnavailableException( "Bad error" );
+        channel.pipeline().fireExceptionCaught( error );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( error, e );
         }
 
         // channel should be closed
@@ -118,9 +143,9 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( RuntimeException e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( error1, e );
+            assertEquals( error1, e.getCause() );
         }
 
         // channel should be closed
@@ -153,9 +178,9 @@ public class HandshakeHandlerTest
             await( handshakeCompletedPromise );
             fail( "Exception expected" );
         }
-        catch ( Exception e )
+        catch ( ServiceUnavailableException e )
         {
-            assertEquals( cause, e );
+            assertEquals( cause, e.getCause() );
         }
 
         // channel should be closed

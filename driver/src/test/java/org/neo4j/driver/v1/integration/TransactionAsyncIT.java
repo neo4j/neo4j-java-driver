@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
+import io.netty.util.concurrent.Future;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,6 +40,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -67,6 +76,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
@@ -1308,6 +1318,18 @@ public class TransactionAsyncIT
         assertEquals( 1, countNodes( 42 ) );
     }
 
+    @Test
+    public void shouldPropagateCommitFailureAfterFatalError()
+    {
+        testCommitAndRollbackFailurePropagation( true );
+    }
+
+    @Test
+    public void shouldPropagateRollbackFailureAfterFatalError()
+    {
+        testCommitAndRollbackFailurePropagation( false );
+    }
+
     private int countNodes( Object id )
     {
         StatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
@@ -1354,6 +1376,45 @@ public class TransactionAsyncIT
 
         // no records should be available, they should all be consumed
         assertNull( await( cursor.nextAsync() ) );
+    }
+
+    private void testCommitAndRollbackFailurePropagation( boolean commit )
+    {
+        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
+        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+
+        try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+        {
+            try ( Session session = driver.session() )
+            {
+                Transaction tx = session.beginTransaction();
+
+                // run query but do not consume the result
+                tx.run( "UNWIND range(0, 10000) AS x RETURN x + 1" );
+
+                IOException ioError = new IOException( "Connection reset by peer" );
+                for ( Channel channel : driverFactory.channels() )
+                {
+                    // make channel experience a fatal network error
+                    // run in the event loop thread and wait for the whole operation to complete
+                    Future<ChannelPipeline> future = channel.eventLoop().submit( () -> channel.pipeline().fireExceptionCaught( ioError ) );
+                    await( future );
+                }
+
+                CompletionStage<Void> commitOrRollback = commit ? tx.commitAsync() : tx.rollbackAsync();
+
+                // commit/rollback should fail and propagate the network error
+                try
+                {
+                    await( commitOrRollback );
+                    fail( "Exception expected" );
+                }
+                catch ( ServiceUnavailableException e )
+                {
+                    assertEquals( ioError, e.getCause() );
+                }
+            }
+        }
     }
 
     private void assumeDatabaseSupportsBookmarks()

@@ -30,18 +30,18 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;
+import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 
 public class ClusterRule extends ExternalResource
 {
     private static final Path CLUSTER_DIR = Paths.get( TARGET_DIR, "test-cluster" ).toAbsolutePath();
-    private static final String PASSWORD = "test";
     private static final int INITIAL_PORT = 20_000;
 
-    // todo: should be possible to configure (dynamically add/remove) cores and read replicas
-    private static final int CORE_COUNT = 3;
-    private static final int READ_REPLICA_COUNT = 2;
+    public static final int CORE_COUNT = 3;
+    public static final int READ_REPLICA_COUNT = 2;
 
     public Cluster getCluster()
     {
@@ -50,7 +50,7 @@ public class ClusterRule extends ExternalResource
 
     public AuthToken getDefaultAuthToken()
     {
-        return AuthTokens.basic( "neo4j", PASSWORD );
+        return AuthTokens.basic( USER, PASSWORD );
     }
 
     public static void stopSharedCluster()
