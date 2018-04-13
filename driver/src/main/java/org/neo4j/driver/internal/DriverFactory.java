@@ -158,7 +158,10 @@ public class DriverFactory
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( securityPlan, sessionFactory, metrics, config );
+        InternalDriver driver = createDriver(securityPlan, sessionFactory, metrics, config);
+        Logger log = config.logging().getLog( Driver.class.getSimpleName() );
+        log.info( "Direct driver instance %s created for server address %s", driver, address.toString() );
+        return driver;
     }
 
     /**
@@ -176,7 +179,10 @@ public class DriverFactory
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        return createDriver( securityPlan, sessionFactory, metrics, config );
+        InternalDriver driver = createDriver(securityPlan, sessionFactory, metrics, config);
+        Logger log = config.logging().getLog( Driver.class.getSimpleName() );
+        log.info( "Routing driver instance %s created for server address %s", driver, address.toString() );
+        return driver;
     }
 
     /**

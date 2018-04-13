@@ -47,7 +47,6 @@ public class InternalDriver implements Driver
         this.sessionFactory = sessionFactory;
         this.metrics = metrics;
         this.log = logging.getLog( Driver.class.getSimpleName() );
-        log.info( "Driver instance %s created", this );
     }
 
     @Override
