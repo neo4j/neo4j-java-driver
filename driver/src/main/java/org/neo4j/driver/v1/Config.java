@@ -267,8 +267,8 @@ public class Config
         private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
         private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
-        private int routingFailureLimit = 1;
-        private long routingRetryDelayMillis = TimeUnit.SECONDS.toMillis( 5 );
+        private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
+        private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
 

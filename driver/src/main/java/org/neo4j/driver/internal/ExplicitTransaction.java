@@ -173,11 +173,6 @@ public class ExplicitTransaction implements Transaction
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been rolled back" ) );
         }
-        else if ( state == State.TERMINATED )
-        {
-            transactionClosed( State.ROLLED_BACK );
-            return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
-        }
         else
         {
             return resultCursors.retrieveNotConsumedError()
@@ -195,12 +190,6 @@ public class ExplicitTransaction implements Transaction
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return completedWithNull();
-        }
-        else if ( state == State.TERMINATED )
-        {
-            // no need for explicit rollback, transaction should've been rolled back by the database
-            transactionClosed( State.ROLLED_BACK );
             return completedWithNull();
         }
         else
@@ -344,6 +333,11 @@ public class ExplicitTransaction implements Transaction
 
     private CompletionStage<Void> doCommitAsync()
     {
+        if ( state == State.TERMINATED )
+        {
+            return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
+        }
+
         CompletableFuture<Void> commitFuture = new CompletableFuture<>();
         ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture, this );
         connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );
@@ -352,6 +346,11 @@ public class ExplicitTransaction implements Transaction
 
     private CompletionStage<Void> doRollbackAsync()
     {
+        if ( state == State.TERMINATED )
+        {
+            return completedWithNull();
+        }
+
         CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
         ResponseHandler pullAllHandler = new RollbackTxResponseHandler( rollbackFuture );
         connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );

@@ -18,8 +18,12 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class RoutingSettings
 {
+    public static final RoutingSettings DEFAULT = new RoutingSettings( 1, SECONDS.toMillis( 5 ) );
+
     private final int maxRoutingFailures;
     private final long retryTimeoutDelay;
     private final RoutingContext routingContext;
