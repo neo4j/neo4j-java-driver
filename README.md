@@ -1,6 +1,6 @@
 # Neo4j Java Driver
 
-This is the official Neo4j java driver for connecting to a Neo4j database or a Neo4j cluster via in-house binary protocol BOLT.
+This is the official Neo4j java driver for connecting to a Neo4j database or a Neo4j cluster via in-house binary protocol Bolt.
 
 ## For Driver Users
 
@@ -9,14 +9,14 @@ who would like to use this driver in their projects to send queries to their Neo
 
 ### Java Runtime
 
-Since 1.6 series, the driver supports Java 8 and Java 9 runtime.
+Since 1.5 series, the driver supports Java 8 and Java 9 runtime.
 The automatic module name of the driver required by Java 9 is `org.neo4j.driver`.
 
 The table bellow shows all driver series and supported Java runtime.
 
-|         Driver Series |         1.6       |   1.5  |   1.4 and bellow  |
-| ---------------------:|:-----------------:|:------:|:-----------------:|
-| Supported Java Runtime| Java 8 and Java 9 | Java 8 | Java 7 and Java 8 |
+|         Driver Series |   1.5 and above   |   1.4 and bellow  |
+| ---------------------:|:-----------------:|:-----------------:|
+| Supported Java Runtime| Java 8 and Java 9 | Java 7 and Java 8 |
 
 
 
@@ -24,7 +24,7 @@ The table bellow shows all driver series and supported Java runtime.
 
 The driver is distributed via Maven exclusively.
 To use the driver in your Maven project:
-```html
+```xml
 <dependency>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver</artifactId>
@@ -54,7 +54,8 @@ The `driver` object holds a connection pool to avoid performance overhead added 
 Network connections are established on demands when running Cypher queries, and returned back to connection pool after query execution finishes.
 As a result, it is expensive to create and close driver, while super cheap to open and close sessions.
 
-The driver is thread-safe, but the session is not thread-safe. So make sure sessions are not passed among threads.
+The driver is thread-safe, but the session or transaction is not thread-safe.
+So make sure make sure `Session` and `Transaction` objects are not used concurrently by multiple threads.
 
 ### More Manual and Documents
 Check out our [Wiki](https://github.com/neo4j/neo4j-java-driver/wiki) for detailed and most up-to-date developer manuals, driver API documentations, changelogs, etc.
