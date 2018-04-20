@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.integration;
 import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -409,7 +408,6 @@ public class CausalClusteringIT
     }
 
     @Test
-    @Ignore
     public void shouldNotServeWritesWhenMajorityOfCoresAreDead() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
@@ -441,7 +439,6 @@ public class CausalClusteringIT
     }
 
     @Test
-    @Ignore
     public void shouldServeReadsWhenMajorityOfCoresAreDead() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
