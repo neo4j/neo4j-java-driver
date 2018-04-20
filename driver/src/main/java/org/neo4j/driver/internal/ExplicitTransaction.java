@@ -47,9 +47,9 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.Extract.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.v1.Values.value;
 
 public class ExplicitTransaction implements Transaction
 {
@@ -227,7 +227,7 @@ public class ExplicitTransaction implements Transaction
     @Override
     public StatementResult run( String statementText, Map<String,Object> statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
         return run( statementText, params );
     }
 
@@ -235,21 +235,21 @@ public class ExplicitTransaction implements Transaction
     public CompletionStage<StatementResultCursor> runAsync( String statementTemplate,
             Map<String,Object> statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters );
+        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
         return runAsync( statementTemplate, params );
     }
 
     @Override
     public StatementResult run( String statementTemplate, Record statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
         return run( statementTemplate, params );
     }
 
     @Override
     public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
     {
-        Value params = statementParameters == null ? Values.EmptyMap : value( statementParameters.asMap() );
+        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
         return runAsync( statementTemplate, params );
     }
 
