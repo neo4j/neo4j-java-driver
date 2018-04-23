@@ -156,13 +156,17 @@ public class InternalIsoDurationTest
     @Test
     public void toStringShouldPrintInIsoStandardFormat() throws Throwable
     {
-        assertThat( new InternalIsoDuration( 0, 0, 0, 0 ).toString(), equalTo( "PT0S" ) );
-        assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P50W6D" ) );
-        assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "PT45S" ) );
+        assertThat( new InternalIsoDuration( 0, 0, 0, 0 ).toString(), equalTo( "P0M0DT0.000000000S" ) );
+        assertThat( new InternalIsoDuration( 2, 45, 59, 11 ).toString(), equalTo( "P2M45DT59.000000011S" ) );
+        assertThat( new InternalIsoDuration( 4, -101, 1, 999 ).toString(), equalTo( "P4M-101DT1.000000999S" ) );
+        assertThat( new InternalIsoDuration( -1, 12, -19, 1 ).toString(), equalTo( "P-1M12DT-19.000000001S" ) );
 
-        assertThat( new InternalIsoDuration( Period.parse( "P14D" ), Duration.parse( "PT16H12M" ) ).toString(), equalTo( "P2WT16H12M" ) );
-        assertThat( new InternalIsoDuration( Period.parse( "P5M1D" ), Duration.parse( "PT12H" ) ).toString(), equalTo( "P5M1DT12H" ) );
-        assertThat( new InternalIsoDuration( Period.parse( "P2W3D" ), Duration.parse( "PT12H" ) ).toString(), equalTo( "P2W3DT12H" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P0M356DT0.000000000S" ) );
+        assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "P0M0DT45.000000000S" ) );
+
+        assertThat( new InternalIsoDuration( Period.parse( "P14D" ), Duration.parse( "PT16H12M" ) ).toString(), equalTo( "P0M14DT58320.000000000S" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P5M1D" ), Duration.parse( "PT12H" ) ).toString(), equalTo( "P5M1DT43200.000000000S" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P2W3D" ), Duration.parse( "PT2H0.111222333S" ) ).toString(), equalTo( "P0M17DT7200.111222333S" ) );
     }
 
     private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )
