@@ -24,9 +24,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.InternalPair;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.types.MapAccessor;
+import org.neo4j.driver.v1.types.Node;
+import org.neo4j.driver.v1.types.Path;
+import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Pair;
 
@@ -36,6 +44,8 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * Utility class for extracting data.
@@ -188,6 +198,34 @@ public final class Extract
                 }
                 return unmodifiableList( list );
             }
+        }
+    }
+
+    public static Value parameters( Map<String,Object> val )
+    {
+        Map<String,Value> asValues = newHashMapWithSize( val.size() );
+        for ( Map.Entry<String,Object> entry : val.entrySet() )
+        {
+            Object value = entry.getValue();
+            assertParameter( value );
+            asValues.put( entry.getKey(), value( value ) );
+        }
+        return new MapValue( asValues );
+    }
+
+    public static void assertParameter( Object value )
+    {
+        if ( value instanceof Node || value instanceof NodeValue )
+        {
+            throw new ClientException( "Nodes can't be used as parameters." );
+        }
+        if ( value instanceof Relationship || value instanceof RelationshipValue )
+        {
+            throw new ClientException( "Relationships can't be used as parameters." );
+        }
+        if ( value instanceof Path || value instanceof PathValue )
+        {
+            throw new ClientException( "Paths can't be used as parameters." );
         }
     }
 }

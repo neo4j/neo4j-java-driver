@@ -494,74 +494,50 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldComplainAboutNodeValueType() throws Throwable
+    public void shouldCreateValueFromNodeValue()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Nodes can't be used as parameters." );
-
-        // When
         NodeValue node = emptyNodeValue();
-        value( node );
+        Value value = value( node );
+        assertEquals( node, value );
     }
 
     @Test
-    public void shouldComplainAboutNodeType() throws Throwable
+    public void shouldCreateValueFromNode()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Nodes can't be used as parameters." );
-
-        // When
         Node node = emptyNodeValue().asNode();
-        value( node );
+        Value value = value( node );
+        assertEquals( node, value.asNode() );
     }
 
     @Test
-    public void shouldComplainAboutRelationshipValueType() throws Throwable
+    public void shouldCreateValueFromRelationshipValue()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Relationships can't be used as parameters." );
-
-        // When
         RelationshipValue rel = emptyRelationshipValue();
-        value( rel );
+        Value value = value( rel );
+        assertEquals( rel, value );
     }
 
     @Test
-    public void shouldComplainAboutRelationshipType() throws Throwable
+    public void shouldCreateValueFromRelationship()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Relationships can't be used as parameters." );
-
-        // When
         Relationship rel = emptyRelationshipValue().asRelationship();
-        value( rel );
+        Value value = value( rel );
+        assertEquals( rel, value.asRelationship() );
     }
 
     @Test
-    public void shouldComplainAboutPathValueType() throws Throwable
+    public void shouldCreateValueFromPathValue()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Paths can't be used as parameters." );
-
-        // When
         PathValue path = filledPathValue();
-        value( path );
+        Value value = value( path );
+        assertEquals( path, value );
     }
 
     @Test
-    public void shouldComplainAboutPathType() throws Throwable
+    public void shouldCreateValueFromPath()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Paths can't be used as parameters." );
-
-        // When
         Path path = filledPathValue().asPath();
-        value( path );
+        Value value = value( path );
+        assertEquals( path, value.asPath() );
     }
 }
