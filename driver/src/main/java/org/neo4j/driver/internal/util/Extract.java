@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.InternalPair;
-import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
@@ -44,8 +43,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
-import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
-import static org.neo4j.driver.v1.Values.value;
 
 /**
  * Utility class for extracting data.
@@ -199,18 +196,6 @@ public final class Extract
                 return unmodifiableList( list );
             }
         }
-    }
-
-    public static Value parameters( Map<String,Object> val )
-    {
-        Map<String,Value> asValues = newHashMapWithSize( val.size() );
-        for ( Map.Entry<String,Object> entry : val.entrySet() )
-        {
-            Object value = entry.getValue();
-            assertParameter( value );
-            asValues.put( entry.getKey(), value( value ) );
-        }
-        return new MapValue( asValues );
     }
 
     public static void assertParameter( Object value )

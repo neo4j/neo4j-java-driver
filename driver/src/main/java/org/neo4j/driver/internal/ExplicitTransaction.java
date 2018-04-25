@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -32,26 +31,20 @@ import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Extract.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class ExplicitTransaction implements Transaction
+public class ExplicitTransaction extends AbstractStatementRunner implements Transaction
 {
     private static final String BEGIN_QUERY = "BEGIN";
     private static final String COMMIT_QUERY = "COMMIT";
@@ -201,59 +194,6 @@ public class ExplicitTransaction implements Transaction
     }
 
     @Override
-    public StatementResult run( String statementText, Value statementParameters )
-    {
-        return run( new Statement( statementText, statementParameters ) );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
-    {
-        return runAsync( new Statement( statementText, parameters ) );
-    }
-
-    @Override
-    public StatementResult run( String statementText )
-    {
-        return run( statementText, Values.EmptyMap );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate )
-    {
-        return runAsync( statementTemplate, Values.EmptyMap );
-    }
-
-    @Override
-    public StatementResult run( String statementText, Map<String,Object> statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
-        return run( statementText, params );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate,
-            Map<String,Object> statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
-        return runAsync( statementTemplate, params );
-    }
-
-    @Override
-    public StatementResult run( String statementTemplate, Record statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
-        return run( statementTemplate, params );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
-        return runAsync( statementTemplate, params );
-    }
-
-    @Override
     public StatementResult run( Statement statement )
     {
         StatementResultCursor cursor = Futures.blockingGet( run( statement, false ),
@@ -305,12 +245,6 @@ public class ExplicitTransaction implements Transaction
     public boolean isOpen()
     {
         return state != State.COMMITTED && state != State.ROLLED_BACK;
-    }
-
-    @Override
-    public TypeSystem typeSystem()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM;
     }
 
     public void markTerminated()

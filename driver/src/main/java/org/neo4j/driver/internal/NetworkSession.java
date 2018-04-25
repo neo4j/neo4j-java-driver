@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -29,29 +28,23 @@ import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.TypeSystem;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.neo4j.driver.internal.util.Extract.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class NetworkSession implements Session
+public class NetworkSession extends AbstractStatementRunner implements Session
 {
     private static final String LOG_NAME = "Session";
 
@@ -74,59 +67,6 @@ public class NetworkSession implements Session
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
-    }
-
-    @Override
-    public StatementResult run( String statementText )
-    {
-        return run( statementText, Values.EmptyMap );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementText )
-    {
-        return runAsync( statementText, Values.EmptyMap );
-    }
-
-    @Override
-    public StatementResult run( String statementText, Map<String,Object> statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
-        return run( statementText, params );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementText,
-            Map<String,Object> statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters );
-        return runAsync( statementText, params );
-    }
-
-    @Override
-    public StatementResult run( String statementTemplate, Record statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
-        return run( statementTemplate, params );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
-    {
-        Value params = statementParameters == null ? Values.EmptyMap : parameters( statementParameters.asMap() );
-        return runAsync( statementTemplate, params );
-    }
-
-    @Override
-    public StatementResult run( String statementText, Value statementParameters )
-    {
-        return run( new Statement( statementText, statementParameters ) );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
-    {
-        return runAsync( new Statement( statementText, parameters ) );
     }
 
     @Override
@@ -276,12 +216,6 @@ public class NetworkSession implements Session
                     }
                     return completedWithNull();
                 } );
-    }
-
-    @Override
-    public TypeSystem typeSystem()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM;
     }
 
     CompletionStage<Boolean> currentConnectionIsOpen()
