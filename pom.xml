@@ -32,15 +32,10 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>neo4j</id>
-      <name>The Neo4j Team</name>
-      <url>http://neo4j.org/</url>
-      <organization>Neo Technology</organization>
-      <organizationUrl>http://www.neotechnology.com/</organizationUrl>
-    </developer>
-  </developers>
+  <organization>
+    <name>Neo4j Sweden AB</name>
+    <url>http://neo4j.com</url>
+  </organization>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j-java-driver.git</connection>
