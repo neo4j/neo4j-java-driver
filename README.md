@@ -83,17 +83,21 @@ Also include any error stacktraces and a code snippet to reproduce the error if 
 
 ## For Driver Developers
 
-This section targets at people who would like to compile the source code on their own machine for the purpose of, for example, contributing a PR to this repository.
-Before contributing to this project, please take a few minutes and read our [Contributing Criteria](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#want-to-contribute).
+This section targets users who would like to compile the driver source code on their own machine for the purpose of, for example, contributing a PR.
+Before contributing to this project, please take a few minutes to read our [Contribution Guide](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#want-to-contribute).
+
 
 ### Java Version
 
-Starting from 1.5 series the driver is compiled on Java 8. For previous series, the code compilation requires Java 7.
+For the 1.5 series driver and above, source code _must_ compile on Java 8.
+For previous versions, the compilation requires Java 7.
+
 
 ### Building
 
 The source code here reflects the current development status of a new driver version.
-If you want to use the driver in your project, please use the released driver via Maven Central or check out the code with git tags of corresponding versions instead.
+To use the driver in a project, please use the released driver via Maven Central or check out the code with git tags of corresponding versions instead.
+
 
 #### Running Tests and Creating a Package
 
@@ -106,15 +110,17 @@ mvn clean install
 ```
 When running integration tests, the driver would start a Neo4j instance and a Neo4j cluster on your local machine.
 Your tests might fail due to
-* a Neo4j server instance is already running on your machine and occupied default server ports,
-* missing the right to download neo4j enterprise artifacts.
+* a Neo4j server instance is already running on your machine and occupying the default server ports,
+* a lack of persmission to download Neo4j Enterprise artifacts.
 
-If you do not wish to run integration tests, then use the following command to run without integration tests:
+To skip the integration tests, use:
 ```
 mvn clean install -DskipITs
 ```
 
+
 #### Windows
 
-If you are building on windows, you need to run install with admin right, as Neo4j installation requires admin right to install as a service and
-start for integration tests.
+If you are building on windows, you will need to run the install with admin rights.
+This is because integration tests require admin privileges to install and start a service.
+
