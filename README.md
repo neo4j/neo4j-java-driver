@@ -1,29 +1,34 @@
 # Neo4j Java Driver
 
-This is the official Neo4j java driver for connecting to a Neo4j database or a Neo4j cluster via in-house binary protocol Bolt.
+This repository holds the official Java driver for Neo4j.
+The API is designed to work against both single instance and clustered databases.
+
 
 ## For Driver Users
 
-This section provides some useful information for application developers
-who would like to use this driver in their projects to send queries to their Neo4j database and/or Neo4j cluster.
+This section provides general information for developers who are building Neo4j-backed applications.
+Note that this driver is designed to be used only by Neo4j 3.0 and above and provides no HTTP capabilities.
+
 
 ### Java Runtime
 
-Since 1.5 series, the driver supports Java 8 and Java 9 runtime.
+Recent drivers require either the Java 8 or Java 9 runtime.
+The table below shows runtime compatiblity for the currently-supported driver versions.
+
+| Driver Series | Java 7 | Java 8 | Java 9 |
+|---------------|:------:|:------:|:------:|
+| 1.3           |   X    |   X    |        |
+| 1.4           |   X    |   X    |        |
+| 1.5           |        |   X    |   X    |
+| 1.6           |        |   X    |   X    |
+
 The automatic module name of the driver required by Java 9 is `org.neo4j.driver`.
 
-The table bellow shows all driver series and supported Java runtime.
 
-|         Driver Series |   1.5 and above   |   1.4 and bellow  |
-| ---------------------:|:-----------------:|:-----------------:|
-| Supported Java Runtime| Java 8 and Java 9 | Java 7 and Java 8 |
+### The `pom.xml` file
 
-
-
-### Minimum Viable Snippet
-
-The driver is distributed via Maven exclusively.
-To use the driver in your Maven project:
+The driver is distributed exclusively via [Maven](https://search.maven.org/).
+To use the driver in your Maven project, include the following within your `pom.xml` file:
 ```xml
 <dependency>
     <groupId>org.neo4j.driver</groupId>
@@ -31,14 +36,17 @@ To use the driver in your Maven project:
     <version>x.y.z</version>
 </dependency>
 ```
-The version `x.y.x` need to be replaced with a released driver version.
-The latest driver version is always recommended for accessing newest features and recent bug fixes.
-The latest and all available versions of this driver could be found at
+Here, `x.y.z` will need to be replaced with the appropriate driver version.
+It is generally recommended to use the latest driver version wherever possible.
+This ensures access to new features and recent bug fixes.
+All available versions of this driver can be found at
 [Maven Central](https://mvnrepository.com/artifact/org.neo4j.driver/neo4j-java-driver) or
 [Releases](https://github.com/neo4j/neo4j-java-driver/releases).
 
 
-To connect to a Neo4j 3.0.0+ database:
+### Example
+
+To run a simple query, the following can be used:
 ```java
 Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "PasSW0rd" ) );
 try ( Session session = driver.session() )
@@ -47,27 +55,34 @@ try ( Session session = driver.session() )
 }
 driver.close();
 ```
-While using this driver in an application project, we recommend **a single driver** during the whole lifetime of the application
-to benefit from the connection pool maintained in the `driver` object.
 
-The `driver` object holds a connection pool to avoid performance overhead added by establishing TCP connections for each query run.
-Network connections are established on demands when running Cypher queries, and returned back to connection pool after query execution finishes.
-As a result, it is expensive to create and close driver, while super cheap to open and close sessions.
+For full applications, a single ``Driver`` object should be created with application-wide scope and lifetime.
+This allows full utilization of the driver connection pool.
+The connection pool reduces network overhead added by sharing TCP connections between subsequent transactions.
+Network connections are acquired on demand from the pool when running Cypher queries, and returned back to connection pool after query execution finishes.
+As a result of this design, it is expensive to create and close a ``Driver`` object.
+``Session`` objects, on the other hand, are very cheap to use.
 
-The driver is thread-safe, but the session or transaction is not thread-safe.
-So make sure make sure `Session` and `Transaction` objects are not used concurrently by multiple threads.
 
-### More Manual and Documents
+### Thread Safety
+
+``Driver`` objects are thread-safe, but ``Session`` and ``Transaction`` objects should only be used by a single thread.
+
+
+### Further reading
 Check out our [Wiki](https://github.com/neo4j/neo4j-java-driver/wiki) for detailed and most up-to-date developer manuals, driver API documentations, changelogs, etc.
 
+
 ### Bug Report
-If you encounter any bugs while using this driver, please following the instructions in our [Contributing Criteria](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#need-to-raise-an-issue)
+If you encounter any bugs while using this driver, please follow the instructions in our [Contribution Guide](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#need-to-raise-an-issue)
 when raising an issue at [Issues](https://github.com/neo4j/neo4j-java-driver/issues).
 
-When reporting, please mention the version of the driver and version of the server, the setup of the server such as single instance or HA or causal cluster,
-the error stacktrace, code snippet to reproduce the error if possible, and anything that you think it is helpful to reproduce the error.
+When reporting, please mention the versions of the driver and server, as well as the server topology (single instance, causal cluster, etc).
+Also include any error stacktraces and a code snippet to reproduce the error if possible, as well as anything else that you think might be helpful.
+
 
 ## For Driver Developers
+
 This section targets at people who would like to compile the source code on their own machine for the purpose of, for example, contributing a PR to this repository.
 Before contributing to this project, please take a few minutes and read our [Contributing Criteria](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#want-to-contribute).
 
