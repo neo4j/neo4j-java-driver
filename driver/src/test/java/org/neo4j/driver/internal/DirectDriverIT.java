@@ -45,7 +45,7 @@ import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
-public class DirectDriverTest
+public class DirectDriverIT
 {
     @ClassRule
     public static final TestNeo4j neo4j = new TestNeo4j();
