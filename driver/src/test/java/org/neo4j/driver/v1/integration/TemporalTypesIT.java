@@ -31,6 +31,7 @@ import java.time.ZonedDateTime;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.util.Function;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.v1.Values.isoDuration;
+import static org.neo4j.driver.v1.Values.parameters;
 
 public class TemporalTypesIT
 {
@@ -245,6 +247,29 @@ public class TemporalTypesIT
         testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asIsoDuration );
     }
 
+    @Test
+    public void shouldFormatDurationToString()
+    {
+        testDurationToString( 1, 0, "P0M0DT1S" );
+        testDurationToString( -1, 0, "P0M0DT-1S" );
+
+        testDurationToString( 0, 5, "P0M0DT0.000000005S" );
+        testDurationToString( 0, -5, "P0M0DT-0.000000005S" );
+        testDurationToString( 0, 999_999_999, "P0M0DT0.999999999S" );
+        testDurationToString( 0, -999_999_999, "P0M0DT-0.999999999S" );
+
+        testDurationToString( 1, 5, "P0M0DT1.000000005S" );
+        testDurationToString( -1, -5, "P0M0DT-1.000000005S" );
+        testDurationToString( 1, -5, "P0M0DT0.999999995S" );
+        testDurationToString( -1, 5, "P0M0DT-0.999999995S" );
+        testDurationToString( 1, 999999999, "P0M0DT1.999999999S" );
+        testDurationToString( -1, -999999999, "P0M0DT-1.999999999S" );
+        testDurationToString( 1, -999999999, "P0M0DT0.000000001S" );
+        testDurationToString( -1, 999999999, "P0M0DT-0.000000001S" );
+
+        testDurationToString( -78036, -143000000, "P0M0DT-78036.143000000S" );
+    }
+
     private <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
     {
         for ( int i = 0; i < RANDOM_VALUES_TO_TEST; i++ )
@@ -272,6 +297,13 @@ public class TemporalTypesIT
     {
         Record record = session.run( "CREATE (n:Node {value: $value}) RETURN n.value", singletonMap( "value", value ) ).single();
         assertEquals( value, converter.apply( record.get( 0 ) ) );
+    }
+
+    private void testDurationToString( long seconds, int nanoseconds, String expectedValue )
+    {
+        StatementResult result = session.run( "RETURN duration({seconds: $s, nanoseconds: $n})", parameters( "s", seconds, "n", nanoseconds ) );
+        IsoDuration duration = result.single().get( 0 ).asIsoDuration();
+        assertEquals( expectedValue, duration.toString() );
     }
 
     private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )

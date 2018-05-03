@@ -192,7 +192,8 @@ public class InternalIsoDuration implements IsoDuration
     @Override
     public String toString()
     {
-        String nanosecondsString = nanoseconds == 0 ? "" : String.format( ".%09d", nanoseconds );
-        return String.format( "P%sM%sDT%s%sS", months, days, seconds, nanosecondsString );
+        String secondsSign = seconds < 0 || nanoseconds < 0 ? "-" : "";
+        String nanosecondsString = nanoseconds == 0 ? "" : String.format( ".%09d", Math.abs( nanoseconds ) );
+        return String.format( "P%sM%sDT%s%s%sS", months, days, secondsSign, Math.abs( seconds ), nanosecondsString );
     }
 }
