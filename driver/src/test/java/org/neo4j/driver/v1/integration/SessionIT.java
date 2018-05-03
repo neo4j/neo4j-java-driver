@@ -1343,6 +1343,38 @@ public class SessionIT
         testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
     }
 
+    @Test
+    public void shouldSupportNestedQueries()
+    {
+        try ( Session session = neo4j.driver().session() )
+        {
+            // populate db with test data
+            session.run( "UNWIND range(1, 100) AS x CREATE (:Property {id: x})" ).consume();
+            session.run( "UNWIND range(1, 10) AS x CREATE (:Resource {id: x})" ).consume();
+
+            int seenProperties = 0;
+            int seenResources = 0;
+
+            // read properties and resources using a single session
+            StatementResult properties = session.run( "MATCH (p:Property) RETURN p" );
+            while ( properties.hasNext() )
+            {
+                assertNotNull( properties.next() );
+                seenProperties++;
+
+                StatementResult resources = session.run( "MATCH (r:Resource) RETURN r" );
+                while ( resources.hasNext() )
+                {
+                    assertNotNull( resources.next() );
+                    seenResources++;
+                }
+            }
+
+            assertEquals( 100, seenProperties );
+            assertEquals( 1000, seenResources );
+        }
+    }
+
     private void testExecuteReadTx( AccessMode sessionMode )
     {
         Driver driver = neo4j.driver();
