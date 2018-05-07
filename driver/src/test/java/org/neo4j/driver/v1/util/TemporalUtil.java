@@ -81,7 +81,7 @@ public final class TemporalUtil
     public static IsoDuration randomDuration()
     {
         int sign = random().nextBoolean() ? 1 : -1; // duration can be negative
-        return new InternalIsoDuration( sign * randomInt(), sign * randomInt(), sign * randomInt(), sign * Math.abs( random( NANO_OF_SECOND ) ) );
+        return new InternalIsoDuration( sign * randomInt(), sign * randomInt(), sign * randomInt(), Math.abs( random( NANO_OF_SECOND ) ) );
     }
 
     private static ZonedDateTime randomZonedDateTime( ZoneId zoneId )
