@@ -268,6 +268,16 @@ public class TemporalTypesIT
         testDurationToString( -1, 999999999, "P0M0DT-0.000000001S" );
 
         testDurationToString( -78036, -143000000, "P0M0DT-78036.143000000S" );
+
+        testDurationToString( 0, 1_000_000_000, "P0M0DT1S" );
+        testDurationToString( 0, -1_000_000_000, "P0M0DT-1S" );
+        testDurationToString( 0, 1_000_000_007, "P0M0DT1.000000007S" );
+        testDurationToString( 0, -1_000_000_007, "P0M0DT-1.000000007S" );
+
+        testDurationToString( 40, 2_123_456_789, "P0M0DT42.123456789S" );
+        testDurationToString( -40, 2_123_456_789, "P0M0DT-37.876543211S" );
+        testDurationToString( 40, -2_123_456_789, "P0M0DT37.876543211S" );
+        testDurationToString( -40, -2_123_456_789, "P0M0DT-42.123456789S" );
     }
 
     private <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
