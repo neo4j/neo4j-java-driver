@@ -36,6 +36,7 @@ import static java.util.Collections.unmodifiableList;
 
 public class InternalIsoDuration implements IsoDuration
 {
+    private static final long NANOS_PER_SECOND = 1_000_000_000;
     private static final List<TemporalUnit> SUPPORTED_UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
 
     private final long months;
@@ -45,25 +46,25 @@ public class InternalIsoDuration implements IsoDuration
 
     public InternalIsoDuration( Period period )
     {
-        this( period.toTotalMonths(), period.getDays(), 0, 0 );
+        this( period.toTotalMonths(), period.getDays(), Duration.ZERO );
     }
 
     public InternalIsoDuration( Duration duration )
     {
-        this( 0, 0, duration.getSeconds(), duration.getNano() );
+        this( 0, 0, duration );
     }
 
     public InternalIsoDuration( long months, long days, long seconds, int nanoseconds )
     {
-        this.months = months;
-        this.days = days;
-        this.seconds = seconds;
-        this.nanoseconds = nanoseconds;
+        this( months, days, Duration.ofSeconds( seconds, nanoseconds ) );
     }
 
-    public InternalIsoDuration( Period period, Duration duration )
+    InternalIsoDuration( long months, long days, Duration duration )
     {
-        this( period.toTotalMonths(), period.getDays(), duration.getSeconds(), duration.getNano() );
+        this.months = months;
+        this.days = days;
+        this.seconds = duration.getSeconds(); // normalized value of seconds
+        this.nanoseconds = duration.getNano(); // normalized value of nanoseconds in [0, 999_999_999]
     }
 
     @Override
@@ -192,8 +193,41 @@ public class InternalIsoDuration implements IsoDuration
     @Override
     public String toString()
     {
-        String secondsSign = seconds < 0 || nanoseconds < 0 ? "-" : "";
-        String nanosecondsString = nanoseconds == 0 ? "" : String.format( ".%09d", Math.abs( nanoseconds ) );
-        return String.format( "P%sM%sDT%s%s%sS", months, days, secondsSign, Math.abs( seconds ), nanosecondsString );
+        StringBuilder sb = new StringBuilder();
+        sb.append( 'P' );
+        sb.append( months ).append( 'M' );
+        sb.append( days ).append( 'D' );
+        sb.append( 'T' );
+        if ( seconds < 0 && nanoseconds > 0 )
+        {
+            if ( seconds == -1 )
+            {
+                sb.append( "-0" );
+            }
+            else
+            {
+                sb.append( seconds + 1 );
+            }
+        }
+        else
+        {
+            sb.append( seconds );
+        }
+        if ( nanoseconds > 0 )
+        {
+            int pos = sb.length();
+            // append nanoseconds as a 10-digit string with leading '1' that is later replaced by a '.'
+            if ( seconds < 0 )
+            {
+                sb.append( 2 * NANOS_PER_SECOND - nanoseconds );
+            }
+            else
+            {
+                sb.append( NANOS_PER_SECOND + nanoseconds );
+            }
+            sb.setCharAt( pos, '.' ); // replace '1' with '.'
+        }
+        sb.append( 'S' );
+        return sb.toString();
     }
 }
