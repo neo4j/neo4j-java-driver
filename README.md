@@ -21,6 +21,7 @@ The table below shows runtime compatiblity for the currently-supported driver ve
 | 1.4           |   X    |   X    |        |
 | 1.5           |        |   X    |   X    |
 | 1.6           |        |   X    |   X    |
+| 1.7           |        |   X    |   X    |
 
 The automatic module name of the driver required by Java 9 is `org.neo4j.driver`.
 
