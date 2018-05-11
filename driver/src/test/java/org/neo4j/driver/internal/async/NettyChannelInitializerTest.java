@@ -22,13 +22,24 @@ import io.netty.handler.ssl.SslHandler;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.List;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
@@ -96,6 +107,23 @@ public class NettyChannelInitializerTest
         assertEquals( LOCAL_DEFAULT, serverAddress( channel ) );
         assertEquals( 42L, creationTimestamp( channel ) );
         assertNotNull( messageDispatcher( channel ) );
+    }
+
+    @Test
+    public void shouldIncludeSniHostName() throws Exception
+    {
+        BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( address, SecurityPlan.forAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
+
+        initializer.initChannel( channel );
+
+        SslHandler sslHandler = channel.pipeline().get( SslHandler.class );
+        SSLEngine sslEngine = sslHandler.engine();
+        SSLParameters sslParameters = sslEngine.getSSLParameters();
+        List<SNIServerName> sniServerNames = sslParameters.getServerNames();
+        assertThat( sniServerNames, hasSize( 1 ) );
+        assertThat( sniServerNames.get( 0 ), instanceOf( SNIHostName.class ) );
+        assertThat( ((SNIHostName) sniServerNames.get( 0 )).getAsciiName(), equalTo( address.host() ) );
     }
 
     private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan )
