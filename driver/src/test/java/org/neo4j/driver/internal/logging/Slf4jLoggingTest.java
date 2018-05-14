@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
- * Neo4j Sweden AB [http://neo4j.com]
+ * Copyright (c) 2002-2018 Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -18,29 +17,29 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import java.util.logging.Level;
+import org.junit.Test;
 
 import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
 
-/**
- * Internal implementation of the JUL.
- * <b>This class should not be used directly.</b> Please use {@link Logging#javaUtilLogging(Level)} factory method instead.
- *
- * @see Logging#javaUtilLogging(Level)
- */
-public class JULogging implements Logging
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+
+public class Slf4jLoggingTest
 {
-    private final Level loggingLevel;
-
-    public JULogging( Level loggingLevel )
+    @Test
+    public void shouldCreateLoggers()
     {
-        this.loggingLevel = loggingLevel;
+        Slf4jLogging logging = new Slf4jLogging();
+
+        Logger logger = logging.getLog( "My Log" );
+
+        assertThat( logger, instanceOf( Slf4jLogger.class ) );
     }
 
-    @Override
-    public Logger getLog( String name )
+    @Test
+    public void shouldCheckIfAvailable()
     {
-        return new JULogger( name, loggingLevel );
+        assertNull( Slf4jLogging.checkAvailability() );
     }
 }

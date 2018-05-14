@@ -26,9 +26,7 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.logging.Level;
 
-import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -42,6 +40,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.Logging.none;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 @RunWith( Enclosed.class )
@@ -171,7 +170,7 @@ public class DriverCloseIT
         {
             Config config = Config.build()
                     .withoutEncryption()
-                    .withLogging( new ConsoleLogging( Level.OFF ) )
+                    .withLogging( none() )
                     .toConfig();
 
             return GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", DEFAULT_AUTH_TOKEN, config );

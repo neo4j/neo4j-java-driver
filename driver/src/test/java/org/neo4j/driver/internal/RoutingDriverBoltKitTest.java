@@ -28,10 +28,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
@@ -53,6 +51,7 @@ import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static java.util.Arrays.asList;
+import static java.util.logging.Level.INFO;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -62,6 +61,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.driver.v1.Logging.console;
 
 public class RoutingDriverBoltKitTest
 {
@@ -70,7 +70,7 @@ public class RoutingDriverBoltKitTest
 
     private static final Config config = Config.build()
             .withoutEncryption()
-            .withLogging( new ConsoleLogging( Level.INFO ) ).toConfig();
+            .withLogging( console( INFO ) ).toConfig();
 
     @Test
     public void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled

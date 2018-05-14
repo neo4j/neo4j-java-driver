@@ -37,12 +37,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
@@ -71,6 +69,7 @@ import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+import static java.util.logging.Level.INFO;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -94,6 +93,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
@@ -1589,7 +1589,7 @@ public class SessionIT
         {
             Config config = Config.build()
                     .withLogging( DEV_NULL_LOGGING )
-                    .withLogging( new ConsoleLogging( Level.INFO ) )
+                    .withLogging( console( INFO ) )
                     .withoutEncryption()
                     .toConfig();
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ) )

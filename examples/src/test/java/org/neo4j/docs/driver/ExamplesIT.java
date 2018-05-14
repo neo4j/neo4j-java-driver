@@ -22,9 +22,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
@@ -36,6 +40,7 @@ import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestUtil;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -453,6 +458,27 @@ public class ExamplesIT
 
             assertEquals( 1, stdIOCapture.stdout().size() );
             assertEquals( "Mind Gem", stdIOCapture.stdout().get( 0 ) );
+        }
+    }
+
+    @Test
+    public void testSlf4jLogging() throws Exception
+    {
+        // log file is defined in logback-test.xml configuration file
+        Path logFile = Paths.get( "target", "test.log" );
+        Files.deleteIfExists( logFile );
+
+        try ( Slf4jLoggingExample example = new Slf4jLoggingExample( uri, USER, PASSWORD ) )
+        {
+            String randomString = UUID.randomUUID().toString();
+            Object result = example.runReturnQuery( randomString );
+            assertEquals( randomString, result );
+
+            assertTrue( Files.exists( logFile ) );
+
+            String logFileContent = new String( Files.readAllBytes( logFile ), UTF_8 );
+            assertThat( logFileContent, containsString( "RETURN $x" ) );
+            assertThat( logFileContent, containsString( randomString ) );
         }
     }
 }

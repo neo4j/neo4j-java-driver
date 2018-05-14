@@ -26,7 +26,6 @@ import org.neo4j.driver.v1.Logger;
 
 import static java.lang.String.format;
 
-
 public class NettyLogger extends AbstractInternalLogger
 {
     private Logger log;

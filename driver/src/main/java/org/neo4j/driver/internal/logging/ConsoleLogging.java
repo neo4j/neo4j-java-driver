@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.logging;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -31,18 +32,10 @@ import org.neo4j.driver.v1.Logging;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 /**
- * Print all the logging messages into {@link System#err}.
- * <p>
- * To use this class for debugging:
- * <pre>
- * {@code
+ * Internal implementation of the console logging.
+ * <b>This class should not be used directly.</b> Please use {@link Logging#console(Level)} factory method instead.
  *
- *     Config config = Config.build()
- *                      .withLogging( new ConsoleLogging( Level.ALL ) )
- *                      .toConfig();
- *     Driver driver = GraphDatabase.driver( "bolt://localhost:7687", config );
- * }
- * </pre>
+ * @see Logging#console(Level)
  */
 public class ConsoleLogging implements Logging
 {
@@ -50,7 +43,7 @@ public class ConsoleLogging implements Logging
 
     public ConsoleLogging( Level level )
     {
-        this.level = level;
+        this.level = Objects.requireNonNull( level );
     }
 
     @Override
