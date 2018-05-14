@@ -601,6 +601,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static class LoggerNameTrackingLogging implements Logging
     {
+        private final ConsoleLogging consoleLogging = new ConsoleLogging( Level.FINE );
         private final Set<String> acquiredLoggerNames = new ConcurrentSet<>();
 
         @Override
@@ -609,7 +610,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
             acquiredLoggerNames.add( name );
             if ( DEBUG_LOGGING_ENABLED )
             {
-                return new ConsoleLogging.ConsoleLogger( name, Level.FINE );
+                return consoleLogging.getLog( name );
             }
             return DevNullLogger.DEV_NULL_LOGGER;
         }
