@@ -12,18 +12,18 @@ Note that this driver is designed to be used only by Neo4j 3.0 and above and pro
 
 ### Java Runtime
 
-Recent drivers require either the Java 8 or Java 9 runtime.
-The table below shows runtime compatiblity for the currently-supported driver versions.
+Recent drivers require the Java 8 or higher version of the runtime.
+The table below shows runtime compatibility for the currently-supported driver versions.
 
-| Driver Series | Java 7 | Java 8 | Java 9 |
-|---------------|:------:|:------:|:------:|
-| 1.3           |   X    |   X    |        |
-| 1.4           |   X    |   X    |        |
-| 1.5           |        |   X    |   X    |
-| 1.6           |        |   X    |   X    |
-| 1.7           |        |   X    |   X    |
+| Driver Series | Java 7 | Java 8 | Java 9 | Java 10 |
+|---------------|:------:|:------:|:------:|:-------:|
+| 1.3           |   X    |   X    |        |         |
+| 1.4           |   X    |   X    |        |         |
+| 1.5           |        |   X    |   X    |    X    |
+| 1.6           |        |   X    |   X    |    X    |
+| 1.7           |        |   X    |   X    |    X    |
 
-The automatic module name of the driver required by Java 9 is `org.neo4j.driver`.
+The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
 
 
 ### The `pom.xml` file
@@ -49,10 +49,9 @@ All available versions of this driver can be found at
 
 To run a simple query, the following can be used:
 ```java
-Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "PasSW0rd" ) );
-try ( Session session = driver.session() )
-{
-    StatementResult rs = session.run( "CREATE (n) RETURN n" );
+Driver driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "PasSW0rd"));
+try (Session session = driver.session()) {
+    StatementResult rs = session.run("CREATE (n) RETURN n");
 }
 driver.close();
 ```
