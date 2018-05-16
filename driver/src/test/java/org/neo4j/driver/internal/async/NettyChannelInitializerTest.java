@@ -23,6 +23,7 @@ import io.netty.handler.ssl.SslHandler;
 import org.junit.After;
 import org.junit.Test;
 
+import java.security.GeneralSecurityException;
 import java.util.List;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
@@ -62,7 +63,7 @@ public class NettyChannelInitializerTest
     @Test
     public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
-        SecurityPlan security = SecurityPlan.forAllCertificates();
+        SecurityPlan security = trustAllCertificates();
         NettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
@@ -85,7 +86,7 @@ public class NettyChannelInitializerTest
     public void shouldAddSslHandlerWithHandshakeTimeout() throws Exception
     {
         int timeoutMillis = 424242;
-        SecurityPlan security = SecurityPlan.forAllCertificates();
+        SecurityPlan security = trustAllCertificates();
         NettyChannelInitializer initializer = newInitializer( security, timeoutMillis );
 
         initializer.initChannel( channel );
@@ -114,7 +115,7 @@ public class NettyChannelInitializerTest
     public void shouldIncludeSniHostName() throws Exception
     {
         BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
-        NettyChannelInitializer initializer = new NettyChannelInitializer( address, SecurityPlan.forAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
@@ -125,6 +126,30 @@ public class NettyChannelInitializerTest
         assertThat( sniServerNames, hasSize( 1 ) );
         assertThat( sniServerNames.get( 0 ), instanceOf( SNIHostName.class ) );
         assertThat( ((SNIHostName) sniServerNames.get( 0 )).getAsciiName(), equalTo( address.host() ) );
+    }
+
+    @Test
+    public void shouldEnableHostnameVerificationWhenConfigured() throws Exception
+    {
+        testHostnameVerificationSetting( true, "HTTPS" );
+    }
+
+    @Test
+    public void shouldNotEnableHostnameVerificationWhenNotConfigured() throws Exception
+    {
+        testHostnameVerificationSetting( false, null );
+    }
+
+    private void testHostnameVerificationSetting( boolean enabled, String expectedValue ) throws Exception
+    {
+        NettyChannelInitializer initializer = newInitializer( SecurityPlan.forAllCertificates( enabled ) );
+
+        initializer.initChannel( channel );
+
+        SslHandler sslHandler = channel.pipeline().get( SslHandler.class );
+        SSLEngine sslEngine = sslHandler.engine();
+        SSLParameters sslParameters = sslEngine.getSSLParameters();
+        assertEquals( expectedValue, sslParameters.getEndpointIdentificationAlgorithm() );
     }
 
     private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan )
@@ -142,5 +167,10 @@ public class NettyChannelInitializerTest
     {
         return new NettyChannelInitializer( LOCAL_DEFAULT, securityPlan, connectTimeoutMillis, clock,
                 DEV_NULL_LOGGING );
+    }
+
+    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
+    {
+        return SecurityPlan.forAllCertificates( false );
     }
 }

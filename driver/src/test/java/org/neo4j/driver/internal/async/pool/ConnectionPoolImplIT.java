@@ -216,7 +216,7 @@ public class ConnectionPoolImplIT
     {
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
-        ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates(),
+        ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates( false ),
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );

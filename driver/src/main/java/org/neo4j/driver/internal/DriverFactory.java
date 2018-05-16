@@ -287,31 +287,30 @@ public class DriverFactory
         if ( config.encrypted() )
         {
             Logger logger = config.logging().getLog( "SecurityPlan" );
-            switch ( config.trustStrategy().strategy() )
+            Config.TrustStrategy trustStrategy = config.trustStrategy();
+            boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
+            switch ( trustStrategy.strategy() )
             {
-
-            // DEPRECATED CASES //
             case TRUST_ON_FIRST_USE:
                 logger.warn(
                         "Option `TRUST_ON_FIRST_USE` has been deprecated and will be removed in a future " +
                         "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
-                return SecurityPlan.forTrustOnFirstUse( config.trustStrategy().certFile(), address, logger );
+                return SecurityPlan.forTrustOnFirstUse( trustStrategy.certFile(), hostnameVerificationEnabled, address, logger );
             case TRUST_SIGNED_CERTIFICATES:
                 logger.warn(
                         "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
                         "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
                 // intentional fallthrough
-                // END OF DEPRECATED CASES //
 
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forCustomCASignedCertificates( config.trustStrategy().certFile() );
+                return SecurityPlan.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSystemCASignedCertificates();
+                return SecurityPlan.forSystemCASignedCertificates( hostnameVerificationEnabled );
             case TRUST_ALL_CERTIFICATES:
-                return SecurityPlan.forAllCertificates();
+                return SecurityPlan.forAllCertificates( hostnameVerificationEnabled );
             default:
                 throw new ClientException(
-                        "Unknown TLS authentication strategy: " + config.trustStrategy().strategy().name() );
+                        "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );
             }
         }
         else

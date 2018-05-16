@@ -33,11 +33,11 @@ import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
+import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.AuthTokens.basic;
-import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
 import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
@@ -51,6 +51,8 @@ import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
+
+    private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" );
 
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.3.4";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
@@ -314,6 +316,14 @@ public class Neo4jRunner
     public static void debug( String text, Object... args )
     {
         System.out.println( String.format( text, args ) );
+    }
+
+    private static void deleteDefaultKnownCertFileIfExists()
+    {
+        if ( DEFAULT_KNOWN_HOSTS.exists() )
+        {
+            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
+        }
     }
 }
 
