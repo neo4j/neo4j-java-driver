@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -43,9 +43,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -55,14 +55,14 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InboundMessageHandlerTest
+class InboundMessageHandlerTest
 {
     private EmbeddedChannel channel;
     private InboundMessageDispatcher messageDispatcher;
     private MessageToByteBufWriter writer;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
@@ -73,8 +73,8 @@ public class InboundMessageHandlerTest
         channel.pipeline().addFirst( handler );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( channel != null )
         {
@@ -83,7 +83,7 @@ public class InboundMessageHandlerTest
     }
 
     @Test
-    public void shouldReadSuccessMessage()
+    void shouldReadSuccessMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
@@ -97,7 +97,7 @@ public class InboundMessageHandlerTest
     }
 
     @Test
-    public void shouldReadFailureMessage()
+    void shouldReadFailureMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
@@ -111,7 +111,7 @@ public class InboundMessageHandlerTest
     }
 
     @Test
-    public void shouldReadRecordMessage()
+    void shouldReadRecordMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
@@ -123,7 +123,7 @@ public class InboundMessageHandlerTest
     }
 
     @Test
-    public void shouldReadIgnoredMessage()
+    void shouldReadIgnoredMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
@@ -133,7 +133,7 @@ public class InboundMessageHandlerTest
     }
 
     @Test
-    public void shouldRethrowReadErrors() throws IOException
+    void shouldRethrowReadErrors() throws IOException
     {
         MessageFormat messageFormat = mock( MessageFormat.class );
         Reader reader = mock( Reader.class );
@@ -146,14 +146,7 @@ public class InboundMessageHandlerTest
         channel.pipeline().remove( InboundMessageHandler.class );
         channel.pipeline().addLast( handler );
 
-        try
-        {
-            channel.writeInbound( writer.asByteBuf( RESET ) );
-            fail( "Exception expected" );
-        }
-        catch ( DecoderException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Failed to read inbound message" ) );
-        }
+        DecoderException e = assertThrows( DecoderException.class, () -> channel.writeInbound( writer.asByteBuf( RESET ) ) );
+        assertThat( e.getMessage(), startsWith( "Failed to read inbound message" ) );
     }
 }

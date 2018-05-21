@@ -19,26 +19,26 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ConnectTimeoutHandlerTest
+class ConnectTimeoutHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldFireExceptionOnTimeout() throws Exception
+    void shouldFireExceptionOnTimeout() throws Exception
     {
         int timeoutMillis = 100;
         channel.pipeline().addLast( new ConnectTimeoutHandler( timeoutMillis ) );
@@ -47,19 +47,12 @@ public class ConnectTimeoutHandlerTest
         Thread.sleep( timeoutMillis * 4 );
         channel.runPendingTasks();
 
-        try
-        {
-            channel.checkException();
-            fail( "Exception expected" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            assertEquals( e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
-        }
+        ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, channel::checkException );
+        assertEquals( error.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
     }
 
     @Test
-    public void shouldNotFireExceptionMultipleTimes() throws Exception
+    void shouldNotFireExceptionMultipleTimes() throws Exception
     {
         int timeoutMillis = 70;
         channel.pipeline().addLast( new ConnectTimeoutHandler( timeoutMillis ) );
@@ -68,15 +61,8 @@ public class ConnectTimeoutHandlerTest
         Thread.sleep( timeoutMillis * 4 );
         channel.runPendingTasks();
 
-        try
-        {
-            channel.checkException();
-            fail( "Exception expected" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            assertEquals( e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
-        }
+        ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, channel::checkException );
+        assertEquals( error.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
 
         // sleep even more
         Thread.sleep( timeoutMillis * 4 );

@@ -19,54 +19,36 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.buffer.ByteBuf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ByteBufInputTest
+class ByteBufInputTest
 {
     @Test
-    public void shouldThrowWhenStartedWithNullBuf()
+    void shouldThrowWhenStartedWithNullBuf()
     {
         ByteBufInput input = new ByteBufInput();
 
-        try
-        {
-            input.start( null );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NullPointerException.class ) );
-        }
+        assertThrows( NullPointerException.class, () -> input.start( null ) );
     }
 
     @Test
-    public void shouldThrowWhenStartedTwice()
+    void shouldThrowWhenStartedTwice()
     {
         ByteBufInput input = new ByteBufInput();
         input.start( mock( ByteBuf.class ) );
 
-        try
-        {
-            input.start( mock( ByteBuf.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> input.start( mock( ByteBuf.class ) ) );
     }
 
     @Test
-    public void shouldDelegateReadByte()
+    void shouldDelegateReadByte()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -77,7 +59,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegateReadShort()
+    void shouldDelegateReadShort()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -88,7 +70,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegateReadInt()
+    void shouldDelegateReadInt()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -99,7 +81,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegateReadLong()
+    void shouldDelegateReadLong()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -110,7 +92,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegateReadDouble()
+    void shouldDelegateReadDouble()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -121,7 +103,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegateReadBytes()
+    void shouldDelegateReadBytes()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
@@ -133,7 +115,7 @@ public class ByteBufInputTest
     }
 
     @Test
-    public void shouldDelegatePeekByte()
+    void shouldDelegatePeekByte()
     {
         ByteBufInput input = new ByteBufInput();
         ByteBuf buf = mock( ByteBuf.class );
