@@ -36,8 +36,10 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -426,6 +428,19 @@ public class InboundMessageDispatcherTest
         {
             assertThat( e, instanceOf( UnsupportedOperationException.class ) );
         }
+    }
+
+    @Test
+    public void shouldMuteAndUnMuteAckFailure()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+        assertFalse( dispatcher.isAckFailureMuted() );
+
+        dispatcher.muteAckFailure();
+        assertTrue( dispatcher.isAckFailureMuted() );
+
+        dispatcher.unMuteAckFailure();
+        assertFalse( dispatcher.isAckFailureMuted() );
     }
 
     private static void verifyFailure( ResponseHandler handler )

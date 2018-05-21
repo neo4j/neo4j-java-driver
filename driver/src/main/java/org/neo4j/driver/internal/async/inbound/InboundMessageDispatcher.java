@@ -229,6 +229,18 @@ public class InboundMessageDispatcher implements MessageHandler
         ackFailureMuted = false;
     }
 
+    /**
+     * Check if ACK_FAILURE is muted.
+     * <p>
+     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
+     *
+     * @return {@code true} if ACK_FAILURE has been muted via {@link #muteAckFailure()}, {@code false} otherwise.
+     */
+    public boolean isAckFailureMuted()
+    {
+        return ackFailureMuted;
+    }
+
     private void ackFailureIfNeeded()
     {
         if ( !ackFailureMuted )
