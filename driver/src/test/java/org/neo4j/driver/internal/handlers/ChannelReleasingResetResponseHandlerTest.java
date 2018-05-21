@@ -71,7 +71,7 @@ public class ChannelReleasingResetResponseHandlerTest
     }
 
     @Test
-    public void shouldReleaseChannelOnFailure()
+    public void shouldCloseAndReleaseChannelOnFailure()
     {
         ChannelPool pool = newChannelPoolMock();
         FakeClock clock = new FakeClock();
@@ -81,7 +81,7 @@ public class ChannelReleasingResetResponseHandlerTest
 
         handler.onFailure( new RuntimeException() );
 
-        verifyLastUsedTimestamp( 100 );
+        assertTrue( channel.closeFuture().isDone() );
         verify( pool ).release( eq( channel ) );
         assertTrue( releaseFuture.isDone() );
         assertFalse( releaseFuture.isCompletedExceptionally() );

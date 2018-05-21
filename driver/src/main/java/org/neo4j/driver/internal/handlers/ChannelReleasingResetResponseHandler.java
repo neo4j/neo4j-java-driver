@@ -45,9 +45,18 @@ public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
     }
 
     @Override
-    protected void resetCompleted( CompletableFuture<Void> completionFuture )
+    protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )
     {
-        setLastUsedTimestamp( channel, clock.millis() );
+        if ( success )
+        {
+            // update the last-used timestamp before returning the channel back to the pool
+            setLastUsedTimestamp( channel, clock.millis() );
+        }
+        else
+        {
+            // close the channel before returning it back to the pool if RESET failed
+            channel.close();
+        }
 
         Future<Void> released = pool.release( channel );
         released.addListener( ignore -> completionFuture.complete( null ) );

@@ -33,8 +33,10 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -359,6 +361,19 @@ class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         assertThrows( UnsupportedOperationException.class, dispatcher::handleAckFailureMessage );
+    }
+
+    @Test
+    void shouldMuteAndUnMuteAckFailure()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+        assertFalse( dispatcher.isAckFailureMuted() );
+
+        dispatcher.muteAckFailure();
+        assertTrue( dispatcher.isAckFailureMuted() );
+
+        dispatcher.unMuteAckFailure();
+        assertFalse( dispatcher.isAckFailureMuted() );
     }
 
     private static void verifyFailure( ResponseHandler handler )
