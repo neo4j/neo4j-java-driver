@@ -24,31 +24,57 @@ package org.neo4j.driver.v1;
 public interface Logger
 {
     /**
-     * Logs errors from this driver
+     * Logs errors from this driver.
+     * <p>
+     * Examples of errors logged using this method:
+     * <ul>
+     * <li>Network connection errors</li>
+     * <li>DNS resolution errors</li>
+     * <li>Cluster discovery errors</li>
+     * </ul>
      *
-     * @param message the error message
-     * @param cause the cause of the error
+     * @param message the error message.
+     * @param cause the cause of the error.
      */
     void error( String message, Throwable cause );
 
     /**
-     * Logs information from the driver
+     * Logs information from the driver.
+     * <p>
+     * Example of info messages logged using this method:
+     * <ul>
+     * <li>Driver creation and shutdown</li>
+     * <li>Cluster discovery progress</li>
+     * </ul>
      *
-     * @param message the information message
-     * @param params parameters used in the information message
+     * @param message the information message.
+     * @param params parameters used in the information message.
      */
     void info( String message, Object... params );
 
     /**
-     * Logs warnings that happened during using the driver
+     * Logs warnings that happened when using the driver.
+     * <p>
+     * Example of info messages logged using this method:
+     * <ul>
+     * <li>Usage of deprecated APIs</li>
+     * <li>Transaction retry failures</li>
+     * </ul>
      *
-     * @param message the warning message
-     * @param params parameters used in the warning message
+     * @param message the warning message.
+     * @param params parameters used in the warning message.
      */
     void warn( String message, Object... params );
 
     /**
      * Logs warnings that happened during using the driver
+     *
+     * <p>
+     * Example of info messages logged using this method:
+     * <ul>
+     * <li>Usage of deprecated APIs</li>
+     * <li>Transaction retry failures</li>
+     * </ul>
      *
      * @param message the warning message
      * @param cause the cause of the warning
@@ -57,8 +83,15 @@ public interface Logger
 
     /**
      * Logs bolt messages sent and received by this driver.
-     * It is only enabled when {@link Logger#isDebugEnabled()} returns {@code True}.
+     * It is only enabled when {@link Logger#isDebugEnabled()} returns {@code true}.
      * This logging level generates a lot of log entries.
+     * <p>
+     * Example of debug messages logged using this method:
+     * <ul>
+     * <li>Connection pool events, like creation, acquire and release of connections</li>
+     * <li>Messages sent to the database</li>
+     * <li>Messages received from the database</li>
+     * </ul>
      *
      * @param message the bolt message
      * @param params parameters used in generating the bolt message
@@ -67,8 +100,17 @@ public interface Logger
 
     /**
      * Logs binary sent and received by this driver.
-     * It is only enabled when {@link Logger#isTraceEnabled()} returns {@code True}.
+     * It is only enabled when {@link Logger#isTraceEnabled()} returns {@code true}.
      * This logging level generates huge amount of log entries.
+     *
+     * <p>
+     * Example of debug messages logged using this method:
+     * <ul>
+     * <li>Idle connection pings</li>
+     * <li>Server selection for load balancing</li>
+     * <li>Messages sent to the database with bytes in hex</li>
+     * <li>Messages received from the database with bytes in hex</li>
+     * </ul>
      *
      * @param message the bolt message in hex
      * @param params parameters used in generating the hex message

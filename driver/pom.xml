@@ -34,6 +34,13 @@
       <artifactId>HdrHistogram</artifactId>
     </dependency>
 
+    <!-- Optional dependencies -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <optional>true</optional>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.hamcrest</groupId>

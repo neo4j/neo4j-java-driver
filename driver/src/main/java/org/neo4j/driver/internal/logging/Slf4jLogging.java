@@ -18,29 +18,37 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import java.util.logging.Level;
+import org.slf4j.LoggerFactory;
 
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 /**
- * Internal implementation of the JUL.
- * <b>This class should not be used directly.</b> Please use {@link Logging#javaUtilLogging(Level)} factory method instead.
+ * Internal implementation of the SLF4J logging.
+ * <b>This class should not be used directly.</b> Please use {@link Logging#slf4j()} factory method instead.
  *
- * @see Logging#javaUtilLogging(Level)
+ * @see Logging#slf4j()
  */
-public class JULogging implements Logging
+public class Slf4jLogging implements Logging
 {
-    private final Level loggingLevel;
-
-    public JULogging( Level loggingLevel )
-    {
-        this.loggingLevel = loggingLevel;
-    }
-
     @Override
     public Logger getLog( String name )
     {
-        return new JULogger( name, loggingLevel );
+        return new Slf4jLogger( LoggerFactory.getLogger( name ) );
+    }
+
+    public static RuntimeException checkAvailability()
+    {
+        try
+        {
+            Class.forName( "org.slf4j.LoggerFactory" );
+            return null;
+        }
+        catch ( Throwable error )
+        {
+            return new IllegalStateException(
+                    "SLF4J logging is not available. Please add dependencies on slf4j-api and SLF4J binding (Logback, Log4j, etc.)",
+                    error );
+        }
     }
 }

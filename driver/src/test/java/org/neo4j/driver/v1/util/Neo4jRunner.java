@@ -26,19 +26,19 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 
 import static java.util.Arrays.asList;
+import static java.util.logging.Level.INFO;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.ConfigTest.deleteDefaultKnownCertFileIfExists;
+import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
@@ -56,8 +56,7 @@ public class Neo4jRunner
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
-    public static final Config DEFAULT_CONFIG = Config.build().withLogging( new ConsoleLogging( Level.INFO ) )
-            .toConfig();
+    public static final Config DEFAULT_CONFIG = Config.build().withLogging( console( INFO ) ).toConfig();
 
     public static final String USER = "neo4j";
     public static final String PASSWORD = "password";

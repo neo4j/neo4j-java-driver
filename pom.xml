@@ -62,6 +62,13 @@
         <version>2.1.10</version>
       </dependency>
 
+      <!-- Optional dependencies -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.25</version>
+      </dependency>
+
       <!-- Test dependencies -->
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -121,6 +128,12 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>2.9.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.2.3</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

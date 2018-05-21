@@ -24,7 +24,6 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -34,6 +33,7 @@ import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
 
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustAllCertificates;
+import static org.neo4j.driver.v1.Logging.javaUtilLogging;
 
 /**
  * A configuration class to config driver properties.
@@ -258,7 +258,7 @@ public class Config
      */
     public static class ConfigBuilder
     {
-        private Logging logging = new JULogging( Level.INFO );
+        private Logging logging = javaUtilLogging( Level.INFO );
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
@@ -275,10 +275,15 @@ public class Config
         private ConfigBuilder() {}
 
         /**
-         * Provide an alternative logging implementation for the driver to use. By default we use
-         * java util logging.
+         * Provide a logging implementation for the driver to use. Java logging framework {@link java.util.logging} with {@link Level#INFO} is used by default.
+         * Callers are expected to either implement {@link Logging} interface or provide one of the existing implementations available from static factory
+         * methods in the {@link Logging} interface.
+         * <p>
+         * Please see documentation in {@link Logging} for more information.
+         *
          * @param logging the logging instance to use
          * @return this builder
+         * @see Logging
          */
         public ConfigBuilder withLogging( Logging logging )
         {

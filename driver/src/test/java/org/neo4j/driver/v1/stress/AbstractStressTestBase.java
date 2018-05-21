@@ -45,7 +45,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
@@ -601,6 +600,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static class LoggerNameTrackingLogging implements Logging
     {
+        private final Logging consoleLogging = Logging.console( Level.FINE );
         private final Set<String> acquiredLoggerNames = new ConcurrentSet<>();
 
         @Override
@@ -609,7 +609,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
             acquiredLoggerNames.add( name );
             if ( DEBUG_LOGGING_ENABLED )
             {
-                return new ConsoleLogging.ConsoleLogger( name, Level.FINE );
+                return consoleLogging.getLog( name );
             }
             return DevNullLogger.DEV_NULL_LOGGER;
         }
