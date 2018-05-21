@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -97,7 +98,7 @@ public class ChannelConnectorImplIT
     @Test
     public void shouldSetupHandlers() throws Exception
     {
-        ChannelConnector connector = newConnector( neo4j.authToken(), SecurityPlan.forAllCertificates(), 10_000 );
+        ChannelConnector connector = newConnector( neo4j.authToken(), trustAllCertificates(), 10_000 );
 
         ChannelFuture channelFuture = connector.connect( neo4j.address(), bootstrap );
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
@@ -186,7 +187,7 @@ public class ChannelConnectorImplIT
     public void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception
     {
         // run with TLS so that TLS handshake is the very first operation after connection is established
-        testReadTimeoutOnConnect( SecurityPlan.forAllCertificates() );
+        testReadTimeoutOnConnect( trustAllCertificates() );
     }
 
     @Test
@@ -253,7 +254,7 @@ public class ChannelConnectorImplIT
 
     private ChannelConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
-        return newConnector( authToken, SecurityPlan.forAllCertificates(), connectTimeoutMillis );
+        return newConnector( authToken, trustAllCertificates(), connectTimeoutMillis );
     }
 
     private ChannelConnectorImpl newConnector( AuthToken authToken, SecurityPlan securityPlan,
@@ -261,5 +262,10 @@ public class ChannelConnectorImplIT
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, connectTimeoutMillis );
         return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock() );
+    }
+
+    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
+    {
+        return SecurityPlan.forAllCertificates( false );
     }
 }

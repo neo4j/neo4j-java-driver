@@ -765,6 +765,7 @@ public class Config
 
         private final Strategy strategy;
         private final File certFile;
+        private boolean hostnameVerificationEnabled;
 
         private TrustStrategy( Strategy strategy )
         {
@@ -787,9 +788,46 @@ public class Config
             return strategy;
         }
 
+        /**
+         * Return the configured certificate file.
+         *
+         * @return configured certificate or {@code null} if trust strategy does not require a certificate.
+         */
         public File certFile()
         {
             return certFile;
+        }
+
+        /**
+         * Check if hostname verification is enabled for this trust strategy.
+         *
+         * @return {@code true} if hostname verification has been enabled via {@link #withHostnameVerification()}, {@code false} otherwise.
+         */
+        public boolean isHostnameVerificationEnabled()
+        {
+            return hostnameVerificationEnabled;
+        }
+
+        /**
+         * Enable hostname verification for this trust strategy.
+         *
+         * @return the current trust strategy.
+         */
+        public TrustStrategy withHostnameVerification()
+        {
+            hostnameVerificationEnabled = true;
+            return this;
+        }
+
+        /**
+         * Disable hostname verification for this trust strategy.
+         *
+         * @return the current trust strategy.
+         */
+        public TrustStrategy withoutHostnameVerification()
+        {
+            hostnameVerificationEnabled = false;
+            return this;
         }
 
         /**

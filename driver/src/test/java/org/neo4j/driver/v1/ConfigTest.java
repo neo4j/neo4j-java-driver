@@ -23,21 +23,16 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.util.FileTools;
-
-import static java.lang.System.getProperty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ConfigTest
 {
-    private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ),
-            ".neo4j" + File.separator + "known_hosts" );
-
     @Test
     public void shouldDefaultToKnownCerts()
     {
@@ -297,12 +292,16 @@ public class ConfigTest
         assertEquals( 0, config.connectionAcquisitionTimeoutMillis() );
     }
 
-    public static void deleteDefaultKnownCertFileIfExists()
+    @Test
+    public void shouldEnableAndDisableHostnameVerificationOnTrustStrategy()
     {
-        if( DEFAULT_KNOWN_HOSTS.exists() )
-        {
-            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
-        }
-    }
+        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustAllCertificates();
+        assertFalse( trustStrategy.isHostnameVerificationEnabled() );
 
+        assertSame( trustStrategy, trustStrategy.withHostnameVerification() );
+        assertTrue( trustStrategy.isHostnameVerificationEnabled() );
+
+        assertSame( trustStrategy, trustStrategy.withoutHostnameVerification() );
+        assertFalse( trustStrategy.isHostnameVerificationEnabled() );
+    }
 }

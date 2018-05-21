@@ -19,10 +19,11 @@
 package org.neo4j.driver.v1.tck;
 
 import cucumber.api.CucumberOptions;
+import org.junit.AfterClass;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.driver.v1.util.TestNeo4j;
 
@@ -37,8 +38,11 @@ public class DriverComplianceIT
     @ClassRule
     public static TestNeo4j neo4j = new TestNeo4j();
 
-    public DriverComplianceIT() throws IOException
+    @AfterClass
+    public static void tearDownClass() throws Exception
     {
+        neo4j.stopDb();
+        Files.deleteIfExists( neo4j.tlsCertFile().toPath() );
+        Files.deleteIfExists( neo4j.tlsKeyFile().toPath() );
     }
-
 }

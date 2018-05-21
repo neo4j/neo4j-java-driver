@@ -481,4 +481,13 @@ public class ExamplesIT
             assertThat( logFileContent, containsString( randomString ) );
         }
     }
+
+    @Test
+    public void testHostnameVerificationExample()
+    {
+        try ( HostnameVerificationExample example = new HostnameVerificationExample( uri, USER, PASSWORD, neo4j.tlsCertFile() ) )
+        {
+            assertTrue( example.canConnect() );
+        }
+    }
 }

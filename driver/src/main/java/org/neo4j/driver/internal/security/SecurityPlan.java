@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -40,15 +39,15 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SecurityPlan
 {
-    public static SecurityPlan forAllCertificates() throws GeneralSecurityException, IOException
+    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification ) throws GeneralSecurityException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
 
-        return new SecurityPlan( true, sslContext, true );
+        return new SecurityPlan( true, sslContext, true, requiresHostnameVerification );
     }
 
-    public static SecurityPlan forCustomCASignedCertificates( File certFile )
+    public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification )
             throws GeneralSecurityException, IOException
     {
         // A certificate file is specified so we will load the certificates in the file
@@ -66,38 +65,40 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
 
-        return new SecurityPlan( true, sslContext, true );
+        return new SecurityPlan( true, sslContext, true, requiresHostnameVerification );
     }
 
-    public static SecurityPlan forSystemCASignedCertificates() throws NoSuchAlgorithmException, KeyStoreException
+    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification ) throws NoSuchAlgorithmException
     {
-        return new SecurityPlan( true, SSLContext.getDefault(), true );
+        return new SecurityPlan( true, SSLContext.getDefault(), true, requiresHostnameVerification );
     }
 
     @Deprecated
-    public static SecurityPlan forTrustOnFirstUse( File knownHosts, BoltServerAddress address, Logger logger )
+    public static SecurityPlan forTrustOnFirstUse( File knownHosts, boolean requiresHostnameVerification, BoltServerAddress address, Logger logger )
             throws IOException, KeyManagementException, NoSuchAlgorithmException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
 
-        return new SecurityPlan( true, sslContext, false );
+        return new SecurityPlan( true, sslContext, false, requiresHostnameVerification );
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlan( false, null, true );
+        return new SecurityPlan( false, null, true, false );
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
     private final boolean routingCompatible;
+    private final boolean requiresHostnameVerification;
 
-    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext, boolean routingCompatible )
+    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext, boolean routingCompatible, boolean requiresHostnameVerification )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
         this.routingCompatible = routingCompatible;
+        this.requiresHostnameVerification = requiresHostnameVerification;
     }
 
     public boolean requiresEncryption()
@@ -115,4 +116,8 @@ public class SecurityPlan
         return sslContext;
     }
 
+    public boolean requiresHostnameVerification()
+    {
+        return requiresHostnameVerification;
+    }
 }
