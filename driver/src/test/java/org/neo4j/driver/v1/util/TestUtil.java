@@ -47,8 +47,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
@@ -261,7 +261,7 @@ public final class TestUtil
     {
         doAnswer( invocation ->
         {
-            ResponseHandler commitHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            ResponseHandler commitHandler = invocation.getArgument( 3 );
             commitHandler.onSuccess( emptyMap() );
             return null;
         } ).when( connection ).runAndFlush( eq( statement ), any(), any(), any() );

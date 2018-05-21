@@ -52,7 +52,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -361,7 +361,7 @@ public class LoadBalancerTest
         ConnectionPool pool = mock( ConnectionPool.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).then( invocation ->
         {
-            BoltServerAddress requestedAddress = invocation.getArgumentAt( 0, BoltServerAddress.class );
+            BoltServerAddress requestedAddress = invocation.getArgument( 0 );
             if ( unavailableAddresses.contains( requestedAddress ) )
             {
                 return Futures.failedFuture( new ServiceUnavailableException( requestedAddress + " is unavailable!" ) );

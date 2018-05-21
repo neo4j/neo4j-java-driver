@@ -33,8 +33,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -312,7 +312,7 @@ public class ExplicitTransactionTest
 
         doAnswer( invocation ->
         {
-            ResponseHandler beginHandler = invocation.getArgumentAt( 3, ResponseHandler.class );
+            ResponseHandler beginHandler = invocation.getArgument( 3 );
             beginBehaviour.accept( beginHandler );
             return null;
         } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
