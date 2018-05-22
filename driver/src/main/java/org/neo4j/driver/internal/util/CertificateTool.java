@@ -48,18 +48,17 @@ public class CertificateTool
      */
     public static void saveX509Cert( String certStr, File certFile ) throws IOException
     {
-        BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) );
+        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) ) )
+        {
+            writer.write( BEGIN_CERT );
+            writer.newLine();
 
-        writer.write( BEGIN_CERT );
-        writer.newLine();
+            writer.write( certStr );
+            writer.newLine();
 
-        writer.write( certStr );
-        writer.newLine();
-
-        writer.write( END_CERT );
-        writer.newLine();
-
-        writer.close();
+            writer.write( END_CERT );
+            writer.newLine();
+        }
     }
 
     /**
@@ -85,23 +84,22 @@ public class CertificateTool
      */
     public static void saveX509Cert( Certificate[] certs, File certFile ) throws GeneralSecurityException, IOException
     {
-        BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) );
-
-        for ( Certificate cert : certs )
+        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( certFile ) ) )
         {
-            String certStr = Base64.getEncoder().encodeToString( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
+            for ( Certificate cert : certs )
+            {
+                String certStr = Base64.getEncoder().encodeToString( cert.getEncoded() ).replaceAll( "(.{64})", "$1\n" );
 
-            writer.write( BEGIN_CERT );
-            writer.newLine();
+                writer.write( BEGIN_CERT );
+                writer.newLine();
 
-            writer.write( certStr );
-            writer.newLine();
+                writer.write( certStr );
+                writer.newLine();
 
-            writer.write( END_CERT );
-            writer.newLine();
+                writer.write( END_CERT );
+                writer.newLine();
+            }
         }
-
-        writer.close();
     }
 
     /**
@@ -114,27 +112,29 @@ public class CertificateTool
      */
     public static void loadX509Cert( File certFile, KeyStore keyStore ) throws GeneralSecurityException, IOException
     {
-        BufferedInputStream inputStream = new BufferedInputStream( new FileInputStream( certFile ) );
-        CertificateFactory certFactory = CertificateFactory.getInstance( "X.509" );
-
-        int certCount = 0; // The file might contain multiple certs
-        while ( inputStream.available() > 0 )
+        try ( BufferedInputStream inputStream = new BufferedInputStream( new FileInputStream( certFile ) ) )
         {
-            try
+            CertificateFactory certFactory = CertificateFactory.getInstance( "X.509" );
+
+            int certCount = 0; // The file might contain multiple certs
+            while ( inputStream.available() > 0 )
             {
-                Certificate cert = certFactory.generateCertificate( inputStream );
-                certCount++;
-                loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
-            }
-            catch ( CertificateException e )
-            {
-                if ( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
+                try
                 {
-                    // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
-                    // second cert, at which point we fail
-                    return;
+                    Certificate cert = certFactory.generateCertificate( inputStream );
+                    certCount++;
+                    loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
                 }
-                throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(), e );
+                catch ( CertificateException e )
+                {
+                    if ( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
+                    {
+                        // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
+                        // second cert, at which point we fail
+                        return;
+                    }
+                    throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(), e );
+                }
             }
         }
     }
