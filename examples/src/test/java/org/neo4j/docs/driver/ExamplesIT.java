@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
@@ -483,8 +484,13 @@ public class ExamplesIT
     }
 
     @Test
-    public void testHostnameVerificationExample()
+    public void testHostnameVerificationExample() throws Exception
     {
+        if ( neo4j.version().lessThanOrEqual( ServerVersion.v3_1_0 ) )
+        {
+            return;
+        }
+
         try ( HostnameVerificationExample example = new HostnameVerificationExample( uri, USER, PASSWORD, neo4j.tlsCertFile() ) )
         {
             assertTrue( example.canConnect() );
