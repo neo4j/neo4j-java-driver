@@ -484,9 +484,9 @@ public class ExamplesIT
     }
 
     @Test
-    public void testHostnameVerificationExample() throws Exception
+    public void testHostnameVerificationExample()
     {
-        if ( neo4j.version().lessThanOrEqual( ServerVersion.v3_1_0 ) )
+        if ( neo4j.version().lessThanOrEqual( ServerVersion.v3_2_0 ) )
         {
             return;
         }
