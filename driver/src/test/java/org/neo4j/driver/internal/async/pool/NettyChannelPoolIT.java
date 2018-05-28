@@ -47,14 +47,13 @@ import org.neo4j.driver.v1.util.Neo4jRunner;
 import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -102,7 +101,7 @@ public class NettyChannelPoolIT
         assertTrue( acquireFuture.isSuccess() );
         Channel channel = acquireFuture.getNow();
         assertNotNull( channel );
-        verify( poolHandler ).channelCreated( argThat( is( channel ) ), any() );
+        verify( poolHandler ).channelCreated( eq( channel ), any() );
         verify( poolHandler, never() ).channelReleased( channel );
 
         Future<Void> releaseFuture = pool.release( channel );

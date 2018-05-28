@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.neo4j.driver.v1.Logger;
@@ -31,23 +31,23 @@ import static io.netty.buffer.ByteBufUtil.hexDump;
 import static io.netty.buffer.Unpooled.buffer;
 import static io.netty.buffer.Unpooled.copyShort;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
-public class ChunkDecoderTest
+class ChunkDecoderTest
 {
     private ByteBuf buffer;
     private EmbeddedChannel channel = new EmbeddedChannel( newChunkDecoder() );
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( buffer != null )
         {
@@ -60,7 +60,7 @@ public class ChunkDecoderTest
     }
 
     @Test
-    public void shouldDecodeFullChunk()
+    void shouldDecodeFullChunk()
     {
         // whole chunk with header and body arrives at once
         ByteBuf input = buffer();
@@ -84,7 +84,7 @@ public class ChunkDecoderTest
     }
 
     @Test
-    public void shouldDecodeSplitChunk()
+    void shouldDecodeSplitChunk()
     {
         // first part of the chunk contains size header and some bytes
         ByteBuf input1 = buffer();
@@ -125,7 +125,7 @@ public class ChunkDecoderTest
     }
 
     @Test
-    public void shouldDecodeEmptyChunk()
+    void shouldDecodeEmptyChunk()
     {
         // chunk contains just the size header which is zero
         ByteBuf input = copyShort( 0 );
@@ -139,7 +139,7 @@ public class ChunkDecoderTest
     }
 
     @Test
-    public void shouldLogEmptyChunkOnTraceLevel()
+    void shouldLogEmptyChunkOnTraceLevel()
     {
         Logger logger = newTraceLogger();
         channel = new EmbeddedChannel( new ChunkDecoder( newLogging( logger ) ) );
@@ -159,7 +159,7 @@ public class ChunkDecoderTest
     }
 
     @Test
-    public void shouldLogNonEmptyChunkOnTraceLevel()
+    void shouldLogNonEmptyChunkOnTraceLevel()
     {
         Logger logger = newTraceLogger();
         channel = new EmbeddedChannel( new ChunkDecoder( newLogging( logger ) ) );

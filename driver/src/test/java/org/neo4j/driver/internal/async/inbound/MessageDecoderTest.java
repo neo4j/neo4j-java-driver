@@ -19,27 +19,27 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
 
-public class MessageDecoderTest
+class MessageDecoderTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel( new MessageDecoder() );
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldDecodeMessageWithSingleChunk()
+    void shouldDecodeMessageWithSingleChunk()
     {
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3, 4, 5} ) ) );
         assertTrue( channel.writeInbound( wrappedBuffer( new byte[0] ) ) );
@@ -50,7 +50,7 @@ public class MessageDecoderTest
     }
 
     @Test
-    public void shouldDecodeMessageWithMultipleChunks()
+    void shouldDecodeMessageWithMultipleChunks()
     {
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3} ) ) );
         assertFalse( channel.writeInbound( wrappedBuffer( new byte[]{4, 5} ) ) );
@@ -63,7 +63,7 @@ public class MessageDecoderTest
     }
 
     @Test
-    public void shouldDecodeMultipleConsecutiveMessages()
+    void shouldDecodeMultipleConsecutiveMessages()
     {
         channel.writeInbound( wrappedBuffer( new byte[]{1, 2, 3} ) );
         channel.writeInbound( wrappedBuffer( new byte[0] ) );

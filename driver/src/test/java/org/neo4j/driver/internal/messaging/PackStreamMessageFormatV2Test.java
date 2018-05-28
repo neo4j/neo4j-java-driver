@@ -53,7 +53,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1.MSG_RECORD;
@@ -417,7 +417,7 @@ public class PackStreamMessageFormatV2Test
         MessageHandler messageHandler = mock( MessageHandler.class );
         doAnswer( invocation ->
         {
-            Value[] arg = invocation.getArgumentAt( 0, Value[].class );
+            Value[] arg = invocation.getArgument( 0 );
             Collections.addAll( values, arg );
             return null;
         } ).when( messageHandler ).handleRecordMessage( any() );

@@ -37,8 +37,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -76,7 +76,7 @@ public class LeakLoggingNetworkSessionTest
         finalize( session );
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
-        verify( log ).error( messageCaptor.capture(), any( Throwable.class ) );
+        verify( log ).error( messageCaptor.capture(), any() );
 
         assertEquals( 1, messageCaptor.getAllValues().size() );
 

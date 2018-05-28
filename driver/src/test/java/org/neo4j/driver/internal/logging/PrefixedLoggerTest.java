@@ -27,8 +27,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.anyVararg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -90,7 +90,7 @@ public class PrefixedLoggerTest
         PrefixedLogger logger = new PrefixedLogger( delegate );
         logger.debug( MESSAGE );
 
-        verify( delegate, never() ).debug( anyString(), anyVararg() );
+        verify( delegate, never() ).debug( anyString(), any() );
     }
 
     @Test
@@ -101,7 +101,7 @@ public class PrefixedLoggerTest
         PrefixedLogger logger = new PrefixedLogger( delegate );
         logger.trace( MESSAGE );
 
-        verify( delegate, never() ).trace( anyString(), anyVararg() );
+        verify( delegate, never() ).trace( anyString(), any() );
     }
 
     @Test

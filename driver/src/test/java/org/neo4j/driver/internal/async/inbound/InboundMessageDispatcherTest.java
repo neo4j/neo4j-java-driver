@@ -19,11 +19,10 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.Channel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,13 +33,11 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static java.util.Collections.emptyMap;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -51,41 +48,25 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InboundMessageDispatcherTest
+class InboundMessageDispatcherTest
 {
     private static final String FAILURE_CODE = "Neo.ClientError.Security.Unauthorized";
     private static final String FAILURE_MESSAGE = "Error Message";
 
     @Test
-    public void shouldFailWhenCreatedWithNullChannel()
+    void shouldFailWhenCreatedWithNullChannel()
     {
-        try
-        {
-            new InboundMessageDispatcher( null, DEV_NULL_LOGGING );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NullPointerException.class ) );
-        }
+        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( null, DEV_NULL_LOGGING ) );
     }
 
     @Test
-    public void shouldFailWhenCreatedWithNullLogging()
+    void shouldFailWhenCreatedWithNullLogging()
     {
-        try
-        {
-            new InboundMessageDispatcher( mock( Channel.class ), null );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NullPointerException.class ) );
-        }
+        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( mock( Channel.class ), null ) );
     }
 
     @Test
-    public void shouldDequeHandlerOnSuccess()
+    void shouldDequeHandlerOnSuccess()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -103,7 +84,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldDequeHandlerOnFailure()
+    void shouldDequeHandlerOnFailure()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -121,7 +102,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldSendAckFailureOnFailure()
+    void shouldSendAckFailureOnFailure()
     {
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
@@ -135,7 +116,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldNotSendAckFailureOnFailureWhenMuted()
+    void shouldNotSendAckFailureOnFailureWhenMuted()
     {
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
@@ -150,7 +131,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldUnMuteAckFailureWhenNotMuted()
+    void shouldUnMuteAckFailureWhenNotMuted()
     {
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
@@ -165,7 +146,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldSendAckFailureAfterUnMute()
+    void shouldSendAckFailureAfterUnMute()
     {
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
@@ -187,7 +168,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldClearFailureOnAckFailureSuccess()
+    void shouldClearFailureOnAckFailureSuccess()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -195,13 +176,13 @@ public class InboundMessageDispatcherTest
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        dispatcher.handleSuccessMessage( Collections.<String,Value>emptyMap() );
+        dispatcher.handleSuccessMessage( emptyMap() );
 
         assertNull( dispatcher.currentError() );
     }
 
     @Test
-    public void shouldPeekHandlerOnRecord()
+    void shouldPeekHandlerOnRecord()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -224,7 +205,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailAllHandlersOnFatalError()
+    void shouldFailAllHandlersOnFatalError()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -246,7 +227,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailNewHandlerAfterFatalError()
+    void shouldFailNewHandlerAfterFatalError()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -260,7 +241,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldDequeHandlerOnIgnored()
+    void shouldDequeHandlerOnIgnored()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -272,7 +253,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailHandlerOnIgnoredMessageWithExistingError()
+    void shouldFailHandlerOnIgnoredMessageWithExistingError()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -290,7 +271,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailHandlerOnIgnoredMessageWhenHandlingReset()
+    void shouldFailHandlerOnIgnoredMessageWhenHandlingReset()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -303,7 +284,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset()
+    void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -315,7 +296,7 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened()
+    void shouldDequeAndFailHandlerOnIgnoredWhenErrorHappened()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -333,99 +314,51 @@ public class InboundMessageDispatcherTest
     }
 
     @Test
-    public void shouldNotSupportInitMessage()
+    void shouldNotSupportInitMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handleInitMessage( "Client", emptyMap() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, () -> dispatcher.handleInitMessage( "Client", emptyMap() ) );
     }
 
     @Test
-    public void shouldNotSupportRunMessage()
+    void shouldNotSupportRunMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handleRunMessage( "RETURN 1", emptyMap() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, () -> dispatcher.handleRunMessage( "RETURN 1", emptyMap() ) );
     }
 
     @Test
-    public void shouldNotSupportPullAllMessage()
+    void shouldNotSupportPullAllMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handlePullAllMessage();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, dispatcher::handlePullAllMessage );
     }
 
     @Test
-    public void shouldNotSupportDiscardAllMessage()
+    void shouldNotSupportDiscardAllMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handleDiscardAllMessage();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, dispatcher::handleDiscardAllMessage );
     }
 
     @Test
-    public void shouldNotSupportResetMessage()
+    void shouldNotSupportResetMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handleResetMessage();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, dispatcher::handleResetMessage );
     }
 
     @Test
-    public void shouldNotSupportAckFailureMessage()
+    void shouldNotSupportAckFailureMessage()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        try
-        {
-            dispatcher.handleAckFailureMessage();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, dispatcher::handleAckFailureMessage );
     }
 
     private static void verifyFailure( ResponseHandler handler )
