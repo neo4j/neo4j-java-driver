@@ -39,13 +39,13 @@ public class ResetResponseHandler implements ResponseHandler
     @Override
     public final void onSuccess( Map<String,Value> metadata )
     {
-        resetCompleted();
+        resetCompleted( true );
     }
 
     @Override
     public final void onFailure( Throwable error )
     {
-        resetCompleted();
+        resetCompleted( false );
     }
 
     @Override
@@ -54,13 +54,13 @@ public class ResetResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    private void resetCompleted()
+    private void resetCompleted( boolean success )
     {
         messageDispatcher.unMuteAckFailure();
-        resetCompleted( completionFuture );
+        resetCompleted( completionFuture, success );
     }
 
-    protected void resetCompleted( CompletableFuture<Void> completionFuture )
+    protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )
     {
         completionFuture.complete( null );
     }

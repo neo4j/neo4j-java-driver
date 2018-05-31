@@ -23,6 +23,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
 public class AckFailureResponseHandler implements ResponseHandler
 {
@@ -42,10 +43,21 @@ public class AckFailureResponseHandler implements ResponseHandler
     @Override
     public void onFailure( Throwable error )
     {
+        if ( messageDispatcher.isAckFailureMuted() )
+        {
+            // RESET cancelled this ACK_FAILURE and made the database send an IGNORED message
+            // this is not a protocol violation and database has all the connection stated cleared now
+            messageDispatcher.clearCurrentError();
+        }
+        else
+        {
+            throw new ClientException( "Unable to acknowledge the previous error. Connection will be closed", error );
+        }
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
+        throw new UnsupportedOperationException();
     }
 }
