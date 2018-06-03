@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
@@ -57,6 +58,7 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 public final class TestUtil
 {
     private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
+    private static final String ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
 
     private TestUtil()
     {
@@ -255,6 +257,17 @@ public final class TestUtil
                 fail( "Interrupted while waiting" );
             }
         }
+    }
+
+    public static String randomString( int size )
+    {
+        StringBuilder sb = new StringBuilder( size );
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for ( int i = 0; i < size; i++ )
+        {
+            sb.append( ALPHANUMERICS.charAt( random.nextInt( ALPHANUMERICS.length() ) ) );
+        }
+        return sb.toString();
     }
 
     private static void setupSuccessfulPullAll( Connection connection, String statement )
