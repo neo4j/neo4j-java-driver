@@ -188,6 +188,31 @@ public class HandshakeHandlerTest
     }
 
     @Test
+    public void shouldHandleDecoderExceptionWithoutCause()
+    {
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        HandshakeHandler handler = newHandler( handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
+
+        DecoderException decoderException = new DecoderException( "Unable to decode a message" );
+        channel.pipeline().fireExceptionCaught( decoderException );
+
+        try
+        {
+            // promise should fail
+            await( handshakeCompletedPromise );
+            fail( "Exception expected" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            assertEquals( decoderException, e.getCause() );
+        }
+
+        // channel should be closed
+        assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
     public void shouldTranslateSSLHandshakeException()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();

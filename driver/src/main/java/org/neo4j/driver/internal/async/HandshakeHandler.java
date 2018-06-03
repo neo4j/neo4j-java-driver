@@ -165,18 +165,23 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
 
     private static Throwable transformError( Throwable error )
     {
-        Throwable cause = error instanceof DecoderException ? error.getCause() : error;
-        if ( cause instanceof ServiceUnavailableException )
+        if ( error instanceof DecoderException && error.getCause() != null )
         {
-            return cause;
+            // unwrap the DecoderException if it has a cause
+            error = error.getCause();
         }
-        else if ( cause instanceof SSLHandshakeException )
+
+        if ( error instanceof ServiceUnavailableException )
         {
-            return new SecurityException( "Failed to establish secured connection with the server", cause );
+            return error;
+        }
+        else if ( error instanceof SSLHandshakeException )
+        {
+            return new SecurityException( "Failed to establish secured connection with the server", error );
         }
         else
         {
-            return new ServiceUnavailableException( "Failed to establish connection with the server", cause );
+            return new ServiceUnavailableException( "Failed to establish connection with the server", error );
         }
     }
 }
