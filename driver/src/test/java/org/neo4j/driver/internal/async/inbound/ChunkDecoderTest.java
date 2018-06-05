@@ -182,6 +182,22 @@ public class ChunkDecoderTest
         assertByteBufEquals( wrappedBuffer( bytes ), channel.readInbound() );
     }
 
+    @Test
+    public void shouldDecodeMaxSizeChunk()
+    {
+        byte[] message = new byte[0xFFFF];
+
+        ByteBuf input = buffer();
+        input.writeShort( message.length ); // chunk header
+        input.writeBytes( message ); // chunk body
+
+        assertTrue( channel.writeInbound( input ) );
+        assertTrue( channel.finish() );
+
+        assertEquals( 1, channel.inboundMessages().size() );
+        assertByteBufEquals( wrappedBuffer( message ), channel.readInbound() );
+    }
+
     private static ChunkDecoder newChunkDecoder()
     {
         return new ChunkDecoder( DEV_NULL_LOGGING );
