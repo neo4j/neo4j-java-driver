@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
@@ -39,11 +38,12 @@ import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.tck.tck.util.runners.CypherStatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StatementRunner;
 import org.neo4j.driver.v1.tck.tck.util.runners.StringRunner;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.tck.Environment.driver;
 import static org.neo4j.driver.v1.tck.Environment.expectedBoltValue;
 import static org.neo4j.driver.v1.tck.Environment.expectedJavaValue;
 import static org.neo4j.driver.v1.tck.Environment.listOfObjects;
@@ -77,9 +77,9 @@ public class DriverComplianceSteps
     }
 
     @Given( "^a String of size (\\d+)$" )
-    public void a_String_of_size( long size ) throws Throwable
+    public void a_String_of_size( int size ) throws Throwable
     {
-        expectedJavaValue = getRandomString( size );
+        expectedJavaValue = TestUtil.randomString( size );
         expectedBoltValue = Values.value( expectedJavaValue );
     }
 
@@ -189,18 +189,6 @@ public class DriverComplianceSteps
 
             assertThat( resultJavaValue, equalTo( expectedJavaValue ) );
         }
-    }
-
-    public String getRandomString( long size )
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-        String alphabet = "abcdefghijklmnopqrstuvwxyz";
-        Random random = new Random();
-        while ( size-- > 0 )
-        {
-            stringBuilder.append( alphabet.charAt( random.nextInt( alphabet.length() ) ) );
-        }
-        return stringBuilder.toString();
     }
 
     public List<Object> getListOfRandomsOfTypes( Type type, long size )

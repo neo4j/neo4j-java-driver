@@ -118,6 +118,18 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
+    public void shouldHandleCodecExceptionWithoutCause()
+    {
+        CodecException codecException = new CodecException( "Unable to encode or decode message" );
+        channel.pipeline().fireExceptionCaught( codecException );
+
+        Throwable error = messageDispatcher.currentError();
+
+        assertEquals( codecException, error );
+        assertFalse( channel.isOpen() );
+    }
+
+    @Test
     public void shouldHandleIOException()
     {
         IOException ioException = new IOException( "Write or read failed" );

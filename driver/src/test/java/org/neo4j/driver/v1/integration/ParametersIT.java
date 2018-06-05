@@ -24,6 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -35,11 +36,15 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.TestUtil;
 
+import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -52,6 +57,8 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 public class ParametersIT
 {
+    private static final int LONG_VALUE_SIZE = 1_000_000;
+
     @Rule
     public TestNeo4jSession session = new TestNeo4jSession();
 
@@ -451,6 +458,35 @@ public class ParametersIT
         expectIOExceptionWithMessage( mapValue, "Unknown type: PATH" );
     }
 
+    @Test
+    public void shouldSendAndReceiveLongString()
+    {
+        String string = TestUtil.randomString( LONG_VALUE_SIZE );
+        testSendAndReceiveValue( string );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLongListOfLongs()
+    {
+        List<Long> longs = ThreadLocalRandom.current()
+                .longs( LONG_VALUE_SIZE )
+                .boxed()
+                .collect( toList() );
+
+        testSendAndReceiveValue( longs );
+    }
+
+    @Test
+    public void shouldSendAndReceiveLongArrayOfBytes()
+    {
+        assumeTrue( supportsBytes() );
+
+        byte[] bytes = new byte[LONG_VALUE_SIZE];
+        ThreadLocalRandom.current().nextBytes( bytes );
+
+        testSendAndReceiveValue( bytes );
+    }
+
     private void testBytesProperty( byte[] array )
     {
         assumeTrue( supportsBytes() );
@@ -508,5 +544,12 @@ public class ParametersIT
         {
             fail( "Expecting a ServiceUnavailableException but got " + e );
         }
+    }
+
+    private void testSendAndReceiveValue( Object value )
+    {
+        StatementResult result = session.run( "RETURN $value", singletonMap( "value", value ) );
+        Object receivedValue = result.single().get( 0 ).asObject();
+        assertArrayEquals( new Object[]{value}, new Object[]{receivedValue} );
     }
 }

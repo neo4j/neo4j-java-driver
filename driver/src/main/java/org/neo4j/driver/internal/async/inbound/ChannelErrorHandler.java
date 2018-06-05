@@ -103,9 +103,9 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
 
     private static Throwable transformError( Throwable error )
     {
-        if ( error instanceof CodecException )
+        if ( error instanceof CodecException && error.getCause() != null )
         {
-            // unwrap exception from message encoder/decoder
+            // unwrap the CodecException if it has a cause
             error = error.getCause();
         }
 

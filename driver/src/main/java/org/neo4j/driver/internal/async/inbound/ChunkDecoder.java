@@ -29,11 +29,12 @@ import org.neo4j.driver.v1.Logging;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    private static final int MAX_FRAME_LENGTH = Short.MAX_VALUE;
+    private static final int MAX_FRAME_BODY_LENGTH = 0xFFFF;
     private static final int LENGTH_FIELD_OFFSET = 0;
     private static final int LENGTH_FIELD_LENGTH = 2;
     private static final int LENGTH_ADJUSTMENT = 0;
     private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_LENGTH;
+    private static final int MAX_FRAME_LENGTH = LENGTH_FIELD_LENGTH + MAX_FRAME_BODY_LENGTH;
 
     private final Logging logging;
     private Logger log;
