@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -27,13 +27,13 @@ import java.time.ZonedDateTime;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DateTimeValueTest
+class DateTimeValueTest
 {
     @Test
-    public void shouldHaveCorrectType()
+    void shouldHaveCorrectType()
     {
         ZonedDateTime dateTime = ZonedDateTime.of( 1991, 2, 24, 12, 0, 0, 999_000, ZoneOffset.ofHours( -5 ) );
         DateTimeValue dateTimeValue = new DateTimeValue( dateTime );
@@ -41,7 +41,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldSupportAsObject()
+    void shouldSupportAsObject()
     {
         ZonedDateTime dateTime = ZonedDateTime.of( 2015, 8, 2, 23, 59, 59, 999_999, ZoneId.of( "Europe/Stockholm" ) );
         DateTimeValue dateTimeValue = new DateTimeValue( dateTime );
@@ -49,7 +49,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldSupportAsZonedDateTime()
+    void shouldSupportAsZonedDateTime()
     {
         ZonedDateTime dateTime = ZonedDateTime.of( 1822, 9, 24, 9, 23, 57, 123, ZoneOffset.ofHoursMinutes( 12, 15 ) );
         DateTimeValue dateTimeValue = new DateTimeValue( dateTime );
@@ -57,18 +57,11 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldNotSupportAsLong()
+    void shouldNotSupportAsLong()
     {
         ZonedDateTime dateTime = ZonedDateTime.now();
         DateTimeValue dateTimeValue = new DateTimeValue( dateTime );
 
-        try
-        {
-            dateTimeValue.asLong();
-            fail( "Exception expected" );
-        }
-        catch ( Uncoercible ignore )
-        {
-        }
+        assertThrows( Uncoercible.class, dateTimeValue::asLong );
     }
 }

@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -35,24 +35,24 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class RoundRobinLoadBalancingStrategyTest
+class RoundRobinLoadBalancingStrategyTest
 {
     private final RoundRobinLoadBalancingStrategy strategy = new RoundRobinLoadBalancingStrategy( DEV_NULL_LOGGING );
 
     @Test
-    public void shouldHandleEmptyReadersArray()
+    void shouldHandleEmptyReadersArray()
     {
         assertNull( strategy.selectReader( new BoltServerAddress[0] ) );
     }
 
     @Test
-    public void shouldHandleEmptyWritersArray()
+    void shouldHandleEmptyWritersArray()
     {
         assertNull( strategy.selectWriter( new BoltServerAddress[0] ) );
     }
 
     @Test
-    public void shouldHandleSingleReader()
+    void shouldHandleSingleReader()
     {
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
 
@@ -60,7 +60,7 @@ public class RoundRobinLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleSingleWriter()
+    void shouldHandleSingleWriter()
     {
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
 
@@ -68,7 +68,7 @@ public class RoundRobinLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldReturnReadersInRoundRobinOrder()
+    void shouldReturnReadersInRoundRobinOrder()
     {
         BoltServerAddress address1 = new BoltServerAddress( "server-1", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "server-2", 2 );
@@ -89,7 +89,7 @@ public class RoundRobinLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldReturnWriterInRoundRobinOrder()
+    void shouldReturnWriterInRoundRobinOrder()
     {
         BoltServerAddress address1 = new BoltServerAddress( "server-1", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "server-2", 2 );
@@ -107,7 +107,7 @@ public class RoundRobinLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldTraceLogWhenNoAddressSelected()
+    void shouldTraceLogWhenNoAddressSelected()
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
@@ -123,7 +123,7 @@ public class RoundRobinLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldTraceLogSelectedAddress()
+    void shouldTraceLogSelectedAddress()
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );

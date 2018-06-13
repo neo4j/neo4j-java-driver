@@ -21,23 +21,21 @@ package org.neo4j.driver.internal.handlers;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyMap;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 
-public class PingResponseHandlerTest
+class PingResponseHandlerTest
 {
     @Test
-    public void shouldResolvePromiseOnSuccess()
+    void shouldResolvePromiseOnSuccess()
     {
         Promise<Boolean> promise = newPromise();
         PingResponseHandler handler = newHandler( promise );
@@ -49,7 +47,7 @@ public class PingResponseHandlerTest
     }
 
     @Test
-    public void shouldResolvePromiseOnFailure()
+    void shouldResolvePromiseOnFailure()
     {
         Promise<Boolean> promise = newPromise();
         PingResponseHandler handler = newHandler( promise );
@@ -61,19 +59,11 @@ public class PingResponseHandlerTest
     }
 
     @Test
-    public void shouldNotSupportRecordMessages()
+    void shouldNotSupportRecordMessages()
     {
         PingResponseHandler handler = newHandler( newPromise() );
 
-        try
-        {
-            handler.onRecord( new Value[0] );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( new Value[0] ) );
     }
 
     private static Promise<Boolean> newPromise()

@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class InternalInputPositionTest
+class InternalInputPositionTest
 {
     @Test
-    public void shouldBehaveAsExpected()
+    void shouldBehaveAsExpected()
     {
         // GIVEN, WHEN
         InternalInputPosition position = new InternalInputPosition( 0, 2, 1 );

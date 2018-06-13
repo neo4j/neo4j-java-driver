@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,12 +44,11 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
@@ -59,13 +56,10 @@ import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalStatementResultTest
+class InternalStatementResultTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void iterationShouldWorksAsExpected()
+    void iterationShouldWorksAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -83,14 +77,11 @@ public class InternalStatementResultTest
         assertThat( values( result.next() ), equalTo( asList( value( "v1-3" ), value( "v2-3" ) ) ) );
         assertFalse( result.hasNext() );
 
-        expectedException.expect( NoSuchRecordException.class );
-
-        // WHEN
-        assertNull( result.next() );
+        assertThrows( NoSuchRecordException.class, result::next );
     }
 
     @Test
-    public void firstOfFieldNameShouldWorkAsExpected()
+    void firstOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -101,7 +92,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void firstOfFieldIndexShouldWorkAsExpected()
+    void firstOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -112,51 +103,39 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singlePastFirstShouldFail()
+    void singlePastFirstShouldFail()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
         result.next();
         result.next();
 
-
         // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // THEN
-        result.single();
+        assertThrows( NoSuchRecordException.class, result::single );
     }
 
     @Test
-    public void singleNoneShouldFail()
+    void singleNoneShouldFail()
     {
         // GIVEN
         StatementResult result = createResult( 0 );
 
-
         // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // THEN
-        result.single();
+        assertThrows( NoSuchRecordException.class, result::single );
     }
 
     @Test
-    public void singleWhenMoreThanOneShouldFail()
+    void singleWhenMoreThanOneShouldFail()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
 
-
         // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // THEN
-        result.single();
+        assertThrows( NoSuchRecordException.class, result::single );
     }
 
     @Test
-    public void singleOfFieldNameShouldWorkAsExpected()
+    void singleOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 1 );
@@ -167,7 +146,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singleOfFieldIndexShouldWorkAsExpected()
+    void singleOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 1 );
@@ -178,45 +157,36 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singleShouldWorkAsExpected()
+    void singleShouldWorkAsExpected()
     {
         assertNotNull( createResult( 1 ).single() );
     }
 
     @Test
-    public void singleShouldThrowOnBigResult()
+    void singleShouldThrowOnBigResult()
     {
-        // Expect
-        expectedException.expect( NoSuchRecordException.class );
-
-        // When
-        createResult( 42 ).single();
+        assertThrows( NoSuchRecordException.class, () -> createResult( 42 ).single() );
     }
 
     @Test
-    public void singleShouldThrowOnEmptyResult()
+    void singleShouldThrowOnEmptyResult()
     {
-        // Expect
-        expectedException.expect( NoSuchRecordException.class );
-
-        // When
-        createResult( 0 ).single();
+        assertThrows( NoSuchRecordException.class, () -> createResult( 0 ).single() );
     }
 
     @Test
-    public void singleShouldThrowOnConsumedResult()
+    void singleShouldThrowOnConsumedResult()
     {
-        // Expect
-        expectedException.expect( NoSuchRecordException.class );
-
-        // When
-        StatementResult result = createResult( 2 );
-        result.consume();
-        result.single();
+        assertThrows( NoSuchRecordException.class, () ->
+        {
+            StatementResult result = createResult( 2 );
+            result.consume();
+            result.single();
+        } );
     }
 
     @Test
-    public void shouldConsumeTwice()
+    void shouldConsumeTwice()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
@@ -230,7 +200,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void shouldList()
+    void shouldList()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
@@ -241,7 +211,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void shouldListTwice()
+    void shouldListTwice()
     {
         // GIVEN
         StatementResult result = createResult( 2 );
@@ -254,7 +224,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singleShouldNotThrowOnPartiallyConsumedResult()
+    void singleShouldNotThrowOnPartiallyConsumedResult()
     {
         // Given
         StatementResult result = createResult( 2 );
@@ -265,24 +235,16 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void singleShouldConsumeIfFailing()
+    void singleShouldConsumeIfFailing()
     {
-        // Given
         StatementResult result = createResult( 2 );
 
-        try
-        {
-            result.single();
-            fail( "Exception expected" );
-        }
-        catch ( NoSuchRecordException e )
-        {
-            assertFalse( result.hasNext() );
-        }
+        assertThrows( NoSuchRecordException.class, result::single );
+        assertFalse( result.hasNext() );
     }
 
     @Test
-    public void retainShouldWorkAsExpected()
+    void retainShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -296,7 +258,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void retainAndMapByKeyShouldWorkAsExpected()
+    void retainAndMapByKeyShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -310,7 +272,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void retainAndMapByIndexShouldWorkAsExpected()
+    void retainAndMapByIndexShouldWorkAsExpected()
     {
         // GIVEN
         StatementResult result = createResult( 3 );
@@ -324,7 +286,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void accessingOutOfBoundsShouldBeNull()
+    void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
         StatementResult result = createResult( 1 );
@@ -340,7 +302,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void accessingKeysWithoutCallingNextShouldNotFail()
+    void accessingKeysWithoutCallingNextShouldNotFail()
     {
         // GIVEN
         StatementResult result = createResult( 11 );
@@ -353,7 +315,7 @@ public class InternalStatementResultTest
     }
 
     @Test
-    public void shouldPeekIntoTheFuture()
+    void shouldPeekIntoTheFuture()
     {
         // WHEN
         StatementResult result = createResult( 2 );
@@ -371,23 +333,17 @@ public class InternalStatementResultTest
         result.next();
 
         // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // WHEN
-        result.peek();
+        assertThrows( NoSuchRecordException.class, result::peek );
     }
 
     @Test
-    public void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
+    void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
     {
         // GIVEN
         StatementResult result = createResult( 0 );
 
         // THEN
-        expectedException.expect( NoSuchRecordException.class );
-
-        // WHEN
-        Record future = result.peek();
+        assertThrows( NoSuchRecordException.class, result::peek );
     }
 
     private StatementResult createResult( int numberOfRecords )

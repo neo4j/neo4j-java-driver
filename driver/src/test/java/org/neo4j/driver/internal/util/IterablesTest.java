@@ -18,59 +18,45 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IterablesTest
+class IterablesTest
 {
     @Test
-    public void shouldCreateHashMapWithExpectedSize()
+    void shouldCreateHashMapWithExpectedSize()
     {
         assertNotNull( Iterables.newHashMapWithSize( 42 ) );
     }
 
     @Test
-    public void shouldCreateLinkedHashMapWithExpectedSize()
+    void shouldCreateLinkedHashMapWithExpectedSize()
     {
         assertNotNull( Iterables.newLinkedHashMapWithSize( 42 ) );
     }
 
     @Test
-    public void shouldThrowWhenNegativeHashMapSizeGiven()
+    void shouldThrowWhenNegativeHashMapSizeGiven()
     {
-        try
-        {
-            Iterables.newHashMapWithSize( -42 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalArgumentException ignore )
-        {
-        }
+        assertThrows( IllegalArgumentException.class, () -> Iterables.newHashMapWithSize( -42 ) );
     }
 
     @Test
-    public void shouldThrowWhenNegativeLinkedHashMapSizeGiven()
+    void shouldThrowWhenNegativeLinkedHashMapSizeGiven()
     {
-        try
-        {
-            Iterables.newLinkedHashMapWithSize( -42 );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalArgumentException ignore )
-        {
-        }
+        assertThrows( IllegalArgumentException.class, () -> Iterables.newLinkedHashMapWithSize( -42 ) );
     }
 
     @Test
-    public void shouldReturnEmptyQueue()
+    void shouldReturnEmptyQueue()
     {
         Queue<Object> queue = Iterables.emptyQueue();
         assertEquals( 0, queue.size() );
@@ -78,27 +64,12 @@ public class IterablesTest
         assertNull( queue.peek() );
         assertNull( queue.poll() );
 
-        try
-        {
-            queue.add( "Hello" );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedOperationException ignore )
-        {
-        }
-
-        try
-        {
-            queue.offer( "World" );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedOperationException ignore )
-        {
-        }
+        assertThrows( UnsupportedOperationException.class, () -> queue.add( "Hello" ) );
+        assertThrows( UnsupportedOperationException.class, () -> queue.offer( "World" ) );
     }
 
     @Test
-    public void shouldReturnSameEmptyQueue()
+    void shouldReturnSameEmptyQueue()
     {
         assertSame( Iterables.emptyQueue(), Iterables.emptyQueue() );
     }

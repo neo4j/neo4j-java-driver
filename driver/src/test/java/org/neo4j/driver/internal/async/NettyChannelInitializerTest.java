@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.ssl.SslHandler;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -38,10 +38,10 @@ import org.neo4j.driver.internal.util.FakeClock;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
@@ -50,18 +50,18 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatche
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class NettyChannelInitializerTest
+class NettyChannelInitializerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
+    void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
         SecurityPlan security = trustAllCertificates();
         NettyChannelInitializer initializer = newInitializer( security );
@@ -72,7 +72,7 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
+    void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
         SecurityPlan security = SecurityPlan.insecure();
         NettyChannelInitializer initializer = newInitializer( security );
@@ -83,7 +83,7 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldAddSslHandlerWithHandshakeTimeout() throws Exception
+    void shouldAddSslHandlerWithHandshakeTimeout() throws Exception
     {
         int timeoutMillis = 424242;
         SecurityPlan security = trustAllCertificates();
@@ -97,7 +97,7 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldUpdateChannelAttributes()
+    void shouldUpdateChannelAttributes()
     {
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
@@ -112,7 +112,7 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldIncludeSniHostName() throws Exception
+    void shouldIncludeSniHostName() throws Exception
     {
         BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
         NettyChannelInitializer initializer = new NettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
@@ -129,13 +129,13 @@ public class NettyChannelInitializerTest
     }
 
     @Test
-    public void shouldEnableHostnameVerificationWhenConfigured() throws Exception
+    void shouldEnableHostnameVerificationWhenConfigured() throws Exception
     {
         testHostnameVerificationSetting( true, "HTTPS" );
     }
 
     @Test
-    public void shouldNotEnableHostnameVerificationWhenNotConfigured() throws Exception
+    void shouldNotEnableHostnameVerificationWhenNotConfigured() throws Exception
     {
         testHostnameVerificationSetting( false, null );
     }

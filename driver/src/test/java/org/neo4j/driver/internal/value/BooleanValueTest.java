@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -26,18 +26,18 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.value.BooleanValue.FALSE;
 import static org.neo4j.driver.internal.value.BooleanValue.TRUE;
 
-public class BooleanValueTest
+class BooleanValueTest
 {
-    TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
+    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    public void testBooleanTrue() throws Exception
+    void testBooleanTrue()
     {
         // Given
         BooleanValue value = TRUE;
@@ -49,7 +49,7 @@ public class BooleanValueTest
     }
 
     @Test
-    public void testBooleanFalse() throws Exception
+    void testBooleanFalse()
     {
         // Given
         BooleanValue value = FALSE;
@@ -61,7 +61,7 @@ public class BooleanValueTest
     }
 
     @Test
-    public void testIsBoolean() throws Exception
+    void testIsBoolean()
     {
         // Given
         BooleanValue value = TRUE;
@@ -71,7 +71,7 @@ public class BooleanValueTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    void testEquals()
     {
         // Given
         BooleanValue firstValue = TRUE;
@@ -82,7 +82,7 @@ public class BooleanValueTest
     }
 
     @Test
-    public void testHashCode() throws Exception
+    void testHashCode()
     {
         // Given
         BooleanValue value = TRUE;
@@ -92,21 +92,21 @@ public class BooleanValueTest
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         assertFalse( TRUE.isNull() );
         assertFalse( BooleanValue.FALSE.isNull() );
     }
 
     @Test
-    public void shouldTypeAsBoolean()
+    void shouldTypeAsBoolean()
     {
         assertThat( TRUE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
         assertThat( BooleanValue.FALSE.typeConstructor(), equalTo( TypeConstructor.BOOLEAN ) );
     }
 
     @Test
-    public void shouldConvertToBooleanAndObject()
+    void shouldConvertToBooleanAndObject()
     {
         assertTrue( TRUE.asBoolean());
         assertFalse( BooleanValue.FALSE.asBoolean());

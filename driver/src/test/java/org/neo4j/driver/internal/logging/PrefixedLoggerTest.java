@@ -18,15 +18,13 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.v1.Logger;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -34,34 +32,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PrefixedLoggerTest
+class PrefixedLoggerTest
 {
     private static final String PREFIX = "Output";
     private static final String MESSAGE = "Hello World!";
     private static final Exception ERROR = new Exception();
 
     @Test
-    public void shouldThrowWhenDelegateIsNull()
+    void shouldThrowWhenDelegateIsNull()
     {
-        try
-        {
-            new PrefixedLogger( null );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NullPointerException.class ) );
-        }
+        assertThrows( NullPointerException.class, () -> new PrefixedLogger( null ) );
     }
 
     @Test
-    public void shouldAllowNullPrefix()
+    void shouldAllowNullPrefix()
     {
         assertNotNull( new PrefixedLogger( null, newLoggerMock() ) );
     }
 
     @Test
-    public void shouldDelegateIsDebugEnabled()
+    void shouldDelegateIsDebugEnabled()
     {
         Logger delegate = newLoggerMock( true, false );
 
@@ -72,7 +62,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateIsTraceEnabled()
+    void shouldDelegateIsTraceEnabled()
     {
         Logger delegate = newLoggerMock( false, true );
 
@@ -83,7 +73,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldNotDelegateDebugLogWhenDebugDisabled()
+    void shouldNotDelegateDebugLogWhenDebugDisabled()
     {
         Logger delegate = newLoggerMock();
 
@@ -94,7 +84,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldNotDelegateTraceLogWhenTraceDisabled()
+    void shouldNotDelegateTraceLogWhenTraceDisabled()
     {
         Logger delegate = newLoggerMock();
 
@@ -105,7 +95,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateErrorMessageWhenNoPrefix()
+    void shouldDelegateErrorMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -116,7 +106,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateInfoMessageWhenNoPrefix()
+    void shouldDelegateInfoMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -127,7 +117,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateWarnMessageWhenNoPrefix()
+    void shouldDelegateWarnMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -138,7 +128,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateWarnMessageWithoutErrorWhenNoPrefix()
+    void shouldDelegateWarnMessageWithoutErrorWhenNoPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -150,7 +140,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateDebugMessageWhenNoPrefix()
+    void shouldDelegateDebugMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -161,7 +151,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateTraceMessageWhenNoPrefix()
+    void shouldDelegateTraceMessageWhenNoPrefix()
     {
         Logger delegate = newLoggerMock( false, true );
         PrefixedLogger logger = new PrefixedLogger( delegate );
@@ -172,7 +162,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateErrorMessageWithPrefix()
+    void shouldDelegateErrorMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
@@ -183,7 +173,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateInfoMessageWithPrefix()
+    void shouldDelegateInfoMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
@@ -194,7 +184,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateWarnMessageWithPrefix()
+    void shouldDelegateWarnMessageWithPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
@@ -205,7 +195,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateWarnMessageWithErrorWithPrefix()
+    void shouldDelegateWarnMessageWithErrorWithPrefix()
     {
         Logger delegate = newLoggerMock();
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
@@ -217,7 +207,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateDebugMessageWithPrefix()
+    void shouldDelegateDebugMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( true, false );
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );
@@ -228,7 +218,7 @@ public class PrefixedLoggerTest
     }
 
     @Test
-    public void shouldDelegateTraceMessageWithPrefix()
+    void shouldDelegateTraceMessageWithPrefix()
     {
         Logger delegate = newLoggerMock( false, true );
         PrefixedLogger logger = new PrefixedLogger( PREFIX, delegate );

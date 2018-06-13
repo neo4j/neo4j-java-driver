@@ -23,9 +23,9 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -41,22 +41,22 @@ import org.neo4j.driver.v1.Values;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InitResponseHandlerTest
+class InitResponseHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
         ChannelPipeline pipeline = channel.pipeline();
@@ -64,14 +64,14 @@ public class InitResponseHandlerTest
         pipeline.addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldSetServerVersionOnChannel()
+    void shouldSetServerVersionOnChannel()
     {
         ChannelPromise channelPromise = channel.newPromise();
         InitResponseHandler handler = new InitResponseHandler( channelPromise );
@@ -84,7 +84,7 @@ public class InitResponseHandlerTest
     }
 
     @Test
-    public void shouldSetServerVersionToDefaultValueWhenUnknown()
+    void shouldSetServerVersionToDefaultValueWhenUnknown()
     {
         ChannelPromise channelPromise = channel.newPromise();
         InitResponseHandler handler = new InitResponseHandler( channelPromise );
@@ -97,7 +97,7 @@ public class InitResponseHandlerTest
     }
 
     @Test
-    public void shouldAllowByteArraysForNewerVersions()
+    void shouldAllowByteArraysForNewerVersions()
     {
         InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
@@ -110,7 +110,7 @@ public class InitResponseHandlerTest
     }
 
     @Test
-    public void shouldNotAllowByteArraysForOldVersions()
+    void shouldNotAllowByteArraysForOldVersions()
     {
         InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
@@ -118,19 +118,12 @@ public class InitResponseHandlerTest
         handler.onSuccess( metadata );
 
         Map<String,Value> params = singletonMap( "array", value( new byte[]{1, 2, 3} ) );
-        try
-        {
-            channel.writeOutbound( new RunMessage( "RETURN 1", params ) );
-            fail( "Exception expected" );
-        }
-        catch ( EncoderException e )
-        {
-            assertThat( e.getCause().getMessage(), startsWith( "Packing bytes is not supported" ) );
-        }
+        EncoderException error = assertThrows( EncoderException.class, () -> channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertThat( error.getCause().getMessage(), startsWith( "Packing bytes is not supported" ) );
     }
 
     @Test
-    public void shouldCloseChannelOnFailure() throws Exception
+    void shouldCloseChannelOnFailure() throws Exception
     {
         ChannelPromise channelPromise = channel.newPromise();
         InitResponseHandler handler = new InitResponseHandler( channelPromise );

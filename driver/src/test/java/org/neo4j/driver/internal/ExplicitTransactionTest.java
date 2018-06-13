@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.function.Consumer;
@@ -29,10 +29,10 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -43,10 +43,10 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
-public class ExplicitTransactionTest
+class ExplicitTransactionTest
 {
     @Test
-    public void shouldRollbackOnImplicitFailure()
+    void shouldRollbackOnImplicitFailure()
     {
         // Given
         Connection connection = connectionMock();
@@ -63,7 +63,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldRollbackOnExplicitFailure()
+    void shouldRollbackOnExplicitFailure()
     {
         // Given
         Connection connection = connectionMock();
@@ -82,7 +82,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldCommitOnSuccess()
+    void shouldCommitOnSuccess()
     {
         // Given
         Connection connection = connectionMock();
@@ -100,7 +100,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
+    void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
         Connection connection = connectionMock();
 
@@ -111,7 +111,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldFlushWhenBookmarkGiven()
+    void shouldFlushWhenBookmarkGiven()
     {
         Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
         Connection connection = connectionMock();
@@ -123,7 +123,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeOpenAfterConstruction()
+    void shouldBeOpenAfterConstruction()
     {
         Transaction tx = beginTx( connectionMock() );
 
@@ -131,7 +131,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeOpenWhenMarkedForSuccess()
+    void shouldBeOpenWhenMarkedForSuccess()
     {
         Transaction tx = beginTx( connectionMock() );
 
@@ -141,7 +141,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeOpenWhenMarkedForFailure()
+    void shouldBeOpenWhenMarkedForFailure()
     {
         Transaction tx = beginTx( connectionMock() );
 
@@ -151,7 +151,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeClosedWhenMarkedAsTerminated()
+    void shouldBeClosedWhenMarkedAsTerminated()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
 
@@ -161,7 +161,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeClosedAfterCommit()
+    void shouldBeClosedAfterCommit()
     {
         Transaction tx = beginTx( connectionMock() );
 
@@ -172,7 +172,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeClosedAfterRollback()
+    void shouldBeClosedAfterRollback()
     {
         Transaction tx = beginTx( connectionMock() );
 
@@ -183,7 +183,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldBeClosedWhenMarkedTerminatedAndClosed()
+    void shouldBeClosedWhenMarkedTerminatedAndClosed()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
 
@@ -194,21 +194,21 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldHaveEmptyBookmarkInitially()
+    void shouldHaveEmptyBookmarkInitially()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
     @Test
-    public void shouldNotKeepInitialBookmark()
+    void shouldNotKeepInitialBookmark()
     {
         ExplicitTransaction tx = beginTx( connectionMock(), Bookmark.from( "Dog" ) );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
     @Test
-    public void shouldNotOverwriteBookmarkWithNull()
+    void shouldNotOverwriteBookmarkWithNull()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
         tx.setBookmark( Bookmark.from( "Cat" ) );
@@ -218,7 +218,7 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldNotOverwriteBookmarkWithEmptyBookmark()
+    void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
         tx.setBookmark( Bookmark.from( "Cat" ) );
@@ -228,27 +228,20 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldReleaseConnectionWhenBeginFails()
+    void shouldReleaseConnectionWhenBeginFails()
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
 
-        try
-        {
-            await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) ) );
+        assertEquals( error, e );
 
         verify( connection ).release();
     }
 
     @Test
-    public void shouldNotReleaseConnectionWhenBeginSucceeds()
+    void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
@@ -258,27 +251,21 @@ public class ExplicitTransactionTest
     }
 
     @Test
-    public void shouldReleaseConnectionWhenTerminatedAndCommitted()
+    void shouldReleaseConnectionWhenTerminatedAndCommitted()
     {
         Connection connection = connectionMock();
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
 
         tx.markTerminated();
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException ignore )
-        {
-        }
+
+        assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
 
         assertFalse( tx.isOpen() );
         verify( connection ).release();
     }
 
     @Test
-    public void shouldReleaseConnectionWhenTerminatedAndRolledBack()
+    void shouldReleaseConnectionWhenTerminatedAndRolledBack()
     {
         Connection connection = connectionMock();
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );

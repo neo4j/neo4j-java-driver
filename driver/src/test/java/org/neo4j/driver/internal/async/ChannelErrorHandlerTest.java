@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.CodecException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -33,20 +33,20 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class ChannelErrorHandlerTest
+class ChannelErrorHandlerTest
 {
     private EmbeddedChannel channel;
     private InboundMessageDispatcher messageDispatcher;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
@@ -54,8 +54,8 @@ public class ChannelErrorHandlerTest
         channel.pipeline().addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( channel != null )
         {
@@ -64,7 +64,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleChannelInactive()
+    void shouldHandleChannelInactive()
     {
         channel.pipeline().fireChannelInactive();
 
@@ -76,7 +76,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleChannelInactiveAfterExceptionCaught()
+    void shouldHandleChannelInactiveAfterExceptionCaught()
     {
         RuntimeException originalError = new RuntimeException( "Hi!" );
         channel.pipeline().fireExceptionCaught( originalError );
@@ -89,7 +89,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleChannelInactiveWhenTerminationReasonSet()
+    void shouldHandleChannelInactiveWhenTerminationReasonSet()
     {
         String terminationReason = "Something really bad happened";
         setTerminationReason( channel, terminationReason );
@@ -105,7 +105,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleCodecException()
+    void shouldHandleCodecException()
     {
         RuntimeException cause = new RuntimeException( "Hi!" );
         CodecException codecException = new CodecException( "Unable to encode or decode message", cause );
@@ -118,7 +118,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleCodecExceptionWithoutCause()
+    void shouldHandleCodecExceptionWithoutCause()
     {
         CodecException codecException = new CodecException( "Unable to encode or decode message" );
         channel.pipeline().fireExceptionCaught( codecException );
@@ -130,7 +130,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleIOException()
+    void shouldHandleIOException()
     {
         IOException ioException = new IOException( "Write or read failed" );
         channel.pipeline().fireExceptionCaught( ioException );
@@ -143,7 +143,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleException()
+    void shouldHandleException()
     {
         RuntimeException originalError = new RuntimeException( "Random failure" );
         channel.pipeline().fireExceptionCaught( originalError );
@@ -155,7 +155,7 @@ public class ChannelErrorHandlerTest
     }
 
     @Test
-    public void shouldHandleMultipleExceptions()
+    void shouldHandleMultipleExceptions()
     {
         RuntimeException error1 = new RuntimeException( "Failure 1" );
         RuntimeException error2 = new RuntimeException( "Failure 2" );

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,10 +34,10 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
@@ -46,10 +46,10 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
 import static org.neo4j.driver.v1.Values.value;
 
-public class ClusterCompositionTest
+class ClusterCompositionTest
 {
     @Test
-    public void hasWritersReturnsFalseWhenNoWriters()
+    void hasWritersReturnsFalseWhenNoWriters()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses(), addresses( C, D ) );
 
@@ -57,7 +57,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void hasWritersReturnsTrueWhenSomeWriters()
+    void hasWritersReturnsTrueWhenSomeWriters()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -65,7 +65,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void hasRoutersAndReadersReturnsFalseWhenNoRouters()
+    void hasRoutersAndReadersReturnsFalseWhenNoRouters()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses() );
 
@@ -73,7 +73,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void hasRoutersAndReadersReturnsFalseWhenNoReaders()
+    void hasRoutersAndReadersReturnsFalseWhenNoReaders()
     {
         ClusterComposition composition = newComposition( 1, addresses(), addresses( A, B ), addresses( C, D ) );
 
@@ -81,7 +81,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void hasRoutersAndReadersWhenSomeReadersAndRouters()
+    void hasRoutersAndReadersWhenSomeReadersAndRouters()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -89,7 +89,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void readersWhenEmpty()
+    void readersWhenEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses(), addresses( A, B ), addresses( C, D ) );
 
@@ -97,7 +97,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void writersWhenEmpty()
+    void writersWhenEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses(), addresses( C, D ) );
 
@@ -105,7 +105,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void routersWhenEmpty()
+    void routersWhenEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses() );
 
@@ -113,7 +113,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void readersWhenNonEmpty()
+    void readersWhenNonEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -121,7 +121,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void writersWhenNonEmpty()
+    void writersWhenNonEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -129,7 +129,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void routersWhenNonEmpty()
+    void routersWhenNonEmpty()
     {
         ClusterComposition composition = newComposition( 1, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -137,7 +137,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void expirationTimestamp()
+    void expirationTimestamp()
     {
         ClusterComposition composition = newComposition( 42, addresses( A, B ), addresses( C, D ), addresses( E, F ) );
 
@@ -145,7 +145,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void parseCorrectRecord()
+    void parseCorrectRecord()
     {
         Value[] values = {
                 value( 42L ),
@@ -166,7 +166,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void parsePreservesOrderOfReaders()
+    void parsePreservesOrderOfReaders()
     {
         Value[] values = {
                 value( 42L ),
@@ -184,7 +184,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void parsePreservesOrderOfWriters()
+    void parsePreservesOrderOfWriters()
     {
         Value[] values = {
                 value( 42L ),
@@ -202,7 +202,7 @@ public class ClusterCompositionTest
     }
 
     @Test
-    public void parsePreservesOrderOfRouters()
+    void parsePreservesOrderOfRouters()
     {
         Value[] values = {
                 value( 42L ),

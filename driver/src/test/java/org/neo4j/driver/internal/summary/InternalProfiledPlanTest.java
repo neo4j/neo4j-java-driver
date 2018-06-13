@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,21 +27,20 @@ import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.summary.ProfiledPlan;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 
-public class InternalProfiledPlanTest
+class InternalProfiledPlanTest
 {
 
     @Test
-    public void shouldHandlePlanWithNoChildren()
+    void shouldHandlePlanWithNoChildren()
     {
         // GIVEN
         Value value = new MapValue( createPlanMap() );
@@ -59,7 +58,7 @@ public class InternalProfiledPlanTest
     }
 
     @Test
-    public void shouldHandlePlanWithChildren()
+    void shouldHandlePlanWithChildren()
     {
         // GIVEN
         Map<String,Value> planMap = createPlanMap();

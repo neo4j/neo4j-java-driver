@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,16 +46,16 @@ import org.neo4j.driver.v1.types.Relationship;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.ofInteger;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalMapAccessorWithDefaultValueTest
+class InternalMapAccessorWithDefaultValueTest
 {
     private static final String wrongKey = "wrong_key";
 
     @Test
-    public void shouldGetValueFromRecord() throws Throwable
+    void shouldGetValueFromRecord()
     {
         Record record = createRecord();
 
@@ -110,7 +110,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetObjectFromRecord() throws Throwable
+    void shouldGetObjectFromRecord()
     {
         Record record = createRecord();
 
@@ -120,7 +120,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetNumberFromRecord() throws Throwable
+    void shouldGetNumberFromRecord()
     {
         Record record = createRecord();
 
@@ -130,7 +130,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetEntityFromRecord() throws Throwable
+    void shouldGetEntityFromRecord()
     {
         Record record = createRecord();
 
@@ -144,7 +144,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetNodeFromRecord() throws Throwable
+    void shouldGetNodeFromRecord()
     {
         Record record = createRecord();
 
@@ -154,7 +154,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetRelFromRecord() throws Throwable
+    void shouldGetRelFromRecord()
     {
         Record record = createRecord();
 
@@ -164,7 +164,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetPathFromRecord() throws Throwable
+    void shouldGetPathFromRecord()
     {
         Record record = createRecord();
 
@@ -177,7 +177,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetListOfObjectsFromRecord() throws Throwable
+    void shouldGetListOfObjectsFromRecord()
     {
         Record record = createRecord();
 
@@ -188,7 +188,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetListOfTFromRecord() throws Throwable
+    void shouldGetListOfTFromRecord()
     {
         Record record = createRecord();
         List<Integer> defaultValue = new ArrayList<>();
@@ -198,7 +198,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetMapOfStringObjectFromRecord() throws Throwable
+    void shouldGetMapOfStringObjectFromRecord()
     {
         Record record = createRecord();
 
@@ -212,7 +212,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetMapOfStringTFromRecord() throws Throwable
+    void shouldGetMapOfStringTFromRecord()
     {
         Record record = createRecord();
 
@@ -226,7 +226,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetPrimitiveTypesFromRecord() throws Throwable
+    void shouldGetPrimitiveTypesFromRecord()
     {
         Record record = createRecord();
 
@@ -256,7 +256,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetFromMap() throws Throwable
+    void shouldGetFromMap()
     {
         MapValue mapValue = new MapValue( createMap() );
         assertThat( mapValue.get( "key1", 0L ), equalTo( 1L ) );
@@ -265,7 +265,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetFromNode() throws Throwable
+    void shouldGetFromNode()
     {
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
@@ -278,7 +278,7 @@ public class InternalMapAccessorWithDefaultValueTest
     }
 
     @Test
-    public void shouldGetFromRel() throws Throwable
+    void shouldGetFromRel()
     {
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );

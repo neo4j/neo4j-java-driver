@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -27,9 +27,9 @@ import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
@@ -41,10 +41,10 @@ import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.createClu
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 
-public class ClusterRoutingTableTest
+class ClusterRoutingTableTest
 {
     @Test
-    public void shouldReturnStaleIfTtlExpired() throws Exception
+    void shouldReturnStaleIfTtlExpired()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -61,7 +61,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldReturnStaleIfNoRouter() throws Exception
+    void shouldReturnStaleIfNoRouter()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -76,7 +76,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldBeStaleForReadsButNotWritesWhenNoReaders() throws Exception
+    void shouldBeStaleForReadsButNotWritesWhenNoReaders()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -91,7 +91,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldBeStaleForWritesButNotReadsWhenNoWriters() throws Exception
+    void shouldBeStaleForWritesButNotReadsWhenNoWriters()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -106,7 +106,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldBeNotStaleWithReadersWritersAndRouters() throws Exception
+    void shouldBeNotStaleWithReadersWritersAndRouters()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -121,7 +121,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldBeStaleForReadsAndWritesAfterCreation() throws Throwable
+    void shouldBeStaleForReadsAndWritesAfterCreation()
     {
         // Given
         FakeClock clock = new FakeClock();
@@ -135,7 +135,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldPreserveOrderingOfRouters()
+    void shouldPreserveOrderingOfRouters()
     {
         ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
         List<BoltServerAddress> routers = asList( A, C, D, F, B, E );
@@ -146,7 +146,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldPreserveOrderingOfWriters()
+    void shouldPreserveOrderingOfWriters()
     {
         ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
         List<BoltServerAddress> writers = asList( D, F, A, C, E );
@@ -157,7 +157,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldPreserveOrderingOfReaders()
+    void shouldPreserveOrderingOfReaders()
     {
         ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
         List<BoltServerAddress> readers = asList( B, A, F, C, D );
@@ -168,7 +168,7 @@ public class ClusterRoutingTableTest
     }
 
     @Test
-    public void shouldTreatOneRouterAsValid()
+    void shouldTreatOneRouterAsValid()
     {
         ClusterRoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
 

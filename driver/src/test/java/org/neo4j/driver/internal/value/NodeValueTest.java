@@ -18,48 +18,48 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 
-public class NodeValueTest
+class NodeValueTest
 {
     @Test
-    public void shouldHaveSensibleToString() throws Throwable
+    void shouldHaveSensibleToString()
     {
         assertEquals( "node<1234>", emptyNodeValue().toString() );
         assertEquals( "node<1234>", filledNodeValue().toString() );
     }
 
     @Test
-    public void shouldHaveCorrectPropertyCount() throws Throwable
+    void shouldHaveCorrectPropertyCount()
     {
         assertEquals( 0, emptyNodeValue().size()) ;
         assertEquals( 1, filledNodeValue().size()) ;
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         assertFalse( emptyNodeValue().isNull() );
     }
 
     @Test
-    public void shouldHaveCorrectType() throws Throwable
+    void shouldHaveCorrectType()
     {
         assertThat( emptyNodeValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.NODE() ));
     }
 
     @Test
-    public void shouldTypeAsNode()
+    void shouldTypeAsNode()
     {
         InternalValue value = emptyNodeValue();
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.NODE ) );

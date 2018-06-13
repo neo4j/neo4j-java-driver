@@ -21,7 +21,7 @@ package org.neo4j.driver.v1.types;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,11 +39,11 @@ import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.v1.Values.value;
 
-public class TypeSystemTest
+class TypeSystemTest
 {
     private final InternalNode node = new InternalNode( 42L );
     private final InternalRelationship relationship = new InternalRelationship( 42L, 42L, 43L, "T" );
@@ -61,7 +61,7 @@ public class TypeSystemTest
 
     private InternalTypeSystem typeSystem = TYPE_SYSTEM;
 
-    TypeVerifier newTypeVerifierFor( Type type )
+    private TypeVerifier newTypeVerifierFor( Type type )
     {
         HashSet<Value> allValues = new HashSet<>();
         allValues.add( integerValue );
@@ -78,7 +78,7 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldNameTypeCorrectly()
+    void shouldNameTypeCorrectly()
     {
         assertThat( TYPE_SYSTEM.ANY().name(), is( "ANY" ) );
         assertThat( TYPE_SYSTEM.BOOLEAN().name(), is( "BOOLEAN" ) );
@@ -95,7 +95,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferAnyTypeCorrectly() {
+    void shouldInferAnyTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.ANY() ) )
         {
             verifier.assertIncludes( booleanValue );
@@ -111,7 +112,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferNumberTypeCorrectly() {
+    void shouldInferNumberTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NUMBER() ) )
         {
             verifier.assertIncludes( integerValue );
@@ -120,7 +122,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferNodesTypeCorrectly() {
+    void shouldInferNodesTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NODE() ) )
         {
             verifier.assertIncludes( nodeValue );
@@ -128,7 +131,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferRelTypeCorrectly() {
+    void shouldInferRelTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.RELATIONSHIP() ) )
         {
             verifier.assertIncludes( relationshipValue );
@@ -136,7 +140,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferStringTypeCorrectly() {
+    void shouldInferStringTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.STRING() ) )
         {
             verifier.assertIncludes( stringValue );
@@ -144,7 +149,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferMapTypeCorrectly() {
+    void shouldInferMapTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.MAP() ) )
         {
             verifier.assertIncludes( nodeValue );
@@ -154,7 +160,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferPathTypeCorrectly() {
+    void shouldInferPathTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.PATH() ) )
         {
             verifier.assertIncludes( pathValue );
@@ -162,7 +169,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferNullCorrectly() {
+    void shouldInferNullCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.NULL() ) )
         {
             verifier.assertIncludes( nullValue );
@@ -170,7 +178,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferBooleanTypeCorrectly() {
+    void shouldInferBooleanTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.BOOLEAN() ) )
         {
             verifier.assertIncludes( booleanValue );
@@ -178,7 +187,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldIntegerTypeCorrectly() {
+    void shouldIntegerTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.INTEGER() ) )
         {
             verifier.assertIncludes( integerValue );
@@ -186,7 +196,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferFloatTypeCorrectly() {
+    void shouldInferFloatTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( TYPE_SYSTEM.FLOAT() ) )
         {
             verifier.assertIncludes( floatValue );
@@ -194,7 +205,8 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldInferListTypeCorrectly() {
+    void shouldInferListTypeCorrectly()
+    {
         try ( TypeVerifier verifier = newTypeVerifierFor( typeSystem.LIST() ) )
         {
             verifier.assertIncludes( listValue );
@@ -202,7 +214,7 @@ public class TypeSystemTest
     }
 
     @Test
-    public void shouldDetermineTypeCorrectly()
+    void shouldDetermineTypeCorrectly()
     {
         assertThat( integerValue, hasType( TYPE_SYSTEM.INTEGER() ) );
         assertThat( floatValue, hasType( TYPE_SYSTEM.FLOAT() ) );
@@ -227,7 +239,7 @@ public class TypeSystemTest
             this.values = values;
         }
 
-        public void assertIncludes( Value value )
+        void assertIncludes( Value value )
         {
             assertThat( value, hasType( type ) );
             values.remove( value );

@@ -18,20 +18,20 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AddressSetTest
+class AddressSetTest
 {
     @Test
-    public void shouldPreserveOrderWhenAdding() throws Exception
+    void shouldPreserveOrderWhenAdding() throws Exception
     {
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
@@ -57,7 +57,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldPreserveOrderWhenRemoving() throws Exception
+    void shouldPreserveOrderWhenRemoving() throws Exception
     {
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
@@ -79,7 +79,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldPreserveOrderWhenRemovingThroughUpdate() throws Exception
+    void shouldPreserveOrderWhenRemovingThroughUpdate() throws Exception
     {
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
@@ -102,7 +102,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldExposeEmptyArrayWhenEmpty()
+    void shouldExposeEmptyArrayWhenEmpty()
     {
         AddressSet addressSet = new AddressSet();
 
@@ -112,7 +112,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldExposeCorrectArray()
+    void shouldExposeCorrectArray()
     {
         AddressSet addressSet = new AddressSet();
         addressSet.update( addresses( "one", "two", "tre" ) );
@@ -126,7 +126,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldHaveSizeZeroWhenEmpty()
+    void shouldHaveSizeZeroWhenEmpty()
     {
         AddressSet addressSet = new AddressSet();
 
@@ -134,7 +134,7 @@ public class AddressSetTest
     }
 
     @Test
-    public void shouldHaveCorrectSize()
+    void shouldHaveCorrectSize()
     {
         AddressSet addressSet = new AddressSet();
         addressSet.update( addresses( "one", "two" ) );

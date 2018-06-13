@@ -18,34 +18,34 @@
  */
 package org.neo4j.driver.internal.net;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.SocketAddress;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
 
-public class BoltServerAddressTest
+class BoltServerAddressTest
 {
     @Test
-    public void defaultPortShouldBe7687()
+    void defaultPortShouldBe7687()
     {
         assertThat( DEFAULT_PORT, equalTo( 7687 ) );
     }
 
     @Test
-    public void portShouldUseDefaultIfNotSupplied()
+    void portShouldUseDefaultIfNotSupplied()
     {
         assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
     }
 
     @Test
-    public void shouldAlwaysResolveAddress()
+    void shouldAlwaysResolveAddress()
     {
         BoltServerAddress boltAddress = new BoltServerAddress( "localhost" );
 
@@ -56,7 +56,7 @@ public class BoltServerAddressTest
     }
 
     @Test
-    public void shouldHaveCorrectToString()
+    void shouldHaveCorrectToString()
     {
         assertEquals( "localhost:4242", new BoltServerAddress( "localhost", 4242 ).toString() );
         assertEquals( "127.0.0.1:8888", new BoltServerAddress( "127.0.0.1", 8888 ).toString() );

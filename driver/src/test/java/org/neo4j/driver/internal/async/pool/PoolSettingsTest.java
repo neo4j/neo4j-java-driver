@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PoolSettingsTest
+class PoolSettingsTest
 {
     @Test
-    public void idleTimeBeforeConnectionTestWhenConfigured()
+    void idleTimeBeforeConnectionTestWhenConfigured()
     {
         PoolSettings settings = new PoolSettings( 5, -1, 10, 42 );
         assertTrue( settings.idleTimeBeforeConnectionTestEnabled() );
@@ -35,7 +35,7 @@ public class PoolSettingsTest
     }
 
     @Test
-    public void idleTimeBeforeConnectionTestWhenSetToZero()
+    void idleTimeBeforeConnectionTestWhenSetToZero()
     {
         //Always test idle time during acquisition
         PoolSettings settings = new PoolSettings( 5, -1, 10, 0 );
@@ -44,7 +44,7 @@ public class PoolSettingsTest
     }
 
     @Test
-    public void idleTimeBeforeConnectionTestWhenSetToNegativeValue()
+    void idleTimeBeforeConnectionTestWhenSetToNegativeValue()
     {
         //Never test idle time during acquisition
         testIdleTimeBeforeConnectionTestWithIllegalValue( -1 );
@@ -53,7 +53,7 @@ public class PoolSettingsTest
     }
 
     @Test
-    public void maxConnectionLifetimeWhenConfigured()
+    void maxConnectionLifetimeWhenConfigured()
     {
         PoolSettings settings = new PoolSettings( 5, -1, 42, 10 );
         assertTrue( settings.maxConnectionLifetimeEnabled() );
@@ -61,7 +61,7 @@ public class PoolSettingsTest
     }
 
     @Test
-    public void maxConnectionLifetimeWhenSetToZeroOrNegativeValue()
+    void maxConnectionLifetimeWhenSetToZeroOrNegativeValue()
     {
         testMaxConnectionLifetimeWithIllegalValue( 0 );
         testMaxConnectionLifetimeWithIllegalValue( -1 );

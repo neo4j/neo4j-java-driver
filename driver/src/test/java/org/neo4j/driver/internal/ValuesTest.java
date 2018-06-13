@@ -19,9 +19,7 @@
 package org.neo4j.driver.internal;
 
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -63,9 +61,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -84,49 +83,42 @@ import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
-public class ValuesTest
+class ValuesTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldConvertPrimitiveArrays() throws Throwable
+    void shouldConvertPrimitiveArrays()
     {
         assertThat( value( new int[]{1, 2, 3} ),
-                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
 
         assertThat( value( new long[]{1, 2, 3} ),
-                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
 
         assertThat( value( new float[]{1.1f, 2.2f, 3.3f} ),
-                equalTo( (Value) new ListValue( values( 1.1f, 2.2f, 3.3f ) ) ) );
+                equalTo( new ListValue( values( 1.1f, 2.2f, 3.3f ) ) ) );
 
         assertThat( value( new double[]{1.1, 2.2, 3.3} ),
-                equalTo( (Value) new ListValue( values( 1.1, 2.2, 3.3 ) ) ) );
+                equalTo( new ListValue( values( 1.1, 2.2, 3.3 ) ) ) );
 
         assertThat( value( new boolean[]{true, false, true} ),
-                equalTo( (Value) new ListValue( values( true, false, true ) ) ) );
+                equalTo( new ListValue( values( true, false, true ) ) ) );
 
         assertThat( value( new char[]{'a', 'b', 'c'} ),
-                equalTo( (Value) new ListValue( values( 'a', 'b', 'c' ) ) ) );
+                equalTo( new ListValue( values( 'a', 'b', 'c' ) ) ) );
 
         assertThat( value( new String[]{"a", "b", "c"} ),
-                equalTo( (Value) new ListValue( values( "a", "b", "c" ) ) ) );
+                equalTo( new ListValue( values( "a", "b", "c" ) ) ) );
     }
 
     @Test
-    public void shouldComplainAboutStrangeTypes() throws Throwable
+    void shouldComplainAboutStrangeTypes()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Unable to convert java.lang.Object to Neo4j Value." );
-
-        // When
-        value( new Object() );
+        ClientException e = assertThrows( ClientException.class, () -> value( new Object() ) );
+        assertEquals( "Unable to convert java.lang.Object to Neo4j Value.", e.getMessage() );
     }
 
     @Test
-    public void equalityRules() throws Throwable
+    void equalityRules()
     {
         assertEquals( value( 1 ), value( 1 ) );
         assertEquals( value( Long.MAX_VALUE ), value( Long.MAX_VALUE ) );
@@ -149,12 +141,12 @@ public class ValuesTest
         assertNotEquals( value( "This åäö string ?? contains strange " ),
                 value( "This åäö string ?? contains strange Ü" ) );
 
-        assertEquals( value ( 'A' ), value( 'A' ));
-        assertEquals( value ( 'A' ), value( "A" ));
+        assertEquals( value( 'A' ), value( 'A' ) );
+        assertEquals( value( 'A' ), value( "A" ) );
     }
 
     @Test
-    public void shouldMapDriverComplexTypesToListOfJavaPrimitiveTypes() throws Throwable
+    void shouldMapDriverComplexTypesToListOfJavaPrimitiveTypes()
     {
         // Given
         Map<String,Value> map = new HashMap<>();
@@ -182,7 +174,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldMapDriverMapsToJavaMaps() throws Throwable
+    void shouldMapDriverMapsToJavaMaps()
     {
         // Given
         Map<String,Value> map = new HashMap<>();
@@ -191,7 +183,7 @@ public class ValuesTest
         MapValue values = new MapValue( map );
 
         // When
-        Map<String, String> result = values.asMap( Values.ofToString() );
+        Map<String,String> result = values.asMap( Values.ofToString() );
 
         // Then
         assertThat( result.size(), equalTo( 2 ) );
@@ -200,62 +192,50 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldNotBeAbleToGetKeysFromNonKeyedValue() throws Throwable
+    void shouldNotBeAbleToGetKeysFromNonKeyedValue()
     {
-        // expect
-        exception.expect( ClientException.class );
-
-        // when
-        value( "asd" ).get(1);
+        assertThrows( ClientException.class, () -> value( "asd" ).get( 1 ) );
     }
 
     @Test
-    public void shouldNotBeAbleToDoCrazyCoercions() throws Throwable
+    void shouldNotBeAbleToDoCrazyCoercions()
     {
-        // expect
-        exception.expect( ClientException.class );
-
-        // when
-        value(1).asPath();
+        assertThrows( ClientException.class, () -> value( 1 ).asPath() );
     }
 
     @Test
-    public void shouldNotBeAbleToGetSizeOnNonSizedValues() throws Throwable
+    void shouldNotBeAbleToGetSizeOnNonSizedValues()
     {
-        // expect
-        exception.expect( ClientException.class );
-
-        // when
-        value(1).size();
+        assertThrows( ClientException.class, () -> value( 1 ).size() );
     }
 
     @Test
-    public void shouldMapInteger() throws Throwable
+    void shouldMapInteger()
     {
         // Given
         Value val = value( 1, 2, 3 );
 
         // When/Then
-        assertThat( val.asList( ofInteger() ), contains(1,2,3) );
-        assertThat( val.asList( ofLong() ), contains(1L,2L,3L) );
-        assertThat( val.asList( ofNumber() ), contains((Number)1L,2L,3L) );
-        assertThat( val.asList( ofObject() ), contains((Object)1L,2L,3L) );
+        assertThat( val.asList( ofInteger() ), contains( 1, 2, 3 ) );
+        assertThat( val.asList( ofLong() ), contains( 1L, 2L, 3L ) );
+        assertThat( val.asList( ofNumber() ), contains( 1L, 2L, 3L ) );
+        assertThat( val.asList( ofObject() ), contains( 1L, 2L, 3L ) );
     }
 
     @Test
-    public void shouldMapFloat() throws Throwable
+    void shouldMapFloat()
     {
         // Given
         Value val = value( 1.0, 1.2, 3.2 );
 
         // When/Then
-        assertThat( val.asList( ofDouble() ), contains(1.0, 1.2, 3.2) );
-        assertThat( val.asList( ofNumber() ), contains((Number)1.0, 1.2, 3.2) );
-        assertThat( val.asList( ofObject() ), contains((Object)1.0, 1.2, 3.2) );
+        assertThat( val.asList( ofDouble() ), contains( 1.0, 1.2, 3.2 ) );
+        assertThat( val.asList( ofNumber() ), contains( 1.0, 1.2, 3.2 ) );
+        assertThat( val.asList( ofObject() ), contains( 1.0, 1.2, 3.2 ) );
     }
 
     @Test
-    public void shouldMapFloatToJavaFloat() throws Throwable
+    void shouldMapFloatToJavaFloat()
     {
         // Given all double -> float conversions other than integers
         //       loose precision, as far as java is concerned, so we
@@ -263,60 +243,60 @@ public class ValuesTest
         Value val = value( 1.0, 2.0, 3.0 );
 
         // When/Then
-        assertThat( val.asList( ofFloat() ), contains(1.0F, 2.0F, 3.0F) );
+        assertThat( val.asList( ofFloat() ), contains( 1.0F, 2.0F, 3.0F ) );
     }
 
     @Test
-    public void shouldMapString() throws Throwable
+    void shouldMapString()
     {
         // Given
         Value val = value( "hello", "world" );
 
         // When/Then
-        assertThat( val.asList( ofString() ), contains("hello", "world") );
-        assertThat( val.asList( ofObject() ), contains((Object)"hello", "world") );
+        assertThat( val.asList( ofString() ), contains( "hello", "world" ) );
+        assertThat( val.asList( ofObject() ), contains( "hello", "world" ) );
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldMapMapOfString() throws Throwable
+    void shouldMapMapOfString()
     {
         // Given
-        Map<String, Object> map = new HashMap<>();
+        Map<String,Object> map = new HashMap<>();
         map.put( "hello", "world" );
-        Value val = value( asList(map, map) );
+        Value val = value( asList( map, map ) );
 
         // When/Then
-        assertThat( val.asList( ofMap() ), contains(map, map) );
-        assertThat( val.asList( ofObject() ), contains((Object)map, map) );
+        assertThat( val.asList( ofMap() ), contains( map, map ) );
+        assertThat( val.asList( ofObject() ), contains( map, map ) );
     }
 
     @Test
-    public void shouldHandleCollection() throws Throwable
+    void shouldHandleCollection()
     {
         // Given
         Collection<String> collection = new ArrayDeque<>();
-        collection.add( "hello");
-        collection.add( "world");
+        collection.add( "hello" );
+        collection.add( "world" );
         Value val = value( collection );
 
         // When/Then
-        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
+        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ) );
     }
 
     @Test
-    public void shouldHandleIterator() throws Throwable
+    void shouldHandleIterator()
     {
         // Given
         Iterator<String> iterator = asList( "hello", "world" ).iterator();
         Value val = value( iterator );
 
         // When/Then
-        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ));
+        assertThat( val.asList(), Matchers.<Object>containsInAnyOrder( "hello", "world" ) );
     }
 
     @Test
-    public void shouldCreateDateValueFromLocalDate()
+    void shouldCreateDateValueFromLocalDate()
     {
         LocalDate localDate = LocalDate.now();
         Value value = value( localDate );
@@ -326,7 +306,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateDateValue()
+    void shouldCreateDateValue()
     {
         Object localDate = LocalDate.now();
         Value value = value( localDate );
@@ -336,7 +316,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateTimeValueFromOffsetTime()
+    void shouldCreateTimeValueFromOffsetTime()
     {
         OffsetTime offsetTime = OffsetTime.now();
         Value value = value( offsetTime );
@@ -346,7 +326,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateTimeValue()
+    void shouldCreateTimeValue()
     {
         OffsetTime offsetTime = OffsetTime.now();
         Value value = value( offsetTime );
@@ -356,7 +336,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateLocalTimeValueFromLocalTime()
+    void shouldCreateLocalTimeValueFromLocalTime()
     {
         LocalTime localTime = LocalTime.now();
         Value value = value( localTime );
@@ -366,7 +346,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateLocalTimeValue()
+    void shouldCreateLocalTimeValue()
     {
         LocalTime localTime = LocalTime.now();
         Value value = value( localTime );
@@ -376,7 +356,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateLocalDateTimeValueFromLocalDateTime()
+    void shouldCreateLocalDateTimeValueFromLocalDateTime()
     {
         LocalDateTime localDateTime = LocalDateTime.now();
         Value value = value( localDateTime );
@@ -386,7 +366,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateLocalDateTimeValue()
+    void shouldCreateLocalDateTimeValue()
     {
         LocalDateTime localDateTime = LocalDateTime.now();
         Value value = value( localDateTime );
@@ -396,7 +376,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateDateTimeValueFromZonedDateTime()
+    void shouldCreateDateTimeValueFromZonedDateTime()
     {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         Value value = value( zonedDateTime );
@@ -406,7 +386,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateDateTimeValue()
+    void shouldCreateDateTimeValue()
     {
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         Value value = value( zonedDateTime );
@@ -416,7 +396,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateIsoDurationValue()
+    void shouldCreateIsoDurationValue()
     {
         Value value = isoDuration( 42_1, 42_2, 42_3, 42_4 );
 
@@ -430,7 +410,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromIsoDuration()
+    void shouldCreateValueFromIsoDuration()
     {
         Value durationValue1 = isoDuration( 1, 2, 3, 4 );
         IsoDuration duration = durationValue1.asIsoDuration();
@@ -442,7 +422,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromPeriod()
+    void shouldCreateValueFromPeriod()
     {
         Period period = Period.of( 5, 11, 190 );
 
@@ -456,7 +436,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromDuration()
+    void shouldCreateValueFromDuration()
     {
         Duration duration = Duration.ofSeconds( 183951, 4384718937L );
 
@@ -470,7 +450,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromPoint2D()
+    void shouldCreateValueFromPoint2D()
     {
         Value point2DValue1 = point( 1, 2, 3 );
         Point point2D = point2DValue1.asPoint();
@@ -482,7 +462,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromPoint3D()
+    void shouldCreateValueFromPoint3D()
     {
         Value point3DValue1 = point( 1, 2, 3, 4 );
         Point point3D = point3DValue1.asPoint();
@@ -494,7 +474,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromNodeValue()
+    void shouldCreateValueFromNodeValue()
     {
         NodeValue node = emptyNodeValue();
         Value value = value( node );
@@ -502,7 +482,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromNode()
+    void shouldCreateValueFromNode()
     {
         Node node = emptyNodeValue().asNode();
         Value value = value( node );
@@ -510,7 +490,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromRelationshipValue()
+    void shouldCreateValueFromRelationshipValue()
     {
         RelationshipValue rel = emptyRelationshipValue();
         Value value = value( rel );
@@ -518,7 +498,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromRelationship()
+    void shouldCreateValueFromRelationship()
     {
         Relationship rel = emptyRelationshipValue().asRelationship();
         Value value = value( rel );
@@ -526,7 +506,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromPathValue()
+    void shouldCreateValueFromPathValue()
     {
         PathValue path = filledPathValue();
         Value value = value( path );
@@ -534,7 +514,7 @@ public class ValuesTest
     }
 
     @Test
-    public void shouldCreateValueFromPath()
+    void shouldCreateValueFromPath()
     {
         Path path = filledPathValue().asPath();
         Value value = value( path );

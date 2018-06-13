@@ -22,8 +22,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,9 +32,9 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -42,19 +42,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 
-public class ChannelReleasingResetResponseHandlerTest
+class ChannelReleasingResetResponseHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldReleaseChannelOnSuccess()
+    void shouldReleaseChannelOnSuccess()
     {
         ChannelPool pool = newChannelPoolMock();
         FakeClock clock = new FakeClock();
@@ -71,7 +71,7 @@ public class ChannelReleasingResetResponseHandlerTest
     }
 
     @Test
-    public void shouldCloseAndReleaseChannelOnFailure()
+    void shouldCloseAndReleaseChannelOnFailure()
     {
         ChannelPool pool = newChannelPoolMock();
         FakeClock clock = new FakeClock();
@@ -88,7 +88,7 @@ public class ChannelReleasingResetResponseHandlerTest
     }
 
     @Test
-    public void shouldUnMuteAckFailureOnSuccess()
+    void shouldUnMuteAckFailureOnSuccess()
     {
         ChannelPool pool = newChannelPoolMock();
         ChannelReleasingResetResponseHandler handler = newHandler( pool, new FakeClock(), new CompletableFuture<>() );
@@ -99,7 +99,7 @@ public class ChannelReleasingResetResponseHandlerTest
     }
 
     @Test
-    public void shouldUnMuteAckFailureOnFailure()
+    void shouldUnMuteAckFailureOnFailure()
     {
         ChannelPool pool = newChannelPoolMock();
         ChannelReleasingResetResponseHandler handler = newHandler( pool, new FakeClock(), new CompletableFuture<>() );

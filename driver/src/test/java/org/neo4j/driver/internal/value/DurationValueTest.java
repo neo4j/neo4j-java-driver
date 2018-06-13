@@ -18,20 +18,20 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import org.neo4j.driver.v1.types.IsoDuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DurationValueTest
+class DurationValueTest
 {
     @Test
-    public void shouldHaveCorrectType()
+    void shouldHaveCorrectType()
     {
         IsoDuration duration = newDuration( 1, 2, 3, 4 );
         DurationValue durationValue = new DurationValue( duration );
@@ -39,7 +39,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldSupportAsObject()
+    void shouldSupportAsObject()
     {
         IsoDuration duration = newDuration( 11, 22, 33, 44 );
         DurationValue durationValue = new DurationValue( duration );
@@ -47,7 +47,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldSupportAsOffsetTime()
+    void shouldSupportAsOffsetTime()
     {
         IsoDuration duration = newDuration( 111, 222, 333, 444 );
         DurationValue durationValue = new DurationValue( duration );
@@ -55,19 +55,12 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldNotSupportAsLong()
+    void shouldNotSupportAsLong()
     {
         IsoDuration duration = newDuration( 1111, 2222, 3333, 4444 );
         DurationValue durationValue = new DurationValue( duration );
 
-        try
-        {
-            durationValue.asLong();
-            fail( "Exception expected" );
-        }
-        catch ( Uncoercible ignore )
-        {
-        }
+        assertThrows( Uncoercible.class, durationValue::asLong );
     }
 
     private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )

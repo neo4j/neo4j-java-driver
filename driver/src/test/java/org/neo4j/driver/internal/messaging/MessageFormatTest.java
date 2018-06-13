@@ -22,9 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -43,9 +41,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -59,15 +57,12 @@ import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 
-public class MessageFormatTest
+class MessageFormatTest
 {
     public MessageFormat format = new PackStreamMessageFormatV1();
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldPackAllRequests() throws Throwable
+    void shouldPackAllRequests() throws Throwable
     {
         assertSerializes( new RunMessage( "Hello", parameters().asMap( ofValue() ) ) );
         assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap( ofValue() ) ) );
@@ -80,14 +75,14 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldUnpackAllResponses() throws Throwable
+    void shouldUnpackAllResponses() throws Throwable
     {
         assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
         assertSerializes( new SuccessMessage( new HashMap<>() ) );
     }
 
     @Test
-    public void shouldPackUnpackValidValues() throws Throwable
+    void shouldPackUnpackValidValues() throws Throwable
     {
         assertSerializesValue( value( parameters( "cat", null, "dog", null ) ) );
         assertSerializesValue( value( parameters( "k", 12, "a", "banana" ) ) );
@@ -95,7 +90,7 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldUnpackNodeRelationshipAndPath() throws Throwable
+    void shouldUnpackNodeRelationshipAndPath() throws Throwable
     {
         // Given
         assertOnlyDeserializesValue( emptyNodeValue() );
@@ -108,7 +103,7 @@ public class MessageFormatTest
 
 
     @Test
-    public void shouldErrorPackingNode() throws Throwable
+    void shouldErrorPackingNode() throws Throwable
     {
         // Given
         Value value = filledNodeValue();
@@ -116,7 +111,7 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldErrorPackingRelationship() throws Throwable
+    void shouldErrorPackingRelationship() throws Throwable
     {
         // Given
         Value value = filledRelationshipValue();
@@ -124,7 +119,7 @@ public class MessageFormatTest
     }
 
     @Test
-    public void shouldErrorPackingPath() throws Throwable
+    void shouldErrorPackingPath() throws Throwable
     {
         // Given
         Value value = filledPathValue();
@@ -133,7 +128,7 @@ public class MessageFormatTest
 
 
     @Test
-    public void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
+    void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
     {
         // Given
         ChunkAwareByteBufOutput output = new ChunkAwareByteBufOutput();
@@ -149,13 +144,10 @@ public class MessageFormatTest
         BoltProtocolUtil.writeMessageBoundary( buf );
 
         // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( startsWith(
+        ClientException error = assertThrows( ClientException.class, () -> unpack( buf, newEmbeddedChannel() ) );
+        assertThat( error.getMessage(), startsWith(
                 "Invalid message received, serialized NODE structures should have 3 fields, " +
                 "received NODE structure has 0 fields." ) );
-
-        // When
-        unpack( buf, newEmbeddedChannel() );
     }
 
     private void assertSerializesValue( Value value ) throws Throwable
@@ -246,21 +238,10 @@ public class MessageFormatTest
         RecordMessage message = new RecordMessage( new Value[]{value} );
         EmbeddedChannel channel = newEmbeddedChannel();
 
-        try
-        {
-            pack( message, channel );
-            fail( "Expecting a EncoderException" );
-        }
-        catch ( EncoderException e )
-        {
-            Throwable cause = e.getCause();
-            assertThat( cause, instanceOf( IOException.class ) );
-            assertThat( cause.getMessage(), equalTo( errorMessage ) );
-        }
-        catch ( Exception e )
-        {
-            fail( "Expecting a EncoderException but got " + e );
-        }
+        EncoderException error = assertThrows( EncoderException.class, () -> pack( message, channel ) );
+        Throwable cause = error.getCause();
+        assertThat( cause, instanceOf( IOException.class ) );
+        assertThat( cause.getMessage(), equalTo( errorMessage ) );
     }
 
 }

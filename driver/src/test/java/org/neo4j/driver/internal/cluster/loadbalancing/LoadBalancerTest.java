@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,14 +44,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -70,10 +69,10 @@ import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class LoadBalancerTest
+class LoadBalancerTest
 {
     @Test
-    public void acquireShouldUpdateRoutingTableWhenKnownRoutingTableIsStale()
+    void acquireShouldUpdateRoutingTableWhenKnownRoutingTableIsStale()
     {
         BoltServerAddress initialRouter = new BoltServerAddress( "initialRouter", 1 );
         BoltServerAddress reader1 = new BoltServerAddress( "reader-1", 2 );
@@ -104,31 +103,31 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldRediscoverOnReadWhenRoutingTableIsStaleForReads()
+    void shouldRediscoverOnReadWhenRoutingTableIsStaleForReads()
     {
         testRediscoveryWhenStale( READ );
     }
 
     @Test
-    public void shouldRediscoverOnWriteWhenRoutingTableIsStaleForWrites()
+    void shouldRediscoverOnWriteWhenRoutingTableIsStaleForWrites()
     {
         testRediscoveryWhenStale( WRITE );
     }
 
     @Test
-    public void shouldNotRediscoverOnReadWhenRoutingTableIsStaleForWritesButNotReads()
+    void shouldNotRediscoverOnReadWhenRoutingTableIsStaleForWritesButNotReads()
     {
         testNoRediscoveryWhenNotStale( WRITE, READ );
     }
 
     @Test
-    public void shouldNotRediscoverOnWriteWhenRoutingTableIsStaleForReadsButNotWrites()
+    void shouldNotRediscoverOnWriteWhenRoutingTableIsStaleForReadsButNotWrites()
     {
         testNoRediscoveryWhenNotStale( READ, WRITE );
     }
 
     @Test
-    public void shouldThrowWhenRediscoveryReturnsNoSuitableServers()
+    void shouldThrowWhenRediscoveryReturnsNoSuitableServers()
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
@@ -143,31 +142,15 @@ public class LoadBalancerTest
         LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
 
-        try
-        {
-            await( loadBalancer.acquireConnection( READ ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( SessionExpiredException.class ) );
-            assertThat( e.getMessage(), startsWith( "Failed to obtain connection towards READ server" ) );
-        }
+        SessionExpiredException error1 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( READ ) ) );
+        assertThat( error1.getMessage(), startsWith( "Failed to obtain connection towards READ server" ) );
 
-        try
-        {
-            await( loadBalancer.acquireConnection( WRITE ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( SessionExpiredException.class ) );
-            assertThat( e.getMessage(), startsWith( "Failed to obtain connection towards WRITE server" ) );
-        }
+        SessionExpiredException error2 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( WRITE ) ) );
+        assertThat( error2.getMessage(), startsWith( "Failed to obtain connection towards WRITE server" ) );
     }
 
     @Test
-    public void shouldSelectLeastConnectedAddress()
+    void shouldSelectLeastConnectedAddress()
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
 
@@ -198,7 +181,7 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldRoundRobinWhenNoActiveConnections()
+    void shouldRoundRobinWhenNoActiveConnections()
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
 
@@ -224,7 +207,7 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldTryMultipleServersAfterRediscovery()
+    void shouldTryMultipleServersAfterRediscovery()
     {
         Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A );
         ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses );
@@ -248,7 +231,7 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldRemoveAddressFromRoutingTableOnConnectionFailure()
+    void shouldRemoveAddressFromRoutingTableOnConnectionFailure()
     {
         RoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
         routingTable.update( new ClusterComposition(
@@ -271,7 +254,7 @@ public class LoadBalancerTest
     }
 
     @Test
-    public void shouldRetainAllFetchedAddressesInConnectionPoolAfterFetchingOfRoutingTable()
+    void shouldRetainAllFetchedAddressesInConnectionPoolAfterFetchingOfRoutingTable()
     {
         RoutingTable routingTable = new ClusterRoutingTable( new FakeClock() );
         routingTable.update( new ClusterComposition(

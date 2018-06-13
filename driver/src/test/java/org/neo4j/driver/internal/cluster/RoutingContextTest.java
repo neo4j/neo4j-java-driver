@@ -18,49 +18,47 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RoutingContextTest
+class RoutingContextTest
 {
     @Test
-    public void emptyContextIsNotDefined()
+    void emptyContextIsNotDefined()
     {
         assertFalse( RoutingContext.EMPTY.isDefined() );
     }
 
     @Test
-    public void emptyContextInEmptyMap()
+    void emptyContextInEmptyMap()
     {
         assertTrue( RoutingContext.EMPTY.asMap().isEmpty() );
     }
 
     @Test
-    public void uriWithoutQueryIsParsedToEmptyContext()
+    void uriWithoutQueryIsParsedToEmptyContext()
     {
         testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/" ) );
     }
 
     @Test
-    public void uriWithEmptyQueryIsParsedToEmptyContext()
+    void uriWithEmptyQueryIsParsedToEmptyContext()
     {
         testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687?" ) );
         testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/?" ) );
     }
 
     @Test
-    public void uriWithQueryIsParsed()
+    void uriWithQueryIsParsed()
     {
         URI uri = URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key3=value3" );
         RoutingContext context = new RoutingContext( uri );
@@ -74,61 +72,44 @@ public class RoutingContextTest
     }
 
     @Test
-    public void throwsForInvalidUriQuery()
+    void throwsForInvalidUriQuery()
     {
         testIllegalUri( URI.create( "bolt+routing://localhost:7687/?justKey" ) );
     }
 
     @Test
-    public void throwsForInvalidUriQueryKey()
+    void throwsForInvalidUriQueryKey()
     {
         testIllegalUri( URI.create( "bolt+routing://localhost:7687/?=value1&key2=value2" ) );
     }
 
     @Test
-    public void throwsForInvalidUriQueryValue()
+    void throwsForInvalidUriQueryValue()
     {
         testIllegalUri( URI.create( "bolt+routing://localhost:7687/key1?=value1&key2=" ) );
     }
 
     @Test
-    public void throwsForDuplicatedUriQueryParameters()
+    void throwsForDuplicatedUriQueryParameters()
     {
         testIllegalUri( URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key1=value2" ) );
     }
 
     @Test
-    public void mapRepresentationIsUnmodifiable()
+    void mapRepresentationIsUnmodifiable()
     {
         URI uri = URI.create( "bolt+routing://localhost:7687/?key1=value1" );
         RoutingContext context = new RoutingContext( uri );
 
         assertEquals( singletonMap( "key1", "value1" ), context.asMap() );
 
-        try
-        {
-            context.asMap().put( "key2", "value2" );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
-
+        assertThrows( UnsupportedOperationException.class, () -> context.asMap().put( "key2", "value2" ) );
         assertEquals( singletonMap( "key1", "value1" ), context.asMap() );
     }
 
     private static void testIllegalUri( URI uri )
     {
-        try
-        {
-            new RoutingContext( uri );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> new RoutingContext( uri ) );
     }
 
     private static void testEmptyRoutingContext( URI uri )

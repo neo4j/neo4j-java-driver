@@ -18,22 +18,22 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class Slf4jLoggerTest
+class Slf4jLoggerTest
 {
     private final Logger logger = mock( Logger.class );
     private final Slf4jLogger slf4jLogger = new Slf4jLogger( logger );
 
     @Test
-    public void shouldLogErrorWithMessageAndThrowable()
+    void shouldLogErrorWithMessageAndThrowable()
     {
         when( logger.isErrorEnabled() ).thenReturn( true );
         String message = "Hello";
@@ -45,7 +45,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldLogInfoWithMessageAndParams()
+    void shouldLogInfoWithMessageAndParams()
     {
         when( logger.isInfoEnabled() ).thenReturn( true );
         String message = "One %s, two %s, three %s";
@@ -57,7 +57,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldLogWarnWithMessageAndParams()
+    void shouldLogWarnWithMessageAndParams()
     {
         when( logger.isWarnEnabled() ).thenReturn( true );
         String message = "C for %s, d for %s";
@@ -69,7 +69,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldLogWarnWithMessageAndThrowable()
+    void shouldLogWarnWithMessageAndThrowable()
     {
         when( logger.isWarnEnabled() ).thenReturn( true );
         String message = "Hello";
@@ -81,7 +81,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldLogDebugWithMessageAndParams()
+    void shouldLogDebugWithMessageAndParams()
     {
         when( logger.isDebugEnabled() ).thenReturn( true );
         String message = "Hello%s%s!";
@@ -93,7 +93,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldLogTraceWithMessageAndParams()
+    void shouldLogTraceWithMessageAndParams()
     {
         when( logger.isTraceEnabled() ).thenReturn( true );
         String message = "I'll be %s!";
@@ -105,7 +105,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldCheckIfDebugIsEnabled()
+    void shouldCheckIfDebugIsEnabled()
     {
         when( logger.isDebugEnabled() ).thenReturn( false );
         assertFalse( slf4jLogger.isDebugEnabled() );
@@ -115,7 +115,7 @@ public class Slf4jLoggerTest
     }
 
     @Test
-    public void shouldCheckIfTraceIsEnabled()
+    void shouldCheckIfTraceIsEnabled()
     {
         when( logger.isTraceEnabled() ).thenReturn( false );
         assertFalse( slf4jLogger.isTraceEnabled() );

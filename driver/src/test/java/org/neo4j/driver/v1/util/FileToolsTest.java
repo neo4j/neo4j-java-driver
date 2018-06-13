@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,14 +27,14 @@ import java.io.PrintWriter;
 import java.util.Scanner;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class FileToolsTest
+class FileToolsTest
 {
     @Test
-    public void shouldBeAbleToCreateTemporaryDirectory() throws Throwable
+    void shouldBeAbleToCreateTemporaryDirectory() throws Throwable
     {
         // Given
         File dir = FileTools.tmpDir();
@@ -51,7 +51,7 @@ public class FileToolsTest
     }
 
     @Test
-    public void shouldAddPropertyAtBottom() throws IOException
+    void shouldAddPropertyAtBottom() throws IOException
     {
         // Given
         File propertyFile = createPropertyFile();
@@ -77,7 +77,7 @@ public class FileToolsTest
     }
 
     @Test
-    public void shouldResetPropertyAtTheSameLine() throws IOException
+    void shouldResetPropertyAtTheSameLine() throws IOException
     {
         // Given
         File propertyFile = createPropertyFile();

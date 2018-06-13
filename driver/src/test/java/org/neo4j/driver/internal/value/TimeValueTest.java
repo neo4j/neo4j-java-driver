@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
@@ -26,13 +26,13 @@ import java.time.ZoneOffset;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TimeValueTest
+class TimeValueTest
 {
     @Test
-    public void shouldHaveCorrectType()
+    void shouldHaveCorrectType()
     {
         OffsetTime time = OffsetTime.now().withOffsetSameInstant( ZoneOffset.ofHoursMinutes( 5, 30 ) );
         TimeValue timeValue = new TimeValue( time );
@@ -40,7 +40,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldSupportAsObject()
+    void shouldSupportAsObject()
     {
         OffsetTime time = OffsetTime.of( 19, 0, 10, 1, ZoneOffset.ofHours( -3 ) );
         TimeValue timeValue = new TimeValue( time );
@@ -48,7 +48,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldSupportAsOffsetTime()
+    void shouldSupportAsOffsetTime()
     {
         OffsetTime time = OffsetTime.of( 23, 59, 59, 999_999_999, ZoneOffset.ofHoursMinutes( 2, 15 ) );
         TimeValue timeValue = new TimeValue( time );
@@ -56,18 +56,11 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldNotSupportAsLong()
+    void shouldNotSupportAsLong()
     {
         OffsetTime time = OffsetTime.now().withOffsetSameInstant( ZoneOffset.ofHours( -5 ) );
         TimeValue timeValue = new TimeValue( time );
 
-        try
-        {
-            timeValue.asLong();
-            fail( "Exception expected" );
-        }
-        catch ( Uncoercible ignore )
-        {
-        }
+        assertThrows( Uncoercible.class, timeValue::asLong );
     }
 }

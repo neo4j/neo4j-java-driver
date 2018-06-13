@@ -22,40 +22,40 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.count;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 
-public class EventLoopGroupFactoryTest
+class EventLoopGroupFactoryTest
 {
     private EventLoopGroup eventLoopGroup;
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         shutdown( eventLoopGroup );
     }
 
     @Test
-    public void shouldReturnCorrectChannelClass()
+    void shouldReturnCorrectChannelClass()
     {
         assertEquals( NioSocketChannel.class, EventLoopGroupFactory.channelClass() );
     }
 
     @Test
-    public void shouldCreateEventLoopGroupWithSpecifiedThreadCount()
+    void shouldCreateEventLoopGroupWithSpecifiedThreadCount()
     {
         int threadCount = 2;
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( threadCount );
@@ -64,14 +64,14 @@ public class EventLoopGroupFactoryTest
     }
 
     @Test
-    public void shouldCreateEventLoopGroup()
+    void shouldCreateEventLoopGroup()
     {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup();
         assertThat( eventLoopGroup, instanceOf( NioEventLoopGroup.class ) );
     }
 
     @Test
-    public void shouldAssertNotInEventLoopThread() throws Exception
+    void shouldAssertNotInEventLoopThread() throws Exception
     {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
 
@@ -80,19 +80,13 @@ public class EventLoopGroupFactoryTest
 
         // submit assertion to the event loop thread, it should fail there
         Future<?> assertFuture = eventLoopGroup.submit( EventLoopGroupFactory::assertNotInEventLoopThread );
-        try
-        {
-            assertFuture.get( 30, SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), is( blockingOperationInEventLoopError() ) );
-        }
+
+        ExecutionException error = assertThrows( ExecutionException.class, () -> assertFuture.get( 30, SECONDS ) );
+        assertThat( error.getCause(), is( blockingOperationInEventLoopError() ) );
     }
 
     @Test
-    public void shouldCheckIfEventLoopThread() throws Exception
+    void shouldCheckIfEventLoopThread() throws Exception
     {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );
 
@@ -107,7 +101,7 @@ public class EventLoopGroupFactoryTest
      * It's needed because default Netty setup has good performance.
      */
     @Test
-    public void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception
+    void shouldUseSameThreadClassAsNioEventLoopGroupDoesByDefault() throws Exception
     {
         NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup( 1 );
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );

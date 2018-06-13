@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -51,8 +51,8 @@ import static java.time.Month.DECEMBER;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -67,27 +67,20 @@ import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
-public class PackStreamMessageFormatV2Test
+class PackStreamMessageFormatV2Test
 {
     private final PackStreamMessageFormatV2 messageFormat = new PackStreamMessageFormatV2();
 
     @Test
-    public void shouldFailToCreateWriterWithoutByteArraySupport()
+    void shouldFailToCreateWriterWithoutByteArraySupport()
     {
         PackOutput output = mock( PackOutput.class );
 
-        try
-        {
-            messageFormat.newWriter( output, false );
-            fail( "Exception expected" );
-        }
-        catch ( IllegalArgumentException ignore )
-        {
-        }
+        assertThrows( IllegalArgumentException.class, () -> messageFormat.newWriter( output, false ) );
     }
 
     @Test
-    public void shouldWritePoint2D() throws Exception
+    void shouldWritePoint2D() throws Exception
     {
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
@@ -102,7 +95,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWritePoint3D() throws Exception
+    void shouldWritePoint3D() throws Exception
     {
         ByteBuf buf = Unpooled.buffer();
         MessageFormat.Writer writer = newWriter( buf );
@@ -117,7 +110,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadPoint2D() throws Exception
+    void shouldReadPoint2D() throws Exception
     {
         Point point = new InternalPoint2D( 42, 120.65, -99.2 );
 
@@ -133,7 +126,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadPoint3D() throws Exception
+    void shouldReadPoint3D() throws Exception
     {
         Point point = new InternalPoint3D( 42, 85.391, 98.8, 11.1 );
 
@@ -150,7 +143,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteDate() throws Exception
+    void shouldWriteDate() throws Exception
     {
         LocalDate date = LocalDate.ofEpochDay( 2147483650L );
         ByteBuf buf = Unpooled.buffer();
@@ -165,7 +158,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadDate() throws Exception
+    void shouldReadDate() throws Exception
     {
         LocalDate date = LocalDate.of( 2012, AUGUST, 3 );
 
@@ -179,7 +172,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteTime() throws Exception
+    void shouldWriteTime() throws Exception
     {
         OffsetTime time = OffsetTime.of( 4, 16, 20, 999, ZoneOffset.MIN );
         ByteBuf buf = Unpooled.buffer();
@@ -194,7 +187,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadTime() throws Exception
+    void shouldReadTime() throws Exception
     {
         OffsetTime time = OffsetTime.of( 23, 59, 59, 999, ZoneOffset.MAX );
 
@@ -209,7 +202,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteLocalTime() throws Exception
+    void shouldWriteLocalTime() throws Exception
     {
         LocalTime time = LocalTime.of( 12, 9, 18, 999_888 );
         ByteBuf buf = Unpooled.buffer();
@@ -224,7 +217,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadLocalTime() throws Exception
+    void shouldReadLocalTime() throws Exception
     {
         LocalTime time = LocalTime.of( 12, 25 );
 
@@ -238,7 +231,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteLocalDateTime() throws Exception
+    void shouldWriteLocalDateTime() throws Exception
     {
         LocalDateTime dateTime = LocalDateTime.of( 2049, DECEMBER, 12, 17, 25, 49, 199 );
         ByteBuf buf = Unpooled.buffer();
@@ -253,7 +246,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadLocalDateTime() throws Exception
+    void shouldReadLocalDateTime() throws Exception
     {
         LocalDateTime dateTime = LocalDateTime.of( 1999, APRIL, 3, 19, 5, 5, 100_200_300 );
 
@@ -268,7 +261,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteZonedDateTimeWithOffset() throws Exception
+    void shouldWriteZonedDateTimeWithOffset() throws Exception
     {
         ZoneOffset zoneOffset = ZoneOffset.ofHoursMinutes( 9, 30 );
         ZonedDateTime dateTime = ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, zoneOffset );
@@ -287,7 +280,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadZonedDateTimeWithOffset() throws Exception
+    void shouldReadZonedDateTimeWithOffset() throws Exception
     {
         ZoneOffset zoneOffset = ZoneOffset.ofHoursMinutes( -7, -15 );
         ZonedDateTime dateTime = ZonedDateTime.of( 1823, 1, 12, 23, 59, 59, 999_999_999, zoneOffset );
@@ -304,7 +297,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteZonedDateTimeWithZoneId() throws Exception
+    void shouldWriteZonedDateTimeWithZoneId() throws Exception
     {
         String zoneName = "Europe/Stockholm";
         byte[] zoneNameBytes = zoneName.getBytes();
@@ -332,7 +325,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadZonedDateTimeWithZoneId() throws Exception
+    void shouldReadZonedDateTimeWithZoneId() throws Exception
     {
         String zoneName = "Europe/Stockholm";
         ZonedDateTime dateTime = ZonedDateTime.of( 1823, 1, 12, 23, 59, 59, 999_999_999, ZoneId.of( zoneName ) );
@@ -349,7 +342,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldWriteDuration() throws Exception
+    void shouldWriteDuration() throws Exception
     {
         Value durationValue = Values.isoDuration( Long.MAX_VALUE - 1, Integer.MAX_VALUE - 1, Short.MAX_VALUE - 1, Byte.MAX_VALUE - 1 );
         IsoDuration duration = durationValue.asIsoDuration();
@@ -367,7 +360,7 @@ public class PackStreamMessageFormatV2Test
     }
 
     @Test
-    public void shouldReadDuration() throws Exception
+    void shouldReadDuration() throws Exception
     {
         Value durationValue = Values.isoDuration( 17, 22, 99, 15 );
         IsoDuration duration = durationValue.asIsoDuration();

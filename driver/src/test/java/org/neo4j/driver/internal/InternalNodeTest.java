@@ -18,38 +18,30 @@
  */
 package org.neo4j.driver.internal;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Test;
-
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.v1.Values.NULL;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalNodeTest
+class InternalNodeTest
 {
     @Test
-    public void extractValuesFromNode()
+    void extractValuesFromNode()
     {
         // GIVEN
         InternalNode node = createNode();
-        Function<Value,Integer> extractor = new Function<Value,Integer>()
-        {
-            @Override
-            public Integer apply( Value value )
-            {
-                return value.asInt();
-            }
-        };
+        Function<Value,Integer> extractor = Value::asInt;
 
         //WHEN
         Iterable<Integer> values = node.values( extractor );
@@ -62,7 +54,7 @@ public class InternalNodeTest
     }
 
     @Test
-    public void accessUnknownKeyShouldBeNull()
+    void accessUnknownKeyShouldBeNull()
     {
         InternalNode node = createNode();
 

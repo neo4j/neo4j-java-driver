@@ -19,17 +19,15 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.ServerVersion;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
@@ -45,12 +43,12 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationRe
 import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 
-public class ChannelAttributesTest
+class ChannelAttributesTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @Test
-    public void shouldSetAndGetAddress()
+    void shouldSetAndGetAddress()
     {
         BoltServerAddress address = new BoltServerAddress( "local:42" );
         setServerAddress( channel, address );
@@ -58,46 +56,30 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldFailToSetAddressTwice()
+    void shouldFailToSetAddressTwice()
     {
         setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
 
-        try
-        {
-            setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> setServerAddress( channel, BoltServerAddress.LOCAL_DEFAULT ) );
     }
 
     @Test
-    public void shouldSetAndGetCreationTimestamp()
+    void shouldSetAndGetCreationTimestamp()
     {
         setCreationTimestamp( channel, 42L );
         assertEquals( 42L, creationTimestamp( channel ) );
     }
 
     @Test
-    public void shouldFailToSetCreationTimestampTwice()
+    void shouldFailToSetCreationTimestampTwice()
     {
         setCreationTimestamp( channel, 42L );
 
-        try
-        {
-            setCreationTimestamp( channel, 42L );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> setCreationTimestamp( channel, 42L ) );
     }
 
     @Test
-    public void shouldSetAndGetLastUsedTimestamp()
+    void shouldSetAndGetLastUsedTimestamp()
     {
         assertNull( lastUsedTimestamp( channel ) );
         setLastUsedTimestamp( channel, 42L );
@@ -105,7 +87,7 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldAllowSettingLastUsedTimestampMultipleTimes()
+    void shouldAllowSettingLastUsedTimestampMultipleTimes()
     {
         setLastUsedTimestamp( channel, 42L );
         setLastUsedTimestamp( channel, 4242L );
@@ -115,7 +97,7 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldSetAndGetMessageDispatcher()
+    void shouldSetAndGetMessageDispatcher()
     {
         InboundMessageDispatcher dispatcher = mock( InboundMessageDispatcher.class );
         setMessageDispatcher( channel, dispatcher );
@@ -123,23 +105,15 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldFailToSetMessageDispatcherTwice()
+    void shouldFailToSetMessageDispatcherTwice()
     {
         setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
 
-        try
-        {
-            setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) ) );
     }
 
     @Test
-    public void shouldSetAndGetServerVersion()
+    void shouldSetAndGetServerVersion()
     {
         ServerVersion version = version( "3.2.1" );
         setServerVersion( channel, version );
@@ -147,23 +121,15 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldFailToSetServerVersionTwice()
+    void shouldFailToSetServerVersionTwice()
     {
         setServerVersion( channel, version( "3.2.2" ) );
 
-        try
-        {
-            setServerVersion( channel, version( "3.2.3" ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> setServerVersion( channel, version( "3.2.3" ) ) );
     }
 
     @Test
-    public void shouldSetAndGetTerminationReason()
+    void shouldSetAndGetTerminationReason()
     {
         String reason = "This channel has been terminated";
         setTerminationReason( channel, reason );
@@ -171,18 +137,10 @@ public class ChannelAttributesTest
     }
 
     @Test
-    public void shouldFailToSetTerminationReasonTwice()
+    void shouldFailToSetTerminationReasonTwice()
     {
         setTerminationReason( channel, "Reason 1" );
 
-        try
-        {
-            setTerminationReason( channel, "Reason 2" );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> setTerminationReason( channel, "Reason 2" ) );
     }
 }

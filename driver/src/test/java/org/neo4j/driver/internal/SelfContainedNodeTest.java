@@ -18,23 +18,22 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.types.Node;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.v1.Values.parameters;
 
-public class SelfContainedNodeTest
+class SelfContainedNodeTest
 {
-
     private Node adamTheNode()
     {
         return new InternalNode( 1, singletonList( "Person" ),
@@ -42,7 +41,7 @@ public class SelfContainedNodeTest
     }
 
     @Test
-    public void testIdentity()
+    void testIdentity()
     {
         // Given
         Node node = adamTheNode();
@@ -52,7 +51,7 @@ public class SelfContainedNodeTest
     }
 
     @Test
-    public void testLabels()
+    void testLabels()
     {
         // Given
         Node node = adamTheNode();
@@ -64,7 +63,7 @@ public class SelfContainedNodeTest
     }
 
     @Test
-    public void testKeys()
+    void testKeys()
     {
         // Given
         Node node = adamTheNode();
@@ -76,7 +75,7 @@ public class SelfContainedNodeTest
     }
 
     @Test
-    public void testValue()
+    void testValue()
     {
         // Given
         Node node = adamTheNode();

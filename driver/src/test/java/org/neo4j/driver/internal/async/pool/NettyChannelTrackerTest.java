@@ -20,25 +20,23 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 
-public class NettyChannelTrackerTest
+class NettyChannelTrackerTest
 {
     private final BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
     private final NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, DEV_NULL_LOGGING );
 
     @Test
-    public void shouldIncrementInUseCountWhenChannelCreated()
+    void shouldIncrementInUseCountWhenChannelCreated()
     {
         Channel channel = newChannel();
         assertEquals( 0, tracker.inUseChannelCount( address ) );
@@ -50,7 +48,7 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldIncrementInUseCountWhenChannelAcquired()
+    void shouldIncrementInUseCountWhenChannelAcquired()
     {
         Channel channel = newChannel();
         assertEquals( 0, tracker.inUseChannelCount( address ) );
@@ -70,7 +68,7 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldIncrementInuseCountForAddress()
+    void shouldIncrementInuseCountForAddress()
     {
         Channel channel1 = newChannel();
         Channel channel2 = newChannel();
@@ -87,7 +85,7 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldDecrementCountForAddress()
+    void shouldDecrementCountForAddress()
     {
         Channel channel1 = newChannel();
         Channel channel2 = newChannel();
@@ -111,7 +109,7 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldDecreaseIdleWhenClosedOutsidePool() throws Throwable
+    void shouldDecreaseIdleWhenClosedOutsidePool() throws Throwable
     {
         // Given
         Channel channel = newChannel();
@@ -132,7 +130,7 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldDecreaseIdleWhenClosedInsidePool() throws Throwable
+    void shouldDecreaseIdleWhenClosedInsidePool() throws Throwable
     {
         // Given
         Channel channel = newChannel();
@@ -153,23 +151,15 @@ public class NettyChannelTrackerTest
     }
 
     @Test
-    public void shouldThrowWhenDecrementingForUnknownAddress()
+    void shouldThrowWhenDecrementingForUnknownAddress()
     {
         Channel channel = newChannel();
 
-        try
-        {
-            tracker.channelReleased( channel );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> tracker.channelReleased( channel ) );
     }
 
     @Test
-    public void shouldReturnZeroActiveCountForUnknownAddress()
+    void shouldReturnZeroActiveCountForUnknownAddress()
     {
         assertEquals( 0, tracker.inUseChannelCount( address ) );
     }

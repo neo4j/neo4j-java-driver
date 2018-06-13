@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -30,18 +28,16 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FloatValueTest
+class FloatValueTest
 {
-    TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    public void testZeroFloatValue() throws Exception
+    void testZeroFloatValue()
     {
         // Given
         FloatValue value = new FloatValue( 0 );
@@ -54,7 +50,7 @@ public class FloatValueTest
     }
 
     @Test
-    public void testNonZeroFloatValue() throws Exception
+    void testNonZeroFloatValue()
     {
         // Given
         FloatValue value = new FloatValue( 6.28 );
@@ -64,7 +60,7 @@ public class FloatValueTest
     }
 
     @Test
-    public void testIsFloat() throws Exception
+    void testIsFloat()
     {
         // Given
         FloatValue value = new FloatValue( 6.28 );
@@ -74,7 +70,7 @@ public class FloatValueTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    void testEquals()
     {
         // Given
         FloatValue firstValue = new FloatValue( 6.28 );
@@ -85,7 +81,7 @@ public class FloatValueTest
     }
 
     @Test
-    public void testHashCode() throws Exception
+    void testHashCode()
     {
         // Given
         FloatValue value = new FloatValue( 6.28 );
@@ -95,47 +91,44 @@ public class FloatValueTest
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         Value value = new FloatValue( 6.28 );
         assertFalse( value.isNull() );
     }
 
     @Test
-    public void shouldTypeAsFloat()
+    void shouldTypeAsFloat()
     {
         InternalValue value = new FloatValue( 6.28 );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.FLOAT ) );
     }
 
     @Test
-    public void shouldThrowIfFloatContainsDecimalWhenConverting()
+    void shouldThrowIfFloatContainsDecimalWhenConverting()
     {
         FloatValue value = new FloatValue( 1.1 );
 
-        exception.expect( LossyCoercion.class );
-        value.asInt();
+        assertThrows( LossyCoercion.class, value::asInt );
     }
 
     @Test
-    public void shouldThrowIfLargerThanIntegerMax()
+    void shouldThrowIfLargerThanIntegerMax()
     {
         FloatValue value1 = new FloatValue( Integer.MAX_VALUE );
         FloatValue value2 = new FloatValue( Integer.MAX_VALUE + 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asInt();
+        assertThrows( LossyCoercion.class, value2::asInt );
     }
 
     @Test
-    public void shouldThrowIfSmallerThanIntegerMin()
+    void shouldThrowIfSmallerThanIntegerMin()
     {
         FloatValue value1 = new FloatValue( Integer.MIN_VALUE );
         FloatValue value2 = new FloatValue( Integer.MIN_VALUE - 1L );
 
         assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asInt();
+        assertThrows( LossyCoercion.class, value2::asInt );
     }
 }
