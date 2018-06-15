@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -27,8 +27,8 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,33 +40,33 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class LeastConnectedLoadBalancingStrategyTest
+class LeastConnectedLoadBalancingStrategyTest
 {
     @Mock
     private ConnectionPool connectionPool;
     private LeastConnectedLoadBalancingStrategy strategy;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp()
     {
         initMocks( this );
         strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING );
     }
 
     @Test
-    public void shouldHandleEmptyReadersArray()
+    void shouldHandleEmptyReadersArray()
     {
         assertNull( strategy.selectReader( new BoltServerAddress[0] ) );
     }
 
     @Test
-    public void shouldHandleEmptyWritersArray()
+    void shouldHandleEmptyWritersArray()
     {
         assertNull( strategy.selectWriter( new BoltServerAddress[0] ) );
     }
 
     @Test
-    public void shouldHandleSingleReaderWithoutActiveConnections()
+    void shouldHandleSingleReaderWithoutActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
 
@@ -74,7 +74,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleSingleWriterWithoutActiveConnections()
+    void shouldHandleSingleWriterWithoutActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
 
@@ -82,7 +82,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleSingleReaderWithActiveConnections()
+    void shouldHandleSingleReaderWithActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
         when( connectionPool.inUseConnections( address ) ).thenReturn( 42 );
@@ -91,7 +91,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleSingleWriterWithActiveConnections()
+    void shouldHandleSingleWriterWithActiveConnections()
     {
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
         when( connectionPool.inUseConnections( address ) ).thenReturn( 24 );
@@ -100,7 +100,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleMultipleReadersWithActiveConnections()
+    void shouldHandleMultipleReadersWithActiveConnections()
     {
         BoltServerAddress address1 = new BoltServerAddress( "reader", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
@@ -114,7 +114,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldHandleMultipleWritersWithActiveConnections()
+    void shouldHandleMultipleWritersWithActiveConnections()
     {
         BoltServerAddress address1 = new BoltServerAddress( "writer", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "writer", 2 );
@@ -131,7 +131,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldReturnDifferentReaderOnEveryInvocationWhenNoActiveConnections()
+    void shouldReturnDifferentReaderOnEveryInvocationWhenNoActiveConnections()
     {
         BoltServerAddress address1 = new BoltServerAddress( "reader", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
@@ -147,7 +147,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldReturnDifferentWriterOnEveryInvocationWhenNoActiveConnections()
+    void shouldReturnDifferentWriterOnEveryInvocationWhenNoActiveConnections()
     {
         BoltServerAddress address1 = new BoltServerAddress( "writer", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "writer", 2 );
@@ -160,7 +160,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldTraceLogWhenNoAddressSelected()
+    void shouldTraceLogWhenNoAddressSelected()
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
@@ -176,7 +176,7 @@ public class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    public void shouldTraceLogSelectedAddress()
+    void shouldTraceLogSelectedAddress()
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );

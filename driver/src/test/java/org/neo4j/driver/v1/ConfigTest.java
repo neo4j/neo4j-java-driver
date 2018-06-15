@@ -18,23 +18,21 @@
  */
 package org.neo4j.driver.v1;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConfigTest
+class ConfigTest
 {
     @Test
-    public void shouldDefaultToKnownCerts()
+    void shouldDefaultToKnownCerts()
     {
         // Given
         Config config = Config.defaultConfig();
@@ -48,7 +46,7 @@ public class ConfigTest
 
     @SuppressWarnings( "deprecation" )
     @Test
-    public void shouldChangeToNewKnownCerts()
+    void shouldChangeToNewKnownCerts()
     {
         // Given
         File knownCerts = new File( "new_known_hosts" );
@@ -63,7 +61,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldChangeToTrustedCert()
+    void shouldChangeToTrustedCert()
     {
         // Given
         File trustedCert = new File( "trusted_cert" );
@@ -78,7 +76,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
+    void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
     {
         Config config = Config.build().withConnectionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).toConfig();
 
@@ -86,7 +84,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
     {
         Config config = Config.build().withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS ).toConfig();
 
@@ -94,7 +92,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
     {
         Config config = Config.build().withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS ).toConfig();
 
@@ -102,13 +100,13 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldHaveCorrectMaxConnectionLifetime()
+    void shouldHaveCorrectMaxConnectionLifetime()
     {
         assertEquals( TimeUnit.HOURS.toMillis( 1 ), Config.defaultConfig().maxConnectionLifetimeMillis() );
     }
 
     @Test
-    public void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
+    void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
     {
         Config config = Config.build().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).toConfig();
 
@@ -116,7 +114,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowZeroConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowZeroConnectionMaxConnectionLifetime() throws Throwable
     {
         Config config = Config.build().withMaxConnectionLifetime( 0, TimeUnit.SECONDS ).toConfig();
 
@@ -124,7 +122,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowNegativeConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowNegativeConnectionMaxConnectionLifetime() throws Throwable
     {
         Config config = Config.build().withMaxConnectionLifetime( -42, TimeUnit.SECONDS ).toConfig();
 
@@ -132,7 +130,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldTurnOnLeakedSessionsLogging()
+    void shouldTurnOnLeakedSessionsLogging()
     {
         // leaked sessions logging is turned off by default
         assertFalse( Config.build().toConfig().logLeakedSessions() );
@@ -142,76 +140,52 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldHaveDefaultConnectionTimeout()
+    void shouldHaveDefaultConnectionTimeout()
     {
         Config defaultConfig = Config.defaultConfig();
         assertEquals( TimeUnit.SECONDS.toMillis( 5 ), defaultConfig.connectionTimeoutMillis() );
     }
 
     @Test
-    public void shouldRespectConfiguredConnectionTimeout()
+    void shouldRespectConfiguredConnectionTimeout()
     {
         Config config = Config.build().withConnectionTimeout( 42, TimeUnit.HOURS ).toConfig();
         assertEquals( TimeUnit.HOURS.toMillis( 42 ), config.connectionTimeoutMillis() );
     }
 
     @Test
-    public void shouldAllowConnectionTimeoutOfZero()
+    void shouldAllowConnectionTimeoutOfZero()
     {
         Config config = Config.build().withConnectionTimeout( 0, TimeUnit.SECONDS ).toConfig();
         assertEquals( 0, config.connectionTimeoutMillis() );
     }
 
     @Test
-    public void shouldThrowForNegativeConnectionTimeout()
+    void shouldThrowForNegativeConnectionTimeout()
     {
         Config.ConfigBuilder builder = Config.build();
 
-        try
-        {
-            builder.withConnectionTimeout( -42, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> builder.withConnectionTimeout( -42, TimeUnit.SECONDS ) );
     }
 
     @Test
-    public void shouldThrowForTooLargeConnectionTimeout()
+    void shouldThrowForTooLargeConnectionTimeout()
     {
         Config.ConfigBuilder builder = Config.build();
 
-        try
-        {
-            builder.withConnectionTimeout( Long.MAX_VALUE - 42, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> builder.withConnectionTimeout( Long.MAX_VALUE - 42, TimeUnit.SECONDS ) );
     }
 
     @Test
-    public void shouldNotAllowNegativeMaxRetryTimeMs()
+    void shouldNotAllowNegativeMaxRetryTimeMs()
     {
         Config.ConfigBuilder builder = Config.build();
 
-        try
-        {
-            builder.withMaxTransactionRetryTime( -42, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> builder.withMaxTransactionRetryTime( -42, TimeUnit.SECONDS ) );
     }
 
     @Test
-    public void shouldAllowZeroMaxRetryTimeMs()
+    void shouldAllowZeroMaxRetryTimeMs()
     {
         Config config = Config.build().withMaxTransactionRetryTime( 0, TimeUnit.SECONDS ).toConfig();
 
@@ -219,7 +193,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowPositiveRetryAttempts()
+    void shouldAllowPositiveRetryAttempts()
     {
         Config config = Config.build().withMaxTransactionRetryTime( 42, TimeUnit.SECONDS ).toConfig();
 
@@ -227,13 +201,13 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldHaveCorrectDefaultMaxConnectionPoolSize()
+    void shouldHaveCorrectDefaultMaxConnectionPoolSize()
     {
         assertEquals( 100, Config.defaultConfig().maxConnectionPoolSize() );
     }
 
     @Test
-    public void shouldAllowPositiveMaxConnectionPoolSize()
+    void shouldAllowPositiveMaxConnectionPoolSize()
     {
         Config config = Config.build().withMaxConnectionPoolSize( 42 ).toConfig();
 
@@ -241,7 +215,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowNegativeMaxConnectionPoolSize()
+    void shouldAllowNegativeMaxConnectionPoolSize()
     {
         Config config = Config.build().withMaxConnectionPoolSize( -42 ).toConfig();
 
@@ -249,27 +223,20 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldDisallowZeroMaxConnectionPoolSize()
+    void shouldDisallowZeroMaxConnectionPoolSize()
     {
-        try
-        {
-            Config.build().withMaxConnectionPoolSize( 0 ).toConfig();
-            fail( "Exception expected" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            assertEquals( "Zero value is not supported", e.getMessage() );
-        }
+        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> Config.build().withMaxConnectionPoolSize( 0 ).toConfig() );
+        assertEquals( "Zero value is not supported", e.getMessage() );
     }
 
     @Test
-    public void shouldHaveCorrectDefaultConnectionAcquisitionTimeout()
+    void shouldHaveCorrectDefaultConnectionAcquisitionTimeout()
     {
         assertEquals( TimeUnit.SECONDS.toMillis( 60 ), Config.defaultConfig().connectionAcquisitionTimeoutMillis() );
     }
 
     @Test
-    public void shouldAllowPositiveConnectionAcquisitionTimeout()
+    void shouldAllowPositiveConnectionAcquisitionTimeout()
     {
         Config config = Config.build().withConnectionAcquisitionTimeout( 42, TimeUnit.SECONDS ).toConfig();
 
@@ -277,7 +244,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowNegativeConnectionAcquisitionTimeout()
+    void shouldAllowNegativeConnectionAcquisitionTimeout()
     {
         Config config = Config.build().withConnectionAcquisitionTimeout( -42, TimeUnit.HOURS ).toConfig();
 
@@ -285,7 +252,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldAllowConnectionAcquisitionTimeoutOfZero()
+    void shouldAllowConnectionAcquisitionTimeoutOfZero()
     {
         Config config = Config.build().withConnectionAcquisitionTimeout( 0, TimeUnit.DAYS ).toConfig();
 
@@ -293,7 +260,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldEnableAndDisableHostnameVerificationOnTrustStrategy()
+    void shouldEnableAndDisableHostnameVerificationOnTrustStrategy()
     {
         Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustAllCertificates();
         assertFalse( trustStrategy.isHostnameVerificationEnabled() );

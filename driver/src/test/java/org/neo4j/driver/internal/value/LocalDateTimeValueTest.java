@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
@@ -28,13 +28,13 @@ import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 import static java.time.Month.AUGUST;
 import static java.time.Month.FEBRUARY;
 import static java.time.Month.JANUARY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class LocalDateTimeValueTest
+class LocalDateTimeValueTest
 {
     @Test
-    public void shouldHaveCorrectType()
+    void shouldHaveCorrectType()
     {
         LocalDateTime dateTime = LocalDateTime.of( 1991, AUGUST, 24, 12, 0, 0 );
         LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
@@ -42,7 +42,7 @@ public class LocalDateTimeValueTest
     }
 
     @Test
-    public void shouldSupportAsObject()
+    void shouldSupportAsObject()
     {
         LocalDateTime dateTime = LocalDateTime.of( 2015, FEBRUARY, 2, 23, 59, 59, 999_999 );
         LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
@@ -50,7 +50,7 @@ public class LocalDateTimeValueTest
     }
 
     @Test
-    public void shouldSupportAsLocalDateTime()
+    void shouldSupportAsLocalDateTime()
     {
         LocalDateTime dateTime = LocalDateTime.of( 1822, JANUARY, 24, 9, 23, 57, 123 );
         LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
@@ -58,18 +58,11 @@ public class LocalDateTimeValueTest
     }
 
     @Test
-    public void shouldNotSupportAsLong()
+    void shouldNotSupportAsLong()
     {
         LocalDateTime dateTime = LocalDateTime.now();
         LocalDateTimeValue dateTimeValue = new LocalDateTimeValue( dateTime );
 
-        try
-        {
-            dateTimeValue.asLong();
-            fail( "Exception expected" );
-        }
-        catch ( Uncoercible ignore )
-        {
-        }
+        assertThrows( Uncoercible.class, dateTimeValue::asLong );
     }
 }

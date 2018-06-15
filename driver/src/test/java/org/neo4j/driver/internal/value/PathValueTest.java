@@ -18,37 +18,35 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
-public class PathValueTest
+class PathValueTest
 {
     @Test
-    public void shouldHaveSensibleToString() throws Throwable
+    void shouldHaveSensibleToString()
     {
         assertEquals("path[(42)-[43:T]->(44)]", filledPathValue().toString());
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         Value value = filledPathValue();
         assertFalse( value.isNull() );
     }
 
-
     @Test
-    public void shouldHaveCorrectType() throws Throwable
+    void shouldHaveCorrectType()
     {
-
         assertThat( filledPathValue().type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.PATH() ));
     }
 }

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SessionPullAllResponseHandlerTest
+class SessionPullAllResponseHandlerTest
 {
     @Test
-    public void shouldReleaseConnectionOnSuccess()
+    void shouldReleaseConnectionOnSuccess()
     {
         Connection connection = newConnectionMock();
         SessionPullAllResponseHandler handler = newHandler( connection );
@@ -46,7 +46,7 @@ public class SessionPullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReleaseConnectionOnFailure()
+    void shouldReleaseConnectionOnFailure()
     {
         Connection connection = newConnectionMock();
         SessionPullAllResponseHandler handler = newHandler( connection );

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -27,15 +27,15 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class StringValueTest
+class StringValueTest
 {
-    TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
+    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    public void testStringValue() throws Exception
+    void testStringValue()
     {
         // Given
         StringValue value = new StringValue( "Spongebob" );
@@ -45,7 +45,7 @@ public class StringValueTest
     }
 
     @Test
-    public void testIsString() throws Exception
+    void testIsString()
     {
         // Given
         StringValue value = new StringValue( "Spongebob" );
@@ -55,7 +55,7 @@ public class StringValueTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    void testEquals()
     {
         // Given
         StringValue firstValue = new StringValue( "Spongebob" );
@@ -66,7 +66,7 @@ public class StringValueTest
     }
 
     @Test
-    public void testHashCode() throws Exception
+    void testHashCode()
     {
         // Given
         StringValue value = new StringValue( "Spongebob" );
@@ -76,21 +76,21 @@ public class StringValueTest
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         Value value = new StringValue( "Spongebob" );
         assertFalse( value.isNull() );
     }
 
     @Test
-    public void shouldTypeAsString()
+    void shouldTypeAsString()
     {
         InternalValue value = new StringValue( "Spongebob" );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.STRING ) );
     }
 
     @Test
-    public void shouldHaveStringType()
+    void shouldHaveStringType()
     {
         InternalValue value = new StringValue( "Spongebob" );
         assertThat( value.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.STRING() ) );

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -47,10 +47,10 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -61,10 +61,10 @@ import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class InternalStatementResultCursorTest
+class InternalStatementResultCursorTest
 {
     @Test
-    public void shouldReturnStatementKeys()
+    void shouldReturnStatementKeys()
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>() );
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
@@ -78,7 +78,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldReturnSummary()
+    void shouldReturnSummary()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -94,7 +94,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldReturnNextExistingRecord()
+    void shouldReturnNextExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -107,7 +107,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldReturnNextNonExistingRecord()
+    void shouldReturnNextNonExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
@@ -118,7 +118,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldPeekExistingRecord()
+    void shouldPeekExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -131,7 +131,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldPeekNonExistingRecord()
+    void shouldPeekNonExistingRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.peekAsync() ).thenReturn( completedWithNull() );
@@ -142,7 +142,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldReturnSingleRecord()
+    void shouldReturnSingleRecord()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -156,26 +156,19 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldFailWhenAskedForSingleRecordButResultIsEmpty()
+    void shouldFailWhenAskedForSingleRecordButResultIsEmpty()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( NoSuchRecordException e )
-        {
-            assertThat( e.getMessage(), containsString( "result is empty" ) );
-        }
+        NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), containsString( "result is empty" ) );
     }
 
     @Test
-    public void shouldFailWhenAskedForSingleRecordButResultContainsMore()
+    void shouldFailWhenAskedForSingleRecordButResultContainsMore()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -186,19 +179,12 @@ public class InternalStatementResultCursorTest
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( NoSuchRecordException e )
-        {
-            assertThat( e.getMessage(), containsString( "Ensure your query returns only one record" ) );
-        }
+        NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), containsString( "Ensure your query returns only one record" ) );
     }
 
     @Test
-    public void shouldForEachAsyncWhenResultContainsMultipleRecords()
+    void shouldForEachAsyncWhenResultContainsMultipleRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -222,7 +208,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldForEachAsyncWhenResultContainsOneRecords()
+    void shouldForEachAsyncWhenResultContainsOneRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -243,7 +229,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldForEachAsyncWhenResultContainsNoRecords()
+    void shouldForEachAsyncWhenResultContainsNoRecords()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
@@ -261,7 +247,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldFailForEachWhenGivenActionThrows()
+    void shouldFailForEachWhenGivenActionThrows()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -289,21 +275,15 @@ public class InternalStatementResultCursorTest
             }
         } );
 
-        try
-        {
-            await( stage );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( stage ) );
+        assertEquals( error, e );
+
         assertEquals( 1, recordsProcessed.get() );
         verify( pullAllHandler, times( 2 ) ).nextAsync();
     }
 
     @Test
-    public void shouldReturnFailureWhenExists()
+    void shouldReturnFailureWhenExists()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -316,7 +296,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldReturnNullFailureWhenDoesNotExist()
+    void shouldReturnNullFailureWhenDoesNotExist()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
@@ -327,7 +307,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldListAsyncWithoutMapFunction()
+    void shouldListAsyncWithoutMapFunction()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
@@ -344,7 +324,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldListAsyncWithMapFunction()
+    void shouldListAsyncWithMapFunction()
     {
         Function<Record,String> mapFunction = record -> record.get( 0 ).asString();
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
@@ -359,7 +339,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldPropagateFailureFromListAsyncWithoutMapFunction()
+    void shouldPropagateFailureFromListAsyncWithoutMapFunction()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
@@ -367,20 +347,13 @@ public class InternalStatementResultCursorTest
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
-        try
-        {
-            await( cursor.listAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.listAsync() ) );
+        assertEquals( error, e );
         verify( pullAllHandler ).listAsync( Functions.identity() );
     }
 
     @Test
-    public void shouldPropagateFailureFromListAsyncWithMapFunction()
+    void shouldPropagateFailureFromListAsyncWithMapFunction()
     {
         Function<Record,String> mapFunction = record -> record.get( 0 ).asString();
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
@@ -389,20 +362,14 @@ public class InternalStatementResultCursorTest
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
-        try
-        {
-            await( cursor.listAsync( mapFunction ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.listAsync( mapFunction ) ) );
+        assertEquals( error, e );
+
         verify( pullAllHandler ).listAsync( mapFunction );
     }
 
     @Test
-    public void shouldConsumeAsync()
+    void shouldConsumeAsync()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         ResultSummary summary = mock( ResultSummary.class );
@@ -414,7 +381,7 @@ public class InternalStatementResultCursorTest
     }
 
     @Test
-    public void shouldPropagateFailureInConsumeAsync()
+    void shouldPropagateFailureInConsumeAsync()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
@@ -422,15 +389,8 @@ public class InternalStatementResultCursorTest
 
         InternalStatementResultCursor cursor = newCursor( pullAllHandler );
 
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.consumeAsync() ) );
+        assertEquals( error, e );
     }
 
     private static InternalStatementResultCursor newCursor( PullAllResponseHandler pullAllHandler )

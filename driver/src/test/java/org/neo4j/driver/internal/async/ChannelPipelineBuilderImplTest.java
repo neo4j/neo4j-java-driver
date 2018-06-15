@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -34,14 +34,14 @@ import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class ChannelPipelineBuilderImplTest
+class ChannelPipelineBuilderImplTest
 {
     @Test
-    public void shouldBuildPipeline()
+    void shouldBuildPipeline()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );

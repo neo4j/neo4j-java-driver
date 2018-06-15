@@ -18,27 +18,27 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AckFailureResponseHandlerTest
+class AckFailureResponseHandlerTest
 {
     private final InboundMessageDispatcher dispatcher = mock( InboundMessageDispatcher.class );
     private final AckFailureResponseHandler handler = new AckFailureResponseHandler( dispatcher );
 
     @Test
-    public void shouldClearCurrentErrorOnSuccess()
+    void shouldClearCurrentErrorOnSuccess()
     {
         verify( dispatcher, never() ).clearCurrentError();
         handler.onSuccess( emptyMap() );
@@ -46,23 +46,16 @@ public class AckFailureResponseHandlerTest
     }
 
     @Test
-    public void shouldThrowOnFailure()
+    void shouldThrowOnFailure()
     {
         RuntimeException error = new RuntimeException( "Unable to process ACK_FAILURE" );
 
-        try
-        {
-            handler.onFailure( error );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertSame( error, e.getCause() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> handler.onFailure( error ) );
+        assertSame( error, e.getCause() );
     }
 
     @Test
-    public void shouldClearCurrentErrorWhenAckFailureMutedAndFailureReceived()
+    void shouldClearCurrentErrorWhenAckFailureMutedAndFailureReceived()
     {
         RuntimeException error = new RuntimeException( "Some error" );
         when( dispatcher.isAckFailureMuted() ).thenReturn( true );
@@ -73,15 +66,8 @@ public class AckFailureResponseHandlerTest
     }
 
     @Test
-    public void shouldThrowOnRecord()
+    void shouldThrowOnRecord()
     {
-        try
-        {
-            handler.onRecord( new Value[0] );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedOperationException ignore )
-        {
-        }
+        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( new Value[0] ) );
     }
 }

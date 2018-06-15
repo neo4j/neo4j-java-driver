@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -35,14 +35,14 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class InternalIsoDurationTest
+class InternalIsoDurationTest
 {
     @Test
-    public void shouldExposeMonths()
+    void shouldExposeMonths()
     {
         IsoDuration duration = newDuration( 42, 1, 2, 3 );
         assertEquals( 42, duration.months() );
@@ -50,7 +50,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldExposeDays()
+    void shouldExposeDays()
     {
         IsoDuration duration = newDuration( 1, 42, 2, 3 );
         assertEquals( 42, duration.days() );
@@ -58,7 +58,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldExposeSeconds()
+    void shouldExposeSeconds()
     {
         IsoDuration duration = newDuration( 1, 2, 42, 3 );
         assertEquals( 42, duration.seconds() );
@@ -66,7 +66,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldExposeNanoseconds()
+    void shouldExposeNanoseconds()
     {
         IsoDuration duration = newDuration( 1, 2, 3, 42 );
         assertEquals( 42, duration.nanoseconds() );
@@ -74,29 +74,22 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldFailToGetUnsupportedTemporalUnit()
+    void shouldFailToGetUnsupportedTemporalUnit()
     {
         IsoDuration duration = newDuration( 1, 2, 3, 4 );
 
-        try
-        {
-            duration.get( YEARS );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedTemporalTypeException ignore )
-        {
-        }
+        assertThrows( UnsupportedTemporalTypeException.class, () -> duration.get( YEARS ) );
     }
 
     @Test
-    public void shouldExposeSupportedTemporalUnits()
+    void shouldExposeSupportedTemporalUnits()
     {
         IsoDuration duration = newDuration( 1, 2, 3, 4 );
         assertEquals( asList( MONTHS, DAYS, SECONDS, NANOS ), duration.getUnits() );
     }
 
     @Test
-    public void shouldAddTo()
+    void shouldAddTo()
     {
         IsoDuration duration = newDuration( 1, 2, 3, 4 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 1, 1, 0, 0, 0, 0 );
@@ -107,7 +100,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldSubtractFrom()
+    void shouldSubtractFrom()
     {
         IsoDuration duration = newDuration( 4, 3, 2, 1 );
         LocalDateTime dateTime = LocalDateTime.of( 1990, 7, 19, 0, 0, 59, 999 );
@@ -118,7 +111,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldImplementEqualsAndHashCode()
+    void shouldImplementEqualsAndHashCode()
     {
         IsoDuration duration1 = newDuration( 1, 2, 3, 4 );
         IsoDuration duration2 = newDuration( 1, 2, 3, 4 );
@@ -128,7 +121,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldCreateFromPeriod()
+    void shouldCreateFromPeriod()
     {
         Period period = Period.of( 3, 5, 12 );
 
@@ -141,7 +134,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void shouldCreateFromDuration()
+    void shouldCreateFromDuration()
     {
         Duration duration = Duration.ofSeconds( 391784, 4879173 );
 
@@ -154,7 +147,7 @@ public class InternalIsoDurationTest
     }
 
     @Test
-    public void toStringShouldPrintInIsoStandardFormat()
+    void toStringShouldPrintInIsoStandardFormat()
     {
         assertThat( newDuration( 0, 0, 0, 0 ).toString(), equalTo( "P0M0DT0S" ) );
         assertThat( newDuration( 2, 45, 59, 11 ).toString(), equalTo( "P2M45DT59.000000011S" ) );

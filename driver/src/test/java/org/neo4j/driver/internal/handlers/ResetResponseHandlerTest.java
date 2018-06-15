@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Values.values;
 
-public class ResetResponseHandlerTest
+class ResetResponseHandlerTest
 {
     @Test
-    public void shouldCompleteFutureOnSuccess() throws Exception
+    void shouldCompleteFutureOnSuccess() throws Exception
     {
         CompletableFuture<Void> future = new CompletableFuture<>();
         ResetResponseHandler handler = newHandler( future );
@@ -50,7 +50,7 @@ public class ResetResponseHandlerTest
     }
 
     @Test
-    public void shouldUnMuteAckFailureOnSuccess()
+    void shouldUnMuteAckFailureOnSuccess()
     {
         InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
         ResetResponseHandler handler = newHandler( messageDispatcher, new CompletableFuture<>() );
@@ -61,7 +61,7 @@ public class ResetResponseHandlerTest
     }
 
     @Test
-    public void shouldCompleteFutureOnFailure() throws Exception
+    void shouldCompleteFutureOnFailure() throws Exception
     {
         CompletableFuture<Void> future = new CompletableFuture<>();
         ResetResponseHandler handler = newHandler( future );
@@ -75,7 +75,7 @@ public class ResetResponseHandlerTest
     }
 
     @Test
-    public void shouldUnMuteAckFailureOnFailure()
+    void shouldUnMuteAckFailureOnFailure()
     {
         InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
         ResetResponseHandler handler = newHandler( messageDispatcher, new CompletableFuture<>() );
@@ -86,18 +86,11 @@ public class ResetResponseHandlerTest
     }
 
     @Test
-    public void shouldThrowWhenOnRecord()
+    void shouldThrowWhenOnRecord()
     {
         ResetResponseHandler handler = newHandler( new CompletableFuture<>() );
 
-        try
-        {
-            handler.onRecord( values( 1, 2, 3 ) );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedOperationException ignore )
-        {
-        }
+        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( values( 1, 2, 3 ) ) );
     }
 
     private static ResetResponseHandler newHandler( CompletableFuture<Void> future )

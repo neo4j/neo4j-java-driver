@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -27,17 +27,17 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class BytesValueTest
+class BytesValueTest
 {
-    public static final byte[] TEST_BYTES = "0123".getBytes();
+    private static final byte[] TEST_BYTES = "0123".getBytes();
 
-    TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
+    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    public void testBytesValue() throws Exception
+    void testBytesValue()
     {
         // Given
         BytesValue value = new BytesValue( TEST_BYTES );
@@ -47,7 +47,7 @@ public class BytesValueTest
     }
 
     @Test
-    public void testIsBytes() throws Exception
+    void testIsBytes()
     {
         // Given
         BytesValue value = new BytesValue( TEST_BYTES );
@@ -57,7 +57,7 @@ public class BytesValueTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    void testEquals()
     {
         // Given
         BytesValue firstValue = new BytesValue( TEST_BYTES );
@@ -68,7 +68,7 @@ public class BytesValueTest
     }
 
     @Test
-    public void testHashCode() throws Exception
+    void testHashCode()
     {
         // Given
         BytesValue value = new BytesValue( TEST_BYTES );
@@ -78,21 +78,21 @@ public class BytesValueTest
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         Value value = new BytesValue( TEST_BYTES );
         assertFalse( value.isNull() );
     }
 
     @Test
-    public void shouldTypeAsString()
+    void shouldTypeAsString()
     {
         InternalValue value = new BytesValue( TEST_BYTES );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.BYTES ) );
     }
 
     @Test
-    public void shouldHaveBytesType()
+    void shouldHaveBytesType()
     {
         InternalValue value = new BytesValue( TEST_BYTES );
         assertThat( value.type(), equalTo( InternalTypeSystem.TYPE_SYSTEM.BYTES() ) );

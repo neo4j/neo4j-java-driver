@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,26 +28,19 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.v1.Values.NULL;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalRelationshipTest
+class InternalRelationshipTest
 {
     @Test
-    public void extractValuesFromNode()
+    void extractValuesFromNode()
     {
         // GIVEN
         InternalRelationship relationship = createRelationship();
-        Function<Value,Integer> extractor = new Function<Value,Integer>()
-        {
-            @Override
-            public Integer apply( Value value )
-            {
-                return value.asInt();
-            }
-        };
+        Function<Value,Integer> extractor = Value::asInt;
 
         //WHEN
         Iterable<Integer> values = relationship.values( extractor );
@@ -60,7 +53,7 @@ public class InternalRelationshipTest
     }
 
     @Test
-    public void accessUnknownKeyShouldBeNull()
+    void accessUnknownKeyShouldBeNull()
     {
         InternalRelationship relationship = createRelationship();
 

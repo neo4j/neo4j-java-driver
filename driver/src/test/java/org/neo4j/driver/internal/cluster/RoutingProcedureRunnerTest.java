@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.List;
@@ -35,10 +35,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,10 +51,10 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class RoutingProcedureRunnerTest
+class RoutingProcedureRunnerTest
 {
     @Test
-    public void shouldCallGetRoutingTableWithEmptyMap()
+    void shouldCallGetRoutingTableWithEmptyMap()
     {
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
@@ -68,7 +68,7 @@ public class RoutingProcedureRunnerTest
     }
 
     @Test
-    public void shouldCallGetRoutingTableWithParam()
+    void shouldCallGetRoutingTableWithParam()
     {
         URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
@@ -85,7 +85,7 @@ public class RoutingProcedureRunnerTest
     }
 
     @Test
-    public void shouldCallGetServers()
+    void shouldCallGetServers()
     {
         URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
@@ -101,7 +101,7 @@ public class RoutingProcedureRunnerTest
     }
 
     @Test
-    public void shouldReturnFailedResponseOnClientException()
+    void shouldReturnFailedResponseOnClientException()
     {
         ClientException error = new ClientException( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
@@ -113,41 +113,27 @@ public class RoutingProcedureRunnerTest
     }
 
     @Test
-    public void shouldReturnFailedStageOnError()
+    void shouldReturnFailedStageOnError()
     {
         Exception error = new Exception( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        try
-        {
-            await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( error, e );
-        }
+        Exception e = assertThrows( Exception.class, () -> await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldPropagateErrorFromConnectionStage()
+    void shouldPropagateErrorFromConnectionStage()
     {
         RuntimeException error = new RuntimeException( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
 
-        try
-        {
-            await( runner.run( failedFuture( error ) ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( failedFuture( error ) ) ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldReleaseConnectionOnSuccess()
+    void shouldReleaseConnectionOnSuccess()
     {
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( singletonList( mock( Record.class ) ) ) );
@@ -161,7 +147,7 @@ public class RoutingProcedureRunnerTest
     }
 
     @Test
-    public void shouldPropagateReleaseError()
+    void shouldPropagateReleaseError()
     {
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( singletonList( mock( Record.class ) ) ) );
@@ -170,15 +156,8 @@ public class RoutingProcedureRunnerTest
         CompletionStage<Connection> connectionStage = connectionStage( "Neo4j/3.3.3", failedFuture( releaseError ) );
         Connection connection = await( connectionStage );
 
-        try
-        {
-            await( runner.run( connectionStage ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( releaseError, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connectionStage ) ) );
+        assertEquals( releaseError, e );
         verify( connection ).release();
     }
 

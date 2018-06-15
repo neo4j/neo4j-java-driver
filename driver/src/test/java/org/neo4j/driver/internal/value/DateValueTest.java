@@ -18,20 +18,20 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.exceptions.value.Uncoercible;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DateValueTest
+class DateValueTest
 {
     @Test
-    public void shouldHaveCorrectType()
+    void shouldHaveCorrectType()
     {
         LocalDate localDate = LocalDate.now();
         DateValue dateValue = new DateValue( localDate );
@@ -39,7 +39,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldSupportAsObject()
+    void shouldSupportAsObject()
     {
         LocalDate localDate = LocalDate.now();
         DateValue dateValue = new DateValue( localDate );
@@ -47,7 +47,7 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldSupportAsLocalDate()
+    void shouldSupportAsLocalDate()
     {
         LocalDate localDate = LocalDate.now();
         DateValue dateValue = new DateValue( localDate );
@@ -55,18 +55,11 @@ public class DateValueTest
     }
 
     @Test
-    public void shouldNotSupportAsLong()
+    void shouldNotSupportAsLong()
     {
         LocalDate localDate = LocalDate.now();
         DateValue dateValue = new DateValue( localDate );
 
-        try
-        {
-            dateValue.asLong();
-            fail( "Exception expected" );
-        }
-        catch ( Uncoercible ignore )
-        {
-        }
+        assertThrows( Uncoercible.class, dateValue::asLong );
     }
 }

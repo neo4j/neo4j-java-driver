@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,18 +27,18 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
-public class RunResponseHandlerTest
+class RunResponseHandlerTest
 {
     @Test
-    public void shouldNotifyCompletionFutureOnSuccess() throws Exception
+    void shouldNotifyCompletionFutureOnSuccess() throws Exception
     {
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
@@ -51,7 +51,7 @@ public class RunResponseHandlerTest
     }
 
     @Test
-    public void shouldNotifyCompletionFutureOnFailure() throws Exception
+    void shouldNotifyCompletionFutureOnFailure() throws Exception
     {
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
@@ -64,22 +64,15 @@ public class RunResponseHandlerTest
     }
 
     @Test
-    public void shouldThrowOnRecord()
+    void shouldThrowOnRecord()
     {
         RunResponseHandler handler = newHandler();
 
-        try
-        {
-            handler.onRecord( values( "a", "b", "c" ) );
-            fail( "Exception expected" );
-        }
-        catch ( UnsupportedOperationException ignore )
-        {
-        }
+        assertThrows( UnsupportedOperationException.class, () -> handler.onRecord( values( "a", "b", "c" ) ) );
     }
 
     @Test
-    public void shouldReturnNoKeysWhenFailed()
+    void shouldReturnNoKeysWhenFailed()
     {
         RunResponseHandler handler = newHandler();
 
@@ -89,7 +82,7 @@ public class RunResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnDefaultResultAvailableAfterWhenFailed()
+    void shouldReturnDefaultResultAvailableAfterWhenFailed()
     {
         RunResponseHandler handler = newHandler();
 
@@ -99,7 +92,7 @@ public class RunResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnKeysWhenSucceeded()
+    void shouldReturnKeysWhenSucceeded()
     {
         RunResponseHandler handler = newHandler();
 
@@ -110,7 +103,7 @@ public class RunResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnResultAvailableAfterWhenSucceeded()
+    void shouldReturnResultAvailableAfterWhenSucceeded()
     {
         RunResponseHandler handler = newHandler();
 

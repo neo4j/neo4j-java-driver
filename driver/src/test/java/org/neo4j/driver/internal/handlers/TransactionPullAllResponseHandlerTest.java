@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -37,10 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TransactionPullAllResponseHandlerTest
+class TransactionPullAllResponseHandlerTest
 {
     @Test
-    public void shouldMarkTransactionAsFailedOnNonFatalFailures()
+    void shouldMarkTransactionAsFailedOnNonFatalFailures()
     {
         testErrorHandling( new ClientException( "Neo.ClientError.Cluster.NotALeader", "" ), false );
         testErrorHandling( new ClientException( "Neo.ClientError.Procedure.ProcedureCallFailed", "" ), false );
@@ -49,7 +49,7 @@ public class TransactionPullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldMarkTransactionAsTerminatedOnFatalFailures()
+    void shouldMarkTransactionAsTerminatedOnFatalFailures()
     {
         testErrorHandling( new RuntimeException(), true );
         testErrorHandling( new IOException(), true );

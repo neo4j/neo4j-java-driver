@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -32,9 +32,9 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
@@ -46,25 +46,25 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class NettyChannelHealthCheckerTest
+class NettyChannelHealthCheckerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         setMessageDispatcher( channel, dispatcher );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldDropTooOldChannelsWhenMaxLifetimeEnabled()
+    void shouldDropTooOldChannelsWhenMaxLifetimeEnabled()
     {
         int maxLifetime = 1000;
         PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
@@ -79,7 +79,7 @@ public class NettyChannelHealthCheckerTest
     }
 
     @Test
-    public void shouldAllowVeryOldChannelsWhenMaxLifetimeDisabled()
+    void shouldAllowVeryOldChannelsWhenMaxLifetimeDisabled()
     {
         PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
                 DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
@@ -92,25 +92,25 @@ public class NettyChannelHealthCheckerTest
     }
 
     @Test
-    public void shouldKeepIdleConnectionWhenPingSucceeds()
+    void shouldKeepIdleConnectionWhenPingSucceeds()
     {
         testPing( true );
     }
 
     @Test
-    public void shouldDropIdleConnectionWhenPingFails()
+    void shouldDropIdleConnectionWhenPingFails()
     {
         testPing( false );
     }
 
     @Test
-    public void shouldKeepActiveConnections()
+    void shouldKeepActiveConnections()
     {
         testActiveConnectionCheck( true );
     }
 
     @Test
-    public void shouldDropInactiveConnections()
+    void shouldDropInactiveConnections()
     {
         testActiveConnectionCheck( false );
     }

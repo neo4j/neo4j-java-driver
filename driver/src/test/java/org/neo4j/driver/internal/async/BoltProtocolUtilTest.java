@@ -20,9 +20,9 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.BOLT_MAGIC_PREAMBLE;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
@@ -34,10 +34,10 @@ import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeEmptyChunkHe
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeMessageBoundary;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
-public class BoltProtocolUtilTest
+class BoltProtocolUtilTest
 {
     @Test
-    public void shouldReturnHandshakeBuf()
+    void shouldReturnHandshakeBuf()
     {
         assertByteBufContains(
                 handshakeBuf(),
@@ -46,13 +46,13 @@ public class BoltProtocolUtilTest
     }
 
     @Test
-    public void shouldReturnHandshakeString()
+    void shouldReturnHandshakeString()
     {
         assertEquals( "[0x6060b017, 2, 1, 0, 0]", handshakeString() );
     }
 
     @Test
-    public void shouldWriteMessageBoundary()
+    void shouldWriteMessageBoundary()
     {
         ByteBuf buf = Unpooled.buffer();
 
@@ -65,7 +65,7 @@ public class BoltProtocolUtilTest
     }
 
     @Test
-    public void shouldWriteEmptyChunkHeader()
+    void shouldWriteEmptyChunkHeader()
     {
         ByteBuf buf = Unpooled.buffer();
 
@@ -78,7 +78,7 @@ public class BoltProtocolUtilTest
     }
 
     @Test
-    public void shouldWriteChunkHeader()
+    void shouldWriteChunkHeader()
     {
         ByteBuf buf = Unpooled.buffer();
 

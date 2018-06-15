@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -44,12 +44,12 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -58,10 +58,10 @@ import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class PullAllResponseHandlerTest
+class PullAllResponseHandlerTest
 {
     @Test
-    public void shouldReturnNoFailureWhenAlreadySucceeded()
+    void shouldReturnNoFailureWhenAlreadySucceeded()
     {
         PullAllResponseHandler handler = newHandler();
         handler.onSuccess( emptyMap() );
@@ -72,7 +72,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnNoFailureWhenSucceededAfterFailureRequested()
+    void shouldReturnNoFailureWhenSucceededAfterFailureRequested()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -86,7 +86,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureWhenAlreadyFailed()
+    void shouldReturnFailureWhenAlreadyFailed()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -98,7 +98,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureWhenFailedAfterFailureRequested()
+    void shouldReturnFailureWhenFailedAfterFailureRequested()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -113,7 +113,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureWhenRequestedMultipleTimes()
+    void shouldReturnFailureWhenRequestedMultipleTimes()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -134,7 +134,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureOnlyOnceWhenFailedBeforeFailureRequested()
+    void shouldReturnFailureOnlyOnceWhenFailedBeforeFailureRequested()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -146,7 +146,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureOnlyOnceWhenFailedAfterFailureRequested()
+    void shouldReturnFailureOnlyOnceWhenFailedAfterFailureRequested()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -160,7 +160,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnSummaryWhenAlreadySucceeded()
+    void shouldReturnSummaryWhenAlreadySucceeded()
     {
         Statement statement = new Statement( "CREATE () RETURN 42" );
         PullAllResponseHandler handler = newHandler( statement );
@@ -173,7 +173,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnSummaryWhenSucceededAfterSummaryRequested()
+    void shouldReturnSummaryWhenSucceededAfterSummaryRequested()
     {
         Statement statement = new Statement( "RETURN 'Hi!" );
         PullAllResponseHandler handler = newHandler( statement );
@@ -191,26 +191,19 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnFailureWhenSummaryRequestedWhenAlreadyFailed()
+    void shouldReturnFailureWhenSummaryRequestedWhenAlreadyFailed()
     {
         PullAllResponseHandler handler = newHandler();
 
         RuntimeException failure = new RuntimeException( "Computer is burning" );
         handler.onFailure( failure );
 
-        try
-        {
-            await( handler.summaryAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( failure, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.summaryAsync() ) );
+        assertEquals( failure, e );
     }
 
     @Test
-    public void shouldReturnFailureWhenFailedAfterSummaryRequested()
+    void shouldReturnFailureWhenFailedAfterSummaryRequested()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -221,20 +214,12 @@ public class PullAllResponseHandlerTest
         handler.onFailure( failure );
 
         assertTrue( summaryFuture.isDone() );
-
-        try
-        {
-            await( summaryFuture );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( failure, e );
-        }
+        Exception e = assertThrows( Exception.class, () -> await( summaryFuture ) );
+        assertEquals( failure, e );
     }
 
     @Test
-    public void shouldFailSummaryWhenRequestedMultipleTimes()
+    void shouldFailSummaryWhenRequestedMultipleTimes()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -249,29 +234,15 @@ public class PullAllResponseHandlerTest
         assertTrue( summaryFuture1.isDone() );
         assertTrue( summaryFuture2.isDone() );
 
-        try
-        {
-            await( summaryFuture1 );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( failure, e );
-        }
+        Exception e1 = assertThrows( Exception.class, () -> await( summaryFuture1 ) );
+        assertEquals( failure, e1 );
 
-        try
-        {
-            await( summaryFuture2 );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( failure, e );
-        }
+        Exception e2 = assertThrows( Exception.class, () -> await( summaryFuture2 ) );
+        assertEquals( failure, e2 );
     }
 
     @Test
-    public void shouldPropagateFailureOnlyOnceFromSummary()
+    void shouldPropagateFailureOnlyOnceFromSummary()
     {
         Statement statement = new Statement( "CREATE INDEX ON :Person(name)" );
         PullAllResponseHandler handler = newHandler( statement );
@@ -279,15 +250,8 @@ public class PullAllResponseHandlerTest
         IllegalStateException failure = new IllegalStateException( "Some state is illegal :(" );
         handler.onFailure( failure );
 
-        try
-        {
-            await( handler.summaryAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( failure, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.summaryAsync() ) );
+        assertEquals( failure, e );
 
         ResultSummary summary = await( handler.summaryAsync() );
         assertNotNull( summary );
@@ -295,7 +259,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnSummaryWhenAlreadyFailedAndFailureConsumed()
+    void shouldReturnSummaryWhenAlreadyFailedAndFailureConsumed()
     {
         Statement statement = new Statement( "CREATE ()" );
         PullAllResponseHandler handler = newHandler( statement );
@@ -311,7 +275,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekSingleAvailableRecord()
+    void shouldPeekSingleAvailableRecord()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -325,7 +289,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekFirstRecordWhenMultipleAvailable()
+    void shouldPeekFirstRecordWhenMultipleAvailable()
     {
         List<String> keys = asList( "key1", "key2", "key3" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -343,7 +307,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekRecordThatBecomesAvailableLater()
+    void shouldPeekRecordThatBecomesAvailableLater()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -361,7 +325,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekAvailableNothingAfterSuccess()
+    void shouldPeekAvailableNothingAfterSuccess()
     {
         List<String> keys = asList( "key1", "key2", "key3" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -377,7 +341,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekNothingAfterSuccess()
+    void shouldPeekNothingAfterSuccess()
     {
         PullAllResponseHandler handler = newHandler();
         handler.onSuccess( emptyMap() );
@@ -386,7 +350,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPeekWhenRequestedMultipleTimes()
+    void shouldPeekWhenRequestedMultipleTimes()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -424,26 +388,19 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPropagateNotConsumedFailureInPeek()
+    void shouldPropagateNotConsumedFailureInPeek()
     {
         PullAllResponseHandler handler = newHandler();
 
         RuntimeException failure = new RuntimeException( "Something is wrong" );
         handler.onFailure( failure );
 
-        try
-        {
-            await( handler.peekAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( failure, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.peekAsync() ) );
+        assertEquals( failure, e );
     }
 
     @Test
-    public void shouldPropagateFailureInPeekWhenItBecomesAvailable()
+    void shouldPropagateFailureInPeekWhenItBecomesAvailable()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -453,40 +410,25 @@ public class PullAllResponseHandlerTest
         RuntimeException failure = new RuntimeException( "Error" );
         handler.onFailure( failure );
 
-        try
-        {
-            await( recordFuture );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( failure, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( recordFuture ) );
+        assertEquals( failure, e );
     }
 
     @Test
-    public void shouldPropagateFailureInPeekOnlyOnce()
+    void shouldPropagateFailureInPeekOnlyOnce()
     {
         PullAllResponseHandler handler = newHandler();
 
         RuntimeException failure = new RuntimeException( "Something is wrong" );
         handler.onFailure( failure );
 
-        try
-        {
-            await( handler.peekAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( failure, e );
-        }
-
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.peekAsync() ) );
+        assertEquals( failure, e );
         assertNull( await( handler.peekAsync() ) );
     }
 
     @Test
-    public void shouldReturnSingleAvailableRecordInNextAsync()
+    void shouldReturnSingleAvailableRecordInNextAsync()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -501,7 +443,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnNoRecordsWhenNoneAvailableInNextAsync()
+    void shouldReturnNoRecordsWhenNoneAvailableInNextAsync()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
         handler.onSuccess( emptyMap() );
@@ -510,7 +452,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnNoRecordsWhenSuccessComesAfterNextAsync()
+    void shouldReturnNoRecordsWhenSuccessComesAfterNextAsync()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
 
@@ -524,7 +466,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPullAllAvailableRecordsWithNextAsync()
+    void shouldPullAllAvailableRecordsWithNextAsync()
     {
         List<String> keys = asList( "key1", "key2", "key3" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -568,7 +510,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnRecordInNextAsyncWhenItBecomesAvailableLater()
+    void shouldReturnRecordInNextAsyncWhenItBecomesAvailableLater()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -587,7 +529,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnSameRecordOnceWhenRequestedMultipleTimesInNextAsync()
+    void shouldReturnSameRecordOnceWhenRequestedMultipleTimesInNextAsync()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -615,25 +557,18 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPropagateExistingFailureInNextAsync()
+    void shouldPropagateExistingFailureInNextAsync()
     {
         PullAllResponseHandler handler = newHandler();
         RuntimeException error = new RuntimeException( "Failed to read" );
         handler.onFailure( error );
 
-        try
-        {
-            await( handler.nextAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.nextAsync() ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldPropagateFailureInNextAsyncWhenFailureMessagesArrivesLater()
+    void shouldPropagateFailureInNextAsyncWhenFailureMessagesArrivesLater()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -644,19 +579,12 @@ public class PullAllResponseHandlerTest
         handler.onFailure( error );
 
         assertTrue( recordFuture.isDone() );
-        try
-        {
-            await( recordFuture );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( recordFuture ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldDisableAutoReadWhenTooManyRecordsArrive()
+    void shouldDisableAutoReadWhenTooManyRecordsArrive()
     {
         Connection connection = connectionMock();
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ), connection );
@@ -670,7 +598,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldEnableAutoReadWhenRecordsRetrievedFromBuffer()
+    void shouldEnableAutoReadWhenRecordsRetrievedFromBuffer()
     {
         Connection connection = connectionMock();
         List<String> keys = asList( "key1", "key2" );
@@ -697,7 +625,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldNotDisableAutoReadWhenSummaryRequested()
+    void shouldNotDisableAutoReadWhenSummaryRequested()
     {
         Connection connection = connectionMock();
         List<String> keys = asList( "key1", "key2" );
@@ -733,7 +661,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldNotDisableAutoReadWhenFailureRequested()
+    void shouldNotDisableAutoReadWhenFailureRequested()
     {
         Connection connection = connectionMock();
         List<String> keys = asList( "key1", "key2" );
@@ -769,7 +697,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldEnableAutoReadOnConnectionWhenFailureRequestedButNotAvailable() throws Exception
+    void shouldEnableAutoReadOnConnectionWhenFailureRequestedButNotAvailable() throws Exception
     {
         Connection connection = connectionMock();
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ), connection );
@@ -797,7 +725,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception
+    void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception
     {
         Connection connection = connectionMock();
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2", "key3" ), connection );
@@ -824,25 +752,18 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldPropagateFailureFromListAsync()
+    void shouldPropagateFailureFromListAsync()
     {
         PullAllResponseHandler handler = newHandler();
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );
 
-        try
-        {
-            await( handler.listAsync( Functions.identity() ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Functions.identity() ) ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldPropagateFailureAfterRecordFromListAsync()
+    void shouldPropagateFailureAfterRecordFromListAsync()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
 
@@ -851,19 +772,12 @@ public class PullAllResponseHandlerTest
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );
 
-        try
-        {
-            await( handler.listAsync( Functions.identity() ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Functions.identity() ) ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldFailListAsyncWhenTransformationFunctionThrows()
+    void shouldFailListAsyncWhenTransformationFunctionThrows()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
         handler.onRecord( values( 1, 2 ) );
@@ -881,19 +795,12 @@ public class PullAllResponseHandlerTest
             return 42;
         } );
 
-        try
-        {
-            await( stage );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( stage ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldReturnEmptyListInListAsyncAfterSuccess()
+    void shouldReturnEmptyListInListAsyncAfterSuccess()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -903,7 +810,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnEmptyListInListAsyncAfterFailure()
+    void shouldReturnEmptyListInListAsyncAfterFailure()
     {
         PullAllResponseHandler handler = newHandler();
 
@@ -916,7 +823,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnTransformedListInListAsync()
+    void shouldReturnTransformedListInListAsync()
     {
         PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
 
@@ -932,7 +839,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReturnNotTransformedListInListAsync()
+    void shouldReturnNotTransformedListInListAsync()
     {
         List<String> keys = asList( "key1", "key2" );
         PullAllResponseHandler handler = newHandler( keys );
@@ -957,7 +864,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeAfterSuccessWithRecords()
+    void shouldConsumeAfterSuccessWithRecords()
     {
         PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
         handler.onRecord( values( 1 ) );
@@ -970,7 +877,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeAfterSuccessWithoutRecords()
+    void shouldConsumeAfterSuccessWithoutRecords()
     {
         PullAllResponseHandler handler = newHandler();
         handler.onSuccess( emptyMap() );
@@ -981,7 +888,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeAfterFailureWithRecords()
+    void shouldConsumeAfterFailureWithRecords()
     {
         PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
         handler.onRecord( values( 1 ) );
@@ -989,41 +896,25 @@ public class PullAllResponseHandlerTest
         RuntimeException error = new RuntimeException( "Hi" );
         handler.onFailure( error );
 
-        try
-        {
-            await( handler.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
-
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.consumeAsync() ) );
+        assertEquals( error, e );
         assertNoRecordsCanBeFetched( handler );
     }
 
     @Test
-    public void shouldConsumeAfterFailureWithoutRecords()
+    void shouldConsumeAfterFailureWithoutRecords()
     {
         PullAllResponseHandler handler = newHandler();
         RuntimeException error = new RuntimeException( "Hi" );
         handler.onFailure( error );
 
-        try
-        {
-            await( handler.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
-
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.consumeAsync() ) );
+        assertEquals( error, e );
         assertNoRecordsCanBeFetched( handler );
     }
 
     @Test
-    public void shouldConsumeAfterProcessedFailureWithRecords()
+    void shouldConsumeAfterProcessedFailureWithRecords()
     {
         PullAllResponseHandler handler = newHandler( singletonList( "key1" ) );
         handler.onRecord( values( 1 ) );
@@ -1040,7 +931,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeAfterProcessedFailureWithoutRecords()
+    void shouldConsumeAfterProcessedFailureWithoutRecords()
     {
         PullAllResponseHandler handler = newHandler();
         RuntimeException error = new RuntimeException( "Hi" );
@@ -1055,7 +946,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeUntilSuccess()
+    void shouldConsumeUntilSuccess()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
         handler.onRecord( values( 1, 2 ) );
@@ -1077,7 +968,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldConsumeUntilFailure()
+    void shouldConsumeUntilFailure()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
         handler.onRecord( values( 1, 2 ) );
@@ -1095,21 +986,13 @@ public class PullAllResponseHandlerTest
 
         assertTrue( consumeFuture.isDone() );
         assertTrue( consumeFuture.isCompletedExceptionally() );
-        try
-        {
-            await( consumeFuture );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
-
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( consumeFuture ) );
+        assertEquals( error, e );
         assertNoRecordsCanBeFetched( handler );
     }
 
     @Test
-    public void shouldReturnNoRecordsWhenConsumed()
+    void shouldReturnNoRecordsWhenConsumed()
     {
         PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ) );
         handler.onRecord( values( 1, 2 ) );
@@ -1140,7 +1023,7 @@ public class PullAllResponseHandlerTest
     }
 
     @Test
-    public void shouldReceiveSummaryAfterConsume()
+    void shouldReceiveSummaryAfterConsume()
     {
         Statement statement = new Statement( "RETURN 'Hello!'" );
         PullAllResponseHandler handler = newHandler( statement, singletonList( "key" ) );

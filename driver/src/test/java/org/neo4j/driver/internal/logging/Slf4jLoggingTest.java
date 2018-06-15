@@ -18,18 +18,18 @@
  */
 package org.neo4j.driver.internal.logging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.v1.Logger;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class Slf4jLoggingTest
+class Slf4jLoggingTest
 {
     @Test
-    public void shouldCreateLoggers()
+    void shouldCreateLoggers()
     {
         Slf4jLogging logging = new Slf4jLogging();
 
@@ -39,7 +39,7 @@ public class Slf4jLoggingTest
     }
 
     @Test
-    public void shouldCheckIfAvailable()
+    void shouldCheckIfAvailable()
     {
         assertNull( Slf4jLogging.checkAvailability() );
     }

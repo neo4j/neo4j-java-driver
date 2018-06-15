@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RoundRobinArrayIndexTest
+class RoundRobinArrayIndexTest
 {
     @Test
-    public void shouldHandleZeroLength()
+    void shouldHandleZeroLength()
     {
         RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
 
@@ -35,7 +35,7 @@ public class RoundRobinArrayIndexTest
     }
 
     @Test
-    public void shouldReturnIndexesInRoundRobinOrder()
+    void shouldReturnIndexesInRoundRobinOrder()
     {
         RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex();
 
@@ -53,7 +53,7 @@ public class RoundRobinArrayIndexTest
     }
 
     @Test
-    public void shouldHandleOverflow()
+    void shouldHandleOverflow()
     {
         int arrayLength = 10;
         RoundRobinArrayIndex roundRobinIndex = new RoundRobinArrayIndex( Integer.MAX_VALUE - 1 );

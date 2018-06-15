@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,17 +27,16 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.Plan;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.values;
 
-@SuppressWarnings("unchecked")
-public class InternalPlanTest
+class InternalPlanTest
 {
     @Test
-    public void shouldConvertFromEmptyMapValue()
+    void shouldConvertFromEmptyMapValue()
     {
         // Given
         Value value = value( parameters( "operatorType", "X" ) );
@@ -48,12 +47,12 @@ public class InternalPlanTest
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters().asMap( ofValue()) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
-        assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
+        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
+        assertThat( plan.children(), equalTo( Collections.emptyList() ) );
     }
 
     @Test
-    public void shouldConvertFromSimpleMapValue()
+    void shouldConvertFromSimpleMapValue()
     {
         // Given
         Value value = value( parameters(
@@ -69,12 +68,12 @@ public class InternalPlanTest
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue()) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
-        assertThat( (List<Plan>) plan.children(), equalTo( Collections.<Plan>emptyList() ) );
+        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
+        assertThat( plan.children(), equalTo( Collections.emptyList() ) );
     }
 
     @Test
-    public void shouldConvertFromNestedMapValue()
+    void shouldConvertFromNestedMapValue()
     {
         // Given
         Value value = value( parameters(
@@ -94,7 +93,7 @@ public class InternalPlanTest
         // Then
         assertThat( plan.operatorType(), equalTo( "X") );
         assertThat( plan.arguments(), equalTo( parameters( "a", 1 ).asMap( ofValue() ) ) );
-        assertThat( plan.identifiers(), equalTo( Collections.<String>emptyList() ) );
+        assertThat( plan.identifiers(), equalTo( Collections.emptyList() ) );
         List<? extends Plan> children = plan.children();
         assertThat( children.size(), equalTo( 1 ) );
         assertThat( children.get( 0 ).operatorType(), equalTo( "Y" ) );

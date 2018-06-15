@@ -21,9 +21,9 @@ package org.neo4j.driver.internal.async.outbound;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -41,10 +41,10 @@ import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
@@ -56,24 +56,24 @@ import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
-public class OutboundMessageHandlerTest
+class OutboundMessageHandlerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary()
+    void shouldOutputByteBufAsWrittenByWriterAndMessageBoundary()
     {
         MessageFormat messageFormat = mockMessageFormatWithWriter( 1, 2, 3, 4, 5 );
         OutboundMessageHandler handler = newHandler( messageFormat );
@@ -94,7 +94,7 @@ public class OutboundMessageHandlerTest
     }
 
     @Test
-    public void shouldSupportByteArraysByDefault()
+    void shouldSupportByteArraysByDefault()
     {
         OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() );
         channel.pipeline().addLast( handler );
@@ -107,7 +107,7 @@ public class OutboundMessageHandlerTest
     }
 
     @Test
-    public void shouldFailToWriteByteArrayWhenNotSupported()
+    void shouldFailToWriteByteArrayWhenNotSupported()
     {
         OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() ).withoutByteArraySupport();
         channel.pipeline().addLast( handler );
@@ -116,15 +116,8 @@ public class OutboundMessageHandlerTest
         Map<String,Value> params = new HashMap<>();
         params.put( "array", value( new byte[]{1, 2, 3} ) );
 
-        try
-        {
-            channel.writeOutbound( new RunMessage( "RETURN 1", params ) );
-            fail( "Exception expected" );
-        }
-        catch ( EncoderException e )
-        {
-            assertThat( e.getCause(), instanceOf( PackStream.UnPackable.class ) );
-        }
+        EncoderException error = assertThrows( EncoderException.class, () -> channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertThat( error.getCause(), instanceOf( PackStream.UnPackable.class ) );
     }
 
     private static MessageFormat mockMessageFormatWithWriter( final int... bytesToWrite )

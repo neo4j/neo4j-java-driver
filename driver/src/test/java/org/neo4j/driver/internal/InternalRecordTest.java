@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,16 +35,16 @@ import org.neo4j.driver.v1.util.Function;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.value;
 
-public class InternalRecordTest
+class InternalRecordTest
 {
     @Test
-    public void accessingUnknownKeyShouldBeNull()
+    void accessingUnknownKeyShouldBeNull()
     {
         InternalRecord record = createRecord();
 
@@ -54,14 +54,14 @@ public class InternalRecordTest
     }
 
     @Test
-    public void shouldHaveCorrectSize()
+    void shouldHaveCorrectSize()
     {
         InternalRecord record = createRecord();
         assertThat( record.size(), equalTo( 2 ) );
     }
 
     @Test
-    public void shouldHaveCorrectFieldIndices()
+    void shouldHaveCorrectFieldIndices()
     {
         InternalRecord record = createRecord();
         assertThat( record.index( "k1" ), equalTo( 0 ) );
@@ -69,22 +69,14 @@ public class InternalRecordTest
     }
 
     @Test
-    public void shouldThrowWhenAskingForIndexOfUnknownField()
+    void shouldThrowWhenAskingForIndexOfUnknownField()
     {
         InternalRecord record = createRecord();
-        try
-        {
-            record.index( "BATMAN" );
-            fail( "Expected NoSuchElementException to be thrown" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            // yay
-        }
+        assertThrows( NoSuchElementException.class, () -> record.index( "BATMAN" ) );
     }
 
     @Test
-    public void accessingOutOfBoundsShouldBeNull()
+    void accessingOutOfBoundsShouldBeNull()
     {
         InternalRecord record = createRecord();
 
@@ -95,7 +87,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void testContainsKey()
+    void testContainsKey()
     {
         InternalRecord record = createRecord();
 
@@ -105,7 +97,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void testIndex()
+    void testIndex()
     {
         InternalRecord record = createRecord();
 
@@ -114,7 +106,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void testAsMap()
+    void testAsMap()
     {
         // GIVEN
         InternalRecord record = createRecord();
@@ -124,23 +116,16 @@ public class InternalRecordTest
 
         // THEN
         assertThat( map.keySet(), containsInAnyOrder( "k1", "k2" ) );
-        assertThat( map.get( "k1" ), equalTo( (Object)0L ) );
-        assertThat( map.get( "k2" ), equalTo( (Object)1L ) );
+        assertThat( map.get( "k1" ), equalTo( 0L ) );
+        assertThat( map.get( "k2" ), equalTo( 1L ) );
     }
 
     @Test
-    public void testMapExtraction()
+    void testMapExtraction()
     {
         // GIVEN
         InternalRecord record = createRecord();
-        Function<Value,Integer> addOne = new Function<Value,Integer>()
-        {
-            @Override
-            public Integer apply( Value value )
-            {
-                return value.asInt() + 1;
-            }
-        };
+        Function<Value,Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
         Map<String,Integer> map = Extract.map( record, addOne );
@@ -152,19 +137,12 @@ public class InternalRecordTest
     }
 
     @Test
-    public void mapExtractionShouldPreserveIterationOrder()
+    void mapExtractionShouldPreserveIterationOrder()
     {
         // GIVEN
         List<String> keys = Arrays.asList( "k2", "k1" );
         InternalRecord record =  new InternalRecord( keys, new Value[]{value( 0 ), value( 1 )} );
-        Function<Value,Integer> addOne = new Function<Value,Integer>()
-        {
-            @Override
-            public Integer apply( Value value )
-            {
-                return value.asInt() + 1;
-            }
-        };
+        Function<Value,Integer> addOne = value -> value.asInt() + 1;
 
         // WHEN
         Map<String,Integer> map = Extract.map( record, addOne );
@@ -177,7 +155,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void testToString()
+    void testToString()
     {
         InternalRecord record = createRecord();
 
@@ -185,7 +163,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void shouldHaveMethodToGetKeys()
+    void shouldHaveMethodToGetKeys()
     {
         //GIVEN
         List<String> keys = Arrays.asList( "k2", "k1" );
@@ -199,7 +177,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void emptyKeysShouldGiveEmptyList()
+    void emptyKeysShouldGiveEmptyList()
     {
         //GIVEN
         List<String> keys = Collections.emptyList();
@@ -214,7 +192,7 @@ public class InternalRecordTest
 
 
     @Test
-    public void shouldHaveMethodToGetValues()
+    void shouldHaveMethodToGetValues()
     {
         //GIVEN
         List<String> keys = Arrays.asList( "k2", "k1" );
@@ -229,7 +207,7 @@ public class InternalRecordTest
     }
 
     @Test
-    public void emptyValuesShouldGiveEmptyList()
+    void emptyValuesShouldGiveEmptyList()
     {
         //GIVEN
         List<String> keys = Collections.emptyList();

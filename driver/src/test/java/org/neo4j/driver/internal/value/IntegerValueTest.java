@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
@@ -30,18 +28,16 @@ import org.neo4j.driver.v1.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IntegerValueTest
+class IntegerValueTest
 {
-    TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
+    private TypeSystem typeSystem = InternalTypeSystem.TYPE_SYSTEM;
 
     @Test
-    public void testZeroIntegerValue() throws Exception
+    void testZeroIntegerValue()
     {
         // Given
         IntegerValue value = new IntegerValue( 0 );
@@ -55,7 +51,7 @@ public class IntegerValueTest
     }
 
     @Test
-    public void testNonZeroIntegerValue() throws Exception
+    void testNonZeroIntegerValue()
     {
         // Given
         IntegerValue value = new IntegerValue( 1 );
@@ -69,7 +65,7 @@ public class IntegerValueTest
     }
 
     @Test
-    public void testIsInteger() throws Exception
+    void testIsInteger()
     {
         // Given
         IntegerValue value = new IntegerValue( 1L );
@@ -79,7 +75,7 @@ public class IntegerValueTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    void testEquals()
     {
         // Given
         IntegerValue firstValue = new IntegerValue( 1 );
@@ -90,7 +86,7 @@ public class IntegerValueTest
     }
 
     @Test
-    public void testHashCode() throws Exception
+    void testHashCode()
     {
         // Given
         IntegerValue value = new IntegerValue( 1L );
@@ -100,49 +96,46 @@ public class IntegerValueTest
     }
 
     @Test
-    public void shouldNotBeNull()
+    void shouldNotBeNull()
     {
         Value value = new IntegerValue( 1L );
         assertFalse( value.isNull() );
     }
 
     @Test
-    public void shouldTypeAsInteger()
+    void shouldTypeAsInteger()
     {
         InternalValue value = new IntegerValue( 1L );
         assertThat( value.typeConstructor(), equalTo( TypeConstructor.INTEGER ) );
     }
 
     @Test
-    public void shouldThrowIfLargerThanIntegerMax()
+    void shouldThrowIfLargerThanIntegerMax()
     {
         IntegerValue value1 = new IntegerValue( Integer.MAX_VALUE );
         IntegerValue value2 = new IntegerValue( Integer.MAX_VALUE + 1L);
 
         assertThat(value1.asInt(), equalTo(Integer.MAX_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asInt();
+        assertThrows( LossyCoercion.class, value2::asInt );
     }
 
     @Test
-    public void shouldThrowIfSmallerThanIntegerMin()
+    void shouldThrowIfSmallerThanIntegerMin()
     {
         IntegerValue value1 = new IntegerValue( Integer.MIN_VALUE );
         IntegerValue value2 = new IntegerValue( Integer.MIN_VALUE - 1L );
 
         assertThat(value1.asInt(), equalTo(Integer.MIN_VALUE));
-        exception.expect( LossyCoercion.class );
-        value2.asInt();
+        assertThrows( LossyCoercion.class, value2::asInt );
     }
 
     @Test
-    public void shouldThrowIfLargerThan()
+    void shouldThrowIfLargerThan()
     {
         IntegerValue value1 = new IntegerValue( 9007199254740992L);
         IntegerValue value2 = new IntegerValue(9007199254740993L );
 
         assertThat(value1.asDouble(), equalTo(9007199254740992D));
-        exception.expect( LossyCoercion.class );
-        value2.asDouble();
+        assertThrows( LossyCoercion.class, value2::asDouble );
     }
 }

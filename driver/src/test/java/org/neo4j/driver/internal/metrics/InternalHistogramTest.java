@@ -18,19 +18,19 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.metrics.spi.Histogram;
 
 import static java.lang.Math.abs;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-public class InternalHistogramTest
+class InternalHistogramTest
 {
     @Test
-    public void shouldRecordSmallValuesPrecisely() throws Throwable
+    void shouldRecordSmallValuesPrecisely()
     {
         // Given
         InternalHistogram histogram = new InternalHistogram();
@@ -48,7 +48,7 @@ public class InternalHistogramTest
     }
 
     @Test
-    public void shouldRecordBigValuesPrecisely() throws Throwable
+    void shouldRecordBigValuesPrecisely()
     {
         // Given
         InternalHistogram histogram = new InternalHistogram();
@@ -66,7 +66,7 @@ public class InternalHistogramTest
     }
 
     @Test
-    public void shouldResetOnOriginalHistogram() throws Throwable
+    void shouldResetOnOriginalHistogram()
     {
         // Given
         InternalHistogram histogram = new InternalHistogram();

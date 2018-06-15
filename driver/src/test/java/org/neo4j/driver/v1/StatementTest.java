@@ -18,19 +18,19 @@
  */
 package org.neo4j.driver.v1;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class StatementTest
+class StatementTest
 {
     @Test
-    public void shouldConstructStatementWithParameters()
+    void shouldConstructStatementWithParameters()
     {
         // given
         String text = "MATCH (n) RETURN n";
@@ -44,7 +44,7 @@ public class StatementTest
     }
 
     @Test
-    public void shouldConstructStatementWithNoParameters()
+    void shouldConstructStatementWithNoParameters()
     {
         // given
         String text = "MATCH (n) RETURN n";
@@ -58,7 +58,7 @@ public class StatementTest
     }
 
     @Test
-    public void shouldUpdateStatementText()
+    void shouldUpdateStatementText()
     {
         // when
         Statement statement =
@@ -72,7 +72,7 @@ public class StatementTest
 
 
     @Test
-    public void shouldReplaceStatementParameters()
+    void shouldReplaceStatementParameters()
     {
         // when
         String text = "MATCH (n) RETURN n";
@@ -85,7 +85,7 @@ public class StatementTest
     }
 
     @Test
-    public void shouldReplaceMapParameters()
+    void shouldReplaceMapParameters()
     {
         // when
         String text = "MATCH (n) RETURN n";
@@ -99,7 +99,7 @@ public class StatementTest
     }
 
     @Test
-    public void shouldUpdateStatementParameters()
+    void shouldUpdateStatementParameters()
     {
         // when
         String text = "MATCH (n) RETURN n";

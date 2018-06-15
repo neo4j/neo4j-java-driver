@@ -20,36 +20,34 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeBuf;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ChannelConnectedListenerTest
+class ChannelConnectedListenerTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         channel.finishAndReleaseAll();
     }
 
     @Test
-    public void shouldFailPromiseWhenChannelConnectionFails()
+    void shouldFailPromiseWhenChannelConnectionFails()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         ChannelConnectedListener listener = newListener( handshakeCompletedPromise );
@@ -60,20 +58,12 @@ public class ChannelConnectedListenerTest
 
         listener.operationComplete( channelConnectedPromise );
 
-        try
-        {
-            await( handshakeCompletedPromise );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertEquals( cause, e.getCause() );
-        }
+        ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, () -> await( handshakeCompletedPromise ) );
+        assertEquals( cause, error.getCause() );
     }
 
     @Test
-    public void shouldWriteHandshakeWhenChannelConnected()
+    void shouldWriteHandshakeWhenChannelConnected()
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         ChannelConnectedListener listener = newListener( handshakeCompletedPromise );

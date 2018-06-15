@@ -18,51 +18,50 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
 import java.util.logging.Level;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
 import org.neo4j.driver.v1.Logger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConsoleLoggingTest
+class ConsoleLoggingTest
 {
-
     private static ByteArrayOutputStream out = new ByteArrayOutputStream();
     private static PrintStream sysErr;
 
-    @BeforeClass
-    public static void saveSysOut()
+    @BeforeAll
+    static void saveSysOut()
     {
         sysErr = System.err;
         System.setErr( new PrintStream( out ) );
     }
 
-    @AfterClass
-    public static void restoreSysOut()
+    @AfterAll
+    static void restoreSysOut()
     {
         System.setErr( sysErr );
     }
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         out.reset();
     }
 
     @Test
-    public void shouldOnlyRecordMessageOnce()
+    void shouldOnlyRecordMessageOnce()
     {
         // Given
         ConsoleLogging logging = new ConsoleLogging( Level.ALL );
@@ -81,7 +80,7 @@ public class ConsoleLoggingTest
     }
 
     @Test
-    public void shouldResetLoggerLevel()
+    void shouldResetLoggerLevel()
     {
         // Given
         String logName = ConsoleLogging.class.getName();

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.CompletionException;
@@ -33,17 +33,17 @@ import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 
-public class RoutingResponseHandlerTest
+class RoutingResponseHandlerTest
 {
     @Test
-    public void shouldUnwrapCompletionException()
+    void shouldUnwrapCompletionException()
     {
         RuntimeException error = new RuntimeException( "Hi" );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
@@ -55,7 +55,7 @@ public class RoutingResponseHandlerTest
     }
 
     @Test
-    public void shouldHandleServiceUnavailableException()
+    void shouldHandleServiceUnavailableException()
     {
         ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
@@ -67,7 +67,7 @@ public class RoutingResponseHandlerTest
     }
 
     @Test
-    public void shouldHandleDatabaseUnavailableError()
+    void shouldHandleDatabaseUnavailableError()
     {
         TransientException error = new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "Hi" );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
@@ -79,7 +79,7 @@ public class RoutingResponseHandlerTest
     }
 
     @Test
-    public void shouldHandleTransientException()
+    void shouldHandleTransientException()
     {
         TransientException error = new TransientException( "Neo.TransientError.Transaction.DeadlockDetected", "Hi" );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
@@ -91,31 +91,31 @@ public class RoutingResponseHandlerTest
     }
 
     @Test
-    public void shouldHandleNotALeaderErrorWithReadAccessMode()
+    void shouldHandleNotALeaderErrorWithReadAccessMode()
     {
         testWriteFailureWithReadAccessMode( "Neo.ClientError.Cluster.NotALeader" );
     }
 
     @Test
-    public void shouldHandleNotALeaderErrorWithWriteAccessMode()
+    void shouldHandleNotALeaderErrorWithWriteAccessMode()
     {
         testWriteFailureWithWriteAccessMode( "Neo.ClientError.Cluster.NotALeader" );
     }
 
     @Test
-    public void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithReadAccessMode()
+    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithReadAccessMode()
     {
         testWriteFailureWithReadAccessMode( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
     }
 
     @Test
-    public void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithWriteAccessMode()
+    void shouldHandleForbiddenOnReadOnlyDatabaseErrorWithWriteAccessMode()
     {
         testWriteFailureWithWriteAccessMode( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase" );
     }
 
     @Test
-    public void shouldHandleClientException()
+    void shouldHandleClientException()
     {
         ClientException error = new ClientException( "Neo.ClientError.Request.Invalid", "Hi" );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );

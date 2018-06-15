@@ -32,7 +32,7 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -57,8 +57,8 @@ import javax.security.auth.x500.X500Principal;
 
 import org.neo4j.driver.internal.util.CertificateTool;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
 
 public class CertificateToolTest
@@ -69,7 +69,7 @@ public class CertificateToolTest
         Security.addProvider( new BouncyCastleProvider() );
     }
 
-    public static KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException
+    private static KeyPair generateKeyPair() throws NoSuchProviderException, NoSuchAlgorithmException
     {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance( "RSA", "BC" );
         keyPairGenerator.initialize( 2048, new SecureRandom() );
@@ -77,7 +77,7 @@ public class CertificateToolTest
         return keyPair;
     }
 
-    public static X509Certificate generateCert( X500Name issuer, X500Name subject, KeyPair issuerKeys, PublicKey
+    private static X509Certificate generateCert( X500Name issuer, X500Name subject, KeyPair issuerKeys, PublicKey
             publicKey )
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
@@ -211,7 +211,7 @@ public class CertificateToolTest
     }
 
     @Test
-    public void shouldLoadMultipleCertsIntoKeyStore() throws Throwable
+    void shouldLoadMultipleCertsIntoKeyStore() throws Throwable
     {
         // Given
         File certFile = File.createTempFile( "3random", ".cer" );

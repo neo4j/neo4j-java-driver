@@ -18,15 +18,15 @@
  */
 package org.neo4j.driver.internal.security;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
@@ -34,18 +34,19 @@ import java.util.Scanner;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.security.TrustOnFirstUseTrustManager.fingerprint;
 
-public class TrustOnFirstUseTrustManagerTest
+class TrustOnFirstUseTrustManagerTest
 {
     private File knownCertsFile;
 
@@ -53,21 +54,19 @@ public class TrustOnFirstUseTrustManagerTest
     private int knownServerPort;
     private String knownServer;
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder( new File( "target" ) );
     private X509Certificate knownCertificate;
 
-    @Before
-    public void setup() throws Throwable
+    @BeforeEach
+    void setUp() throws Throwable
     {
         // create the cert file with one ip:port and some random "cert" in it
-        knownCertsFile = testDir.newFile();
+        knownCertsFile = Files.createTempFile( Paths.get( "target" ), "known-certs", "" ).toFile();
         knownServerIp = "1.2.3.4";
         knownServerPort = 100;
         knownServer = knownServerIp + ":" + knownServerPort;
 
         knownCertificate = mock( X509Certificate.class );
-        when( knownCertificate.getEncoded() ).thenReturn( "certificate".getBytes( "UTF-8" ) );
+        when( knownCertificate.getEncoded() ).thenReturn( "certificate".getBytes( UTF_8 ) );
 
         PrintWriter writer = new PrintWriter( knownCertsFile );
         writer.println( " # I am a comment." );
@@ -75,15 +74,14 @@ public class TrustOnFirstUseTrustManagerTest
         writer.close();
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @After
-    public void teardown()
+    @AfterEach
+    void tearDown() throws IOException
     {
-        knownCertsFile.delete();
+        Files.deleteIfExists( knownCertsFile.toPath() );
     }
 
     @Test
-    public void shouldLoadExistingCert() throws Throwable
+    void shouldLoadExistingCert() throws Throwable
     {
         // Given
         BoltServerAddress knownServerAddress = new BoltServerAddress( knownServerIp, knownServerPort );
@@ -95,21 +93,13 @@ public class TrustOnFirstUseTrustManagerTest
         when( wrongCertificate.getEncoded() ).thenReturn( "fake certificate".getBytes() );
 
         // When & Then
-        try
-        {
-            manager.checkServerTrusted( new X509Certificate[]{wrongCertificate}, null );
-            fail( "Should not trust the fake certificate" );
-        }
-        catch ( CertificateException e )
-        {
-            assertTrue( e.getMessage().contains(
-                    "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
-            verifyNoMoreInteractions( logger );
-        }
+        CertificateException e = assertThrows( CertificateException.class, () -> manager.checkServerTrusted( new X509Certificate[]{wrongCertificate}, null ) );
+        assertTrue( e.getMessage().contains( "If you trust the certificate the server uses now, simply remove the line that starts with" ) );
+        verifyNoMoreInteractions( logger );
     }
 
     @Test
-    public void shouldSaveNewCert() throws Throwable
+    void shouldSaveNewCert() throws Throwable
     {
         // Given
         int newPort = 200;
@@ -149,7 +139,7 @@ public class TrustOnFirstUseTrustManagerTest
     }
 
     @Test
-    public void shouldThrowMeaningfulExceptionIfHasNoReadPermissionToKnownHostFile() throws Throwable
+    void shouldThrowMeaningfulExceptionIfHasNoReadPermissionToKnownHostFile()
     {
         // Given
         File knownHostFile = mock( File.class );
@@ -157,23 +147,13 @@ public class TrustOnFirstUseTrustManagerTest
         when( knownHostFile.exists() ).thenReturn( true );
 
         // When & Then
-        try
-        {
-            new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, null );
-            fail( "Should have failed in load certs" );
-        }
-        catch( IOException e )
-        {
-            assertThat( e.getMessage(), containsString( "you have no read permissions to it" ) );
-        }
-        catch( Exception e )
-        {
-            fail( "Should not get any other error besides no permission to read" );
-        }
+        BoltServerAddress address = new BoltServerAddress( knownServerIp, knownServerPort );
+        IOException e = assertThrows( IOException.class, () -> new TrustOnFirstUseTrustManager( address, knownHostFile, null ) );
+        assertThat( e.getMessage(), containsString( "you have no read permissions to it" ) );
     }
 
     @Test
-    public void shouldThrowMeaningfulExceptionIfHasNoWritePermissionToKnownHostFile() throws Throwable
+    void shouldThrowMeaningfulExceptionIfHasNoWritePermissionToKnownHostFile() throws Throwable
     {
         // Given
         File knownHostFile = mock( File.class );
@@ -181,21 +161,10 @@ public class TrustOnFirstUseTrustManagerTest
         when( knownHostFile.canWrite() ).thenReturn( false );
 
         // When & Then
-        try
-        {
-            TrustOnFirstUseTrustManager manager =
-                    new TrustOnFirstUseTrustManager( new BoltServerAddress( knownServerIp, knownServerPort ), knownHostFile, mock( Logger.class ) );
-            manager.checkServerTrusted( new X509Certificate[]{ knownCertificate}, null );
-            fail( "Should have failed in write to certs" );
-        }
-        catch( CertificateException e )
-        {
-            assertThat( e.getCause().getMessage(), containsString( "you have no write permissions to it" ) );
-        }
-        catch( Exception e )
-        {
-            e.printStackTrace();
-            fail( "Should not get any other error besides no permission to write" );
-        }
+        BoltServerAddress address = new BoltServerAddress( knownServerIp, knownServerPort );
+        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( address, knownHostFile, mock( Logger.class ) );
+
+        CertificateException e = assertThrows( CertificateException.class, () -> manager.checkServerTrusted( new X509Certificate[]{knownCertificate}, null ) );
+        assertThat( e.getCause().getMessage(), containsString( "you have no write permissions to it" ) );
     }
 }

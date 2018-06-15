@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -27,8 +27,8 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,10 +36,10 @@ import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class DirectConnectionProviderTest
+class DirectConnectionProviderTest
 {
     @Test
-    public void acquiresConnectionsFromThePool()
+    void acquiresConnectionsFromThePool()
     {
         BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         Connection connection1 = mock( Connection.class );
@@ -53,7 +53,7 @@ public class DirectConnectionProviderTest
     }
 
     @Test
-    public void closesPool()
+    void closesPool()
     {
         BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
@@ -65,7 +65,7 @@ public class DirectConnectionProviderTest
     }
 
     @Test
-    public void returnsCorrectAddress()
+    void returnsCorrectAddress()
     {
         BoltServerAddress address = new BoltServerAddress( "server-1", 25000 );
 

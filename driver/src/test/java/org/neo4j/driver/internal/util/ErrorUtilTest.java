@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -32,18 +32,18 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.ErrorUtil.isFatal;
 import static org.neo4j.driver.internal.util.ErrorUtil.newConnectionTerminatedError;
 import static org.neo4j.driver.internal.util.ErrorUtil.newNeo4jError;
 
-public class ErrorUtilTest
+class ErrorUtilTest
 {
     @Test
-    public void shouldCreateAuthenticationException()
+    void shouldCreateAuthenticationException()
     {
         String code = "Neo.ClientError.Security.Unauthorized";
         String message = "Wrong credentials";
@@ -56,7 +56,7 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldCreateClientException()
+    void shouldCreateClientException()
     {
         String code = "Neo.ClientError.Transaction.InvalidBookmark";
         String message = "Wrong bookmark";
@@ -69,7 +69,7 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldCreateTransientException()
+    void shouldCreateTransientException()
     {
         String code = "Neo.TransientError.Transaction.DeadlockDetected";
         String message = "Deadlock occurred";
@@ -82,7 +82,7 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldCreateDatabaseException()
+    void shouldCreateDatabaseException()
     {
         String code = "Neo.DatabaseError.Transaction.TransactionLogError";
         String message = "Failed to write the transaction log";
@@ -95,7 +95,7 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldCreateDatabaseExceptionWhenErrorCodeIsWrong()
+    void shouldCreateDatabaseExceptionWhenErrorCodeIsWrong()
     {
         String code = "WrongErrorCode";
         String message = "Some really strange error";
@@ -108,13 +108,13 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldTreatNotNeo4jExceptionAsFatal()
+    void shouldTreatNotNeo4jExceptionAsFatal()
     {
         assertTrue( isFatal( new IOException( "IO failed!" ) ) );
     }
 
     @Test
-    public void shouldTreatProtocolErrorAsFatal()
+    void shouldTreatProtocolErrorAsFatal()
     {
         assertTrue( isFatal( new ClientException( "Neo.ClientError.Request.Invalid", "Illegal request" ) ) );
         assertTrue( isFatal( new ClientException( "Neo.ClientError.Request.InvalidFormat", "Wrong format" ) ) );
@@ -122,39 +122,39 @@ public class ErrorUtilTest
     }
 
     @Test
-    public void shouldTreatAuthenticationExceptionAsNonFatal()
+    void shouldTreatAuthenticationExceptionAsNonFatal()
     {
         assertFalse( isFatal( new AuthenticationException( "Neo.ClientError.Security.Unauthorized", "" ) ) );
     }
 
     @Test
-    public void shouldTreatClientExceptionAsNonFatal()
+    void shouldTreatClientExceptionAsNonFatal()
     {
         assertFalse( isFatal( new ClientException( "Neo.ClientError.Transaction.ConstraintsChanged", "" ) ) );
     }
 
     @Test
-    public void shouldTreatDatabaseExceptionAsFatal()
+    void shouldTreatDatabaseExceptionAsFatal()
     {
         assertTrue( isFatal( new ClientException( "Neo.DatabaseError.Schema.ConstraintCreationFailed", "" ) ) );
     }
 
     @Test
-    public void shouldCreateConnectionTerminatedError()
+    void shouldCreateConnectionTerminatedError()
     {
         ServiceUnavailableException error = newConnectionTerminatedError();
         assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
     }
 
     @Test
-    public void shouldCreateConnectionTerminatedErrorWithNullReason()
+    void shouldCreateConnectionTerminatedErrorWithNullReason()
     {
         ServiceUnavailableException error = newConnectionTerminatedError( null );
         assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
     }
 
     @Test
-    public void shouldCreateConnectionTerminatedErrorWithReason()
+    void shouldCreateConnectionTerminatedErrorWithReason()
     {
         String reason = "Thread interrupted";
         ServiceUnavailableException error = newConnectionTerminatedError( reason );

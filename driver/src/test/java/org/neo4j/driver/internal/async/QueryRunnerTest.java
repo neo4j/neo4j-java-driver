@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Map;
@@ -38,10 +38,10 @@ import org.neo4j.driver.v1.Value;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,44 +49,44 @@ import static org.neo4j.driver.internal.async.QueryRunner.runInSession;
 import static org.neo4j.driver.internal.async.QueryRunner.runInTransaction;
 import static org.neo4j.driver.v1.Values.value;
 
-public class QueryRunnerTest
+class QueryRunnerTest
 {
     private static final String QUERY = "RETURN $x";
     private static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
     private static final Statement STATEMENT = new Statement( QUERY, value( PARAMS ) );
 
     @Test
-    public void shouldRunInSessionWithoutWaitingForRunResponse() throws Exception
+    void shouldRunInSessionWithoutWaitingForRunResponse() throws Exception
     {
         testNotWaitingForRunResponse( true );
     }
 
     @Test
-    public void shouldRunInSessionAndWaitForSuccessRunResponse() throws Exception
+    void shouldRunInSessionAndWaitForSuccessRunResponse() throws Exception
     {
         testWaitingForRunResponse( true, true );
     }
 
     @Test
-    public void shouldRunInSessionAndWaitForFailureRunResponse() throws Exception
+    void shouldRunInSessionAndWaitForFailureRunResponse() throws Exception
     {
         testWaitingForRunResponse( false, true );
     }
 
     @Test
-    public void shouldRunInTransactionWithoutWaitingForRunResponse() throws Exception
+    void shouldRunInTransactionWithoutWaitingForRunResponse() throws Exception
     {
         testNotWaitingForRunResponse( false );
     }
 
     @Test
-    public void shouldRunInTransactionAndWaitForSuccessRunResponse() throws Exception
+    void shouldRunInTransactionAndWaitForSuccessRunResponse() throws Exception
     {
         testWaitingForRunResponse( true, false );
     }
 
     @Test
-    public void shouldRunInTransactionAndWaitForFailureRunResponse() throws Exception
+    void shouldRunInTransactionAndWaitForFailureRunResponse() throws Exception
     {
         testWaitingForRunResponse( false, false );
     }

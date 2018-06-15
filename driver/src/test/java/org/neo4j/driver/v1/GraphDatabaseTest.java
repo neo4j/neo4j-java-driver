@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,10 +34,9 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,10 +49,10 @@ import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
-public class GraphDatabaseTest
+class GraphDatabaseTest
 {
     @Test
-    public void boltSchemeShouldInstantiateDirectDriver() throws Exception
+    void boltSchemeShouldInstantiateDirectDriver() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "dummy_connection.script", 9001 );
@@ -71,7 +70,7 @@ public class GraphDatabaseTest
     }
 
     @Test
-    public void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
+    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "discover_servers.script", 9001 );
@@ -90,7 +89,7 @@ public class GraphDatabaseTest
 
     @Test
     @SuppressWarnings( "deprecation" )
-    public void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
+    void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
     {
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
@@ -99,33 +98,17 @@ public class GraphDatabaseTest
                 .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
                 .toConfig();
 
-        try
-        {
-            GraphDatabase.driver( uri, config );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, config ) );
     }
 
     @Test
-    public void throwsWhenBoltSchemeUsedWithRoutingParams()
+    void throwsWhenBoltSchemeUsedWithRoutingParams()
     {
-        try
-        {
-            GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalArgumentException.class ) );
-        }
+        assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" ) );
     }
 
     @Test
-    public void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
+    void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
     {
         StubServer server1 = StubServer.start( "non_discovery_server.script", 9001 );
         StubServer server2 = StubServer.start( "non_discovery_server.script", 9002 );
@@ -143,15 +126,7 @@ public class GraphDatabaseTest
                 URI.create( "bolt+routing://localhost:9001" ),
                 URI.create( "bolt+routing://localhost:9002" ) );
 
-        try
-        {
-            GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-        }
+        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
 
         verify( logger ).warn( eq( "Unable to create routing driver for URI: bolt+routing://localhost:9001" ),
                 any( Throwable.class ) );
@@ -164,20 +139,16 @@ public class GraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception
+    void shouldRespondToInterruptsWhenConnectingToUnresponsiveServer() throws Exception
     {
         try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
         {
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
+
             try
             {
-                GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
-                fail( "Exception expected" );
-            }
-            catch ( ServiceUnavailableException ignore )
-            {
-                // expected
+                assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() ) );
             }
             finally
             {
@@ -188,13 +159,13 @@ public class GraphDatabaseTest
     }
 
     @Test
-    public void shouldFailToCreateUnencryptedDriverWhenServerDoesNotRespond() throws IOException
+    void shouldFailToCreateUnencryptedDriverWhenServerDoesNotRespond() throws IOException
     {
         testFailureWhenServerDoesNotRespond( false );
     }
 
     @Test
-    public void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException
+    void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException
     {
         testFailureWhenServerDoesNotRespond( true );
     }
@@ -206,15 +177,9 @@ public class GraphDatabaseTest
             int connectionTimeoutMillis = 1_000;
             Config config = createConfig( encrypted, connectionTimeoutMillis );
 
-            try
-            {
-                GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config );
-                fail( "Exception expected" );
-            }
-            catch ( ServiceUnavailableException e )
-            {
-                assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
-            }
+            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
+                    () -> GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config ) );
+            assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
         }
     }
 

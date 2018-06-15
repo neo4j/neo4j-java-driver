@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -26,28 +26,28 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.v1.Values.value;
 
-public class MapValueTest
+class MapValueTest
 {
     @Test
-    public void shouldHaveSensibleToString() throws Throwable
+    void shouldHaveSensibleToString()
     {
         MapValue mapValue = mapValue();
         assertThat( mapValue.toString(), equalTo( "{k1: \"v1\", k2: 42}" ) );
     }
 
     @Test
-    public void shouldHaveCorrectPropertyCount() throws Throwable
+    void shouldHaveCorrectPropertyCount()
     {
         MapValue mapValue = mapValue();
         assertThat( mapValue.size(), equalTo( 2 ) );
     }
 
     @Test
-    public void shouldHaveCorrectType() throws Throwable
+    void shouldHaveCorrectType()
     {
 
         MapValue map = mapValue();
@@ -56,7 +56,7 @@ public class MapValueTest
     }
 
     @Test
-    public void shouldNotBeNull() throws Throwable
+    void shouldNotBeNull()
     {
         MapValue map = mapValue();
 

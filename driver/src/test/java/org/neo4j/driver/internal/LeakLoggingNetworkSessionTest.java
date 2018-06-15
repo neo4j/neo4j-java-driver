@@ -18,9 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
@@ -35,8 +34,8 @@ import org.neo4j.driver.v1.Session;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -45,13 +44,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.AccessMode.READ;
 
-public class LeakLoggingNetworkSessionTest
+class LeakLoggingNetworkSessionTest
 {
-    @Rule
-    public final TestName testName = new TestName();
-
     @Test
-    public void logsNothingDuringFinalizationIfClosed() throws Exception
+    void logsNothingDuringFinalizationIfClosed() throws Exception
     {
         Logging logging = mock( Logging.class );
         Logger log = mock( Logger.class );
@@ -64,7 +60,7 @@ public class LeakLoggingNetworkSessionTest
     }
 
     @Test
-    public void logsMessageWithStacktraceDuringFinalizationIfLeaked() throws Exception
+    void logsMessageWithStacktraceDuringFinalizationIfLeaked( TestInfo testInfo ) throws Exception
     {
         Logging logging = mock( Logging.class );
         Logger log = mock( Logger.class );
@@ -84,7 +80,7 @@ public class LeakLoggingNetworkSessionTest
         assertThat( loggedMessage, containsString( "Neo4j Session object leaked" ) );
         assertThat( loggedMessage, containsString( "Session was create at" ) );
         assertThat( loggedMessage, containsString(
-                getClass().getSimpleName() + "." + testName.getMethodName() )
+                getClass().getSimpleName() + "." + testInfo.getTestMethod().get().getName() )
         );
     }
 

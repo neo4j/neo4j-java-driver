@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,8 +42,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,10 +51,10 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class RoutingProcedureClusterCompositionProviderTest
+class RoutingProcedureClusterCompositionProviderTest
 {
     @Test
-    public void shouldProtocolErrorWhenNoRecord()
+    void shouldProtocolErrorWhenNoRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -70,20 +70,12 @@ public class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
-        try
-        {
-            response.clusterComposition();
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ProtocolException.class ) );
-            assertThat( e.getMessage(), containsString( "records received '0' is too few or too many." ) );
-        }
+        ProtocolException error = assertThrows( ProtocolException.class, response::clusterComposition );
+        assertThat( error.getMessage(), containsString( "records received '0' is too few or too many." ) );
     }
 
     @Test
-    public void shouldProtocolErrorWhenMoreThanOneRecord()
+    void shouldProtocolErrorWhenMoreThanOneRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -100,20 +92,12 @@ public class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
-        try
-        {
-            response.clusterComposition();
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ProtocolException.class ) );
-            assertThat( e.getMessage(), containsString( "records received '2' is too few or too many." ) );
-        }
+        ProtocolException error = assertThrows( ProtocolException.class, response::clusterComposition );
+        assertThat( error.getMessage(), containsString( "records received '2' is too few or too many." ) );
     }
 
     @Test
-    public void shouldProtocolErrorWhenUnparsableRecord()
+    void shouldProtocolErrorWhenUnparsableRecord()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -130,20 +114,12 @@ public class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
-        try
-        {
-            response.clusterComposition();
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ProtocolException.class ) );
-            assertThat( e.getMessage(), containsString( "unparsable record received." ) );
-        }
+        ProtocolException error = assertThrows( ProtocolException.class, response::clusterComposition );
+        assertThat( error.getMessage(), containsString( "unparsable record received." ) );
     }
 
     @Test
-    public void shouldProtocolErrorWhenNoRouters()
+    void shouldProtocolErrorWhenNoRouters()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -166,20 +142,12 @@ public class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
-        try
-        {
-            response.clusterComposition();
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ProtocolException.class ) );
-            assertThat( e.getMessage(), containsString( "no router or reader found in response." ) );
-        }
+        ProtocolException error = assertThrows( ProtocolException.class, response::clusterComposition );
+        assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
     @Test
-    public void shouldProtocolErrorWhenNoReaders()
+    void shouldProtocolErrorWhenNoReaders()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -202,21 +170,13 @@ public class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
-        try
-        {
-            response.clusterComposition();
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ProtocolException.class ) );
-            assertThat( e.getMessage(), containsString( "no router or reader found in response." ) );
-        }
+        ProtocolException error = assertThrows( ProtocolException.class, response::clusterComposition );
+        assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
 
     @Test
-    public void shouldPropagateConnectionFailureExceptions()
+    void shouldPropagateConnectionFailureExceptions()
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
@@ -228,20 +188,12 @@ public class RoutingProcedureClusterCompositionProviderTest
                 new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
         // When & Then
-        try
-        {
-            await( provider.getClusterComposition( connectionStage ) );
-            fail( "Expecting a failure but not triggered." );
-        }
-        catch( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( provider.getClusterComposition( connectionStage ) ) );
+        assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
     }
 
     @Test
-    public void shouldReturnSuccessResultWhenNoError()
+    void shouldReturnSuccessResultWhenNoError()
     {
         // Given
         Clock mockedClock = mock( Clock.class );
@@ -274,7 +226,7 @@ public class RoutingProcedureClusterCompositionProviderTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldReturnFailureWhenProcedureRunnerFails()
+    void shouldReturnFailureWhenProcedureRunnerFails()
     {
         RoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
         RuntimeException error = new RuntimeException( "hi" );
@@ -287,18 +239,11 @@ public class RoutingProcedureClusterCompositionProviderTest
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
 
-        try
-        {
-            response.clusterComposition();
-            fail( "Exception expected" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            assertEquals( error, e.getCause() );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, response::clusterComposition );
+        assertEquals( error, e.getCause() );
     }
 
-    public static Map<String,Object> serverInfo( String role, String... addresses )
+    private static Map<String,Object> serverInfo( String role, String... addresses )
     {
         Map<String,Object> map = new HashMap<>();
         map.put( "role", role );

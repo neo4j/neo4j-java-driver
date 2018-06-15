@@ -18,9 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -47,33 +45,28 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Logging.console;
 
-public class RoutingDriverBoltKitTest
+class RoutingDriverBoltKitTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private static final Config config = Config.build()
             .withoutEncryption()
             .withLogging( console( INFO ) ).toConfig();
 
     @Test
-    public void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -88,7 +81,6 @@ public class RoutingDriverBoltKitTest
                     .list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
-
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -96,7 +88,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleAcquireReadSessionPlusTransaction()
+    void shouldHandleAcquireReadSessionPlusTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -109,14 +101,7 @@ public class RoutingDriverBoltKitTest
               Session session = driver.session( AccessMode.READ );
               Transaction tx = session.beginTransaction() )
         {
-            List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
-            {
-                @Override
-                public String apply( Record record )
-                {
-                    return record.get( "n.name" ).asString();
-                }
-            } );
+            List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
 
@@ -127,7 +112,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -143,14 +128,8 @@ public class RoutingDriverBoltKitTest
             {
                 try ( Session session = driver.session( AccessMode.READ ) )
                 {
-                    assertThat( session.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
-                    {
-                        @Override
-                        public String apply( Record record )
-                        {
-                            return record.get( "n.name" ).asString();
-                        }
-                    } ), equalTo( asList( "Bob", "Alice", "Tina" ) ) );
+                    assertThat( session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
+                            equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                 }
             }
         }
@@ -161,7 +140,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinReadServersWhenUsingTransaction()
+    void shouldRoundRobinReadServersWhenUsingTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -179,14 +158,8 @@ public class RoutingDriverBoltKitTest
                 try ( Session session = driver.session( AccessMode.READ );
                       Transaction tx = session.beginTransaction() )
                 {
-                    assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( new Function<Record,String>()
-                    {
-                        @Override
-                        public String apply( Record record )
-                        {
-                            return record.get( "n.name" ).asString();
-                        }
-                    } ), equalTo( asList( "Bob", "Alice", "Tina" ) ) );
+                    assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
+                            equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                 }
             }
         }
@@ -197,34 +170,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldThrowSessionExpiredIfReadServerDisappears()
-            throws IOException, InterruptedException, StubServer.ForceKilled
-    {
-
-        // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
-
-        //START a read server
-        StubServer.start( "dead_read_server.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-
-        //Expect
-        exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
-
-        try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ ) )
-        {
-            session.run( "MATCH (n) RETURN n.name" );
-        }
-        finally
-        {
-            assertThat( server.exitStatus(), equalTo( 0 ) );
-        }
-    }
-
-    @Test
-    public void shouldThrowSessionExpiredIfReadServerDisappearsWhenUsingTransaction()
+    void shouldThrowSessionExpiredIfReadServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -235,24 +181,45 @@ public class RoutingDriverBoltKitTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
-        exception.expect( SessionExpiredException.class );
-        exception.expectMessage( "Server at 127.0.0.1:9005 is no longer available" );
-
-        try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ );
-              Transaction tx = session.beginTransaction() )
+        assertThrows( SessionExpiredException.class, () ->
         {
-            tx.run( "MATCH (n) RETURN n.name" );
-            tx.success();
-        }
-        finally
-        {
-            assertThat( server.exitStatus(), equalTo( 0 ) );
-        }
+            try ( Driver driver = GraphDatabase.driver( uri, config );
+                  Session session = driver.session( AccessMode.READ ) )
+            {
+                session.run( "MATCH (n) RETURN n.name" );
+            }
+        } );
+        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
-    public void shouldThrowSessionExpiredIfWriteServerDisappears()
+    void shouldThrowSessionExpiredIfReadServerDisappearsWhenUsingTransaction()
+            throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+
+        //START a read server
+        StubServer.start( "dead_read_server.script", 9005 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+
+        //Expect
+        SessionExpiredException e = assertThrows( SessionExpiredException.class, () ->
+        {
+            try ( Driver driver = GraphDatabase.driver( uri, config );
+                  Session session = driver.session( AccessMode.READ );
+                  Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "MATCH (n) RETURN n.name" );
+                tx.success();
+            }
+        } );
+        assertEquals( "Server at 127.0.0.1:9005 is no longer available", e.getMessage() );
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldThrowSessionExpiredIfWriteServerDisappears()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -263,13 +230,10 @@ public class RoutingDriverBoltKitTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
-        exception.expect( SessionExpiredException.class );
-        //exception.expectMessage( "Server at 127.0.0.1:9006 is no longer available" );
-
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
-            session.run( "MATCH (n) RETURN n.name" ).consume();
+            assertThrows( SessionExpiredException.class, () -> session.run( "MATCH (n) RETURN n.name" ).consume() );
         }
         finally
         {
@@ -278,7 +242,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldThrowSessionExpiredIfWriteServerDisappearsWhenUsingTransaction()
+    void shouldThrowSessionExpiredIfWriteServerDisappearsWhenUsingTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -289,13 +253,11 @@ public class RoutingDriverBoltKitTest
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //Expect
-        exception.expect( SessionExpiredException.class );
-
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
         {
-            tx.run( "MATCH (n) RETURN n.name" ).consume();
+            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
             tx.success();
         }
         finally
@@ -305,7 +267,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -324,7 +286,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleAcquireWriteSessionAndTransaction()
+    void shouldHandleAcquireWriteSessionAndTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -346,7 +308,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -372,7 +334,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRoundRobinWriteSessionsInTransaction() throws Exception
+    void shouldRoundRobinWriteSessionsInTransaction() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -400,35 +362,29 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException
     {
         // Given
         StubServer.start( "non_discovery_server.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
-        exception.expect( ServiceUnavailableException.class );
-
-        // When
-        GraphDatabase.driver( uri, config );
+        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( uri, config ) );
     }
 
     @Test
-    public void shouldFailRandomFailureInGetServers() throws IOException, InterruptedException, StubServer.ForceKilled
+    void shouldFailRandomFailureInGetServers() throws IOException, InterruptedException
     {
         // Given
         StubServer.start( "failed_discovery.script", 9001 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
         //Expect
-        exception.expect( ServiceUnavailableException.class );
-
-        // When
-        GraphDatabase.driver( uri, config );
+        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( uri, config ) );
     }
 
     @Test
-    public void shouldHandleLeaderSwitchWhenWriting()
+    void shouldHandleLeaderSwitchWhenWriting()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -456,7 +412,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleLeaderSwitchWhenWritingWithoutConsuming()
+    void shouldHandleLeaderSwitchWhenWritingWithoutConsuming()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -484,7 +440,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldHandleLeaderSwitchWhenWritingInTransaction()
+    void shouldHandleLeaderSwitchWhenWritingInTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
@@ -514,7 +470,7 @@ public class RoutingDriverBoltKitTest
 
     @Test
     @SuppressWarnings( "deprecation" )
-    public void shouldSendAndReceiveBookmark() throws Exception
+    void shouldSendAndReceiveBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
@@ -537,7 +493,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldSendInitialBookmark() throws Exception
+    void shouldSendInitialBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
@@ -559,7 +515,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldUseWriteSessionModeAndInitialBookmark() throws Exception
+    void shouldUseWriteSessionModeAndInitialBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
@@ -581,7 +537,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldUseReadSessionModeAndInitialBookmark() throws Exception
+    void shouldUseReadSessionModeAndInitialBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
@@ -606,7 +562,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldPassBookmarkFromTransactionToTransaction() throws Exception
+    void shouldPassBookmarkFromTransactionToTransaction() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
@@ -638,7 +594,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryReadTransactionUntilSuccess() throws Exception
+    void shouldRetryReadTransactionUntilSuccess() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer brokenReader = StubServer.start( "dead_read_server.script", 9005 );
@@ -662,7 +618,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryWriteTransactionUntilSuccess() throws Exception
+    void shouldRetryWriteTransactionUntilSuccess() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9007 );
@@ -686,7 +642,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryReadTransactionUntilFailure() throws Exception
+    void shouldRetryReadTransactionUntilFailure() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
@@ -696,15 +652,8 @@ public class RoutingDriverBoltKitTest
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
-            try
-            {
-                session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( SessionExpiredException.class ) );
-            }
+            assertThrows( SessionExpiredException.class,
+                    () -> session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) ) );
             assertEquals( 2, invocations.get() );
         }
         finally
@@ -716,7 +665,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryWriteTransactionUntilFailure() throws Exception
+    void shouldRetryWriteTransactionUntilFailure() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
@@ -726,15 +675,8 @@ public class RoutingDriverBoltKitTest
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
-            try
-            {
-                session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( SessionExpiredException.class ) );
-            }
+            assertThrows( SessionExpiredException.class,
+                    () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
             assertEquals( 2, invocations.get() );
         }
         finally
@@ -746,7 +688,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryReadTransactionAndPerformRediscoveryUntilSuccess() throws Exception
+    void shouldRetryReadTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
         StubServer router1 = StubServer.start( "acquire_endpoints.script", 9010 );
         StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
@@ -774,7 +716,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
+    void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
         StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9001 );
@@ -802,7 +744,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldUseInitialRouterForRediscoveryWhenAllOtherRoutersAreDead() throws Exception
+    void shouldUseInitialRouterForRediscoveryWhenAllOtherRoutersAreDead() throws Exception
     {
         // initial router does not have itself in the returned set of routers
         StubServer router = StubServer.start( "acquire_endpoints.script", 9010 );
@@ -824,7 +766,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldInvokeProcedureGetRoutingTableWhenServerVersionPermits() throws Exception
+    void shouldInvokeProcedureGetRoutingTableWhenServerVersionPermits() throws Exception
     {
         // stub server is both a router and reader
         StubServer server = StubServer.start( "get_routing_table.script", 9001 );
@@ -845,7 +787,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldSendRoutingContextToServer() throws Exception
+    void shouldSendRoutingContextToServer() throws Exception
     {
         // stub server is both a router and reader
         StubServer server = StubServer.start( "get_routing_table_with_context.script", 9001 );
@@ -866,7 +808,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldIgnoreRoutingContextWhenServerDoesNotSupportIt() throws Exception
+    void shouldIgnoreRoutingContextWhenServerDoesNotSupportIt() throws Exception
     {
         // stub server is both a router and reader
         StubServer server = StubServer.start( "rediscover_and_read_with_init.script", 9001 );
@@ -887,7 +829,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
+    void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
     {
         StubServer router1 = StubServer.start( "discover_no_writers.script", 9010 );
         StubServer router2 = StubServer.start( "discover_no_writers.script", 9004 );
@@ -898,15 +840,8 @@ public class RoutingDriverBoltKitTest
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
-            try
-            {
-                session.run( "CREATE (n {name:'Bob'})" ).consume();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( SessionExpiredException.class ) );
-            }
+            assertThrows( SessionExpiredException.class,
+                    () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
         }
         finally
         {
@@ -917,7 +852,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldAcceptRoutingTableWithoutWritersAndThenRediscover() throws Exception
+    void shouldAcceptRoutingTableWithoutWritersAndThenRediscover() throws Exception
     {
         // first router does not have itself in the resulting routing table so connection
         // towards it will be closed after rediscovery
@@ -948,7 +883,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldTreatRoutingTableWithSingleRouterAsValid() throws Exception
+    void shouldTreatRoutingTableWithSingleRouterAsValid() throws Exception
     {
         StubServer router = StubServer.start( "discover_one_router.script", 9010 );
         StubServer reader1 = StubServer.start( "read_server.script", 9003 );
@@ -977,7 +912,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldSendMultipleBookmarks() throws Exception
+    void shouldSendMultipleBookmarks() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
@@ -1005,7 +940,7 @@ public class RoutingDriverBoltKitTest
     }
 
     @Test
-    public void shouldForgetAddressOnDatabaseUnavailableError() throws Exception
+    void shouldForgetAddressOnDatabaseUnavailableError() throws Exception
     {
         // perform initial discovery using router1
         StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
@@ -1057,32 +992,24 @@ public class RoutingDriverBoltKitTest
 
     private static TransactionWork<List<Record>> queryWork( final String query, final AtomicInteger invocations )
     {
-        return new TransactionWork<List<Record>>()
+        return tx ->
         {
-            @Override
-            public List<Record> execute( Transaction tx )
-            {
-                invocations.incrementAndGet();
-                return tx.run( query ).list();
-            }
+            invocations.incrementAndGet();
+            return tx.run( query ).list();
         };
     }
 
     private static List<String> readStrings( final String query, Session session )
     {
-        return session.readTransaction( new TransactionWork<List<String>>()
+        return session.readTransaction( tx ->
         {
-            @Override
-            public List<String> execute( Transaction tx )
+            List<Record> records = tx.run( query ).list();
+            List<String> names = new ArrayList<>( records.size() );
+            for ( Record record : records )
             {
-                List<Record> records = tx.run( query ).list();
-                List<String> names = new ArrayList<>( records.size() );
-                for ( Record record : records )
-                {
-                    names.add( record.get( 0 ).asString() );
-                }
-                return names;
+                names.add( record.get( 0 ).asString() );
             }
+            return names;
         } );
     }
 }

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
@@ -28,17 +28,17 @@ import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ResultCursorsHolderTest
+class ResultCursorsHolderTest
 {
     @Test
-    public void shouldReturnNoErrorWhenNoCursorStages()
+    void shouldReturnNoErrorWhenNoCursorStages()
     {
         ResultCursorsHolder holder = new ResultCursorsHolder();
 
@@ -47,23 +47,15 @@ public class ResultCursorsHolderTest
     }
 
     @Test
-    public void shouldFailToAddNullCursorStage()
+    void shouldFailToAddNullCursorStage()
     {
         ResultCursorsHolder holder = new ResultCursorsHolder();
 
-        try
-        {
-            holder.add( null );
-            fail( "Exception expected" );
-        }
-        catch ( NullPointerException e )
-        {
-            // expected
-        }
+        assertThrows( NullPointerException.class, () -> holder.add( null ) );
     }
 
     @Test
-    public void shouldReturnNoErrorWhenCursorStagesHaveNoErrors()
+    void shouldReturnNoErrorWhenCursorStagesHaveNoErrors()
     {
         ResultCursorsHolder holder = new ResultCursorsHolder();
 
@@ -77,7 +69,7 @@ public class ResultCursorsHolderTest
     }
 
     @Test
-    public void shouldNotReturnStageErrors()
+    void shouldNotReturnStageErrors()
     {
         ResultCursorsHolder holder = new ResultCursorsHolder();
 
@@ -91,7 +83,7 @@ public class ResultCursorsHolderTest
     }
 
     @Test
-    public void shouldReturnErrorWhenOneCursorFailed()
+    void shouldReturnErrorWhenOneCursorFailed()
     {
         IOException error = new IOException( "IO failed" );
         ResultCursorsHolder holder = new ResultCursorsHolder();
@@ -106,7 +98,7 @@ public class ResultCursorsHolderTest
     }
 
     @Test
-    public void shouldReturnFirstError()
+    void shouldReturnFirstError()
     {
         RuntimeException error1 = new RuntimeException( "Error 1" );
         IOException error2 = new IOException( "Error 2" );

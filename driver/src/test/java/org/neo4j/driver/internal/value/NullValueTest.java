@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,33 +34,33 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.point;
 
-public class NullValueTest
+class NullValueTest
 {
     @Test
-    public void shouldEqualItself()
+    void shouldEqualItself()
     {
         assertThat( NullValue.NULL, equalTo( NullValue.NULL ) );
     }
 
     @Test
-    public void shouldBeNull()
+    void shouldBeNull()
     {
         assertTrue( NullValue.NULL.isNull() );
     }
 
     @Test
-    public void shouldTypeAsNull()
+    void shouldTypeAsNull()
     {
         assertThat( ((InternalValue) NullValue.NULL).typeConstructor(), equalTo( TypeConstructor.NULL ) );
     }
 
     @Test
-    public void shouldReturnNativeTypesAsDefaultValue() throws Throwable
+    void shouldReturnNativeTypesAsDefaultValue()
     {
         Value value = NullValue.NULL;
         // string
@@ -94,7 +94,7 @@ public class NullValueTest
     }
 
     @Test
-    public void shouldReturnAsNull() throws Throwable
+    void shouldReturnAsNull()
     {
         assertComputeOrDefaultReturnNull( Value::asObject );
         assertComputeOrDefaultReturnNull( Value::asNumber );
@@ -122,7 +122,7 @@ public class NullValueTest
     }
 
     @Test
-    public void shouldReturnAsDefaultValue() throws Throwable
+    void shouldReturnAsDefaultValue()
     {
         assertComputeOrDefaultReturnDefault( Value::asObject, "null string" );
         assertComputeOrDefaultReturnDefault( Value::asNumber, 10 );

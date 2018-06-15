@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -31,10 +31,10 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
-public class SessionFactoryImplTest
+class SessionFactoryImplTest
 {
     @Test
-    public void createsNetworkSessions()
+    void createsNetworkSessions()
     {
         Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
         SessionFactory factory = newSessionFactory( config );
@@ -47,7 +47,7 @@ public class SessionFactoryImplTest
     }
 
     @Test
-    public void createsLeakLoggingNetworkSessions()
+    void createsLeakLoggingNetworkSessions()
     {
         Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().toConfig();
         SessionFactory factory = newSessionFactory( config );

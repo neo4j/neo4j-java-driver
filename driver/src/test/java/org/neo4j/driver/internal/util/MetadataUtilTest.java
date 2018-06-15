@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -38,10 +38,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
@@ -56,10 +56,10 @@ import static org.neo4j.driver.v1.summary.StatementType.READ_WRITE;
 import static org.neo4j.driver.v1.summary.StatementType.SCHEMA_WRITE;
 import static org.neo4j.driver.v1.summary.StatementType.WRITE_ONLY;
 
-public class MetadataUtilTest
+class MetadataUtilTest
 {
     @Test
-    public void shouldExtractStatementKeys()
+    void shouldExtractStatementKeys()
     {
         List<String> keys = asList( "hello", " ", "world", "!" );
         List<String> extractedKeys = extractStatementKeys( singletonMap( "fields", value( keys ) ) );
@@ -67,14 +67,14 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldExtractEmptyStatementKeysWhenNoneInMetadata()
+    void shouldExtractEmptyStatementKeysWhenNoneInMetadata()
     {
         List<String> extractedKeys = extractStatementKeys( emptyMap() );
         assertEquals( emptyList(), extractedKeys );
     }
 
     @Test
-    public void shouldExtractResultAvailableAfter()
+    void shouldExtractResultAvailableAfter()
     {
         long extractedResultAvailableAfter = extractResultAvailableAfter(
                 singletonMap( "result_available_after", value( 424242 ) ) );
@@ -82,14 +82,14 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldExtractNoResultAvailableAfterWhenNoneInMetadata()
+    void shouldExtractNoResultAvailableAfterWhenNoneInMetadata()
     {
         long extractedResultAvailableAfter = extractResultAvailableAfter( emptyMap() );
         assertEquals( -1, extractedResultAvailableAfter );
     }
 
     @Test
-    public void shouldBuildResultSummaryWithStatement()
+    void shouldBuildResultSummaryWithStatement()
     {
         Statement statement = new Statement( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
                 singletonMap( "name", "Apa" ) );
@@ -100,7 +100,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithServerInfo()
+    void shouldBuildResultSummaryWithServerInfo()
     {
         Connection connection = connectionMock( new BoltServerAddress( "server:42" ), ServerVersion.v3_2_0 );
 
@@ -111,7 +111,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithStatementType()
+    void shouldBuildResultSummaryWithStatementType()
     {
         assertEquals( READ_ONLY, createWithStatementType( value( "r" ) ).statementType() );
         assertEquals( READ_WRITE, createWithStatementType( value( "rw" ) ).statementType() );
@@ -122,7 +122,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithCounters()
+    void shouldBuildResultSummaryWithCounters()
     {
         Value stats = parameters(
                 "nodes-created", value( 42 ),
@@ -156,14 +156,14 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithoutCounters()
+    void shouldBuildResultSummaryWithoutCounters()
     {
         ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( EMPTY_STATS, summary.counters() );
     }
 
     @Test
-    public void shouldBuildResultSummaryWithPlan()
+    void shouldBuildResultSummaryWithPlan()
     {
         Value plan = value( parameters(
                 "operatorType", "Projection",
@@ -197,7 +197,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithoutPlan()
+    void shouldBuildResultSummaryWithoutPlan()
     {
         ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasPlan() );
@@ -205,7 +205,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithProfiledPlan()
+    void shouldBuildResultSummaryWithProfiledPlan()
     {
         Value profile = value( parameters(
                 "operatorType", "ProduceResult",
@@ -247,7 +247,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithoutProfiledPlan()
+    void shouldBuildResultSummaryWithoutProfiledPlan()
     {
         ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasProfile() );
@@ -255,7 +255,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithNotifications()
+    void shouldBuildResultSummaryWithNotifications()
     {
         Value notification1 = parameters(
                 "description", "Almost bad thing",
@@ -302,14 +302,14 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithoutNotifications()
+    void shouldBuildResultSummaryWithoutNotifications()
     {
         ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( 0, summary.notifications().size() );
     }
 
     @Test
-    public void shouldBuildResultSummaryWithResultAvailableAfter()
+    void shouldBuildResultSummaryWithResultAvailableAfter()
     {
         int value = 42_000;
 
@@ -320,7 +320,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithResultConsumedAfter()
+    void shouldBuildResultSummaryWithResultConsumedAfter()
     {
         int value = 42_000;
         Map<String,Value> metadata = singletonMap( "result_consumed_after", value( value ) );
@@ -332,7 +332,7 @@ public class MetadataUtilTest
     }
 
     @Test
-    public void shouldBuildResultSummaryWithoutResultConsumedAfter()
+    void shouldBuildResultSummaryWithoutResultConsumedAfter()
     {
         ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.SECONDS ) );

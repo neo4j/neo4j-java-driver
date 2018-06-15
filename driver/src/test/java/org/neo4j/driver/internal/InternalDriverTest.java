@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,10 +34,10 @@ import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class InternalDriverTest
+class InternalDriverTest
 {
     @Test
-    public void shouldCloseSessionFactory()
+    void shouldCloseSessionFactory()
     {
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
@@ -47,7 +47,7 @@ public class InternalDriverTest
     }
 
     @Test
-    public void shouldNotCloseSessionFactoryMultipleTimes()
+    void shouldNotCloseSessionFactoryMultipleTimes()
     {
         SessionFactory sessionFactory = sessionFactoryMock();
         InternalDriver driver = newDriver( sessionFactory );
@@ -60,7 +60,7 @@ public class InternalDriverTest
     }
 
     @Test
-    public void shouldVerifyConnectivity()
+    void shouldVerifyConnectivity()
     {
         SessionFactory sessionFactory = sessionFactoryMock();
         CompletableFuture<Void> connectivityStage = completedWithNull();
