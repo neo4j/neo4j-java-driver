@@ -68,10 +68,11 @@ class TrustOnFirstUseTrustManagerTest
         knownCertificate = mock( X509Certificate.class );
         when( knownCertificate.getEncoded() ).thenReturn( "certificate".getBytes( UTF_8 ) );
 
-        PrintWriter writer = new PrintWriter( knownCertsFile );
-        writer.println( " # I am a comment." );
-        writer.println( knownServer + " " + fingerprint( knownCertificate ) );
-        writer.close();
+        try ( PrintWriter writer = new PrintWriter( knownCertsFile ) )
+        {
+            writer.println( " # I am a comment." );
+            writer.println( knownServer + " " + fingerprint( knownCertificate ) );
+        }
     }
 
     @AfterEach
@@ -86,8 +87,7 @@ class TrustOnFirstUseTrustManagerTest
         // Given
         BoltServerAddress knownServerAddress = new BoltServerAddress( knownServerIp, knownServerPort );
         Logger logger = mock(Logger.class);
-        TrustOnFirstUseTrustManager manager =
-                new TrustOnFirstUseTrustManager( knownServerAddress, knownCertsFile, logger );
+        TrustOnFirstUseTrustManager manager = new TrustOnFirstUseTrustManager( knownServerAddress, knownCertsFile, logger );
 
         X509Certificate wrongCertificate = mock( X509Certificate.class );
         when( wrongCertificate.getEncoded() ).thenReturn( "fake certificate".getBytes() );
@@ -116,14 +116,14 @@ class TrustOnFirstUseTrustManagerTest
         verify( logger ).info( "Adding %s as known and trusted certificate for %s.", fingerprint, "1.2.3.4:200" );
 
         // And the file should contain the right info
-        Scanner reader = new Scanner( knownCertsFile );
-
-        String line;
-        line = nextLine( reader );
-        assertEquals( knownServer + " " + fingerprint, line );
-        assertTrue( reader.hasNextLine() );
-        line = nextLine( reader );
-        assertEquals( knownServerIp + ":" + newPort + " " + fingerprint, line );
+        try ( Scanner reader = new Scanner( knownCertsFile ) )
+        {
+            String line1 = nextLine( reader );
+            assertEquals( knownServer + " " + fingerprint, line1 );
+            assertTrue( reader.hasNextLine() );
+            String line2 = nextLine( reader );
+            assertEquals( knownServerIp + ":" + newPort + " " + fingerprint, line2 );
+        }
     }
 
     private String nextLine( Scanner reader )

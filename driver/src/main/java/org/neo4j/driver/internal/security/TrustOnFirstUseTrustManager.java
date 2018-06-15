@@ -82,22 +82,23 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
 
         assertKnownHostFileReadable();
 
-        BufferedReader reader = new BufferedReader( new FileReader( knownHosts ) );
-        String line;
-        while ( (line = reader.readLine()) != null )
+        try ( BufferedReader reader = new BufferedReader( new FileReader( knownHosts ) ) )
         {
-            if ( (!line.trim().startsWith( "#" )) )
+            String line;
+            while ( (line = reader.readLine()) != null )
             {
-                String[] strings = line.split( " " );
-                if ( strings[0].trim().equals( serverId ) )
+                if ( (!line.trim().startsWith( "#" )) )
                 {
-                    // load the certificate
-                    fingerprint = strings[1].trim();
-                    return;
+                    String[] strings = line.split( " " );
+                    if ( strings[0].trim().equals( serverId ) )
+                    {
+                        // load the certificate
+                        fingerprint = strings[1].trim();
+                        return;
+                    }
                 }
             }
         }
-        reader.close();
     }
 
     /**
@@ -113,10 +114,11 @@ public class TrustOnFirstUseTrustManager implements X509TrustManager
         createKnownCertFileIfNotExists();
 
         assertKnownHostFileWritable();
-        BufferedWriter writer = new BufferedWriter( new FileWriter( knownHosts, true ) );
-        writer.write( serverId + " " + this.fingerprint );
-        writer.newLine();
-        writer.close();
+        try ( BufferedWriter writer = new BufferedWriter( new FileWriter( knownHosts, true ) ) )
+        {
+            writer.write( serverId + " " + this.fingerprint );
+            writer.newLine();
+        }
     }
 
 
