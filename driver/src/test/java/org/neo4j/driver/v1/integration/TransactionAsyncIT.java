@@ -518,7 +518,7 @@ public class TransactionAsyncIT
         assertNotNull( summary.plan() );
         // asserting on plan is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
-        assertThat( summary.plan().toString(), containsString( "AllNodesScan" ) );
+        assertThat( summary.plan().toString().toLowerCase(), containsString( "scan" ) );
         assertNull( summary.profile() );
         assertEquals( 0, summary.notifications().size() );
         assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
@@ -548,8 +548,8 @@ public class TransactionAsyncIT
         assertNotNull( summary.profile() );
         // asserting on profile is a bit fragile and can break when server side changes or with different
         // server versions; that is why do fuzzy assertions in this test based on string content
-        String profileAsString = summary.profile().toString();
-        assertThat( profileAsString, containsString( "DbHits" ) );
+        String profileAsString = summary.profile().toString().toLowerCase();
+        assertThat( profileAsString, containsString( "hits" ) );
         assertEquals( 0, summary.notifications().size() );
         assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
     }
