@@ -20,42 +20,40 @@ package org.neo4j.driver.internal.cluster;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 
-public class DnsResolver implements HostNameResolver
+import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toSet;
+
+public class DnsResolver implements ServerAddressResolver
 {
     private final Logger logger;
 
-    public DnsResolver( Logger logger )
+    public DnsResolver( Logging logging )
     {
-        this.logger = logger;
+        this.logger = logging.getLog( DnsResolver.class.getSimpleName() );
     }
 
     @Override
-    public Set<BoltServerAddress> resolve( BoltServerAddress initialRouter )
+    public Set<ServerAddress> resolve( ServerAddress initialRouter )
     {
-        Set<BoltServerAddress> addresses = new HashSet<>();
         try
         {
-            InetAddress[] ipAddresses = InetAddress.getAllByName( initialRouter.host() );
-
-            for ( InetAddress ipAddress : ipAddresses )
-            {
-                addresses.add( new BoltServerAddress( ipAddress.getHostAddress(), initialRouter.port() ) );
-            }
-
-            return addresses;
+            return Stream.of( InetAddress.getAllByName( initialRouter.host() ) )
+                    .map( address -> new BoltServerAddress( address.getHostAddress(), initialRouter.port() ) )
+                    .collect( toSet() );
         }
         catch ( UnknownHostException e )
         {
-            logger.error( "Failed to resolve URI `" + initialRouter + "` to IPs due to error: " + e.getMessage(), e );
-
-            addresses.add( initialRouter );
-            return addresses;
+            logger.error( "Failed to resolve address `" + initialRouter + "` to IPs due to error: " + e.getMessage(), e );
+            return singleton( initialRouter );
         }
     }
 }

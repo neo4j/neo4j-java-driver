@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.cluster.DnsResolver;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
@@ -58,6 +59,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
@@ -204,8 +206,9 @@ public class DriverFactory
             EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
     {
         LoadBalancingStrategy loadBalancingStrategy = createLoadBalancingStrategy( config, connectionPool );
+        ServerAddressResolver resolver = createResolver( config );
         return new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
-                config.logging(), loadBalancingStrategy );
+                config.logging(), loadBalancingStrategy, resolver );
     }
 
     private static LoadBalancingStrategy createLoadBalancingStrategy( Config config,
@@ -220,6 +223,12 @@ public class DriverFactory
         default:
             throw new IllegalArgumentException( "Unknown load balancing strategy: " + config.loadBalancingStrategy() );
         }
+    }
+
+    private static ServerAddressResolver createResolver( Config config )
+    {
+        ServerAddressResolver configuredResolver = config.resolver();
+        return configuredResolver != null ? configuredResolver : new DnsResolver( config.logging() );
     }
 
     /**

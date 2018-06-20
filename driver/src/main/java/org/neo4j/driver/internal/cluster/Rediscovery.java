@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.cluster;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -35,9 +35,13 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class Rediscovery
@@ -48,27 +52,26 @@ public class Rediscovery
     private final RoutingSettings settings;
     private final Logger logger;
     private final ClusterCompositionProvider provider;
-    private final HostNameResolver hostNameResolver;
+    private final ServerAddressResolver resolver;
     private final EventExecutorGroup eventExecutorGroup;
 
     private volatile boolean useInitialRouter;
 
     public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-            EventExecutorGroup eventExecutorGroup, HostNameResolver hostNameResolver, Logger logger )
+            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logger logger )
     {
-        this( initialRouter, settings, provider, hostNameResolver, eventExecutorGroup, logger, true );
+        this( initialRouter, settings, provider, resolver, eventExecutorGroup, logger, true );
     }
 
     // Test-only constructor
-    public Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-            HostNameResolver hostNameResolver, EventExecutorGroup eventExecutorGroup, Logger logger,
-            boolean useInitialRouter )
+    Rediscovery( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
+            ServerAddressResolver resolver, EventExecutorGroup eventExecutorGroup, Logger logger, boolean useInitialRouter )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
         this.logger = logger;
         this.provider = provider;
-        this.hostNameResolver = hostNameResolver;
+        this.resolver = resolver;
         this.eventExecutorGroup = eventExecutorGroup;
         this.useInitialRouter = useInitialRouter;
     }
@@ -163,7 +166,7 @@ public class Rediscovery
     private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
             ConnectionPool connectionPool )
     {
-        Set<BoltServerAddress> seenServers = Collections.emptySet();
+        Set<BoltServerAddress> seenServers = emptySet();
         return lookupOnInitialRouter( routingTable, connectionPool, seenServers ).thenCompose( composition ->
         {
             if ( composition != null )
@@ -201,7 +204,7 @@ public class Rediscovery
     private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
             ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
-        Set<BoltServerAddress> addresses = hostNameResolver.resolve( initialRouter );
+        List<BoltServerAddress> addresses = resolve( initialRouter );
         addresses.removeAll( seenServers );
 
         CompletableFuture<ClusterComposition> result = completedWithNull();
@@ -255,4 +258,19 @@ public class Rediscovery
         }
     }
 
+    private List<BoltServerAddress> resolve( BoltServerAddress address )
+    {
+        try
+        {
+            return resolver.resolve( address )
+                    .stream()
+                    .map( BoltServerAddress::from )
+                    .collect( toList() ); // collect to list to preserve the order
+        }
+        catch ( Throwable error )
+        {
+            logger.error( "Resolver function failed to resolve '" + address + "'. The address will be used as is", error );
+            return singletonList( address );
+        }
+    }
 }

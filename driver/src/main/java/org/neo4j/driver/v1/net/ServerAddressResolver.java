@@ -16,13 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.v1.net;
 
 import java.util.Set;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-
-public interface HostNameResolver
+/**
+ * A resolver function used by the routing driver to resolve the initial address used to create the driver.
+ */
+@FunctionalInterface
+public interface ServerAddressResolver
 {
-    Set<BoltServerAddress> resolve( BoltServerAddress initialRouter );
+    /**
+     * Resolve the given address to a set of other addresses.
+     * Exceptions thrown by this method will be logged and driver will continue using the original address.
+     *
+     * @param address the address to resolve.
+     * @return new set of addresses.
+     */
+    Set<ServerAddress> resolve( ServerAddress address );
 }
