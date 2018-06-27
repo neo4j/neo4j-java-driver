@@ -32,7 +32,7 @@ public class ServerVersion
     public static final ServerVersion v3_2_0 = new ServerVersion( 3, 2, 0 );
     public static final ServerVersion v3_1_0 = new ServerVersion( 3, 1, 0 );
     public static final ServerVersion v3_0_0 = new ServerVersion( 3, 0, 0 );
-    public static final ServerVersion vInDev = new ServerVersion( 0, 0, 0 );
+    public static final ServerVersion vInDev = new ServerVersion( Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE );
 
     private static final String NEO4J_IN_DEV_VERSION_STRING = "Neo4j/dev";
     private static final Pattern PATTERN =
@@ -161,7 +161,7 @@ public class ServerVersion
 
     private static String stringValue( int major, int minor, int patch )
     {
-        if ( major == 0 && minor == 0 && patch == 0 )
+        if ( major == Integer.MAX_VALUE && minor == Integer.MAX_VALUE && patch == Integer.MAX_VALUE )
         {
             return NEO4J_IN_DEV_VERSION_STRING;
         }
