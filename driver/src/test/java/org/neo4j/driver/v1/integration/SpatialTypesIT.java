@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,33 +30,33 @@ import java.util.stream.Stream;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Point;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.v1.Values.ofPoint;
 import static org.neo4j.driver.v1.Values.point;
 
-public class SpatialTypesIT
+class SpatialTypesIT
 {
     private static final int WGS_84_CRS_CODE = 4326;
     private static final int CARTESIAN_CRS_CODE = 7203;
     private static final double DELTA = 0.00001;
 
-    @Rule
-    public final TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         assumeTrue( session.version().greaterThanOrEqual( v3_4_0 ) );
     }
 
     @Test
-    public void shouldReceivePoint()
+    void shouldReceivePoint()
     {
         Record record = session.run( "RETURN point({x: 39.111748, y:-76.775635})" ).single();
 
@@ -68,7 +68,7 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldSendPoint()
+    void shouldSendPoint()
     {
         Value pointValue = point( WGS_84_CRS_CODE, 38.8719, 77.0563 );
         Record record1 = session.run( "CREATE (n:Node {location: $point}) RETURN 42", singletonMap( "point", pointValue ) ).single();
@@ -84,13 +84,13 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldSendAndReceivePoint()
+    void shouldSendAndReceivePoint()
     {
         testPointSendAndReceive( point( CARTESIAN_CRS_CODE, 40.7624, 73.9738 ) );
     }
 
     @Test
-    public void shouldSendAndReceiveRandom2DPoints()
+    void shouldSendAndReceiveRandom2DPoints()
     {
         Stream<Value> randomPoints = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
@@ -102,7 +102,7 @@ public class SpatialTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveRandom2DPointArrays()
+    void shouldSendAndReceiveRandom2DPointArrays()
     {
         Stream<List<Value>> randomPointLists = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
@@ -150,8 +150,8 @@ public class SpatialTypesIT
     private static void assertPoints2DEqual( Point expected, Point actual )
     {
         String message = "Expected: " + expected + " but was: " + actual;
-        assertEquals( message, expected.srid(), actual.srid() );
-        assertEquals( message, expected.x(), actual.x(), DELTA );
-        assertEquals( message, expected.y(), actual.y(), DELTA );
+        assertEquals( expected.srid(), actual.srid(), message );
+        assertEquals( expected.x(), actual.x(), DELTA, message );
+        assertEquals( expected.y(), actual.y(), DELTA, message );
     }
 }

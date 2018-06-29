@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 
@@ -27,21 +27,21 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jSettings;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class LoadCSVIT
+class LoadCSVIT
 {
-    @Rule
-    public TestNeo4j neo4j = new TestNeo4j( Neo4jSettings.TEST_SETTINGS.without( Neo4jSettings.IMPORT_DIR ) );
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension( Neo4jSettings.TEST_SETTINGS.without( Neo4jSettings.IMPORT_DIR ) );
 
     @Test
-    public void shouldLoadCSV() throws Throwable
+    void shouldLoadCSV() throws Throwable
     {
         try( Driver driver =  GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
             Session session = driver.session() )
@@ -76,24 +76,14 @@ public class LoadCSVIT
         return neo4j.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
-    private static void consume( StatementResult result )
-    {
-        while ( result.hasNext() )
-        {
-            // be happy
-        }
-    }
-
-
-    public static String[] IRIS_CLASS_NAMES =
+    private static String[] IRIS_CLASS_NAMES =
         new String[] {
             "Iris-setosa",
             "Iris-versicolor",
             "Iris-virginica"
         };
 
-    public static String IRIS_DATA =
+    private static String IRIS_DATA =
         "sepal_length,sepal_width,petal_length,petal_width,class_name\n" +
         "5.1,3.5,1.4,0.2,Iris-setosa\n" +
         "4.9,3.0,1.4,0.2,Iris-setosa\n" +

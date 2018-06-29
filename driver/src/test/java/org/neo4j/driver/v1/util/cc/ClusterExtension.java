@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver.v1.util.cc;
 
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,13 +32,13 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;
 import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 
-public class ClusterRule extends ExternalResource
+public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
     private static final Path CLUSTER_DIR = Paths.get( TARGET_DIR, "test-cluster" ).toAbsolutePath();
     private static final int INITIAL_PORT = 20_000;
@@ -53,25 +56,10 @@ public class ClusterRule extends ExternalResource
         return AuthTokens.basic( USER, PASSWORD );
     }
 
-    public static void stopSharedCluster()
-    {
-        if ( SharedCluster.exists() )
-        {
-            try
-            {
-                SharedCluster.stop();
-            }
-            finally
-            {
-                SharedCluster.remove();
-            }
-        }
-    }
-
     @Override
-    protected void before() throws Throwable
+    public void beforeAll( ExtensionContext context ) throws Exception
     {
-        assumeTrue( "BoltKit cluster support unavailable", boltKitAvailable() );
+        assumeTrue( boltKitAvailable(), "BoltKit cluster support unavailable" );
 
         stopSingleInstanceDatabase();
 
@@ -110,11 +98,27 @@ public class ClusterRule extends ExternalResource
     }
 
     @Override
-    protected void after()
+    public void afterEach( ExtensionContext context )
     {
         Cluster cluster = getCluster();
         cluster.startOfflineMembers();
         cluster.deleteData();
+    }
+
+    @Override
+    public void afterAll( ExtensionContext context )
+    {
+        if ( SharedCluster.exists() )
+        {
+            try
+            {
+                SharedCluster.stop();
+            }
+            finally
+            {
+                SharedCluster.remove();
+            }
+        }
     }
 
     private static String parseNeo4jVersion()
@@ -122,8 +126,8 @@ public class ClusterRule extends ExternalResource
         String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
         String version = split[split.length - 1];
         // if the server version is older than 3.1 series, then ignore the tests
-        assumeTrue( "Server version `" + version + "` does not support Casual Cluster",
-                ServerVersion.version( version ).greaterThanOrEqual( ServerVersion.v3_1_0 ) );
+        assumeTrue( ServerVersion.version( version ).greaterThanOrEqual( ServerVersion.v3_1_0 ),
+                "Server version `" + version + "` does not support Casual Cluster" );
         return version;
     }
 
@@ -137,24 +141,20 @@ public class ClusterRule extends ExternalResource
 
     private static void addShutdownHookToStopCluster()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread()
+        Runtime.getRuntime().addShutdownHook( new Thread( () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
+                if ( SharedCluster.exists() )
                 {
-                    if ( SharedCluster.exists() )
-                    {
-                        SharedCluster.kill();
-                    }
-                }
-                catch ( Throwable t )
-                {
-                    System.err.println( "Cluster stopping shutdown hook failed" );
-                    t.printStackTrace();
+                    SharedCluster.kill();
                 }
             }
-        } );
+            catch ( Throwable t )
+            {
+                System.err.println( "Cluster stopping shutdown hook failed" );
+                t.printStackTrace();
+            }
+        } ) );
     }
 }

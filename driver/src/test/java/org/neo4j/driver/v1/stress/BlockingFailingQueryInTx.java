@@ -25,8 +25,8 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
 public class BlockingFailingQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C>
@@ -45,15 +45,8 @@ public class BlockingFailingQueryInTx<C extends AbstractContext> extends Abstrac
             {
                 StatementResult result = tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
 
-                try
-                {
-                    result.consume();
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, is( arithmeticError() ) );
-                }
+                Exception e = assertThrows( Exception.class, result::consume );
+                assertThat( e, is( arithmeticError() ) );
             }
         }
     }

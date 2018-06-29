@@ -18,57 +18,49 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 
-@RunWith(Parameterized.class)
-public class ScalarTypeIT
+class ScalarTypeIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
-    @Parameterized.Parameter(0)
-    public String statement;
-
-    @Parameterized.Parameter(1)
-    public Value expectedValue;
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> typesToTest()
+    static Stream<Arguments> typesToTest()
     {
-        return Arrays.asList(
-                new Object[]{"RETURN 1 as v", Values.value( 1L )},
-                new Object[]{"RETURN 1.1 as v", Values.value( 1.1d )},
-                new Object[]{"RETURN 'hello' as v", Values.value( "hello" )},
-                new Object[]{"RETURN true as v", Values.value( true )},
-                new Object[]{"RETURN false as v", Values.value( false )},
-                new Object[]{"RETURN [1,2,3] as v", new ListValue( Values.value( 1 ), Values.value( 2 ), Values.value( 3 ) )},
-                new Object[]{"RETURN ['hello'] as v", new ListValue( Values.value( "hello" ) )},
-                new Object[]{"RETURN [] as v", new ListValue()},
-                new Object[]{"RETURN {k:'hello'} as v", parameters( "k", Values.value( "hello" ) )},
-                new Object[]{"RETURN {} as v", new MapValue( Collections.<String, Value>emptyMap() )}
+        return Stream.of(
+                Arguments.of( "RETURN 1 as v", Values.value( 1L ) ),
+                Arguments.of( "RETURN 1.1 as v", Values.value( 1.1d ) ),
+                Arguments.of( "RETURN 'hello' as v", Values.value( "hello" ) ),
+                Arguments.of( "RETURN true as v", Values.value( true ) ),
+                Arguments.of( "RETURN false as v", Values.value( false ) ),
+                Arguments.of( "RETURN [1,2,3] as v", new ListValue( Values.value( 1 ), Values.value( 2 ), Values.value( 3 ) ) ),
+                Arguments.of( "RETURN ['hello'] as v", new ListValue( Values.value( "hello" ) ) ),
+                Arguments.of( "RETURN [] as v", new ListValue() ),
+                Arguments.of( "RETURN {k:'hello'} as v", parameters( "k", Values.value( "hello" ) ) ),
+                Arguments.of( "RETURN {} as v", new MapValue( Collections.<String,Value>emptyMap() ) )
         );
     }
 
-    @Test
-    public void shouldHandleType() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "typesToTest" )
+    void shouldHandleType( String statement, Value expectedValue )
     {
         // When
         StatementResult cursor = session.run( statement );

@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -27,7 +27,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,13 +36,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class LoggingIT
+class LoggingIT
 {
-    @Rule
-    public TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    public void logShouldRecordDebugAndTraceInfo() throws Exception
+    void logShouldRecordDebugAndTraceInfo()
     {
         // Given
         Logging logging = mock( Logging.class );

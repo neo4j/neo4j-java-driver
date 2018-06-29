@@ -19,9 +19,9 @@
 package org.neo4j.driver.v1.stress;
 
 import io.netty.util.internal.ConcurrentSet;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -69,13 +69,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.metrics.spi.Metrics.DRIVER_METRICS_ENABLED_KEY;
 
-public abstract class AbstractStressTestBase<C extends AbstractContext>
+abstract class AbstractStressTestBase<C extends AbstractContext>
 {
     private static final int THREAD_COUNT = Integer.getInteger( "threadCount", 8 );
     private static final int ASYNC_BATCH_SIZE = Integer.getInteger( "asyncBatchSize", 10 );
@@ -90,8 +90,8 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
 
     InternalDriver driver;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
@@ -109,8 +109,8 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
         executor = Executors.newCachedThreadPool( threadFactory );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         System.out.println( driver.metrics() );
         executor.shutdownNow();
@@ -122,26 +122,26 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
     }
 
     @Test
-    public void blockingApiStressTest() throws Throwable
+    void blockingApiStressTest() throws Throwable
     {
         runStressTest( this::launchBlockingWorkerThreads );
     }
 
     @Test
-    public void asyncApiStressTest() throws Throwable
+    void asyncApiStressTest() throws Throwable
     {
         runStressTest( this::launchAsyncWorkerThreads );
     }
 
     @Test
-    public void blockingApiBigDataTest()
+    void blockingApiBigDataTest()
     {
         String bookmark = createNodesBlocking( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesBlocking( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
     }
 
     @Test
-    public void asyncApiBigDataTest() throws Throwable
+    void asyncApiBigDataTest() throws Throwable
     {
         String bookmark = createNodesAsync( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesAsync( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
@@ -366,7 +366,7 @@ public abstract class AbstractStressTestBase<C extends AbstractContext>
             assertEquals( 1, records.size() );
             Record record = records.get( 0 );
             long actualCount = record.get( "nodesCount" ).asLong();
-            assertEquals( "Unexpected number of nodes in the database", expectedCount, actualCount );
+            assertEquals( expectedCount, actualCount, "Unexpected number of nodes in the database" );
         }
     }
 

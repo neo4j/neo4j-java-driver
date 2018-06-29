@@ -18,9 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.singletonMap;
@@ -44,10 +43,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
@@ -55,18 +55,15 @@ import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class ParametersIT
+class ParametersIT
 {
     private static final int LONG_VALUE_SIZE = 1_000_000;
 
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldBeAbleToSetAndReturnBooleanProperty()
+    void shouldBeAbleToSetAndReturnBooleanProperty()
     {
         // When
         StatementResult result = session.run(
@@ -82,7 +79,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnByteProperty()
+    void shouldBeAbleToSetAndReturnByteProperty()
     {
         // When
         StatementResult result = session.run(
@@ -98,7 +95,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnShortProperty()
+    void shouldBeAbleToSetAndReturnShortProperty()
     {
         // When
         StatementResult result = session.run(
@@ -114,7 +111,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnIntegerProperty()
+    void shouldBeAbleToSetAndReturnIntegerProperty()
     {
         // When
         StatementResult result = session.run(
@@ -131,7 +128,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnLongProperty()
+    void shouldBeAbleToSetAndReturnLongProperty()
     {
         // When
         StatementResult result = session.run(
@@ -148,7 +145,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnDoubleProperty()
+    void shouldBeAbleToSetAndReturnDoubleProperty()
     {
         // When
         StatementResult result = session.run(
@@ -164,7 +161,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnBytesProperty()
+    void shouldBeAbleToSetAndReturnBytesProperty()
     {
         assumeTrue( supportsBytes() );
 
@@ -178,7 +175,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldThrowExceptionWhenServerDoesNotSupportBytes()
+    void shouldThrowExceptionWhenServerDoesNotSupportBytes()
     {
         assumeFalse( supportsBytes() );
 
@@ -186,21 +183,16 @@ public class ParametersIT
         byte[] byteArray = "hello, world".getBytes();
 
         // When
-        try
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () ->
         {
-            StatementResult result = session.run(
-                    "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
+            StatementResult result = session.run( "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
             result.single();
-            fail( "Should not be able to pack bytes" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            assertThat( e.getCause().getMessage(), containsString( "Packing bytes is not supported" ) );
-        }
+        } );
+        assertThat( e.getCause().getMessage(), containsString( "Packing bytes is not supported" ) );
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringProperty()
+    void shouldBeAbleToSetAndReturnStringProperty()
     {
         testStringProperty( "" );
         testStringProperty( "π≈3.14" );
@@ -209,7 +201,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnBooleanArrayProperty()
+    void shouldBeAbleToSetAndReturnBooleanArrayProperty()
     {
         // When
         boolean[] arrayValue = new boolean[]{true, true, true};
@@ -232,7 +224,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnIntegerArrayProperty()
+    void shouldBeAbleToSetAndReturnIntegerArrayProperty()
     {
         // When
         int[] arrayValue = new int[]{42, 42, 42};
@@ -255,7 +247,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnDoubleArrayProperty()
+    void shouldBeAbleToSetAndReturnDoubleArrayProperty()
     {
         // When
         double[] arrayValue = new double[]{6.28, 6.28, 6.28};
@@ -277,7 +269,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringArrayProperty()
+    void shouldBeAbleToSetAndReturnStringArrayProperty()
     {
         testStringArrayContaining( "cat" );
         testStringArrayContaining( "Mjölnir" );
@@ -305,7 +297,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldHandleLargeString() throws Throwable
+    void shouldHandleLargeString()
     {
         // Given
         char[] bigStr = new char[1024 * 10];
@@ -327,7 +319,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnBooleanPropertyWithinMap()
+    void shouldBeAbleToSetAndReturnBooleanPropertyWithinMap()
     {
         // When
         StatementResult result = session.run(
@@ -345,7 +337,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnIntegerPropertyWithinMap()
+    void shouldBeAbleToSetAndReturnIntegerPropertyWithinMap()
     {
         // When
         StatementResult result = session.run(
@@ -363,7 +355,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnDoublePropertyWithinMap()
+    void shouldBeAbleToSetAndReturnDoublePropertyWithinMap()
     {
         // When
         StatementResult result = session.run(
@@ -381,7 +373,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldBeAbleToSetAndReturnStringPropertyWithinMap()
+    void shouldBeAbleToSetAndReturnStringPropertyWithinMap()
     {
         // When
         StatementResult result = session.run(
@@ -398,29 +390,21 @@ public class ParametersIT
     }
 
     @Test
-    public void settingInvalidParameterTypeShouldThrowHelpfulError() throws Throwable
+    void settingInvalidParameterTypeShouldThrowHelpfulError()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Unable to convert java.lang.Object to Neo4j Value." );
-
-        // When
-        session.run( "anything", parameters( "k", new Object() ) );
+        ClientException e = assertThrows( ClientException.class, () -> session.run( "anything", parameters( "k", new Object() ) ) );
+        assertEquals( "Unable to convert java.lang.Object to Neo4j Value.", e.getMessage() );
     }
 
     @Test
-    public void settingInvalidParameterTypeDirectlyShouldThrowHelpfulError() throws Throwable
+    void settingInvalidParameterTypeDirectlyShouldThrowHelpfulError()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "The parameters should be provided as Map type. Unsupported parameters type: NODE" );
-
-        // When
-        session.run( "anything", emptyNodeValue() );
+        ClientException e = assertThrows( ClientException.class, () -> session.run( "anything", emptyNodeValue() ) );
+        assertEquals( "The parameters should be provided as Map type. Unsupported parameters type: NODE", e.getMessage() );
     }
 
     @Test
-    public void shouldNotBePossibleToUseNodeAsParameterInMapValue()
+    void shouldNotBePossibleToUseNodeAsParameterInMapValue()
     {
         // GIVEN
         Value node = emptyNodeValue();
@@ -433,7 +417,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldNotBePossibleToUseRelationshipAsParameterViaMapValue()
+    void shouldNotBePossibleToUseRelationshipAsParameterViaMapValue()
     {
         // GIVEN
         Value relationship = emptyRelationshipValue();
@@ -446,7 +430,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldNotBePossibleToUsePathAsParameterViaMapValue()
+    void shouldNotBePossibleToUsePathAsParameterViaMapValue()
     {
         // GIVEN
         Value path = filledPathValue();
@@ -459,14 +443,14 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldSendAndReceiveLongString()
+    void shouldSendAndReceiveLongString()
     {
         String string = TestUtil.randomString( LONG_VALUE_SIZE );
         testSendAndReceiveValue( string );
     }
 
     @Test
-    public void shouldSendAndReceiveLongListOfLongs()
+    void shouldSendAndReceiveLongListOfLongs()
     {
         List<Long> longs = ThreadLocalRandom.current()
                 .longs( LONG_VALUE_SIZE )
@@ -477,7 +461,7 @@ public class ParametersIT
     }
 
     @Test
-    public void shouldSendAndReceiveLongArrayOfBytes()
+    void shouldSendAndReceiveLongArrayOfBytes()
     {
         assumeTrue( supportsBytes() );
 
@@ -529,21 +513,10 @@ public class ParametersIT
 
     private void expectIOExceptionWithMessage( Value value, String message )
     {
-        try
-        {
-            session.run( "RETURN {a}", value ).consume();
-            fail( "Expecting a ServiceUnavailableException" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            Throwable cause = e.getCause();
-            assertThat( cause, instanceOf( IOException.class ) );
-            assertThat( cause.getMessage(), equalTo( message ) );
-        }
-        catch ( Exception e )
-        {
-            fail( "Expecting a ServiceUnavailableException but got " + e );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.run( "RETURN {a}", value ).consume() );
+        Throwable cause = e.getCause();
+        assertThat( cause, instanceOf( IOException.class ) );
+        assertThat( cause.getMessage(), equalTo( message ) );
     }
 
     private void testSendAndReceiveValue( Object value )

@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal;
 
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -32,29 +32,29 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
-public class DirectDriverIT
+class DirectDriverIT
 {
-    @ClassRule
-    public static final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
 
-    @After
-    public void closeDriver() throws Exception
+    @AfterEach
+    void closeDriver()
     {
         if ( driver != null )
         {
@@ -63,7 +63,7 @@ public class DirectDriverIT
     }
 
     @Test
-    public void shouldUseDefaultPortIfMissing()
+    void shouldUseDefaultPortIfMissing()
     {
         // Given
         URI uri = URI.create( "bolt://localhost" );
@@ -76,7 +76,7 @@ public class DirectDriverIT
     }
 
     @Test
-    public void shouldAllowIPv6Address()
+    void shouldAllowIPv6Address()
     {
         assumeTrue( supportsListenAddressConfiguration( neo4j ) );
 
@@ -92,25 +92,18 @@ public class DirectDriverIT
     }
 
     @Test
-    public void shouldRejectInvalidAddress()
+    void shouldRejectInvalidAddress()
     {
         // Given
         URI uri = URI.create( "*" );
 
         // When & Then
-        try
-        {
-            driver = GraphDatabase.driver( uri, neo4j.authToken() );
-            fail( "Expecting error for wrong uri" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            assertThat( e.getMessage(), equalTo( "Invalid address format `*`" ) );
-        }
+        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, neo4j.authToken() ) );
+        assertThat( e.getMessage(), equalTo( "Invalid address format `*`" ) );
     }
 
     @Test
-    public void shouldRegisterSingleServer()
+    void shouldRegisterSingleServer()
     {
         // Given
         URI uri = URI.create( "bolt://localhost:7687" );
@@ -124,7 +117,7 @@ public class DirectDriverIT
     }
 
     @Test
-    public void shouldBeAbleRunCypher() throws Exception
+    void shouldBeAbleRunCypher() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "return_x.script", 9001 );
@@ -149,7 +142,7 @@ public class DirectDriverIT
     }
 
     @Test
-    public void shouldSendMultipleBookmarks() throws Exception
+    void shouldSendMultipleBookmarks() throws Exception
     {
         StubServer server = StubServer.start( "multiple_bookmarks.script", 9001 );
 
@@ -181,7 +174,7 @@ public class DirectDriverIT
      * @param neo4j the test neo4j instance to check.
      * @return {@code true} if given test neo4j supports config option, {@code false} otherwise.
      */
-    private static boolean supportsListenAddressConfiguration( TestNeo4j neo4j )
+    private static boolean supportsListenAddressConfiguration( DatabaseExtension neo4j )
     {
         ServerVersion version = ServerVersion.version( neo4j.driver() );
         return version.greaterThanOrEqual( ServerVersion.v3_1_0 );

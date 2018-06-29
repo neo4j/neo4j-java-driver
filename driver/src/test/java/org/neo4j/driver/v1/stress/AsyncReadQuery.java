@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.types.Node;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class AsyncReadQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>
 {

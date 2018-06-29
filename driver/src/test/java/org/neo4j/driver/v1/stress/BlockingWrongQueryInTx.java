@@ -24,8 +24,8 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
 public class BlockingWrongQueryInTx<C extends AbstractContext> extends AbstractBlockingQuery<C>
@@ -42,15 +42,8 @@ public class BlockingWrongQueryInTx<C extends AbstractContext> extends AbstractB
         {
             try ( Transaction tx = beginTransaction( session, context ) )
             {
-                try
-                {
-                    tx.run( "RETURN" ).consume();
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-                }
+                Exception e = assertThrows( Exception.class, () -> tx.run( "RETURN" ).consume() );
+                assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
             }
         }
     }

@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,38 +36,38 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.SessionExtension;
 import org.neo4j.driver.v1.util.TemporalUtil;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
 
 import static java.time.Month.MARCH;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class TemporalTypesIT
+class TemporalTypesIT
 {
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
 
-    @Rule
-    public final TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         assumeTrue( session.version().greaterThanOrEqual( v3_4_0 ) );
     }
 
     @Test
-    public void shouldSendDate()
+    void shouldSendDate()
     {
         testSendValue( LocalDate.now(), Value::asLocalDate );
     }
 
     @Test
-    public void shouldReceiveDate()
+    void shouldReceiveDate()
     {
         testReceiveValue( "RETURN date({year: 1995, month: 12, day: 4})",
                 LocalDate.of( 1995, 12, 4 ),
@@ -75,25 +75,25 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveDate()
+    void shouldSendAndReceiveDate()
     {
         testSendAndReceiveValue( LocalDate.now(), Value::asLocalDate );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomDate()
+    void shouldSendAndReceiveRandomDate()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomLocalDate, Value::asLocalDate );
     }
 
     @Test
-    public void shouldSendTime()
+    void shouldSendTime()
     {
         testSendValue( OffsetTime.now(), Value::asOffsetTime );
     }
 
     @Test
-    public void shouldReceiveTime()
+    void shouldReceiveTime()
     {
         testReceiveValue( "RETURN time({hour: 23, minute: 19, second: 55, timezone:'-07:00'})",
                 OffsetTime.of( 23, 19, 55, 0, ZoneOffset.ofHours( -7 ) ),
@@ -101,25 +101,25 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveTime()
+    void shouldSendAndReceiveTime()
     {
         testSendAndReceiveValue( OffsetTime.now(), Value::asOffsetTime );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomTime()
+    void shouldSendAndReceiveRandomTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomOffsetTime, Value::asOffsetTime );
     }
 
     @Test
-    public void shouldSendLocalTime()
+    void shouldSendLocalTime()
     {
         testSendValue( LocalTime.now(), Value::asLocalTime );
     }
 
     @Test
-    public void shouldReceiveLocalTime()
+    void shouldReceiveLocalTime()
     {
         testReceiveValue( "RETURN localtime({hour: 22, minute: 59, second: 10, nanosecond: 999999})",
                 LocalTime.of( 22, 59, 10, 999_999 ),
@@ -127,25 +127,25 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveLocalTime()
+    void shouldSendAndReceiveLocalTime()
     {
         testSendAndReceiveValue( LocalTime.now(), Value::asLocalTime );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomLocalTime()
+    void shouldSendAndReceiveRandomLocalTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomLocalTime, Value::asLocalTime );
     }
 
     @Test
-    public void shouldSendLocalDateTime()
+    void shouldSendLocalDateTime()
     {
         testSendValue( LocalDateTime.now(), Value::asLocalDateTime );
     }
 
     @Test
-    public void shouldReceiveLocalDateTime()
+    void shouldReceiveLocalDateTime()
     {
         testReceiveValue( "RETURN localdatetime({year: 1899, month: 3, day: 20, hour: 12, minute: 17, second: 13, nanosecond: 999})",
                 LocalDateTime.of( 1899, MARCH, 20, 12, 17, 13, 999 ),
@@ -153,26 +153,26 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveLocalDateTime()
+    void shouldSendAndReceiveLocalDateTime()
     {
         testSendAndReceiveValue( LocalDateTime.now(), Value::asLocalDateTime );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomLocalDateTime()
+    void shouldSendAndReceiveRandomLocalDateTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomLocalDateTime, Value::asLocalDateTime );
     }
 
     @Test
-    public void shouldSendDateTimeWithZoneOffset()
+    void shouldSendDateTimeWithZoneOffset()
     {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes( -4, -15 );
         testSendValue( ZonedDateTime.of( 1845, 3, 25, 19, 15, 45, 22, offset ), Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldReceiveDateTimeWithZoneOffset()
+    void shouldReceiveDateTimeWithZoneOffset()
     {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes( 3, 30 );
         testReceiveValue( "RETURN datetime({year:1984, month:10, day:11, hour:21, minute:30, second:34, timezone:'+03:30'})",
@@ -181,27 +181,27 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveDateTimeWithZoneOffset()
+    void shouldSendAndReceiveDateTimeWithZoneOffset()
     {
         ZoneOffset offset = ZoneOffset.ofHoursMinutes( -7, -15 );
         testSendAndReceiveValue( ZonedDateTime.of( 2017, 3, 9, 11, 12, 13, 14, offset ), Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomDateTimeWithZoneOffset()
+    void shouldSendAndReceiveRandomDateTimeWithZoneOffset()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomZonedDateTimeWithOffset, Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldSendDateTimeWithZoneId()
+    void shouldSendDateTimeWithZoneId()
     {
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
         testSendValue( ZonedDateTime.of( 2049, 9, 11, 19, 10, 40, 20, zoneId ), Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldReceiveDateTimeWithZoneId()
+    void shouldReceiveDateTimeWithZoneId()
     {
         ZoneId zoneId = ZoneId.of( "Europe/London" );
         testReceiveValue( "RETURN datetime({year:2000, month:1, day:1, hour:9, minute:5, second:1, timezone:'Europe/London'})",
@@ -210,26 +210,26 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveDateTimeWithZoneId()
+    void shouldSendAndReceiveDateTimeWithZoneId()
     {
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
         testSendAndReceiveValue( ZonedDateTime.of( 2099, 12, 29, 12, 59, 59, 59, zoneId ), Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomDateTimeWithZoneId()
+    void shouldSendAndReceiveRandomDateTimeWithZoneId()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomZonedDateTimeWithZoneId, Value::asZonedDateTime );
     }
 
     @Test
-    public void shouldSendDuration()
+    void shouldSendDuration()
     {
         testSendValue( newDuration( 8, 12, 90, 8 ), Value::asIsoDuration );
     }
 
     @Test
-    public void shouldReceiveDuration()
+    void shouldReceiveDuration()
     {
         testReceiveValue( "RETURN duration({months: 13, days: 40, seconds: 12, nanoseconds: 999})",
                 newDuration( 13, 40, 12, 999 ),
@@ -237,19 +237,19 @@ public class TemporalTypesIT
     }
 
     @Test
-    public void shouldSendAndReceiveDuration()
+    void shouldSendAndReceiveDuration()
     {
         testSendAndReceiveValue( newDuration( 7, 7, 88, 999_999 ), Value::asIsoDuration );
     }
 
     @Test
-    public void shouldSendAndReceiveRandomDuration()
+    void shouldSendAndReceiveRandomDuration()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asIsoDuration );
     }
 
     @Test
-    public void shouldFormatDurationToString()
+    void shouldFormatDurationToString()
     {
         testDurationToString( 1, 0, "P0M0DT1S" );
         testDurationToString( -1, 0, "P0M0DT-1S" );

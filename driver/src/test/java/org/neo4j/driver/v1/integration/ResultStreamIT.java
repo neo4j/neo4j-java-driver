@@ -18,34 +18,35 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class ResultStreamIT
+class ResultStreamIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldAllowIteratingOverResultStream() throws Throwable
+    void shouldAllowIteratingOverResultStream()
     {
         // When
         StatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
@@ -59,7 +60,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldHaveFieldNamesInResult()
+    void shouldHaveFieldNamesInResult()
     {
         // When
         StatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
@@ -71,7 +72,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField() throws Throwable
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField()
     {
         // Given
         StatementResult rs =
@@ -85,7 +86,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode() throws Throwable
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode()
     {
         // Given
         StatementResult rs =
@@ -99,7 +100,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldNotReturnNullKeysOnEmptyResult()
+    void shouldNotReturnNullKeysOnEmptyResult()
     {
         // Given
         StatementResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
@@ -109,19 +110,11 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldBeAbleToReuseSessionAfterFailure() throws Throwable
+    void shouldBeAbleToReuseSessionAfterFailure()
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
-        try
-        {
-            res1.consume();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            //ignore
-        }
+        assertThrows( Exception.class, res1::consume );
 
         // When
         StatementResult res2 = session.run( "RETURN 1" );
@@ -132,7 +125,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldBeAbleToAccessSummaryAfterFailure() throws Throwable
+    void shouldBeAbleToAccessSummaryAfterFailure()
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
@@ -159,28 +152,27 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldBeAbleToAccessSummaryAfterTransactionFailure()
+    void shouldBeAbleToAccessSummaryAfterTransactionFailure()
     {
-        StatementResult result = null;
-        try
+        AtomicReference<StatementResult> resultRef = new AtomicReference<>();
+
+        assertThrows( ClientException.class, () ->
         {
             try ( Transaction tx = session.beginTransaction() )
             {
-                result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
+                StatementResult result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
+                resultRef.set( result );
                 tx.success();
             }
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertNotNull( result );
-            assertEquals( 0, result.summary().counters().nodesCreated() );
-        }
+        } );
+
+        StatementResult result = resultRef.get();
+        assertNotNull( result );
+        assertEquals( 0, result.summary().counters().nodesCreated() );
     }
 
     @Test
-    public void shouldBufferRecordsAfterSummary() throws Throwable
+    void shouldBufferRecordsAfterSummary()
     {
         // Given
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
@@ -198,7 +190,7 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldDiscardRecordsAfterConsume() throws Throwable
+    void shouldDiscardRecordsAfterConsume()
     {
         // Given
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
@@ -215,38 +207,20 @@ public class ResultStreamIT
     }
 
     @Test
-    public void shouldHasNoElementsAfterFailure()
+    void shouldHasNoElementsAfterFailure()
     {
         StatementResult result = session.run( "INVALID" );
 
-        try
-        {
-            result.hasNext();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
-
+        assertThrows( ClientException.class, result::hasNext );
         assertFalse( result.hasNext() );
     }
 
     @Test
-    public void shouldBeAnEmptyLitAfterFailure()
+    void shouldBeAnEmptyLitAfterFailure()
     {
         StatementResult result = session.run( "UNWIND (0, 1) as i RETURN 10 / i" );
 
-        try
-        {
-            result.list();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
-
+        assertThrows( ClientException.class, result::list );
         assertTrue( result.list().isEmpty() );
     }
 }

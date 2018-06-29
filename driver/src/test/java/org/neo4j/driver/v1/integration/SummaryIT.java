@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -32,27 +32,27 @@ import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 
-public class SummaryIT
+class SummaryIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldContainBasicMetadata() throws Throwable
+    void shouldContainBasicMetadata()
     {
         // Given
         Value statementParameters = Values.parameters( "limit", 10 );
@@ -79,7 +79,7 @@ public class SummaryIT
     }
 
     @Test
-    public void shouldContainTimeInformation()
+    void shouldContainTimeInformation()
     {
         // Given
         ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
@@ -99,7 +99,7 @@ public class SummaryIT
     }
 
     @Test
-    public void shouldContainCorrectStatistics() throws Throwable
+    void shouldContainCorrectStatistics()
     {
         assertThat( session.run( "CREATE (n)" ).consume().counters().nodesCreated(), equalTo( 1 ) );
         assertThat( session.run( "MATCH (n) DELETE (n)" ).consume().counters().nodesDeleted(), equalTo( 1 ) );
@@ -122,7 +122,7 @@ public class SummaryIT
     }
 
     @Test
-    public void shouldContainCorrectStatementType() throws Throwable
+    void shouldContainCorrectStatementType()
     {
         assertThat( session.run("MATCH (n) RETURN 1").consume().statementType(), equalTo( StatementType.READ_ONLY ));
         assertThat( session.run("CREATE (n)").consume().statementType(), equalTo( StatementType.WRITE_ONLY ));
@@ -131,7 +131,7 @@ public class SummaryIT
     }
 
     @Test
-    public void shouldContainCorrectPlan() throws Throwable
+    void shouldContainCorrectPlan()
     {
         // When
         Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume().plan();
@@ -143,14 +143,14 @@ public class SummaryIT
     }
 
     @Test
-    public void shouldContainProfile() throws Throwable
+    void shouldContainProfile()
     {
         // When
         ResultSummary summary = session.run( "PROFILE RETURN 1" ).consume();
 
         // Then
-        assertEquals( true, summary.hasProfile() );
-        assertEquals( true, summary.hasPlan() ); // Profile is a superset of plan, so plan should be available as well if profile is available
+        assertTrue( summary.hasProfile() );
+        assertTrue( summary.hasPlan() ); // Profile is a superset of plan, so plan should be available as well if profile is available
         assertEquals( summary.plan(), summary.profile() );
 
         ProfiledPlan profile = summary.profile();
@@ -161,13 +161,13 @@ public class SummaryIT
 
 
     @Test
-    public void shouldContainNotifications() throws Throwable
+    void shouldContainNotifications()
     {
         // When
         ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).consume();
 
         // Then
-        assertEquals( true, summary.hasPlan() );
+        assertTrue( summary.hasPlan() );
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );

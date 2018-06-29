@@ -23,7 +23,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlockingQuery<C>
 {

@@ -19,10 +19,9 @@
 package org.neo4j.driver.v1.integration;
 
 import io.netty.channel.Channel;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -56,7 +55,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
@@ -66,25 +64,24 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
+import org.neo4j.driver.v1.util.cc.ClusterExtension;
 import org.neo4j.driver.v1.util.cc.ClusterMember;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
-import org.neo4j.driver.v1.util.cc.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.v1.Values.parameters;
@@ -92,17 +89,17 @@ import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 
-public class CausalClusteringIT
+class CausalClusteringIT
 {
     private static final long DEFAULT_TIMEOUT_MS = 120_000;
 
-    @Rule
-    public final ClusterRule clusterRule = new ClusterRule();
+    @RegisterExtension
+    static final ClusterExtension clusterRule = new ClusterExtension();
 
     private ExecutorService executor;
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( executor != null )
         {
@@ -110,14 +107,8 @@ public class CausalClusteringIT
         }
     }
 
-    @AfterClass
-    public static void stopSharedCluster()
-    {
-        ClusterRule.stopSharedCluster();
-    }
-
     @Test
-    public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
+    void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfLeader() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -127,7 +118,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
+    void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -137,7 +128,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfFollower() throws Exception
+    void shouldExecuteReadAndWritesWhenDriverSuppliedWithAddressOfFollower() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -147,44 +138,33 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void sessionCreationShouldFailIfCallingDiscoveryProcedureOnEdgeServer() throws Exception
+    void sessionCreationShouldFailIfCallingDiscoveryProcedureOnEdgeServer()
     {
         Cluster cluster = clusterRule.getCluster();
 
         ClusterMember readReplica = cluster.anyReadReplica();
-        try
-        {
-            createDriver( readReplica.getRoutingUri() );
-            fail( "Should have thrown an exception using a read replica address for routing" );
-        }
-        catch ( ServiceUnavailableException ex )
-        {
-            assertThat( ex.getMessage(), containsString( "Failed to run 'CALL dbms.cluster.routing" ) );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( readReplica.getRoutingUri() ) );
+        assertThat( e.getMessage(), containsString( "Failed to run 'CALL dbms.cluster.routing" ) );
     }
 
     // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.
     @Test
-    public void bookmarksShouldWorkWithDriverPinnedToSingleServer() throws Exception
+    void bookmarksShouldWorkWithDriverPinnedToSingleServer() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() ) )
         {
-            String bookmark = inExpirableSession( driver, createSession(), new Function<Session,String>()
+            String bookmark = inExpirableSession( driver, Driver::session, session ->
             {
-                @Override
-                public String apply( Session session )
+                try ( Transaction tx = session.beginTransaction() )
                 {
-                    try ( Transaction tx = session.beginTransaction() )
-                    {
-                        tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
-                        tx.success();
-                    }
-
-                    return session.lastBookmark();
+                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.success();
                 }
+
+                return session.lastBookmark();
             } );
 
             assertNotNull( bookmark );
@@ -200,21 +180,17 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldUseBookmarkFromAReadSessionInAWriteSession() throws Exception
+    void shouldUseBookmarkFromAReadSessionInAWriteSession() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() ) )
         {
-            inExpirableSession( driver, createWritableSession( null ), new Function<Session,Void>()
+            inExpirableSession( driver, createWritableSession( null ), session ->
             {
-                @Override
-                public Void apply( Session session )
-                {
-                    session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
-                    return null;
-                }
+                session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                return null;
             } );
 
             final String bookmark;
@@ -231,19 +207,15 @@ public class CausalClusteringIT
 
             assertNotNull( bookmark );
 
-            inExpirableSession( driver, createWritableSession( bookmark ), new Function<Session,Void>()
+            inExpirableSession( driver, createWritableSession( bookmark ), session ->
             {
-                @Override
-                public Void apply( Session session )
+                try ( Transaction tx = session.beginTransaction() )
                 {
-                    try ( Transaction tx = session.beginTransaction() )
-                    {
-                        tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
-                        tx.success();
-                    }
-
-                    return null;
+                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.success();
                 }
+
+                return null;
             } );
 
             try ( Session session = driver.session() )
@@ -255,7 +227,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldDropBrokenOldConnections() throws Exception
+    void shouldDropBrokenOldConnections() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
 
@@ -308,7 +280,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void beginTransactionThrowsForInvalidBookmark()
+    void beginTransactionThrowsForInvalidBookmark()
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
         ClusterMember leader = clusterRule.getCluster().leader();
@@ -316,22 +288,14 @@ public class CausalClusteringIT
         try ( Driver driver = createDriver( leader.getBoltUri() );
               Session session = driver.session( invalidBookmark ) )
         {
-            try
-            {
-                session.beginTransaction();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( ClientException.class ) );
-                assertThat( e.getMessage(), containsString( invalidBookmark ) );
-            }
+            ClientException e = assertThrows( ClientException.class, session::beginTransaction );
+            assertThat( e.getMessage(), containsString( invalidBookmark ) );
         }
     }
 
     @SuppressWarnings( "deprecation" )
     @Test
-    public void beginTransactionThrowsForUnreachableBookmark()
+    void beginTransactionThrowsForUnreachableBookmark()
     {
         ClusterMember leader = clusterRule.getCluster().leader();
 
@@ -348,21 +312,13 @@ public class CausalClusteringIT
             assertNotNull( bookmark );
             String newBookmark = bookmark + "0";
 
-            try
-            {
-                session.beginTransaction( newBookmark );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( TransientException.class ) );
-                assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
-            }
+            TransientException e = assertThrows( TransientException.class, () -> session.beginTransaction( newBookmark ) );
+            assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
         }
     }
 
     @Test
-    public void shouldHandleGracefulLeaderSwitch() throws Exception
+    void shouldHandleGracefulLeaderSwitch() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -379,22 +335,18 @@ public class CausalClusteringIT
                     parameters( "name", "Webber", "title", "Mr" ) );
             tx1.success();
 
-            closeAndExpectException( tx1, SessionExpiredException.class );
+            assertThrows( (Class<? extends Exception>) SessionExpiredException.class, ((AutoCloseable) tx1)::close );
             session1.close();
 
-            String bookmark = inExpirableSession( driver, createSession(), new Function<Session,String>()
+            String bookmark = inExpirableSession( driver, Driver::session, session ->
             {
-                @Override
-                public String apply( Session session )
+                try ( Transaction tx = session.beginTransaction() )
                 {
-                    try ( Transaction tx = session.beginTransaction() )
-                    {
-                        tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
-                                parameters( "name", "Webber", "title", "Mr" ) );
-                        tx.success();
-                    }
-                    return session.lastBookmark();
+                    tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                            parameters( "name", "Webber", "title", "Mr" ) );
+                    tx.success();
                 }
+                return session.lastBookmark();
             } );
 
             try ( Session session2 = driver.session( AccessMode.READ, bookmark );
@@ -408,7 +360,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldNotServeWritesWhenMajorityOfCoresAreDead() throws Exception
+    void shouldNotServeWritesWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -425,21 +377,19 @@ public class CausalClusteringIT
             // now we should be unable to write because majority of cores is down
             for ( int i = 0; i < 10; i++ )
             {
-                try ( Session session = driver.session( AccessMode.WRITE ) )
+                assertThrows( SessionExpiredException.class, () ->
                 {
-                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( SessionExpiredException.class ) );
-                }
+                    try ( Session session = driver.session( AccessMode.WRITE ) )
+                    {
+                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                    }
+                } );
             }
         }
     }
 
     @Test
-    public void shouldServeReadsWhenMajorityOfCoresAreDead() throws Exception
+    void shouldServeReadsWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -449,14 +399,10 @@ public class CausalClusteringIT
             String bookmark;
             try ( Session session = driver.session() )
             {
-                int writeResult = session.writeTransaction( new TransactionWork<Integer>()
+                int writeResult = session.writeTransaction( tx ->
                 {
-                    @Override
-                    public Integer execute( Transaction tx )
-                    {
-                        StatementResult result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
-                        return result.single().get( 0 ).asInt();
-                    }
+                    StatementResult result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
+                    return result.single().get( 0 ).asInt();
                 } );
 
                 assertEquals( 42, writeResult );
@@ -473,27 +419,21 @@ public class CausalClusteringIT
             awaitLeaderToStepDown( cores );
 
             // now we should be unable to write because majority of cores is down
-            try ( Session session = driver.session( AccessMode.WRITE ) )
+            assertThrows( SessionExpiredException.class, () ->
             {
-                session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( SessionExpiredException.class ) );
-            }
+                try ( Session session = driver.session( AccessMode.WRITE ) )
+                {
+                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                }
+            } );
 
             // but we should be able to read from the remaining core or read replicas
             try ( Session session = driver.session() )
             {
-                int count = session.readTransaction( new TransactionWork<Integer>()
+                int count = session.readTransaction( tx ->
                 {
-                    @Override
-                    public Integer execute( Transaction tx )
-                    {
-                        StatementResult result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN count(*)" );
-                        return result.single().get( 0 ).asInt();
-                    }
+                    StatementResult result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN COUNT(*)" );
+                    return result.single().get( 0 ).asInt();
                 } );
 
                 assertEquals( 1, count );
@@ -502,7 +442,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldAcceptMultipleBookmarks() throws Exception
+    void shouldAcceptMultipleBookmarks() throws Exception
     {
         int threadCount = 5;
         String label = "Person";
@@ -539,7 +479,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldNotReuseReadConnectionForWriteTransaction()
+    void shouldNotReuseReadConnectionForWriteTransaction()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -577,7 +517,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldRespectMaxConnectionPoolSizePerClusterMember()
+    void shouldRespectMaxConnectionPoolSizePerClusterMember()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -598,15 +538,8 @@ public class CausalClusteringIT
 
             // should not be possible to acquire more connections towards leader because limit is 2
             Session writeSession3 = driver.session( AccessMode.WRITE );
-            try
-            {
-                writeSession3.beginTransaction();
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
-            }
+            ClientException e = assertThrows( ClientException.class, writeSession3::beginTransaction );
+            assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
 
             // should be possible to acquire new connection towards read server
             // it's a different machine, not leader, so different max connection pool size limit applies
@@ -617,7 +550,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
+    void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -660,7 +593,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldRediscoverWhenConnectionsToAllCoresBreak()
+    void shouldRediscoverWhenConnectionsToAllCoresBreak()
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
@@ -691,15 +624,9 @@ public class CausalClusteringIT
             // observe that connection towards writer is broken
             try ( Session session = driver.session( AccessMode.WRITE ) )
             {
-                try
-                {
-                    runCreateNode( session, "Person", "name", "Vision" ).consume();
-                    fail( "Exception expected" );
-                }
-                catch ( SessionExpiredException e )
-                {
-                    assertEquals( "Disconnected", e.getCause().getMessage() );
-                }
+                SessionExpiredException e = assertThrows( SessionExpiredException.class,
+                        () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
+                assertEquals( "Disconnected", e.getCause().getMessage() );
             }
 
             // probe connections to all readers
@@ -725,7 +652,7 @@ public class CausalClusteringIT
     }
 
     @Test
-    public void shouldKeepOperatingWhenConnectionsBreak() throws Exception
+    void shouldKeepOperatingWhenConnectionsBreak() throws Exception
     {
         long testRunTimeMs = MINUTES.toMillis( 1 );
         String label = "Person";
@@ -784,15 +711,8 @@ public class CausalClusteringIT
 
     private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
     {
-        try
-        {
-            tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume();
-            fail( "Exception expected" );
-        }
-        catch ( SessionExpiredException e )
-        {
-            assertEquals( cause, e.getCause() );
-        }
+        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
+        assertEquals( cause, e.getCause() );
     }
 
     private CompletionStage<List<RecordAndSummary>> combineCursors( StatementResultCursor cursor1,
@@ -829,41 +749,18 @@ public class CausalClusteringIT
         }
     }
 
-    private Function<Driver,Session> createSession()
-    {
-        return new Function<Driver,Session>()
-        {
-            @Override
-            public Session apply( Driver driver )
-            {
-                return driver.session();
-            }
-        };
-    }
-
     private Function<Driver,Session> createWritableSession( final String bookmark )
     {
-        return new Function<Driver,Session>()
-        {
-            @Override
-            public Session apply( Driver driver )
-            {
-                return driver.session( AccessMode.WRITE, bookmark );
-            }
-        };
+        return driver -> driver.session( AccessMode.WRITE, bookmark );
     }
 
     private Function<Session,Integer> executeWriteAndRead()
     {
-        return new Function<Session,Integer>()
+        return session ->
         {
-            @Override
-            public Integer apply( Session session )
-            {
-                session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
-                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                return record.get( "count" ).asInt();
-            }
+            session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
+            Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
+            return record.get( "count" ).asInt();
         };
     }
 
@@ -904,15 +801,11 @@ public class CausalClusteringIT
         Driver driver = clusterRule.getCluster().getDirectDriver( member );
         try ( Session session = driver.session( bookmark ) )
         {
-            return session.readTransaction( new TransactionWork<Integer>()
+            return session.readTransaction( tx ->
             {
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    StatementResult result = tx.run( "MATCH (:Person {name: {name}}) RETURN count(*)",
-                            parameters( "name", name ) );
-                    return result.single().get( 0 ).asInt();
-                }
+                StatementResult result = tx.run( "MATCH (:Person {name: {name}}) RETURN count(*)",
+                        parameters( "name", name ) );
+                return result.single().get( 0 ).asInt();
             } );
         }
     }
@@ -1000,19 +893,15 @@ public class CausalClusteringIT
 
         for ( int i = 0; i < count; i++ )
         {
-            executor.submit( new Callable<Void>()
+            executor.submit( () ->
             {
-                @Override
-                public Void call() throws Exception
+                beforeRunLatch.countDown();
+                try ( Session session = driver.session( AccessMode.WRITE ) )
                 {
-                    beforeRunLatch.countDown();
-                    try ( Session session = driver.session( AccessMode.WRITE ) )
-                    {
-                        runQueryLatch.await();
-                        session.run( "CREATE ()" );
-                    }
-                    return null;
+                    runQueryLatch.await();
+                    session.run( "CREATE ()" );
                 }
+                return null;
             } );
         }
 
@@ -1021,19 +910,6 @@ public class CausalClusteringIT
 
         executor.shutdown();
         assertTrue( executor.awaitTermination( 1, TimeUnit.MINUTES ) );
-    }
-
-    private static void closeAndExpectException( AutoCloseable closeable, Class<? extends Exception> exceptionClass )
-    {
-        try
-        {
-            closeable.close();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( exceptionClass ) );
-        }
     }
 
     private static Callable<Void> createNodesCallable( Driver driver, String label, String property, String value, AtomicBoolean stop )
@@ -1165,7 +1041,7 @@ public class CausalClusteringIT
         }
         return overview.leaderCount == 0 &&
                overview.followerCount == 1 &&
-               overview.readReplicaCount == ClusterRule.READ_REPLICA_COUNT;
+               overview.readReplicaCount == ClusterExtension.READ_REPLICA_COUNT;
     }
 
     private static class RecordAndSummary

@@ -20,10 +20,10 @@ package org.neo4j.driver.v1.integration;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -46,6 +46,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -58,7 +59,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -71,12 +72,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
@@ -89,7 +90,7 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.v1.util.TestUtil.awaitCondition;
 
 @SuppressWarnings( "deprecation" )
-public class SessionResetIT
+class SessionResetIT
 {
     private static final int CSV_FILE_SIZE = 10_000;
     private static final int LOAD_CSV_BATCH_SIZE = 10;
@@ -107,20 +108,20 @@ public class SessionResetIT
     private static final long STRESS_TEST_DURATION_MS = SECONDS.toMillis( 5 );
     private static final String[] STRESS_TEST_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
-    @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private ExecutorService executor;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         assumeTrue( neo4j.version().greaterThanOrEqual( v3_1_0 ) );
         executor = Executors.newCachedThreadPool( daemon( getClass().getSimpleName() + "-thread" ) );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( executor != null )
         {
@@ -129,13 +130,13 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldTerminateAutoCommitQuery() throws Exception
+    void shouldTerminateAutoCommitQuery()
     {
         testQueryTermination( LONG_QUERY, true );
     }
 
     @Test
-    public void shouldTerminateQueryInExplicitTransaction() throws Exception
+    void shouldTerminateQueryInExplicitTransaction()
     {
         testQueryTermination( LONG_QUERY, false );
     }
@@ -144,38 +145,32 @@ public class SessionResetIT
      * It is currently unsafe to terminate periodic commit query because it'll then be half-committed.
      */
     @Test
-    public void shouldNotTerminatePeriodicCommitQuery() throws Exception
+    void shouldNotTerminatePeriodicCommitQuery()
     {
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( longPeriodicCommitQuery(), true );
 
-        try
-        {
-            queryResult.get( 1, MINUTES );
-            fail( "Exception expected" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), instanceOf( Neo4jException.class ) );
-        }
+        ExecutionException e = assertThrows( ExecutionException.class, () -> queryResult.get( 1, MINUTES ) );
+        assertThat( e.getCause(), instanceOf( Neo4jException.class ) );
+
         awaitNoActiveQueries();
 
         assertEquals( CSV_FILE_SIZE * LOAD_CSV_BATCH_SIZE, countNodes() );
     }
 
     @Test
-    public void shouldTerminateAutoCommitQueriesRandomly() throws Exception
+    void shouldTerminateAutoCommitQueriesRandomly() throws Exception
     {
         testRandomQueryTermination( true );
     }
 
     @Test
-    public void shouldTerminateQueriesInExplicitTransactionsRandomly() throws Exception
+    void shouldTerminateQueriesInExplicitTransactionsRandomly() throws Exception
     {
         testRandomQueryTermination( false );
     }
 
     @Test
-    public void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
+    void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -188,43 +183,20 @@ public class SessionResetIT
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
 
-            try
-            {
-                session.beginTransaction();
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e.getMessage(),
-                        containsString( "You cannot begin a transaction on a session with an open transaction" ) );
-            }
+            ClientException e1 = assertThrows( ClientException.class, session::beginTransaction );
+            assertThat( e1.getMessage(), containsString( "You cannot begin a transaction on a session with an open transaction" ) );
 
-            try
-            {
-                tx1.run( "RETURN 1" );
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e.getMessage(),
-                        containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
-            }
+            ClientException e2 = assertThrows( ClientException.class, () -> tx1.run( "RETURN 1" ) );
+            assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
 
             // Make sure failure from the terminated long running statement is propagated
-            try
-            {
-                result.consume();
-                fail( "Exception expected" );
-            }
-            catch ( Neo4jException e )
-            {
-                assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
-            }
+            Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
+            assertThat( e3.getMessage(), containsString( "The transaction has been terminated" ) );
         }
     }
 
     @Test
-    public void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
+    void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -235,19 +207,12 @@ public class SessionResetIT
         awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
         session.reset();
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( Neo4jException e )
-        {
-            assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
-        }
+        Neo4jException e = assertThrows( Neo4jException.class, session::close );
+        assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
     }
 
     @Test
-    public void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
+    void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -261,19 +226,9 @@ public class SessionResetIT
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
 
-            try
-            {
-                procedureResult.consume();
-                fail( "Should procedure throw an exception as we interrupted procedure call" );
-            }
-            catch ( Neo4jException e )
-            {
-                assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
-            }
-            finally
-            {
-                tx1.close();
-            }
+            Neo4jException e = assertThrows( Neo4jException.class, procedureResult::consume );
+            assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
+            tx1.close();
 
             try ( Transaction tx2 = session.beginTransaction() )
             {
@@ -288,77 +243,73 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldKillLongRunningStatement() throws Throwable
+    void shouldKillLongRunningStatement() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
-        // Given
-        int executionTimeout = 10; // 10s
+
+        final int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
-        long startTime = -1, endTime;
+        final AtomicLong startTime = new AtomicLong( -1 );
+        long endTime;
 
-        try ( Session session = neo4j.driver().session() )
+        assertThrows( Neo4jException.class, () ->
         {
-            StatementResult result = session.run( "CALL test.driver.longRunningStatement({seconds})",
-                    parameters( "seconds", executionTimeout ) );
+            try ( Session session = neo4j.driver().session() )
+            {
+                StatementResult result = session.run( "CALL test.driver.longRunningStatement({seconds})",
+                        parameters( "seconds", executionTimeout ) );
 
-            resetSessionAfterTimeout( session, killTimeout );
+                resetSessionAfterTimeout( session, killTimeout );
 
-            // When
-            startTime = System.currentTimeMillis();
-            result.consume();// blocking to run the statement
+                // When
+                startTime.set( System.currentTimeMillis() );
+                result.consume(); // blocking to run the statement
+            }
+        } );
 
-            fail( "Should have got an exception about statement get killed." );
-        }
-        catch ( Neo4jException e )
-        {
-            endTime = System.currentTimeMillis();
-            assertTrue( startTime > 0 );
-            assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
-            assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
-        }
-        catch ( Exception e )
-        {
-            fail( "Should be a Neo4jException" );
-        }
+        endTime = System.currentTimeMillis();
+        assertTrue( startTime.get() > 0 );
+        assertTrue( endTime - startTime.get() > killTimeout * 1000 ); // get reset by session.reset
+        assertTrue( endTime - startTime.get() < executionTimeout * 1000 / 2 ); // finished before execution finished
     }
 
     @Test
-    public void shouldKillLongStreamingResult() throws Throwable
+    void shouldKillLongStreamingResult() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
-        int executionTimeout = 10; // 10s
+        final int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
-        long startTime = -1, endTime;
-        int recordCount = 0;
+        final AtomicInteger recordCount = new AtomicInteger();
+        final AtomicLong startTime = new AtomicLong( -1 );
+        long endTime;
 
-        try ( Session session = neo4j.driver().session() )
+        Neo4jException e = assertThrows( Neo4jException.class, () ->
         {
-            StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
-                    parameters( "seconds", executionTimeout ) );
-
-            resetSessionAfterTimeout( session, killTimeout );
-
-            // When
-            startTime = System.currentTimeMillis();
-            while ( result.hasNext() )
+            try ( Session session = neo4j.driver().session() )
             {
-                result.next();
-                recordCount++;
+                StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
+                        parameters( "seconds", executionTimeout ) );
+
+                resetSessionAfterTimeout( session, killTimeout );
+
+                // When
+                startTime.set( System.currentTimeMillis() );
+                while ( result.hasNext() )
+                {
+                    result.next();
+                    recordCount.incrementAndGet();
+                }
             }
+        } );
 
-            fail( "Should have got an exception about streaming get killed." );
-        }
-        catch ( Neo4jException e )
-        {
-            endTime = System.currentTimeMillis();
-            assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
-            assertThat( recordCount, greaterThan( 1 ) );
+        endTime = System.currentTimeMillis();
+        assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
+        assertThat( recordCount.get(), greaterThan( 1 ) );
 
-            assertTrue( startTime > 0 );
-            assertTrue( endTime - startTime > killTimeout * 1000 ); // get reset by session.reset
-            assertTrue( endTime - startTime < executionTimeout * 1000 / 2 ); // finished before execution finished
-        }
+        assertTrue( startTime.get() > 0 );
+        assertTrue( endTime - startTime.get() > killTimeout * 1000 ); // get reset by session.reset
+        assertTrue( endTime - startTime.get() < executionTimeout * 1000 / 2 ); // finished before execution finished
     }
 
     private void resetSessionAfterTimeout( Session session, int timeout )
@@ -380,7 +331,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldAllowMoreStatementAfterSessionReset()
+    void shouldAllowMoreStatementAfterSessionReset()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
@@ -397,7 +348,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldAllowMoreTxAfterSessionReset()
+    void shouldAllowMoreTxAfterSessionReset()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
@@ -420,31 +371,29 @@ public class SessionResetIT
         }
     }
 
-    @SuppressWarnings( "deprecation" )
     @Test
-    public void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
+    void shouldMarkTxAsFailedAndDisallowRunAfterSessionReset()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
         {
-            try ( Transaction tx = session.beginTransaction() )
+            Transaction tx = session.beginTransaction();
+            // When reset the state of this session
+            session.reset();
+
+            // Then
+            Exception e = assertThrows( Exception.class, () ->
             {
-                // When reset the state of this session
-                session.reset();
-                // Then
                 tx.run( "RETURN 1" );
-                fail( "Should not allow tx run as tx is already failed." );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
-            }
+                tx.success();
+                tx.close();
+            } );
+            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
         }
     }
 
-    @SuppressWarnings( "deprecation" )
     @Test
-    public void shouldAllowMoreTxAfterSessionResetInTx()
+    void shouldAllowMoreTxAfterSessionResetInTx()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
@@ -465,7 +414,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void resetShouldStopQueryWaitingForALock() throws Exception
+    void resetShouldStopQueryWaitingForALock() throws Exception
     {
         // 3.1+ neo4j supports termination of queries that wait for a lock
         assumeServerIs31OrLater();
@@ -488,7 +437,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void resetShouldStopTransactionWaitingForALock() throws Exception
+    void resetShouldStopTransactionWaitingForALock() throws Exception
     {
         // 3.1+ neo4j supports termination of queries that wait for a lock
         assumeServerIs31OrLater();
@@ -512,7 +461,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void resetShouldStopWriteTransactionWaitingForALock() throws Exception
+    void resetShouldStopWriteTransactionWaitingForALock() throws Exception
     {
         // 3.1+ neo4j supports termination of queries that wait for a lock
         assumeServerIs31OrLater();
@@ -545,7 +494,7 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState()
+    void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -566,28 +515,20 @@ public class SessionResetIT
     }
 
     @Test
-    public void shouldHandleResetBeforeRun()
+    void shouldHandleResetBeforeRun()
     {
         try ( Session session = neo4j.driver().session();
               Transaction tx = session.beginTransaction() )
         {
             session.reset();
 
-            try
-            {
-                tx.run( "CREATE (n:FirstNode)" );
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e.getMessage(),
-                        containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
-            }
+            ClientException e = assertThrows( ClientException.class, () -> tx.run( "CREATE (n:FirstNode)" ) );
+            assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
         }
     }
 
     @Test
-    public void shouldHandleResetFromMultipleThreads() throws Throwable
+    void shouldHandleResetFromMultipleThreads() throws Throwable
     {
         Session session = neo4j.driver().session();
 
@@ -688,18 +629,11 @@ public class SessionResetIT
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 
-    private static void assertTransactionTerminated( Future<Void> work ) throws Exception
+    private static void assertTransactionTerminated( Future<Void> work )
     {
-        try
-        {
-            work.get( 20, TimeUnit.SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), CoreMatchers.instanceOf( TransientException.class ) );
-            assertThat( e.getCause().getMessage(), startsWith( "The transaction has been terminated" ) );
-        }
+        ExecutionException e = assertThrows( ExecutionException.class, () -> work.get( 20, TimeUnit.SECONDS ) );
+        assertThat( e.getCause(), CoreMatchers.instanceOf( TransientException.class ) );
+        assertThat( e.getCause().getMessage(), startsWith( "The transaction has been terminated" ) );
     }
 
     private void testRandomQueryTermination( boolean autoCommit ) throws Exception
@@ -766,20 +700,11 @@ public class SessionResetIT
         }
     }
 
-    private void testQueryTermination( String query, boolean autoCommit ) throws Exception
+    private void testQueryTermination( String query, boolean autoCommit )
     {
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( query, autoCommit );
-
-        try
-        {
-            queryResult.get( 10, SECONDS );
-            fail( "Exception expected" );
-        }
-        catch ( ExecutionException e )
-        {
-            assertThat( e.getCause(), instanceOf( Neo4jException.class ) );
-        }
-
+        ExecutionException e = assertThrows( ExecutionException.class, () -> queryResult.get( 10, SECONDS ) );
+        assertThat( e.getCause(), instanceOf( Neo4jException.class ) );
         awaitNoActiveQueries();
     }
 
@@ -918,7 +843,7 @@ public class SessionResetIT
     private void assumeServerIs31OrLater()
     {
         ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );
-        assumeTrue( "Ignored on `" + serverVersion + "`", serverVersion.greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), "Ignored on `" + serverVersion + "`" );
     }
 
     private abstract class NodeIdUpdater

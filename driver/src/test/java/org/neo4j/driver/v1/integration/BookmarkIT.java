@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
 
@@ -34,44 +33,40 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.TransientException;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
-public class BookmarkIT
+class BookmarkIT
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-    @Rule
-    public TestNeo4jSession sessionRule = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension sessionRule = new SessionExtension();
 
     private Driver driver;
     private Session session;
 
-    @Before
-    public void assumeBookmarkSupport()
+    @BeforeEach
+    void assumeBookmarkSupport()
     {
         driver = sessionRule.driver();
         session = sessionRule;
 
         ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( "Server version `" + serverVersion + "` does not support bookmark",
-                serverVersion.greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), "Server version `" + serverVersion + "` does not support bookmark" );
     }
 
     @Test
-    public void shouldConnectIPv6Uri()
+    void shouldConnectIPv6Uri()
     {
         // Given
         try(Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687", DEFAULT_AUTH_TOKEN );
@@ -86,7 +81,7 @@ public class BookmarkIT
     }
 
     @Test
-    public void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable
+    void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable
     {
         // Given
         assertNull( session.lastBookmark() );
@@ -100,43 +95,28 @@ public class BookmarkIT
     }
 
     @Test
-    public void shouldThrowForInvalidBookmark()
+    void shouldThrowForInvalidBookmark()
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try (Session session = driver.session( invalidBookmark )) {
-            try
-            {
-                session.beginTransaction();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( ClientException.class ) );
-            }
+        try ( Session session = driver.session( invalidBookmark ) )
+        {
+            assertThrows( ClientException.class, session::beginTransaction );
         }
     }
 
     @SuppressWarnings( "deprecation" )
     @Test
-    public void shouldThrowForUnreachableBookmark()
+    void shouldThrowForUnreachableBookmark()
     {
         createNodeInTx( session );
 
-        try
-        {
-            session.beginTransaction( session.lastBookmark() + 42 );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( TransientException.class ) );
-            assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
-        }
+        TransientException e = assertThrows( TransientException.class, () -> session.beginTransaction( session.lastBookmark() + 42 ) );
+        assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
     }
 
     @Test
-    public void bookmarkRemainsAfterRolledBackTx()
+    void bookmarkRemainsAfterRolledBackTx()
     {
         assertNull( session.lastBookmark() );
 
@@ -155,7 +135,7 @@ public class BookmarkIT
     }
 
     @Test
-    public void bookmarkRemainsAfterTxFailure()
+    void bookmarkRemainsAfterTxFailure()
     {
         assertNull( session.lastBookmark() );
 
@@ -167,21 +147,13 @@ public class BookmarkIT
         Transaction tx = session.beginTransaction();
         tx.run( "RETURN" );
         tx.success();
-        try
-        {
-            tx.close();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
 
+        assertThrows( ClientException.class, tx::close );
         assertEquals( bookmark, session.lastBookmark() );
     }
 
     @Test
-    public void bookmarkRemainsAfterSuccessfulSessionRun()
+    void bookmarkRemainsAfterSuccessfulSessionRun()
     {
         assertNull( session.lastBookmark() );
 
@@ -196,7 +168,7 @@ public class BookmarkIT
     }
 
     @Test
-    public void bookmarkRemainsAfterFailedSessionRun()
+    void bookmarkRemainsAfterFailedSessionRun()
     {
         assertNull( session.lastBookmark() );
 
@@ -205,21 +177,12 @@ public class BookmarkIT
         String bookmark = session.lastBookmark();
         assertNotNull( bookmark );
 
-        try
-        {
-            session.run( "RETURN" ).consume();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
-
+        assertThrows( ClientException.class, () -> session.run( "RETURN" ).consume() );
         assertEquals( bookmark, session.lastBookmark() );
     }
 
     @Test
-    public void bookmarkIsUpdatedOnEveryCommittedTx()
+    void bookmarkIsUpdatedOnEveryCommittedTx()
     {
         assertNull( session.lastBookmark() );
 
@@ -239,7 +202,7 @@ public class BookmarkIT
     }
 
     @Test
-    public void createSessionWithInitialBookmark()
+    void createSessionWithInitialBookmark()
     {
         String bookmark = "TheBookmark";
         try ( Session session = driver.session( bookmark ) )
@@ -249,7 +212,7 @@ public class BookmarkIT
     }
 
     @Test
-    public void createSessionWithAccessModeAndInitialBookmark()
+    void createSessionWithAccessModeAndInitialBookmark()
     {
         String bookmark = "TheBookmark";
         try ( Session session = driver.session( AccessMode.WRITE, bookmark ) )

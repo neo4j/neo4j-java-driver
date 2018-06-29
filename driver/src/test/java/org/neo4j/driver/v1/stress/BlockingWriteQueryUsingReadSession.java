@@ -18,17 +18,17 @@
  */
 package org.neo4j.driver.v1.stress;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlockingWriteQueryUsingReadSession<C extends AbstractContext> extends AbstractBlockingQuery<C>
 {
@@ -40,20 +40,16 @@ public class BlockingWriteQueryUsingReadSession<C extends AbstractContext> exten
     @Override
     public void execute( C context )
     {
-        StatementResult result = null;
-        try
+        AtomicReference<StatementResult> resultRef = new AtomicReference<>();
+        assertThrows( ClientException.class, () ->
         {
             try ( Session session = newSession( AccessMode.READ, context ) )
             {
-                result = session.run( "CREATE ()" );
+                StatementResult result = session.run( "CREATE ()" );
+                resultRef.set( result );
             }
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertNotNull( result );
-            assertEquals( 0, result.summary().counters().nodesCreated() );
-        }
+        } );
+        assertNotNull( resultRef.get() );
+        assertEquals( 0, resultRef.get().summary().counters().nodesCreated() );
     }
 }

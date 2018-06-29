@@ -44,10 +44,10 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -125,12 +125,12 @@ public final class TestUtil
             {
                 expectedReadableBytes += bytesCount( value );
             }
-            assertEquals( "Unexpected number of bytes", expectedReadableBytes, buf.readableBytes() );
+            assertEquals( expectedReadableBytes, buf.readableBytes(), "Unexpected number of bytes" );
             for ( Number expectedValue : values )
             {
                 Number actualValue = read( buf, expectedValue.getClass() );
                 String valueType = actualValue.getClass().getSimpleName();
-                assertEquals( valueType + " values not equal", expectedValue, actualValue );
+                assertEquals( expectedValue, actualValue, valueType + " values not equal" );
             }
         }
         finally

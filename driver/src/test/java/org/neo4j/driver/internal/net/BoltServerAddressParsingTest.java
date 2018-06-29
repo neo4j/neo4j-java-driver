@@ -18,101 +18,93 @@
  */
 package org.neo4j.driver.internal.net;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
 
-@RunWith( Parameterized.class )
-public class BoltServerAddressParsingTest
+class BoltServerAddressParsingTest
 {
-    @Parameter
-    public String address;
-    @Parameter( 1 )
-    public String expectedHost;
-    @Parameter( 2 )
-    public int expectedPort;
-
-    @Parameters( name = "{0}" )
-    public static Object[][] addressesToParse()
+    private static Stream<Arguments> addressesToParse()
     {
-        return new Object[][]{
+        return Stream.of(
                 // Hostname
-                {"localhost", "localhost", DEFAULT_PORT},
-                {"localhost:9193", "localhost", 9193},
-                {"neo4j.com", "neo4j.com", DEFAULT_PORT},
-                {"royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT},
-                {"royal-server.com.uk:4546", "royal-server.com.uk", 4546},
+                Arguments.of( "localhost", "localhost", DEFAULT_PORT ),
+                Arguments.of( "localhost:9193", "localhost", 9193 ),
+                Arguments.of( "neo4j.com", "neo4j.com", DEFAULT_PORT ),
+                Arguments.of( "royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
+                Arguments.of( "royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
 
                 // Hostname with scheme
-                {"bolt://localhost", "localhost", DEFAULT_PORT},
-                {"bolt+routing://localhost", "localhost", DEFAULT_PORT},
-                {"bolt://localhost:9193", "localhost", 9193},
-                {"bolt+routing://localhost:9193", "localhost", 9193},
-                {"bolt://neo4j.com", "neo4j.com", DEFAULT_PORT},
-                {"bolt+routing://neo4j.com", "neo4j.com", DEFAULT_PORT},
-                {"bolt://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT},
-                {"bolt+routing://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT},
-                {"bolt://royal-server.com.uk:4546", "royal-server.com.uk", 4546},
-                {"bolt+routing://royal-server.com.uk:4546", "royal-server.com.uk", 4546},
+                Arguments.of( "bolt://localhost", "localhost", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://localhost", "localhost", DEFAULT_PORT ),
+                Arguments.of( "bolt://localhost:9193", "localhost", 9193 ),
+                Arguments.of( "bolt+routing://localhost:9193", "localhost", 9193 ),
+                Arguments.of( "bolt://neo4j.com", "neo4j.com", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://neo4j.com", "neo4j.com", DEFAULT_PORT ),
+                Arguments.of( "bolt://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
+                Arguments.of( "bolt://royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
+                Arguments.of( "bolt+routing://royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
 
                 // IPv4
-                {"127.0.0.1", "127.0.0.1", DEFAULT_PORT},
-                {"8.8.8.8:8080", "8.8.8.8", 8080},
-                {"0.0.0.0", "0.0.0.0", DEFAULT_PORT},
-                {"192.0.2.235:4329", "192.0.2.235", 4329},
-                {"172.31.255.255:255", "172.31.255.255", 255},
+                Arguments.of( "127.0.0.1", "127.0.0.1", DEFAULT_PORT ),
+                Arguments.of( "8.8.8.8:8080", "8.8.8.8", 8080 ),
+                Arguments.of( "0.0.0.0", "0.0.0.0", DEFAULT_PORT ),
+                Arguments.of( "192.0.2.235:4329", "192.0.2.235", 4329 ),
+                Arguments.of( "172.31.255.255:255", "172.31.255.255", 255 ),
 
                 // IPv4 with scheme
-                {"bolt://198.51.100.0", "198.51.100.0", DEFAULT_PORT},
-                {"bolt://65.21.10.12:5656", "65.21.10.12", 5656},
-                {"bolt+routing://12.0.0.5", "12.0.0.5", DEFAULT_PORT},
-                {"bolt+routing://155.55.20.6:9191", "155.55.20.6", 9191},
+                Arguments.of( "bolt://198.51.100.0", "198.51.100.0", DEFAULT_PORT ),
+                Arguments.of( "bolt://65.21.10.12:5656", "65.21.10.12", 5656 ),
+                Arguments.of( "bolt+routing://12.0.0.5", "12.0.0.5", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://155.55.20.6:9191", "155.55.20.6", 9191 ),
 
                 // IPv6
-                {"::1", "[::1]", DEFAULT_PORT},
-                {"ff02::2:ff00:0", "[ff02::2:ff00:0]", DEFAULT_PORT},
-                {"[1afc:0:a33:85a3::ff2f]", "[1afc:0:a33:85a3::ff2f]", DEFAULT_PORT},
-                {"[::1]:1515", "[::1]", 1515},
-                {"[ff0a::101]:8989", "[ff0a::101]", 8989},
+                Arguments.of( "::1", "[::1]", DEFAULT_PORT ),
+                Arguments.of( "ff02::2:ff00:0", "[ff02::2:ff00:0]", DEFAULT_PORT ),
+                Arguments.of( "[1afc:0:a33:85a3::ff2f]", "[1afc:0:a33:85a3::ff2f]", DEFAULT_PORT ),
+                Arguments.of( "[::1]:1515", "[::1]", 1515 ),
+                Arguments.of( "[ff0a::101]:8989", "[ff0a::101]", 8989 ),
 
                 // IPv6 with scheme
-                {"bolt://[::1]", "[::1]", DEFAULT_PORT},
-                {"bolt+routing://[::1]", "[::1]", DEFAULT_PORT},
-                {"bolt://[ff02::d]", "[ff02::d]", DEFAULT_PORT},
-                {"bolt+routing://[fe80::b279:2f]", "[fe80::b279:2f]", DEFAULT_PORT},
-                {"bolt://[::1]:8687", "[::1]", 8687},
-                {"bolt+routing://[::1]:1212", "[::1]", 1212},
-                {"bolt://[ff02::d]:9090", "[ff02::d]", 9090},
-                {"bolt+routing://[fe80::b279:2f]:7878", "[fe80::b279:2f]", 7878},
+                Arguments.of( "bolt://[::1]", "[::1]", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://[::1]", "[::1]", DEFAULT_PORT ),
+                Arguments.of( "bolt://[ff02::d]", "[ff02::d]", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://[fe80::b279:2f]", "[fe80::b279:2f]", DEFAULT_PORT ),
+                Arguments.of( "bolt://[::1]:8687", "[::1]", 8687 ),
+                Arguments.of( "bolt+routing://[::1]:1212", "[::1]", 1212 ),
+                Arguments.of( "bolt://[ff02::d]:9090", "[ff02::d]", 9090 ),
+                Arguments.of( "bolt+routing://[fe80::b279:2f]:7878", "[fe80::b279:2f]", 7878 ),
 
                 // IPv6 with zone id
-                {"::1%eth0", "[::1%eth0]", DEFAULT_PORT},
-                {"ff02::2:ff00:0%12", "[ff02::2:ff00:0%12]", DEFAULT_PORT},
-                {"[1afc:0:a33:85a3::ff2f%eth1]", "[1afc:0:a33:85a3::ff2f%eth1]", DEFAULT_PORT},
-                {"[::1%eth0]:3030", "[::1%eth0]", 3030},
-                {"[ff0a::101%8]:4040", "[ff0a::101%8]", 4040},
+                Arguments.of( "::1%eth0", "[::1%eth0]", DEFAULT_PORT ),
+                Arguments.of( "ff02::2:ff00:0%12", "[ff02::2:ff00:0%12]", DEFAULT_PORT ),
+                Arguments.of( "[1afc:0:a33:85a3::ff2f%eth1]", "[1afc:0:a33:85a3::ff2f%eth1]", DEFAULT_PORT ),
+                Arguments.of( "[::1%eth0]:3030", "[::1%eth0]", 3030 ),
+                Arguments.of( "[ff0a::101%8]:4040", "[ff0a::101%8]", 4040 ),
 
                 // IPv6 with scheme and zone id
-                {"bolt://[::1%eth5]", "[::1%eth5]", DEFAULT_PORT},
-                {"bolt+routing://[::1%12]", "[::1%12]", DEFAULT_PORT},
-                {"bolt://[ff02::d%3]", "[ff02::d%3]", DEFAULT_PORT},
-                {"bolt+routing://[fe80::b279:2f%eth0]", "[fe80::b279:2f%eth0]", DEFAULT_PORT},
-                {"bolt://[::1%eth3]:8687", "[::1%eth3]", 8687},
-                {"bolt+routing://[::1%2]:1212", "[::1%2]", 1212},
-                {"bolt://[ff02::d%3]:9090", "[ff02::d%3]", 9090},
-                {"bolt+routing://[fe80::b279:2f%eth1]:7878", "[fe80::b279:2f%eth1]", 7878},
-        };
+                Arguments.of( "bolt://[::1%eth5]", "[::1%eth5]", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://[::1%12]", "[::1%12]", DEFAULT_PORT ),
+                Arguments.of( "bolt://[ff02::d%3]", "[ff02::d%3]", DEFAULT_PORT ),
+                Arguments.of( "bolt+routing://[fe80::b279:2f%eth0]", "[fe80::b279:2f%eth0]", DEFAULT_PORT ),
+                Arguments.of( "bolt://[::1%eth3]:8687", "[::1%eth3]", 8687 ),
+                Arguments.of( "bolt+routing://[::1%2]:1212", "[::1%2]", 1212 ),
+                Arguments.of( "bolt://[ff02::d%3]:9090", "[ff02::d%3]", 9090 ),
+                Arguments.of( "bolt+routing://[fe80::b279:2f%eth1]:7878", "[fe80::b279:2f%eth1]", 7878 )
+        );
     }
 
-    @Test
-    public void shouldParseAddress()
+    @ParameterizedTest
+    @MethodSource( "addressesToParse" )
+    void shouldParseAddress( String address, String expectedHost, int expectedPort )
     {
         BoltServerAddress parsed = new BoltServerAddress( address );
         assertEquals( expectedHost, parsed.host() );

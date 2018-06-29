@@ -18,12 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
 import java.util.List;
@@ -63,8 +60,8 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.lang.String.format;
@@ -76,15 +73,15 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -98,19 +95,16 @@ import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
-public class SessionIT
+class SessionIT
 {
-    private final TestNeo4j neo4j = new TestNeo4j();
-    private final ExpectedException exception = ExpectedException.none();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( neo4j ).around( exception ).around( Timeout.seconds( 60 ) );
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
     private ExecutorService executor;
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( driver != null )
         {
@@ -123,7 +117,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldKnowSessionIsClosed() throws Throwable
+    void shouldKnowSessionIsClosed()
     {
         // Given
         Session session = neo4j.driver().session();
@@ -136,7 +130,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldHandleNullConfig() throws Throwable
+    void shouldHandleNullConfig()
     {
         // Given
         driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), null );
@@ -151,55 +145,53 @@ public class SessionIT
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void shouldHandleNullAuthToken() throws Throwable
+    void shouldHandleNullAuthToken()
     {
         AuthToken token = null;
 
-        exception.expect( AuthenticationException.class );
-
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        driver = GraphDatabase.driver( neo4j.uri(), token );
+        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( neo4j.uri(), token ) );
     }
 
     @Test
-    public void executeReadTxInReadSession()
+    void executeReadTxInReadSession()
     {
         testExecuteReadTx( AccessMode.READ );
     }
 
     @Test
-    public void executeReadTxInWriteSession()
+    void executeReadTxInWriteSession()
     {
         testExecuteReadTx( AccessMode.WRITE );
     }
 
     @Test
-    public void executeWriteTxInReadSession()
+    void executeWriteTxInReadSession()
     {
         testExecuteWriteTx( AccessMode.READ );
     }
 
     @Test
-    public void executeWriteTxInWriteSession()
+    void executeWriteTxInWriteSession()
     {
         testExecuteWriteTx( AccessMode.WRITE );
     }
 
     @Test
-    public void rollsBackWriteTxInReadSessionWhenFunctionThrows()
+    void rollsBackWriteTxInReadSessionWhenFunctionThrows()
     {
         testTxRollbackWhenFunctionThrows( AccessMode.READ );
     }
 
     @Test
-    public void rollsBackWriteTxInWriteSessionWhenFunctionThrows()
+    void rollsBackWriteTxInWriteSessionWhenFunctionThrows()
     {
         testTxRollbackWhenFunctionThrows( AccessMode.WRITE );
     }
 
     @Test
-    public void readTxRetriedUntilSuccess()
+    void readTxRetriedUntilSuccess()
     {
         int failures = 6;
         int retries = failures + 1;
@@ -222,7 +214,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRetriedUntilSuccess()
+    void writeTxRetriedUntilSuccess()
     {
         int failures = 4;
         int retries = failures + 1;
@@ -246,7 +238,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRetriedUntilFailure()
+    void readTxRetriedUntilFailure()
     {
         int failures = 3;
         int retries = failures - 1;
@@ -255,15 +247,7 @@ public class SessionIT
             ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", failures );
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.readTransaction( work );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                }
+                assertThrows( ServiceUnavailableException.class, () -> session.readTransaction( work ) );
             }
 
             verify( work, times( failures ) ).execute( any( Transaction.class ) );
@@ -271,7 +255,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRetriedUntilFailure()
+    void writeTxRetriedUntilFailure()
     {
         int failures = 8;
         int retries = failures - 1;
@@ -280,15 +264,7 @@ public class SessionIT
             ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan'})", failures );
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.writeTransaction( work );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                }
+                assertThrows( ServiceUnavailableException.class, () -> session.writeTransaction( work ) );
             }
 
             try ( Session session = driver.session() )
@@ -302,25 +278,17 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRetryErrorsAreCollected()
+    void writeTxRetryErrorsAreCollected()
     {
         try ( Driver driver = newDriverWithLimitedRetries( 5, TimeUnit.SECONDS ) )
         {
             ThrowingWork work = newThrowingWorkSpy( "CREATE (:Person {name: 'Ronan'})", Integer.MAX_VALUE );
-            int suppressedErrors = 0;
+            int suppressedErrors;
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.writeTransaction( work );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertThat( e.getSuppressed(), not( emptyArray() ) );
-                    suppressedErrors = e.getSuppressed().length;
-                }
+                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.writeTransaction( work ) );
+                assertThat( e.getSuppressed(), not( emptyArray() ) );
+                suppressedErrors = e.getSuppressed().length;
             }
 
             try ( Session session = driver.session() )
@@ -334,25 +302,17 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRetryErrorsAreCollected()
+    void readTxRetryErrorsAreCollected()
     {
         try ( Driver driver = newDriverWithLimitedRetries( 4, TimeUnit.SECONDS ) )
         {
             ThrowingWork work = newThrowingWorkSpy( "MATCH (n) RETURN n.name", Integer.MAX_VALUE );
-            int suppressedErrors = 0;
+            int suppressedErrors;
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.readTransaction( work );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                    assertThat( e.getSuppressed(), not( emptyArray() ) );
-                    suppressedErrors = e.getSuppressed().length;
-                }
+                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.readTransaction( work ) );
+                assertThat( e.getSuppressed(), not( emptyArray() ) );
+                suppressedErrors = e.getSuppressed().length;
             }
 
             verify( work, times( suppressedErrors + 1 ) ).execute( any( Transaction.class ) );
@@ -360,7 +320,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxCommittedWithoutTxSuccess()
+    void readTxCommittedWithoutTxSuccess()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -377,7 +337,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxCommittedWithoutTxSuccess()
+    void writeTxCommittedWithoutTxSuccess()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
@@ -397,7 +357,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRolledBackWithTxFailure()
+    void readTxRolledBackWithTxFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -419,7 +379,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRolledBackWithTxFailure()
+    void writeTxRolledBackWithTxFailure()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
@@ -444,7 +404,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRolledBackWhenExceptionIsThrown()
+    void readTxRolledBackWhenExceptionIsThrown()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -452,23 +412,16 @@ public class SessionIT
             assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
-            try
-            {
-                session.readTransaction( tx ->
-                {
-                    StatementResult result = tx.run( "RETURN 42" );
-                    if ( result.single().get( 0 ).asLong() == 42 )
+            assertThrows( IllegalStateException.class, () ->
+                    session.readTransaction( tx ->
                     {
-                        throw new IllegalStateException();
-                    }
-                    return 1L;
-                } );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+                        StatementResult result = tx.run( "RETURN 42" );
+                        if ( result.single().get( 0 ).asLong() == 42 )
+                        {
+                            throw new IllegalStateException();
+                        }
+                        return 1L;
+                    } ) );
 
             // bookmark should remain null after rollback
             assertNull( session.lastBookmark() );
@@ -476,25 +429,18 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRolledBackWhenExceptionIsThrown()
+    void writeTxRolledBackWhenExceptionIsThrown()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.writeTransaction( tx ->
-                    {
-                        tx.run( "CREATE (:Person {name: 'Loki Odinson'})" );
-                        throw new IllegalStateException();
-                    } );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( IllegalStateException.class ) );
-                }
+                assertThrows( IllegalStateException.class, () ->
+                        session.writeTransaction( tx ->
+                        {
+                            tx.run( "CREATE (:Person {name: 'Loki Odinson'})" );
+                            throw new IllegalStateException();
+                        } ) );
             }
 
             try ( Session session = driver.session() )
@@ -506,7 +452,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRolledBackWhenMarkedBothSuccessAndFailure()
+    void readTxRolledBackWhenMarkedBothSuccessAndFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -529,7 +475,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRolledBackWhenMarkedBothSuccessAndFailure()
+    void writeTxRolledBackWhenMarkedBothSuccessAndFailure()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
@@ -555,7 +501,7 @@ public class SessionIT
     }
 
     @Test
-    public void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -563,20 +509,13 @@ public class SessionIT
             assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
-            try
-            {
-                session.readTransaction( tx ->
-                {
-                    tx.run( "RETURN 42" );
-                    tx.success();
-                    throw new IllegalStateException();
-                } );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+            assertThrows( IllegalStateException.class, () ->
+                    session.readTransaction( tx ->
+                    {
+                        tx.run( "RETURN 42" );
+                        tx.success();
+                        throw new IllegalStateException();
+                    } ) );
 
             // bookmark should remain null after rollback
             assertNull( session.lastBookmark() );
@@ -584,26 +523,19 @@ public class SessionIT
     }
 
     @Test
-    public void writeTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    void writeTxRolledBackWhenMarkedAsSuccessAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
             try ( Session session = driver.session() )
             {
-                try
-                {
-                    session.writeTransaction( tx ->
-                    {
-                        tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                        tx.success();
-                        throw new IllegalStateException();
-                    } );
-                    fail( "Exception expected" );
-                }
-                catch ( Exception e )
-                {
-                    assertThat( e, instanceOf( IllegalStateException.class ) );
-                }
+                assertThrows( IllegalStateException.class, () ->
+                        session.writeTransaction( tx ->
+                        {
+                            tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                            tx.success();
+                            throw new IllegalStateException();
+                        } ) );
             }
 
             try ( Session session = driver.session() )
@@ -615,7 +547,7 @@ public class SessionIT
     }
 
     @Test
-    public void transactionRunShouldFailOnDeadlocks() throws Exception
+    void transactionRunShouldFailOnDeadlocks() throws Exception
     {
         final int nodeId1 = 42;
         final int nodeId2 = 4242;
@@ -680,7 +612,7 @@ public class SessionIT
     }
 
     @Test
-    public void writeTransactionFunctionShouldRetryDeadlocks() throws Exception
+    void writeTransactionFunctionShouldRetryDeadlocks() throws Exception
     {
         final int nodeId1 = 42;
         final int nodeId2 = 4242;
@@ -771,7 +703,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldExecuteTransactionWorkInCallerThread()
+    void shouldExecuteTransactionWorkInCallerThread()
     {
         int maxFailures = 3;
         Thread callerThread = Thread.currentThread();
@@ -799,43 +731,29 @@ public class SessionIT
     }
 
     @Test
-    public void shouldPropagateRunFailureWhenClosed()
+    void shouldPropagateRunFailureWhenClosed()
     {
         Session session = neo4j.driver().session();
 
         session.run( "RETURN 10 / 0" );
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, session::close );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldPropagatePullAllFailureWhenClosed()
+    void shouldPropagatePullAllFailureWhenClosed()
     {
         Session session = neo4j.driver().session();
 
         session.run( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, session::close );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    void shouldBePossibleToConsumeResultAfterSessionIsClosed()
     {
         StatementResult result;
         try ( Session session = neo4j.driver().session() )
@@ -848,28 +766,20 @@ public class SessionIT
     }
 
     @Test
-    public void shouldPropagateFailureFromSummary()
+    void shouldPropagateFailureFromSummary()
     {
         try ( Session session = neo4j.driver().session() )
         {
             StatementResult result = session.run( "RETURN Wrong" );
 
-            try
-            {
-                result.summary();
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e.code(), containsString( "SyntaxError" ) );
-            }
-
+            ClientException e = assertThrows( ClientException.class, result::summary );
+            assertThat( e.code(), containsString( "SyntaxError" ) );
             assertNotNull( result.summary() );
         }
     }
 
     @Test
-    public void shouldThrowFromCloseWhenPreviousErrorNotConsumed()
+    void shouldThrowFromCloseWhenPreviousErrorNotConsumed()
     {
         Session session = neo4j.driver().session();
 
@@ -877,19 +787,12 @@ public class SessionIT
         session.run( "CREATE ()" );
         session.run( "RETURN 10 / 0" );
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, session::close );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldThrowFromRunWhenPreviousErrorNotConsumed()
+    void shouldThrowFromRunWhenPreviousErrorNotConsumed()
     {
         Session session = neo4j.driver().session();
 
@@ -899,11 +802,7 @@ public class SessionIT
 
         try
         {
-            session.run( "CREATE ()" );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "CREATE ()" ) );
             assertThat( e.getMessage(), containsString( "/ by zero" ) );
         }
         finally
@@ -913,21 +812,15 @@ public class SessionIT
     }
 
     @Test
-    public void shouldCloseCleanlyWhenRunErrorConsumed()
+    void shouldCloseCleanlyWhenRunErrorConsumed()
     {
         Session session = neo4j.driver().session();
 
         session.run( "CREATE ()" );
 
-        try
-        {
-            session.run( "RETURN 10 / 0" ).consume();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).consume() );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+
         session.run( "CREATE ()" );
 
         session.close();
@@ -935,26 +828,19 @@ public class SessionIT
     }
 
     @Test
-    public void shouldConsumePreviousResultBeforeRunningNewQuery()
+    void shouldConsumePreviousResultBeforeRunningNewQuery()
     {
         try ( Session session = neo4j.driver().session() )
         {
             session.run( "UNWIND range(1000, 0, -1) AS x RETURN 42 / x" );
 
-            try
-            {
-                session.run( "RETURN 1" );
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e.getMessage(), containsString( "/ by zero" ) );
-            }
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 1" ) );
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
         }
     }
 
     @Test
-    public void shouldNotRetryOnConnectionAcquisitionTimeout()
+    void shouldNotRetryOnConnectionAcquisitionTimeout()
     {
         int maxPoolSize = 3;
         Config config = Config.build()
@@ -971,36 +857,23 @@ public class SessionIT
         }
 
         AtomicInteger invocations = new AtomicInteger();
-        try
-        {
-            driver.session().writeTransaction( tx -> invocations.incrementAndGet() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e, is( connectionAcquisitionTimeoutError( 0 ) ) );
-        }
+        ClientException e = assertThrows( ClientException.class,
+                () -> driver.session().writeTransaction( tx -> invocations.incrementAndGet() ) );
+        assertThat( e, is( connectionAcquisitionTimeoutError( 0 ) ) );
 
         // work should never be invoked
         assertEquals( 0, invocations.get() );
     }
 
     @Test
-    public void shouldAllowConsumingRecordsAfterFailureInSessionClose()
+    void shouldAllowConsumingRecordsAfterFailureInSessionClose()
     {
         Session session = neo4j.driver().session();
 
         StatementResult result = session.run( "UNWIND [2, 4, 8, 0] AS x RETURN 32 / x" );
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e, is( arithmeticError() ) );
-        }
+        ClientException e = assertThrows( ClientException.class, session::close );
+        assertThat( e, is( arithmeticError() ) );
 
         assertTrue( result.hasNext() );
         assertEquals( 16, result.next().get( 0 ).asInt() );
@@ -1012,7 +885,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowAccessingRecordsAfterSummary()
+    void shouldAllowAccessingRecordsAfterSummary()
     {
         int recordCount = 10_000;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
@@ -1036,7 +909,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowAccessingRecordsAfterSessionClosed()
+    void shouldAllowAccessingRecordsAfterSessionClosed()
     {
         int recordCount = 11_333;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
@@ -1057,7 +930,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
+    void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
     {
         Session session = neo4j.driver().session();
 
@@ -1071,19 +944,12 @@ public class SessionIT
             Thread.sleep( 50 );
         }
 
-        try
-        {
-            session.close();
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e, is( arithmeticError() ) );
-        }
+        ClientException e = assertThrows( ClientException.class, session::close );
+        assertThat( e, is( arithmeticError() ) );
     }
 
     @Test
-    public void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException
+    void shouldAllowToConsumeRecordsSlowlyAndRetrieveSummary() throws InterruptedException
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1103,7 +969,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldBeResponsiveToThreadInterruptWhenWaitingForResult() throws Exception
+    void shouldBeResponsiveToThreadInterruptWhenWaitingForResult()
     {
         try ( Session session1 = neo4j.driver().session();
               Session session2 = neo4j.driver().session() )
@@ -1120,11 +986,8 @@ public class SessionIT
 
             try
             {
-                session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume();
-                fail( "Exception expected" );
-            }
-            catch ( ServiceUnavailableException e )
-            {
+                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
+                        () -> session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume() );
                 assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
                 assertThat( e.getMessage(), containsString( "Thread interrupted" ) );
             }
@@ -1137,7 +1000,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception
+    void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception
     {
         int connectionTimeoutMs = 3_000;
         Config config = Config.build()
@@ -1180,7 +1043,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowReturningNullFromTransactionFunction()
+    void shouldAllowReturningNullFromTransactionFunction()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1190,25 +1053,19 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowIteratingOverEmptyResult()
+    void shouldAllowIteratingOverEmptyResult()
     {
         try ( Session session = neo4j.driver().session() )
         {
             StatementResult result = session.run( "UNWIND [] AS x RETURN x" );
             assertFalse( result.hasNext() );
-            try
-            {
-                result.next();
-                fail( "Exception expected" );
-            }
-            catch ( NoSuchElementException ignore )
-            {
-            }
+
+            assertThrows( NoSuchElementException.class, result::next );
         }
     }
 
     @Test
-    public void shouldAllowConsumingEmptyResult()
+    void shouldAllowConsumingEmptyResult()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1220,7 +1077,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldAllowListEmptyResult()
+    void shouldAllowListEmptyResult()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1230,7 +1087,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldConsume()
+    void shouldConsume()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1247,22 +1104,15 @@ public class SessionIT
     }
 
     @Test
-    public void shouldConsumeWithFailure()
+    void shouldConsumeWithFailure()
     {
         try ( Session session = neo4j.driver().session() )
         {
             String query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
             StatementResult result = session.run( query );
 
-            try
-            {
-                result.consume();
-                fail( "Exception expected" );
-            }
-            catch ( ClientException e )
-            {
-                assertThat( e, is( arithmeticError() ) );
-            }
+            ClientException e = assertThrows( ClientException.class, result::consume );
+            assertThat( e, is( arithmeticError() ) );
 
             assertFalse( result.hasNext() );
             assertEquals( emptyList(), result.list() );
@@ -1273,7 +1123,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldNotAllowStartingMultipleTransactions()
+    void shouldNotAllowStartingMultipleTransactions()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1282,16 +1132,9 @@ public class SessionIT
 
             for ( int i = 0; i < 3; i++ )
             {
-                try
-                {
-                    session.beginTransaction();
-                    fail( "Exception expected" );
-                }
-                catch ( ClientException e )
-                {
-                    assertThat( e.getMessage(),
-                            containsString( "You cannot begin a transaction on a session with an open transaction" ) );
-                }
+                ClientException e = assertThrows( ClientException.class, session::beginTransaction );
+                assertThat( e.getMessage(),
+                        containsString( "You cannot begin a transaction on a session with an open transaction" ) );
             }
 
             tx.close();
@@ -1301,7 +1144,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldCloseOpenTransactionWhenClosed()
+    void shouldCloseOpenTransactionWhenClosed()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1317,7 +1160,7 @@ public class SessionIT
     }
 
     @Test
-    public void shouldRollbackOpenTransactionWhenClosed()
+    void shouldRollbackOpenTransactionWhenClosed()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1333,19 +1176,19 @@ public class SessionIT
     }
 
     @Test
-    public void shouldPropagateTransactionCommitErrorWhenClosed() throws Exception
+    void shouldPropagateTransactionCommitErrorWhenClosed() throws Exception
     {
         testTransactionCloseErrorPropagationWhenSessionClosed( "commit_error.script", true, "Unable to commit" );
     }
 
     @Test
-    public void shouldPropagateTransactionRollbackErrorWhenClosed() throws Exception
+    void shouldPropagateTransactionRollbackErrorWhenClosed() throws Exception
     {
         testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
     }
 
     @Test
-    public void shouldSupportNestedQueries()
+    void shouldSupportNestedQueries()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1437,22 +1280,15 @@ public class SessionIT
 
         try ( Session session = driver.session( sessionMode ) )
         {
-            try
-            {
-                session.writeTransaction( tx ->
-                {
-                    tx.run( "CREATE (:Person {name: 'Thanos'})" );
-                    // trigger division by zero error:
-                    tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
-                    tx.success();
-                    return null;
-                } );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( ClientException.class ) );
-            }
+            assertThrows( ClientException.class, () ->
+                    session.writeTransaction( tx ->
+                    {
+                        tx.run( "CREATE (:Person {name: 'Thanos'})" );
+                        // trigger division by zero error:
+                        tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
+                        tx.success();
+                        return null;
+                    } ) );
         }
 
         // no data should have been committed
@@ -1499,8 +1335,7 @@ public class SessionIT
     private static void assumeBookmarkSupport( Driver driver )
     {
         ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( format( "Server version `%s` does not support bookmark", serverVersion ),
-                serverVersion.greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), format( "Server version `%s` does not support bookmark", serverVersion ) );
     }
 
     private int countNodesWithId( int id )
@@ -1546,7 +1381,7 @@ public class SessionIT
         }
         catch ( ExecutionException e )
         {
-            assertFalse( "Both futures failed, ", firstFailed );
+            assertFalse( firstFailed, "Both futures failed" );
             assertDeadlockDetectedError( e );
         }
         return firstFailed;
@@ -1609,16 +1444,9 @@ public class SessionIT
                     tx.failure();
                 }
 
-                try
-                {
-                    session.close();
-                    fail( "Exception expected" );
-                }
-                catch ( TransientException e )
-                {
-                    assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                    assertEquals( expectedErrorMessage, e.getMessage() );
-                }
+                TransientException e = assertThrows( TransientException.class, session::close );
+                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
+                assertEquals( expectedErrorMessage, e.getMessage() );
             }
         }
         finally
