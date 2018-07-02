@@ -47,6 +47,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.neo4j.driver.internal.util.Neo4jFeature.READ_ON_FOLLOWERS_BY_DEFAULT;
 import static org.neo4j.driver.v1.util.cc.ClusterMember.SIMPLE_SCHEME;
 
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
@@ -105,7 +106,8 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         ClusterAddresses clusterAddresses = fetchClusterAddresses( driver );
 
         // before 3.2.0 only read replicas serve reads
-        boolean readsOnFollowersEnabled = ServerVersion.version( driver ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+        ServerVersion version = ServerVersion.version( driver );
+        boolean readsOnFollowersEnabled = READ_ON_FOLLOWERS_BY_DEFAULT.availableIn( version );
 
         if ( readsOnFollowersEnabled )
         {

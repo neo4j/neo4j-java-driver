@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
@@ -72,13 +73,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -111,7 +111,7 @@ class TransactionAsyncIT
 
         String bookmarkAfter = session.lastBookmark();
 
-        if ( neo4j.version().greaterThanOrEqual( v3_1_0 ) )
+        if ( BOOKMARKS.availableIn( neo4j.version() ) )
         {
             // bookmarks are only supported in 3.1.0+
             assertNotNull( bookmarkAfter );
@@ -313,10 +313,9 @@ class TransactionAsyncIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        assumeDatabaseSupportsBookmarks();
-
         Session session = neo4j.driver().session( "InvalidBookmark" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
@@ -773,10 +772,9 @@ class TransactionAsyncIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldUpdateSessionBookmarkAfterCommit()
     {
-        assumeDatabaseSupportsBookmarks();
-
         String bookmarkBefore = session.lastBookmark();
 
         await( session.beginTransactionAsync()
@@ -1100,10 +1098,5 @@ class TransactionAsyncIT
                 assertEquals( ioError, e.getCause() );
             }
         }
-    }
-
-    private void assumeDatabaseSupportsBookmarks()
-    {
-        assumeTrue( neo4j.version().greaterThanOrEqual( v3_1_0 ), "Neo4j " + neo4j.version() + " does not support bookmarks" );
     }
 }

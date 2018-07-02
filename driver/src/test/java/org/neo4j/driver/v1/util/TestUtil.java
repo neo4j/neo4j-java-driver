@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public final class TestUtil
@@ -219,8 +219,7 @@ public final class TestUtil
 
     public static List<String> activeQueryNames( Driver driver )
     {
-        // procedure dbms.listQueries() is only supported starting from 3.1
-        assumeTrue( version( driver ).greaterThanOrEqual( v3_1_0 ) );
+        assumeTrue( LIST_QUERIES_PROCEDURE.availableIn( version( driver ) ) );
 
         try ( Session session = driver.session() )
         {

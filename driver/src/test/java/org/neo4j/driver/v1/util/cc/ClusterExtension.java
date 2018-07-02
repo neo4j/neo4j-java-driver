@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.util.Neo4jRunner;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.driver.internal.util.Neo4jFeature.CAUSAL_CLUSTER;
 import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.v1.util.Neo4jRunner.TARGET_DIR;
 import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
@@ -125,9 +126,8 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     {
         String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
         String version = split[split.length - 1];
-        // if the server version is older than 3.1 series, then ignore the tests
-        assumeTrue( ServerVersion.version( version ).greaterThanOrEqual( ServerVersion.v3_1_0 ),
-                "Server version `" + version + "` does not support Casual Cluster" );
+        ServerVersion serverVersion = ServerVersion.version( version );
+        assumeTrue( CAUSAL_CLUSTER.availableIn( serverVersion ), "Server version `" + version + "` does not support Casual Cluster" );
         return version;
     }
 

@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
@@ -46,9 +47,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BYTE_ARRAYS;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -161,10 +160,9 @@ class ParametersIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BYTE_ARRAYS )
     void shouldBeAbleToSetAndReturnBytesProperty()
     {
-        assumeTrue( supportsBytes() );
-
         testBytesProperty( new byte[0] );
         for ( int i = 0; i < 16; i++ )
         {
@@ -175,10 +173,9 @@ class ParametersIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( BYTE_ARRAYS )
     void shouldThrowExceptionWhenServerDoesNotSupportBytes()
     {
-        assumeFalse( supportsBytes() );
-
         // Given
         byte[] byteArray = "hello, world".getBytes();
 
@@ -461,10 +458,9 @@ class ParametersIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BYTE_ARRAYS )
     void shouldSendAndReceiveLongArrayOfBytes()
     {
-        assumeTrue( supportsBytes() );
-
         byte[] bytes = new byte[LONG_VALUE_SIZE];
         ThreadLocalRandom.current().nextBytes( bytes );
 
@@ -473,10 +469,7 @@ class ParametersIT
 
     private void testBytesProperty( byte[] array )
     {
-        assumeTrue( supportsBytes() );
-
-        StatementResult result = session.run(
-                "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", array ) );
+        StatementResult result = session.run( "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", array ) );
 
         for ( Record record : result.list() )
         {
@@ -497,11 +490,6 @@ class ParametersIT
             assertThat( value.hasType( session.typeSystem().STRING() ), equalTo( true ) );
             assertThat( value.asString(), equalTo( string ) );
         }
-    }
-
-    private boolean supportsBytes()
-    {
-        return version( session.driver() ).greaterThanOrEqual( ServerVersion.v3_2_0 );
     }
 
     private static byte[] randomByteArray( int length )

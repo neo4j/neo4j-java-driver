@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -43,8 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
 
 class SummaryIT
 {
@@ -85,7 +85,8 @@ class SummaryIT
         ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
 
         // Then
-        if ( version( summary.server().version() ).greaterThanOrEqual( v3_1_0 ) )
+        ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
+        if ( STATEMENT_RESULT_TIMINGS.availableIn( serverVersion ) )
         {
             assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
             assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );

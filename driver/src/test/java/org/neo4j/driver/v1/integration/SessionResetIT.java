@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -77,8 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.TRANSACTION_TERMINATION_AWARE_LOCKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.HOME_DIR;
@@ -90,6 +89,7 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.v1.util.TestUtil.awaitCondition;
 
 @SuppressWarnings( "deprecation" )
+@EnabledOnNeo4jWith( TRANSACTION_TERMINATION_AWARE_LOCKS )
 class SessionResetIT
 {
     private static final int CSV_FILE_SIZE = 10_000;
@@ -116,7 +116,6 @@ class SessionResetIT
     @BeforeEach
     void setUp()
     {
-        assumeTrue( neo4j.version().greaterThanOrEqual( v3_1_0 ) );
         executor = Executors.newCachedThreadPool( daemon( getClass().getSimpleName() + "-thread" ) );
     }
 
@@ -416,9 +415,6 @@ class SessionResetIT
     @Test
     void resetShouldStopQueryWaitingForALock() throws Exception
     {
-        // 3.1+ neo4j supports termination of queries that wait for a lock
-        assumeServerIs31OrLater();
-
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
         {
             @Override
@@ -439,9 +435,6 @@ class SessionResetIT
     @Test
     void resetShouldStopTransactionWaitingForALock() throws Exception
     {
-        // 3.1+ neo4j supports termination of queries that wait for a lock
-        assumeServerIs31OrLater();
-
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
         {
             @Override
@@ -463,9 +456,6 @@ class SessionResetIT
     @Test
     void resetShouldStopWriteTransactionWaitingForALock() throws Exception
     {
-        // 3.1+ neo4j supports termination of queries that wait for a lock
-        assumeServerIs31OrLater();
-
         AtomicInteger invocationsOfWork = new AtomicInteger();
 
         testResetOfQueryWaitingForLock( new NodeIdUpdater()
@@ -838,12 +828,6 @@ class SessionResetIT
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    private void assumeServerIs31OrLater()
-    {
-        ServerVersion serverVersion = ServerVersion.version( neo4j.driver() );
-        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), "Ignored on `" + serverVersion + "`" );
     }
 
     private abstract class NodeIdUpdater

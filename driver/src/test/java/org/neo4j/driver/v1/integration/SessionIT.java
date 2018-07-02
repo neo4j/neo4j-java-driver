@@ -41,7 +41,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
@@ -64,7 +64,6 @@ import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestUtil;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.logging.Level.INFO;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -81,7 +80,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -89,7 +87,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
@@ -320,12 +318,12 @@ class SessionIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxCommittedWithoutTxSuccess()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( tx -> tx.run( "RETURN 42" ).single().get( 0 ).asLong() );
@@ -357,12 +355,12 @@ class SessionIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWithTxFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( tx ->
@@ -404,12 +402,12 @@ class SessionIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenExceptionIsThrown()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             assertThrows( IllegalStateException.class, () ->
@@ -452,12 +450,12 @@ class SessionIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenMarkedBothSuccessAndFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             long answer = session.readTransaction( tx ->
@@ -501,12 +499,12 @@ class SessionIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assumeBookmarkSupport( driver );
             assertNull( session.lastBookmark() );
 
             assertThrows( IllegalStateException.class, () ->
@@ -1330,12 +1328,6 @@ class SessionIT
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )
     {
         return spy( new ThrowingWork( query, failures ) );
-    }
-
-    private static void assumeBookmarkSupport( Driver driver )
-    {
-        ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), format( "Server version `%s` does not support bookmark", serverVersion ) );
     }
 
     private int countNodesWithId( int id )

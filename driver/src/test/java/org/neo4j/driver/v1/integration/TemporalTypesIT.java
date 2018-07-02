@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,6 +30,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.function.Supplier;
 
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
@@ -42,23 +42,17 @@ import org.neo4j.driver.v1.util.TemporalUtil;
 import static java.time.Month.MARCH;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.TEMPORAL_TYPES;
 import static org.neo4j.driver.v1.Values.isoDuration;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@EnabledOnNeo4jWith( TEMPORAL_TYPES )
 class TemporalTypesIT
 {
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
 
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
-
-    @BeforeEach
-    void setUp()
-    {
-        assumeTrue( session.version().greaterThanOrEqual( v3_4_0 ) );
-    }
 
     @Test
     void shouldSendDate()

@@ -27,7 +27,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
@@ -42,9 +42,9 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
+import static org.neo4j.driver.internal.util.Neo4jFeature.CONNECTOR_LISTEN_ADDRESS_CONFIGURATION;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
@@ -79,10 +79,9 @@ class DirectDriverIT
     }
 
     @Test
+    @EnabledOnNeo4jWith( CONNECTOR_LISTEN_ADDRESS_CONFIGURATION )
     void shouldAllowIPv6Address()
     {
-        assumeTrue( supportsListenAddressConfiguration( neo4j ) );
-
         // Given
         URI uri = URI.create( "bolt://[::1]" );
         BoltServerAddress address = new BoltServerAddress( uri );
@@ -183,18 +182,5 @@ class DirectDriverIT
             // Then
             assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
         }
-    }
-
-    /**
-     * Check if running test neo4j instance supports {@value org.neo4j.driver.v1.util.Neo4jSettings#LISTEN_ADDR}
-     * configuration option. Only 3.1+ versions support it.
-     *
-     * @param neo4j the test neo4j instance to check.
-     * @return {@code true} if given test neo4j supports config option, {@code false} otherwise.
-     */
-    private static boolean supportsListenAddressConfiguration( DatabaseExtension neo4j )
-    {
-        ServerVersion version = ServerVersion.version( neo4j.driver() );
-        return version.greaterThanOrEqual( ServerVersion.v3_1_0 );
     }
 }

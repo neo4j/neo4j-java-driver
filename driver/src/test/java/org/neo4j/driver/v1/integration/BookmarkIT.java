@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
 
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
@@ -40,9 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 
+@EnabledOnNeo4jWith( BOOKMARKS )
 class BookmarkIT
 {
     @RegisterExtension
@@ -56,9 +56,6 @@ class BookmarkIT
     {
         driver = sessionRule.driver();
         session = sessionRule;
-
-        ServerVersion serverVersion = ServerVersion.version( driver );
-        assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), "Server version `" + serverVersion + "` does not support bookmark" );
     }
 
     @Test

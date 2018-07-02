@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Point;
@@ -35,11 +35,11 @@ import org.neo4j.driver.v1.util.SessionExtension;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.SPATIAL_TYPES;
 import static org.neo4j.driver.v1.Values.ofPoint;
 import static org.neo4j.driver.v1.Values.point;
 
+@EnabledOnNeo4jWith( SPATIAL_TYPES )
 class SpatialTypesIT
 {
     private static final int WGS_84_CRS_CODE = 4326;
@@ -48,12 +48,6 @@ class SpatialTypesIT
 
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
-
-    @BeforeEach
-    void setUp()
-    {
-        assumeTrue( session.version().greaterThanOrEqual( v3_4_0 ) );
-    }
 
     @Test
     void shouldReceivePoint()
