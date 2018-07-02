@@ -23,11 +23,14 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.v1.net.ServerAddressResolver;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class ConfigTest
 {
@@ -270,5 +273,20 @@ class ConfigTest
 
         assertSame( trustStrategy, trustStrategy.withoutHostnameVerification() );
         assertFalse( trustStrategy.isHostnameVerificationEnabled() );
+    }
+
+    @Test
+    void shouldAllowToConfigureResolver()
+    {
+        ServerAddressResolver resolver = mock( ServerAddressResolver.class );
+        Config config = Config.build().withResolver( resolver ).toConfig();
+
+        assertEquals( resolver, config.resolver() );
+    }
+
+    @Test
+    void shouldNotAllowNullResolver()
+    {
+        assertThrows( NullPointerException.class, () -> Config.build().withResolver( null ) );
     }
 }

@@ -19,6 +19,8 @@
 package org.neo4j.driver.v1;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -28,6 +30,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 import org.neo4j.driver.v1.util.Experimental;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Resource;
@@ -88,6 +91,7 @@ public class Config
     private final RetrySettings retrySettings;
 
     private final LoadBalancingStrategy loadBalancingStrategy;
+    private final ServerAddressResolver resolver;
 
     private Config( ConfigBuilder builder)
     {
@@ -106,6 +110,7 @@ public class Config
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
         this.retrySettings = builder.retrySettings;
         this.loadBalancingStrategy = builder.loadBalancingStrategy;
+        this.resolver = builder.resolver;
     }
 
     /**
@@ -216,14 +221,24 @@ public class Config
     }
 
     /**
-     * Load balancing strategy
+     * Load balancing strategy.
      *
-     * @return the strategy to use
+     * @return the strategy to use.
      */
     @Experimental
     public LoadBalancingStrategy loadBalancingStrategy()
     {
         return loadBalancingStrategy;
+    }
+
+    /**
+     * Server address resolver.
+     *
+     * @return the resolver to use.
+     */
+    public ServerAddressResolver resolver()
+    {
+        return resolver;
     }
 
     /**
@@ -271,6 +286,7 @@ public class Config
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
+        private ServerAddressResolver resolver;
 
         private ConfigBuilder() {}
 
@@ -708,6 +724,25 @@ public class Config
                         "The max retry time may not be smaller than 0, but was %d %s.", value, unit ) );
             }
             this.retrySettings = new RetrySettings( maxRetryTimeMs );
+            return this;
+        }
+
+        /**
+         * Specify a custom server address resolver used by the routing driver to resolve the initial address used to create the driver.
+         * Such resolution happens:
+         * <ul>
+         * <li>during the very first rediscovery when driver is created</li>
+         * <li>when all the known routers from the current routing table have failed and driver needs to fallback to the initial address</li>
+         * </ul>
+         * By default driver performs a DNS lookup for the initial address using {@link InetAddress#getAllByName(String)}.
+         *
+         * @param resolver the resolver to use.
+         * @return this builder.
+         * @throws NullPointerException when the given resolver is {@code null}.
+         */
+        public ConfigBuilder withResolver( ServerAddressResolver resolver )
+        {
+            this.resolver = Objects.requireNonNull( resolver, "resolver" );
             return this;
         }
 

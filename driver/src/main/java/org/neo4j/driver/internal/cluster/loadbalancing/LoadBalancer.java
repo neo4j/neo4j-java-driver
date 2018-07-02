@@ -30,7 +30,6 @@ import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
-import org.neo4j.driver.internal.cluster.DnsResolver;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -45,6 +44,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -63,15 +63,15 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
-            LoadBalancingStrategy loadBalancingStrategy )
+            LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
     {
         this( connectionPool, new ClusterRoutingTable( clock, initialRouter ),
-                createRediscovery( initialRouter, settings, eventExecutorGroup, clock, logging ),
+                createRediscovery( initialRouter, settings, eventExecutorGroup, resolver, clock, logging ),
                 loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
     }
 
     // Used only in testing
-    public LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+    LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
             EventExecutorGroup eventExecutorGroup, Logging logging )
     {
         this( connectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
@@ -264,13 +264,11 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
-            EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging )
+            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Clock clock, Logging logging )
     {
         Logger log = loadBalancerLogger( logging );
-        ClusterCompositionProvider clusterCompositionProvider =
-                new RoutingProcedureClusterCompositionProvider( clock, settings );
-        return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup,
-                new DnsResolver( log ), log );
+        ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings );
+        return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }
 
     private static Logger loadBalancerLogger( Logging logging )

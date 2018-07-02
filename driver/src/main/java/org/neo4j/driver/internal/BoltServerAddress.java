@@ -24,12 +24,14 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 
+import org.neo4j.driver.v1.net.ServerAddress;
+
 import static java.util.Objects.requireNonNull;
 
 /**
  * Holds a host and port pair that denotes a Bolt server address.
  */
-public class BoltServerAddress
+public class BoltServerAddress implements ServerAddress
 {
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
@@ -50,9 +52,16 @@ public class BoltServerAddress
 
     public BoltServerAddress( String host, int port )
     {
-        this.host = requireNonNull( host );
-        this.port = port;
+        this.host = requireNonNull( host, "host" );
+        this.port = requireValidPort( port );
         this.stringValue = String.format( "%s:%d", host, port );
+    }
+
+    public static BoltServerAddress from( ServerAddress address )
+    {
+        return address instanceof BoltServerAddress
+               ? (BoltServerAddress) address
+               : new BoltServerAddress( address.host(), address.port() );
     }
 
     @Override
@@ -114,11 +123,13 @@ public class BoltServerAddress
         }
     }
 
+    @Override
     public String host()
     {
         return host;
     }
 
+    @Override
     public int port()
     {
         return port;
@@ -193,5 +204,14 @@ public class BoltServerAddress
     private static RuntimeException invalidAddressFormat( String address )
     {
         return new IllegalArgumentException( "Invalid address format `" + address + "`" );
+    }
+
+    private static int requireValidPort( int port )
+    {
+        if ( port >= 0 && port <= 65_535 )
+        {
+            return port;
+        }
+        throw new IllegalArgumentException( "Illegal port: " + port );
     }
 }
