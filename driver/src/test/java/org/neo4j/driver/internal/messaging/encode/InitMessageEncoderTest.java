@@ -40,7 +40,7 @@ class InitMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodeAckFailureMessage() throws Exception
+    void shouldEncodeInitMessage() throws Exception
     {
         Map<String,Value> authToken = new HashMap<>();
         authToken.put( "username", value( "bob" ) );

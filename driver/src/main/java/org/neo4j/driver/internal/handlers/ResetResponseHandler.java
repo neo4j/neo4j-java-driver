@@ -56,8 +56,11 @@ public class ResetResponseHandler implements ResponseHandler
 
     private void resetCompleted( boolean success )
     {
-        messageDispatcher.unMuteAckFailure();
-        resetCompleted( completionFuture, success );
+        messageDispatcher.clearCurrentError();
+        if (completionFuture != null)
+        {
+            resetCompleted(completionFuture, success);
+        }
     }
 
     protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )

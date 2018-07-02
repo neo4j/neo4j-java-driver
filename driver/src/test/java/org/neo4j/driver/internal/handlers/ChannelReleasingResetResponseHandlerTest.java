@@ -87,28 +87,6 @@ class ChannelReleasingResetResponseHandlerTest
         assertFalse( releaseFuture.isCompletedExceptionally() );
     }
 
-    @Test
-    void shouldUnMuteAckFailureOnSuccess()
-    {
-        ChannelPool pool = newChannelPoolMock();
-        ChannelReleasingResetResponseHandler handler = newHandler( pool, new FakeClock(), new CompletableFuture<>() );
-
-        handler.onSuccess( emptyMap() );
-
-        verify( messageDispatcher ).unMuteAckFailure();
-    }
-
-    @Test
-    void shouldUnMuteAckFailureOnFailure()
-    {
-        ChannelPool pool = newChannelPoolMock();
-        ChannelReleasingResetResponseHandler handler = newHandler( pool, new FakeClock(), new CompletableFuture<>() );
-
-        handler.onFailure( new RuntimeException() );
-
-        verify( messageDispatcher ).unMuteAckFailure();
-    }
-
     private void verifyLastUsedTimestamp( int expectedValue )
     {
         assertEquals( expectedValue, lastUsedTimestamp( channel ).intValue() );

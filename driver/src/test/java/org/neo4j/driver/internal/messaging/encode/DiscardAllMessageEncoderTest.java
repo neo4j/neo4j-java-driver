@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.messaging.encode;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -34,7 +34,7 @@ class DiscardAllMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodeAckFailureMessage() throws Exception
+    void shouldEncodeDiscardAllMessage() throws Exception
     {
         encoder.encode( DiscardAllMessage.DISCARD_ALL, packer );
 
@@ -44,6 +44,6 @@ class DiscardAllMessageEncoderTest
     @Test
     void shouldFailToEncodeWrongMessage()
     {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( AckFailureMessage.ACK_FAILURE, packer ) );
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( ResetMessage.RESET, packer ) );
     }
 }

@@ -6,6 +6,6 @@ C: RUN "CALL dbms.cluster.routing.getServers" {}
    PULL_ALL
 S: FAILURE {"code": "Neo.ClientError.General.Unknown", "message": "wut!"}
 S: IGNORED
-C: ACK_FAILURE
+C: RESET
 S: SUCCESS {}
 S: <EXIT>

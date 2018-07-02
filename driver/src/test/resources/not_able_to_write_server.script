@@ -9,5 +9,5 @@ C: RUN "CREATE ()" {}
 C: PULL_ALL
 S: FAILURE {"code": "Neo.ClientError.Cluster.NotALeader", "message": "blabla"}
 S: IGNORED
-C: ACK_FAILURE
+C: RESET
 S: SUCCESS {}

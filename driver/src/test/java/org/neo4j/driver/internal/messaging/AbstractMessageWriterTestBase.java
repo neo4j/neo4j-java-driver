@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
-import org.neo4j.driver.internal.messaging.request.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
@@ -40,12 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class AbstractMessageWriterTestBase
 {
-    @Test
-    void shouldWriteAckFailureMessage() throws Exception
-    {
-        testMessageWriting( AckFailureMessage.ACK_FAILURE, 0 );
-    }
-
     @Test
     void shouldWriteDiscardAllMessage() throws Exception
     {

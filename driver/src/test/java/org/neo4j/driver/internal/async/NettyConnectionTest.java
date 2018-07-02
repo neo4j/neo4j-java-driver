@@ -419,19 +419,6 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldMuteAckFailureWhenReset()
-    {
-        InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
-        EmbeddedChannel channel = newChannel( messageDispatcher );
-        NettyConnection connection = newConnection( channel );
-
-        connection.reset();
-        channel.runPendingTasks();
-
-        verify( messageDispatcher ).muteAckFailure();
-    }
-
-    @Test
     void shouldEnableAutoReadWhenDoingReset()
     {
         EmbeddedChannel channel = newChannel();

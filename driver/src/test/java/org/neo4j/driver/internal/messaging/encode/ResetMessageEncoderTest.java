@@ -34,7 +34,7 @@ class ResetMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodeAckFailureMessage() throws Exception
+    void shouldEncodeResetMessage() throws Exception
     {
         encoder.encode( ResetMessage.RESET, packer );
 

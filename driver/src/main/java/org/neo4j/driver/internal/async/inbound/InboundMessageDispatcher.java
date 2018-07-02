@@ -25,7 +25,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
+import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -36,7 +36,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.messaging.request.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 
 public class InboundMessageDispatcher implements ResponseMessageHandler
 {
@@ -46,7 +46,6 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
 
     private Throwable currentError;
     private boolean fatalErrorOccurred;
-    private boolean ackFailureMuted;
 
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
@@ -104,13 +103,14 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         if ( ErrorUtil.isFatal( currentError ) )
         {
             // we should not continue using channel after a fatal error
-            // fire error event back to the pipeline and avoid sending ACK_FAILURE
+            // fire error event back to the pipeline and avoid sending RESET
             channel.pipeline().fireExceptionCaught( currentError );
             return;
         }
 
-        // try to write ACK_FAILURE before notifying the next response handler
-        ackFailureIfNeeded();
+        // write a RESET to "acknowledge" the failure
+        queue( new ResetResponseHandler( this, null ) );
+        channel.writeAndFlush( RESET, channel.voidPromise() );
 
         ResponseHandler handler = handlers.remove();
         handler.onFailure( currentError );
@@ -127,10 +127,6 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         if ( currentError != null )
         {
             error = currentError;
-        }
-        else if ( ackFailureMuted )
-        {
-            error = new ClientException( "Database ignored the request because session has been reset" );
         }
         else
         {
@@ -169,48 +165,4 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         return fatalErrorOccurred;
     }
 
-    /**
-     * Makes this message dispatcher not send ACK_FAILURE in response to FAILURE until it's un-muted using
-     * {@link #unMuteAckFailure()}. Muting ACK_FAILURE is needed <b>only</b> when sending RESET message. RESET "jumps"
-     * over all queued messages on server and makes them fail. Received failures do not need to be acknowledge because
-     * RESET moves server's state machine to READY state.
-     * <p>
-     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
-     */
-    public void muteAckFailure()
-    {
-        ackFailureMuted = true;
-    }
-
-    /**
-     * Makes this message dispatcher send ACK_FAILURE in response to FAILURE. Should be used in combination with
-     * {@link #muteAckFailure()} when sending RESET message.
-     * <p>
-     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
-     */
-    public void unMuteAckFailure()
-    {
-        ackFailureMuted = false;
-    }
-
-    /**
-     * Check if ACK_FAILURE is muted.
-     * <p>
-     * <b>This method is not thread-safe</b> and should only be executed by the event loop thread.
-     *
-     * @return {@code true} if ACK_FAILURE has been muted via {@link #muteAckFailure()}, {@code false} otherwise.
-     */
-    public boolean isAckFailureMuted()
-    {
-        return ackFailureMuted;
-    }
-
-    private void ackFailureIfNeeded()
-    {
-        if ( !ackFailureMuted )
-        {
-            queue( new AckFailureResponseHandler( this ) );
-            channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
-        }
-    }
 }
