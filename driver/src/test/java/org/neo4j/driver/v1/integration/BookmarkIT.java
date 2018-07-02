@@ -27,16 +27,13 @@ import java.util.HashSet;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
-import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 class BookmarkIT
 {
@@ -63,21 +59,6 @@ class BookmarkIT
 
         ServerVersion serverVersion = ServerVersion.version( driver );
         assumeTrue( serverVersion.greaterThanOrEqual( v3_1_0 ), "Server version `" + serverVersion + "` does not support bookmark" );
-    }
-
-    @Test
-    void shouldConnectIPv6Uri()
-    {
-        // Given
-        try(Driver driver =  GraphDatabase.driver( "bolt://[::1]:7687", DEFAULT_AUTH_TOKEN );
-            Session session = driver.session() )
-        {
-            // When
-            StatementResult result = session.run( "RETURN 1" );
-
-            // Then
-            assertThat( result.single().get( 0 ).asInt(), equalTo( 1 ) );
-        }
     }
 
     @Test

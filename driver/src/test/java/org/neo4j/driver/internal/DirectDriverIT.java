@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,6 +32,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 class DirectDriverIT
@@ -164,6 +167,21 @@ class DirectDriverIT
         finally
         {
             assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldConnectIPv6Uri()
+    {
+        // Given
+        try ( Driver driver = GraphDatabase.driver( "bolt://[::1]:7687", DEFAULT_AUTH_TOKEN );
+              Session session = driver.session() )
+        {
+            // When
+            StatementResult result = session.run( "RETURN 1" );
+
+            // Then
+            assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
         }
     }
 
