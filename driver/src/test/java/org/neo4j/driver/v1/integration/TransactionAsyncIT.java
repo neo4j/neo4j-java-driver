@@ -899,7 +899,7 @@ class TransactionAsyncIT
         assertThat( e1.code(), containsString( "SyntaxError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "Transaction rolled back" ) );
+        assertThat( e2.getMessage(), startsWith( "No current transaction to commit." ) );
     }
 
     @Test
@@ -913,7 +913,7 @@ class TransactionAsyncIT
         assertThat( e1.code(), containsString( "TypeError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "Transaction rolled back" ) );
+        assertThat( e2.getMessage(), startsWith( "No current transaction to commit." ) );
     }
 
     @Test
