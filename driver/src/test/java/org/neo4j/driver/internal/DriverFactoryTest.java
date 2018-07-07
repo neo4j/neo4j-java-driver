@@ -20,15 +20,12 @@ package org.neo4j.driver.internal;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -51,11 +48,11 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -66,41 +63,27 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
-@RunWith( Parameterized.class )
-public class DriverFactoryTest
+class DriverFactoryTest
 {
-    @Parameter
-    public URI uri;
-
-    @Parameters( name = "{0}" )
-    public static List<URI> uris()
+    private static Stream<String> testUris()
     {
-        return Arrays.asList(
-                URI.create( "bolt://localhost:7687" ),
-                URI.create( "bolt+routing://localhost:7687" )
-        );
+        return Stream.of( "bolt://localhost:7687", "bolt+routing://localhost:7687" );
     }
 
-    @Test
-    public void connectionPoolClosedWhenDriverCreationFails() throws Exception
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void connectionPoolClosedWhenDriverCreationFails( String uri )
     {
         ConnectionPool connectionPool = connectionPoolMock();
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
-        try
-        {
-            createDriver( factory );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
+        assertThrows( UnsupportedOperationException.class, () -> createDriver( uri, factory ) );
         verify( connectionPool ).close();
     }
 
-    @Test
-    public void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails() throws Exception
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void connectionPoolCloseExceptionIsSuppressedWhenDriverCreationFails( String uri )
     {
         ConnectionPool connectionPool = connectionPoolMock();
         RuntimeException poolCloseError = new RuntimeException( "Pool close error" );
@@ -108,60 +91,56 @@ public class DriverFactoryTest
 
         DriverFactory factory = new ThrowingDriverFactory( connectionPool );
 
-        try
-        {
-            createDriver( factory );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-            assertArrayEquals( new Throwable[]{poolCloseError}, e.getSuppressed() );
-        }
+        UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> createDriver( uri, factory ) );
+        assertArrayEquals( new Throwable[]{poolCloseError}, e.getSuppressed() );
         verify( connectionPool ).close();
     }
 
-    @Test
-    public void usesStandardSessionFactoryWhenNothingConfigured()
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void usesStandardSessionFactoryWhenNothingConfigured( String uri )
     {
         Config config = Config.defaultConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        createDriver( factory, config );
+        createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat( capturedFactory.newInstance( READ, null ), instanceOf( NetworkSession.class ) );
     }
 
-    @Test
-    public void usesLeakLoggingSessionFactoryWhenConfigured()
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void usesLeakLoggingSessionFactoryWhenConfigured( String uri )
     {
         Config config = Config.build().withLeakedSessionsLogging().toConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
-        createDriver( factory, config );
+        createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
         assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
-    @Test
-    public void shouldVerifyConnectivity()
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void shouldVerifyConnectivity( String uri )
     {
         SessionFactory sessionFactory = mock( SessionFactory.class );
         when( sessionFactory.verifyConnectivity() ).thenReturn( completedWithNull() );
         when( sessionFactory.close() ).thenReturn( completedWithNull() );
         DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
 
-        try ( Driver driver = createDriver( driverFactory ) )
+        try ( Driver driver = createDriver( uri, driverFactory ) )
         {
             assertNotNull( driver );
             verify( sessionFactory ).verifyConnectivity();
         }
     }
 
-    @Test
-    public void shouldThrowWhenUnableToVerifyConnectivity()
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void shouldThrowWhenUnableToVerifyConnectivity( String uri )
     {
         SessionFactory sessionFactory = mock( SessionFactory.class );
         ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
@@ -169,19 +148,12 @@ public class DriverFactoryTest
         when( sessionFactory.close() ).thenReturn( completedWithNull() );
         DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
 
-        try
-        {
-            createDriver( driverFactory );
-            fail( "Exception expected" );
-        }
-        catch ( ServiceUnavailableException e )
-        {
-            assertEquals( "Hello", e.getMessage() );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( uri, driverFactory ) );
+        assertEquals( e.getMessage(), "Hello" );
     }
 
     @Test
-    public void shouldNotCreateDriverMetrics() throws Throwable
+    void shouldNotCreateDriverMetrics()
     {
         // Given
         Config config = mock( Config.class );
@@ -192,7 +164,7 @@ public class DriverFactoryTest
     }
 
     @Test
-    public void shouldCreateDriverMetricsIfMonitoringEnabled() throws Throwable
+    void shouldCreateDriverMetricsIfMonitoringEnabled()
     {
         // Given
         Config config = mock( Config.class );
@@ -204,16 +176,16 @@ public class DriverFactoryTest
         assertThat( handler instanceof InternalMetrics, is( true ) );
     }
 
-    private Driver createDriver( DriverFactory driverFactory )
+    private Driver createDriver( String uri, DriverFactory driverFactory )
     {
-        return createDriver( driverFactory, defaultConfig() );
+        return createDriver( uri, driverFactory, defaultConfig() );
     }
 
-    private Driver createDriver( DriverFactory driverFactory, Config config )
+    private Driver createDriver( String uri, DriverFactory driverFactory, Config config )
     {
         AuthToken auth = AuthTokens.none();
         RoutingSettings routingSettings = new RoutingSettings( 42, 42, null );
-        return driverFactory.newInstance( uri, auth, routingSettings, RetrySettings.DEFAULT, config );
+        return driverFactory.newInstance( URI.create( uri ), auth, routingSettings, RetrySettings.DEFAULT, config );
     }
 
     private static ConnectionPool connectionPoolMock()

@@ -19,9 +19,9 @@
 package org.neo4j.driver.v1.integration;
 
 import io.netty.channel.Channel;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,28 +39,43 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 
-public class ConnectionPoolIT
+class ConnectionPoolIT
 {
-    @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
     private SessionGrabber sessionGrabber;
 
+    @AfterEach
+    void cleanup() throws Exception
+    {
+        if ( driver != null )
+        {
+            driver.close();
+        }
+
+        if ( sessionGrabber != null )
+        {
+            sessionGrabber.stop();
+        }
+    }
+
     @Test
-    public void shouldRecoverFromDownedServer() throws Throwable
+    void shouldRecoverFromDownedServer() throws Throwable
     {
         // Given a driver
         driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
@@ -77,7 +92,7 @@ public class ConnectionPoolIT
     }
 
     @Test
-    public void shouldDisposeChannelsBasedOnMaxLifetime() throws Exception
+    void shouldDisposeChannelsBasedOnMaxLifetime() throws Exception
     {
         FakeClock clock = new FakeClock();
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
@@ -119,7 +134,7 @@ public class ConnectionPoolIT
     }
 
     @Test
-    public void shouldRespectMaxConnectionPoolSize()
+    void shouldRespectMaxConnectionPoolSize()
     {
         int maxPoolSize = 3;
         Config config = Config.build()
@@ -129,29 +144,9 @@ public class ConnectionPoolIT
 
         driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
 
-        try
-        {
-            startAndCloseTransactions( driver, maxPoolSize + 1 );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e, is( connectionAcquisitionTimeoutError( 542 ) ) );
-        }
-    }
+        ClientException e = assertThrows( ClientException.class, () -> startAndCloseTransactions( driver, maxPoolSize + 1 ) );
+        assertThat( e, is( connectionAcquisitionTimeoutError( 542 ) ) );
 
-    @After
-    public void cleanup() throws Exception
-    {
-        if ( driver != null )
-        {
-            driver.close();
-        }
-
-        if ( sessionGrabber != null )
-        {
-            sessionGrabber.stop();
-        }
     }
 
     private static void startAndCloseTransactions( Driver driver, int txCount )
@@ -225,7 +220,7 @@ public class ConnectionPoolIT
         private volatile boolean run = true;
         private volatile Throwable lastExceptionFromDriver;
 
-        public SessionGrabber( Driver driver )
+        SessionGrabber( Driver driver )
         {
             this.driver = driver;
         }
@@ -262,7 +257,7 @@ public class ConnectionPoolIT
             }
         }
 
-        public void assertSessionsAvailableWithin( int timeoutSeconds ) throws InterruptedException
+        void assertSessionsAvailableWithin( int timeoutSeconds ) throws InterruptedException
         {
             long deadline = System.currentTimeMillis() + 1000 * timeoutSeconds;
             while( System.currentTimeMillis() < deadline )

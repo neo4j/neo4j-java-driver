@@ -20,10 +20,10 @@ package org.neo4j.driver.v1.integration;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 import java.net.URI;
@@ -57,17 +57,15 @@ import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -78,16 +76,16 @@ import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ConnectionHandlingIT
+class ConnectionHandlingIT
 {
-    @ClassRule
-    public static final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Driver driver;
     private MemorizingConnectionPool connectionPool;
 
-    @Before
-    public void createDriver()
+    @BeforeEach
+    void createDriver()
     {
         DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
         AuthToken auth = neo4j.authToken();
@@ -98,14 +96,14 @@ public class ConnectionHandlingIT
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
 
-    @After
-    public void closeDriver()
+    @AfterEach
+    void closeDriver()
     {
         driver.close();
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenResultConsumed()
+    void connectionUsedForSessionRunReturnedToThePoolWhenResultConsumed()
     {
         StatementResult result = createNodesInNewSession( 12 );
 
@@ -120,7 +118,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenResultSummaryObtained()
+    void connectionUsedForSessionRunReturnedToThePoolWhenResultSummaryObtained()
     {
         StatementResult result = createNodesInNewSession( 5 );
 
@@ -136,7 +134,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedInList()
+    void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedInList()
     {
         StatementResult result = createNodesInNewSession( 2 );
 
@@ -152,7 +150,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenSingleRecordFetched()
+    void connectionUsedForSessionRunReturnedToThePoolWhenSingleRecordFetched()
     {
         StatementResult result = createNodesInNewSession( 1 );
 
@@ -167,7 +165,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedAsIterator()
+    void connectionUsedForSessionRunReturnedToThePoolWhenResultFetchedAsIterator()
     {
         StatementResult result = createNodesInNewSession( 6 );
 
@@ -188,7 +186,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForSessionRunReturnedToThePoolWhenServerErrorDuringResultFetching()
+    void connectionUsedForSessionRunReturnedToThePoolWhenServerErrorDuringResultFetching()
     {
         Session session = driver.session();
         // provoke division by zero
@@ -197,15 +195,7 @@ public class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        try
-        {
-            result.hasNext();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
+        assertThrows( ClientException.class, result::hasNext );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
@@ -213,7 +203,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForTransactionReturnedToThePoolWhenTransactionCommitted()
+    void connectionUsedForTransactionReturnedToThePoolWhenTransactionCommitted()
     {
         Session session = driver.session();
 
@@ -234,7 +224,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForTransactionReturnedToThePoolWhenTransactionRolledBack()
+    void connectionUsedForTransactionReturnedToThePoolWhenTransactionRolledBack()
     {
         Session session = driver.session();
 
@@ -255,7 +245,7 @@ public class ConnectionHandlingIT
     }
 
     @Test
-    public void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted() throws Exception
+    void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted() throws Exception
     {
         try ( Session session = driver.session() )
         {
@@ -274,22 +264,14 @@ public class ConnectionHandlingIT
         tx.run( "CREATE (:Book)" );
         tx.success();
 
-        try
-        {
-            tx.close();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
+        assertThrows( ClientException.class, tx::close );
 
         // connection should have been released after failed node creation
         verify( connection2 ).release();
     }
 
     @Test
-    public void shouldCloseChannelWhenResetFails() throws Exception
+    void shouldCloseChannelWhenResetFails() throws Exception
     {
         StubServer server = StubServer.start( "reset_error.script", 9001 );
         try

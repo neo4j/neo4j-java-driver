@@ -35,8 +35,8 @@ import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
 public class StubServer
@@ -53,7 +53,7 @@ public class StubServer
 
     private static final String BOLT_STUB_COMMAND = "boltstub";
 
-    private Process process = null;
+    private Process process;
 
     private StubServer( String script, int port ) throws IOException, InterruptedException
     {
@@ -95,7 +95,7 @@ public class StubServer
 
     private static String resource( String fileName )
     {
-        File resource = new File( TestNeo4j.TEST_RESOURCE_FOLDER_PATH, fileName );
+        File resource = new File( DatabaseExtension.TEST_RESOURCE_FOLDER_PATH, fileName );
         if ( !resource.exists() )
         {
             fail( fileName + " does not exists" );

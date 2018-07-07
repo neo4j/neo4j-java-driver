@@ -21,12 +21,10 @@ package org.neo4j.driver.v1.integration;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.concurrent.Future;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +42,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Record;
@@ -59,55 +58,51 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class TransactionAsyncIT
+class TransactionAsyncIT
 {
-    private final TestNeo4j neo4j = new TestNeo4j();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 180 ) ).around( neo4j );
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Session session;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         session = neo4j.driver().session();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         session.closeAsync();
     }
 
     @Test
-    public void shouldBePossibleToCommitEmptyTx()
+    void shouldBePossibleToCommitEmptyTx()
     {
         String bookmarkBefore = session.lastBookmark();
 
@@ -116,7 +111,7 @@ public class TransactionAsyncIT
 
         String bookmarkAfter = session.lastBookmark();
 
-        if ( neo4j.version().greaterThanOrEqual( v3_1_0 ) )
+        if ( BOOKMARKS.availableIn( neo4j.version() ) )
         {
             // bookmarks are only supported in 3.1.0+
             assertNotNull( bookmarkAfter );
@@ -125,7 +120,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRollbackEmptyTx()
+    void shouldBePossibleToRollbackEmptyTx()
     {
         String bookmarkBefore = session.lastBookmark();
 
@@ -137,7 +132,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunSingleStatementAndCommit()
+    void shouldBePossibleToRunSingleStatementAndCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -155,7 +150,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunSingleStatementAndRollback()
+    void shouldBePossibleToRunSingleStatementAndRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -172,7 +167,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunMultipleStatementsAndCommit()
+    void shouldBePossibleToRunMultipleStatementsAndCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -191,7 +186,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunMultipleStatementsAndCommitWithoutWaiting()
+    void shouldBePossibleToRunMultipleStatementsAndCommitWithoutWaiting()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -205,7 +200,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunMultipleStatementsAndRollback()
+    void shouldBePossibleToRunMultipleStatementsAndRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -221,7 +216,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunMultipleStatementsAndRollbackWithoutWaiting()
+    void shouldBePossibleToRunMultipleStatementsAndRollbackWithoutWaiting()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -234,53 +229,32 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToCommitAfterSingleWrongStatement()
+    void shouldFailToCommitAfterSingleWrongStatement()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-        }
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
+        Exception e = assertThrows( Exception.class, () -> await( cursor.consumeAsync() ) );
+        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+
+        assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
     }
 
     @Test
-    public void shouldAllowRollbackAfterSingleWrongStatement()
+    void shouldAllowRollbackAfterSingleWrongStatement()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-        try
-        {
-            await( cursor.nextAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-        }
 
+        Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
+        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
 
     @Test
-    public void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -295,29 +269,15 @@ public class TransactionAsyncIT
         assertEquals( 42, record2.get( 0 ).asInt() );
 
         StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
-        try
-        {
-            await( cursor3.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-        }
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-        }
+        Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
+        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+
+        assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
     }
 
     @Test
-    public void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -332,68 +292,38 @@ public class TransactionAsyncIT
         assertEquals( 42, record2.get( 0 ).asInt() );
 
         StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
-        try
-        {
-            await( cursor3.summaryAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-        }
 
+        Exception e = assertThrows( Exception.class, () -> await( cursor3.summaryAsync() ) );
+        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
 
     @Test
-    public void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
+    void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-        try
-        {
-            await( cursor.nextAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
-        }
 
-        try
-        {
-            tx.runAsync( "CREATE ()" );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
-        }
+        Exception e1 = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
+        assertThat( e1, is( syntaxError( "Unexpected end of input" ) ) );
+
+        ClientException e2 = assertThrows( ClientException.class, () -> tx.runAsync( "CREATE ()" ) );
+        assertThat( e2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
     }
 
     @Test
-    public void shouldFailBoBeginTxWithInvalidBookmark()
+    @EnabledOnNeo4jWith( BOOKMARKS )
+    void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        assumeDatabaseSupportsBookmarks();
-
         Session session = neo4j.driver().session( "InvalidBookmark" );
 
-        try
-        {
-            await( session.beginTransactionAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
+        assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
     }
 
     @Test
-    public void shouldBePossibleToCommitWhenCommitted()
+    void shouldBePossibleToCommitWhenCommitted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
@@ -406,7 +336,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRollbackWhenRolledBack()
+    void shouldBePossibleToRollbackWhenRolledBack()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
@@ -419,47 +349,31 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToCommitWhenRolledBack()
+    void shouldFailToCommitWhenRolledBack()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        try
-        {
-            // should not be possible to commit after rollback
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );
-        }
+        // should not be possible to commit after rollback
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );
     }
 
     @Test
-    public void shouldFailToRollbackWhenCommitted()
+    void shouldFailToRollbackWhenCommitted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.commitAsync() ) );
 
-        try
-        {
-            // should not be possible to rollback after commit
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ClientException.class ) );
-            assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
-        }
+        // should not be possible to rollback after commit
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
     }
 
     @Test
-    public void shouldExposeStatementKeysForColumnsWithAliases()
+    void shouldExposeStatementKeysForColumnsWithAliases()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
@@ -468,7 +382,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldExposeStatementKeysForColumnsWithoutAliases()
+    void shouldExposeStatementKeysForColumnsWithoutAliases()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
@@ -477,7 +391,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldExposeResultSummaryForSimpleQuery()
+    void shouldExposeResultSummaryForSimpleQuery()
     {
         String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
         Value params = parameters( "name1", "Bob", "name2", "John" );
@@ -501,7 +415,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldExposeResultSummaryForExplainQuery()
+    void shouldExposeResultSummaryForExplainQuery()
     {
         String query = "EXPLAIN MATCH (n) RETURN n";
 
@@ -525,7 +439,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldExposeResultSummaryForProfileQuery()
+    void shouldExposeResultSummaryForProfileQuery()
     {
         String query = "PROFILE MERGE (n {name: $name}) " +
                        "ON CREATE SET n.created = timestamp() " +
@@ -555,7 +469,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldPeekRecordFromCursor()
+    void shouldPeekRecordFromCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
@@ -579,52 +493,48 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldForEachWithEmptyCursor()
+    void shouldForEachWithEmptyCursor()
     {
         testForEach( "MATCH (n:SomeReallyStrangeLabel) RETURN n", 0 );
     }
 
     @Test
-    public void shouldForEachWithNonEmptyCursor()
+    void shouldForEachWithNonEmptyCursor()
     {
         testForEach( "UNWIND range(1, 12555) AS x CREATE (n:Node {id: x}) RETURN n", 12555 );
     }
 
     @Test
-    public void shouldFailForEachWhenActionFails()
+    void shouldFailForEachWhenActionFails()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hi!'" ) );
         RuntimeException error = new RuntimeException();
 
-        try
+        RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             await( cursor.forEachAsync( record ->
             {
                 throw error;
             } ) );
-            fail( "Exception expected" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertEquals( error, e );
-        }
+        } );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldConvertToListWithEmptyCursor()
+    void shouldConvertToListWithEmptyCursor()
     {
         testList( "CREATE (:Person)-[:KNOWS]->(:Person)", Collections.emptyList() );
     }
 
     @Test
-    public void shouldConvertToListWithNonEmptyCursor()
+    void shouldConvertToListWithNonEmptyCursor()
     {
         testList( "UNWIND [1, '1', 2, '2', 3, '3'] AS x RETURN x", Arrays.asList( 1L, "1", 2L, "2", 3L, "3" ) );
     }
 
     @Test
-    public void shouldConvertToTransformedListWithEmptyCursor()
+    void shouldConvertToTransformedListWithEmptyCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "CREATE ()" ) );
@@ -633,7 +543,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldConvertToTransformedListWithNonEmptyCursor()
+    void shouldConvertToTransformedListWithNonEmptyCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
@@ -642,28 +552,22 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailWhenListTransformationFunctionFails()
+    void shouldFailWhenListTransformationFunctionFails()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello'" ) );
         IOException error = new IOException( "World" );
 
-        try
-        {
-            await( cursor.listAsync( record ->
-            {
-                throw new CompletionException( error );
-            } ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertEquals( error, e );
-        }
+        Exception e = assertThrows( Exception.class, () ->
+                await( cursor.listAsync( record ->
+                {
+                    throw new CompletionException( error );
+                } ) ) );
+        assertEquals( error, e );
     }
 
     @Test
-    public void shouldFailToCommitWhenServerIsRestarted()
+    void shouldFailToCommitWhenServerIsRestarted()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -671,53 +575,31 @@ public class TransactionAsyncIT
 
         neo4j.killDb();
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( Throwable t )
-        {
-            assertThat( t, instanceOf( ServiceUnavailableException.class ) );
-        }
+        assertThrows( ServiceUnavailableException.class, () -> await( tx.commitAsync() ) );
     }
 
     @Test
-    public void shouldFailSingleWithEmptyCursor()
+    void shouldFailSingleWithEmptyCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "MATCH (n:NoSuchLabel) RETURN n" ) );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( NoSuchRecordException e )
-        {
-            assertThat( e.getMessage(), containsString( "result is empty" ) );
-        }
+        NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), containsString( "result is empty" ) );
     }
 
     @Test
-    public void shouldFailSingleWithMultiRecordCursor()
+    void shouldFailSingleWithMultiRecordCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b'] AS x RETURN x" ) );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( NoSuchRecordException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
-        }
+        NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
     }
 
     @Test
-    public void shouldReturnSingleWithSingleRecordCursor()
+    void shouldReturnSingleWithSingleRecordCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello!'" ) );
@@ -728,53 +610,39 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldPropagateFailureFromFirstRecordInSingleAsync()
+    void shouldPropagateFailureFromFirstRecordInSingleAsync()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND [0] AS x RETURN 10 / x" ) );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldNotPropagateFailureFromSecondRecordInSingleAsync()
+    void shouldNotPropagateFailureFromSecondRecordInSingleAsync()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 10 / x" ) );
 
-        try
-        {
-            await( cursor.singleAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldConsumeEmptyCursor()
+    void shouldConsumeEmptyCursor()
     {
         testConsume( "MATCH (n:NoSuchLabel) RETURN n" );
     }
 
     @Test
-    public void shouldConsumeNonEmptyCursor()
+    void shouldConsumeNonEmptyCursor()
     {
         testConsume( "RETURN 42" );
     }
 
     @Test
-    public void shouldDoNothingWhenCommittedSecondTime()
+    void shouldDoNothingWhenCommittedSecondTime()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -785,44 +653,30 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToCommitAfterRollback()
+    void shouldFailToCommitAfterRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         assertNull( await( tx.rollbackAsync() ) );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
         assertFalse( tx.isOpen() );
     }
 
     @Test
-    public void shouldFailToCommitAfterTermination()
+    void shouldFailToCommitAfterTermination()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         ((ExplicitTransaction) tx).markTerminated();
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
     }
 
     @Test
-    public void shouldDoNothingWhenRolledBackSecondTime()
+    void shouldDoNothingWhenRolledBackSecondTime()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -833,26 +687,19 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToRollbackAfterCommit()
+    void shouldFailToRollbackAfterCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         assertNull( await( tx.commitAsync() ) );
 
-        try
-        {
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
         assertFalse( tx.isOpen() );
     }
 
     @Test
-    public void shouldRollbackAfterTermination()
+    void shouldRollbackAfterTermination()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -863,7 +710,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToRunQueryAfterCommit()
+    void shouldFailToRunQueryAfterCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE (:MyLabel)" );
@@ -871,19 +718,12 @@ public class TransactionAsyncIT
 
         assertEquals( 1, session.run( "MATCH (n:MyLabel) RETURN count(n)" ).single().get( 0 ).asInt() );
 
-        try
-        {
-            await( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Cannot run more statements in this transaction, it has been committed", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
+        assertEquals( "Cannot run more statements in this transaction, it has been committed", e.getMessage() );
     }
 
     @Test
-    public void shouldFailToRunQueryAfterRollback()
+    void shouldFailToRunQueryAfterRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE (:MyLabel)" );
@@ -891,55 +731,34 @@ public class TransactionAsyncIT
 
         assertEquals( 0, session.run( "MATCH (n:MyLabel) RETURN count(n)" ).single().get( 0 ).asInt() );
 
-        try
-        {
-            await( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Cannot run more statements in this transaction, it has been rolled back", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
+        assertEquals( "Cannot run more statements in this transaction, it has been rolled back", e.getMessage() );
     }
 
     @Test
-    public void shouldFailToRunQueryWhenMarkedForFailure()
+    void shouldFailToRunQueryWhenMarkedForFailure()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE (:MyLabel)" );
         tx.failure();
 
-        try
-        {
-            await( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
     }
 
     @Test
-    public void shouldFailToRunQueryWhenTerminated()
+    void shouldFailToRunQueryWhenTerminated()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE (:MyLabel)" );
         ((ExplicitTransaction) tx).markTerminated();
 
-        try
-        {
-            await( tx.runAsync( "CREATE (:MyOtherLabel)" ) );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Cannot run more statements in this transaction, it has been terminated", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
+        assertEquals( "Cannot run more statements in this transaction, it has been terminated", e.getMessage() );
     }
 
     @Test
-    public void shouldAllowQueriesWhenMarkedForSuccess()
+    void shouldAllowQueriesWhenMarkedForSuccess()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE (:MyLabel)" );
@@ -953,10 +772,9 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldUpdateSessionBookmarkAfterCommit()
+    @EnabledOnNeo4jWith( BOOKMARKS )
+    void shouldUpdateSessionBookmarkAfterCommit()
     {
-        assumeDatabaseSupportsBookmarks();
-
         String bookmarkBefore = session.lastBookmark();
 
         await( session.beginTransactionAsync()
@@ -970,7 +788,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException
+    void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
@@ -979,290 +797,169 @@ public class TransactionAsyncIT
         tx.runAsync( "RETURN 10 / 0" );
         tx.runAsync( "CREATE (:TestNode)" );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "/ by zero", e.getMessage() );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertEquals( "/ by zero", e.getMessage() );
     }
 
     @Test
-    public void shouldPropagateRunFailureFromCommit()
+    void shouldPropagateRunFailureFromCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         tx.runAsync( "RETURN ILLEGAL" );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
     }
 
     @Test
-    public void shouldPropagateBlockedRunFailureFromCommit()
+    void shouldPropagateBlockedRunFailureFromCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         await( tx.runAsync( "RETURN 42 / 0" ) );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldPropagateRunFailureFromRollback()
+    void shouldPropagateRunFailureFromRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         tx.runAsync( "RETURN ILLEGAL" );
 
-        try
-        {
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
     }
 
     @Test
-    public void shouldPropagateBlockedRunFailureFromRollback()
+    void shouldPropagateBlockedRunFailureFromRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         await( tx.runAsync( "RETURN 42 / 0" ) );
 
-        try
-        {
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
     @Test
-    public void shouldPropagatePullAllFailureFromCommit()
+    void shouldPropagatePullAllFailureFromCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "TypeError" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.code(), containsString( "TypeError" ) );
     }
 
     @Test
-    public void shouldPropagateBlockedPullAllFailureFromCommit()
+    void shouldPropagateBlockedPullAllFailureFromCommit()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         await( tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" ) );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "TypeError" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.code(), containsString( "TypeError" ) );
     }
 
     @Test
-    public void shouldPropagatePullAllFailureFromRollback()
+    void shouldPropagatePullAllFailureFromRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" );
 
-        try
-        {
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "TypeError" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.code(), containsString( "TypeError" ) );
     }
 
     @Test
-    public void shouldPropagateBlockedPullAllFailureFromRollback()
+    void shouldPropagateBlockedPullAllFailureFromRollback()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         await( tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" ) );
 
-        try
-        {
-            await( tx.rollbackAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "TypeError" ) );
-        }
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.code(), containsString( "TypeError" ) );
     }
 
     @Test
-    public void shouldFailToCommitWhenRunFailureIsConsumed()
+    void shouldFailToCommitWhenRunFailureIsConsumed()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "SyntaxError" ) );
-        }
+        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        assertThat( e1.code(), containsString( "SyntaxError" ) );
 
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Transaction rolled back" ) );
-        }
+        ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e2.getMessage(), startsWith( "Transaction rolled back" ) );
     }
 
     @Test
-    public void shouldFailToCommitWhenPullAllFailureIsConsumed()
+    void shouldFailToCommitWhenPullAllFailureIsConsumed()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync(
                 "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" ) );
 
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "TypeError" ) );
-        }
-        try
-        {
-            await( tx.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), startsWith( "Transaction rolled back" ) );
-        }
+        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        assertThat( e1.code(), containsString( "TypeError" ) );
+
+        ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e2.getMessage(), startsWith( "Transaction rolled back" ) );
     }
 
     @Test
-    public void shouldRollbackWhenRunFailureIsConsumed()
+    void shouldRollbackWhenRunFailureIsConsumed()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "SyntaxError" ) );
-        }
-
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        assertThat( e.code(), containsString( "SyntaxError" ) );
         assertNull( await( tx.rollbackAsync() ) );
     }
 
     @Test
-    public void shouldRollbackWhenPullAllFailureIsConsumed()
+    void shouldRollbackWhenPullAllFailureIsConsumed()
     {
         Transaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 5 / x" ) );
 
-        try
-        {
-            await( cursor.consumeAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
-        }
-
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
         assertNull( await( tx.rollbackAsync() ) );
     }
 
     @Test
-    public void shouldPropagateFailureFromSummary()
+    void shouldPropagateFailureFromSummary()
     {
         Transaction tx = await( session.beginTransactionAsync() );
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        try
-        {
-            await( cursor.summaryAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertThat( e.code(), containsString( "SyntaxError" ) );
-        }
-
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        assertThat( e.code(), containsString( "SyntaxError" ) );
         assertNotNull( await( cursor.summaryAsync() ) );
     }
 
     @Test
-    public void shouldFailToExecuteBlockingRunChainedWithAsyncTransaction()
+    void shouldFailToExecuteBlockingRunChainedWithAsyncTransaction()
     {
         CompletionStage<Void> result = session.beginTransactionAsync()
                 .thenApply( tx ->
                 {
                     if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
                     {
-                        try
-                        {
-                            tx.run( "CREATE ()" );
-                            fail( "Exception expected" );
-                        }
-                        catch ( IllegalStateException e )
-                        {
-                            assertThat( e, is( blockingOperationInEventLoopError() ) );
-                        }
+                        IllegalStateException e = assertThrows( IllegalStateException.class, () -> tx.run( "CREATE ()" ) );
+                        assertThat( e, is( blockingOperationInEventLoopError() ) );
                     }
                     return null;
                 } );
@@ -1271,7 +968,7 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldAllowUsingBlockingApiInCommonPoolWhenChaining()
+    void shouldAllowUsingBlockingApiInCommonPoolWhenChaining()
     {
         CompletionStage<Transaction> txStage = session.beginTransactionAsync()
                 // move execution to ForkJoinPool.commonPool()
@@ -1293,21 +990,14 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated()
+    void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated()
     {
         Transaction tx1 = await( session.beginTransactionAsync() );
         ((ExplicitTransaction) tx1).markTerminated();
 
-        try
-        {
-            // commit should fail, make session forget about this transaction and release the connection to the pool
-            await( tx1.commitAsync() );
-            fail( "Exception expected" );
-        }
-        catch ( ClientException e )
-        {
-            assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
-        }
+        // commit should fail, make session forget about this transaction and release the connection to the pool
+        ClientException e = assertThrows( ClientException.class, () -> await( tx1.commitAsync() ) );
+        assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
 
         await( session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "CREATE (:Node {id: 42})" )
@@ -1319,13 +1009,13 @@ public class TransactionAsyncIT
     }
 
     @Test
-    public void shouldPropagateCommitFailureAfterFatalError()
+    void shouldPropagateCommitFailureAfterFatalError()
     {
         testCommitAndRollbackFailurePropagation( true );
     }
 
     @Test
-    public void shouldPropagateRollbackFailureAfterFatalError()
+    void shouldPropagateRollbackFailureAfterFatalError()
     {
         testCommitAndRollbackFailurePropagation( false );
     }
@@ -1404,22 +1094,9 @@ public class TransactionAsyncIT
                 CompletionStage<Void> commitOrRollback = commit ? tx.commitAsync() : tx.rollbackAsync();
 
                 // commit/rollback should fail and propagate the network error
-                try
-                {
-                    await( commitOrRollback );
-                    fail( "Exception expected" );
-                }
-                catch ( ServiceUnavailableException e )
-                {
-                    assertEquals( ioError, e.getCause() );
-                }
+                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( commitOrRollback ) );
+                assertEquals( ioError, e.getCause() );
             }
         }
-    }
-
-    private void assumeDatabaseSupportsBookmarks()
-    {
-        assumeTrue( "Neo4j " + neo4j.version() + " does not support bookmarks",
-                neo4j.version().greaterThanOrEqual( v3_1_0 ) );
     }
 }

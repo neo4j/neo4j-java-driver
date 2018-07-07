@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 
 import java.nio.file.Files;
 
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.tck.tck.util.DatabaseRule;
 
 /**
  * The base class to run all cucumber tests
@@ -36,7 +36,7 @@ import org.neo4j.driver.v1.util.TestNeo4j;
 public class DriverComplianceIT
 {
     @ClassRule
-    public static TestNeo4j neo4j = new TestNeo4j();
+    public static final DatabaseRule neo4j = new DatabaseRule();
 
     @AfterClass
     public static void tearDownClass() throws Exception

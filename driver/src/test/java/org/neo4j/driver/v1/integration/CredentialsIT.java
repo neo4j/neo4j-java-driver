@@ -18,14 +18,12 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.File;
-import java.util.HashMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Map;
 
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.AuthToken;
@@ -37,59 +35,63 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jSettings;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.AuthTokens.custom;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 
-public class CredentialsIT
+class CredentialsIT
 {
-    @ClassRule
-    public static TemporaryFolder tempDir = new TemporaryFolder( new File( "target" ) );
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
-    @ClassRule
-    public static TestNeo4j neo4j = new TestNeo4j();
-
-    private static final String PASSWORD = "secret";
-
-    @BeforeClass
-    public static void enableAuth() throws Exception
+    @Test
+    void shouldBePossibleToChangePassword() throws Exception
     {
+        String newPassword = "secret";
+        String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString();
+
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.DATA_DIR, tempDir.getRoot().getAbsolutePath().replace( "\\", "/" ) ) );
+                .updateWith( Neo4jSettings.DATA_DIR, tmpDataDir ) );
 
-        InternalAuthToken authToken = new InternalAuthToken( parameters(
+        AuthToken authToken = new InternalAuthToken( parameters(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j",
-                "new_credentials", PASSWORD ).asMap( ofValue() ) );
+                "new_credentials", newPassword ).asMap( ofValue() ) );
 
+        // change the password
         try ( Driver driver = GraphDatabase.driver( neo4j.uri(), authToken );
               Session session = driver.session() )
         {
             session.run( "RETURN 1" ).consume();
         }
-    }
 
-    @AfterClass
-    public static void restartWithDefaultSettings()
-    {
-        // restart after the test to prevent TemporaryFolder rule from cleaning up files of a running database
-        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS );
+        // verify old password does not work
+        assertThrows( AuthenticationException.class,
+                () -> GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", PASSWORD ) ) );
+
+        // verify new password works
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
+              Session session = driver.session() )
+        {
+            session.run( "RETURN 2" ).consume();
+        }
     }
 
     @Test
-    public void basicCredentialsShouldWork() throws Throwable
+    void basicCredentialsShouldWork()
     {
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
@@ -102,24 +104,21 @@ public class CredentialsIT
     }
 
     @Test
-    public void shouldGetHelpfulErrorOnInvalidCredentials() throws Throwable
+    void shouldGetHelpfulErrorOnInvalidCredentials()
     {
-        // When
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), basic( "thisisnotthepassword", PASSWORD ) );
-              Session session = driver.session() )
+        SecurityException e = assertThrows( SecurityException.class, () ->
         {
-            session.run( "RETURN 1" );
-            fail( "Should fail with an auth error already" );
-        }
-        catch ( Throwable e )
-        {
-            assertThat( e, instanceOf( SecurityException.class ) );
-            assertThat( e.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
-        }
+            try ( Driver driver = GraphDatabase.driver( neo4j.uri(), basic( "thisisnotthepassword", PASSWORD ) );
+                  Session session = driver.session() )
+            {
+                session.run( "RETURN 1" );
+            }
+        } );
+        assertThat( e.getMessage(), containsString( "The client is unauthorized due to authentication failure." ) );
     }
 
     @Test
-    public void shouldBeAbleToProvideRealmWithBasicAuth() throws Throwable
+    void shouldBeAbleToProvideRealmWithBasicAuth()
     {
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
@@ -132,7 +131,7 @@ public class CredentialsIT
     }
 
     @Test
-    public void shouldBeAbleToConnectWithCustomToken() throws Throwable
+    void shouldBeAbleToConnectWithCustomToken()
     {
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
@@ -145,14 +144,13 @@ public class CredentialsIT
     }
 
     @Test
-    public void shouldBeAbleToConnectWithCustomTokenWithAdditionalParameters() throws Throwable
+    void shouldBeAbleToConnectWithCustomTokenWithAdditionalParameters()
     {
-        HashMap<String,Object> parameters = new HashMap<>();
-        parameters.put( "secret", 16 );
+        Map<String,Object> params = singletonMap( "secret", 16 );
 
         // When & Then
         try( Driver driver = GraphDatabase.driver( neo4j.uri(),
-                custom( "neo4j", PASSWORD, "native", "basic", parameters ) );
+                custom( "neo4j", PASSWORD, "native", "basic", params ) );
              Session session = driver.session() )
         {
             Value single = session.run( "CREATE () RETURN 1" ).single().get( 0 );
@@ -161,13 +159,13 @@ public class CredentialsIT
     }
 
     @Test
-    public void directDriverShouldFailEarlyOnWrongCredentials()
+    void directDriverShouldFailEarlyOnWrongCredentials()
     {
         testDriverFailureOnWrongCredentials( "bolt://localhost" );
     }
 
     @Test
-    public void routingDriverShouldFailEarlyOnWrongCredentials()
+    void routingDriverShouldFailEarlyOnWrongCredentials()
     {
         testDriverFailureOnWrongCredentials( "bolt+routing://localhost" );
     }
@@ -177,14 +175,6 @@ public class CredentialsIT
         Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrongSecret" );
 
-        try
-        {
-            GraphDatabase.driver( uri, authToken, config );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( AuthenticationException.class ) );
-        }
+        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( uri, authToken, config ) );
     }
 }

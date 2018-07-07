@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -30,20 +30,20 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class StatementIT
+class StatementIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldRunWithResult() throws Throwable
+    void shouldRunWithResult()
     {
         // When I execute a statement that yields a result
         List<Record> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).list();
@@ -67,7 +67,7 @@ public class StatementIT
     }
 
     @Test
-    public void shouldRunWithParameters() throws Throwable
+    void shouldRunWithParameters()
     {
         // When
         session.run( "CREATE (n:FirstNode {name:{name}})", parameters( "name", "Steven" ) );
@@ -77,7 +77,7 @@ public class StatementIT
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void shouldRunWithNullValuesAsParameters() throws Throwable
+    void shouldRunWithNullValuesAsParameters()
     {
         // Given
         Value params = null;
@@ -90,7 +90,7 @@ public class StatementIT
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void shouldRunWithNullRecordAsParameters() throws Throwable
+    void shouldRunWithNullRecordAsParameters()
     {
         // Given
         Record params = null;
@@ -103,7 +103,7 @@ public class StatementIT
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void shouldRunWithNullMapAsParameters() throws Throwable
+    void shouldRunWithNullMapAsParameters()
     {
         // Given
         Map<String, Object> params = null;
@@ -115,7 +115,7 @@ public class StatementIT
     }
 
     @Test
-    public void shouldRunWithCollectionAsParameter() throws Throwable
+    void shouldRunWithCollectionAsParameter()
     {
         // When
         session.run( "RETURN {param}", parameters( "param", Collections.singleton( "FOO" ) ) );
@@ -124,7 +124,7 @@ public class StatementIT
     }
 
     @Test
-    public void shouldRunWithIteratorAsParameter() throws Throwable
+    void shouldRunWithIteratorAsParameter()
     {
         Iterator<String> values = asList( "FOO", "BAR", "BAZ" ).iterator();
         // When
@@ -134,7 +134,7 @@ public class StatementIT
     }
 
     @Test
-    public void shouldRun() throws Throwable
+    void shouldRun()
     {
         // When
         session.run( "CREATE (n:FirstNode)" );
@@ -143,7 +143,7 @@ public class StatementIT
     }
 
     @Test
-    public void shouldRunParameterizedWithResult() throws Throwable
+    void shouldRunParameterizedWithResult()
     {
         // When
         List<Record> result =
@@ -155,7 +155,7 @@ public class StatementIT
 
     @SuppressWarnings({"StatementWithEmptyBody", "ConstantConditions"})
     @Test
-    public void shouldRunSimpleStatement() throws Throwable
+    void shouldRunSimpleStatement()
     {
         // When I run a simple write statement
         session.run( "CREATE (a {name:'Adam'})" );

@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Config;
@@ -31,62 +31,62 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.Neo4jSettings.BoltTlsLevel;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 
-public class EncryptionIT
+class EncryptionIT
 {
-    @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private ServerVersion neo4jVersion;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         neo4jVersion = neo4j.version();
     }
 
     @Test
-    public void shouldOperateWithNoEncryptionWhenItIsOptionalInTheDatabase()
+    void shouldOperateWithNoEncryptionWhenItIsOptionalInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.OPTIONAL, false );
     }
 
     @Test
-    public void shouldOperateWithEncryptionWhenItIsOptionalInTheDatabase()
+    void shouldOperateWithEncryptionWhenItIsOptionalInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.OPTIONAL, true );
     }
 
     @Test
-    public void shouldFailWithoutEncryptionWhenItIsRequiredInTheDatabase()
+    void shouldFailWithoutEncryptionWhenItIsRequiredInTheDatabase()
     {
         testMismatchingEncryption( BoltTlsLevel.REQUIRED, false );
     }
 
     @Test
-    public void shouldOperateWithEncryptionWhenItIsAlsoRequiredInTheDatabase()
+    void shouldOperateWithEncryptionWhenItIsAlsoRequiredInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.REQUIRED, true );
     }
 
     @Test
-    public void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase()
+    void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase()
     {
         testMismatchingEncryption( BoltTlsLevel.DISABLED, true );
     }
 
     @Test
-    public void shouldOperateWithoutEncryptionWhenItIsAlsoDisabledInTheDatabase()
+    void shouldOperateWithoutEncryptionWhenItIsAlsoDisabledInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.DISABLED, false );
     }
@@ -116,24 +116,19 @@ public class EncryptionIT
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString() ) );
         Config config = newConfig( driverEncrypted );
 
-        try
+        RuntimeException e = assertThrows( RuntimeException.class,
+                () -> GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).close() );
+
+        // pre 3.1 neo4j throws different exception when encryption required but not used
+        if ( neo4jVersion.lessThan( v3_1_0 ) && tlsLevel == BoltTlsLevel.REQUIRED )
         {
-            GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).close();
-            fail( "Exception expected" );
+            assertThat( e, instanceOf( ClientException.class ) );
+            assertThat( e.getMessage(), startsWith( "This server requires a TLS encrypted connection" ) );
         }
-        catch ( RuntimeException e )
+        else
         {
-            // pre 3.1 neo4j throws different exception when encryption required but not used
-            if ( neo4jVersion.lessThan( v3_1_0 ) && tlsLevel == BoltTlsLevel.REQUIRED )
-            {
-                assertThat( e, instanceOf( ClientException.class ) );
-                assertThat( e.getMessage(), startsWith( "This server requires a TLS encrypted connection" ) );
-            }
-            else
-            {
-                assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-                assertThat( e.getMessage(), startsWith( "Connection to the database terminated" ) );
-            }
+            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
+            assertThat( e.getMessage(), startsWith( "Connection to the database terminated" ) );
         }
     }
 

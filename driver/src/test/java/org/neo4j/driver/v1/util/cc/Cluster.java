@@ -37,8 +37,6 @@ import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.TestUtil.sleep;
 
@@ -82,14 +80,20 @@ public class Cluster implements AutoCloseable
         // execute write query to remove all nodes and retrieve bookmark
         Driver driverToLeader = clusterDrivers.getDriver( leader() );
         String bookmark = TestUtil.cleanDb( driverToLeader );
-        assertNotNull( "Cleanup of the database did not produce a bookmark", bookmark );
+        if ( bookmark == null )
+        {
+            throw new IllegalStateException( "Cleanup of the database did not produce a bookmark" );
+        }
 
         // ensure that every cluster member is up-to-date and contains no nodes
         for ( ClusterMember member : members )
         {
             Driver driver = clusterDrivers.getDriver( member );
             long nodeCount = TestUtil.countNodes( driver, bookmark );
-            assertEquals( "Not all nodes have been deleted. " + nodeCount + " still there somehow ", 0L, nodeCount );
+            if ( nodeCount != 0 )
+            {
+                throw new IllegalStateException( "Not all nodes have been deleted. " + nodeCount + " still there somehow" );
+            }
         }
     }
 

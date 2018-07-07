@@ -23,10 +23,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,36 +45,36 @@ import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ChannelConnectorImplIT
+class ChannelConnectorImplIT
 {
-    @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private Bootstrap bootstrap;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         bootstrap = BootstrapFactory.newBootstrap( 1 );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( bootstrap != null )
         {
@@ -83,7 +83,7 @@ public class ChannelConnectorImplIT
     }
 
     @Test
-    public void shouldConnect() throws Exception
+    void shouldConnect() throws Exception
     {
         ChannelConnector connector = newConnector( neo4j.authToken() );
 
@@ -96,7 +96,7 @@ public class ChannelConnectorImplIT
     }
 
     @Test
-    public void shouldSetupHandlers() throws Exception
+    void shouldSetupHandlers() throws Exception
     {
         ChannelConnector connector = newConnector( neo4j.authToken(), trustAllCertificates(), 10_000 );
 
@@ -112,7 +112,7 @@ public class ChannelConnectorImplIT
     }
 
     @Test
-    public void shouldFailToConnectToWrongAddress() throws Exception
+    void shouldFailToConnectToWrongAddress() throws Exception
     {
         ChannelConnector connector = newConnector( neo4j.authToken() );
 
@@ -120,22 +120,15 @@ public class ChannelConnectorImplIT
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
         Channel channel = channelFuture.channel();
 
-        try
-        {
-            channelFuture.get();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getCause().getMessage(), startsWith( "Unable to connect" ) );
-        }
+        ExecutionException e = assertThrows( ExecutionException.class, channelFuture::get );
+
+        assertThat( e.getCause(), instanceOf( ServiceUnavailableException.class ) );
+        assertThat( e.getCause().getMessage(), startsWith( "Unable to connect" ) );
         assertFalse( channel.isActive() );
     }
 
     @Test
-    public void shouldFailToConnectWithWrongCredentials() throws Exception
+    void shouldFailToConnectWithWrongCredentials() throws Exception
     {
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrong-password" );
         ChannelConnector connector = newConnector( authToken );
@@ -144,54 +137,38 @@ public class ChannelConnectorImplIT
         assertTrue( channelFuture.await( 10, TimeUnit.SECONDS ) );
         Channel channel = channelFuture.channel();
 
-        try
-        {
-            channelFuture.get();
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ExecutionException.class ) );
-            assertThat( e.getCause(), instanceOf( AuthenticationException.class ) );
-        }
+        ExecutionException e = assertThrows( ExecutionException.class, channelFuture::get );
+        assertThat( e.getCause(), instanceOf( AuthenticationException.class ) );
         assertFalse( channel.isActive() );
     }
 
     @Test
-    public void shouldEnforceConnectTimeout() throws Exception
+    void shouldEnforceConnectTimeout() throws Exception
     {
         ChannelConnector connector = newConnector( neo4j.authToken(), 1000 );
 
         // try connect to a non-routable ip address 10.0.0.0, it will never respond
         ChannelFuture channelFuture = connector.connect( new BoltServerAddress( "10.0.0.0" ), bootstrap );
 
-        try
-        {
-            await( channelFuture );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-        }
+        assertThrows( ServiceUnavailableException.class, () -> await( channelFuture ) );
     }
 
     @Test
-    public void shouldFailWhenProtocolNegotiationTakesTooLong() throws Exception
+    void shouldFailWhenProtocolNegotiationTakesTooLong() throws Exception
     {
         // run without TLS so that Bolt handshake is the very first operation after connection is established
         testReadTimeoutOnConnect( SecurityPlan.insecure() );
     }
 
     @Test
-    public void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception
+    void shouldFailWhenTLSHandshakeTakesTooLong() throws Exception
     {
         // run with TLS so that TLS handshake is the very first operation after connection is established
         testReadTimeoutOnConnect( trustAllCertificates() );
     }
 
     @Test
-    public void shouldThrowServiceUnavailableExceptionOnFailureDuringConnect() throws Exception
+    void shouldThrowServiceUnavailableExceptionOnFailureDuringConnect() throws Exception
     {
         ServerSocket server = new ServerSocket( 0 );
         BoltServerAddress address = new BoltServerAddress( "localhost", server.getLocalPort() );
@@ -216,14 +193,7 @@ public class ChannelConnectorImplIT
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
 
         // connect operation should fail with ServiceUnavailableException
-        try
-        {
-            await( channelFuture );
-            fail( "Exception expected" );
-        }
-        catch ( ServiceUnavailableException ignore )
-        {
-        }
+        assertThrows( ServiceUnavailableException.class, () -> await( channelFuture ) );
     }
 
     private void testReadTimeoutOnConnect( SecurityPlan securityPlan ) throws IOException
@@ -235,15 +205,9 @@ public class ChannelConnectorImplIT
             ChannelConnector connector = newConnector( neo4j.authToken(), securityPlan, timeoutMillis );
 
             ChannelFuture channelFuture = connector.connect( address, bootstrap );
-            try
-            {
-                await( channelFuture );
-                fail( "Exception expected" );
-            }
-            catch ( ServiceUnavailableException e )
-            {
-                assertEquals( e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
-            }
+
+            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( channelFuture ) );
+            assertEquals( e.getMessage(), "Unable to establish connection in " + timeoutMillis + "ms" );
         }
     }
 

@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver.v1.util.cc;
 
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.net.URI;
 
@@ -31,15 +34,15 @@ import org.neo4j.driver.v1.util.TestUtil;
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
-public class LocalOrRemoteClusterRule extends ExternalResource
+public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
     private static final String CLUSTER_URI_SYSTEM_PROPERTY_NAME = "externalClusterUri";
     private static final String NEO4J_USER_PASSWORD_PROPERTY_NAME = "neo4jUserPassword";
 
-    private ClusterRule localClusterRule;
+    private ClusterExtension localClusterExtension;
     private URI clusterUri;
 
-    public LocalOrRemoteClusterRule()
+    public LocalOrRemoteClusterExtension()
     {
         assertValidSystemPropertiesDefined();
     }
@@ -51,50 +54,63 @@ public class LocalOrRemoteClusterRule extends ExternalResource
 
     public AuthToken getAuthToken()
     {
-        if ( externalClusterExists() )
+        if ( remoteClusterExists() )
         {
             return AuthTokens.basic( "neo4j", neo4jUserPasswordFromSystemProperty() );
         }
-        return localClusterRule.getDefaultAuthToken();
+        return localClusterExtension.getDefaultAuthToken();
     }
 
     @Override
-    protected void before() throws Throwable
+    public void beforeAll( ExtensionContext context ) throws Exception
     {
-        if ( externalClusterExists() )
+        if ( remoteClusterExists() )
         {
-            clusterUri = externalClusterUriFromSystemProperty();
+            clusterUri = remoteClusterUriFromSystemProperty();
+            deleteDataInRemoteCluster();
         }
         else
         {
-            localClusterRule = new ClusterRule();
-            localClusterRule.before();
-            clusterUri = localClusterRule.getCluster().leader().getRoutingUri();
+            localClusterExtension = new ClusterExtension();
+            localClusterExtension.beforeAll( context );
+            clusterUri = localClusterExtension.getCluster().leader().getRoutingUri();
         }
     }
 
     @Override
-    protected void after()
+    public void afterEach( ExtensionContext context )
     {
-        if ( externalClusterExists() )
+        if ( remoteClusterExists() )
         {
-            DriverFactoryWithOneEventLoopThread driverFactory = new DriverFactoryWithOneEventLoopThread();
-            try ( Driver driver = driverFactory.newInstance( getClusterUri(), getAuthToken(), defaultConfig() ) )
-            {
-                TestUtil.cleanDb( driver );
-            }
+            deleteDataInRemoteCluster();
         }
         else
         {
-            localClusterRule.after();
-            localClusterRule = null;
+            localClusterExtension.afterEach( context );
         }
-        clusterUri = null;
+    }
+
+    @Override
+    public void afterAll( ExtensionContext context )
+    {
+        if ( !remoteClusterExists() )
+        {
+            localClusterExtension.afterAll( context );
+        }
+    }
+
+    private void deleteDataInRemoteCluster()
+    {
+        DriverFactoryWithOneEventLoopThread driverFactory = new DriverFactoryWithOneEventLoopThread();
+        try ( Driver driver = driverFactory.newInstance( getClusterUri(), getAuthToken(), defaultConfig() ) )
+        {
+            TestUtil.cleanDb( driver );
+        }
     }
 
     private static void assertValidSystemPropertiesDefined()
     {
-        URI uri = externalClusterUriFromSystemProperty();
+        URI uri = remoteClusterUriFromSystemProperty();
         String password = neo4jUserPasswordFromSystemProperty();
         if ( (uri != null && password == null) || (uri == null && password != null) )
         {
@@ -108,12 +124,12 @@ public class LocalOrRemoteClusterRule extends ExternalResource
         }
     }
 
-    private static boolean externalClusterExists()
+    private static boolean remoteClusterExists()
     {
-        return externalClusterUriFromSystemProperty() != null;
+        return remoteClusterUriFromSystemProperty() != null;
     }
 
-    private static URI externalClusterUriFromSystemProperty()
+    private static URI remoteClusterUriFromSystemProperty()
     {
         String uri = System.getProperty( CLUSTER_URI_SYSTEM_PROPERTY_NAME );
         return uri == null ? null : URI.create( uri );

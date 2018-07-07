@@ -36,7 +36,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
@@ -76,7 +76,7 @@ public class Neo4jRunner
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
     {
-        assumeTrue( "BoltKit support unavailable", boltKitAvailable() );
+        assumeTrue( boltKitAvailable(), "BoltKit support unavailable" );
         if ( globalInstance == null )
         {
             globalInstance = new Neo4jRunner();

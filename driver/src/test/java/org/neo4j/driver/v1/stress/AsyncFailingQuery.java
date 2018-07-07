@@ -27,8 +27,8 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResultCursor;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 
 public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQuery<C>

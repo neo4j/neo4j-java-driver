@@ -18,9 +18,9 @@
  */
 package org.neo4j.docs.driver;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,13 +32,11 @@ import java.util.UUID;
 
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StdIOCapture;
-import org.neo4j.driver.v1.util.TestNeo4j;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,18 +47,18 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ExamplesIT
+class ExamplesIT
 {
-    @ClassRule
-    public static TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private String uri;
 
@@ -68,14 +66,7 @@ public class ExamplesIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            return session.readTransaction( new TransactionWork<Integer>()
-            {
-                @Override
-                public Integer execute( Transaction tx )
-                {
-                    return tx.run( statement, parameters ).single().get( 0 ).asInt();
-                }
-            } );
+            return session.readTransaction( tx -> tx.run( statement, parameters ).single().get( 0 ).asInt() );
         }
     }
 
@@ -88,14 +79,10 @@ public class ExamplesIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            session.writeTransaction( new TransactionWork<Object>()
+            session.writeTransaction( tx ->
             {
-                @Override
-                public Object execute( Transaction tx )
-                {
-                    tx.run( statement, parameters );
-                    return null;
-                }
+                tx.run( statement, parameters );
+                return null;
             } );
         }
     }
@@ -115,15 +102,15 @@ public class ExamplesIT
         return readInt( "MATCH (a:Company {name: $name}) RETURN count(a)", parameters( "name", name ) );
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         uri = neo4j.uri().toString();
         TestUtil.cleanDb( neo4j.driver() );
     }
 
     @Test
-    public void testShouldRunAutocommitTransactionExample() throws Exception
+    void testShouldRunAutocommitTransactionExample() throws Exception
     {
         // Given
         try ( AutocommitTransactionExample example = new AutocommitTransactionExample( uri, USER, PASSWORD ) )
@@ -137,7 +124,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunAsyncAutocommitTransactionExample() throws Exception
+    void testShouldRunAsyncAutocommitTransactionExample() throws Exception
     {
         try ( AsyncAutocommitTransactionExample example = new AsyncAutocommitTransactionExample( uri, USER, PASSWORD ) )
         {
@@ -156,7 +143,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigConnectionPoolExample() throws Exception
+    void testShouldRunConfigConnectionPoolExample() throws Exception
     {
         // Given
         try ( ConfigConnectionPoolExample example = new ConfigConnectionPoolExample( uri, USER, PASSWORD ) )
@@ -167,7 +154,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigLoadBalancingStrategyExample() throws Exception
+    void testShouldRunConfigLoadBalancingStrategyExample() throws Exception
     {
         // Given
         try ( ConfigLoadBalancingStrategyExample example =
@@ -179,7 +166,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunBasicAuthExample() throws Exception
+    void testShouldRunBasicAuthExample() throws Exception
     {
         // Given
         try ( BasicAuthExample example = new BasicAuthExample( uri, USER, PASSWORD ) )
@@ -190,7 +177,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigConnectionTimeoutExample() throws Exception
+    void testShouldRunConfigConnectionTimeoutExample() throws Exception
     {
         // Given
         try ( ConfigConnectionTimeoutExample example = new ConfigConnectionTimeoutExample( uri, USER, PASSWORD ) )
@@ -201,7 +188,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigMaxRetryTimeExample() throws Exception
+    void testShouldRunConfigMaxRetryTimeExample() throws Exception
     {
         // Given
         try ( ConfigMaxRetryTimeExample example = new ConfigMaxRetryTimeExample( uri, USER, PASSWORD ) )
@@ -212,7 +199,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigTrustExample() throws Exception
+    void testShouldRunConfigTrustExample() throws Exception
     {
         // Given
         try ( ConfigTrustExample example = new ConfigTrustExample( uri, USER, PASSWORD ) )
@@ -223,7 +210,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunConfigUnencryptedExample() throws Exception
+    void testShouldRunConfigUnencryptedExample() throws Exception
     {
         // Given
         try ( ConfigUnencryptedExample example = new ConfigUnencryptedExample( uri, USER, PASSWORD ) )
@@ -234,7 +221,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunCypherErrorExample() throws Exception
+    void testShouldRunCypherErrorExample() throws Exception
     {
         // Given
         try ( CypherErrorExample example = new CypherErrorExample( uri, USER, PASSWORD ) )
@@ -255,7 +242,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunDriverLifecycleExample() throws Exception
+    void testShouldRunDriverLifecycleExample() throws Exception
     {
         // Given
         try ( DriverLifecycleExample example = new DriverLifecycleExample( uri, USER, PASSWORD ) )
@@ -266,7 +253,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunHelloWorld() throws Exception
+    void testShouldRunHelloWorld() throws Exception
     {
         // Given
         try ( HelloWorldExample greeter = new HelloWorldExample( uri, USER, PASSWORD ) )
@@ -286,7 +273,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunReadWriteTransactionExample() throws Exception
+    void testShouldRunReadWriteTransactionExample() throws Exception
     {
         // Given
         try ( ReadWriteTransactionExample example = new ReadWriteTransactionExample( uri, USER, PASSWORD ) )
@@ -300,7 +287,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunResultConsumeExample() throws Exception
+    void testShouldRunResultConsumeExample() throws Exception
     {
         // Given
         write( "CREATE (a:Person {name: 'Alice'})" );
@@ -316,7 +303,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunResultRetainExample() throws Exception
+    void testShouldRunResultRetainExample() throws Exception
     {
         // Given
         write( "CREATE (a:Person {name: 'Alice'})" );
@@ -334,7 +321,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunServiceUnavailableExample() throws Exception
+    void testShouldRunServiceUnavailableExample() throws Exception
     {
         // Given
         try ( ServiceUnavailableExample example = new ServiceUnavailableExample( uri, USER, PASSWORD ) )
@@ -355,7 +342,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunSessionExample() throws Exception
+    void testShouldRunSessionExample() throws Exception
     {
         // Given
         try ( SessionExample example = new SessionExample( uri, USER, PASSWORD ) )
@@ -370,7 +357,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunTransactionFunctionExample() throws Exception
+    void testShouldRunTransactionFunctionExample() throws Exception
     {
         // Given
         try ( TransactionFunctionExample example = new TransactionFunctionExample( uri, USER, PASSWORD ) )
@@ -384,7 +371,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testShouldRunAsyncTransactionFunctionExample() throws Exception
+    void testShouldRunAsyncTransactionFunctionExample() throws Exception
     {
         try ( AsyncTransactionFunctionExample example = new AsyncTransactionFunctionExample( uri, USER, PASSWORD ) )
         {
@@ -411,7 +398,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testPassBookmarksExample() throws Exception
+    void testPassBookmarksExample() throws Exception
     {
         try ( PassBookmarkExample example = new PassBookmarkExample( uri, USER, PASSWORD ) )
         {
@@ -439,7 +426,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testAsyncExplicitTransactionExample() throws Exception
+    void testAsyncExplicitTransactionExample() throws Exception
     {
         try ( AsyncExplicitTransactionExample example = new AsyncExplicitTransactionExample( uri, USER, PASSWORD ) )
         {
@@ -463,7 +450,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testSlf4jLogging() throws Exception
+    void testSlf4jLogging() throws Exception
     {
         // log file is defined in logback-test.xml configuration file
         Path logFile = Paths.get( "target", "test.log" );
@@ -484,7 +471,7 @@ public class ExamplesIT
     }
 
     @Test
-    public void testHostnameVerificationExample()
+    void testHostnameVerificationExample()
     {
         if ( neo4j.version().lessThanOrEqual( ServerVersion.v3_2_0 ) )
         {

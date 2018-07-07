@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
@@ -33,79 +33,53 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.TestNeo4j;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.TestInstance.Lifecycle;
 import static org.neo4j.driver.v1.Logging.none;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
-@RunWith( Enclosed.class )
-public class DriverCloseIT
+class DriverCloseIT
 {
     public abstract static class DriverCloseITBase
     {
         protected abstract Driver createDriver();
 
         @Test
-        public void isEncryptedThrowsForClosedDriver()
+        void isEncryptedThrowsForClosedDriver()
         {
             Driver driver = createDriver();
 
             driver.close();
 
-            try
-            {
-                driver.isEncrypted();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+            assertThrows( IllegalStateException.class, driver::isEncrypted );
         }
 
         @Test
-        public void sessionThrowsForClosedDriver()
+        void sessionThrowsForClosedDriver()
         {
             Driver driver = createDriver();
 
             driver.close();
 
-            try
-            {
-                driver.session();
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+            assertThrows( IllegalStateException.class, driver::session );
         }
 
         @Test
-        public void sessionWithModeThrowsForClosedDriver()
+        void sessionWithModeThrowsForClosedDriver()
         {
             Driver driver = createDriver();
 
             driver.close();
 
-            try
-            {
-                driver.session( AccessMode.WRITE );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+            assertThrows( IllegalStateException.class, () -> driver.session( AccessMode.WRITE ) );
         }
 
         @Test
-        public void closeClosedDriver()
+        void closeClosedDriver()
         {
             Driver driver = createDriver();
 
@@ -115,10 +89,12 @@ public class DriverCloseIT
         }
     }
 
-    public static class DirectDriverCloseIT extends DriverCloseITBase
+    @Nested
+    @TestInstance( Lifecycle.PER_CLASS )
+    public class DirectDriverCloseIT extends DriverCloseITBase
     {
-        @ClassRule
-        public static TestNeo4j neo4j = new TestNeo4j();
+        @RegisterExtension
+        public final DatabaseExtension neo4j = new DatabaseExtension();
 
         @Override
         protected Driver createDriver()
@@ -127,37 +103,30 @@ public class DriverCloseIT
         }
 
         @Test
-        public void useSessionAfterDriverIsClosed()
+        void useSessionAfterDriverIsClosed()
         {
             Driver driver = createDriver();
             Session session = driver.session();
 
             driver.close();
 
-            try
-            {
-                session.run( "create ()" );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
+            assertThrows( IllegalStateException.class, () -> session.run( "CREATE ()" ) );
         }
     }
 
-    public static class RoutingDriverCloseIT extends DriverCloseITBase
+    @Nested
+    public class RoutingDriverCloseIT extends DriverCloseITBase
     {
         private StubServer router;
 
-        @Before
-        public void setUp() throws Exception
+        @BeforeEach
+        void setUp() throws Exception
         {
             router = StubServer.start( "acquire_endpoints.script", 9001 );
         }
 
-        @After
-        public void tearDown() throws Exception
+        @AfterEach
+        void tearDown() throws Exception
         {
             if ( router != null )
             {
@@ -177,7 +146,7 @@ public class DriverCloseIT
         }
 
         @Test
-        public void useSessionAfterDriverIsClosed() throws Exception
+        void useSessionAfterDriverIsClosed() throws Exception
         {
             StubServer readServer = StubServer.start( "read_server.script", 9005 );
 
@@ -193,16 +162,7 @@ public class DriverCloseIT
 
             driver.close();
 
-            try
-            {
-                session.run( "MATCH (n) RETURN n.name" );
-                fail( "Exception expected" );
-            }
-            catch ( Exception e )
-            {
-                assertThat( e, instanceOf( IllegalStateException.class ) );
-            }
-
+            assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
             assertEquals( 0, readServer.exitStatus() );
         }
     }

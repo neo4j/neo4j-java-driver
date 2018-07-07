@@ -26,9 +26,8 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 
 public class FailedAuth<C extends AbstractContext> implements BlockingCommand<C>
@@ -47,15 +46,8 @@ public class FailedAuth<C extends AbstractContext> implements BlockingCommand<C>
     {
         Config config = Config.build().withLogging( logging ).toConfig();
 
-        try
-        {
-            GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( SecurityException.class ) );
-            assertThat( e.getMessage(), containsString( "authentication failure" ) );
-        }
+        SecurityException e = assertThrows( SecurityException.class,
+                () -> GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config ) );
+        assertThat( e.getMessage(), containsString( "authentication failure" ) );
     }
 }

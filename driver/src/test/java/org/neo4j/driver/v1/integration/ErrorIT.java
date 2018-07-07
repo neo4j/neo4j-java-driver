@@ -19,9 +19,8 @@
 package org.neo4j.driver.v1.integration;
 
 import io.netty.channel.Channel;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.net.URI;
@@ -45,42 +44,40 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 
-public class ErrorIT
+class ErrorIT
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldThrowHelpfulSyntaxError() throws Throwable
+    void shouldThrowHelpfulSyntaxError()
     {
-        // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( startsWith( "Invalid input") );
+        ClientException e = assertThrows( ClientException.class, () ->
+        {
+            StatementResult result = session.run( "invalid statement" );
+            result.consume();
+        } );
 
-        // When
-        StatementResult result = session.run( "invalid statement" );
-        result.consume();
+        assertThat( e.getMessage(), startsWith( "Invalid input" ) );
     }
 
     @Test
-    public void shouldNotAllowMoreTxAfterClientException() throws Throwable
+    void shouldNotAllowMoreTxAfterClientException()
     {
         // Given
         Transaction tx = session.beginTransaction();
@@ -89,17 +86,16 @@ public class ErrorIT
         try { tx.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // Expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Cannot run more statements in this transaction, " +
-                                 "because previous statements in the" );
-
-        // When
-        StatementResult cursor = tx.run( "RETURN 1" );
-        cursor.single().get( "1" ).asInt();
+        ClientException e = assertThrows( ClientException.class, () ->
+        {
+            StatementResult cursor = tx.run( "RETURN 1" );
+            cursor.single().get( "1" ).asInt();
+        } );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction, because previous statements in the" ) );
     }
 
     @Test
-    public void shouldAllowNewStatementAfterRecoverableError() throws Throwable
+    void shouldAllowNewStatementAfterRecoverableError()
     {
         // Given an error has occurred
         try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
@@ -113,7 +109,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldAllowNewTransactionAfterRecoverableError() throws Throwable
+    void shouldAllowNewTransactionAfterRecoverableError()
     {
         // Given an error has occurred in a prior transaction
         try ( Transaction tx = session.beginTransaction() )
@@ -134,17 +130,16 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldExplainConnectionError() throws Throwable
+    void shouldExplainConnectionError()
     {
-        exception.expect( ServiceUnavailableException.class );
-        exception.expectMessage( "Unable to connect to localhost:7777, ensure the database is running " +
-                                 "and that there is a working network connection to it." );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( "bolt://localhost:7777" ) );
 
-        GraphDatabase.driver( "bolt://localhost:7777" );
+        assertEquals( "Unable to connect to localhost:7777, ensure the database is running " +
+                      "and that there is a working network connection to it.", e.getMessage() );
     }
 
     @Test
-    public void shouldHandleFailureAtCommitTime() throws Throwable
+    void shouldHandleFailureAtCommitTime()
     {
         String label = UUID.randomUUID().toString();  // avoid clashes with other tests
 
@@ -160,33 +155,26 @@ public class ErrorIT
         tx.success();
 
         // then expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Label '" + label + "' and property 'name' have a unique " +
-                "constraint defined on them, so an index is already created that matches this." );
-
-        // when
-        tx.close();
-
+        ClientException e = assertThrows( ClientException.class, tx::close );
+        assertEquals( "Label '" + label + "' and property 'name' have a unique " +
+                      "constraint defined on them, so an index is already created that matches this.", e.getMessage() );
     }
 
     @Test
-    public void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable
+    void shouldGetHelpfulErrorWhenTryingToConnectToHttpPort() throws Throwable
     {
         //the http server needs some time to start up
         Thread.sleep( 2000 );
 
         Config config = Config.build().withoutEncryption().toConfig();
 
-        exception.expect( ClientException.class );
-        exception.expectMessage(
-                "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
-                "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
-
-        GraphDatabase.driver( "bolt://localhost:7474", config );
+        ClientException e = assertThrows( ClientException.class, () -> GraphDatabase.driver( "bolt://localhost:7474", config ) );
+        assertEquals( "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
+                      "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)", e.getMessage() );
     }
 
     @Test
-    public void shouldCloseChannelOnRuntimeExceptionInOutboundMessage() throws InterruptedException
+    void shouldCloseChannelOnRuntimeExceptionInOutboundMessage() throws InterruptedException
     {
         RuntimeException error = new RuntimeException( "Unable to encode message" );
         Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeWriterThrow( error ) );
@@ -195,7 +183,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldCloseChannelOnIOExceptionInOutboundMessage() throws InterruptedException
+    void shouldCloseChannelOnIOExceptionInOutboundMessage() throws InterruptedException
     {
         IOException error = new IOException( "Unable to write" );
         Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeWriterThrow( error ) );
@@ -206,7 +194,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldCloseChannelOnRuntimeExceptionInInboundMessage() throws InterruptedException
+    void shouldCloseChannelOnRuntimeExceptionInInboundMessage() throws InterruptedException
     {
         RuntimeException error = new RuntimeException( "Unable to decode message" );
         Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeReaderThrow( error ) );
@@ -215,7 +203,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldCloseChannelOnIOExceptionInInboundMessage() throws InterruptedException
+    void shouldCloseChannelOnIOExceptionInInboundMessage() throws InterruptedException
     {
         IOException error = new IOException( "Unable to read" );
         Throwable queryError = testChannelErrorHandling( messageFormat -> messageFormat.makeReaderThrow( error ) );
@@ -226,7 +214,7 @@ public class ErrorIT
     }
 
     @Test
-    public void shouldCloseChannelOnInboundFatalFailureMessage() throws InterruptedException
+    void shouldCloseChannelOnInboundFatalFailureMessage() throws InterruptedException
     {
         String errorCode = "Neo.ClientError.Request.Invalid";
         String errorMessage = "Very wrong request";

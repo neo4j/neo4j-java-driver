@@ -22,10 +22,10 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.ImmediateEventExecutor;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,17 +40,16 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.TestNeo4j;
+import org.neo4j.driver.v1.util.DatabaseExtension;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -62,31 +61,31 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class ConnectionPoolImplIT
+class ConnectionPoolImplIT
 {
     private static final BoltServerAddress ADDRESS_1 = new BoltServerAddress( "server:1" );
     private static final BoltServerAddress ADDRESS_2 = new BoltServerAddress( "server:2" );
     private static final BoltServerAddress ADDRESS_3 = new BoltServerAddress( "server:3" );
 
-    @Rule
-    public final TestNeo4j neo4j = new TestNeo4j();
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     private ConnectionPoolImpl pool;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         pool = newPool();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         pool.close();
     }
 
     @Test
-    public void shouldAcquireConnectionWhenPoolIsEmpty()
+    void shouldAcquireConnectionWhenPoolIsEmpty()
     {
         Connection connection = await( pool.acquire( neo4j.address() ) );
 
@@ -94,7 +93,7 @@ public class ConnectionPoolImplIT
     }
 
     @Test
-    public void shouldAcquireIdleConnection()
+    void shouldAcquireIdleConnection()
     {
         Connection connection1 = await( pool.acquire( neo4j.address() ) );
         await( connection1.release() );
@@ -104,48 +103,34 @@ public class ConnectionPoolImplIT
     }
 
     @Test
-    public void shouldFailToAcquireConnectionToWrongAddress()
+    void shouldFailToAcquireConnectionToWrongAddress()
     {
-        try
-        {
-            await( pool.acquire( new BoltServerAddress( "wrong-localhost" ) ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-            assertThat( e.getMessage(), startsWith( "Unable to connect" ) );
-        }
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
+                () -> await( pool.acquire( new BoltServerAddress( "wrong-localhost" ) ) ) );
+
+        assertThat( e.getMessage(), startsWith( "Unable to connect" ) );
     }
 
     @Test
-    public void shouldFailToAcquireWhenPoolClosed()
+    void shouldFailToAcquireWhenPoolClosed()
     {
         Connection connection = await( pool.acquire( neo4j.address() ) );
         await( connection.release() );
         await( pool.close() );
 
-        try
-        {
-            pool.acquire( neo4j.address() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-            assertThat( e.getMessage(), startsWith( "Pool closed" ) );
-        }
+        IllegalStateException e = assertThrows( IllegalStateException.class, () -> pool.acquire( neo4j.address() ) );
+        assertThat( e.getMessage(), startsWith( "Pool closed" ) );
     }
 
     @Test
-    public void shouldNotCloseWhenClosed()
+    void shouldNotCloseWhenClosed()
     {
         assertNull( await( pool.close() ) );
         assertTrue( pool.close().toCompletableFuture().isDone() );
     }
 
     @Test
-    public void shouldDoNothingWhenRetainOnEmptyPool()
+    void shouldDoNothingWhenRetainOnEmptyPool()
     {
         NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
         TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
@@ -156,7 +141,7 @@ public class ConnectionPoolImplIT
     }
 
     @Test
-    public void shouldRetainSpecifiedAddresses()
+    void shouldRetainSpecifiedAddresses()
     {
         NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
         TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
@@ -173,7 +158,7 @@ public class ConnectionPoolImplIT
     }
 
     @Test
-    public void shouldClosePoolsWhenRetaining()
+    void shouldClosePoolsWhenRetaining()
     {
         NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
         TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );
@@ -193,7 +178,7 @@ public class ConnectionPoolImplIT
     }
 
     @Test
-    public void shouldNotClosePoolsWithActiveConnectionsWhenRetaining()
+    void shouldNotClosePoolsWithActiveConnectionsWhenRetaining()
     {
         NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
         TestConnectionPool pool = new TestConnectionPool( nettyChannelTracker );

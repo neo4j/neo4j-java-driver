@@ -18,25 +18,25 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.util.TestNeo4jSession;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
-public class EntityTypeIT
+class EntityTypeIT
 {
-    @Rule
-    public TestNeo4jSession session = new TestNeo4jSession();
+    @RegisterExtension
+    static final SessionExtension session = new SessionExtension();
 
     @Test
-    public void shouldReturnIdentitiesOfNodes() throws Throwable
+    void shouldReturnIdentitiesOfNodes()
     {
         // When
         StatementResult cursor = session.run( "CREATE (n) RETURN n" );
@@ -47,7 +47,7 @@ public class EntityTypeIT
     }
 
     @Test
-    public void shouldReturnIdentitiesOfRelationships() throws Throwable
+    void shouldReturnIdentitiesOfRelationships()
     {
         // When
         StatementResult cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
@@ -60,7 +60,7 @@ public class EntityTypeIT
     }
 
     @Test
-    public void shouldReturnIdentitiesOfPaths() throws Throwable
+    void shouldReturnIdentitiesOfPaths()
     {
         // When
         StatementResult cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );

@@ -18,8 +18,7 @@
  */
 package org.neo4j.driver.v1.stress;
 
-import org.junit.AfterClass;
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -41,26 +40,20 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
-import org.neo4j.driver.v1.util.cc.ClusterRule;
-import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterRule;
+import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterExtension;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.neo4j.driver.internal.util.Neo4jFeature.READ_ON_FOLLOWERS_BY_DEFAULT;
 import static org.neo4j.driver.v1.util.cc.ClusterMember.SIMPLE_SCHEME;
 
-public class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
+class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
-    @Rule
-    public final LocalOrRemoteClusterRule clusterRule = new LocalOrRemoteClusterRule();
-
-    @AfterClass
-    public static void stopSharedCluster()
-    {
-        ClusterRule.stopSharedCluster();
-    }
+    @RegisterExtension
+    static final LocalOrRemoteClusterExtension clusterRule = new LocalOrRemoteClusterExtension();
 
     @Override
     URI databaseUri()
@@ -113,7 +106,8 @@ public class CausalClusteringStressIT extends AbstractStressTestBase<CausalClust
         ClusterAddresses clusterAddresses = fetchClusterAddresses( driver );
 
         // before 3.2.0 only read replicas serve reads
-        boolean readsOnFollowersEnabled = ServerVersion.version( driver ).greaterThanOrEqual( ServerVersion.v3_2_0 );
+        ServerVersion version = ServerVersion.version( driver );
+        boolean readsOnFollowersEnabled = READ_ON_FOLLOWERS_BY_DEFAULT.availableIn( version );
 
         if ( readsOnFollowersEnabled )
         {
