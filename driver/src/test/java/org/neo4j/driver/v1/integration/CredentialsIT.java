@@ -59,7 +59,7 @@ class CredentialsIT
     void shouldBePossibleToChangePassword() throws Exception
     {
         String newPassword = "secret";
-        String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString();
+        String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString().replace( "\\", "/" );
 
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
                 .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
