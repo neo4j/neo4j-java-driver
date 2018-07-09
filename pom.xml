@@ -10,10 +10,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
     <surefire.and.failsafe.version>2.22.0</surefire.and.failsafe.version>
-    <!-- JUnit 4 is required for TCK tests that use Cucumber, see https://github.com/cucumber/cucumber-jvm/issues/1149 -->
-    <junit4.version>4.12</junit4.version>
-    <junit5.version>5.2.0</junit5.version>
-    <junit5.surefire.version>1.2.0</junit5.surefire.version>
+    <junit.version>5.2.0</junit.version>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -88,21 +85,21 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${junit4.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit5.version}</version>
+        <artifactId>junit-jupiter-engine</artifactId>
+        <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-params</artifactId>
-        <version>${junit5.version}</version>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -347,23 +344,6 @@
         <configuration>
           <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-surefire-provider</artifactId>
-            <version>${junit5.surefire.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit5.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <version>${junit5.version}</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -380,23 +360,6 @@
             </goals>
           </execution>
         </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-surefire-provider</artifactId>
-            <version>${junit5.surefire.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit5.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <version>${junit5.version}</version>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>
