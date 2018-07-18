@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -106,17 +108,17 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldEnqueueRunHandlerFromEventLoopThread() throws Exception
+    void shouldEnqueueHandlersFromEventLoopThread() throws Exception
     {
         testWriteInEventLoop( "RunTestEventLoop",
-                connection -> connection.run( "RETURN 1", emptyMap(), NO_OP_HANDLER, NO_OP_HANDLER ) );
+                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PullAllMessage.PULL_ALL, NO_OP_HANDLER ) );
     }
 
     @Test
     void shouldWriteRunAndFlushInEventLoopThread() throws Exception
     {
         testWriteInEventLoop( "RunAndFlushTestEventLoop",
-                connection -> connection.runAndFlush( "RETURN 1", emptyMap(), NO_OP_HANDLER, NO_OP_HANDLER ) );
+                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PullAllMessage.PULL_ALL, NO_OP_HANDLER ) );
     }
 
     @Test
@@ -160,7 +162,7 @@ class NettyConnectionTest
         NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+        connection.write( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -175,7 +177,7 @@ class NettyConnectionTest
         NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -190,7 +192,7 @@ class NettyConnectionTest
         NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.run( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+        connection.write( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -205,7 +207,7 @@ class NettyConnectionTest
         NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.runAndFlush( "RETURN 1", emptyMap(), runHandler, pullAllHandler );
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );

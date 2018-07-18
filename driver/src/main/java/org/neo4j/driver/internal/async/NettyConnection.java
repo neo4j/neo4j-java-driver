@@ -98,22 +98,20 @@ public class NettyConnection implements Connection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler )
+    public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
-        if ( verifyOpen( runHandler, pullAllHandler ) )
+        if ( verifyOpen( handler1, handler2 ) )
         {
-            run( statement, parameters, runHandler, pullAllHandler, false );
+            writeMessagesInEventLoop( message1, handler1, message2, handler2, false );
         }
     }
 
     @Override
-    public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler )
+    public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
-        if ( verifyOpen( runHandler, pullAllHandler ) )
+        if ( verifyOpen( handler1, handler2 ) )
         {
-            run( statement, parameters, runHandler, pullAllHandler, true );
+            writeMessagesInEventLoop( message1, handler1, message2, handler2, true );
         }
     }
 

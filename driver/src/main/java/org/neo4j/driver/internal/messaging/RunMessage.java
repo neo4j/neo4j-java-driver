@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
@@ -36,10 +37,20 @@ public class RunMessage implements Message
     private final String statement;
     private final Map<String,Value> parameters;
 
+    public RunMessage( String statement )
+    {
+        this( statement, Collections.emptyMap() );
+    }
+
     public RunMessage( String statement, Map<String,Value> parameters )
     {
         this.statement = statement;
         this.parameters = parameters;
+    }
+
+    public String statement()
+    {
+        return statement;
     }
 
     @Override

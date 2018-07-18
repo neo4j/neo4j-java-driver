@@ -18,17 +18,16 @@
  */
 package org.neo4j.driver.internal.async;
 
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Value;
 
 public class RoutingConnection implements Connection
 {
@@ -56,19 +55,15 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler )
+    public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
-        delegate.run( statement, parameters, newRoutingResponseHandler( runHandler ),
-                newRoutingResponseHandler( pullAllHandler ) );
+        delegate.write( message1, newRoutingResponseHandler( handler1 ), message2, newRoutingResponseHandler( handler2 ) );
     }
 
     @Override
-    public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler )
+    public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
-        delegate.runAndFlush( statement, parameters, newRoutingResponseHandler( runHandler ),
-                newRoutingResponseHandler( pullAllHandler ) );
+        delegate.writeAndFlush( message1, newRoutingResponseHandler( handler1 ), message2, newRoutingResponseHandler( handler2 ) );
     }
 
     @Override

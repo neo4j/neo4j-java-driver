@@ -27,6 +27,8 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -55,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.atLeastOnce;
@@ -73,6 +76,7 @@ import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
+import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
 
 class NetworkSessionTest
 {
@@ -99,7 +103,7 @@ class NetworkSessionTest
     {
         session.run( "RETURN 1" );
 
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), any(), any(), any() );
     }
 
     @Test
@@ -145,7 +149,7 @@ class NetworkSessionTest
         session.run( "RETURN 1" );
 
         // Then
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), any(), any(), any() );
     }
 
     @Test
@@ -184,7 +188,7 @@ class NetworkSessionTest
         session.run( "RETURN 1" );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
     @Test
@@ -198,7 +202,7 @@ class NetworkSessionTest
         await( session.closeAsync() );
 
         InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).runAndFlush( eq( "RETURN 1" ), any(), any(), any() );
+        inOrder.verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         inOrder.verify( connection, atLeastOnce() ).release();
     }
 
@@ -256,7 +260,7 @@ class NetworkSessionTest
         tx.run( query );
 
         verify( connectionProvider ).acquireConnection( READ );
-        verify( connection ).runAndFlush( eq( query ), any(), any(), any() );
+        verify( connection ).writeAndFlush( eq( new RunMessage( query ) ), any(), any(), any() );
 
         tx.close();
         verify( connection ).release();
@@ -830,19 +834,19 @@ class NetworkSessionTest
 
     private static void verifyBeginTx( Connection connectionMock, VerificationMode mode )
     {
-        verify( connectionMock, mode ).run( eq( "BEGIN" ), any(), any(), any() );
+        verify( connectionMock, mode ).write( eq( new RunMessage( "BEGIN" ) ), any(), any(), any() );
     }
 
     private static void verifyBeginTx( Connection connectionMock, Bookmark bookmark )
     {
         if ( bookmark.isEmpty() )
         {
-            verify( connectionMock ).run( eq( "BEGIN" ), any(), any(), any() );
+            verify( connectionMock ).write( eq( new RunMessage( "BEGIN" ) ), any(), any(), any() );
         }
         else
         {
             Map<String,Value> params = bookmark.asBeginTransactionParameters();
-            verify( connectionMock ).runAndFlush( eq( "BEGIN" ), eq( params ), any(), any() );
+            verify( connectionMock ).writeAndFlush( eq( new RunMessage( "BEGIN", params ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         }
     }
 
@@ -858,7 +862,7 @@ class NetworkSessionTest
 
     private static void verifyRunAndFlush( Connection connectionMock, String statement, VerificationMode mode )
     {
-        verify( connectionMock, mode ).runAndFlush( eq( statement ), any(), any(), any() );
+        verify( connectionMock, mode ).writeAndFlush( eq( new RunMessage( statement ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
     private static Bookmark getBookmark( Transaction tx )
@@ -891,17 +895,17 @@ class NetworkSessionTest
                 }
                 return null;
             }
-        } ).when( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( eq( new RunMessage( "COMMIT" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
     private static void setupFailingBegin( Connection connection, Throwable error )
     {
-        doAnswer( (Answer<Void>) invocation ->
+        doAnswer( invocation ->
         {
             ResponseHandler handler = invocation.getArgument( 3 );
             handler.onFailure( error );
             return null;
-        } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
     private void setupSuccessfulPullAll( String query )
@@ -911,7 +915,7 @@ class NetworkSessionTest
             ResponseHandler pullAllHandler = invocation.getArgument( 3 );
             pullAllHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).runAndFlush( eq( query ), eq( emptyMap() ), any(), any() );
+        } ).when( connection ).writeAndFlush( eq( new RunMessage( query ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
     private static class TxWork implements TransactionWork<Integer>

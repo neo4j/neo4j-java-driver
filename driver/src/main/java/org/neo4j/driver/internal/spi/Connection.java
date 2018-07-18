@@ -18,12 +18,11 @@
  */
 package org.neo4j.driver.internal.spi;
 
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Value;
 
 public interface Connection
 {
@@ -33,11 +32,9 @@ public interface Connection
 
     void disableAutoRead();
 
-    void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler );
+    void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
 
-    void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler );
+    void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
 
     CompletionStage<Void> reset();
 

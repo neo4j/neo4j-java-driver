@@ -23,6 +23,8 @@ import org.mockito.InOrder;
 
 import java.util.function.Consumer;
 
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
@@ -34,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -42,6 +45,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
+import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
 
 class ExplicitTransactionTest
 {
@@ -57,8 +61,8 @@ class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( connection );
-        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        order.verify( connection ).writeAndFlush( eq( new RunMessage( "ROLLBACK" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         order.verify( connection ).release();
     }
 
@@ -76,8 +80,8 @@ class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( connection );
-        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).runAndFlush( eq( "ROLLBACK" ), any(), any(), any() );
+        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        order.verify( connection ).writeAndFlush( eq( new RunMessage( "ROLLBACK" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         order.verify( connection ).release();
     }
 
@@ -94,8 +98,8 @@ class ExplicitTransactionTest
 
         // Then
         InOrder order = inOrder( connection );
-        order.verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        order.verify( connection ).runAndFlush( eq( "COMMIT" ), any(), any(), any() );
+        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        order.verify( connection ).writeAndFlush( eq( new RunMessage( "COMMIT" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         order.verify( connection ).release();
     }
 
@@ -106,8 +110,8 @@ class ExplicitTransactionTest
 
         beginTx( connection, Bookmark.empty() );
 
-        verify( connection ).run( eq( "BEGIN" ), any(), any(), any() );
-        verify( connection, never() ).runAndFlush( any(), any(), any(), any() );
+        verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
     }
 
     @Test
@@ -118,8 +122,9 @@ class ExplicitTransactionTest
 
         beginTx( connection, bookmark );
 
-        verify( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
-        verify( connection, never() ).run( any(), any(), any(), any() );
+        RunMessage expectedRunMessage = new RunMessage( "BEGIN", bookmark.asBeginTransactionParameters() );
+        verify( connection ).writeAndFlush( eq( expectedRunMessage ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verify( connection, never() ).write( any(), any(), any(), any() );
     }
 
     @Test
@@ -302,7 +307,7 @@ class ExplicitTransactionTest
             ResponseHandler beginHandler = invocation.getArgument( 3 );
             beginBehaviour.accept( beginHandler );
             return null;
-        } ).when( connection ).runAndFlush( eq( "BEGIN" ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( "BEGIN" ) ), any(), any(), any() );
 
         return connection;
     }

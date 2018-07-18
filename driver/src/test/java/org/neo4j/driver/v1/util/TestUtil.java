@@ -20,10 +20,12 @@ package org.neo4j.driver.v1.util;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
+import org.mockito.ArgumentMatcher;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -34,6 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Driver;
@@ -49,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
@@ -269,6 +273,11 @@ public final class TestUtil
         return sb.toString();
     }
 
+    public static ArgumentMatcher<Message> runMessageWithStatementMatcher( String statement )
+    {
+        return message -> message instanceof RunMessage && Objects.equals( statement, ((RunMessage) message).statement() );
+    }
+
     private static void setupSuccessfulPullAll( Connection connection, String statement )
     {
         doAnswer( invocation ->
@@ -276,7 +285,7 @@ public final class TestUtil
             ResponseHandler commitHandler = invocation.getArgument( 3 );
             commitHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).runAndFlush( eq( statement ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( statement ) ), any(), any(), any() );
     }
 
     private static void cleanDb( Session session )

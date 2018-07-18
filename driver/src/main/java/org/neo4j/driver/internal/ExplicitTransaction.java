@@ -29,6 +29,9 @@ import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.PullAllMessage;
+import org.neo4j.driver.internal.messaging.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
@@ -39,7 +42,6 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -47,8 +49,10 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 public class ExplicitTransaction extends AbstractStatementRunner implements Transaction
 {
     private static final String BEGIN_QUERY = "BEGIN";
-    private static final String COMMIT_QUERY = "COMMIT";
-    private static final String ROLLBACK_QUERY = "ROLLBACK";
+
+    private static final Message BEGIN_MESSAGE = new RunMessage( BEGIN_QUERY );
+    private static final Message COMMIT_MESSAGE = new RunMessage( "COMMIT" );
+    private static final Message ROLLBACK_MESSAGE = new RunMessage( "ROLLBACK" );
 
     private enum State
     {
@@ -92,14 +96,17 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     {
         if ( initialBookmark.isEmpty() )
         {
-            connection.run( BEGIN_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, NoOpResponseHandler.INSTANCE );
+            connection.write(
+                    BEGIN_MESSAGE, NoOpResponseHandler.INSTANCE,
+                    PullAllMessage.PULL_ALL, NoOpResponseHandler.INSTANCE );
             return completedFuture( this );
         }
         else
         {
             CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
-            connection.runAndFlush( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters(),
-                    NoOpResponseHandler.INSTANCE, new BeginTxResponseHandler<>( beginFuture, this ) );
+            connection.writeAndFlush(
+                    new RunMessage( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
+                    PullAllMessage.PULL_ALL, new BeginTxResponseHandler<>( beginFuture, this ) );
 
             return beginFuture.handle( ( tx, beginError ) ->
             {
@@ -274,7 +281,9 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
 
         CompletableFuture<Void> commitFuture = new CompletableFuture<>();
         ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture, this );
-        connection.runAndFlush( COMMIT_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );
+        connection.writeAndFlush(
+                COMMIT_MESSAGE, NoOpResponseHandler.INSTANCE,
+                PullAllMessage.PULL_ALL, pullAllHandler );
         return commitFuture;
     }
 
@@ -287,7 +296,9 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
 
         CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
         ResponseHandler pullAllHandler = new RollbackTxResponseHandler( rollbackFuture );
-        connection.runAndFlush( ROLLBACK_QUERY, emptyMap(), NoOpResponseHandler.INSTANCE, pullAllHandler );
+        connection.writeAndFlush(
+                ROLLBACK_MESSAGE, NoOpResponseHandler.INSTANCE,
+                PullAllMessage.PULL_ALL, pullAllHandler );
         return rollbackFuture;
     }
 
