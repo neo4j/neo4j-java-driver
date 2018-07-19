@@ -23,8 +23,8 @@ import org.mockito.InOrder;
 
 import java.util.function.Consumer;
 
-import org.neo4j.driver.internal.messaging.PullAllMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;

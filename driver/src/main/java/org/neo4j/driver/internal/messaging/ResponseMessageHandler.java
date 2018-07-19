@@ -19,38 +19,17 @@
 package org.neo4j.driver.internal.messaging;
 
 import java.io.IOException;
+import java.util.Map;
 
-/**
- * IGNORED response message
- * <p>
- * Sent by the server to signal that an operation has been ignored.
- * Terminates response sequence.
- */
-public class IgnoredMessage implements Message
+import org.neo4j.driver.v1.Value;
+
+public interface ResponseMessageHandler
 {
-    public static final IgnoredMessage IGNORED = new IgnoredMessage();
+    void handleSuccessMessage( Map<String,Value> meta ) throws IOException;
 
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
-    {
-        handler.handleIgnoredMessage();
-    }
+    void handleRecordMessage( Value[] fields ) throws IOException;
 
-    @Override
-    public String toString()
-    {
-        return "IGNORED {}";
-    }
+    void handleFailureMessage( String code, String message ) throws IOException;
 
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj != null && obj.getClass() == getClass();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
-    }
+    void handleIgnoredMessage() throws IOException;
 }

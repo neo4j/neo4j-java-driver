@@ -27,8 +27,8 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.messaging.PullAllMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;

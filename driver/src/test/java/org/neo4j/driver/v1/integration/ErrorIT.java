@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.messaging.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactoryWithMessageFormat;

@@ -23,8 +23,8 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.messaging.ResetMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 
 public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
 {

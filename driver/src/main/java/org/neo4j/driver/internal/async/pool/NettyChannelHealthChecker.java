@@ -24,7 +24,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
-import org.neo4j.driver.internal.messaging.ResetMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;

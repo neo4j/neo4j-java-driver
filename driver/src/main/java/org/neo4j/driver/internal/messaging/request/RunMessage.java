@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.request;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.v1.Value;
 
 import static java.lang.String.format;
@@ -34,6 +34,8 @@ import static java.lang.String.format;
  */
 public class RunMessage implements Message
 {
+    public final static byte SIGNATURE = 0x10;
+
     private final String statement;
     private final Map<String,Value> parameters;
 
@@ -53,10 +55,15 @@ public class RunMessage implements Message
         return statement;
     }
 
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public Map<String,Value> parameters()
     {
-        handler.handleRunMessage( statement, parameters );
+        return parameters;
+    }
+
+    @Override
+    public byte signature()
+    {
+        return SIGNATURE;
     }
 
     @Override

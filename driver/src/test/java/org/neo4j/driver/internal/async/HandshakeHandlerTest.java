@@ -35,8 +35,8 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV2;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -190,13 +190,13 @@ class HandshakeHandlerTest
     @Test
     void shouldSelectProtocolV1WhenServerSuggests()
     {
-        testProtocolSelection( PROTOCOL_VERSION_1, PackStreamMessageFormatV1.class );
+        testProtocolSelection( PROTOCOL_VERSION_1, MessageFormatV1.class );
     }
 
     @Test
     void shouldSelectProtocolV2WhenServerSuggests()
     {
-        testProtocolSelection( PROTOCOL_VERSION_2, PackStreamMessageFormatV2.class );
+        testProtocolSelection( PROTOCOL_VERSION_2, MessageFormatV2.class );
     }
 
     @Test

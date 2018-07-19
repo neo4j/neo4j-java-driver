@@ -16,30 +16,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.response;
 
-import java.io.IOException;
+import org.neo4j.driver.internal.messaging.Message;
 
 /**
- * ACK_FAILURE request message
- *
- * This message acts as a barrier after an error, informing the server that we've seen the error
- * message, and that messages that follow this one are safe to execute.
+ * IGNORED response message
+ * <p>
+ * Sent by the server to signal that an operation has been ignored.
+ * Terminates response sequence.
  */
-public class AckFailureMessage implements Message
+public class IgnoredMessage implements Message
 {
-    public static final AckFailureMessage ACK_FAILURE= new AckFailureMessage();
+    public final static byte SIGNATURE = 0x7E;
+
+    public static final IgnoredMessage IGNORED = new IgnoredMessage();
+
+    private IgnoredMessage()
+    {
+    }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public byte signature()
     {
-        handler.handleAckFailureMessage();
+        return SIGNATURE;
     }
 
     @Override
     public String toString()
     {
-        return "ACK_FAILURE";
+        return "IGNORED {}";
     }
 
     @Override

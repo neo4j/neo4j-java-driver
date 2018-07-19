@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.request;
 
-import java.io.IOException;
+import org.neo4j.driver.internal.messaging.Message;
 
 /**
  * RESET request message
@@ -36,29 +36,23 @@ import java.io.IOException;
  */
 public class ResetMessage implements Message
 {
+    public static final byte SIGNATURE = 0x0F;
+
     public static final ResetMessage RESET = new ResetMessage();
 
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    private ResetMessage()
     {
-        handler.handleResetMessage();
+    }
+
+    @Override
+    public byte signature()
+    {
+        return SIGNATURE;
     }
 
     @Override
     public String toString()
     {
         return "RESET";
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj != null && obj.getClass() == getClass();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
     }
 }

@@ -23,11 +23,11 @@ import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.internal.messaging.FailureMessage;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.MessageHandler;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
@@ -40,7 +40,7 @@ public class FailingMessageFormat implements MessageFormat
 
     public FailingMessageFormat()
     {
-        this( new PackStreamMessageFormatV1() );
+        this( new MessageFormatV1() );
     }
 
     public FailingMessageFormat( MessageFormat delegate )
@@ -116,7 +116,7 @@ public class FailingMessageFormat implements MessageFormat
         }
 
         @Override
-        public void read( MessageHandler handler ) throws IOException
+        public void read( ResponseMessageHandler handler ) throws IOException
         {
             Throwable error = throwableRef.getAndSet( null );
             if ( error != null )
@@ -128,7 +128,7 @@ public class FailingMessageFormat implements MessageFormat
             FailureMessage failureMsg = failureRef.getAndSet( null );
             if ( failureMsg != null )
             {
-                failureMsg.dispatch( handler );
+                handler.handleFailureMessage( failureMsg.code(), failureMsg.message() );
                 return;
             }
 

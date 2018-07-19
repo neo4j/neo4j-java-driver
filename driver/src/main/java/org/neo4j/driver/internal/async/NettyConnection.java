@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,16 +30,13 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.PullAllMessage;
-import org.neo4j.driver.internal.messaging.ResetMessage;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
@@ -161,13 +157,6 @@ public class NettyConnection implements Connection
     public ServerVersion serverVersion()
     {
         return serverVersion;
-    }
-
-    private void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-            ResponseHandler pullAllHandler, boolean flush )
-    {
-        writeMessagesInEventLoop( new RunMessage( statement, parameters ), runHandler, PullAllMessage.PULL_ALL,
-                pullAllHandler, flush );
     }
 
     private void writeResetMessageIfNeeded( ResponseHandler resetHandler, boolean isSessionReset )

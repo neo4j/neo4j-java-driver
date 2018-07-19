@@ -16,51 +16,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.response;
 
-import java.io.IOException;
-import java.util.Map;
+import java.util.Arrays;
 
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.v1.Value;
 
-import static java.lang.String.format;
-
-/**
- * SUCCESS response message
- * <p>
- * Sent by the server to signal a successful operation.
- * Terminates response sequence.
- */
-public class SuccessMessage implements Message
+public class RecordMessage implements Message
 {
-    private final Map<String,Value> metadata;
+    public final static byte SIGNATURE = 0x71;
 
-    public SuccessMessage( Map<String,Value> metadata )
+    private final Value[] fields;
+
+    public RecordMessage( Value[] fields )
     {
-        this.metadata = metadata;
+        this.fields = fields;
+    }
+
+    public Value[] fields()
+    {
+        return fields;
     }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public byte signature()
     {
-        handler.handleSuccessMessage( metadata );
+        return SIGNATURE;
     }
 
     @Override
     public String toString()
     {
-        return format( "SUCCESS %s", metadata );
+        return "RECORD " + Arrays.toString( fields );
     }
 
     @Override
-    public boolean equals( Object obj )
+    public boolean equals( Object o )
     {
-        return obj != null && obj.getClass() == getClass();
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        RecordMessage that = (RecordMessage) o;
+
+        return Arrays.equals( fields, that.fields );
     }
 
     @Override
     public int hashCode()
     {
-        return 1;
+        return Arrays.hashCode( fields );
     }
 }

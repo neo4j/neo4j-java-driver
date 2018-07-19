@@ -18,13 +18,10 @@
  */
 package org.neo4j.driver.internal.messaging;
 
-import java.io.IOException;
-
 /**
  * Base class for all protocol messages.
  */
 public interface Message
 {
-    void dispatch( MessageHandler handler ) throws IOException;
-
+    byte signature();
 }

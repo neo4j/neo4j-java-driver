@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
@@ -60,7 +60,7 @@ class InitResponseHandlerTest
     {
         setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast( NAME, new OutboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING ) );
+        pipeline.addLast( NAME, new OutboundMessageHandler( new MessageFormatV1(), DEV_NULL_LOGGING ) );
         pipeline.addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
     }
 

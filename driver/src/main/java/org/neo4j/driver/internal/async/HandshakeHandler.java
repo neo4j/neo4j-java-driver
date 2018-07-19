@@ -30,8 +30,8 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV2;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -115,10 +115,10 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         switch ( serverSuggestedVersion )
         {
         case PROTOCOL_VERSION_1:
-            protocolSelected( new PackStreamMessageFormatV1(), pipeline );
+            protocolSelected( new MessageFormatV1(), pipeline );
             break;
         case PROTOCOL_VERSION_2:
-            protocolSelected( new PackStreamMessageFormatV2(), pipeline );
+            protocolSelected( new MessageFormatV2(), pipeline );
             break;
         case NO_PROTOCOL_VERSION:
             fail( ctx, protocolNoSupportedByServerError() );

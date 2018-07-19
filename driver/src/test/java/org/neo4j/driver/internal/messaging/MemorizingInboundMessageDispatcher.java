@@ -26,6 +26,10 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Value;
 
@@ -41,42 +45,6 @@ public class MemorizingInboundMessageDispatcher extends InboundMessageDispatcher
     public List<Message> messages()
     {
         return new ArrayList<>( messages );
-    }
-
-    @Override
-    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
-    {
-        messages.add( new InitMessage( clientNameAndVersion, authToken ) );
-    }
-
-    @Override
-    public void handleRunMessage( String statement, Map<String,Value> parameters )
-    {
-        messages.add( new RunMessage( statement, parameters ) );
-    }
-
-    @Override
-    public void handlePullAllMessage()
-    {
-        messages.add( PullAllMessage.PULL_ALL );
-    }
-
-    @Override
-    public void handleDiscardAllMessage()
-    {
-        messages.add( DiscardAllMessage.DISCARD_ALL );
-    }
-
-    @Override
-    public void handleResetMessage()
-    {
-        messages.add( ResetMessage.RESET );
-    }
-
-    @Override
-    public void handleAckFailureMessage()
-    {
-        messages.add( AckFailureMessage.ACK_FAILURE );
     }
 
     @Override

@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.response;
 
-import java.io.IOException;
+import org.neo4j.driver.internal.messaging.Message;
 
 import static java.lang.String.format;
 
@@ -30,6 +30,8 @@ import static java.lang.String.format;
  */
 public class FailureMessage implements Message
 {
+    public final static byte SIGNATURE = 0x7F;
+
     private final String code;
     private final String message;
 
@@ -40,10 +42,20 @@ public class FailureMessage implements Message
         this.message = message;
     }
 
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public String code()
     {
-        handler.handleFailureMessage( code, message );
+        return code;
+    }
+
+    public String message()
+    {
+        return message;
+    }
+
+    @Override
+    public byte signature()
+    {
+        return SIGNATURE;
     }
 
     @Override

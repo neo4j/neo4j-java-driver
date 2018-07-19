@@ -27,16 +27,24 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,30 +61,18 @@ import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue
 import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
-import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 
 class MessageFormatTest
 {
-    public MessageFormat format = new PackStreamMessageFormatV1();
-
-    @Test
-    void shouldPackAllRequests() throws Throwable
-    {
-        assertSerializes( new RunMessage( "Hello", parameters().asMap( ofValue() ) ) );
-        assertSerializes( new RunMessage( "Hello", parameters( "a", 12 ).asMap( ofValue() ) ) );
-        assertSerializes( new PullAllMessage() );
-        assertSerializes( new DiscardAllMessage() );
-        assertSerializes( new IgnoredMessage() );
-        assertSerializes( new FailureMessage( "Neo.Banana.Bork.Birk", "Hello, world!" ) );
-        assertSerializes( new ResetMessage() );
-        assertSerializes( new InitMessage( "JavaDriver/1.0.0", parameters().asMap( ofValue() ) ) );
-    }
+    public MessageFormat format = new MessageFormatV1();
 
     @Test
     void shouldUnpackAllResponses() throws Throwable
     {
+        assertSerializes( new FailureMessage( "Hello", "World!" ) );
+        assertSerializes( IgnoredMessage.IGNORED );
         assertSerializes( new RecordMessage( new Value[]{value( 1337L )} ) );
         assertSerializes( new SuccessMessage( new HashMap<>() ) );
     }
@@ -136,9 +132,9 @@ class MessageFormatTest
         output.start( buf );
         PackStream.Packer packer = new PackStream.Packer( output );
 
-        packer.packStructHeader( 1, PackStreamMessageFormatV1.MSG_RECORD );
+        packer.packStructHeader( 1, RecordMessage.SIGNATURE );
         packer.packListHeader( 1 );
-        packer.packStructHeader( 0, PackStreamMessageFormatV1.NODE );
+        packer.packStructHeader( 0, MessageFormatV1.NODE );
 
         output.stop();
         BoltProtocolUtil.writeMessageBoundary( buf );
@@ -157,7 +153,7 @@ class MessageFormatTest
 
     private void assertSerializes( Message message ) throws Throwable
     {
-        EmbeddedChannel channel = newEmbeddedChannel();
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeablePackStreamMessageFormat() );
 
         ByteBuf packed = pack( message, channel );
         Message unpackedMessage = unpack( packed, channel );
@@ -235,7 +231,8 @@ class MessageFormatTest
 
     private void expectIOExceptionWithMessage( Value value, String errorMessage )
     {
-        RecordMessage message = new RecordMessage( new Value[]{value} );
+        Map<String,Value> metadata = singletonMap( "relationship", value );
+        InitMessage message = new InitMessage( "Hello", metadata );
         EmbeddedChannel channel = newEmbeddedChannel();
 
         EncoderException error = assertThrows( EncoderException.class, () -> pack( message, channel ) );
