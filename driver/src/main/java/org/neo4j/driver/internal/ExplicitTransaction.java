@@ -103,12 +103,12 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         }
         else
         {
-            CompletableFuture<ExplicitTransaction> beginFuture = new CompletableFuture<>();
+            CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
             connection.writeAndFlush(
                     new RunMessage( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
-                    PullAllMessage.PULL_ALL, new BeginTxResponseHandler<>( beginFuture, this ) );
+                    PullAllMessage.PULL_ALL, new BeginTxResponseHandler( beginTxFuture ) );
 
-            return beginFuture.handle( ( tx, beginError ) ->
+            return beginTxFuture.handle( ( ignore, beginError ) ->
             {
                 if ( beginError != null )
                 {
@@ -116,7 +116,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
                     connection.release();
                     throw Futures.asCompletionException( beginError );
                 }
-                return tx;
+                return this;
             } );
         }
     }
