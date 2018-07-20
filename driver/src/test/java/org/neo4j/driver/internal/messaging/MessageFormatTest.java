@@ -153,7 +153,7 @@ class MessageFormatTest
 
     private void assertSerializes( Message message ) throws Throwable
     {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeablePackStreamMessageFormat() );
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
 
         ByteBuf packed = pack( message, channel );
         Message unpackedMessage = unpack( packed, channel );
@@ -218,7 +218,7 @@ class MessageFormatTest
 
     private ByteBuf knowledgeablePack( Message message ) throws IOException
     {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeablePackStreamMessageFormat() );
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
         assertTrue( channel.writeOutbound( message ) );
 
         ByteBuf[] packedMessages = channel.outboundMessages()

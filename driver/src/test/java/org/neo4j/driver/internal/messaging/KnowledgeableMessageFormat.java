@@ -56,7 +56,7 @@ import org.neo4j.driver.v1.types.Relationship;
  * This class provides the missing server side packing methods to serialize Node, Relationship and Path.
  * It also allows writing of server side messages like SUCCESS, FAILURE, IGNORED and RECORD.
  */
-public class KnowledgeablePackStreamMessageFormat extends MessageFormatV2
+public class KnowledgeableMessageFormat extends MessageFormatV2
 {
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )

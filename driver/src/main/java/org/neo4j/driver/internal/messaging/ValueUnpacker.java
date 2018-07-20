@@ -29,8 +29,6 @@ public interface ValueUnpacker
 
     int unpackStructSignature() throws IOException;
 
-    Value unpack() throws IOException;
-
     Map<String,Value> unpackMap() throws IOException;
 
     Value[] unpackArray() throws IOException;

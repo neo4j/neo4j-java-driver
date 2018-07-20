@@ -69,7 +69,35 @@ public class ValueUnpackerV1 implements ValueUnpacker
     }
 
     @Override
-    public Value unpack() throws IOException
+    public Map<String,Value> unpackMap() throws IOException
+    {
+        int size = (int) unpacker.unpackMapHeader();
+        if ( size == 0 )
+        {
+            return Collections.emptyMap();
+        }
+        Map<String,Value> map = Iterables.newHashMapWithSize( size );
+        for ( int i = 0; i < size; i++ )
+        {
+            String key = unpacker.unpackString();
+            map.put( key, unpack() );
+        }
+        return map;
+    }
+
+    @Override
+    public Value[] unpackArray() throws IOException
+    {
+        int size = (int) unpacker.unpackListHeader();
+        Value[] values = new Value[size];
+        for ( int i = 0; i < size; i++ )
+        {
+            values[i] = unpack();
+        }
+        return values;
+    }
+
+    private Value unpack() throws IOException
     {
         PackType type = unpacker.peekNextType();
         switch ( type )
@@ -108,35 +136,6 @@ public class ValueUnpackerV1 implements ValueUnpacker
         }
         }
         throw new IOException( "Unknown value type: " + type );
-    }
-
-    @Override
-    public Map<String,Value> unpackMap() throws IOException
-    {
-        int size = (int) unpacker.unpackMapHeader();
-        if ( size == 0 )
-        {
-            return Collections.emptyMap();
-        }
-        Map<String,Value> map = Iterables.newHashMapWithSize( size );
-        for ( int i = 0; i < size; i++ )
-        {
-            String key = unpacker.unpackString();
-            map.put( key, unpack() );
-        }
-        return map;
-    }
-
-    @Override
-    public Value[] unpackArray() throws IOException
-    {
-        int size = (int) unpacker.unpackListHeader();
-        Value[] values = new Value[size];
-        for ( int i = 0; i < size; i++ )
-        {
-            values[i] = unpack();
-        }
-        return values;
     }
 
     protected Value unpackStruct( long size, byte type ) throws IOException

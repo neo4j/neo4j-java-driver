@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.ChannelAttributes;
-import org.neo4j.driver.internal.messaging.KnowledgeablePackStreamMessageFormat;
+import org.neo4j.driver.internal.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
@@ -67,7 +67,7 @@ class InboundMessageHandlerTest
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        writer = new MessageToByteBufWriter( new KnowledgeablePackStreamMessageFormat() );
+        writer = new MessageToByteBufWriter( new KnowledgeableMessageFormat() );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
         InboundMessageHandler handler = new InboundMessageHandler( new MessageFormatV1(), DEV_NULL_LOGGING );

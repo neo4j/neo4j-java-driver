@@ -104,7 +104,7 @@ public abstract class AbstractMessageReaderTestBase
     {
         ByteBuf buffer = Unpooled.buffer();
 
-        MessageFormat messageFormat = new KnowledgeablePackStreamMessageFormat();
+        MessageFormat messageFormat = new KnowledgeableMessageFormat();
         MessageFormat.Writer writer = messageFormat.newWriter( new ByteBufOutput( buffer ), true );
         writer.write( message );
 
