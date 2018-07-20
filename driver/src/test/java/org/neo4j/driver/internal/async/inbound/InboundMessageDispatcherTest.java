@@ -47,7 +47,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.request.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.v1.Values.value;
 
 class InboundMessageDispatcherTest
@@ -316,54 +316,6 @@ class InboundMessageDispatcherTest
     }
 
     @Test
-    void shouldNotSupportInitMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, () -> dispatcher.handleInitMessage( "Client", emptyMap() ) );
-    }
-
-    @Test
-    void shouldNotSupportRunMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, () -> dispatcher.handleRunMessage( "RETURN 1", emptyMap() ) );
-    }
-
-    @Test
-    void shouldNotSupportPullAllMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, dispatcher::handlePullAllMessage );
-    }
-
-    @Test
-    void shouldNotSupportDiscardAllMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, dispatcher::handleDiscardAllMessage );
-    }
-
-    @Test
-    void shouldNotSupportResetMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, dispatcher::handleResetMessage );
-    }
-
-    @Test
-    void shouldNotSupportAckFailureMessage()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-
-        assertThrows( UnsupportedOperationException.class, dispatcher::handleAckFailureMessage );
-    }
-
-    @Test
     void shouldMuteAndUnMuteAckFailure()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
@@ -374,6 +326,14 @@ class InboundMessageDispatcherTest
 
         dispatcher.unMuteAckFailure();
         assertFalse( dispatcher.isAckFailureMuted() );
+    }
+
+    @Test
+    void shouldThrowWhenNoHandlerToHandleRecordMessage()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+
+        assertThrows( IllegalStateException.class, () -> dispatcher.handleRecordMessage( new Value[]{value( 1 ), value( 2 )} ) );
     }
 
     private static void verifyFailure( ResponseHandler handler )

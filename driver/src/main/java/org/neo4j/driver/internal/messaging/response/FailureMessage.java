@@ -16,42 +16,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.response;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.internal.messaging.Message;
 
 import static java.lang.String.format;
 
 /**
- * RUN request message
+ * FAILURE response message
  * <p>
- * Sent by clients to start a new Tank job for a given statement and
- * parameter set.
+ * Sent by the server to signal a failed operation.
+ * Terminates response sequence.
  */
-public class RunMessage implements Message
+public class FailureMessage implements Message
 {
-    private final String statement;
-    private final Map<String,Value> parameters;
+    public final static byte SIGNATURE = 0x7F;
 
-    public RunMessage( String statement, Map<String,Value> parameters )
+    private final String code;
+    private final String message;
+
+    public FailureMessage( String code, String message )
     {
-        this.statement = statement;
-        this.parameters = parameters;
+        super();
+        this.code = code;
+        this.message = message;
+    }
+
+    public String code()
+    {
+        return code;
+    }
+
+    public String message()
+    {
+        return message;
     }
 
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public byte signature()
     {
-        handler.handleRunMessage( statement, parameters );
+        return SIGNATURE;
     }
 
     @Override
     public String toString()
     {
-        return format( "RUN \"%s\" %s", statement, parameters );
+        return format( "FAILURE %s \"%s\"", code, message );
     }
 
     @Override
@@ -66,18 +76,18 @@ public class RunMessage implements Message
             return false;
         }
 
-        RunMessage that = (RunMessage) o;
+        FailureMessage that = (FailureMessage) o;
 
-        return !(parameters != null ? !parameters.equals( that.parameters ) : that.parameters != null) &&
-               !(statement != null ? !statement.equals( that.statement ) : that.statement != null);
+        return !(code != null ? !code.equals( that.code ) : that.code != null) &&
+               !(message != null ? !message.equals( that.message ) : that.message != null);
 
     }
 
     @Override
     public int hashCode()
     {
-        int result = statement != null ? statement.hashCode() : 0;
-        result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
+        int result = code != null ? code.hashCode() : 0;
+        result = 31 * result + (message != null ? message.hashCode() : 0);
         return result;
     }
 }

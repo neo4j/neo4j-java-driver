@@ -34,8 +34,8 @@ import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.messaging.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.v1.Value;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
-import static org.neo4j.driver.internal.messaging.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
@@ -96,7 +96,7 @@ class OutboundMessageHandlerTest
     @Test
     void shouldSupportByteArraysByDefault()
     {
-        OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() );
+        OutboundMessageHandler handler = newHandler( new MessageFormatV1() );
         channel.pipeline().addLast( handler );
 
         Map<String,Value> params = new HashMap<>();
@@ -109,7 +109,7 @@ class OutboundMessageHandlerTest
     @Test
     void shouldFailToWriteByteArrayWhenNotSupported()
     {
-        OutboundMessageHandler handler = newHandler( new PackStreamMessageFormatV1() ).withoutByteArraySupport();
+        OutboundMessageHandler handler = newHandler( new MessageFormatV1() ).withoutByteArraySupport();
         channel.pipeline().addLast( handler );
         channel.pipeline().addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
 

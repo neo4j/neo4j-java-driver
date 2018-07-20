@@ -23,32 +23,29 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class BeginTxResponseHandler<T extends Transaction> implements ResponseHandler
+public class BeginTxResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<T> beginTxPromise;
-    private final T tx;
+    private final CompletableFuture<Void> beginTxFuture;
 
-    public BeginTxResponseHandler( CompletableFuture<T> beginFuture, T tx )
+    public BeginTxResponseHandler( CompletableFuture<Void> beginTxFuture )
     {
-        this.beginTxPromise = requireNonNull( beginFuture );
-        this.tx = requireNonNull( tx );
+        this.beginTxFuture = requireNonNull( beginTxFuture );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        beginTxPromise.complete( tx );
+        beginTxFuture.complete( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        beginTxPromise.completeExceptionally( error );
+        beginTxFuture.completeExceptionally( error );
     }
 
     @Override

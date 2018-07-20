@@ -23,10 +23,11 @@ import org.mockito.ArgumentCaptor;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.eq;
@@ -56,13 +57,13 @@ class RoutingConnectionTest
 
         if ( flush )
         {
-            routingConnection.runAndFlush( "RETURN 1", emptyMap(), mock( ResponseHandler.class ),
-                    mock( ResponseHandler.class ) );
+            routingConnection.writeAndFlush( new RunMessage( "RETURN 1" ), mock( ResponseHandler.class ),
+                    PullAllMessage.PULL_ALL, mock( ResponseHandler.class ) );
         }
         else
         {
-            routingConnection.run( "RETURN 1", emptyMap(), mock( ResponseHandler.class ),
-                    mock( ResponseHandler.class ) );
+            routingConnection.write( new RunMessage( "RETURN 1" ), mock( ResponseHandler.class ),
+                    PullAllMessage.PULL_ALL, mock( ResponseHandler.class ) );
         }
 
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
@@ -70,13 +71,13 @@ class RoutingConnectionTest
 
         if ( flush )
         {
-            verify( connection ).runAndFlush( eq( "RETURN 1" ), eq( emptyMap() ), runHandlerCaptor.capture(),
-                    pullAllHandlerCaptor.capture() );
+            verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), runHandlerCaptor.capture(),
+                    eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
         }
         else
         {
-            verify( connection ).run( eq( "RETURN 1" ), eq( emptyMap() ), runHandlerCaptor.capture(),
-                    pullAllHandlerCaptor.capture() );
+            verify( connection ).write( eq( new RunMessage( "RETURN 1" ) ), runHandlerCaptor.capture(),
+                    eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
         }
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RoutingResponseHandler.class ) );

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.v2;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -37,6 +37,10 @@ import java.util.List;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.util.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
@@ -56,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1.MSG_RECORD;
 import static org.neo4j.driver.internal.packstream.PackStream.FLOAT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_16;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
@@ -67,9 +70,9 @@ import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
 
-class PackStreamMessageFormatV2Test
+class MessageFormatV2Test
 {
-    private final PackStreamMessageFormatV2 messageFormat = new PackStreamMessageFormatV2();
+    private final MessageFormatV2 messageFormat = new MessageFormatV2();
 
     @Test
     void shouldFailToCreateWriterWithoutByteArraySupport()
@@ -383,7 +386,7 @@ class PackStreamMessageFormatV2Test
         try
         {
             Packer packer = new Packer( new ByteBufOutput( buf ) );
-            packer.packStructHeader( 1, MSG_RECORD );
+            packer.packStructHeader( 1, RecordMessage.SIGNATURE );
             packer.packListHeader( 1 );
             packAction.accept( packer );
 
@@ -392,8 +395,8 @@ class PackStreamMessageFormatV2Test
             MessageFormat.Reader reader = messageFormat.newReader( input );
 
             List<Value> values = new ArrayList<>();
-            MessageHandler messageHandler = recordMemorizingHandler( values );
-            reader.read( messageHandler );
+            ResponseMessageHandler responseHandler = recordMemorizingHandler( values );
+            reader.read( responseHandler );
             input.stop();
 
             assertEquals( 1, values.size() );
@@ -405,16 +408,16 @@ class PackStreamMessageFormatV2Test
         }
     }
 
-    private static MessageHandler recordMemorizingHandler( List<Value> values ) throws IOException
+    private static ResponseMessageHandler recordMemorizingHandler( List<Value> values ) throws IOException
     {
-        MessageHandler messageHandler = mock( MessageHandler.class );
+        ResponseMessageHandler responseHandler = mock( ResponseMessageHandler.class );
         doAnswer( invocation ->
         {
             Value[] arg = invocation.getArgument( 0 );
             Collections.addAll( values, arg );
             return null;
-        } ).when( messageHandler ).handleRecordMessage( any() );
-        return messageHandler;
+        } ).when( responseHandler ).handleRecordMessage( any() );
+        return responseHandler;
     }
 
     private MessageFormat.Writer newWriter( ByteBuf buf )

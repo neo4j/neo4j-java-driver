@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.messaging.ResetMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Value;
 

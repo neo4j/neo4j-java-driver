@@ -16,11 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.request;
 
-import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.v1.Value;
 
 import static java.lang.String.format;
@@ -32,6 +32,8 @@ import static java.lang.String.format;
  */
 public class InitMessage implements Message
 {
+    public final static byte SIGNATURE = 0x01;
+
     private final String userAgent;
     private Map<String,Value> authToken;
 
@@ -39,12 +41,6 @@ public class InitMessage implements Message
     {
         this.userAgent = userAgent;
         this.authToken = authToken;
-    }
-
-    @Override
-    public void dispatch( MessageHandler handler ) throws IOException
-    {
-        handler.handleInitMessage( userAgent, authToken );
     }
 
     public String userAgent()
@@ -58,9 +54,15 @@ public class InitMessage implements Message
     }
 
     @Override
+    public byte signature()
+    {
+        return SIGNATURE;
+    }
+
+    @Override
     public String toString()
     {
-        return format( "INIT \"%s\" {...}", userAgent, authToken );
+        return format( "INIT \"%s\" {...}", userAgent );
     }
 
     @Override

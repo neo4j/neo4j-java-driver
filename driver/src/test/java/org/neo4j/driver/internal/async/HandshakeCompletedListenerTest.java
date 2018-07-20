@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
-import org.neo4j.driver.internal.messaging.InitMessage;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.v1.Value;
 
 import static org.hamcrest.Matchers.instanceOf;

@@ -28,6 +28,8 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -91,7 +93,9 @@ public final class QueryRunner
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
-        connection.runAndFlush( query, params, runHandler, pullAllHandler );
+        connection.writeAndFlush(
+                new RunMessage( query, params ), runHandler,
+                PullAllMessage.PULL_ALL, pullAllHandler );
 
         if ( waitForRunResponse )
         {

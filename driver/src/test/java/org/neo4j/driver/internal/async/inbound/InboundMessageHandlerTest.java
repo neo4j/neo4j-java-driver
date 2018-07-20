@@ -30,13 +30,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.ChannelAttributes;
-import org.neo4j.driver.internal.messaging.FailureMessage;
-import org.neo4j.driver.internal.messaging.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
-import org.neo4j.driver.internal.messaging.RecordMessage;
-import org.neo4j.driver.internal.messaging.SuccessMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.MessageToByteBufWriter;
 import org.neo4j.driver.v1.Value;
@@ -52,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.ResetMessage.RESET;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.v1.Values.value;
 
 class InboundMessageHandlerTest
@@ -66,10 +67,10 @@ class InboundMessageHandlerTest
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        writer = new MessageToByteBufWriter( new PackStreamMessageFormatV1() );
+        writer = new MessageToByteBufWriter( new KnowledgeableMessageFormat() );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
-        InboundMessageHandler handler = new InboundMessageHandler( new PackStreamMessageFormatV1(), DEV_NULL_LOGGING );
+        InboundMessageHandler handler = new InboundMessageHandler( new MessageFormatV1(), DEV_NULL_LOGGING );
         channel.pipeline().addFirst( handler );
     }
 
@@ -128,7 +129,7 @@ class InboundMessageHandlerTest
         ResponseHandler responseHandler = mock( ResponseHandler.class );
         messageDispatcher.queue( responseHandler );
 
-        channel.writeInbound( writer.asByteBuf( new IgnoredMessage() ) );
+        channel.writeInbound( writer.asByteBuf( IgnoredMessage.IGNORED ) );
         assertEquals( 0, messageDispatcher.queuedHandlersCount() );
     }
 

@@ -27,7 +27,7 @@ import java.util.Queue;
 
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
-import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
@@ -36,9 +36,9 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.request.AckFailureMessage.ACK_FAILURE;
 
-public class InboundMessageDispatcher implements MessageHandler
+public class InboundMessageDispatcher implements ResponseMessageHandler
 {
     private final Channel channel;
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
@@ -72,46 +72,6 @@ public class InboundMessageDispatcher implements MessageHandler
     }
 
     @Override
-    public void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken )
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive INIT message. " +
-                                                 "Received INIT with client: '" + clientNameAndVersion + "' " +
-                                                 "and auth: " + authToken );
-    }
-
-    @Override
-    public void handleRunMessage( String statement, Map<String,Value> parameters )
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive RUN message. " +
-                                                 "Received RUN with statement: '" + statement + "' " +
-                                                 "and params: " + parameters );
-    }
-
-    @Override
-    public void handlePullAllMessage()
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive PULL_ALL message." );
-    }
-
-    @Override
-    public void handleDiscardAllMessage()
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive DISCARD_ALL message." );
-    }
-
-    @Override
-    public void handleResetMessage()
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive RESET message." );
-    }
-
-    @Override
-    public void handleAckFailureMessage()
-    {
-        throw new UnsupportedOperationException( "Driver is not supposed to receive ACK_FAILURE message." );
-    }
-
-    @Override
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         log.debug( "S: SUCCESS %s", meta );
@@ -127,6 +87,10 @@ public class InboundMessageDispatcher implements MessageHandler
             log.debug( "S: RECORD %s", Arrays.toString( fields ) );
         }
         ResponseHandler handler = handlers.peek();
+        if ( handler == null )
+        {
+            throw new IllegalStateException( "No handler exists to handle RECORD message with fields: " + Arrays.toString( fields ) );
+        }
         handler.onRecord( fields );
     }
 

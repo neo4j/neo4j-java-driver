@@ -16,40 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.messaging.encode;
 
 import java.io.IOException;
 
-/**
- * PULL_ALL request message
- * <p>
- * Sent by clients to pull the entirety of the remaining stream down.
- */
-public class PullAllMessage implements Message
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageEncoder;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
+
+public class PullAllMessageEncoder implements MessageEncoder
 {
-    public static final PullAllMessage PULL_ALL = new PullAllMessage();
-
     @Override
-    public void dispatch( MessageHandler handler ) throws IOException
+    public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        handler.handlePullAllMessage();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PULL_ALL";
-    }
-
-    @Override
-    public boolean equals( Object obj )
-    {
-        return obj != null && obj.getClass() == getClass();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return 1;
+        checkArgument( message, PullAllMessage.class );
+        packer.packStructHeader( 0, PullAllMessage.SIGNATURE );
     }
 }

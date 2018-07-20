@@ -21,6 +21,28 @@ package org.neo4j.driver.internal.messaging;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.encode.AckFailureMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.FailureMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.IgnoredMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.RecordMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.RunMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.SuccessMessageEncoder;
+import org.neo4j.driver.internal.messaging.request.AckFailureMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.ResetMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
+import org.neo4j.driver.internal.messaging.v2.ValuePackerV2;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.util.Iterables;
@@ -32,24 +54,51 @@ import org.neo4j.driver.v1.types.Relationship;
 
 /**
  * This class provides the missing server side packing methods to serialize Node, Relationship and Path.
+ * It also allows writing of server side messages like SUCCESS, FAILURE, IGNORED and RECORD.
  */
-public class KnowledgeablePackStreamMessageFormat extends PackStreamMessageFormatV2
+public class KnowledgeableMessageFormat extends MessageFormatV2
 {
     @Override
     public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
-        return new KnowledgeablePackStreamMessageFormat.Writer( output );
+        return new KnowledgeableMessageWriter( output );
     }
 
-    private static class Writer extends WriterV2
+    private static class KnowledgeableMessageWriter extends AbstractMessageWriter
     {
-        Writer( PackOutput output )
+        KnowledgeableMessageWriter( PackOutput output )
+        {
+            super( new KnowledgeableValuePacker( output ), buildEncoders() );
+        }
+
+        static Map<Byte,MessageEncoder> buildEncoders()
+        {
+            Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 10 );
+            // request message encoders
+            result.put( AckFailureMessage.SIGNATURE, new AckFailureMessageEncoder() );
+            result.put( DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder() );
+            result.put( InitMessage.SIGNATURE, new InitMessageEncoder() );
+            result.put( PullAllMessage.SIGNATURE, new PullAllMessageEncoder() );
+            result.put( ResetMessage.SIGNATURE, new ResetMessageEncoder() );
+            result.put( RunMessage.SIGNATURE, new RunMessageEncoder() );
+            // response message encoders
+            result.put( FailureMessage.SIGNATURE, new FailureMessageEncoder() );
+            result.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );
+            result.put( RecordMessage.SIGNATURE, new RecordMessageEncoder() );
+            result.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder() );
+            return result;
+        }
+    }
+
+    private static class KnowledgeableValuePacker extends ValuePackerV2
+    {
+        KnowledgeableValuePacker( PackOutput output )
         {
             super( output );
         }
 
         @Override
-        void packInternalValue( InternalValue value ) throws IOException
+        protected void packInternalValue( InternalValue value ) throws IOException
         {
             TypeConstructor typeConstructor = value.typeConstructor();
             switch ( typeConstructor )

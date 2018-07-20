@@ -20,13 +20,13 @@ package org.neo4j.driver.internal.util;
 
 import io.netty.bootstrap.Bootstrap;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -34,7 +34,6 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Value;
 
 public class FailingConnectionDriverFactory extends DriverFactory
 {
@@ -131,25 +130,23 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public void run( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-                ResponseHandler pullAllHandler )
+        public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
         {
-            if ( tryFail( runHandler, pullAllHandler ) )
+            if ( tryFail( handler1, handler2 ) )
             {
                 return;
             }
-            delegate.run( statement, parameters, runHandler, pullAllHandler );
+            delegate.write( message1, handler1, message2, handler2 );
         }
 
         @Override
-        public void runAndFlush( String statement, Map<String,Value> parameters, ResponseHandler runHandler,
-                ResponseHandler pullAllHandler )
+        public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
         {
-            if ( tryFail( runHandler, pullAllHandler ) )
+            if ( tryFail( handler1, handler2 ) )
             {
                 return;
             }
-            delegate.runAndFlush( statement, parameters, runHandler, pullAllHandler );
+            delegate.writeAndFlush( message1, handler1, message2, handler2 );
         }
 
         @Override

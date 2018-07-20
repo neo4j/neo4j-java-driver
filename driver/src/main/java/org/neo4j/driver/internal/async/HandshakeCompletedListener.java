@@ -26,7 +26,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
-import org.neo4j.driver.internal.messaging.InitMessage;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;

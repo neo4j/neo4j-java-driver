@@ -30,6 +30,8 @@ import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Statement;
@@ -148,8 +150,8 @@ class QueryRunnerTest
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).runAndFlush( eq( QUERY ), eq( PARAMS ),
-                runHandlerCaptor.capture(), pullAllHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( new RunMessage( QUERY, PARAMS ) ), runHandlerCaptor.capture(),
+                eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
 

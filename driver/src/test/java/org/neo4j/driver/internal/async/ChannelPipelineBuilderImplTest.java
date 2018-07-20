@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.messaging.PackStreamMessageFormatV1;
+import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -46,7 +46,7 @@ class ChannelPipelineBuilderImplTest
         EmbeddedChannel channel = new EmbeddedChannel();
         ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
 
-        new ChannelPipelineBuilderImpl().build( new PackStreamMessageFormatV1(), channel.pipeline(), DEV_NULL_LOGGING );
+        new ChannelPipelineBuilderImpl().build( new MessageFormatV1(), channel.pipeline(), DEV_NULL_LOGGING );
 
         Iterator<Map.Entry<String,ChannelHandler>> iterator = channel.pipeline().iterator();
         assertThat( iterator.next().getValue(), instanceOf( ChunkDecoder.class ) );

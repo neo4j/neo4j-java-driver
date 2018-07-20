@@ -23,28 +23,13 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
 
-public interface MessageHandler
+public interface ValueUnpacker
 {
-    // Requests
-    void handleInitMessage( String clientNameAndVersion, Map<String,Value> authToken ) throws IOException;
+    long unpackStructHeader() throws IOException;
 
-    void handleRunMessage( String statement, Map<String,Value> parameters ) throws IOException;
+    int unpackStructSignature() throws IOException;
 
-    void handlePullAllMessage() throws IOException;
+    Map<String,Value> unpackMap() throws IOException;
 
-    void handleDiscardAllMessage() throws IOException;
-
-    void handleResetMessage() throws IOException;
-
-    void handleAckFailureMessage() throws IOException;
-
-    // Responses
-    void handleSuccessMessage( Map<String,Value> meta ) throws IOException;
-
-    void handleRecordMessage( Value[] fields ) throws IOException;
-
-    void handleFailureMessage( String code, String message ) throws IOException;
-
-    void handleIgnoredMessage() throws IOException;
-
+    Value[] unpackArray() throws IOException;
 }
