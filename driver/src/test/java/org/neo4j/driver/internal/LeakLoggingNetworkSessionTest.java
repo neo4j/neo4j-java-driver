@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
@@ -107,7 +108,7 @@ class LeakLoggingNetworkSessionTest
 
     private static Connection connectionMock( boolean open )
     {
-        Connection connection = mock( Connection.class );
+        Connection connection = TestUtil.connectionMock();
         when( connection.isOpen() ).thenReturn( open );
         return connection;
     }

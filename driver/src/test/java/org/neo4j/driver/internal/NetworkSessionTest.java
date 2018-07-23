@@ -74,6 +74,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
@@ -92,6 +93,7 @@ class NetworkSessionTest
         when( connection.reset() ).thenReturn( completedWithNull() );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
+        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -181,7 +183,7 @@ class NetworkSessionTest
     void acquiresNewConnectionForRun()
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        Connection connection = mock( Connection.class );
+        Connection connection = connectionMock();
         when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
         NetworkSession session = newSession( connectionProvider, READ );
 

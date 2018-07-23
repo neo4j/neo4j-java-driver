@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
@@ -47,6 +48,7 @@ public class NettyConnection implements Connection
     private final InboundMessageDispatcher messageDispatcher;
     private final BoltServerAddress serverAddress;
     private final ServerVersion serverVersion;
+    private final BoltProtocol protocol;
     private final ChannelPool channelPool;
     private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
@@ -61,6 +63,7 @@ public class NettyConnection implements Connection
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
         this.serverAddress = ChannelAttributes.serverAddress( channel );
         this.serverVersion = ChannelAttributes.serverVersion( channel );
+        this.protocol = BoltProtocol.forChannel( channel );
         this.channelPool = channelPool;
         this.releaseFuture = new CompletableFuture<>();
         this.clock = clock;
@@ -157,6 +160,12 @@ public class NettyConnection implements Connection
     public ServerVersion serverVersion()
     {
         return serverVersion;
+    }
+
+    @Override
+    public BoltProtocol protocol()
+    {
+        return protocol;
     }
 
     private void writeResetMessageIfNeeded( ResponseHandler resetHandler, boolean isSessionReset )

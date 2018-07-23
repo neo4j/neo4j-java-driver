@@ -29,11 +29,13 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,11 +43,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 class HandshakeCompletedListenerTest
 {
+    private static final String USER_AGENT = "user-agent";
+
     private final EmbeddedChannel channel = new EmbeddedChannel();
 
     @AfterEach
@@ -72,13 +77,25 @@ class HandshakeCompletedListenerTest
     }
 
     @Test
-    void shouldWriteInitMessageWhenHandshakeCompleted()
+    void shouldWriteInitializationMessageInBoltV1WhenHandshakeCompleted()
+    {
+        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+    }
+
+    @Test
+    void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
+    {
+        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+    }
+
+    private void testWritingOfInitializationMessage( int protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
     {
         InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
+        setProtocolVersion( channel, protocolVersion );
         setMessageDispatcher( channel, messageDispatcher );
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener( "user-agent", authToken(),
+        HandshakeCompletedListener listener = new HandshakeCompletedListener( USER_AGENT, authToken(),
                 channelInitializedPromise );
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
@@ -87,12 +104,9 @@ class HandshakeCompletedListenerTest
         listener.operationComplete( handshakeCompletedPromise );
         assertTrue( channel.finish() );
 
-        verify( messageDispatcher ).queue( any( InitResponseHandler.class ) );
+        verify( messageDispatcher ).queue( any( handlerType ) );
         Object outboundMessage = channel.readOutbound();
-        assertThat( outboundMessage, instanceOf( InitMessage.class ) );
-        InitMessage initMessage = (InitMessage) outboundMessage;
-        assertEquals( "user-agent", initMessage.userAgent() );
-        assertEquals( authToken(), initMessage.authToken() );
+        assertEquals( expectedMessage, outboundMessage );
     }
 
     private static Map<String,Value> authToken()

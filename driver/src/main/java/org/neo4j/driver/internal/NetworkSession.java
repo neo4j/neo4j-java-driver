@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -365,7 +364,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
 
         CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection -> QueryRunner.runInSession( connection, statement, waitForRunResponse ) );
+                .thenCompose( connection -> connection.protocol().runInAutoCommitTransaction( connection, statement, waitForRunResponse ) );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
 

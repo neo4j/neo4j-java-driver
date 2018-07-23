@@ -58,13 +58,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
+import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
 
 class NettyConnectionTest
 {
@@ -449,7 +449,8 @@ class NettyConnectionTest
         EmbeddedChannel channel = spy( new EmbeddedChannel() );
         initializeEventLoop( channel, threadName );
         ThreadTrackingInboundMessageDispatcher dispatcher = new ThreadTrackingInboundMessageDispatcher( channel );
-        setMessageDispatcher( channel, dispatcher );
+        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
+        ChannelAttributes.setMessageDispatcher( channel, dispatcher );
 
         NettyConnection connection = newConnection( channel );
         action.accept( connection );
@@ -482,6 +483,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
         return channel;
     }
@@ -489,6 +491,7 @@ class NettyConnectionTest
     private static EmbeddedChannel newChannel( InboundMessageDispatcher messageDispatcher )
     {
         EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
         return channel;
     }

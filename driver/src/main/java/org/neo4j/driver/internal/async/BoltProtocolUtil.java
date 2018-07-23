@@ -20,6 +20,9 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.buffer.ByteBuf;
 
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+
 import static io.netty.buffer.Unpooled.copyInt;
 import static io.netty.buffer.Unpooled.unreleasableBuffer;
 import static java.lang.Integer.toHexString;
@@ -27,9 +30,6 @@ import static java.lang.Integer.toHexString;
 public final class BoltProtocolUtil
 {
     public static final int HTTP = 1213486160; //== 0x48545450 == "HTTP"
-
-    public static final int PROTOCOL_VERSION_1 = 1;
-    public static final int PROTOCOL_VERSION_2 = 2;
 
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
     public static final int NO_PROTOCOL_VERSION = 0;
@@ -40,8 +40,8 @@ public final class BoltProtocolUtil
 
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
-            PROTOCOL_VERSION_2,
-            PROTOCOL_VERSION_1,
+            BoltProtocolV2.VERSION,
+            BoltProtocolV1.VERSION,
             NO_PROTOCOL_VERSION,
             NO_PROTOCOL_VERSION ) ).asReadOnly();
 

@@ -43,6 +43,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
@@ -301,6 +303,7 @@ class ExplicitTransactionTest
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
     {
         Connection connection = mock( Connection.class );
+        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
 
         doAnswer( invocation ->
         {
