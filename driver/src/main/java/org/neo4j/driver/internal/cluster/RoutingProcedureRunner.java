@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -60,7 +59,8 @@ public class RoutingProcedureRunner
 
     CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
-        return QueryRunner.runInSession( connection, procedure, true )
+        return connection.protocol()
+                .runInAutoCommitTransaction( connection, procedure, true )
                 .thenCompose( StatementResultCursor::listAsync );
     }
 

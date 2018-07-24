@@ -32,11 +32,13 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
@@ -46,6 +48,21 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 class ChannelAttributesTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
+
+    @Test
+    void shouldSetAndGetProtocolVersion()
+    {
+        setProtocolVersion( channel, 42 );
+        assertEquals( 42, protocolVersion( channel ) );
+    }
+
+    @Test
+    void shouldFailToSetProtocolVersionTwice()
+    {
+        setProtocolVersion( channel, 42 );
+
+        assertThrows( IllegalStateException.class, () -> setProtocolVersion( channel, -42 ) );
+    }
 
     @Test
     void shouldSetAndGetAddress()

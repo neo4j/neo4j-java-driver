@@ -83,11 +83,10 @@ public class InitResponseHandler implements ResponseHandler
         if ( serverVersion.lessThan( ServerVersion.v3_2_0 ) )
         {
             OutboundMessageHandler outboundHandler = pipeline.get( OutboundMessageHandler.class );
-            if ( outboundHandler == null )
+            if ( outboundHandler != null )
             {
-                throw new IllegalStateException( "Can't find " + OutboundMessageHandler.NAME + " in the pipeline" );
+                pipeline.replace( outboundHandler, OutboundMessageHandler.NAME, outboundHandler.withoutByteArraySupport() );
             }
-            pipeline.replace( outboundHandler, OutboundMessageHandler.NAME, outboundHandler.withoutByteArraySupport() );
         }
     }
 }

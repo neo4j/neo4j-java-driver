@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
 
@@ -45,4 +46,6 @@ public interface Connection
     BoltServerAddress serverAddress();
 
     ServerVersion serverVersion();
+
+    BoltProtocol protocol();
 }

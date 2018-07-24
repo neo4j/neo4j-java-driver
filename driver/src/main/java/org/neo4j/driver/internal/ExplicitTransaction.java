@@ -18,22 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
-import org.neo4j.driver.internal.async.QueryRunner;
 import org.neo4j.driver.internal.async.ResultCursorsHolder;
-import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
-import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
@@ -42,18 +33,11 @@ import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public class ExplicitTransaction extends AbstractStatementRunner implements Transaction
 {
-    private static final String BEGIN_QUERY = "BEGIN";
-
-    private static final Message BEGIN_MESSAGE = new RunMessage( BEGIN_QUERY );
-    private static final Message COMMIT_MESSAGE = new RunMessage( "COMMIT" );
-    private static final Message ROLLBACK_MESSAGE = new RunMessage( "ROLLBACK" );
-
     private enum State
     {
         /** The transaction is running with no explicit success or failure marked */
@@ -79,6 +63,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     }
 
     private final Connection connection;
+    private final BoltProtocol protocol;
     private final NetworkSession session;
     private final ResultCursorsHolder resultCursors;
 
@@ -88,37 +73,24 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     public ExplicitTransaction( Connection connection, NetworkSession session )
     {
         this.connection = connection;
+        this.protocol = connection.protocol();
         this.session = session;
         this.resultCursors = new ResultCursorsHolder();
     }
 
     public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark )
     {
-        if ( initialBookmark.isEmpty() )
-        {
-            connection.write(
-                    BEGIN_MESSAGE, NoOpResponseHandler.INSTANCE,
-                    PullAllMessage.PULL_ALL, NoOpResponseHandler.INSTANCE );
-            return completedFuture( this );
-        }
-        else
-        {
-            CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
-            connection.writeAndFlush(
-                    new RunMessage( BEGIN_QUERY, initialBookmark.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
-                    PullAllMessage.PULL_ALL, new BeginTxResponseHandler( beginTxFuture ) );
-
-            return beginTxFuture.handle( ( ignore, beginError ) ->
-            {
-                if ( beginError != null )
+        return protocol.beginTransaction( connection, initialBookmark )
+                .handle( ( ignore, beginError ) ->
                 {
-                    // release connection if begin failed, transaction can't be started
-                    connection.release();
-                    throw Futures.asCompletionException( beginError );
-                }
-                return this;
-            } );
-        }
+                    if ( beginError != null )
+                    {
+                        // release connection if begin failed, transaction can't be started
+                        connection.release();
+                        throw Futures.asCompletionException( beginError );
+                    }
+                    return this;
+                } );
     }
 
     @Override
@@ -218,8 +190,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage =
-                QueryRunner.runInTransaction( connection, statement, this, waitForRunResponse );
+        CompletionStage<InternalStatementResultCursor> cursorStage = protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse );
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -278,13 +249,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
         }
-
-        CompletableFuture<Void> commitFuture = new CompletableFuture<>();
-        ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture, this );
-        connection.writeAndFlush(
-                COMMIT_MESSAGE, NoOpResponseHandler.INSTANCE,
-                PullAllMessage.PULL_ALL, pullAllHandler );
-        return commitFuture;
+        return protocol.commitTransaction( connection, this );
     }
 
     private CompletionStage<Void> doRollbackAsync()
@@ -293,13 +258,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         {
             return completedWithNull();
         }
-
-        CompletableFuture<Void> rollbackFuture = new CompletableFuture<>();
-        ResponseHandler pullAllHandler = new RollbackTxResponseHandler( rollbackFuture );
-        connection.writeAndFlush(
-                ROLLBACK_MESSAGE, NoOpResponseHandler.INSTANCE,
-                PullAllMessage.PULL_ALL, pullAllHandler );
-        return rollbackFuture;
+        return protocol.rollbackTransaction( connection );
     }
 
     private BiFunction<Void,Throwable,Void> handleCommitOrRollback( Throwable cursorFailure )

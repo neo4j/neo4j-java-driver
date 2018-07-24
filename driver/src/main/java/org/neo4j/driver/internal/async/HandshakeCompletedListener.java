@@ -18,19 +18,16 @@
  */
 package org.neo4j.driver.internal.async;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.handlers.InitResponseHandler;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 
 public class HandshakeCompletedListener implements ChannelFutureListener
 {
@@ -51,13 +48,8 @@ public class HandshakeCompletedListener implements ChannelFutureListener
     {
         if ( future.isSuccess() )
         {
-            Channel channel = future.channel();
-
-            InitMessage message = new InitMessage( userAgent, authToken );
-            InitResponseHandler handler = new InitResponseHandler( connectionInitializedPromise );
-
-            messageDispatcher( channel ).queue( handler );
-            channel.writeAndFlush( message, channel.voidPromise() );
+            BoltProtocol protocol = BoltProtocol.forChannel( future.channel() );
+            protocol.initializeChannel( userAgent, authToken, connectionInitializedPromise );
         }
         else
         {

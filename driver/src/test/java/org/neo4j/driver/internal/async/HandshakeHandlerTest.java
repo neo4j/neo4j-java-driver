@@ -35,7 +35,9 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logging;
@@ -53,8 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
-import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_2;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -190,13 +190,13 @@ class HandshakeHandlerTest
     @Test
     void shouldSelectProtocolV1WhenServerSuggests()
     {
-        testProtocolSelection( PROTOCOL_VERSION_1, MessageFormatV1.class );
+        testProtocolSelection( BoltProtocolV1.VERSION, MessageFormatV1.class );
     }
 
     @Test
     void shouldSelectProtocolV2WhenServerSuggests()
     {
-        testProtocolSelection( PROTOCOL_VERSION_2, MessageFormatV2.class );
+        testProtocolSelection( BoltProtocolV2.VERSION, MessageFormatV2.class );
     }
 
     @Test

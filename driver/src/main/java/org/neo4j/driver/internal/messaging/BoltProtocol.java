@@ -1,0 +1,145 @@
+/*
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.internal.messaging;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPromise;
+
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.InternalStatementResultCursor;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.ClientException;
+
+import static org.neo4j.driver.internal.async.ChannelAttributes.protocolVersion;
+
+public interface BoltProtocol
+{
+    /**
+     * Instantiate {@link MessageFormat} used by this Bolt protocol verison.
+     *
+     * @return new message format.
+     */
+    MessageFormat createMessageFormat();
+
+    /**
+     * Initialize channel after it is connected and handshake selected this protocol version.
+     *
+     * @param userAgent the user agent string.
+     * @param authToken the authentication token.
+     * @param channelInitializedPromise the promise to be notified when initialization is completed.
+     */
+    void initializeChannel( String userAgent, Map<String,Value> authToken, ChannelPromise channelInitializedPromise );
+
+    /**
+     * Begin an explicit transaction.
+     *
+     * @param connection the connection to use.
+     * @param bookmark the bookmark. Never null, should be {@link Bookmark#empty()} when absent.
+     * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
+     */
+    CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark );
+
+    /**
+     * Commit the explicit transaction.
+     *
+     * @param connection the connection to use.
+     * @param tx the explicit transaction being committed. Parameter is needed to update bookmark.
+     * @return a completion stage completed when transaction is committed or completed exceptionally when there was a failure.
+     */
+    CompletionStage<Void> commitTransaction( Connection connection, ExplicitTransaction tx );
+
+    /**
+     * Rollback the explicit transaction.
+     *
+     * @param connection the connection to use.
+     * @return a completion stage completed when transaction is rolled back or completed exceptionally when there was a failure.
+     */
+    CompletionStage<Void> rollbackTransaction( Connection connection );
+
+    /**
+     * Execute the given statement in an aut-commit transaction, i.e. {@link Session#run(Statement)}.
+     *
+     * @param connection the network connection to use.
+     * @param statement the cypher to execute.
+     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * keys populated.
+     * @return stage with cursor.
+     */
+    CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement, boolean waitForRunResponse );
+
+    /**
+     * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.
+     *
+     * @param connection the network connection to use.
+     * @param statement the cypher to execute.
+     * @param tx the transaction which executes the query.
+     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * keys populated.
+     * @return stage with cursor.
+     */
+    CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
+            boolean waitForRunResponse );
+
+    /**
+     * Obtain an instance of the protocol for the given channel.
+     *
+     * @param channel the channel to get protocol for.
+     * @return the protocol.
+     * @throws ClientException when unable to find protocol version for the given channel.
+     */
+    static BoltProtocol forChannel( Channel channel )
+    {
+        return forVersion( protocolVersion( channel ) );
+    }
+
+    /**
+     * Obtain an instance of the protocol for the given channel.
+     *
+     * @param version the version of the protocol.
+     * @return the protocol.
+     * @throws ClientException when unable to find protocol with the given version.
+     */
+    static BoltProtocol forVersion( int version )
+    {
+        if ( version == BoltProtocolV1.VERSION )
+        {
+            return BoltProtocolV1.INSTANCE;
+        }
+        else if ( version == BoltProtocolV2.VERSION )
+        {
+            return BoltProtocolV2.INSTANCE;
+        }
+        else
+        {
+            throw new ClientException( "Unknown protocol version: " + version );
+        }
+    }
+}

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -177,6 +178,12 @@ public class FailingConnectionDriverFactory extends DriverFactory
         public ServerVersion serverVersion()
         {
             return delegate.serverVersion();
+        }
+
+        @Override
+        public BoltProtocol protocol()
+        {
+            return delegate.protocol();
         }
 
         private boolean tryFail( ResponseHandler runHandler, ResponseHandler pullAllHandler )

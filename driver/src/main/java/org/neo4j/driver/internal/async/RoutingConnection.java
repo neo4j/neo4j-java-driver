@@ -23,6 +23,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -100,6 +101,12 @@ public class RoutingConnection implements Connection
     public ServerVersion serverVersion()
     {
         return delegate.serverVersion();
+    }
+
+    @Override
+    public BoltProtocol protocol()
+    {
+        return delegate.protocol();
     }
 
     private RoutingResponseHandler newRoutingResponseHandler( ResponseHandler handler )

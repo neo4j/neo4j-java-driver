@@ -36,8 +36,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Driver;
@@ -56,11 +58,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public final class TestUtil
 {
+    public static final int DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV2.VERSION;
+    public static final BoltProtocol DEFAULT_TEST_PROTOCOL = BoltProtocol.forVersion( DEFAULT_TEST_PROTOCOL_VERSION );
+
     private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
     private static final String ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
 
@@ -182,6 +188,7 @@ public final class TestUtil
     public static Connection connectionMock()
     {
         Connection connection = mock( Connection.class );
+        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );

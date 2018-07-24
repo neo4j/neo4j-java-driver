@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.ReplayingDecoder;
@@ -29,9 +28,8 @@ import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -41,8 +39,6 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
-import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_1;
-import static org.neo4j.driver.internal.async.BoltProtocolUtil.PROTOCOL_VERSION_2;
 
 public class HandshakeHandler extends ReplayingDecoder<Void>
 {
@@ -108,18 +104,43 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         int serverSuggestedVersion = in.readInt();
         log.debug( "S: [Bolt Handshake] %d", serverSuggestedVersion );
 
-        ChannelPipeline pipeline = ctx.pipeline();
         // this is a one-time handler, remove it when protocol version has been read
-        pipeline.remove( this );
+        ctx.pipeline().remove( this );
 
-        switch ( serverSuggestedVersion )
+        BoltProtocol protocol = protocolForVersion( serverSuggestedVersion );
+        if ( protocol != null )
         {
-        case PROTOCOL_VERSION_1:
-            protocolSelected( new MessageFormatV1(), pipeline );
-            break;
-        case PROTOCOL_VERSION_2:
-            protocolSelected( new MessageFormatV2(), pipeline );
-            break;
+            protocolSelected( serverSuggestedVersion, protocol.createMessageFormat(), ctx );
+        }
+        else
+        {
+            handleUnknownSuggestedProtocolVersion( serverSuggestedVersion, ctx );
+        }
+    }
+
+    private BoltProtocol protocolForVersion( int version )
+    {
+        try
+        {
+            return BoltProtocol.forVersion( version );
+        }
+        catch ( ClientException e )
+        {
+            return null;
+        }
+    }
+
+    private void protocolSelected( int version, MessageFormat messageFormat, ChannelHandlerContext ctx )
+    {
+        ChannelAttributes.setProtocolVersion( ctx.channel(), version );
+        pipelineBuilder.build( messageFormat, ctx.pipeline(), logging );
+        handshakeCompletedPromise.setSuccess();
+    }
+
+    private void handleUnknownSuggestedProtocolVersion( int version, ChannelHandlerContext ctx )
+    {
+        switch ( version )
+        {
         case NO_PROTOCOL_VERSION:
             fail( ctx, protocolNoSupportedByServerError() );
             break;
@@ -127,15 +148,9 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
             fail( ctx, httpEndpointError() );
             break;
         default:
-            fail( ctx, protocolNoSupportedByDriverError( serverSuggestedVersion ) );
+            fail( ctx, protocolNoSupportedByDriverError( version ) );
             break;
         }
-    }
-
-    private void protocolSelected( MessageFormat messageFormat, ChannelPipeline pipeline )
-    {
-        pipelineBuilder.build( messageFormat, pipeline, logging );
-        handshakeCompletedPromise.setSuccess();
     }
 
     private void fail( ChannelHandlerContext ctx, Throwable error )
