@@ -109,7 +109,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         }
 
         // write a RESET to "acknowledge" the failure
-        queue( new ResetResponseHandler( this, null ) );
+        queue( new ResetResponseHandler( this ) );
         channel.writeAndFlush( RESET, channel.voidPromise() );
 
         ResponseHandler handler = handlers.remove();
