@@ -22,6 +22,8 @@ import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -45,6 +47,8 @@ import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -358,7 +362,65 @@ class TransactionIT
         testTxCloseErrorPropagation( "rollback_error.script", false, "Unable to rollback" );
     }
 
-    private void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
+    @Test
+    void shouldDisallowQueriesAfterFailureWhenResultsAreConsumed()
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            List<Integer> xs = tx.run( "UNWIND [1,2,3] AS x CREATE (:Node) RETURN x" ).list( record -> record.get( 0 ).asInt() );
+            assertEquals( Arrays.asList( 1, 2, 3 ), xs );
+
+            ClientException error1 = assertThrows( ClientException.class, () -> tx.run( "RETURN unknown" ).consume() );
+            assertThat( error1.code(), containsString( "SyntaxError" ) );
+
+            ClientException error2 = assertThrows( ClientException.class, () -> tx.run( "CREATE (:OtherNode)" ).consume() );
+            assertThat( error2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+
+            ClientException error3 = assertThrows( ClientException.class, () -> tx.run( "RETURN 42" ).consume() );
+            assertThat( error3.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+
+            tx.success();
+        }
+
+        assertEquals( 0, countNodesByLabel( "Node" ) );
+        assertEquals( 0, countNodesByLabel( "OtherNode" ) );
+    }
+
+    @Test
+    void shouldRollbackWhenMarkedSuccessfulButOneStatementFails()
+    {
+        ClientException error = assertThrows( ClientException.class, () ->
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CREATE (:Node1)" );
+                tx.run( "CREATE (:Node2)" );
+                tx.run( "CREATE SmthStrange" );
+                tx.run( "CREATE (:Node3)" );
+                tx.run( "CREATE (:Node4)" );
+
+                tx.success();
+            }
+        } );
+
+        assertThat( error.code(), containsString( "SyntaxError" ) );
+        assertEquals( 1, error.getSuppressed().length );
+        Throwable suppressed = error.getSuppressed()[0];
+        assertThat( suppressed, instanceOf( ClientException.class ) );
+        assertThat( suppressed.getMessage(), startsWith( "Transaction can't be committed" ) );
+
+        assertEquals( 0, countNodesByLabel( "Node1" ) );
+        assertEquals( 0, countNodesByLabel( "Node2" ) );
+        assertEquals( 0, countNodesByLabel( "Node3" ) );
+        assertEquals( 0, countNodesByLabel( "Node4" ) );
+    }
+
+    private static int countNodesByLabel( String label )
+    {
+        return session.run( "MATCH (n:" + label + ") RETURN count(n)" ).single().get( 0 ).asInt();
+    }
+
+    private static void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
     {
         ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
         RoutingSettings instance = new RoutingSettings( 1, 0 );

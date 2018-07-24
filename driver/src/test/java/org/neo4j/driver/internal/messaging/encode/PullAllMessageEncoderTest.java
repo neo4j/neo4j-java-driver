@@ -34,7 +34,7 @@ class PullAllMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodeAckFailureMessage() throws Exception
+    void shouldEncodePullAllMessage() throws Exception
     {
         encoder.encode( PullAllMessage.PULL_ALL, packer );
 

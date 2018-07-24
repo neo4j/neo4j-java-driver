@@ -91,7 +91,7 @@ class ErrorIT
             StatementResult cursor = tx.run( "RETURN 1" );
             cursor.single().get( "1" ).asInt();
         } );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction, because previous statements in the" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
     }
 
     @Test

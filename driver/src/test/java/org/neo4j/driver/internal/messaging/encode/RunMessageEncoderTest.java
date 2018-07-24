@@ -40,7 +40,7 @@ class RunMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodeAckFailureMessage() throws Exception
+    void shouldEncodeRunMessage() throws Exception
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 

@@ -178,7 +178,6 @@ public class NettyConnection implements Connection
             }
             else
             {
-                messageDispatcher.muteAckFailure();
                 // auto-read could've been disabled, re-enable it to automatically receive response for RESET
                 setAutoRead( true );
                 writeAndFlushMessage( ResetMessage.RESET, resetHandler );

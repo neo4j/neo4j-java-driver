@@ -14,5 +14,5 @@ C: RUN "COMMIT" {}
    PULL_ALL
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Unable to commit"}
    IGNORED
-C: ACK_FAILURE
+C: RESET
 S: SUCCESS {}

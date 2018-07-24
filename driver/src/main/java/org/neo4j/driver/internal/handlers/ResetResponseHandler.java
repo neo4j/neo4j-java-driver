@@ -30,6 +30,11 @@ public class ResetResponseHandler implements ResponseHandler
     private final InboundMessageDispatcher messageDispatcher;
     private final CompletableFuture<Void> completionFuture;
 
+    public ResetResponseHandler( InboundMessageDispatcher messageDispatcher )
+    {
+        this( messageDispatcher, null );
+    }
+
     public ResetResponseHandler( InboundMessageDispatcher messageDispatcher, CompletableFuture<Void> completionFuture )
     {
         this.messageDispatcher = messageDispatcher;
@@ -56,8 +61,11 @@ public class ResetResponseHandler implements ResponseHandler
 
     private void resetCompleted( boolean success )
     {
-        messageDispatcher.unMuteAckFailure();
-        resetCompleted( completionFuture, success );
+        messageDispatcher.clearCurrentError();
+        if ( completionFuture != null )
+        {
+            resetCompleted( completionFuture, success );
+        }
     }
 
     protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )

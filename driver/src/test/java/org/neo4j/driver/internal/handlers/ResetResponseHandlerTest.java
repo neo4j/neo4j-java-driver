@@ -50,17 +50,6 @@ class ResetResponseHandlerTest
     }
 
     @Test
-    void shouldUnMuteAckFailureOnSuccess()
-    {
-        InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
-        ResetResponseHandler handler = newHandler( messageDispatcher, new CompletableFuture<>() );
-
-        handler.onSuccess( emptyMap() );
-
-        verify( messageDispatcher ).unMuteAckFailure();
-    }
-
-    @Test
     void shouldCompleteFutureOnFailure() throws Exception
     {
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -72,17 +61,6 @@ class ResetResponseHandlerTest
 
         assertTrue( future.isDone() );
         assertNull( future.get() );
-    }
-
-    @Test
-    void shouldUnMuteAckFailureOnFailure()
-    {
-        InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
-        ResetResponseHandler handler = newHandler( messageDispatcher, new CompletableFuture<>() );
-
-        handler.onFailure( new RuntimeException() );
-
-        verify( messageDispatcher ).unMuteAckFailure();
     }
 
     @Test

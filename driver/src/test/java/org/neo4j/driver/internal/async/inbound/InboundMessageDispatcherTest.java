@@ -34,20 +34,16 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.request.AckFailureMessage.ACK_FAILURE;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.v1.Values.value;
 
 class InboundMessageDispatcherTest
@@ -96,7 +92,7 @@ class InboundMessageDispatcherTest
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
 
-        // ACK_FAILURE handler should remain queued
+        // "RESET after failure" handler should remain queued
         assertEquals( 1, dispatcher.queuedHandlersCount() );
         verifyFailure( handler );
         assertEquals( FAILURE_CODE, ((Neo4jException) dispatcher.currentError()).code() );
@@ -104,7 +100,7 @@ class InboundMessageDispatcherTest
     }
 
     @Test
-    void shouldSendAckFailureOnFailure()
+    void shouldSendResetOnFailure()
     {
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
@@ -114,63 +110,11 @@ class InboundMessageDispatcherTest
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
 
-        verify( channel ).writeAndFlush( eq( ACK_FAILURE ), any() );
+        verify( channel ).writeAndFlush( eq( RESET ), any() );
     }
 
     @Test
-    void shouldNotSendAckFailureOnFailureWhenMuted()
-    {
-        Channel channel = mock( Channel.class );
-        InboundMessageDispatcher dispatcher = newDispatcher( channel );
-        dispatcher.muteAckFailure();
-
-        dispatcher.queue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-
-        verify( channel, never() ).writeAndFlush( eq( ACK_FAILURE ), any() );
-    }
-
-    @Test
-    void shouldUnMuteAckFailureWhenNotMuted()
-    {
-        Channel channel = mock( Channel.class );
-        InboundMessageDispatcher dispatcher = newDispatcher( channel );
-
-        dispatcher.unMuteAckFailure();
-
-        dispatcher.queue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        verify( channel ).writeAndFlush( eq( ACK_FAILURE ), any() );
-    }
-
-    @Test
-    void shouldSendAckFailureAfterUnMute()
-    {
-        Channel channel = mock( Channel.class );
-        InboundMessageDispatcher dispatcher = newDispatcher( channel );
-        dispatcher.muteAckFailure();
-
-        dispatcher.queue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        verify( channel, never() ).writeAndFlush( eq( ACK_FAILURE ), any() );
-
-        dispatcher.unMuteAckFailure();
-
-        dispatcher.queue( mock( ResponseHandler.class ) );
-        assertEquals( 1, dispatcher.queuedHandlersCount() );
-
-        dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
-        verify( channel, times( 1 ) ).writeAndFlush( eq( ACK_FAILURE ), any() );
-    }
-
-    @Test
-    void shouldClearFailureOnAckFailureSuccess()
+    void shouldClearFailureOnSuccessOfResetAfterFailure()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -273,19 +217,6 @@ class InboundMessageDispatcherTest
     }
 
     @Test
-    void shouldFailHandlerOnIgnoredMessageWhenHandlingReset()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
-
-        dispatcher.muteAckFailure();
-        dispatcher.handleIgnoredMessage();
-
-        verify( handler ).onFailure( any( ClientException.class ) );
-    }
-
-    @Test
     void shouldFailHandlerOnIgnoredMessageWhenNoErrorAndNotHandlingReset()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
@@ -309,23 +240,10 @@ class InboundMessageDispatcherTest
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
         dispatcher.handleIgnoredMessage();
 
-        // ACK_FAILURE handler should remain queued
+        // "RESET after failure" handler should remain queued
         assertEquals( 1, dispatcher.queuedHandlersCount() );
         verifyFailure( handler1 );
         verifyFailure( handler2 );
-    }
-
-    @Test
-    void shouldMuteAndUnMuteAckFailure()
-    {
-        InboundMessageDispatcher dispatcher = newDispatcher();
-        assertFalse( dispatcher.isAckFailureMuted() );
-
-        dispatcher.muteAckFailure();
-        assertTrue( dispatcher.isAckFailureMuted() );
-
-        dispatcher.unMuteAckFailure();
-        assertFalse( dispatcher.isAckFailureMuted() );
     }
 
     @Test

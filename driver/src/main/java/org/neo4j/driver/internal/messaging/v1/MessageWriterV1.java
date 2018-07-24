@@ -23,13 +23,11 @@ import java.util.Map;
 import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.encode.AckFailureMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.RunMessageEncoder;
-import org.neo4j.driver.internal.messaging.request.AckFailureMessage;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
@@ -53,7 +51,6 @@ public class MessageWriterV1 extends AbstractMessageWriter
     private static Map<Byte,MessageEncoder> buildEncoders()
     {
         Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 6 );
-        result.put( AckFailureMessage.SIGNATURE, new AckFailureMessageEncoder() );
         result.put( DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder() );
         result.put( InitMessage.SIGNATURE, new InitMessageEncoder() );
         result.put( PullAllMessage.SIGNATURE, new PullAllMessageEncoder() );

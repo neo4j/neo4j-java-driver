@@ -21,11 +21,11 @@ package org.neo4j.driver.internal.async;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class ResultCursorsHolder
@@ -40,28 +40,40 @@ public class ResultCursorsHolder
 
     public CompletionStage<Throwable> retrieveNotConsumedError()
     {
-        return cursorStages.stream()
-                .map( this::retrieveFailure )
-                .reduce( completedWithNull(), this::nonNullFailureFromEither );
+        CompletableFuture<Throwable>[] failures = retrieveAllFailures();
+
+        return CompletableFuture.allOf( failures )
+                .thenApply( ignore -> findFirstFailure( failures ) );
     }
 
-    private CompletionStage<Throwable> retrieveFailure( CompletionStage<InternalStatementResultCursor> cursorStage )
+    @SuppressWarnings( "unchecked" )
+    private CompletableFuture<Throwable>[] retrieveAllFailures()
+    {
+        return cursorStages.stream()
+                .map( ResultCursorsHolder::retrieveFailure )
+                .map( CompletionStage::toCompletableFuture )
+                .toArray( CompletableFuture[]::new );
+    }
+
+    private static Throwable findFirstFailure( CompletableFuture<Throwable>[] completedFailureFutures )
+    {
+        // all given futures should be completed, it is thus safe to get their values
+
+        for ( CompletableFuture<Throwable> failureFuture : completedFailureFutures )
+        {
+            Throwable failure = failureFuture.getNow( null ); // does not block
+            if ( failure != null )
+            {
+                return failure;
+            }
+        }
+        return null;
+    }
+
+    private static CompletionStage<Throwable> retrieveFailure( CompletionStage<InternalStatementResultCursor> cursorStage )
     {
         return cursorStage
                 .exceptionally( cursor -> null )
                 .thenCompose( cursor -> cursor == null ? completedWithNull() : cursor.failureAsync() );
-    }
-
-    private CompletionStage<Throwable> nonNullFailureFromEither( CompletionStage<Throwable> stage1,
-            CompletionStage<Throwable> stage2 )
-    {
-        return stage1.thenCompose( value ->
-        {
-            if ( value != null )
-            {
-                return completedFuture( value );
-            }
-            return stage2;
-        } );
     }
 }

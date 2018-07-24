@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
@@ -29,8 +30,10 @@ import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -113,15 +116,40 @@ class ResultCursorsHolderTest
         assertEquals( error1, await( holder.retrieveNotConsumedError() ) );
     }
 
-    private CompletionStage<InternalStatementResultCursor> cursorWithoutError()
+    @Test
+    void shouldWaitForAllFailuresToArrive()
+    {
+        RuntimeException error1 = new RuntimeException( "Error 1" );
+        CompletableFuture<Throwable> error2Future = new CompletableFuture<>();
+        ResultCursorsHolder holder = new ResultCursorsHolder();
+
+        holder.add( cursorWithoutError() );
+        holder.add( cursorWithError( error1 ) );
+        holder.add( cursorWithFailureFuture( error2Future ) );
+
+        CompletableFuture<Throwable> failureFuture = holder.retrieveNotConsumedError().toCompletableFuture();
+        assertFalse( failureFuture.isDone() );
+
+        error2Future.complete( null );
+        assertTrue( failureFuture.isDone() );
+
+        assertEquals( error1, await( failureFuture ) );
+    }
+
+    private static CompletionStage<InternalStatementResultCursor> cursorWithoutError()
     {
         return cursorWithError( null );
     }
 
-    private CompletionStage<InternalStatementResultCursor> cursorWithError( Throwable error )
+    private static CompletionStage<InternalStatementResultCursor> cursorWithError( Throwable error )
+    {
+        return cursorWithFailureFuture( completedFuture( error ) );
+    }
+
+    private static CompletionStage<InternalStatementResultCursor> cursorWithFailureFuture( CompletableFuture<Throwable> future )
     {
         InternalStatementResultCursor cursor = mock( InternalStatementResultCursor.class );
-        when( cursor.failureAsync() ).thenReturn( completedFuture( error ) );
+        when( cursor.failureAsync() ).thenReturn( future );
         return completedFuture( cursor );
     }
 }
