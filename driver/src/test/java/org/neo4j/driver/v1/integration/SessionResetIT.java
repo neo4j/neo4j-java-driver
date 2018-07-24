@@ -186,7 +186,7 @@ class SessionResetIT
             assertThat( e1.getMessage(), containsString( "You cannot begin a transaction on a session with an open transaction" ) );
 
             ClientException e2 = assertThrows( ClientException.class, () -> tx1.run( "RETURN 1" ) );
-            assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
+            assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
 
             // Make sure failure from the terminated long running statement is propagated
             Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
@@ -513,7 +513,7 @@ class SessionResetIT
             session.reset();
 
             ClientException e = assertThrows( ClientException.class, () -> tx.run( "CREATE (n:FirstNode)" ) );
-            assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction, it has been terminated" ) );
+            assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
         }
     }
 
