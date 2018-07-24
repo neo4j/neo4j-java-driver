@@ -40,26 +40,22 @@ import static org.mockito.Mockito.when;
 class TransactionPullAllResponseHandlerTest
 {
     @Test
-    void shouldMarkTransactionAsFailedOnNonFatalFailures()
+    void shouldMarkTransactionAsTerminatedOnFailures()
     {
-        testErrorHandling( new ClientException( "Neo.ClientError.Cluster.NotALeader", "" ), false );
-        testErrorHandling( new ClientException( "Neo.ClientError.Procedure.ProcedureCallFailed", "" ), false );
-        testErrorHandling( new TransientException( "Neo.TransientError.Transaction.Terminated", "" ), false );
-        testErrorHandling( new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "" ), false );
+        testErrorHandling( new ClientException( "Neo.ClientError.Cluster.NotALeader", "" ) );
+        testErrorHandling( new ClientException( "Neo.ClientError.Procedure.ProcedureCallFailed", "" ) );
+        testErrorHandling( new TransientException( "Neo.TransientError.Transaction.Terminated", "" ) );
+        testErrorHandling( new TransientException( "Neo.TransientError.General.DatabaseUnavailable", "" ) );
+
+        testErrorHandling( new RuntimeException() );
+        testErrorHandling( new IOException() );
+        testErrorHandling( new ServiceUnavailableException( "" ) );
+        testErrorHandling( new SessionExpiredException( "" ) );
+        testErrorHandling( new SessionExpiredException( "" ) );
+        testErrorHandling( new ClientException( "Neo.ClientError.Request.Invalid" ) );
     }
 
-    @Test
-    void shouldMarkTransactionAsTerminatedOnFatalFailures()
-    {
-        testErrorHandling( new RuntimeException(), true );
-        testErrorHandling( new IOException(), true );
-        testErrorHandling( new ServiceUnavailableException( "" ), true );
-        testErrorHandling( new SessionExpiredException( "" ), true );
-        testErrorHandling( new SessionExpiredException( "" ), true );
-        testErrorHandling( new ClientException( "Neo.ClientError.Request.Invalid" ), true );
-    }
-
-    private static void testErrorHandling( Throwable error, boolean fatal )
+    private static void testErrorHandling( Throwable error )
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
@@ -70,13 +66,6 @@ class TransactionPullAllResponseHandlerTest
 
         handler.onFailure( error );
 
-        if ( fatal )
-        {
-            verify( tx ).markTerminated();
-        }
-        else
-        {
-            verify( tx ).failure();
-        }
+        verify( tx ).markTerminated();
     }
 }

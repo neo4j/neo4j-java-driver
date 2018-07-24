@@ -672,7 +672,7 @@ class TransactionAsyncIT
         ((ExplicitTransaction) tx).markTerminated();
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
+        assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
     }
 
     @Test
@@ -754,7 +754,7 @@ class TransactionAsyncIT
         ((ExplicitTransaction) tx).markTerminated();
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
-        assertEquals( "Cannot run more statements in this transaction, it has been terminated", e.getMessage() );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
     }
 
     @Test
@@ -899,7 +899,7 @@ class TransactionAsyncIT
         assertThat( e1.code(), containsString( "SyntaxError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "No current transaction to commit." ) );
+        assertThat( e2.getMessage(), startsWith( "Transaction can't be committed" ) );
     }
 
     @Test
@@ -913,7 +913,7 @@ class TransactionAsyncIT
         assertThat( e1.code(), containsString( "TypeError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "No current transaction to commit." ) );
+        assertThat( e2.getMessage(), startsWith( "Transaction can't be committed" ) );
     }
 
     @Test
@@ -997,7 +997,7 @@ class TransactionAsyncIT
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
         ClientException e = assertThrows( ClientException.class, () -> await( tx1.commitAsync() ) );
-        assertEquals( "Can't commit, transaction has been terminated", e.getMessage() );
+        assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
 
         await( session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "CREATE (:Node {id: 42})" )

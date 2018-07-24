@@ -207,15 +207,13 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         }
         else if ( state == State.MARKED_FAILED )
         {
-            throw new ClientException(
-                    "Cannot run more statements in this transaction, because previous statements in the " +
-                    "transaction has failed and the transaction has been rolled back. Please start a new " +
-                    "transaction to run another statement."
-            );
+            throw new ClientException( "Cannot run more statements in this transaction, it has been marked for failure. " +
+                                       "Please either rollback or close this transaction" );
         }
         else if ( state == State.TERMINATED )
         {
-            throw new ClientException( "Cannot run more statements in this transaction, it has been terminated" );
+            throw new ClientException( "Cannot run more statements in this transaction, " +
+                                       "it has either experienced an fatal error or was explicitly terminated" );
         }
     }
 
@@ -247,7 +245,8 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     {
         if ( state == State.TERMINATED )
         {
-            return failedFuture( new ClientException( "Can't commit, transaction has been terminated" ) );
+            return failedFuture( new ClientException( "Transaction can't be committed. " +
+                                                      "It has been rolled back either because of an error or explicit termination" ) );
         }
         return protocol.commitTransaction( connection, this );
     }
