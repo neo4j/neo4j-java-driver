@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.async.NettyConnection;
+import org.neo4j.driver.internal.async.DirectConnection;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
@@ -55,7 +55,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final PoolSettings settings;
     private final Clock clock;
     private final Logger log;
-    private MetricsListener metricsListener;
+    private final MetricsListener metricsListener;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -97,10 +97,10 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 processAcquisitionError( address, error );
                 assertNotClosed( address, channel, pool );
-                NettyConnection nettyConnection = new NettyConnection( channel, pool, clock, metricsListener );
+                Connection connection = new DirectConnection( channel, pool, clock, metricsListener );
 
                 metricsListener.afterAcquiredOrCreated( address, acquireEvent );
-                return nettyConnection;
+                return connection;
             }
             finally
             {

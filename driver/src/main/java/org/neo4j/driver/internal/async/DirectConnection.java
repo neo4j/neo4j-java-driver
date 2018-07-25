@@ -42,7 +42,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setTerminationReason;
 
-public class NettyConnection implements Connection
+public class DirectConnection implements Connection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
@@ -57,7 +57,7 @@ public class NettyConnection implements Connection
     private final MetricsListener metricsListener;
     private final ListenerEvent inUseEvent;
 
-    public NettyConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
+    public DirectConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );

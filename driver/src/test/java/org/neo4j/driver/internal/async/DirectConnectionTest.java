@@ -66,7 +66,7 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
 
-class NettyConnectionTest
+class DirectConnectionTest
 {
     private static final NoOpResponseHandler NO_OP_HANDLER = NoOpResponseHandler.INSTANCE;
 
@@ -82,14 +82,14 @@ class NettyConnectionTest
     @Test
     void shouldBeOpenAfterCreated()
     {
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
         assertTrue( connection.isOpen() );
     }
 
     @Test
     void shouldNotBeOpenAfterRelease()
     {
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
         connection.release();
         assertFalse( connection.isOpen() );
     }
@@ -98,7 +98,7 @@ class NettyConnectionTest
     void shouldSendResetOnRelease()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -130,7 +130,7 @@ class NettyConnectionTest
     @Test
     void shouldWriteForceReleaseInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "ReleaseTestEventLoop", NettyConnection::release );
+        testWriteInEventLoop( "ReleaseTestEventLoop", DirectConnection::release );
     }
 
     @Test
@@ -139,7 +139,7 @@ class NettyConnectionTest
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
 
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -153,7 +153,7 @@ class NettyConnectionTest
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
 
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.release();
         connection.disableAutoRead(); // does nothing on released connection
@@ -164,7 +164,7 @@ class NettyConnectionTest
     void shouldWriteSingleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.write( PULL_ALL, NO_OP_HANDLER );
 
@@ -178,7 +178,7 @@ class NettyConnectionTest
     void shouldWriteMultipleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.write( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
 
@@ -193,7 +193,7 @@ class NettyConnectionTest
     void shouldWriteAndFlushSingleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER );
 
@@ -205,7 +205,7 @@ class NettyConnectionTest
     void shouldWriteAndFlushMultipleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
 
@@ -218,7 +218,7 @@ class NettyConnectionTest
     void shouldNotWriteSingleMessageWhenReleased()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.write( new RunMessage( "RETURN 1" ), handler );
@@ -233,7 +233,7 @@ class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -247,7 +247,7 @@ class NettyConnectionTest
     void shouldNotWriteAndFlushSingleMessageWhenReleased()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
@@ -262,7 +262,7 @@ class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -276,7 +276,7 @@ class NettyConnectionTest
     void shouldNotWriteSingleMessageWhenTerminated()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.write( new RunMessage( "RETURN 1" ), handler );
@@ -291,7 +291,7 @@ class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -305,7 +305,7 @@ class NettyConnectionTest
     void shouldNotWriteAndFlushSingleMessageWhenTerminated()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
@@ -320,7 +320,7 @@ class NettyConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        NettyConnection connection = newConnection( newChannel() );
+        DirectConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -337,7 +337,7 @@ class NettyConnectionTest
         BoltServerAddress address = new BoltServerAddress( "host", 4242 );
         ChannelAttributes.setServerAddress( channel, address );
 
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
         connection.release();
 
         assertEquals( address, connection.serverAddress() );
@@ -350,7 +350,7 @@ class NettyConnectionTest
         ServerVersion version = ServerVersion.v3_2_0;
         ChannelAttributes.setServerVersion( channel, version );
 
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
         connection.release();
 
         assertEquals( version, connection.serverVersion() );
@@ -360,7 +360,7 @@ class NettyConnectionTest
     void shouldReturnSameCompletionStageFromRelease()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         CompletionStage<Void> releaseStage1 = connection.release();
         CompletionStage<Void> releaseStage2 = connection.release();
@@ -382,7 +382,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.enableAutoRead();
 
@@ -394,7 +394,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.disableAutoRead();
 
@@ -405,7 +405,7 @@ class NettyConnectionTest
     void shouldSetTerminationReasonOnChannelWhenTerminated()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         String reason = "Something really bad has happened";
         connection.terminateAndRelease( reason );
@@ -417,7 +417,7 @@ class NettyConnectionTest
     void shouldCloseChannelWhenTerminated()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
         assertTrue( channel.isActive() );
 
         connection.terminateAndRelease( "test" );
@@ -430,7 +430,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        NettyConnection connection = newConnection( channel, pool );
+        DirectConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "test" );
@@ -443,7 +443,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        NettyConnection connection = newConnection( channel, pool );
+        DirectConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "reason 1" );
@@ -461,7 +461,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        NettyConnection connection = newConnection( channel, pool );
+        DirectConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "test" );
@@ -477,7 +477,7 @@ class NettyConnectionTest
     void shouldSendResetMessageWhenReset()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.reset();
         channel.runPendingTasks();
@@ -490,7 +490,7 @@ class NettyConnectionTest
     void shouldCompleteResetFutureWhenSuccessResponseArrives()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
         channel.runPendingTasks();
@@ -505,7 +505,7 @@ class NettyConnectionTest
     void shouldCompleteResetFutureWhenFailureResponseArrives()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
         channel.runPendingTasks();
@@ -520,7 +520,7 @@ class NettyConnectionTest
     void shouldDoNothingInResetWhenClosed()
     {
         EmbeddedChannel channel = newChannel();
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -539,7 +539,7 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
 
         connection.reset();
         channel.runPendingTasks();
@@ -547,7 +547,7 @@ class NettyConnectionTest
         assertTrue( channel.config().isAutoRead() );
     }
 
-    private void testWriteInEventLoop( String threadName, Consumer<NettyConnection> action ) throws Exception
+    private void testWriteInEventLoop( String threadName, Consumer<DirectConnection> action ) throws Exception
     {
         EmbeddedChannel channel = spy( new EmbeddedChannel() );
         initializeEventLoop( channel, threadName );
@@ -555,7 +555,7 @@ class NettyConnectionTest
         ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
         ChannelAttributes.setMessageDispatcher( channel, dispatcher );
 
-        NettyConnection connection = newConnection( channel );
+        DirectConnection connection = newConnection( channel );
         action.accept( connection );
 
         shutdownEventLoop();
@@ -591,14 +591,14 @@ class NettyConnectionTest
         return channel;
     }
 
-    private static NettyConnection newConnection( Channel channel )
+    private static DirectConnection newConnection( Channel channel )
     {
         return newConnection( channel, mock( ChannelPool.class ) );
     }
 
-    private static NettyConnection newConnection( Channel channel, ChannelPool pool )
+    private static DirectConnection newConnection( Channel channel, ChannelPool pool )
     {
-        return new NettyConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
+        return new DirectConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
     }
 
     private static void assertConnectionReleasedError( IllegalStateException e )
