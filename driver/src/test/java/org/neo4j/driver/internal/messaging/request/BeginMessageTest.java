@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
@@ -18,7 +18,7 @@ class BeginMessageTest
     @Test
     void shouldHaveCorrectMetadata()
     {
-        Bookmark bookmark = Bookmark.from( asList( "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx4242", "neo4j:bookmark:v1:tx424242" ) );
+        Bookmarks bookmarks = Bookmarks.from( asList( "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx4242", "neo4j:bookmark:v1:tx424242" ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "hello", value( "world" ) );
@@ -27,10 +27,10 @@ class BeginMessageTest
 
         Duration txTimeout = Duration.ofSeconds( 13 );
 
-        BeginMessage message = new BeginMessage( bookmark, txTimeout, txMetadata );
+        BeginMessage message = new BeginMessage( bookmarks, txTimeout, txMetadata );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
         expectedMetadata.put( "tx_timeout", value( 13_000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
 

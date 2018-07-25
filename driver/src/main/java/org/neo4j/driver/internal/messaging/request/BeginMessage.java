@@ -22,16 +22,16 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.v1.Value;
 
 public class BeginMessage extends TransactionStartingMessage
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata )
+    public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {
-        super( bookmark, txTimeout, txMetadata );
+        super( bookmarks, txTimeout, txMetadata );
     }
 
     @Override

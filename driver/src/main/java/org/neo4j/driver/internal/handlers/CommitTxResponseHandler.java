@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
@@ -48,7 +48,7 @@ public class CommitTxResponseHandler implements ResponseHandler
         {
             if ( tx != null )
             {
-                tx.setBookmark( Bookmark.from( bookmarkValue.asString() ) );
+                tx.setBookmarks( Bookmarks.from( bookmarkValue.asString() ) );
             }
         }
 

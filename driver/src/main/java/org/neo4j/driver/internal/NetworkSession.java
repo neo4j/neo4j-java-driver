@@ -52,7 +52,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
-    private volatile Bookmark bookmark = Bookmark.empty();
+    private volatile Bookmarks bookmarks = Bookmarks.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
     private volatile CompletionStage<InternalStatementResultCursor> resultCursorStage = completedWithNull();
@@ -138,7 +138,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public Transaction beginTransaction( String bookmark )
     {
-        setBookmark( Bookmark.from( bookmark ) );
+        setBookmarks( Bookmarks.from( bookmark ) );
         return beginTransaction();
     }
 
@@ -173,18 +173,18 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         return transactionAsync( AccessMode.WRITE, work );
     }
 
-    void setBookmark( Bookmark bookmark )
+    void setBookmarks( Bookmarks bookmarks )
     {
-        if ( bookmark != null && !bookmark.isEmpty() )
+        if ( bookmarks != null && !bookmarks.isEmpty() )
         {
-            this.bookmark = bookmark;
+            this.bookmarks = bookmarks;
         }
     }
 
     @Override
     public String lastBookmark()
     {
-        return bookmark == null ? null : bookmark.maxBookmarkAsString();
+        return bookmarks == null ? null : bookmarks.maxBookmarkAsString();
     }
 
     @Override
@@ -387,7 +387,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
                 .thenCompose( connection ->
                 {
                     ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
-                    return tx.beginAsync( bookmark );
+                    return tx.beginAsync( bookmarks );
                 } );
 
         // update the reference to the only known transaction

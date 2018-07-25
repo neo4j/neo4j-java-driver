@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.v1.Value;
 
 public class RunWithMetadataMessage extends TransactionStartingMessage
@@ -32,9 +32,9 @@ public class RunWithMetadataMessage extends TransactionStartingMessage
     private final String statement;
     private final Map<String,Value> parameters;
 
-    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata )
+    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {
-        super( bookmark, txTimeout, txMetadata );
+        super( bookmarks, txTimeout, txMetadata );
         this.statement = statement;
         this.parameters = parameters;
     }

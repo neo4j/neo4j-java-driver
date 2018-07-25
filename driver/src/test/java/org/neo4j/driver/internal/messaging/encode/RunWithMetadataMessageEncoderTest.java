@@ -25,7 +25,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.v1.Value;
@@ -47,7 +47,7 @@ class RunWithMetadataMessageEncoderTest
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
-        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx999" );
+        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx999" );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "key1", value( "value1" ) );
@@ -56,7 +56,7 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmark, txTimeout, txMetadata ), packer );
+        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmarks, txTimeout, txMetadata ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );
@@ -64,7 +64,7 @@ class RunWithMetadataMessageEncoderTest
         order.verify( packer ).pack( params );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
         expectedMetadata.put( "tx_timeout", value( 42 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
 

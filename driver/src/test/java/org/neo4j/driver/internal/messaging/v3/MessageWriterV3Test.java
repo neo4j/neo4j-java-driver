@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.AbstractMessageWriterTestBase;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -43,19 +43,19 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
                 GOODBYE,
-                new BeginMessage( Bookmark.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ) ),
+                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ) ),
                 COMMIT,
                 ROLLBACK,
-                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmark.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
+                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
                         singletonMap( "key", value( 42 ) ) ),
                 PULL_ALL,
                 DISCARD_ALL,
                 RESET,
 
                 // Bolt V3 messages with struct values
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmark.empty(),
+                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
                         Duration.ofSeconds( 1 ), emptyMap() ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmark.empty(),
+                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
                         Duration.ofSeconds( 1 ), emptyMap() )
         );
     }

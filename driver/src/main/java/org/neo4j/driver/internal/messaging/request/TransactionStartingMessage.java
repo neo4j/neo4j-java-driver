@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.request;
 import java.time.Duration;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.Value;
@@ -36,9 +36,9 @@ abstract class TransactionStartingMessage implements Message
 
     final Map<String,Value> metadata;
 
-    TransactionStartingMessage( Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata )
+    TransactionStartingMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {
-        this.metadata = buildMetadata( bookmark, txTimeout, txMetadata );
+        this.metadata = buildMetadata( bookmarks, txTimeout, txMetadata );
     }
 
     public final Map<String,Value> metadata()
@@ -46,13 +46,13 @@ abstract class TransactionStartingMessage implements Message
         return metadata;
     }
 
-    private static Map<String,Value> buildMetadata( Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata )
+    private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {
         Map<String,Value> result = Iterables.newHashMapWithSize( 3 );
 
-        if ( bookmark != null && !bookmark.isEmpty() )
+        if ( bookmarks != null && !bookmarks.isEmpty() )
         {
-            result.put( BOOKMARKS_METADATA_KEY, value( bookmark.values() ) );
+            result.put( BOOKMARKS_METADATA_KEY, value( bookmarks.values() ) );
         }
 
         if ( txTimeout != null )

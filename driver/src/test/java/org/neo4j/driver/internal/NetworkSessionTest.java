@@ -244,7 +244,7 @@ class NetworkSessionTest
     void updatesBookmarkWhenTxIsClosed()
     {
         Transaction tx = session.beginTransaction();
-        setBookmark( tx, Bookmark.from( "TheBookmark" ) );
+        setBookmarks( tx, Bookmarks.from( "TheBookmark" ) );
 
         assertNull( session.lastBookmark() );
 
@@ -271,58 +271,58 @@ class NetworkSessionTest
     @Test
     void bookmarkCanBeSet()
     {
-        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx100" );
+        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx100" );
 
-        session.setBookmark( bookmark );
+        session.setBookmarks( bookmarks );
 
-        assertEquals( bookmark.maxBookmarkAsString(), session.lastBookmark() );
+        assertEquals( bookmarks.maxBookmarkAsString(), session.lastBookmark() );
     }
 
     @Test
     void bookmarkIsPropagatedFromSession()
     {
-        Bookmark bookmark = Bookmark.from( "Bookmark" );
-        NetworkSession session = newSession( connectionProvider, READ, bookmark );
+        Bookmarks bookmarks = Bookmarks.from( "Bookmarks" );
+        NetworkSession session = newSession( connectionProvider, READ, bookmarks );
 
         Transaction tx = session.beginTransaction();
         assertNotNull( tx );
-        verifyBeginTx( connection, bookmark );
+        verifyBeginTx( connection, bookmarks );
     }
 
     @Test
     void bookmarkIsPropagatedInBeginTransaction()
     {
-        Bookmark bookmark = Bookmark.from( "Bookmark" );
+        Bookmarks bookmarks = Bookmarks.from( "Bookmarks" );
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( bookmark );
+        session.setBookmarks( bookmarks );
 
         Transaction tx = session.beginTransaction();
         assertNotNull( tx );
-        verifyBeginTx( connection, bookmark );
+        verifyBeginTx( connection, bookmarks );
     }
 
     @Test
     void bookmarkIsPropagatedBetweenTransactions()
     {
-        Bookmark bookmark1 = Bookmark.from( "Bookmark1" );
-        Bookmark bookmark2 = Bookmark.from( "Bookmark2" );
+        Bookmarks bookmarks1 = Bookmarks.from( "Bookmark1" );
+        Bookmarks bookmarks2 = Bookmarks.from( "Bookmark2" );
 
         NetworkSession session = newSession( connectionProvider, READ );
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            setBookmark( tx, bookmark1 );
+            setBookmarks( tx, bookmarks1 );
         }
 
-        assertEquals( bookmark1, Bookmark.from( session.lastBookmark() ) );
+        assertEquals( bookmarks1, Bookmarks.from( session.lastBookmark() ) );
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            verifyBeginTx( connection, bookmark1 );
-            assertTrue( getBookmark( tx ).isEmpty() );
-            setBookmark( tx, bookmark2 );
+            verifyBeginTx( connection, bookmarks1 );
+            assertTrue( getBookmarks( tx ).isEmpty() );
+            setBookmarks( tx, bookmarks2 );
         }
-        assertEquals( bookmark2, Bookmark.from( session.lastBookmark() ) );
+        assertEquals( bookmarks2, Bookmarks.from( session.lastBookmark() ) );
     }
 
     @Test
@@ -342,7 +342,7 @@ class NetworkSessionTest
     {
         NetworkSession session = newSession( mock( ConnectionProvider.class ), WRITE );
 
-        session.setBookmark( Bookmark.from( "TheBookmark" ) );
+        session.setBookmarks( Bookmarks.from( "TheBookmark" ) );
 
         assertEquals( "TheBookmark", session.lastBookmark() );
     }
@@ -351,7 +351,7 @@ class NetworkSessionTest
     void testPassingNoBookmarkShouldRetainBookmark()
     {
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( Bookmark.from( "X" ) );
+        session.setBookmarks( Bookmarks.from( "X" ) );
         session.beginTransaction();
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
@@ -361,7 +361,7 @@ class NetworkSessionTest
     void testPassingNullBookmarkShouldRetainBookmark()
     {
         NetworkSession session = newSession( connectionProvider, READ );
-        session.setBookmark( Bookmark.from( "X" ) );
+        session.setBookmarks( Bookmarks.from( "X" ) );
         session.beginTransaction( null );
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
@@ -498,18 +498,18 @@ class NetworkSessionTest
     @Test
     void shouldNotOverwriteBookmarkWithNull()
     {
-        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmark.from( "Cat" ) );
+        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmarks.from( "Cat" ) );
         assertEquals( "Cat", session.lastBookmark() );
-        session.setBookmark( null );
+        session.setBookmarks( null );
         assertEquals( "Cat", session.lastBookmark() );
     }
 
     @Test
     void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
-        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmark.from( "Cat" ) );
+        NetworkSession session = newSession( mock( ConnectionProvider.class ), READ, Bookmarks.from( "Cat" ) );
         assertEquals( "Cat", session.lastBookmark() );
-        session.setBookmark( Bookmark.empty() );
+        session.setBookmarks( Bookmarks.empty() );
         assertEquals( "Cat", session.lastBookmark() );
     }
 
@@ -552,8 +552,8 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( READ ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx42" );
-        session.setBookmark( bookmark );
+        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmarks( bookmarks );
 
         Exception e = assertThrows( Exception.class, session::beginTransaction );
         assertEquals( error, e );
@@ -561,7 +561,7 @@ class NetworkSessionTest
         session.run( "RETURN 2" );
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-        verifyBeginTx( connection1, bookmark );
+        verifyBeginTx( connection1, bookmarks );
         verifyRunAndFlush( connection2, "RETURN 2", times( 1 ) );
     }
 
@@ -576,8 +576,8 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( READ ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx42" );
-        session.setBookmark( bookmark );
+        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmarks( bookmarks );
 
         Exception e = assertThrows( Exception.class, session::beginTransaction );
         assertEquals( error, e );
@@ -585,8 +585,8 @@ class NetworkSessionTest
         session.beginTransaction();
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
-        verifyBeginTx( connection1, bookmark );
-        verifyBeginTx( connection2, bookmark );
+        verifyBeginTx( connection1, bookmarks );
+        verifyBeginTx( connection2, bookmarks );
     }
 
     @Test
@@ -807,25 +807,25 @@ class NetworkSessionTest
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
     {
-        return newSession( connectionProvider, mode, Bookmark.empty() );
+        return newSession( connectionProvider, mode, Bookmarks.empty() );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic retryLogic )
     {
-        return newSession( connectionProvider, WRITE, retryLogic, Bookmark.empty() );
+        return newSession( connectionProvider, WRITE, retryLogic, Bookmarks.empty() );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            Bookmark bookmark )
+            Bookmarks bookmarks )
     {
-        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), bookmark );
+        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), bookmarks );
     }
 
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, Bookmark bookmark )
+            RetryLogic retryLogic, Bookmarks bookmarks )
     {
         NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
-        session.setBookmark( bookmark );
+        session.setBookmarks( bookmarks );
         return session;
     }
 
@@ -839,15 +839,15 @@ class NetworkSessionTest
         verify( connectionMock, mode ).write( eq( new RunMessage( "BEGIN" ) ), any(), any(), any() );
     }
 
-    private static void verifyBeginTx( Connection connectionMock, Bookmark bookmark )
+    private static void verifyBeginTx( Connection connectionMock, Bookmarks bookmarks )
     {
-        if ( bookmark.isEmpty() )
+        if ( bookmarks.isEmpty() )
         {
             verify( connectionMock ).write( eq( new RunMessage( "BEGIN" ) ), any(), any(), any() );
         }
         else
         {
-            Map<String,Value> params = bookmark.asBeginTransactionParameters();
+            Map<String,Value> params = bookmarks.asBeginTransactionParameters();
             verify( connectionMock ).writeAndFlush( eq( new RunMessage( "BEGIN", params ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         }
     }
@@ -867,14 +867,14 @@ class NetworkSessionTest
         verify( connectionMock, mode ).writeAndFlush( eq( new RunMessage( statement ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
-    private static Bookmark getBookmark( Transaction tx )
+    private static Bookmarks getBookmarks( Transaction tx )
     {
         return ((ExplicitTransaction) tx).bookmark();
     }
 
-    private static void setBookmark( Transaction tx, Bookmark bookmark )
+    private static void setBookmarks( Transaction tx, Bookmarks bookmarks )
     {
-        ((ExplicitTransaction) tx).setBookmark( bookmark );
+        ((ExplicitTransaction) tx).setBookmarks( bookmarks );
     }
 
     private static void setupFailingCommit( Connection connection, int times )

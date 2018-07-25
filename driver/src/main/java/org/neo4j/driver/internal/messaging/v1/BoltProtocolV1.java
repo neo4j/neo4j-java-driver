@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -83,9 +83,9 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark )
+    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks )
     {
-        if ( bookmark.isEmpty() )
+        if ( bookmarks.isEmpty() )
         {
             connection.write(
                     BEGIN_MESSAGE, NoOpResponseHandler.INSTANCE,
@@ -97,7 +97,7 @@ public class BoltProtocolV1 implements BoltProtocol
         {
             CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
             connection.writeAndFlush(
-                    new RunMessage( BEGIN_QUERY, bookmark.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
+                    new RunMessage( BEGIN_QUERY, bookmarks.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
                     PullAllMessage.PULL_ALL, new BeginTxResponseHandler( beginTxFuture ) );
 
             return beginTxFuture;

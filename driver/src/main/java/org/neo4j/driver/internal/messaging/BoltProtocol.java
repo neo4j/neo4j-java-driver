@@ -24,7 +24,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
@@ -61,10 +61,10 @@ public interface BoltProtocol
      * Begin an explicit transaction.
      *
      * @param connection the connection to use.
-     * @param bookmark the bookmark. Never null, should be {@link Bookmark#empty()} when absent.
+     * @param bookmarks the bookmarks. Never null, should be {@link Bookmarks#empty()} when absent.
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark );
+    CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks );
 
     /**
      * Commit the explicit transaction.

@@ -30,7 +30,7 @@ import static java.util.Collections.singleton;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 import static org.neo4j.driver.v1.Values.value;
 
-public final class Bookmark
+public final class Bookmarks
 {
     private static final String BOOKMARK_KEY = "bookmark";
     private static final String BOOKMARKS_KEY = "bookmarks";
@@ -38,23 +38,23 @@ public final class Bookmark
 
     private static final long UNKNOWN_BOOKMARK_VALUE = -1;
 
-    private static final Bookmark EMPTY = new Bookmark( Collections.<String>emptySet() );
+    private static final Bookmarks EMPTY = new Bookmarks( Collections.emptySet() );
 
     private final Iterable<String> values;
     private final String maxValue;
 
-    private Bookmark( Iterable<String> values )
+    private Bookmarks( Iterable<String> values )
     {
         this.values = values;
         this.maxValue = maxBookmark( values );
     }
 
-    public static Bookmark empty()
+    public static Bookmarks empty()
     {
         return EMPTY;
     }
 
-    public static Bookmark from( String value )
+    public static Bookmarks from( String value )
     {
         if ( value == null )
         {
@@ -63,13 +63,13 @@ public final class Bookmark
         return from( singleton( value ) );
     }
 
-    public static Bookmark from( Iterable<String> values )
+    public static Bookmarks from( Iterable<String> values )
     {
         if ( values == null )
         {
             return empty();
         }
-        return new Bookmark( values );
+        return new Bookmarks( values );
     }
 
     public boolean isEmpty()
@@ -115,9 +115,9 @@ public final class Bookmark
         {
             return false;
         }
-        Bookmark bookmark = (Bookmark) o;
-        return Objects.equals( values, bookmark.values ) &&
-               Objects.equals( maxValue, bookmark.maxValue );
+        Bookmarks bookmarks = (Bookmarks) o;
+        return Objects.equals( values, bookmarks.values ) &&
+               Objects.equals( maxValue, bookmarks.maxValue );
     }
 
     @Override
@@ -129,7 +129,7 @@ public final class Bookmark
     @Override
     public String toString()
     {
-        return "Bookmark{values=" + values + "}";
+        return "Bookmarks{values=" + values + "}";
     }
 
     private static String maxBookmark( Iterable<String> bookmarks )
