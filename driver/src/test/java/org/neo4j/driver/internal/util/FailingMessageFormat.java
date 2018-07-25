@@ -27,7 +27,6 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
@@ -37,11 +36,6 @@ public class FailingMessageFormat implements MessageFormat
     private final AtomicReference<Throwable> writerThrowableRef = new AtomicReference<>();
     private final AtomicReference<Throwable> readerThrowableRef = new AtomicReference<>();
     private final AtomicReference<FailureMessage> readerFailureRef = new AtomicReference<>();
-
-    public FailingMessageFormat()
-    {
-        this( new MessageFormatV1() );
-    }
 
     public FailingMessageFormat( MessageFormat delegate )
     {

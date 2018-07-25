@@ -21,27 +21,27 @@ package org.neo4j.driver.internal.util;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
-import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.v1.Config;
 
-public class ChannelTrackingDriverFactoryWithMessageFormat extends ChannelTrackingDriverFactory
+public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory
 {
-    private final MessageFormat messageFormat;
+    private final ChannelPipelineBuilderWithFailingMessageFormat pipelineBuilder = new ChannelPipelineBuilderWithFailingMessageFormat();
 
-    public ChannelTrackingDriverFactoryWithMessageFormat( MessageFormat messageFormat, Clock clock )
+    public ChannelTrackingDriverFactoryWithFailingMessageFormat( Clock clock )
     {
         super( clock );
-        this.messageFormat = messageFormat;
     }
 
     @Override
-    protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-            Config config, Clock clock )
+    protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config, Clock clock )
     {
-        ChannelPipelineBuilder pipelineBuilder = new ChannelPipelineBuilderWithMessageFormat( messageFormat );
         return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock );
+    }
+
+    public FailingMessageFormat getFailingMessageFormat()
+    {
+        return pipelineBuilder.getFailingMessageFormat();
     }
 }
 

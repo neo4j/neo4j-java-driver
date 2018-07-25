@@ -25,18 +25,22 @@ import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.v1.Logging;
 
-public class ChannelPipelineBuilderWithMessageFormat implements ChannelPipelineBuilder
+public class ChannelPipelineBuilderWithFailingMessageFormat implements ChannelPipelineBuilder
 {
-    private final MessageFormat messageFormat;
-
-    public ChannelPipelineBuilderWithMessageFormat( MessageFormat messageFormat )
-    {
-        this.messageFormat = messageFormat;
-    }
+    private volatile FailingMessageFormat failingMessageFormat;
 
     @Override
-    public void build( MessageFormat ignored, ChannelPipeline pipeline, Logging logging )
+    public void build( MessageFormat messageFormat, ChannelPipeline pipeline, Logging logging )
     {
-        new ChannelPipelineBuilderImpl().build( messageFormat, pipeline, logging );
+        if ( failingMessageFormat == null )
+        {
+            failingMessageFormat = new FailingMessageFormat( messageFormat );
+        }
+        new ChannelPipelineBuilderImpl().build( failingMessageFormat, pipeline, logging );
+    }
+
+    FailingMessageFormat getFailingMessageFormat()
+    {
+        return failingMessageFormat;
     }
 }
