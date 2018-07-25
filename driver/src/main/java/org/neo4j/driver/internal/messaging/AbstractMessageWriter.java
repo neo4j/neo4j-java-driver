@@ -41,7 +41,7 @@ public abstract class AbstractMessageWriter implements MessageFormat.Writer
         MessageEncoder encoder = encodersByMessageSignature.get( signature );
         if ( encoder == null )
         {
-            throw new IllegalArgumentException( "No encoder found for message " + msg + " with signature " + signature );
+            throw new IOException( "No encoder found for message " + msg + " with signature " + signature );
         }
         encoder.encode( msg, packer );
     }

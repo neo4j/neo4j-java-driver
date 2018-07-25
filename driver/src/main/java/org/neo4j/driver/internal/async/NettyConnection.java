@@ -97,11 +97,29 @@ public class NettyConnection implements Connection
     }
 
     @Override
+    public void write( Message message, ResponseHandler handler )
+    {
+        if ( verifyOpen( handler, null ) )
+        {
+            writeMessageInEventLoop( message, handler, false );
+        }
+    }
+
+    @Override
     public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
         if ( verifyOpen( handler1, handler2 ) )
         {
             writeMessagesInEventLoop( message1, handler1, message2, handler2, false );
+        }
+    }
+
+    @Override
+    public void writeAndFlush( Message message, ResponseHandler handler )
+    {
+        if ( verifyOpen( handler, null ) )
+        {
+            writeMessageInEventLoop( message, handler, true );
         }
     }
 
@@ -180,39 +198,48 @@ public class NettyConnection implements Connection
             {
                 // auto-read could've been disabled, re-enable it to automatically receive response for RESET
                 setAutoRead( true );
-                writeAndFlushMessage( ResetMessage.RESET, resetHandler );
+
+                messageDispatcher.queue( resetHandler );
+                channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
             }
         } );
     }
 
-    private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2,
-            ResponseHandler handler2, boolean flush )
+    private void writeMessageInEventLoop( Message message, ResponseHandler handler, boolean flush )
     {
-        channel.eventLoop().execute( () -> writeMessages( message1, handler1, message2, handler2, flush ) );
+        channel.eventLoop().execute( () ->
+        {
+            messageDispatcher.queue( handler );
+
+            if ( flush )
+            {
+                channel.writeAndFlush( message, channel.voidPromise() );
+            }
+            else
+            {
+                channel.write( message, channel.voidPromise() );
+            }
+        } );
     }
 
-    private void writeMessages( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2,
-            boolean flush )
+    private void writeMessagesInEventLoop( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2, boolean flush )
     {
-        messageDispatcher.queue( handler1 );
-        messageDispatcher.queue( handler2 );
-
-        channel.write( message1, channel.voidPromise() );
-
-        if ( flush )
+        channel.eventLoop().execute( () ->
         {
-            channel.writeAndFlush( message2, channel.voidPromise() );
-        }
-        else
-        {
-            channel.write( message2, channel.voidPromise() );
-        }
-    }
+            messageDispatcher.queue( handler1 );
+            messageDispatcher.queue( handler2 );
 
-    private void writeAndFlushMessage( Message message, ResponseHandler handler )
-    {
-        messageDispatcher.queue( handler );
-        channel.writeAndFlush( message, channel.voidPromise() );
+            channel.write( message1, channel.voidPromise() );
+
+            if ( flush )
+            {
+                channel.writeAndFlush( message2, channel.voidPromise() );
+            }
+            else
+            {
+                channel.write( message2, channel.voidPromise() );
+            }
+        } );
     }
 
     private void setAutoRead( boolean value )
@@ -220,7 +247,7 @@ public class NettyConnection implements Connection
         channel.config().setAutoRead( value );
     }
 
-    private boolean verifyOpen( ResponseHandler runHandler, ResponseHandler pullAllHandler )
+    private boolean verifyOpen( ResponseHandler handler1, ResponseHandler handler2 )
     {
         Status connectionStatus = this.status.get();
         switch ( connectionStatus )
@@ -229,13 +256,19 @@ public class NettyConnection implements Connection
             return true;
         case RELEASED:
             Exception error = new IllegalStateException( "Connection has been released to the pool and can't be used" );
-            runHandler.onFailure( error );
-            pullAllHandler.onFailure( error );
+            handler1.onFailure( error );
+            if ( handler2 != null )
+            {
+                handler2.onFailure( error );
+            }
             return false;
         case TERMINATED:
             Exception terminatedError = new IllegalStateException( "Connection has been terminated and can't be used" );
-            runHandler.onFailure( terminatedError );
-            pullAllHandler.onFailure( terminatedError );
+            handler1.onFailure( terminatedError );
+            if ( handler2 != null )
+            {
+                handler2.onFailure( terminatedError );
+            }
             return false;
         default:
             throw new IllegalStateException( "Unknown status: " + connectionStatus );

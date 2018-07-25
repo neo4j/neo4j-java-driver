@@ -56,9 +56,21 @@ public class RoutingConnection implements Connection
     }
 
     @Override
+    public void write( Message message, ResponseHandler handler )
+    {
+        delegate.write( message, newRoutingResponseHandler( handler ) );
+    }
+
+    @Override
     public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
     {
         delegate.write( message1, newRoutingResponseHandler( handler1 ), message2, newRoutingResponseHandler( handler2 ) );
+    }
+
+    @Override
+    public void writeAndFlush( Message message, ResponseHandler handler )
+    {
+        delegate.writeAndFlush( message, newRoutingResponseHandler( handler ) );
     }
 
     @Override

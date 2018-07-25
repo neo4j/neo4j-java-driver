@@ -24,6 +24,11 @@ import java.util.Objects;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 
 import static java.util.Collections.singletonMap;
+import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
+import static org.neo4j.driver.internal.security.InternalAuthToken.PARAMETERS_KEY;
+import static org.neo4j.driver.internal.security.InternalAuthToken.PRINCIPAL_KEY;
+import static org.neo4j.driver.internal.security.InternalAuthToken.REALM_KEY;
+import static org.neo4j.driver.internal.security.InternalAuthToken.SCHEME_KEY;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -64,12 +69,12 @@ public class AuthTokens
         Objects.requireNonNull( password, "Password can't be null" );
 
         Map<String,Value> map = newHashMapWithSize( 4 );
-        map.put( "scheme", value( "basic" ) );
-        map.put( "principal", value( username ) );
-        map.put( "credentials", value( password ) );
+        map.put( SCHEME_KEY, value( "basic" ) );
+        map.put( PRINCIPAL_KEY, value( username ) );
+        map.put( CREDENTIALS_KEY, value( password ) );
         if ( realm != null )
         {
-            map.put( "realm", value( realm ) );
+            map.put( REALM_KEY, value( realm ) );
         }
         return new InternalAuthToken( map );
     }
@@ -87,9 +92,9 @@ public class AuthTokens
         Objects.requireNonNull( base64EncodedTicket, "Ticket can't be null" );
 
         Map<String,Value> map = newHashMapWithSize( 3 );
-        map.put( "scheme", value( "kerberos" ) );
-        map.put( "principal", value( "" ) ); // This empty string is required for backwards compatibility.
-        map.put( "credentials", value( base64EncodedTicket ) );
+        map.put( SCHEME_KEY, value( "kerberos" ) );
+        map.put( PRINCIPAL_KEY, value( "" ) ); // This empty string is required for backwards compatibility.
+        map.put( CREDENTIALS_KEY, value( base64EncodedTicket ) );
         return new InternalAuthToken( map );
     }
 
@@ -126,16 +131,16 @@ public class AuthTokens
         Objects.requireNonNull( scheme, "Scheme can't be null" );
 
         Map<String,Value> map = newHashMapWithSize( 5 );
-        map.put( "scheme", value( scheme ) );
-        map.put( "principal", value( principal ) );
-        map.put( "credentials", value( credentials ) );
+        map.put( SCHEME_KEY, value( scheme ) );
+        map.put( PRINCIPAL_KEY, value( principal ) );
+        map.put( CREDENTIALS_KEY, value( credentials ) );
         if ( realm != null )
         {
-            map.put( "realm", value( realm ) );
+            map.put( REALM_KEY, value( realm ) );
         }
         if ( parameters != null )
         {
-            map.put( "parameters", value( parameters ) );
+            map.put( PARAMETERS_KEY, value( parameters ) );
         }
         return new InternalAuthToken( map );
     }
@@ -148,6 +153,6 @@ public class AuthTokens
      */
     public static AuthToken none()
     {
-        return new InternalAuthToken( singletonMap( "scheme", value( "none" ) ) );
+        return new InternalAuthToken( singletonMap( SCHEME_KEY, value( "none" ) ) );
     }
 }

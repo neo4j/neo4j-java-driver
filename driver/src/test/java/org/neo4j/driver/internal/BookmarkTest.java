@@ -28,9 +28,12 @@ import java.util.Map;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.value;
@@ -148,6 +151,16 @@ class BookmarkTest
         verifyParameters( bookmark,
                 "neo4j:bookmark:v1:tx42",
                 asList( "neo4j:bookmark:v1:tx41", null, "neo4j:bookmark:v1:tx42" ) );
+    }
+
+    @Test
+    void shouldReturnAllBookmarks()
+    {
+        assertIterableEquals( emptyList(), Bookmark.empty().values() );
+        assertIterableEquals( singletonList( "neo4j:bookmark:v1:tx42" ), Bookmark.from( "neo4j:bookmark:v1:tx42" ).values() );
+
+        List<String> bookmarks = asList( "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx2", "neo4j:bookmark:v1:tx3" );
+        assertIterableEquals( bookmarks, Bookmark.from( bookmarks ).values() );
     }
 
     private static void verifyParameters( Bookmark bookmark, String expectedMaxValue, String... expectedValues )

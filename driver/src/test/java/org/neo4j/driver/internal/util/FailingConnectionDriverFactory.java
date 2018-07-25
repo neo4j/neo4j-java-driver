@@ -131,6 +131,16 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
+        public void write( Message message, ResponseHandler handler )
+        {
+            if ( tryFail( handler, null ) )
+            {
+                return;
+            }
+            delegate.write( message, handler );
+        }
+
+        @Override
         public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
         {
             if ( tryFail( handler1, handler2 ) )
@@ -138,6 +148,16 @@ public class FailingConnectionDriverFactory extends DriverFactory
                 return;
             }
             delegate.write( message1, handler1, message2, handler2 );
+        }
+
+        @Override
+        public void writeAndFlush( Message message, ResponseHandler handler )
+        {
+            if ( tryFail( handler, null ) )
+            {
+                return;
+            }
+            delegate.writeAndFlush( message, handler );
         }
 
         @Override
@@ -186,13 +206,16 @@ public class FailingConnectionDriverFactory extends DriverFactory
             return delegate.protocol();
         }
 
-        private boolean tryFail( ResponseHandler runHandler, ResponseHandler pullAllHandler )
+        private boolean tryFail( ResponseHandler handler1, ResponseHandler handler2 )
         {
             Throwable failure = nextRunFailure.getAndSet( null );
             if ( failure != null )
             {
-                runHandler.onFailure( failure );
-                pullAllHandler.onFailure( failure );
+                handler1.onFailure( failure );
+                if ( handler2 != null )
+                {
+                    handler2.onFailure( failure );
+                }
                 return true;
             }
             return false;

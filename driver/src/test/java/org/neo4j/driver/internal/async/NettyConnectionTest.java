@@ -39,7 +39,6 @@ import java.util.function.Consumer;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -60,6 +59,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Iterables.single;
@@ -108,17 +108,23 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldEnqueueHandlersFromEventLoopThread() throws Exception
+    void shouldWriteInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "RunTestEventLoop",
-                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PullAllMessage.PULL_ALL, NO_OP_HANDLER ) );
+        testWriteInEventLoop( "WriteSingleMessage",
+                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER ) );
+
+        testWriteInEventLoop( "WriteMultipleMessages",
+                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PULL_ALL, NO_OP_HANDLER ) );
     }
 
     @Test
-    void shouldWriteRunAndFlushInEventLoopThread() throws Exception
+    void shouldWriteAndFlushInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "RunAndFlushTestEventLoop",
-                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PullAllMessage.PULL_ALL, NO_OP_HANDLER ) );
+        testWriteInEventLoop( "WriteAndFlushSingleMessage",
+                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER ) );
+
+        testWriteInEventLoop( "WriteAndFlushMultipleMessages",
+                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PULL_ALL, NO_OP_HANDLER ) );
     }
 
     @Test
@@ -155,14 +161,82 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldNotRunWhenReleased()
+    void shouldWriteSingleMessage()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.write( PULL_ALL, NO_OP_HANDLER );
+
+        assertEquals( 0, channel.outboundMessages().size() );
+        channel.flushOutbound();
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( PULL_ALL, single( channel.outboundMessages() ) );
+    }
+
+    @Test
+    void shouldWriteMultipleMessage()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.write( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
+
+        assertEquals( 0, channel.outboundMessages().size() );
+        channel.flushOutbound();
+        assertEquals( 2, channel.outboundMessages().size() );
+        assertEquals( PULL_ALL, channel.outboundMessages().poll() );
+        assertEquals( RESET, channel.outboundMessages().poll() );
+    }
+
+    @Test
+    void shouldWriteAndFlushSingleMessage()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER );
+
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertEquals( PULL_ALL, single( channel.outboundMessages() ) );
+    }
+
+    @Test
+    void shouldWriteAndFlushMultipleMessage()
+    {
+        EmbeddedChannel channel = newChannel();
+        NettyConnection connection = newConnection( channel );
+
+        connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
+
+        assertEquals( 2, channel.outboundMessages().size() );
+        assertEquals( PULL_ALL, channel.outboundMessages().poll() );
+        assertEquals( RESET, channel.outboundMessages().poll() );
+    }
+
+    @Test
+    void shouldNotWriteSingleMessageWhenReleased()
+    {
+        ResponseHandler handler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( newChannel() );
+
+        connection.release();
+        connection.write( new RunMessage( "RETURN 1" ), handler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( handler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    void shouldNotWriteMultipleMessagesWhenReleased()
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.write( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
+        connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -170,14 +244,28 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldNotRunAndFlushWhenReleased()
+    void shouldNotWriteAndFlushSingleMessageWhenReleased()
+    {
+        ResponseHandler handler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( newChannel() );
+
+        connection.release();
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( handler ).onFailure( failureCaptor.capture() );
+        assertConnectionReleasedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    void shouldNotWriteAndFlushMultipleMessagesWhenReleased()
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -185,14 +273,28 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldNotRunWhenTerminated()
+    void shouldNotWriteSingleMessageWhenTerminated()
+    {
+        ResponseHandler handler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( newChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.write( new RunMessage( "RETURN 1" ), handler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( handler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    void shouldNotWriteMultipleMessagesWhenTerminated()
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.write( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
+        connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -200,14 +302,28 @@ class NettyConnectionTest
     }
 
     @Test
-    void shouldNotRunAndFlushWhenTerminated()
+    void shouldNotWriteAndFlushSingleMessageWhenTerminated()
+    {
+        ResponseHandler handler = mock( ResponseHandler.class );
+        NettyConnection connection = newConnection( newChannel() );
+
+        connection.terminateAndRelease( "42" );
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
+
+        ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
+        verify( handler ).onFailure( failureCaptor.capture() );
+        assertConnectionTerminatedError( failureCaptor.getValue() );
+    }
+
+    @Test
+    void shouldNotWriteAndFlushMultipleMessagesWhenTerminated()
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
         NettyConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PullAllMessage.PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -470,14 +586,6 @@ class NettyConnectionTest
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         InboundMessageDispatcher messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
-        ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
-        return channel;
-    }
-
-    private static EmbeddedChannel newChannel( InboundMessageDispatcher messageDispatcher )
-    {
-        EmbeddedChannel channel = new EmbeddedChannel();
         ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
         return channel;

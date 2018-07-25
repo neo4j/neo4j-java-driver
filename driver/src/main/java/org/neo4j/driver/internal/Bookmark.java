@@ -82,6 +82,11 @@ public final class Bookmark
         return maxValue;
     }
 
+    public Iterable<String> values()
+    {
+        return values;
+    }
+
     public Map<String,Value> asBeginTransactionParameters()
     {
         if ( isEmpty() )

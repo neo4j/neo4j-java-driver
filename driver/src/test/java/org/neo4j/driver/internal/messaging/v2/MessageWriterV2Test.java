@@ -18,40 +18,58 @@
  */
 package org.neo4j.driver.internal.messaging.v2;
 
-import org.junit.jupiter.api.Test;
-
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.messaging.AbstractMessageWriterTestBase;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
+import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 
 class MessageWriterV2Test extends AbstractMessageWriterTestBase
 {
-    @Test
-    void shouldWriteMessageWithTemporalValue() throws Exception
-    {
-        RunMessage message = new RunMessage( "RETURN $now", singletonMap( "now", value( LocalDateTime.now() ) ) );
-
-        testMessageWriting( message, 2 );
-    }
-
-    @Test
-    void shouldWriteMessageWithSpatialValue() throws Exception
-    {
-        RunMessage message = new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) );
-
-        testMessageWriting( message, 2 );
-    }
-
     @Override
     protected Writer newWriter( PackOutput output )
     {
         return new MessageWriterV2( output );
+    }
+
+    @Override
+    protected Stream<Message> supportedMessages()
+    {
+        return Stream.of(
+                new InitMessage( "MyDriver/1.2.3", singletonMap( "password", value( "hello" ) ) ),
+                new RunMessage( "RETURN 1", singletonMap( "key", value( 42 ) ) ),
+                new RunMessage( "RETURN $now", singletonMap( "now", value( LocalDateTime.now() ) ) ), // RUN with temporal value
+                new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) ), // RUN with spatial value
+                PULL_ALL,
+                DISCARD_ALL,
+                RESET
+        );
+    }
+
+    @Override
+    protected Stream<Message> unsupportedMessages()
+    {
+        return Stream.of(
+                new HelloMessage( "JavaDriver/1.1.0", emptyMap() ),
+                GOODBYE,
+                COMMIT,
+                ROLLBACK
+        );
     }
 }
