@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -95,7 +96,7 @@ class LeakLoggingNetworkSessionTest
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
         return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), READ,
-                new FixedRetryLogic( 0 ), logging );
+                new FixedRetryLogic( 0 ), TransactionConfig.empty(), logging );
     }
 
     private static ConnectionProvider connectionProviderMock( boolean openConnection )

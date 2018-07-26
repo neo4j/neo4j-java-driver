@@ -105,6 +105,6 @@ class ParametersTest
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
-        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
+        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, TransactionConfig.empty(), DEV_NULL_LOGGING );
     }
 }

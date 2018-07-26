@@ -83,21 +83,6 @@ class ExtractTest
     }
 
     @Test
-    void testMapShouldNotBeModifiable()
-    {
-        // GIVEN
-        Map<String,Value> map = new HashMap<>();
-        map.put( "k1", value( "foo" ) );
-        map.put( "k2", value( 42 ) );
-
-        // WHEN
-        Map<String,Value> valueMap = Extract.map( map );
-
-        // THEN
-        assertThrows( UnsupportedOperationException.class, () -> valueMap.put( "foo", value( "bar" ) ) );
-    }
-
-    @Test
     void testMapValues()
     {
         // GIVEN

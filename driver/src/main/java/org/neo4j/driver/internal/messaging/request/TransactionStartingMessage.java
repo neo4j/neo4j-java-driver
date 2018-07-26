@@ -26,6 +26,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.Value;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.v1.Values.value;
 
 abstract class TransactionStartingMessage implements Message
@@ -48,19 +49,26 @@ abstract class TransactionStartingMessage implements Message
 
     private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {
+        boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
+        boolean txTimeoutPresent = txTimeout != null;
+        boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
+
+        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent )
+        {
+            return emptyMap();
+        }
+
         Map<String,Value> result = Iterables.newHashMapWithSize( 3 );
 
-        if ( bookmarks != null && !bookmarks.isEmpty() )
+        if ( bookmarksPresent )
         {
             result.put( BOOKMARKS_METADATA_KEY, value( bookmarks.values() ) );
         }
-
-        if ( txTimeout != null )
+        if ( txTimeoutPresent )
         {
             result.put( TX_TIMEOUT_METADATA_KEY, value( txTimeout.toMillis() ) );
         }
-
-        if ( txMetadata != null && !txMetadata.isEmpty() )
+        if ( txMetadataPresent )
         {
             result.put( TX_METADATA_METADATA_KEY, value( txMetadata ) );
         }

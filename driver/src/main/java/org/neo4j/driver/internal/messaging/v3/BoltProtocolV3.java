@@ -47,6 +47,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -83,9 +84,9 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks )
+    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
-        BeginMessage beginMessage = new BeginMessage( bookmarks, null, null );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config );
 
         if ( bookmarks.isEmpty() )
         {
@@ -117,26 +118,27 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement, boolean waitForRunResponse )
+    public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
+            Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, null, waitForRunResponse );
+        return runStatement( connection, statement, null, bookmarks, config, waitForRunResponse );
     }
 
     @Override
     public CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, tx, waitForRunResponse );
+        return runStatement( connection, statement, tx, Bookmarks.empty(), TransactionConfig.empty(), waitForRunResponse );
     }
 
     private static CompletionStage<InternalStatementResultCursor> runStatement( Connection connection, Statement statement,
-            ExplicitTransaction tx, boolean waitForRunResponse )
+            ExplicitTransaction tx, Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        Message runMessage = new RunWithMetadataMessage( query, params, null, null, null );
+        Message runMessage = new RunWithMetadataMessage( query, params, bookmarks, config );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 

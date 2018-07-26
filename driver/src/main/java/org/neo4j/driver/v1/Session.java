@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
@@ -77,6 +78,8 @@ public interface Session extends Resource, StatementRunner
      */
     Transaction beginTransaction();
 
+    Transaction beginTransaction( TransactionConfig config );
+
     /**
      * Begin a new <em>explicit {@linkplain Transaction transaction}</em>,
      * requiring that the server hosting is at least as up-to-date as the
@@ -112,6 +115,8 @@ public interface Session extends Resource, StatementRunner
      */
     CompletionStage<Transaction> beginTransactionAsync();
 
+    CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config );
+
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
      * <p>
@@ -126,6 +131,8 @@ public interface Session extends Resource, StatementRunner
      * @return a result as returned by the given unit of work.
      */
     <T> T readTransaction( TransactionWork<T> work );
+
+    <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction.
@@ -150,6 +157,8 @@ public interface Session extends Resource, StatementRunner
      */
     <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work );
 
+    <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config );
+
     /**
      * Execute given unit of work in a  {@link AccessMode#WRITE write} transaction.
      * <p>
@@ -164,6 +173,8 @@ public interface Session extends Resource, StatementRunner
      * @return a result as returned by the given unit of work.
      */
     <T> T writeTransaction( TransactionWork<T> work );
+
+    <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction.
@@ -187,6 +198,20 @@ public interface Session extends Resource, StatementRunner
      * unit of work. Stage can be completed exceptionally if given work or commit fails.
      */
     <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work );
+
+    <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config );
+
+    StatementResult run( String statement, TransactionConfig config );
+
+    StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config );
+
+    StatementResult run( Statement statement, TransactionConfig config );
+
+    CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config );
+
+    CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config );
+
+    CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed

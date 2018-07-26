@@ -28,6 +28,7 @@ import static java.lang.Integer.compare;
 
 public class ServerVersion
 {
+    public static final ServerVersion v3_5_0 = new ServerVersion( 3, 5, 0 );
     public static final ServerVersion v3_4_0 = new ServerVersion( 3, 4, 0 );
     public static final ServerVersion v3_2_0 = new ServerVersion( 3, 2, 0 );
     public static final ServerVersion v3_1_0 = new ServerVersion( 3, 1, 0 );

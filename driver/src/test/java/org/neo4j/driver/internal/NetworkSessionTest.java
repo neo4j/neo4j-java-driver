@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -362,7 +363,7 @@ class NetworkSessionTest
     {
         NetworkSession session = newSession( connectionProvider, READ );
         session.setBookmarks( Bookmarks.from( "X" ) );
-        session.beginTransaction( null );
+        session.beginTransaction( (String) null );
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
 
@@ -824,7 +825,7 @@ class NetworkSessionTest
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, Bookmarks bookmarks )
     {
-        NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING );
+        NetworkSession session = new NetworkSession( connectionProvider, mode, retryLogic, TransactionConfig.empty(), DEV_NULL_LOGGING );
         session.setBookmarks( bookmarks );
         return session;
     }

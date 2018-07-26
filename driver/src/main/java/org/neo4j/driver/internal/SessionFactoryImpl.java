@@ -26,11 +26,13 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.TransactionConfig;
 
 public class SessionFactoryImpl implements SessionFactory
 {
     private final ConnectionProvider connectionProvider;
     private final RetryLogic retryLogic;
+    private final TransactionConfig defaultTransactionConfig;
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
 
@@ -39,6 +41,7 @@ public class SessionFactoryImpl implements SessionFactory
         this.connectionProvider = connectionProvider;
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
         this.retryLogic = retryLogic;
+        this.defaultTransactionConfig = config.defaultTransactionConfig();
         this.logging = config.logging();
     }
 
@@ -78,7 +81,7 @@ public class SessionFactoryImpl implements SessionFactory
             AccessMode mode, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging )
-               : new NetworkSession( connectionProvider, mode, retryLogic, logging );
+               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, defaultTransactionConfig, logging )
+               : new NetworkSession( connectionProvider, mode, retryLogic, defaultTransactionConfig, logging );
     }
 }

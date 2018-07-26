@@ -92,6 +92,7 @@ public class Config
 
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final ServerAddressResolver resolver;
+    private final TransactionConfig defaultTransactionConfig;
 
     private Config( ConfigBuilder builder)
     {
@@ -111,6 +112,7 @@ public class Config
         this.retrySettings = builder.retrySettings;
         this.loadBalancingStrategy = builder.loadBalancingStrategy;
         this.resolver = builder.resolver;
+        this.defaultTransactionConfig = builder.defaultTransactionConfig;
     }
 
     /**
@@ -241,6 +243,11 @@ public class Config
         return resolver;
     }
 
+    public TransactionConfig defaultTransactionConfig()
+    {
+        return defaultTransactionConfig;
+    }
+
     /**
      * Return a {@link ConfigBuilder} instance
      * @return a {@link ConfigBuilder} instance
@@ -287,6 +294,7 @@ public class Config
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
+        private TransactionConfig defaultTransactionConfig = TransactionConfig.empty();
 
         private ConfigBuilder() {}
 
@@ -743,6 +751,12 @@ public class Config
         public ConfigBuilder withResolver( ServerAddressResolver resolver )
         {
             this.resolver = Objects.requireNonNull( resolver, "resolver" );
+            return this;
+        }
+
+        public ConfigBuilder withDefaultTransactionConfig( TransactionConfig defaultTransactionConfig )
+        {
+            this.defaultTransactionConfig = Objects.requireNonNull( defaultTransactionConfig, "defaultTransactionConfig" );
             return this;
         }
 

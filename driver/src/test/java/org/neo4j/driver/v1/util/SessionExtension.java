@@ -27,9 +27,11 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.TypeSystem;
@@ -88,6 +90,12 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
         return realSession.beginTransaction();
     }
 
+    @Override
+    public Transaction beginTransaction( TransactionConfig config )
+    {
+        return realSession.beginTransaction( config );
+    }
+
     @Deprecated
     @Override
     public Transaction beginTransaction( String bookmark )
@@ -102,9 +110,21 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    public CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config )
+    {
+        return realSession.beginTransactionAsync( config );
+    }
+
+    @Override
     public <T> T readTransaction( TransactionWork<T> work )
     {
         return realSession.readTransaction( work );
+    }
+
+    @Override
+    public <T> T readTransaction( TransactionWork<T> work, TransactionConfig config )
+    {
+        return realSession.readTransaction( work, config );
     }
 
     @Override
@@ -114,15 +134,33 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    {
+        return realSession.readTransactionAsync( work, config );
+    }
+
+    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return realSession.writeTransaction( work );
     }
 
     @Override
+    public <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config )
+    {
+        return realSession.writeTransaction( work, config );
+    }
+
+    @Override
     public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
         return realSession.writeTransactionAsync( work );
+    }
+
+    @Override
+    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    {
+        return realSession.writeTransactionAsync( work, config );
     }
 
     @Override
@@ -190,6 +228,42 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     public CompletionStage<StatementResultCursor> runAsync( org.neo4j.driver.v1.Statement statement )
     {
         return realSession.runAsync( statement );
+    }
+
+    @Override
+    public StatementResult run( String statement, TransactionConfig config )
+    {
+        return realSession.run( statement, config );
+    }
+
+    @Override
+    public StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    {
+        return realSession.run( statement, parameters, config );
+    }
+
+    @Override
+    public StatementResult run( Statement statement, TransactionConfig config )
+    {
+        return realSession.run( statement, config );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config )
+    {
+        return realSession.runAsync( statement, config );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config )
+    {
+        return realSession.runAsync( statement, parameters, config );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config )
+    {
+        return realSession.runAsync( statement, config );
     }
 
     @Override

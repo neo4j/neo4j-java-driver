@@ -25,6 +25,21 @@ public final class Preconditions
     }
 
     /**
+     * Assert that given expression is true.
+     *
+     * @param expression the value to check.
+     * @param message the message.
+     * @throws IllegalArgumentException if given value is {@code false}.
+     */
+    public static void checkArgument( boolean expression, String message )
+    {
+        if ( !expression )
+        {
+            throw new IllegalArgumentException( message );
+        }
+    }
+
+    /**
      * Assert that given argument is of expected type.
      *
      * @param argument the object to check.

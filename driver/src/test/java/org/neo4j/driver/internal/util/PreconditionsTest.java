@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,16 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 class PreconditionsTest
 {
+    @Test
+    void shouldCheckBooleanArgument()
+    {
+        assertDoesNotThrow( () -> checkArgument( true, "" ) );
+        assertDoesNotThrow( () -> checkArgument( !Duration.ofSeconds( 1 ).isZero(), "" ) );
+
+        assertThrows( IllegalArgumentException.class, () -> checkArgument( false, "" ) );
+        assertThrows( IllegalArgumentException.class, () -> checkArgument( Period.ofDays( 2 ).isNegative(), "" ) );
+    }
+
     @Test
     void shouldCheckArgumentType()
     {

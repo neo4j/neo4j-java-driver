@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
+import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 
 public enum Neo4jFeature
 {
@@ -34,7 +35,8 @@ public enum Neo4jFeature
     READ_ON_FOLLOWERS_BY_DEFAULT( v3_2_0 ),
     STATEMENT_RESULT_TIMINGS( v3_1_0 ),
     LIST_QUERIES_PROCEDURE( v3_1_0 ),
-    CONNECTOR_LISTEN_ADDRESS_CONFIGURATION( v3_1_0 );
+    CONNECTOR_LISTEN_ADDRESS_CONFIGURATION( v3_1_0 ),
+    BOLT_V3( v3_5_0 );
 
     private final ServerVersion availableFromVersion;
 
