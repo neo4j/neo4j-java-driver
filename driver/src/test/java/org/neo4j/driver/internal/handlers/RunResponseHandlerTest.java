@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_AVAILABLE_AFTER_METADATA_KEY;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -114,11 +115,11 @@ class RunResponseHandlerTest
 
     private static RunResponseHandler newHandler()
     {
-        return new RunResponseHandler( new CompletableFuture<>() );
+        return newHandler( new CompletableFuture<>() );
     }
 
     private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture )
     {
-        return new RunResponseHandler( runCompletedFuture );
+        return new RunResponseHandler( runCompletedFuture, RESULT_AVAILABLE_AFTER_METADATA_KEY );
     }
 }

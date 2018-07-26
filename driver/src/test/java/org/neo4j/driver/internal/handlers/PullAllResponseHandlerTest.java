@@ -54,6 +54,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_AVAILABLE_AFTER_METADATA_KEY;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_CONSUMED_AFTER_METADATA_KEY;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -1067,9 +1069,9 @@ class PullAllResponseHandlerTest
     private static PullAllResponseHandler newHandler( Statement statement, List<String> statementKeys,
             Connection connection )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>() );
+        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), RESULT_AVAILABLE_AFTER_METADATA_KEY );
         runResponseHandler.onSuccess( singletonMap( "fields", value( statementKeys ) ) );
-        return new TestPullAllResponseHandler( statement, runResponseHandler, connection );
+        return new TestPullAllResponseHandler( statement, runResponseHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection );
     }
 
     private static Connection connectionMock()
@@ -1089,9 +1091,10 @@ class PullAllResponseHandlerTest
 
     private static class TestPullAllResponseHandler extends PullAllResponseHandler
     {
-        TestPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
+        public TestPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, String resultConsumedAfterMetadataKey,
+                Connection connection )
         {
-            super( statement, runResponseHandler, connection );
+            super( statement, runResponseHandler, resultConsumedAfterMetadataKey, connection );
         }
 
         @Override

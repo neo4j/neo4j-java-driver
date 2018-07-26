@@ -58,6 +58,9 @@ import static org.neo4j.driver.v1.summary.StatementType.WRITE_ONLY;
 
 class MetadataUtilTest
 {
+    private static final String RESULT_AVAILABLE_AFTER_KEY = "available_after";
+    private static final String RESULT_CONSUMED_AFTER_KEY = "consumed_after";
+
     @Test
     void shouldExtractStatementKeys()
     {
@@ -76,15 +79,15 @@ class MetadataUtilTest
     @Test
     void shouldExtractResultAvailableAfter()
     {
-        long extractedResultAvailableAfter = extractResultAvailableAfter(
-                singletonMap( "result_available_after", value( 424242 ) ) );
+        Map<String,Value> metadata = singletonMap( RESULT_AVAILABLE_AFTER_KEY, value( 424242 ) );
+        long extractedResultAvailableAfter = extractResultAvailableAfter( metadata, RESULT_AVAILABLE_AFTER_KEY );
         assertEquals( 424242L, extractedResultAvailableAfter );
     }
 
     @Test
     void shouldExtractNoResultAvailableAfterWhenNoneInMetadata()
     {
-        long extractedResultAvailableAfter = extractResultAvailableAfter( emptyMap() );
+        long extractedResultAvailableAfter = extractResultAvailableAfter( emptyMap(), RESULT_AVAILABLE_AFTER_KEY );
         assertEquals( -1, extractedResultAvailableAfter );
     }
 
@@ -94,7 +97,7 @@ class MetadataUtilTest
         Statement statement = new Statement( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
                 singletonMap( "name", "Apa" ) );
 
-        ResultSummary summary = extractSummary( statement, connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement, connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( statement, summary.statement() );
     }
@@ -104,7 +107,7 @@ class MetadataUtilTest
     {
         Connection connection = connectionMock( new BoltServerAddress( "server:42" ), ServerVersion.v3_2_0 );
 
-        ResultSummary summary = extractSummary( statement(), connection, 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connection, 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( "server:42", summary.server().address() );
         assertEquals( "Neo4j/3.2.0", summary.server().version() );
@@ -140,7 +143,7 @@ class MetadataUtilTest
 
         Map<String,Value> metadata = singletonMap( "stats", stats );
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( 42, summary.counters().nodesCreated() );
         assertEquals( 4242, summary.counters().nodesDeleted() );
@@ -158,7 +161,7 @@ class MetadataUtilTest
     @Test
     void shouldBuildResultSummaryWithoutCounters()
     {
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
         assertEquals( EMPTY_STATS, summary.counters() );
     }
 
@@ -179,7 +182,7 @@ class MetadataUtilTest
         ) );
         Map<String,Value> metadata = singletonMap( "plan", plan );
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
 
         assertTrue( summary.hasPlan() );
         assertEquals( "Projection", summary.plan().operatorType() );
@@ -199,7 +202,7 @@ class MetadataUtilTest
     @Test
     void shouldBuildResultSummaryWithoutPlan()
     {
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
         assertFalse( summary.hasPlan() );
         assertNull( summary.plan() );
     }
@@ -225,7 +228,7 @@ class MetadataUtilTest
         ) );
         Map<String,Value> metadata = singletonMap( "profile", profile );
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
 
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
@@ -249,7 +252,7 @@ class MetadataUtilTest
     @Test
     void shouldBuildResultSummaryWithoutProfiledPlan()
     {
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
         assertFalse( summary.hasProfile() );
         assertNull( summary.profile() );
     }
@@ -282,7 +285,7 @@ class MetadataUtilTest
         Value notifications = value( notification1, notification2 );
         Map<String,Value> metadata = singletonMap( "notifications", notifications );
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( 2, summary.notifications().size() );
         Notification firstNotification = summary.notifications().get( 0 );
@@ -304,7 +307,7 @@ class MetadataUtilTest
     @Test
     void shouldBuildResultSummaryWithoutNotifications()
     {
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
         assertEquals( 0, summary.notifications().size() );
     }
 
@@ -313,7 +316,7 @@ class MetadataUtilTest
     {
         int value = 42_000;
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), value, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), value, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( 42, summary.resultAvailableAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) );
@@ -323,9 +326,9 @@ class MetadataUtilTest
     void shouldBuildResultSummaryWithResultConsumedAfter()
     {
         int value = 42_000;
-        Map<String,Value> metadata = singletonMap( "result_consumed_after", value( value ) );
+        Map<String,Value> metadata = singletonMap( RESULT_CONSUMED_AFTER_KEY, value( value ) );
 
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
 
         assertEquals( 42, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
@@ -334,7 +337,7 @@ class MetadataUtilTest
     @Test
     void shouldBuildResultSummaryWithoutResultConsumedAfter()
     {
-        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractSummary( statement(), connectionMock(), 42, emptyMap(), RESULT_CONSUMED_AFTER_KEY );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
     }
@@ -342,7 +345,7 @@ class MetadataUtilTest
     private static ResultSummary createWithStatementType( Value typeValue )
     {
         Map<String,Value> metadata = singletonMap( "type", typeValue );
-        return extractSummary( statement(), connectionMock(), 42, metadata );
+        return extractSummary( statement(), connectionMock(), 42, metadata, RESULT_CONSUMED_AFTER_KEY );
     }
 
     private static Statement statement()

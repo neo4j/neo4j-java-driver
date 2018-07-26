@@ -28,10 +28,10 @@ public class TransactionPullAllResponseHandler extends PullAllResponseHandler
 {
     private final ExplicitTransaction tx;
 
-    public TransactionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
+    public TransactionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, String resultConsumedAfterMetadataKey,
             Connection connection, ExplicitTransaction tx )
     {
-        super( statement, runResponseHandler, connection );
+        super( statement, runResponseHandler, resultConsumedAfterMetadataKey, connection );
         this.tx = requireNonNull( tx );
     }
 

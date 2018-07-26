@@ -24,9 +24,9 @@ import org.neo4j.driver.v1.Statement;
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
     public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection )
+            String resultConsumedAfterMetadataKey, Connection connection )
     {
-        super( statement, runResponseHandler, connection );
+        super( statement, runResponseHandler, resultConsumedAfterMetadataKey, connection );
     }
 
     @Override

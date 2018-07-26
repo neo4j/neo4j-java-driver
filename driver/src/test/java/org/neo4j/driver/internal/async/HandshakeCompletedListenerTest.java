@@ -28,11 +28,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
@@ -86,6 +89,12 @@ class HandshakeCompletedListenerTest
     void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
     {
         testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+    }
+
+    @Test
+    void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted()
+    {
+        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken() ), HelloResponseHandler.class );
     }
 
     private void testWritingOfInitializationMessage( int protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )

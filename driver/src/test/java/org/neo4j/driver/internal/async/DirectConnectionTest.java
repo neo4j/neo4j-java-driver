@@ -196,6 +196,7 @@ class DirectConnectionTest
         DirectConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER );
+        channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its execution
 
         assertEquals( 1, channel.outboundMessages().size() );
         assertEquals( PULL_ALL, single( channel.outboundMessages() ) );
@@ -208,6 +209,7 @@ class DirectConnectionTest
         DirectConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
+        channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its execution
 
         assertEquals( 2, channel.outboundMessages().size() );
         assertEquals( PULL_ALL, channel.outboundMessages().poll() );

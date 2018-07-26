@@ -59,6 +59,9 @@ public class BoltProtocolV1 implements BoltProtocol
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV1();
 
+    public static final String RESULT_AVAILABLE_AFTER_METADATA_KEY = "result_available_after";
+    public static final String RESULT_CONSUMED_AFTER_METADATA_KEY = "result_consumed_after";
+
     private static final String BEGIN_QUERY = "BEGIN";
     private static final Message BEGIN_MESSAGE = new RunMessage( BEGIN_QUERY );
     private static final Message COMMIT_MESSAGE = new RunMessage( "COMMIT" );
@@ -150,7 +153,7 @@ public class BoltProtocolV1 implements BoltProtocol
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture );
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, RESULT_AVAILABLE_AFTER_METADATA_KEY );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.writeAndFlush(
@@ -174,8 +177,8 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         if ( tx != null )
         {
-            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx );
+            return new TransactionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection, tx );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection );
+        return new SessionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection );
     }
 }

@@ -61,6 +61,9 @@ public class BoltProtocolV3 implements BoltProtocol
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV3();
 
+    public static final String RESULT_AVAILABLE_AFTER_METADATA_KEY = "t_first";
+    public static final String RESULT_CONSUMED_AFTER_METADATA_KEY = "t_last";
+
     @Override
     public MessageFormat createMessageFormat()
     {
@@ -134,7 +137,7 @@ public class BoltProtocolV3 implements BoltProtocol
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
         Message runMessage = new RunWithMetadataMessage( query, params, null, null, null );
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture );
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, RESULT_AVAILABLE_AFTER_METADATA_KEY );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.writeAndFlush( runMessage, runHandler, PULL_ALL, pullAllHandler );
@@ -156,8 +159,8 @@ public class BoltProtocolV3 implements BoltProtocol
     {
         if ( tx != null )
         {
-            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx );
+            return new TransactionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection, tx );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection );
+        return new SessionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection );
     }
 }

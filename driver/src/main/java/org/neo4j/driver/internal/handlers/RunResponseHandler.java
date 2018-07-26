@@ -32,20 +32,22 @@ import static org.neo4j.driver.internal.util.MetadataUtil.extractStatementKeys;
 public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
+    private final String resultAvailableAfterMetadataKey;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture )
+    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, String resultAvailableAfterMetadataKey )
     {
         this.runCompletedFuture = runCompletedFuture;
+        this.resultAvailableAfterMetadataKey = resultAvailableAfterMetadataKey;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
         statementKeys = extractStatementKeys( metadata );
-        resultAvailableAfter = extractResultAvailableAfter( metadata );
+        resultAvailableAfter = extractResultAvailableAfter( metadata, resultAvailableAfterMetadataKey );
 
         completeRunFuture();
     }

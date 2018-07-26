@@ -53,6 +53,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
+    private final String resultConsumedAfterMetadataKey;
     protected final Connection connection;
 
     // initialized lazily when first record arrives
@@ -66,10 +67,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
-    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
+    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, String resultConsumedAfterMetadataKey, Connection connection )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
+        this.resultConsumedAfterMetadataKey = requireNonNull( resultConsumedAfterMetadataKey );
         this.connection = requireNonNull( connection );
     }
 
@@ -317,6 +319,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return MetadataUtil.extractSummary( statement, connection, resultAvailableAfter, metadata );
+        return MetadataUtil.extractSummary( statement, connection, resultAvailableAfter, metadata, resultConsumedAfterMetadataKey );
     }
 }
