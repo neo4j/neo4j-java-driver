@@ -49,6 +49,7 @@ import org.neo4j.driver.v1.util.SessionExtension;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -156,8 +157,8 @@ class ErrorIT
 
         // then expect
         ClientException e = assertThrows( ClientException.class, tx::close );
-        assertEquals( "Label '" + label + "' and property 'name' have a unique " +
-                      "constraint defined on them, so an index is already created that matches this.", e.getMessage() );
+        assertThat( e.getMessage(), containsString( label ) );
+        assertThat( e.getMessage(), containsString( "name" ) );
     }
 
     @Test
