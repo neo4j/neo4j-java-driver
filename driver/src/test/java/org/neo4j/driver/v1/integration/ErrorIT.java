@@ -50,6 +50,7 @@ import org.neo4j.driver.v1.util.TestNeo4jSession;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -159,14 +160,18 @@ public class ErrorIT
         tx.run( "CREATE INDEX ON :`" + label + "`(name)" );
         tx.success();
 
-        // then expect
-        exception.expect( ClientException.class );
-        exception.expectMessage( "Label '" + label + "' and property 'name' have a unique " +
-                "constraint defined on them, so an index is already created that matches this." );
-
         // when
-        tx.close();
-
+        try
+        {
+            tx.close();
+            fail( "Exception expected" );
+        }
+        catch ( ClientException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString( label ) );
+            assertThat( e.getMessage(), containsString( "name" ) );
+        }
     }
 
     @Test
