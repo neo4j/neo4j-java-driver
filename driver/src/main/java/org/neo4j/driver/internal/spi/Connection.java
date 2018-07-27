@@ -33,7 +33,11 @@ public interface Connection
 
     void disableAutoRead();
 
+    void write( Message message, ResponseHandler handler );
+
     void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
+
+    void writeAndFlush( Message message, ResponseHandler handler );
 
     void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 );
 

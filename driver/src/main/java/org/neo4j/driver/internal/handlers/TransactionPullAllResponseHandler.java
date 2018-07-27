@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
 
 import static java.util.Objects.requireNonNull;
@@ -29,9 +30,9 @@ public class TransactionPullAllResponseHandler extends PullAllResponseHandler
     private final ExplicitTransaction tx;
 
     public TransactionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, ExplicitTransaction tx )
+            Connection connection, ExplicitTransaction tx, MetadataExtractor metadataExtractor )
     {
-        super( statement, runResponseHandler, connection );
+        super( statement, runResponseHandler, connection, metadataExtractor );
         this.tx = requireNonNull( tx );
     }
 

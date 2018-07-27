@@ -43,10 +43,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public Session newInstance( AccessMode mode, Bookmark bookmark )
+    public Session newInstance( AccessMode mode, Bookmarks bookmarks )
     {
         NetworkSession session = createSession( connectionProvider, retryLogic, mode, logging );
-        session.setBookmark( bookmark );
+        session.setBookmarks( bookmarks );
         return session;
     }
 

@@ -16,27 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.messaging.v3;
 
-import io.netty.channel.ChannelPipeline;
-
-import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.internal.messaging.v2.MessageReaderV2;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
-public class ChannelPipelineBuilderWithMessageFormat implements ChannelPipelineBuilder
+public class MessageFormatV3 implements MessageFormat
 {
-    private final MessageFormat messageFormat;
-
-    public ChannelPipelineBuilderWithMessageFormat( MessageFormat messageFormat )
+    @Override
+    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
-        this.messageFormat = messageFormat;
+        return new MessageWriterV3( output );
     }
 
     @Override
-    public void build( MessageFormat ignored, ChannelPipeline pipeline, Logging logging )
+    public Reader newReader( PackInput input )
     {
-        new ChannelPipelineBuilderImpl().build( messageFormat, pipeline, logging );
+        return new MessageReaderV2( input );
     }
 }

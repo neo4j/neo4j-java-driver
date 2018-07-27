@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.internal.util.MetadataUtil;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
@@ -53,6 +53,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
+    private final MetadataExtractor metadataExtractor;
     protected final Connection connection;
 
     // initialized lazily when first record arrives
@@ -66,10 +67,11 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
-    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection )
+    public PullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
+        this.metadataExtractor = requireNonNull( metadataExtractor );
         this.connection = requireNonNull( connection );
     }
 
@@ -317,6 +319,6 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return MetadataUtil.extractSummary( statement, connection, resultAvailableAfter, metadata );
+        return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
     }
 }

@@ -20,58 +20,47 @@ package org.neo4j.driver.internal.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DynamicNode;
+import org.junit.jupiter.api.TestFactory;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
-import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.ByteBufOutput;
 
-import static java.util.Collections.emptyMap;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static org.mockito.Mockito.mock;
 
 public abstract class AbstractMessageWriterTestBase
 {
-    @Test
-    void shouldWriteDiscardAllMessage() throws Exception
+    @TestFactory
+    Stream<DynamicNode> shouldWriteSupportedMessages()
     {
-        testMessageWriting( DiscardAllMessage.DISCARD_ALL, 0 );
+        return supportedMessages().map( message ->
+                dynamicTest( message.toString(), () -> testSupportedMessageWriting( message ) ) );
     }
 
-    @Test
-    void shouldWriteInitMessage() throws Exception
+    @TestFactory
+    Stream<DynamicNode> shouldFailToWriteUnsupportedMessages()
     {
-        testMessageWriting( new InitMessage( "MyDriver", emptyMap() ), 2 );
-    }
-
-    @Test
-    void shouldWritePullAllMessage() throws Exception
-    {
-        testMessageWriting( PullAllMessage.PULL_ALL, 0 );
-    }
-
-    @Test
-    void shouldWriteResetMessage() throws Exception
-    {
-        testMessageWriting( ResetMessage.RESET, 0 );
-    }
-
-    @Test
-    void shouldWriteRunMessage() throws Exception
-    {
-        testMessageWriting( new RunMessage( "RETURN 1", emptyMap() ), 2 );
+        return unsupportedMessages().map( message ->
+                dynamicTest( message.toString(), () -> testUnsupportedMessageWriting( message ) ) );
     }
 
     protected abstract MessageFormat.Writer newWriter( PackOutput output );
 
-    protected void testMessageWriting( Message message, int expectedStructHeader ) throws IOException
+    protected abstract Stream<Message> supportedMessages();
+
+    protected abstract Stream<Message> unsupportedMessages();
+
+    private void testSupportedMessageWriting( Message message ) throws IOException
     {
         ByteBuf buffer = Unpooled.buffer();
         PackOutput output = new ByteBufOutput( buffer );
@@ -84,9 +73,15 @@ public abstract class AbstractMessageWriterTestBase
         PackStream.Unpacker unpacker = new PackStream.Unpacker( input );
 
         long structHeader = unpacker.unpackStructHeader();
-        assertEquals( expectedStructHeader, structHeader );
+        assertThat( structHeader, greaterThanOrEqualTo( 0L ) );
 
         byte structSignature = unpacker.unpackStructSignature();
         assertEquals( message.signature(), structSignature );
+    }
+
+    private void testUnsupportedMessageWriting( Message message )
+    {
+        MessageFormat.Writer writer = newWriter( mock( PackOutput.class ) );
+        assertThrows( Exception.class, () -> writer.write( message ) );
     }
 }

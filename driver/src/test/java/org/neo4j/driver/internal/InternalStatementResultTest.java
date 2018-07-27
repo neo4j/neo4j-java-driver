@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.v1.Records.column;
 import static org.neo4j.driver.v1.Values.ofString;
 import static org.neo4j.driver.v1.Values.value;
@@ -348,14 +349,14 @@ class InternalStatementResultTest
 
     private StatementResult createResult( int numberOfRecords )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>() );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
 
         Statement statement = new Statement( "<unknown>" );
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
-        PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection );
+        PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
         {

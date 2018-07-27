@@ -65,7 +65,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session( AccessMode mode )
     {
-        return newSession( mode, Bookmark.empty() );
+        return newSession( mode, Bookmarks.empty() );
     }
 
     @Override
@@ -77,7 +77,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session( AccessMode mode, String bookmark )
     {
-        return newSession( mode, Bookmark.from( bookmark ) );
+        return newSession( mode, Bookmarks.from( bookmark ) );
     }
 
     @Override
@@ -89,13 +89,13 @@ public class InternalDriver implements Driver
     @Override
     public Session session( AccessMode mode, Iterable<String> bookmarks )
     {
-        return newSession( mode, Bookmark.from( bookmarks ) );
+        return newSession( mode, Bookmarks.from( bookmarks ) );
     }
 
-    private Session newSession( AccessMode mode, Bookmark bookmark )
+    private Session newSession( AccessMode mode, Bookmarks bookmarks )
     {
         assertOpen();
-        Session session = sessionFactory.newInstance( mode, bookmark );
+        Session session = sessionFactory.newInstance( mode, bookmarks );
         if ( closed.get() )
         {
             // session does not immediately acquire connection, it is fine to just throw

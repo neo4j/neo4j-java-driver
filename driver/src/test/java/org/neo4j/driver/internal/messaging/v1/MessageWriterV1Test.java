@@ -18,42 +18,61 @@
  */
 package org.neo4j.driver.internal.messaging.v1;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.messaging.AbstractMessageWriterTestBase;
+import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
+import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
+import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
 
 class MessageWriterV1Test extends AbstractMessageWriterTestBase
 {
-    @Test
-    void shouldFailToWriteMessageWithTemporalValue()
-    {
-        RunMessage message = new RunMessage( "RETURN $now", singletonMap( "now", value( LocalDateTime.now() ) ) );
-
-        assertThrows( IOException.class, () -> testMessageWriting( message, 0 ) );
-    }
-
-    @Test
-    void shouldFailToWriteMessageWithSpatialValue()
-    {
-        RunMessage message = new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) );
-
-        assertThrows( IOException.class, () -> testMessageWriting( message, 0 ) );
-    }
-
     @Override
     protected Writer newWriter( PackOutput output )
     {
         return new MessageWriterV1( output, true );
+    }
+
+    @Override
+    protected Stream<Message> supportedMessages()
+    {
+        return Stream.of(
+                new InitMessage( "MyDriver/1.2.3", singletonMap( "password", value( "hello" ) ) ),
+                new RunMessage( "RETURN 1", singletonMap( "key", value( 42 ) ) ),
+                PULL_ALL,
+                DISCARD_ALL,
+                RESET
+        );
+    }
+
+    @Override
+    protected Stream<Message> unsupportedMessages()
+    {
+        return Stream.of(
+                // Bolt V1 messages with Bolt V2 structs
+                new RunMessage( "RETURN $now", singletonMap( "now", value( LocalDateTime.now() ) ) ),
+                new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) ),
+
+                // Bolt V3 messages
+                new HelloMessage( "Driver/2.3.4", emptyMap() ),
+                GOODBYE,
+                COMMIT,
+                ROLLBACK
+        );
     }
 }

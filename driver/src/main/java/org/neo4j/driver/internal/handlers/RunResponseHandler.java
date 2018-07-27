@@ -23,29 +23,30 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.internal.util.MetadataUtil.extractResultAvailableAfter;
-import static org.neo4j.driver.internal.util.MetadataUtil.extractStatementKeys;
 
 public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
+    private final MetadataExtractor metadataExtractor;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture )
+    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         this.runCompletedFuture = runCompletedFuture;
+        this.metadataExtractor = metadataExtractor;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        statementKeys = extractStatementKeys( metadata );
-        resultAvailableAfter = extractResultAvailableAfter( metadata );
+        statementKeys = metadataExtractor.extractStatementKeys( metadata );
+        resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
 
         completeRunFuture();
     }

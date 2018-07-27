@@ -19,14 +19,15 @@
 package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
 
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
     public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection )
+            Connection connection, MetadataExtractor metadataExtractor )
     {
-        super( statement, runResponseHandler, connection );
+        super( statement, runResponseHandler, connection, metadataExtractor );
     }
 
     @Override

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
@@ -58,6 +59,8 @@ public class BoltProtocolV1 implements BoltProtocol
     public static final int VERSION = 1;
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV1();
+
+    public static final MetadataExtractor METADATA_EXTRACTOR = new MetadataExtractor( "result_available_after", "result_consumed_after" );
 
     private static final String BEGIN_QUERY = "BEGIN";
     private static final Message BEGIN_MESSAGE = new RunMessage( BEGIN_QUERY );
@@ -83,9 +86,9 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark )
+    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks )
     {
-        if ( bookmark.isEmpty() )
+        if ( bookmarks.isEmpty() )
         {
             connection.write(
                     BEGIN_MESSAGE, NoOpResponseHandler.INSTANCE,
@@ -97,7 +100,7 @@ public class BoltProtocolV1 implements BoltProtocol
         {
             CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
             connection.writeAndFlush(
-                    new RunMessage( BEGIN_QUERY, bookmark.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
+                    new RunMessage( BEGIN_QUERY, bookmarks.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
                     PullAllMessage.PULL_ALL, new BeginTxResponseHandler( beginTxFuture ) );
 
             return beginTxFuture;
@@ -150,7 +153,7 @@ public class BoltProtocolV1 implements BoltProtocol
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture );
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.writeAndFlush(
@@ -174,8 +177,8 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         if ( tx != null )
         {
-            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx );
+            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
     }
 }

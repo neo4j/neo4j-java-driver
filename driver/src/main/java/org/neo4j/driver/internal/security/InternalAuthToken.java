@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.security;
 
+import java.util.Map;
+
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Value;
-
-import java.util.Map;
 
 /**
  * A simple common token for authentication schemes that easily convert to
@@ -29,6 +29,12 @@ import java.util.Map;
  */
 public class InternalAuthToken implements AuthToken
 {
+    public static final String SCHEME_KEY = "scheme";
+    public static final String PRINCIPAL_KEY = "principal";
+    public static final String CREDENTIALS_KEY = "credentials";
+    public static final String REALM_KEY = "realm";
+    public static final String PARAMETERS_KEY = "parameters";
+
     private final Map<String,Value> content;
 
     public InternalAuthToken( Map<String,Value> content )

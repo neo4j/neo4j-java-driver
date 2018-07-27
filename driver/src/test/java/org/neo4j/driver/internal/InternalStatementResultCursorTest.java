@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
@@ -66,7 +67,7 @@ class InternalStatementResultCursorTest
     @Test
     void shouldReturnStatementKeys()
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>() );
+        RunResponseHandler runHandler = newRunResponseHandler();
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         List<String> keys = asList( "key1", "key2", "key3" );
@@ -395,12 +396,16 @@ class InternalStatementResultCursorTest
 
     private static InternalStatementResultCursor newCursor( PullAllResponseHandler pullAllHandler )
     {
-        return new InternalStatementResultCursor( new RunResponseHandler( new CompletableFuture<>() ), pullAllHandler );
+        return new InternalStatementResultCursor( newRunResponseHandler(), pullAllHandler );
     }
 
-    private static InternalStatementResultCursor newCursor( RunResponseHandler runHandler,
-            PullAllResponseHandler pullAllHandler )
+    private static InternalStatementResultCursor newCursor( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
         return new InternalStatementResultCursor( runHandler, pullAllHandler );
+    }
+
+    private static RunResponseHandler newRunResponseHandler()
+    {
+        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV1.METADATA_EXTRACTOR );
     }
 }

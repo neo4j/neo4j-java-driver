@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.ChannelAttributes;
@@ -141,7 +141,7 @@ public class BoltProtocolV1Test
     {
         Connection connection = connectionMock();
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmark.empty() );
+        CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty() );
 
         verify( connection ).write(
                 new RunMessage( "BEGIN" ), NoOpResponseHandler.INSTANCE,
@@ -154,12 +154,12 @@ public class BoltProtocolV1Test
     void shouldBeginTransactionWithBookmark()
     {
         Connection connection = connectionMock();
-        Bookmark bookmark = Bookmark.from( "neo4j:bookmark:v1:tx100" );
+        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx100" );
 
-        CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark );
+        CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks );
 
         verify( connection ).writeAndFlush(
-                eq( new RunMessage( "BEGIN", bookmark.asBeginTransactionParameters() ) ), eq( NoOpResponseHandler.INSTANCE ),
+                eq( new RunMessage( "BEGIN", bookmarks.asBeginTransactionParameters() ) ), eq( NoOpResponseHandler.INSTANCE ),
                 eq( PullAllMessage.PULL_ALL ), any( BeginTxResponseHandler.class ) );
 
         assertNull( Futures.blockingGet( stage ) );

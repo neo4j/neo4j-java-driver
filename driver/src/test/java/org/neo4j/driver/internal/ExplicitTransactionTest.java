@@ -110,7 +110,7 @@ class ExplicitTransactionTest
     {
         Connection connection = connectionMock();
 
-        beginTx( connection, Bookmark.empty() );
+        beginTx( connection, Bookmarks.empty() );
 
         verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
@@ -119,12 +119,12 @@ class ExplicitTransactionTest
     @Test
     void shouldFlushWhenBookmarkGiven()
     {
-        Bookmark bookmark = Bookmark.from( "hi, I'm bookmark" );
+        Bookmarks bookmarks = Bookmarks.from( "hi, I'm bookmark" );
         Connection connection = connectionMock();
 
-        beginTx( connection, bookmark );
+        beginTx( connection, bookmarks );
 
-        RunMessage expectedRunMessage = new RunMessage( "BEGIN", bookmark.asBeginTransactionParameters() );
+        RunMessage expectedRunMessage = new RunMessage( "BEGIN", bookmarks.asBeginTransactionParameters() );
         verify( connection ).writeAndFlush( eq( expectedRunMessage ), any(), eq( PullAllMessage.PULL_ALL ), any() );
         verify( connection, never() ).write( any(), any(), any(), any() );
     }
@@ -210,7 +210,7 @@ class ExplicitTransactionTest
     @Test
     void shouldNotKeepInitialBookmark()
     {
-        ExplicitTransaction tx = beginTx( connectionMock(), Bookmark.from( "Dog" ) );
+        ExplicitTransaction tx = beginTx( connectionMock(), Bookmarks.from( "Dog" ) );
         assertTrue( tx.bookmark().isEmpty() );
     }
 
@@ -218,9 +218,9 @@ class ExplicitTransactionTest
     void shouldNotOverwriteBookmarkWithNull()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
-        tx.setBookmark( Bookmark.from( "Cat" ) );
+        tx.setBookmarks( Bookmarks.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-        tx.setBookmark( null );
+        tx.setBookmarks( null );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
@@ -228,9 +228,9 @@ class ExplicitTransactionTest
     void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
-        tx.setBookmark( Bookmark.from( "Cat" ) );
+        tx.setBookmarks( Bookmarks.from( "Cat" ) );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-        tx.setBookmark( Bookmark.empty() );
+        tx.setBookmarks( Bookmarks.empty() );
         assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
     }
 
@@ -241,7 +241,7 @@ class ExplicitTransactionTest
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( Bookmarks.from( "SomeBookmark" ) ) ) );
         assertEquals( error, e );
 
         verify( connection ).release();
@@ -252,7 +252,7 @@ class ExplicitTransactionTest
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
-        await( tx.beginAsync( Bookmark.from( "SomeBookmark" ) ) );
+        await( tx.beginAsync( Bookmarks.from( "SomeBookmark" ) ) );
 
         verify( connection, never() ).release();
     }
@@ -285,19 +285,18 @@ class ExplicitTransactionTest
 
     private static ExplicitTransaction beginTx( Connection connection )
     {
-        return beginTx( connection, Bookmark.empty() );
+        return beginTx( connection, Bookmarks.empty() );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, Bookmark initialBookmark )
+    private static ExplicitTransaction beginTx( Connection connection, Bookmarks initialBookmarks )
     {
-        return beginTx( connection, mock( NetworkSession.class ), initialBookmark );
+        return beginTx( connection, mock( NetworkSession.class ), initialBookmarks );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, NetworkSession session,
-            Bookmark initialBookmark )
+    private static ExplicitTransaction beginTx( Connection connection, NetworkSession session, Bookmarks initialBookmarks )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, session );
-        return await( tx.beginAsync( initialBookmark ) );
+        return await( tx.beginAsync( initialBookmarks ) );
     }
 
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )

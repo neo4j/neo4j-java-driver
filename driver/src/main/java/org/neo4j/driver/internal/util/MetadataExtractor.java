@@ -41,13 +41,18 @@ import org.neo4j.driver.v1.summary.StatementType;
 
 import static java.util.Collections.emptyList;
 
-public final class MetadataUtil
+public class MetadataExtractor
 {
-    private MetadataUtil()
+    private final String resultAvailableAfterMetadataKey;
+    private final String resultConsumedAfterMetadataKey;
+
+    public MetadataExtractor( String resultAvailableAfterMetadataKey, String resultConsumedAfterMetadataKey )
     {
+        this.resultAvailableAfterMetadataKey = resultAvailableAfterMetadataKey;
+        this.resultConsumedAfterMetadataKey = resultConsumedAfterMetadataKey;
     }
 
-    public static List<String> extractStatementKeys( Map<String,Value> metadata )
+    public List<String> extractStatementKeys( Map<String,Value> metadata )
     {
         Value keysValue = metadata.get( "fields" );
         if ( keysValue != null )
@@ -66,9 +71,9 @@ public final class MetadataUtil
         return emptyList();
     }
 
-    public static long extractResultAvailableAfter( Map<String,Value> metadata )
+    public long extractResultAvailableAfter( Map<String,Value> metadata )
     {
-        Value resultAvailableAfterValue = metadata.get( "result_available_after" );
+        Value resultAvailableAfterValue = metadata.get( resultAvailableAfterMetadataKey );
         if ( resultAvailableAfterValue != null )
         {
             return resultAvailableAfterValue.asLong();
@@ -76,13 +81,12 @@ public final class MetadataUtil
         return -1;
     }
 
-    public static ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter,
-            Map<String,Value> metadata )
+    public ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(), connection.serverVersion() );
         return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
                 extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
-                extractNotifications( metadata ), resultAvailableAfter, extractResultConsumedAfter( metadata ) );
+                extractNotifications( metadata ), resultAvailableAfter, extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )
@@ -153,9 +157,9 @@ public final class MetadataUtil
         return Collections.emptyList();
     }
 
-    private static long extractResultConsumedAfter( Map<String,Value> metadata )
+    private static long extractResultConsumedAfter( Map<String,Value> metadata, String key )
     {
-        Value resultConsumedAfterValue = metadata.get( "result_consumed_after" );
+        Value resultConsumedAfterValue = metadata.get( key );
         if ( resultConsumedAfterValue != null )
         {
             return resultConsumedAfterValue.asLong();

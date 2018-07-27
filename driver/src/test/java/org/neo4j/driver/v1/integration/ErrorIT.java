@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
-import org.neo4j.driver.internal.util.ChannelTrackingDriverFactoryWithMessageFormat;
+import org.neo4j.driver.internal.util.ChannelTrackingDriverFactoryWithFailingMessageFormat;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.AuthToken;
@@ -231,10 +231,7 @@ class ErrorIT
     private Throwable testChannelErrorHandling( Consumer<FailingMessageFormat> messageFormatSetup )
             throws InterruptedException
     {
-        FailingMessageFormat messageFormat = new FailingMessageFormat();
-
-        ChannelTrackingDriverFactoryWithMessageFormat driverFactory = new ChannelTrackingDriverFactoryWithMessageFormat(
-                messageFormat, new FakeClock() );
+        ChannelTrackingDriverFactoryWithFailingMessageFormat driverFactory = new ChannelTrackingDriverFactoryWithFailingMessageFormat( new FakeClock() );
 
         URI uri = session.uri();
         AuthToken authToken = session.authToken();
@@ -246,7 +243,7 @@ class ErrorIT
         try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config );
               Session session = driver.session() )
         {
-            messageFormatSetup.accept( messageFormat );
+            messageFormatSetup.accept( driverFactory.getFailingMessageFormat() );
 
             try
             {
