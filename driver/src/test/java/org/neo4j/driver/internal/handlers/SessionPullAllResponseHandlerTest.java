@@ -31,8 +31,7 @@ import static java.util.Collections.emptyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_AVAILABLE_AFTER_METADATA_KEY;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_CONSUMED_AFTER_METADATA_KEY;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 
 class SessionPullAllResponseHandlerTest
 {
@@ -58,10 +57,10 @@ class SessionPullAllResponseHandlerTest
         verify( connection ).release();
     }
 
-    private SessionPullAllResponseHandler newHandler( Connection connection )
+    private static SessionPullAllResponseHandler newHandler( Connection connection )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), RESULT_AVAILABLE_AFTER_METADATA_KEY );
-        return new SessionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR );
     }
 
     private static Connection newConnectionMock()

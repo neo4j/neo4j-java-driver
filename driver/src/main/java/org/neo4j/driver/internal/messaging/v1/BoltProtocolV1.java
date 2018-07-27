@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 
@@ -59,8 +60,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV1();
 
-    public static final String RESULT_AVAILABLE_AFTER_METADATA_KEY = "result_available_after";
-    public static final String RESULT_CONSUMED_AFTER_METADATA_KEY = "result_consumed_after";
+    public static final MetadataExtractor METADATA_EXTRACTOR = new MetadataExtractor( "result_available_after", "result_consumed_after" );
 
     private static final String BEGIN_QUERY = "BEGIN";
     private static final Message BEGIN_MESSAGE = new RunMessage( BEGIN_QUERY );
@@ -153,7 +153,7 @@ public class BoltProtocolV1 implements BoltProtocol
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, RESULT_AVAILABLE_AFTER_METADATA_KEY );
+        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 
         connection.writeAndFlush(
@@ -177,8 +177,8 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         if ( tx != null )
         {
-            return new TransactionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection, tx );
+            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, RESULT_CONSUMED_AFTER_METADATA_KEY, connection );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
     }
 }

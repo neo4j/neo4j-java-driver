@@ -23,6 +23,10 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.util.MetadataExtractor;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -32,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.RESULT_AVAILABLE_AFTER_METADATA_KEY;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 
@@ -104,22 +107,43 @@ class RunResponseHandlerTest
     }
 
     @Test
-    void shouldReturnResultAvailableAfterWhenSucceeded()
+    void shouldReturnResultAvailableAfterWhenSucceededV1()
     {
-        RunResponseHandler handler = newHandler();
+        testResultAvailableAfterOnSuccess( "result_available_after", BoltProtocolV1.METADATA_EXTRACTOR );
+    }
 
-        handler.onSuccess( singletonMap( "result_available_after", value( 42 ) ) );
+    @Test
+    void shouldReturnResultAvailableAfterWhenSucceededV3()
+    {
+        testResultAvailableAfterOnSuccess( "t_first", BoltProtocolV3.METADATA_EXTRACTOR );
+    }
+
+    private static void testResultAvailableAfterOnSuccess( String key, MetadataExtractor metadataExtractor )
+    {
+        RunResponseHandler handler = newHandler( metadataExtractor );
+
+        handler.onSuccess( singletonMap( key, value( 42 ) ) );
 
         assertEquals( 42L, handler.resultAvailableAfter() );
     }
 
     private static RunResponseHandler newHandler()
     {
-        return newHandler( new CompletableFuture<>() );
+        return newHandler( BoltProtocolV1.METADATA_EXTRACTOR );
     }
 
     private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture )
     {
-        return new RunResponseHandler( runCompletedFuture, RESULT_AVAILABLE_AFTER_METADATA_KEY );
+        return newHandler( runCompletedFuture, BoltProtocolV1.METADATA_EXTRACTOR );
+    }
+
+    private static RunResponseHandler newHandler( MetadataExtractor metadataExtractor )
+    {
+        return newHandler( new CompletableFuture<>(), metadataExtractor );
+    }
+
+    private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
+    {
+        return new RunResponseHandler( runCompletedFuture, metadataExtractor );
     }
 }

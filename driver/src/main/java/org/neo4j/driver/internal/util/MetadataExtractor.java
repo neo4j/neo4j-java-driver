@@ -41,13 +41,18 @@ import org.neo4j.driver.v1.summary.StatementType;
 
 import static java.util.Collections.emptyList;
 
-public final class MetadataUtil
+public class MetadataExtractor
 {
-    private MetadataUtil()
+    private final String resultAvailableAfterMetadataKey;
+    private final String resultConsumedAfterMetadataKey;
+
+    public MetadataExtractor( String resultAvailableAfterMetadataKey, String resultConsumedAfterMetadataKey )
     {
+        this.resultAvailableAfterMetadataKey = resultAvailableAfterMetadataKey;
+        this.resultConsumedAfterMetadataKey = resultConsumedAfterMetadataKey;
     }
 
-    public static List<String> extractStatementKeys( Map<String,Value> metadata )
+    public List<String> extractStatementKeys( Map<String,Value> metadata )
     {
         Value keysValue = metadata.get( "fields" );
         if ( keysValue != null )
@@ -66,9 +71,9 @@ public final class MetadataUtil
         return emptyList();
     }
 
-    public static long extractResultAvailableAfter( Map<String,Value> metadata, String key )
+    public long extractResultAvailableAfter( Map<String,Value> metadata )
     {
-        Value resultAvailableAfterValue = metadata.get( key );
+        Value resultAvailableAfterValue = metadata.get( resultAvailableAfterMetadataKey );
         if ( resultAvailableAfterValue != null )
         {
             return resultAvailableAfterValue.asLong();
@@ -76,8 +81,7 @@ public final class MetadataUtil
         return -1;
     }
 
-    public static ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter,
-            Map<String,Value> metadata, String resultConsumedAfterMetadataKey )
+    public ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(), connection.serverVersion() );
         return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),

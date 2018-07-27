@@ -406,6 +406,6 @@ class InternalStatementResultCursorTest
 
     private static RunResponseHandler newRunResponseHandler()
     {
-        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV1.RESULT_AVAILABLE_AFTER_METADATA_KEY );
+        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV1.METADATA_EXTRACTOR );
     }
 }

@@ -23,31 +23,30 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.driver.internal.util.MetadataUtil.extractResultAvailableAfter;
-import static org.neo4j.driver.internal.util.MetadataUtil.extractStatementKeys;
 
 public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
-    private final String resultAvailableAfterMetadataKey;
+    private final MetadataExtractor metadataExtractor;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, String resultAvailableAfterMetadataKey )
+    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         this.runCompletedFuture = runCompletedFuture;
-        this.resultAvailableAfterMetadataKey = resultAvailableAfterMetadataKey;
+        this.metadataExtractor = metadataExtractor;
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        statementKeys = extractStatementKeys( metadata );
-        resultAvailableAfter = extractResultAvailableAfter( metadata, resultAvailableAfterMetadataKey );
+        statementKeys = metadataExtractor.extractStatementKeys( metadata );
+        resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
 
         completeRunFuture();
     }
