@@ -53,7 +53,6 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
-    private final TransactionConfig defaultTransactionConfig;
     protected final Logger logger;
 
     private volatile Bookmarks bookmarks = Bookmarks.empty();
@@ -63,13 +62,11 @@ public class NetworkSession extends AbstractStatementRunner implements Session
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            TransactionConfig defaultTransactionConfig, Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.defaultTransactionConfig = defaultTransactionConfig;
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
     }
 
@@ -172,7 +169,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public Transaction beginTransaction()
     {
-        return beginTransaction( defaultTransactionConfig );
+        return beginTransaction( TransactionConfig.empty() );
     }
 
     @Override
@@ -192,7 +189,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public CompletionStage<Transaction> beginTransactionAsync()
     {
-        return beginTransactionAsync( defaultTransactionConfig );
+        return beginTransactionAsync( TransactionConfig.empty() );
     }
 
     @Override
@@ -205,7 +202,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public <T> T readTransaction( TransactionWork<T> work )
     {
-        return readTransaction( work, defaultTransactionConfig );
+        return readTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
@@ -217,7 +214,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return readTransactionAsync( work, defaultTransactionConfig );
+        return readTransactionAsync( work, TransactionConfig.empty() );
     }
 
     @Override
@@ -229,7 +226,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
-        return writeTransaction( work, defaultTransactionConfig );
+        return writeTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
@@ -241,7 +238,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return writeTransactionAsync( work, defaultTransactionConfig );
+        return writeTransactionAsync( work, TransactionConfig.empty() );
     }
 
     @Override

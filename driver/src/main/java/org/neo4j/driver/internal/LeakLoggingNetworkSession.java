@@ -23,7 +23,6 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.TransactionConfig;
 
 import static java.lang.System.lineSeparator;
 
@@ -31,10 +30,9 @@ class LeakLoggingNetworkSession extends NetworkSession
 {
     private final String stackTrace;
 
-    LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            TransactionConfig defaultTransactionConfig, Logging logging )
+    LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging )
     {
-        super( connectionProvider, mode, retryLogic, defaultTransactionConfig, logging );
+        super( connectionProvider, mode, retryLogic, logging );
         this.stackTrace = captureStackTrace();
     }
 
