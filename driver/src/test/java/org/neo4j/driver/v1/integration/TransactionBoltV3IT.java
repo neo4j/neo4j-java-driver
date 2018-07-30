@@ -21,12 +21,15 @@ package org.neo4j.driver.v1.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
@@ -39,6 +42,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
+import static org.neo4j.driver.v1.util.TestUtil.await;
 
 @EnabledOnNeo4jWith( BOLT_V3 )
 class TransactionBoltV3IT
@@ -62,20 +66,34 @@ class TransactionBoltV3IT
         {
             tx.run( "RETURN 1" ).consume();
 
-            try ( Session otherSession = session.driver().session() )
-            {
-                StatementResult result = otherSession.run( "CALL dbms.listTransactions()" );
+            verifyTransactionMetadata( metadata );
+        }
+    }
 
-                Map<String,Object> receivedMetadata = result.list()
-                        .stream()
-                        .map( record -> record.get( "metaData" ) )
-                        .map( Value::asMap )
-                        .filter( map -> !map.isEmpty() )
-                        .findFirst()
-                        .orElseThrow( IllegalStateException::new );
+    @Test
+    void shouldSetTransactionMetadataAsync()
+    {
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "hello", "world" );
+        metadata.put( "key", ZonedDateTime.now() );
 
-                assertEquals( metadata, receivedMetadata );
-            }
+        TransactionConfig config = TransactionConfig.builder()
+                .withMetadata( metadata )
+                .build();
+
+        CompletionStage<Transaction> txFuture = session.beginTransactionAsync( config )
+                .thenCompose( tx -> tx.runAsync( "RETURN 1" )
+                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenApply( ignore -> tx ) );
+
+        Transaction transaction = await( txFuture );
+        try
+        {
+            verifyTransactionMetadata( metadata );
+        }
+        finally
+        {
+            await( transaction.rollbackAsync() );
         }
     }
 
@@ -108,6 +126,52 @@ class TransactionBoltV3IT
 
                 assertThat( error.getMessage(), containsString( "terminated" ) );
             }
+        }
+    }
+
+    @Test
+    void shouldSetTransactionTimeoutAsync()
+    {
+        // create a dummy node
+        session.run( "CREATE (:Node)" ).consume();
+
+        try ( Session otherSession = session.driver().session() )
+        {
+            try ( Transaction otherTx = otherSession.beginTransaction() )
+            {
+                // lock dummy node but keep the transaction open
+                otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).consume();
+
+                TransactionConfig config = TransactionConfig.builder()
+                        .withTimeout( ofSeconds( 1 ) )
+                        .build();
+
+                // start a new transaction with timeout and try to update the locked dummy node
+                CompletionStage<Void> txCommitFuture = session.beginTransactionAsync( config )
+                        .thenCompose( tx -> tx.runAsync( "MATCH (n:Node) SET n.prop = 2" )
+                                .thenCompose( ignore -> tx.commitAsync() ) );
+
+                TransientException error = assertThrows( TransientException.class, () -> await( txCommitFuture ) );
+                assertThat( error.getMessage(), containsString( "terminated" ) );
+            }
+        }
+    }
+
+    private static void verifyTransactionMetadata( Map<String,Object> metadata )
+    {
+        try ( Session session = TransactionBoltV3IT.session.driver().session() )
+        {
+            StatementResult result = session.run( "CALL dbms.listTransactions()" );
+
+            Map<String,Object> receivedMetadata = result.list()
+                    .stream()
+                    .map( record -> record.get( "metaData" ) )
+                    .map( Value::asMap )
+                    .filter( map -> !map.isEmpty() )
+                    .findFirst()
+                    .orElseThrow( IllegalStateException::new );
+
+            assertEquals( metadata, receivedMetadata );
         }
     }
 }

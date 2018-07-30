@@ -38,6 +38,9 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.BeginMessage;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.spi.Connection;
@@ -192,6 +195,9 @@ public final class TestUtil
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );
+        setupSuccessResponse( connection, CommitMessage.class );
+        setupSuccessResponse( connection, RollbackMessage.class );
+        setupSuccessResponse( connection, BeginMessage.class );
         return connection;
     }
 
@@ -289,10 +295,20 @@ public final class TestUtil
     {
         doAnswer( invocation ->
         {
-            ResponseHandler commitHandler = invocation.getArgument( 3 );
-            commitHandler.onSuccess( emptyMap() );
+            ResponseHandler handler = invocation.getArgument( 3 );
+            handler.onSuccess( emptyMap() );
             return null;
         } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( statement ) ), any(), any(), any() );
+    }
+
+    private static void setupSuccessResponse( Connection connection, Class<? extends Message> messageType )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler handler = invocation.getArgument( 1 );
+            handler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).writeAndFlush( any( messageType ), any() );
     }
 
     private static void cleanDb( Session session )
