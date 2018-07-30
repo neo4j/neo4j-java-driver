@@ -290,19 +290,9 @@ public interface StatementRunner
     /**
      * Run a statement asynchronously and return a {@link CompletionStage} with a
      * result cursor.
-     * <p>
-     * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
-     * dangerous cypher injection attacks and improves database performance as
-     * Neo4j can re-use query plans more often.
-     * <p>
-     * This version of runAsync takes a {@link Map} of parameters. The values in the map
-     * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
-     * a list of allowed types.
      * <h2>Example</h2>
      * <pre>
      * {@code
-     *
      * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
      * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement);
      * }

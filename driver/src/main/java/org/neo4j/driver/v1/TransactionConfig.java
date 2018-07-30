@@ -29,6 +29,36 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
+/**
+ * Configuration object containing settings for explicit and auto-commit transactions.
+ * Instances are immutable and can be reused for multiple transactions.
+ * <p>
+ * Configuration is supported for:
+ * <ul>
+ * <li>queries executed in auto-commit transactions - using various overloads of {@link Session#run(String, TransactionConfig)} and
+ * {@link Session#runAsync(String, TransactionConfig)}</li>
+ * <li>transactions started by transaction functions - using {@link Session#readTransaction(TransactionWork, TransactionConfig)},
+ * {@link Session#writeTransaction(TransactionWork, TransactionConfig)}, {@link Session#readTransactionAsync(TransactionWork, TransactionConfig)} and
+ * {@link Session#writeTransactionAsync(TransactionWork, TransactionConfig)}</li>
+ * <li>explicit transactions - using {@link Session#beginTransaction(TransactionConfig)} and {@link Session#beginTransactionAsync(TransactionConfig)}</li>
+ * </ul>
+ * <p>
+ * Creation of configuration objects can be done using the builder API:
+ * <pre>
+ * {@code
+ * Map<String, Object> metadata = new HashMap<>();
+ * metadata.put("type", "update user");
+ * metadata.put("application", "my application");
+ *
+ * TransactionConfig config = TransactionConfig.builder()
+ *                 .withTimeout(Duration.ofSeconds(4))
+ *                 .withMetadata(metadata)
+ *                 .build();
+ * }
+ * </pre>
+ *
+ * @see Session
+ */
 public class TransactionConfig
 {
     private static final TransactionConfig EMPTY = builder().build();
@@ -42,26 +72,51 @@ public class TransactionConfig
         this.metadata = unmodifiableMap( builder.metadata );
     }
 
+    /**
+     * Get a configuration object that does not have any values configures.
+     *
+     * @return an empty configuration object.
+     */
     public static TransactionConfig empty()
     {
         return EMPTY;
     }
 
+    /**
+     * Create new {@link Builder} used to construct a configuration object.
+     *
+     * @return new builder.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Get the configured transaction timeout.
+     *
+     * @return timeout or {@code null} when it is not configured.
+     */
     public Duration timeout()
     {
         return timeout;
     }
 
+    /**
+     * Get the configured transaction metadata.
+     *
+     * @return metadata or empty map when it is not configured.
+     */
     public Map<String,Value> metadata()
     {
         return metadata;
     }
 
+    /**
+     * Check if this configuration object contains any values.
+     *
+     * @return {@code true} when no values are configured, {@code false otherwise}.
+     */
     public boolean isEmpty()
     {
         return timeout == null && (metadata == null || metadata.isEmpty());
@@ -98,6 +153,9 @@ public class TransactionConfig
                '}';
     }
 
+    /**
+     * Builder used to construct {@link TransactionConfig transaction configuration} objects.
+     */
     public static class Builder
     {
         private Duration timeout;
@@ -107,6 +165,17 @@ public class TransactionConfig
         {
         }
 
+        /**
+         * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
+         * <p>
+         * This functionality allows to limit query/transaction execution time. Specified timeout overrides the default timeout configured in the database
+         * using {@code dbms.transaction.timeout} setting.
+         * <p>
+         * Provided value should not be {@code null} and should not represent a duration of zero or negative duration.
+         *
+         * @param timeout the timeout.
+         * @return this builder.
+         */
         public Builder withTimeout( Duration timeout )
         {
             requireNonNull( timeout, "Transaction timeout should not be null" );
@@ -117,6 +186,17 @@ public class TransactionConfig
             return this;
         }
 
+        /**
+         * Set the transaction metadata. Specified metadata will be attached to the executing transaction and visible in the output of
+         * {@code dbms.listQueries} and {@code dbms.listTransactions} procedures. It will also get logged to the {@code query.log}.
+         * <p>
+         * This functionality makes it easier to tag transactions and is equivalent to {@code dbms.setTXMetaData} procedure.
+         * <p>
+         * Provided value should not be {@code null}.
+         *
+         * @param metadata the metadata.
+         * @return this builder.
+         */
         public Builder withMetadata( Map<String,Object> metadata )
         {
             requireNonNull( metadata, "Transaction metadata should not be null" );
@@ -125,6 +205,11 @@ public class TransactionConfig
             return this;
         }
 
+        /**
+         * Build the transaction configuration object using the specified settings.
+         *
+         * @return new transaction configuration object.
+         */
         public TransactionConfig build()
         {
             return new TransactionConfig( this );
