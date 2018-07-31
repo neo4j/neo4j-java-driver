@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Value;
 
@@ -31,28 +30,25 @@ import static java.util.Objects.requireNonNull;
 
 public class CommitTxResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<Void> commitFuture;
-    private final ExplicitTransaction tx;
+    private final CompletableFuture<Bookmarks> commitFuture;
 
-    public CommitTxResponseHandler( CompletableFuture<Void> commitFuture, ExplicitTransaction tx )
+    public CommitTxResponseHandler( CompletableFuture<Bookmarks> commitFuture )
     {
         this.commitFuture = requireNonNull( commitFuture );
-        this.tx = requireNonNull( tx );
     }
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
         Value bookmarkValue = metadata.get( "bookmark" );
-        if ( bookmarkValue != null )
+        if ( bookmarkValue == null )
         {
-            if ( tx != null )
-            {
-                tx.setBookmarks( Bookmarks.from( bookmarkValue.asString() ) );
-            }
+            commitFuture.complete( null );
         }
-
-        commitFuture.complete( null );
+        else
+        {
+            commitFuture.complete( Bookmarks.from( bookmarkValue.asString() ) );
+        }
     }
 
     @Override

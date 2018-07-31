@@ -108,11 +108,11 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> commitTransaction( Connection connection, ExplicitTransaction tx )
+    public CompletionStage<Bookmarks> commitTransaction( Connection connection )
     {
-        CompletableFuture<Void> commitFuture = new CompletableFuture<>();
+        CompletableFuture<Bookmarks> commitFuture = new CompletableFuture<>();
 
-        ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture, tx );
+        ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture );
         connection.writeAndFlush(
                 COMMIT_MESSAGE, NoOpResponseHandler.INSTANCE,
                 PullAllMessage.PULL_ALL, pullAllHandler );
