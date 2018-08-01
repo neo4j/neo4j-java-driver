@@ -248,7 +248,12 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
             return failedFuture( new ClientException( "Transaction can't be committed. " +
                                                       "It has been rolled back either because of an error or explicit termination" ) );
         }
-        return protocol.commitTransaction( connection, this );
+        return protocol.commitTransaction( connection )
+                .thenApply( newBookmarks ->
+                {
+                    setBookmarks( newBookmarks );
+                    return null;
+                } );
     }
 
     private CompletionStage<Void> doRollbackAsync()
@@ -260,7 +265,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         return protocol.rollbackTransaction( connection );
     }
 
-    private BiFunction<Void,Throwable,Void> handleCommitOrRollback( Throwable cursorFailure )
+    private static BiFunction<Void,Throwable,Void> handleCommitOrRollback( Throwable cursorFailure )
     {
         return ( ignore, commitOrRollbackError ) ->
         {

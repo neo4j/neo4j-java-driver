@@ -70,10 +70,9 @@ public interface BoltProtocol
      * Commit the explicit transaction.
      *
      * @param connection the connection to use.
-     * @param tx the explicit transaction being committed. Parameter is needed to update bookmark.
-     * @return a completion stage completed when transaction is committed or completed exceptionally when there was a failure.
+     * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> commitTransaction( Connection connection, ExplicitTransaction tx );
+    CompletionStage<Bookmarks> commitTransaction( Connection connection );
 
     /**
      * Rollback the explicit transaction.
