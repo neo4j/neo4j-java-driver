@@ -69,10 +69,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
@@ -194,12 +197,21 @@ class BoltProtocolV3Test
     @Test
     void shouldCommitTransaction()
     {
-        Connection connection = connectionMock();
+        String bookmarkString = "neo4j:bookmark:v1:tx4242";
 
-        CompletionStage<Void> stage = protocol.commitTransaction( connection, mock( ExplicitTransaction.class ) );
+        Connection connection = mock( Connection.class );
+        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        doAnswer( invocation ->
+        {
+            ResponseHandler commitHandler = invocation.getArgument( 1 );
+            commitHandler.onSuccess( singletonMap( "bookmark", value( bookmarkString ) ) );
+            return null;
+        } ).when( connection ).writeAndFlush( eq( CommitMessage.COMMIT ), any() );
+
+        CompletionStage<Bookmarks> stage = protocol.commitTransaction( connection );
 
         verify( connection ).writeAndFlush( eq( CommitMessage.COMMIT ), any( CommitTxResponseHandler.class ) );
-        assertNull( await( stage ) );
+        assertEquals( Bookmarks.from( bookmarkString ), await( stage ) );
     }
 
     @Test
