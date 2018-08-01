@@ -36,7 +36,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.SessionExtension;
 
-import static java.time.Duration.ofSeconds;
+import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -111,7 +111,7 @@ class TransactionBoltV3IT
                 otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).consume();
 
                 TransactionConfig config = TransactionConfig.builder()
-                        .withTimeout( ofSeconds( 1 ) )
+                        .withTimeout( ofMillis( 1 ) )
                         .build();
 
                 // start a new transaction with timeout and try to update the locked dummy node
@@ -143,7 +143,7 @@ class TransactionBoltV3IT
                 otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).consume();
 
                 TransactionConfig config = TransactionConfig.builder()
-                        .withTimeout( ofSeconds( 1 ) )
+                        .withTimeout( ofMillis( 1 ) )
                         .build();
 
                 // start a new transaction with timeout and try to update the locked dummy node
