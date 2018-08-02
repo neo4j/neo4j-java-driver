@@ -23,11 +23,17 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 
 public class BeginMessage extends TransactionStartingMessage
 {
     public static final byte SIGNATURE = 0x11;
+
+    public BeginMessage( Bookmarks bookmarks, TransactionConfig config )
+    {
+        this( bookmarks, config.timeout(), config.metadata() );
+    }
 
     public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
     {

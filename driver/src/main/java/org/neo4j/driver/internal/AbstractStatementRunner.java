@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
@@ -31,10 +32,6 @@ import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.TypeSystem;
-
-import static org.neo4j.driver.internal.util.Extract.assertParameter;
-import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
-import static org.neo4j.driver.v1.Values.value;
 
 abstract class AbstractStatementRunner implements StatementRunner
 {
@@ -103,14 +100,6 @@ abstract class AbstractStatementRunner implements StatementRunner
         {
             return Values.EmptyMap;
         }
-
-        Map<String,Value> asValues = newHashMapWithSize( map.size() );
-        for ( Map.Entry<String,Object> entry : map.entrySet() )
-        {
-            Object value = entry.getValue();
-            assertParameter( value );
-            asValues.put( entry.getKey(), value( value ) );
-        }
-        return new MapValue( asValues );
+        return new MapValue( Extract.mapOfValues( map ) );
     }
 }

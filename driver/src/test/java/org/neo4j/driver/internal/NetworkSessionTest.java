@@ -362,7 +362,7 @@ class NetworkSessionTest
     {
         NetworkSession session = newSession( connectionProvider, READ );
         session.setBookmarks( Bookmarks.from( "X" ) );
-        session.beginTransaction( null );
+        session.beginTransaction( (String) null );
         assertThat( session.lastBookmark(), equalTo( "X" ) );
     }
 

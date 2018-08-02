@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.emptyMap;
@@ -241,9 +242,12 @@ class ExplicitTransactionTest
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( Bookmarks.from( "SomeBookmark" ) ) ) );
-        assertEquals( error, e );
+        Bookmarks bookmarks = Bookmarks.from( "SomeBookmark" );
+        TransactionConfig txConfig = TransactionConfig.empty();
 
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
+
+        assertEquals( error, e );
         verify( connection ).release();
     }
 
@@ -252,7 +256,11 @@ class ExplicitTransactionTest
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, mock( NetworkSession.class ) );
-        await( tx.beginAsync( Bookmarks.from( "SomeBookmark" ) ) );
+
+        Bookmarks bookmarks = Bookmarks.from( "SomeBookmark" );
+        TransactionConfig txConfig = TransactionConfig.empty();
+
+        await( tx.beginAsync( bookmarks, txConfig ) );
 
         verify( connection, never() ).release();
     }
@@ -296,7 +304,7 @@ class ExplicitTransactionTest
     private static ExplicitTransaction beginTx( Connection connection, NetworkSession session, Bookmarks initialBookmarks )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, session );
-        return await( tx.beginAsync( initialBookmarks ) );
+        return await( tx.beginAsync( initialBookmarks, TransactionConfig.empty() ) );
     }
 
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )

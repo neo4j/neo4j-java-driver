@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -36,9 +37,11 @@ import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -59,8 +62,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic,
-            Logging logging )
+    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
@@ -71,7 +73,25 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public StatementResult run( Statement statement )
     {
-        StatementResultCursor cursor = Futures.blockingGet( run( statement, false ),
+        return run( statement, TransactionConfig.empty() );
+    }
+
+    @Override
+    public StatementResult run( String statement, TransactionConfig config )
+    {
+        return run( statement, emptyMap(), config );
+    }
+
+    @Override
+    public StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    {
+        return run( new Statement( statement, parameters ), config );
+    }
+
+    @Override
+    public StatementResult run( Statement statement, TransactionConfig config )
+    {
+        StatementResultCursor cursor = Futures.blockingGet( run( statement, config, false ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
 
         // query executed, it is safe to obtain a connection in a blocking way
@@ -82,8 +102,26 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public CompletionStage<StatementResultCursor> runAsync( Statement statement )
     {
+        return runAsync( statement, TransactionConfig.empty() );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config )
+    {
+        return runAsync( statement, emptyMap(), config );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config )
+    {
+        return runAsync( new Statement( statement, parameters ), config );
+    }
+
+    @Override
+    public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config )
+    {
         //noinspection unchecked
-        return (CompletionStage) run( statement, true );
+        return (CompletionStage) run( statement, config, true );
     }
 
     @Override
@@ -131,7 +169,13 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public Transaction beginTransaction()
     {
-        return beginTransaction( mode );
+        return beginTransaction( TransactionConfig.empty() );
+    }
+
+    @Override
+    public Transaction beginTransaction( TransactionConfig config )
+    {
+        return beginTransaction( mode, config );
     }
 
     @Deprecated
@@ -145,32 +189,62 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     @Override
     public CompletionStage<Transaction> beginTransactionAsync()
     {
+        return beginTransactionAsync( TransactionConfig.empty() );
+    }
+
+    @Override
+    public CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config )
+    {
         //noinspection unchecked
-        return (CompletionStage) beginTransactionAsync( mode );
+        return (CompletionStage) beginTransactionAsync( mode, config );
     }
 
     @Override
     public <T> T readTransaction( TransactionWork<T> work )
     {
-        return transaction( AccessMode.READ, work );
+        return readTransaction( work, TransactionConfig.empty() );
+    }
+
+    @Override
+    public <T> T readTransaction( TransactionWork<T> work, TransactionConfig config )
+    {
+        return transaction( AccessMode.READ, work, config );
     }
 
     @Override
     public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return transactionAsync( AccessMode.READ, work );
+        return readTransactionAsync( work, TransactionConfig.empty() );
+    }
+
+    @Override
+    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    {
+        return transactionAsync( AccessMode.READ, work, config );
     }
 
     @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
-        return transaction( AccessMode.WRITE, work );
+        return writeTransaction( work, TransactionConfig.empty() );
+    }
+
+    @Override
+    public <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config )
+    {
+        return transaction( AccessMode.WRITE, work, config );
     }
 
     @Override
     public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
     {
-        return transactionAsync( AccessMode.WRITE, work );
+        return writeTransactionAsync( work, TransactionConfig.empty() );
+    }
+
+    @Override
+    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    {
+        return transactionAsync( AccessMode.WRITE, work, config );
     }
 
     void setBookmarks( Bookmarks bookmarks )
@@ -225,7 +299,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
                 connection.isOpen() ); // and it's still open
     }
 
-    private <T> T transaction( AccessMode mode, TransactionWork<T> work )
+    private <T> T transaction( AccessMode mode, TransactionWork<T> work, TransactionConfig config )
     {
         // use different code path compared to async so that work is executed in the caller thread
         // caller thread will also be the one who sleeps between retries;
@@ -233,7 +307,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         // event loop thread will bock and wait for itself to read some data
         return retryLogic.retry( () ->
         {
-            try ( Transaction tx = beginTransaction( mode ) )
+            try ( Transaction tx = beginTransaction( mode, config ) )
             {
                 try
                 {
@@ -252,12 +326,12 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         } );
     }
 
-    private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work )
+    private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return retryLogic.retryAsync( () ->
         {
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
-            CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode );
+            CompletionStage<ExplicitTransaction> txFuture = beginTransactionAsync( mode, config );
 
             txFuture.whenComplete( ( tx, completionError ) ->
             {
@@ -358,26 +432,27 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         }
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
         CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection -> connection.protocol().runInAutoCommitTransaction( connection, statement, waitForRunResponse ) );
+                .thenCompose( connection ->
+                        connection.protocol().runInAutoCommitTransaction( connection, statement, bookmarks, config, waitForRunResponse ) );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
 
         return newResultCursorStage;
     }
 
-    private Transaction beginTransaction( AccessMode mode )
+    private Transaction beginTransaction( AccessMode mode, TransactionConfig config )
     {
-        return Futures.blockingGet( beginTransactionAsync( mode ),
+        return Futures.blockingGet( beginTransactionAsync( mode, config ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while starting a transaction" ) );
     }
 
-    private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode )
+    private CompletionStage<ExplicitTransaction> beginTransactionAsync( AccessMode mode, TransactionConfig config )
     {
         ensureSessionIsOpen();
 
@@ -387,7 +462,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
                 .thenCompose( connection ->
                 {
                     ExplicitTransaction tx = new ExplicitTransaction( connection, NetworkSession.this );
-                    return tx.beginAsync( bookmarks );
+                    return tx.beginAsync( bookmarks, config );
                 } );
 
         // update the reference to the only known transaction

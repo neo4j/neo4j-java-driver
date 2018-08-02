@@ -31,6 +31,7 @@ import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -78,9 +79,9 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         this.resultCursors = new ResultCursorsHolder();
     }
 
-    public CompletionStage<ExplicitTransaction> beginAsync( Bookmarks initialBookmarks )
+    public CompletionStage<ExplicitTransaction> beginAsync( Bookmarks initialBookmarks, TransactionConfig config )
     {
-        return protocol.beginTransaction( connection, initialBookmarks )
+        return protocol.beginTransaction( connection, initialBookmarks, config )
                 .handle( ( ignore, beginError ) ->
                 {
                     if ( beginError != null )

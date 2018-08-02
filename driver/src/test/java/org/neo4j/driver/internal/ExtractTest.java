@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,16 +32,19 @@ import java.util.Map;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.Values.value;
@@ -77,24 +81,9 @@ class ExtractTest
     @Test
     void testMapOverList()
     {
-        List<Integer> mapped = Extract.list( new Value[]{value( 42 ), value( 43 )}, integerExtractor() );
+        List<Integer> mapped = Extract.list( new Value[]{value( 42 ), value( 43 )}, Value::asInt );
 
         assertThat( mapped, equalTo( Arrays.asList( 42, 43 ) ) );
-    }
-
-    @Test
-    void testMapShouldNotBeModifiable()
-    {
-        // GIVEN
-        Map<String,Value> map = new HashMap<>();
-        map.put( "k1", value( "foo" ) );
-        map.put( "k2", value( 42 ) );
-
-        // WHEN
-        Map<String,Value> valueMap = Extract.map( map );
-
-        // THEN
-        assertThrows( UnsupportedOperationException.class, () -> valueMap.put( "foo", value( "bar" ) ) );
     }
 
     @Test
@@ -106,7 +95,7 @@ class ExtractTest
         map.put( "k2", value( 42 ) );
 
         // WHEN
-        Map<String,Integer> mappedMap = Extract.map( map, integerExtractor() );
+        Map<String,Integer> mappedMap = Extract.map( map, Value::asInt );
 
         // THEN
         Collection<Integer> values = mappedMap.values();
@@ -123,7 +112,7 @@ class ExtractTest
         map.put( "k1", value( 42 ) );
 
         // WHEN
-        Map<String,Integer> mappedMap = Extract.map( map, integerExtractor() );
+        Map<String,Integer> mappedMap = Extract.map( map, Value::asInt );
 
         // THEN
         Collection<Integer> values = mappedMap.values();
@@ -141,7 +130,7 @@ class ExtractTest
         InternalNode node = new InternalNode( 42L, Collections.singletonList( "L" ), props );
 
         // WHEN
-        Iterable<Pair<String, Integer>> properties = Extract.properties( node, integerExtractor() );
+        Iterable<Pair<String,Integer>> properties = Extract.properties( node, Value::asInt );
 
         // THEN
         Iterator<Pair<String, Integer>> iterator = properties.iterator();
@@ -156,24 +145,43 @@ class ExtractTest
         // GIVEN
         InternalRecord record = new InternalRecord( Arrays.asList( "k1" ), new Value[]{value( 42 )} );
         // WHEN
-        List<Pair<String, Integer>> fields = Extract.fields( record, integerExtractor() );
+        List<Pair<String,Integer>> fields = Extract.fields( record, Value::asInt );
 
 
         // THEN
         assertThat( fields, equalTo( Collections.singletonList( InternalPair.of( "k1", 42 ) ) ) );
     }
 
-    private Function<Value,Integer> integerExtractor()
+    @Test
+    void shouldExtractMapOfValuesFromNullOrEmptyMap()
     {
-        return new Function<Value,Integer>()
-        {
-
-            @Override
-            public Integer apply( Value value )
-            {
-                return value.asInt();
-            }
-        };
+        assertEquals( emptyMap(), Extract.mapOfValues( null ) );
+        assertEquals( emptyMap(), Extract.mapOfValues( emptyMap() ) );
     }
 
+    @Test
+    void shouldExtractMapOfValues()
+    {
+        Map<String,Object> map = new HashMap<>();
+        map.put( "key1", "value1" );
+        map.put( "key2", 42L );
+        map.put( "key3", LocalDate.now() );
+        map.put( "key4", new byte[]{1, 2, 3} );
+
+        Map<String,Value> mapOfValues = Extract.mapOfValues( map );
+
+        assertEquals( 4, map.size() );
+        assertEquals( value( "value1" ), mapOfValues.get( "key1" ) );
+        assertEquals( value( 42L ), mapOfValues.get( "key2" ) );
+        assertEquals( value( LocalDate.now() ), mapOfValues.get( "key3" ) );
+        assertEquals( value( new byte[]{1, 2, 3} ), mapOfValues.get( "key4" ) );
+    }
+
+    @Test
+    void shouldFailToExtractMapOfValuesFromUnsupportedValues()
+    {
+        assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalNode( 1 ) ) ) );
+        assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalRelationship( 1, 1, 1, "HI" ) ) ) );
+        assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalPath( new InternalNode( 1 ) ) ) ) );
+    }
 }

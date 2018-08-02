@@ -43,6 +43,8 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
+import static org.neo4j.driver.v1.Values.value;
 
 /**
  * Utility class for extracting data.
@@ -83,18 +85,6 @@ public final class Extract
                     result.add( mapFunction.apply( value ) );
                 }
                 return unmodifiableList( result );
-        }
-    }
-
-    public static Map<String, Value> map( Map<String, Value> data )
-    {
-        if ( data.isEmpty() )
-        {
-            return emptyMap();
-        }
-        else
-        {
-            return unmodifiableMap( data );
         }
     }
 
@@ -196,6 +186,23 @@ public final class Extract
                 return unmodifiableList( list );
             }
         }
+    }
+
+    public static Map<String,Value> mapOfValues( Map<String,Object> map )
+    {
+        if ( map == null || map.isEmpty() )
+        {
+            return emptyMap();
+        }
+
+        Map<String,Value> result = newHashMapWithSize( map.size() );
+        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        {
+            Object value = entry.getValue();
+            assertParameter( value );
+            result.put( entry.getKey(), value( value ) );
+        }
+        return result;
     }
 
     public static void assertParameter( Object value )
