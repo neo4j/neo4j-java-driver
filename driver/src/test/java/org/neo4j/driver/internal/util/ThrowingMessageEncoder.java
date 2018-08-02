@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 
 public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
 {
@@ -46,6 +47,11 @@ public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
     public static ThrowingMessageEncoder<RunMessage> forRunMessage( RuntimeException error )
     {
         return new ThrowingMessageEncoder<>( RunMessage.class, error );
+    }
+
+    public static ThrowingMessageEncoder<RunWithMetadataMessage> forRunWithMetadataMessage( RuntimeException error )
+    {
+        return new ThrowingMessageEncoder<>( RunWithMetadataMessage.class, error );
     }
 
     public static ThrowingMessageEncoder<ResetMessage> forResetMessage( RuntimeException error )

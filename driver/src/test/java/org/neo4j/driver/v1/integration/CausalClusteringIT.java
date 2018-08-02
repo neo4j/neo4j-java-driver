@@ -43,6 +43,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
@@ -84,6 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -615,11 +617,7 @@ class CausalClusteringIT
 
             // now driver should have connections towards every cluster member
             // make all those connections throw and seem broken
-            for ( Channel channel : driverFactory.channels() )
-            {
-                RuntimeException error = new ServiceUnavailableException( "Disconnected" );
-                channel.pipeline().addLast( ThrowingMessageEncoder.forRunMessage( error ) );
-            }
+            makeAllChannelsFailToRunQueries( driverFactory, ServerVersion.version( driver ) );
 
             // observe that connection towards writer is broken
             try ( Session session = driver.session( AccessMode.WRITE ) )
@@ -1042,6 +1040,22 @@ class CausalClusteringIT
         return overview.leaderCount == 0 &&
                overview.followerCount == 1 &&
                overview.readReplicaCount == ClusterExtension.READ_REPLICA_COUNT;
+    }
+
+    private static void makeAllChannelsFailToRunQueries( ChannelTrackingDriverFactory driverFactory, ServerVersion dbVersion )
+    {
+        for ( Channel channel : driverFactory.channels() )
+        {
+            RuntimeException error = new ServiceUnavailableException( "Disconnected" );
+            if ( BOLT_V3.availableIn( dbVersion ) )
+            {
+                channel.pipeline().addLast( ThrowingMessageEncoder.forRunWithMetadataMessage( error ) );
+            }
+            else
+            {
+                channel.pipeline().addLast( ThrowingMessageEncoder.forRunMessage( error ) );
+            }
+        }
     }
 
     private static class RecordAndSummary
