@@ -18,9 +18,11 @@
  */
 package org.neo4j.driver.v1.tck.tck.util;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.opentest4j.TestAbortedException;
 
 import org.neo4j.driver.v1.util.DatabaseExtension;
 
@@ -34,7 +36,14 @@ public class DatabaseRule extends DatabaseExtension implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                DatabaseRule.this.beforeEach( null );
+                try
+                {
+                    DatabaseRule.this.beforeEach( null );
+                }
+                catch ( TestAbortedException e )
+                {
+                    throw new AssumptionViolatedException( "Unable to prepare database", e );
+                }
                 base.evaluate();
             }
         };
