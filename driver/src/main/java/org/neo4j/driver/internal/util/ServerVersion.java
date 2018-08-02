@@ -56,7 +56,7 @@ public class ServerVersion
     {
         try ( Session session = driver.session() )
         {
-            String versionString = session.run( "RETURN 1" ).consume().server().version();
+            String versionString = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().version() );
             return version( versionString );
         }
     }
