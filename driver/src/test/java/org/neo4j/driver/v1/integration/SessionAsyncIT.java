@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
@@ -78,6 +79,7 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -595,7 +597,7 @@ class SessionAsyncIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
+    @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
         session = neo4j.driver().session( "Illegal Bookmark" );
@@ -606,6 +608,26 @@ class SessionAsyncIT
         Record record = await( cursor.singleAsync() );
         assertEquals( "Hello!", record.get( 0 ).asString() );
     }
+
+    @Test
+    @EnabledOnNeo4jWith( BOOKMARKS )
+    void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
+    {
+        session = neo4j.driver().session( "Illegal Bookmark" );
+        assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
+        assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V3 )
+    void shouldNotRunAfterBeginTxFailureOnBookmark()
+    {
+        session = neo4j.driver().session( "Illegal Bookmark" );
+        assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
+        StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
+        assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
+    }
+
 
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection()

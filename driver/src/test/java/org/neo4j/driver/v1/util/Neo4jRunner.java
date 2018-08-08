@@ -54,7 +54,7 @@ public class Neo4jRunner
 
     private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" );
 
-    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.4.4";
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.5";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
     public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
