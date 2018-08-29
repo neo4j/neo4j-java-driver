@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.value;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -251,6 +252,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public OffsetDateTime asOffsetDateTime( OffsetDateTime defaultValue )
+    {
+        return computeOrDefault( Value::asOffsetDateTime, defaultValue );
+    }
+
+    @Override
     public ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue )
     {
         return computeOrDefault( Value::asZonedDateTime, defaultValue );
@@ -326,6 +333,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public LocalDateTime asLocalDateTime()
     {
         throw new Uncoercible( type().name(), "LocalDateTime" );
+    }
+
+    @Override
+    public OffsetDateTime asOffsetDateTime()
+    {
+        throw new Uncoercible( type().name(), "OffsetDateTime" );
     }
 
     @Override

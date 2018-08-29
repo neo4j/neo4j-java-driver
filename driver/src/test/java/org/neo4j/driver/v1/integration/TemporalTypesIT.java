@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -188,6 +189,32 @@ class TemporalTypesIT
     }
 
     @Test
+    void shouldSendDateTimeRepresentedWithOffsetDateTime()
+    {
+        testSendValue( OffsetDateTime.of( 1851, 9, 29, 1, 29, 42, 987, ZoneOffset.ofHours( -8 ) ), Value::asOffsetDateTime );
+    }
+
+    @Test
+    void shouldReceiveDateTimeRepresentedWithOffsetDateTime()
+    {
+        testReceiveValue( "RETURN datetime({year:2121, month:1, day:1, hour:2, minute:2, second:2, timezone:'-07:20'})",
+                OffsetDateTime.of( 2121, 1, 1, 2, 2, 2, 0, ZoneOffset.ofHoursMinutes( -7, -20 ) ),
+                Value::asOffsetDateTime );
+    }
+
+    @Test
+    void shouldSendAndReceiveDateTimeRepresentedWithOffsetDateTime()
+    {
+        testSendAndReceiveValue( OffsetDateTime.of( 1998, 12, 12, 23, 54, 14, 123, ZoneOffset.ofHoursMinutes( 1, 15 ) ), Value::asOffsetDateTime );
+    }
+
+    @Test
+    void shouldSendAndReceiveRandomDateTimeRepresentedWithOffsetDateTime()
+    {
+        testSendAndReceiveRandomValues( TemporalUtil::randomOffsetDateTime, Value::asOffsetDateTime );
+    }
+
+    @Test
     void shouldSendDateTimeWithZoneId()
     {
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
@@ -275,7 +302,7 @@ class TemporalTypesIT
         testDurationToString( -40, -2_123_456_789, "P0M0DT-42.123456789S" );
     }
 
-    private <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
+    private static <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
     {
         for ( int i = 0; i < RANDOM_VALUES_TO_TEST; i++ )
         {
@@ -283,7 +310,7 @@ class TemporalTypesIT
         }
     }
 
-    private <T> void testSendValue( T value, Function<Value,T> converter )
+    private static <T> void testSendValue( T value, Function<Value,T> converter )
     {
         Record record1 = session.run( "CREATE (n:Node {value: $value}) RETURN 42", singletonMap( "value", value ) ).single();
         assertEquals( 42, record1.get( 0 ).asInt() );
@@ -292,19 +319,19 @@ class TemporalTypesIT
         assertEquals( value, converter.apply( record2.get( 0 ) ) );
     }
 
-    private <T> void testReceiveValue( String query, T expectedValue, Function<Value,T> converter )
+    private static <T> void testReceiveValue( String query, T expectedValue, Function<Value,T> converter )
     {
         Record record = session.run( query ).single();
         assertEquals( expectedValue, converter.apply( record.get( 0 ) ) );
     }
 
-    private <T> void testSendAndReceiveValue( T value, Function<Value,T> converter )
+    private static <T> void testSendAndReceiveValue( T value, Function<Value,T> converter )
     {
         Record record = session.run( "CREATE (n:Node {value: $value}) RETURN n.value", singletonMap( "value", value ) ).single();
         assertEquals( value, converter.apply( record.get( 0 ) ) );
     }
 
-    private void testDurationToString( long seconds, int nanoseconds, String expectedValue )
+    private static void testDurationToString( long seconds, int nanoseconds, String expectedValue )
     {
         StatementResult result = session.run( "RETURN duration({seconds: $s, nanoseconds: $n})", parameters( "s", seconds, "n", nanoseconds ) );
         IsoDuration duration = result.single().get( 0 ).asIsoDuration();

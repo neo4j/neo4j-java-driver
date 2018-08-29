@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.util;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -67,6 +68,11 @@ public final class TemporalUtil
     {
         return LocalDateTime.of( random( YEAR ), random( MONTH_OF_YEAR ), random( DAY_OF_MONTH ), random( HOUR_OF_DAY ),
                 random( MINUTE_OF_HOUR ), random( SECOND_OF_MINUTE ), random( NANO_OF_SECOND ) );
+    }
+
+    public static OffsetDateTime randomOffsetDateTime()
+    {
+        return randomZonedDateTimeWithOffset().toOffsetDateTime();
     }
 
     public static ZonedDateTime randomZonedDateTimeWithOffset()

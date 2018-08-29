@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -373,6 +374,18 @@ class ValuesTest
 
         assertThat( value, instanceOf( LocalDateTimeValue.class ) );
         assertEquals( localDateTime, value.asObject() );
+    }
+
+    @Test
+    void shouldCreateDateTimeValueFromOffsetDateTime()
+    {
+        OffsetDateTime offsetDateTime = OffsetDateTime.now();
+        Value value = value( offsetDateTime );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( offsetDateTime, value.asOffsetDateTime() );
+        assertEquals( offsetDateTime.toZonedDateTime(), value.asZonedDateTime() );
+        assertEquals( offsetDateTime.toZonedDateTime(), value.asObject() );
     }
 
     @Test
