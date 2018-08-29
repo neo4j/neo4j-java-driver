@@ -20,6 +20,7 @@ package org.neo4j.driver.v1;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
@@ -93,6 +94,15 @@ public interface StatementResult extends Iterator<Record>
      * @return the next record
      */
     Record peek();
+
+    /**
+     * Convert this result to a sequential {@link Stream} of records.
+     * <p>
+     * Result is exhausted when a terminal operation on the returned stream is executed.
+     *
+     * @return sequential {@link Stream} of records. Empty stream if this result has already been consumed or is empty.
+     */
+    Stream<Record> stream();
 
     /**
      * Retrieve and store the entire result stream.
