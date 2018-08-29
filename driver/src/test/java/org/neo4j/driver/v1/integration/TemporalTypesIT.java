@@ -29,7 +29,10 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Record;
@@ -42,15 +45,21 @@ import org.neo4j.driver.v1.util.TemporalUtil;
 
 import static java.time.Month.MARCH;
 import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.util.Neo4jFeature.TEMPORAL_TYPES;
 import static org.neo4j.driver.v1.Values.isoDuration;
+import static org.neo4j.driver.v1.Values.ofOffsetDateTime;
 import static org.neo4j.driver.v1.Values.parameters;
 
 @EnabledOnNeo4jWith( TEMPORAL_TYPES )
 class TemporalTypesIT
 {
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
+
+    private static final int RANDOM_LISTS_TO_TEST = 100;
+    private static final int MIN_LIST_SIZE = 100;
+    private static final int MAX_LIST_SIZE = 1_000;
 
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
@@ -82,6 +91,12 @@ class TemporalTypesIT
     }
 
     @Test
+    void shouldSendAndReceiveListsWithRandomDates()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomLocalDate );
+    }
+
+    @Test
     void shouldSendTime()
     {
         testSendValue( OffsetTime.now(), Value::asOffsetTime );
@@ -105,6 +120,12 @@ class TemporalTypesIT
     void shouldSendAndReceiveRandomTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomOffsetTime, Value::asOffsetTime );
+    }
+
+    @Test
+    void shouldSendAndReceiveListsWithRandomTimes()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomOffsetTime );
     }
 
     @Test
@@ -134,6 +155,12 @@ class TemporalTypesIT
     }
 
     @Test
+    void shouldSendAndReceiveListsWithRandomLocalTimes()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomLocalTime );
+    }
+
+    @Test
     void shouldSendLocalDateTime()
     {
         testSendValue( LocalDateTime.now(), Value::asLocalDateTime );
@@ -157,6 +184,12 @@ class TemporalTypesIT
     void shouldSendAndReceiveRandomLocalDateTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomLocalDateTime, Value::asLocalDateTime );
+    }
+
+    @Test
+    void shouldSendAndReceiveListsWithRandomLocalDateTimes()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomLocalDateTime );
     }
 
     @Test
@@ -189,6 +222,12 @@ class TemporalTypesIT
     }
 
     @Test
+    void shouldSendAndReceiveListsWithRandomDateTimeWithZoneOffsets()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomZonedDateTimeWithOffset );
+    }
+
+    @Test
     void shouldSendDateTimeRepresentedWithOffsetDateTime()
     {
         testSendValue( OffsetDateTime.of( 1851, 9, 29, 1, 29, 42, 987, ZoneOffset.ofHours( -8 ) ), Value::asOffsetDateTime );
@@ -212,6 +251,12 @@ class TemporalTypesIT
     void shouldSendAndReceiveRandomDateTimeRepresentedWithOffsetDateTime()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomOffsetDateTime, Value::asOffsetDateTime );
+    }
+
+    @Test
+    void shouldSendAndReceiveListsWithRandomDateTimeRepresentedWithOffsetDateTimes()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomOffsetDateTime, value -> value.asList( ofOffsetDateTime() ) );
     }
 
     @Test
@@ -244,6 +289,12 @@ class TemporalTypesIT
     }
 
     @Test
+    void shouldSendAndReceiveListsWithRandomDateTimeWithZoneIds()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomZonedDateTimeWithZoneId );
+    }
+
+    @Test
     void shouldSendDuration()
     {
         testSendValue( newDuration( 8, 12, 90, 8 ), Value::asIsoDuration );
@@ -267,6 +318,12 @@ class TemporalTypesIT
     void shouldSendAndReceiveRandomDuration()
     {
         testSendAndReceiveRandomValues( TemporalUtil::randomDuration, Value::asIsoDuration );
+    }
+
+    @Test
+    void shouldSendAndReceiveListsWithRandomDurations()
+    {
+        testSendAndReceiveRandomLists( TemporalUtil::randomDuration );
     }
 
     @Test
@@ -302,11 +359,29 @@ class TemporalTypesIT
         testDurationToString( -40, -2_123_456_789, "P0M0DT-42.123456789S" );
     }
 
-    private static <T> void testSendAndReceiveRandomValues( Supplier<T> supplier, Function<Value,T> converter )
+    private static <T> void testSendAndReceiveRandomValues( Supplier<T> valueSupplier, Function<Value,T> converter )
     {
         for ( int i = 0; i < RANDOM_VALUES_TO_TEST; i++ )
         {
-            testSendAndReceiveValue( supplier.get(), converter );
+            testSendAndReceiveValue( valueSupplier.get(), converter );
+        }
+    }
+
+    private static <T> void testSendAndReceiveRandomLists( Supplier<T> valueSupplier )
+    {
+        testSendAndReceiveRandomLists( valueSupplier::get, Value::asList );
+    }
+
+    private static <T> void testSendAndReceiveRandomLists( Supplier<T> valueSupplier, Function<Value,List<T>> converter )
+    {
+        for ( int i = 0; i < RANDOM_LISTS_TO_TEST; i++ )
+        {
+            int listSize = ThreadLocalRandom.current().nextInt( MIN_LIST_SIZE, MAX_LIST_SIZE );
+            List<T> list = Stream.generate( valueSupplier )
+                    .limit( listSize )
+                    .collect( toList() );
+
+            testSendAndReceiveValue( list, converter );
         }
     }
 
