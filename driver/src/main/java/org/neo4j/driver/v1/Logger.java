@@ -20,6 +20,11 @@ package org.neo4j.driver.v1;
 
 /**
  * Logs messages for driver activity.
+ * <p>
+ * Some methods in this interface take a message template together with a list of parameters. These methods are expected to construct the final
+ * message only if the needed logging level is enabled. Driver expects formatting to be done using {@link String#format(String, Object...)} method.
+ * Thus all supplied message templates will contain "%s" as parameter placeholders. This is different from all SLF4J-compatible logging frameworks
+ * where parameter placeholder is "{}". Implementations of this interface should adapt placeholders from "%s" to "{}", if required.
  */
 public interface Logger
 {
@@ -47,7 +52,7 @@ public interface Logger
      * <li>Cluster discovery progress</li>
      * </ul>
      *
-     * @param message the information message.
+     * @param message the information message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in the information message.
      */
     void info( String message, Object... params );
@@ -61,7 +66,7 @@ public interface Logger
      * <li>Transaction retry failures</li>
      * </ul>
      *
-     * @param message the warning message.
+     * @param message the warning message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in the warning message.
      */
     void warn( String message, Object... params );
@@ -93,7 +98,7 @@ public interface Logger
      * <li>Messages received from the database</li>
      * </ul>
      *
-     * @param message the bolt message
+     * @param message the debug message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in generating the bolt message
      */
     void debug( String message, Object... params );
@@ -112,7 +117,7 @@ public interface Logger
      * <li>Messages received from the database with bytes in hex</li>
      * </ul>
      *
-     * @param message the bolt message in hex
+     * @param message the trace message template. Can contain {@link String#format(String, Object...)}-style placeholders, like "%s".
      * @param params parameters used in generating the hex message
      */
     void trace( String message, Object... params );
