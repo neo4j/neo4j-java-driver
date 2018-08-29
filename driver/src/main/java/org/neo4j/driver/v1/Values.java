@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.InternalIsoDuration;
@@ -116,6 +117,7 @@ public abstract class Values
         if ( value instanceof Map<?,?> ) { return value( (Map<String,Object>) value ); }
         if ( value instanceof Iterable<?> ) { return value( (Iterable<Object>) value ); }
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
+        if ( value instanceof Stream<?> ) { return value( (Stream<Object>) value ); }
 
         if ( value instanceof byte[] ) { return value( (byte[]) value ); }
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
@@ -246,7 +248,13 @@ public abstract class Values
         {
             values.add( value( val.next() ) );
         }
-        return new ListValue( values.toArray( new Value[values.size()] ) );
+        return new ListValue( values.toArray( new Value[0] ) );
+    }
+
+    public static Value value( Stream<Object> stream )
+    {
+        Value[] values = stream.map( Values::value ).toArray( Value[]::new );
+        return new ListValue( values );
     }
 
     public static Value value( final char val )

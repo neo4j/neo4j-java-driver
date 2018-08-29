@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -38,6 +39,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.SessionExtension;
 import org.neo4j.driver.v1.util.TestUtil;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -51,6 +53,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BYTE_ARRAYS;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
+import static org.neo4j.driver.v1.Values.ofInteger;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
@@ -272,7 +275,7 @@ class ParametersIT
         testStringArrayContaining( "Mjölnir" );
     }
 
-    private void testStringArrayContaining( String str )
+    private static void testStringArrayContaining( String str )
     {
         String[] arrayValue = new String[]{str, str, str};
 
@@ -467,7 +470,18 @@ class ParametersIT
         testSendAndReceiveValue( bytes );
     }
 
-    private void testBytesProperty( byte[] array )
+    @Test
+    void shouldAcceptStreamsAsQueryParameters()
+    {
+        Stream<Integer> stream = Stream.of( 1, 2, 3, 4, 5, 42 );
+
+        StatementResult result = session.run( "RETURN $value", singletonMap( "value", stream ) );
+        Value receivedValue = result.single().get( 0 );
+
+        assertEquals( asList( 1, 2, 3, 4, 5, 42 ), receivedValue.asList( ofInteger() ) );
+    }
+
+    private static void testBytesProperty( byte[] array )
     {
         StatementResult result = session.run( "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", array ) );
 
@@ -479,7 +493,7 @@ class ParametersIT
         }
     }
 
-    private void testStringProperty( String string )
+    private static void testStringProperty( String string )
     {
         StatementResult result = session.run(
                 "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", string ) );
@@ -499,7 +513,7 @@ class ParametersIT
         return result;
     }
 
-    private void expectIOExceptionWithMessage( Value value, String message )
+    private static void expectIOExceptionWithMessage( Value value, String message )
     {
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.run( "RETURN {a}", value ).consume() );
         Throwable cause = e.getCause();
@@ -507,7 +521,7 @@ class ParametersIT
         assertThat( cause.getMessage(), equalTo( message ) );
     }
 
-    private void testSendAndReceiveValue( Object value )
+    private static void testSendAndReceiveValue( Object value )
     {
         StatementResult result = session.run( "RETURN $value", singletonMap( "value", value ) );
         Object receivedValue = result.single().get( 0 ).asObject();
