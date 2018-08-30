@@ -57,6 +57,18 @@ class DateTimeValueTest
     }
 
     @Test
+    void shouldSupportAsOffsetDateTime()
+    {
+        ZonedDateTime dateTimeWithOffset = ZonedDateTime.of( 2019, 1, 2, 3, 14, 22, 100, ZoneOffset.ofHours( -5 ) );
+        DateTimeValue dateTimeValue1 = new DateTimeValue( dateTimeWithOffset );
+        assertEquals( dateTimeWithOffset.toOffsetDateTime(), dateTimeValue1.asOffsetDateTime() );
+
+        ZonedDateTime dateTimeWithZoneId = ZonedDateTime.of( 2000, 11, 8, 5, 57, 59, 1, ZoneId.of( "Europe/Stockholm" ) );
+        DateTimeValue dateTimeValue2 = new DateTimeValue( dateTimeWithZoneId );
+        assertEquals( dateTimeWithZoneId.toOffsetDateTime(), dateTimeValue2.asOffsetDateTime() );
+    }
+
+    @Test
     void shouldNotSupportAsLong()
     {
         ZonedDateTime dateTime = ZonedDateTime.now();

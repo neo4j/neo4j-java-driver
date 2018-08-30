@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -107,6 +108,7 @@ public abstract class Values
         if ( value instanceof OffsetTime ) { return value( (OffsetTime) value ); }
         if ( value instanceof LocalTime ) { return value( (LocalTime) value ); }
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
+        if ( value instanceof OffsetDateTime ) { return value( (OffsetDateTime) value ); }
         if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
         if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
         if ( value instanceof Period ) { return value( (Period) value ); }
@@ -315,6 +317,11 @@ public abstract class Values
     public static Value value( LocalDateTime localDateTime )
     {
         return new LocalDateTimeValue( localDateTime );
+    }
+
+    public static Value value( OffsetDateTime offsetDateTime )
+    {
+        return new DateTimeValue( offsetDateTime.toZonedDateTime() );
     }
 
     public static Value value( ZonedDateTime zonedDateTime )
@@ -619,6 +626,16 @@ public abstract class Values
     public static Function<Value,LocalDateTime> ofLocalDateTime()
     {
         return Value::asLocalDateTime;
+    }
+
+    /**
+     * Converts values to {@link OffsetDateTime}.
+     *
+     * @return a function that returns {@link Value#asOffsetDateTime()} of a {@link Value}
+     */
+    public static Function<Value,OffsetDateTime> ofOffsetDateTime()
+    {
+        return Value::asOffsetDateTime;
     }
 
     /**

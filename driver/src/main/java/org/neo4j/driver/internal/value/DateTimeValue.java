@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
@@ -28,6 +29,12 @@ public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime>
     public DateTimeValue( ZonedDateTime zonedDateTime )
     {
         super( zonedDateTime );
+    }
+
+    @Override
+    public OffsetDateTime asOffsetDateTime()
+    {
+        return asZonedDateTime().toOffsetDateTime();
     }
 
     @Override

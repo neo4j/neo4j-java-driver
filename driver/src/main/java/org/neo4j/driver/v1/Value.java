@@ -21,6 +21,7 @@ package org.neo4j.driver.v1;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -409,6 +410,12 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     LocalDateTime asLocalDateTime();
 
     /**
+     * @return the value as a {@link java.time.OffsetDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    OffsetDateTime asOffsetDateTime();
+
+    /**
      * @return the value as a {@link ZonedDateTime}, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
@@ -453,6 +460,13 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     LocalDateTime asLocalDateTime( LocalDateTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link OffsetDateTime}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    OffsetDateTime asOffsetDateTime( OffsetDateTime defaultValue );
 
     /**
      * @param defaultValue default to this value if the value is a {@link NullValue}

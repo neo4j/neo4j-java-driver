@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 
@@ -88,6 +89,7 @@ class NullValueTest
         assertAsWithDefaultValueReturnDefault( value::asOffsetTime, OffsetTime.now() );
         assertAsWithDefaultValueReturnDefault( value::asLocalTime, LocalTime.now() );
         assertAsWithDefaultValueReturnDefault( value::asLocalDateTime, LocalDateTime.now() );
+        assertAsWithDefaultValueReturnDefault( value::asOffsetDateTime, OffsetDateTime.now() );
         assertAsWithDefaultValueReturnDefault( value::asZonedDateTime, ZonedDateTime.now() );
         assertAsWithDefaultValueReturnDefault( value::asIsoDuration,
                 isoDuration( 1, 2, 3, 4 ).asIsoDuration() );
@@ -117,6 +119,7 @@ class NullValueTest
         assertComputeOrDefaultReturnNull( Value::asOffsetTime );
         assertComputeOrDefaultReturnNull( Value::asLocalTime );
         assertComputeOrDefaultReturnNull( Value::asLocalDateTime );
+        assertComputeOrDefaultReturnNull( Value::asOffsetTime );
         assertComputeOrDefaultReturnNull( Value::asZonedDateTime );
         assertComputeOrDefaultReturnNull( Value::asIsoDuration );
     }
@@ -128,18 +131,18 @@ class NullValueTest
         assertComputeOrDefaultReturnDefault( Value::asNumber, 10 );
     }
 
-    private <T> void assertComputeOrDefaultReturnDefault( Function<Value,T> f, T defaultAndExpectedValue )
+    private static <T> void assertComputeOrDefaultReturnDefault( Function<Value,T> f, T defaultAndExpectedValue )
     {
         Value value = NullValue.NULL;
         assertThat( value.computeOrDefault( f, defaultAndExpectedValue ), equalTo( defaultAndExpectedValue ) );
     }
 
-    private <T> void assertComputeOrDefaultReturnNull( Function<Value,T> f )
+    private static <T> void assertComputeOrDefaultReturnNull( Function<Value,T> f )
     {
         assertComputeOrDefaultReturnDefault( f, null );
     }
 
-    private <T> void assertAsWithDefaultValueReturnDefault( Function<T,T> map, T defaultValue )
+    private static <T> void assertAsWithDefaultValueReturnDefault( Function<T,T> map, T defaultValue )
     {
         assertThat( map.apply( defaultValue ), equalTo( defaultValue ) );
     }
