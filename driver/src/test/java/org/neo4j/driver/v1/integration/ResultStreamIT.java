@@ -21,15 +21,25 @@ package org.neo4j.driver.v1.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.SessionExtension;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -222,5 +232,103 @@ class ResultStreamIT
 
         assertThrows( ClientException.class, result::list );
         assertTrue( result.list().isEmpty() );
+    }
+
+    @Test
+    void shouldConvertEmptyStatementResultToStream()
+    {
+        long count = session.run( "MATCH (n:WrongLabel) RETURN n" )
+                .stream()
+                .count();
+
+        assertEquals( 0, count );
+
+        Optional<Record> anyRecord = session.run( "MATCH (n:OtherWrongLabel) RETURN n" )
+                .stream()
+                .findAny();
+
+        assertFalse( anyRecord.isPresent() );
+    }
+
+    @Test
+    void shouldConvertStatementResultToStream()
+    {
+        List<Integer> receivedList = session.run( "UNWIND range(1, 10) AS x RETURN x" )
+                .stream()
+                .map( record -> record.get( 0 ) )
+                .map( Value::asInt )
+                .collect( toList() );
+
+        assertEquals( asList( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), receivedList );
+    }
+
+    @Test
+    void shouldConvertImmediatelyFailingStatementResultToStream()
+    {
+        List<Integer> seen = new ArrayList<>();
+
+        ClientException e = assertThrows( ClientException.class,
+                () -> session.run( "RETURN 10 / 0" )
+                        .stream()
+                        .forEach( record -> seen.add( record.get( 0 ).asInt() ) ) );
+
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+
+        assertEquals( emptyList(), seen );
+    }
+
+    @Test
+    void shouldConvertEventuallyFailingStatementResultToStream()
+    {
+        List<Integer> seen = new ArrayList<>();
+
+        ClientException e = assertThrows( ClientException.class,
+                () -> session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" )
+                        .stream()
+                        .forEach( record -> seen.add( record.get( 0 ).asInt() ) ) );
+
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+
+        // stream should manage to consume all elements except the last one, which produces an error
+        assertEquals( asList( 1, 1, 1, 1, 1 ), seen );
+    }
+
+    @Test
+    void shouldEmptyResultWhenConvertedToStream()
+    {
+        StatementResult result = session.run( "UNWIND range(1, 10) AS x RETURN x" );
+
+        assertTrue( result.hasNext() );
+        assertEquals( 1, result.next().get( 0 ).asInt() );
+
+        assertTrue( result.hasNext() );
+        assertEquals( 2, result.next().get( 0 ).asInt() );
+
+        List<Integer> list = result.stream()
+                .map( record -> record.get( 0 ).asInt() )
+                .collect( toList() );
+        assertEquals( asList( 3, 4, 5, 6, 7, 8, 9, 10 ), list );
+
+        assertFalse( result.hasNext() );
+        assertThrows( NoSuchRecordException.class, result::next );
+        assertEquals( emptyList(), result.list() );
+        assertEquals( 0, result.stream().count() );
+    }
+
+    @Test
+    void shouldConsumeLargeResultAsParallelStream()
+    {
+        List<String> receivedList = session.run( "UNWIND range(1, 200000) AS x RETURN 'value-' + x" )
+                .stream()
+                .parallel()
+                .map( record -> record.get( 0 ) )
+                .map( Value::asString )
+                .collect( toList() );
+
+        List<String> expectedList = IntStream.range( 1, 200001 )
+                .mapToObj( i -> "value-" + i )
+                .collect( toList() );
+
+        assertEquals( expectedList, receivedList );
     }
 }

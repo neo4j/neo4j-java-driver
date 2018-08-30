@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
@@ -519,5 +520,37 @@ class ValuesTest
         Path path = filledPathValue().asPath();
         Value value = value( path );
         assertEquals( path, value.asPath() );
+    }
+
+    @Test
+    void shouldCreateValueFromStream()
+    {
+        Stream<String> stream = Stream.of( "foo", "bar", "baz", "qux" );
+        Value value = value( stream );
+        assertEquals( asList( "foo", "bar", "baz", "qux" ), value.asObject() );
+    }
+
+    @Test
+    void shouldFailToConvertStreamOfUnsupportedTypeToValue()
+    {
+        Stream<Object> stream = Stream.of( new Object(), new Object() );
+        ClientException e = assertThrows( ClientException.class, () -> value( stream ) );
+        assertEquals( "Unable to convert java.lang.Object to Neo4j Value.", e.getMessage() );
+    }
+
+    @Test
+    void shouldCreateValueFromStreamOfStreams()
+    {
+        Stream<Stream<String>> stream = Stream.of( Stream.of( "foo", "bar" ), Stream.of( "baz", "qux" ) );
+        Value value = value( stream );
+        assertEquals( asList( asList( "foo", "bar" ), asList( "baz", "qux" ) ), value.asObject() );
+    }
+
+    @Test
+    void shouldCreateValueFromStreamOfNulls()
+    {
+        Stream<Object> stream = Stream.of( null, null, null );
+        Value value = value( stream );
+        assertEquals( asList( null, null, null ), value.asObject() );
     }
 }

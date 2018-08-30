@@ -19,7 +19,11 @@
 package org.neo4j.driver.internal;
 
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
@@ -86,6 +90,13 @@ public class InternalStatementResult implements StatementResult
             throw new NoSuchRecordException( "Cannot peek past the last record" );
         }
         return record;
+    }
+
+    @Override
+    public Stream<Record> stream()
+    {
+        Spliterator<Record> spliterator = Spliterators.spliteratorUnknownSize( this, Spliterator.IMMUTABLE | Spliterator.ORDERED );
+        return StreamSupport.stream( spliterator, false );
     }
 
     @Override
