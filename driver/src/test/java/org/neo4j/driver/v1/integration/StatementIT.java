@@ -35,6 +35,7 @@ import org.neo4j.driver.v1.util.SessionExtension;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.Values.parameters;
 
 class StatementIT
@@ -171,5 +172,12 @@ class StatementIT
         }
 
         assertThat( name.asString(), equalTo( "Adam" ) );
+    }
+
+    @Test
+    void shouldFailForIllegalQueries()
+    {
+        assertThrows( IllegalArgumentException.class, () -> session.run( (String) null ) );
+        assertThrows( IllegalArgumentException.class, () -> session.run( "" ) );
     }
 }

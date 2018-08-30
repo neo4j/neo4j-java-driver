@@ -21,12 +21,12 @@ package org.neo4j.driver.v1;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Immutable;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -53,7 +53,7 @@ public class Statement
      */
     public Statement( String text, Value parameters )
     {
-        this.text = text;
+        this.text = validateQuery( text );
         if( parameters == null )
         {
             this.parameters = Values.EmptyMap;
@@ -64,7 +64,7 @@ public class Statement
         }
         else
         {
-            throw new ClientException( "The parameters should be provided as Map type. Unsupported parameters type: " + parameters.type().name() );
+            throw new IllegalArgumentException( "The parameters should be provided as Map type. Unsupported parameters type: " + parameters.type().name() );
         }
     }
 
@@ -196,5 +196,12 @@ public class Statement
     public String toString()
     {
         return format( "Statement{text='%s', parameters=%s}", text, parameters );
+    }
+
+    private static String validateQuery( String query )
+    {
+        checkArgument( query != null, "Cypher query should not be null" );
+        checkArgument( !query.isEmpty(), "Cypher query should not be an empty string" );
+        return query;
     }
 }

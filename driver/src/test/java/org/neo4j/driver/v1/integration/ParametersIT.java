@@ -396,7 +396,7 @@ class ParametersIT
     @Test
     void settingInvalidParameterTypeDirectlyShouldThrowHelpfulError()
     {
-        ClientException e = assertThrows( ClientException.class, () -> session.run( "anything", emptyNodeValue() ) );
+        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> session.run( "anything", emptyNodeValue() ) );
         assertEquals( "The parameters should be provided as Map type. Unsupported parameters type: NODE", e.getMessage() );
     }
 

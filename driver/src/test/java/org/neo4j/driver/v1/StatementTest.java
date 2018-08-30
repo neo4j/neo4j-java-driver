@@ -25,6 +25,7 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.Values.parameters;
 
 class StatementTest
@@ -111,5 +112,17 @@ class StatementTest
         // then
         assertThat( statement.text(), equalTo( text ) );
         assertThat( statement.parameters(), equalTo( parameters( "a", 0, "c", 3 ) ) );
+    }
+
+    @Test
+    void shouldProhibitNullQuery()
+    {
+        assertThrows( IllegalArgumentException.class, () -> new Statement( null ) );
+    }
+
+    @Test
+    void shouldProhibitEmptyQuery()
+    {
+        assertThrows( IllegalArgumentException.class, () -> new Statement( "" ) );
     }
 }
