@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
@@ -89,7 +90,7 @@ public interface BoltProtocol
      *
      * @param connection the network connection to use.
      * @param statement the cypher to execute.
-     * @param bookmarks the bookmarks. Never null, should be {@link Bookmarks#empty()} when absent.
+     * @param bookmarksHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
      * @param config the transaction config for the implicitly started auto-commit transaction.
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
      * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
@@ -97,7 +98,7 @@ public interface BoltProtocol
      * @return stage with cursor.
      */
     CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
-            Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse );
+            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse );
 
     /**
      * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.

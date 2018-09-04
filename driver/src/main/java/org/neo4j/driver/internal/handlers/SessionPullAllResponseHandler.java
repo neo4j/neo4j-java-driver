@@ -18,22 +18,32 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import java.util.Map;
+
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
+
+import static java.util.Objects.requireNonNull;
 
 public class SessionPullAllResponseHandler extends PullAllResponseHandler
 {
+    private final BookmarksHolder bookmarksHolder;
+
     public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, MetadataExtractor metadataExtractor )
+            Connection connection, BookmarksHolder bookmarksHolder, MetadataExtractor metadataExtractor )
     {
         super( statement, runResponseHandler, connection, metadataExtractor );
+        this.bookmarksHolder = requireNonNull( bookmarksHolder );
     }
 
     @Override
-    protected void afterSuccess()
+    protected void afterSuccess( Map<String,Value> metadata )
     {
         releaseConnection();
+        bookmarksHolder.setBookmarks( metadataExtractor.extractBookmarks( metadata ) );
     }
 
     @Override

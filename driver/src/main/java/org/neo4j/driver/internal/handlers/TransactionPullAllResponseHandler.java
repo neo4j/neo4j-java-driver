@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.internal.handlers;
 
+import java.util.Map;
+
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,7 +40,7 @@ public class TransactionPullAllResponseHandler extends PullAllResponseHandler
     }
 
     @Override
-    protected void afterSuccess()
+    protected void afterSuccess( Map<String,Value> metadata )
     {
     }
 

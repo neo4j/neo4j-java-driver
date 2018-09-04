@@ -652,6 +652,37 @@ class NetworkSessionTest
         assertNotNull( session.beginTransaction() );
     }
 
+    @Test
+    void shouldAllowToGetAndSetBookmarks()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        session.setBookmarks( null );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        session.setBookmarks( Bookmarks.empty() );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        Bookmarks bookmarks1 = Bookmarks.from( "neo4j:bookmark:v1:tx1" );
+        session.setBookmarks( bookmarks1 );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        session.setBookmarks( null );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        session.setBookmarks( Bookmarks.empty() );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        Bookmarks bookmarks2 = Bookmarks.from( "neo4j:bookmark:v1:tx2" );
+        session.setBookmarks( bookmarks2 );
+        assertEquals( bookmarks2, session.getBookmarks() );
+
+        Bookmarks bookmarks3 = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmarks( bookmarks3 );
+        assertEquals( bookmarks3, session.getBookmarks() );
+    }
+
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         NetworkSession session = newSession( connectionProvider, sessionMode );

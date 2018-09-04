@@ -356,7 +356,8 @@ class InternalStatementResultTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
-        PullAllResponseHandler pullAllHandler = new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
+        PullAllResponseHandler pullAllHandler =
+                new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarksHolder.NO_OP, METADATA_EXTRACTOR );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
         {

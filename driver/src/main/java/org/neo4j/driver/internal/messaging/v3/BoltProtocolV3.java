@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -119,28 +120,28 @@ public class BoltProtocolV3 implements BoltProtocol
 
     @Override
     public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
-            Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse )
+            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, null, bookmarks, config, waitForRunResponse );
+        return runStatement( connection, statement, bookmarksHolder, null, config, waitForRunResponse );
     }
 
     @Override
     public CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, tx, Bookmarks.empty(), TransactionConfig.empty(), waitForRunResponse );
+        return runStatement( connection, statement, BookmarksHolder.NO_OP, tx, TransactionConfig.empty(), waitForRunResponse );
     }
 
     private static CompletionStage<InternalStatementResultCursor> runStatement( Connection connection, Statement statement,
-            ExplicitTransaction tx, Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse )
+            BookmarksHolder bookmarksHolder, ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarks, config );
+        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
-        PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
+        PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
         connection.writeAndFlush( runMessage, runHandler, PULL_ALL, pullAllHandler );
 
@@ -157,12 +158,12 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,
-            Connection connection, ExplicitTransaction tx )
+            Connection connection, BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
     {
         if ( tx != null )
         {
             return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
     }
 }
