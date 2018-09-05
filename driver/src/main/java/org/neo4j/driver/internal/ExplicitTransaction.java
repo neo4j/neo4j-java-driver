@@ -68,7 +68,6 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     private final NetworkSession session;
     private final ResultCursorsHolder resultCursors;
 
-    private volatile Bookmarks bookmarks = Bookmarks.empty();
     private volatile State state = State.ACTIVE;
 
     public ExplicitTransaction( Connection connection, NetworkSession session )
@@ -229,19 +228,6 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         state = State.TERMINATED;
     }
 
-    public Bookmarks bookmark()
-    {
-        return bookmarks;
-    }
-
-    public void setBookmarks( Bookmarks bookmarks )
-    {
-        if ( bookmarks != null && !bookmarks.isEmpty() )
-        {
-            this.bookmarks = bookmarks;
-        }
-    }
-
     private CompletionStage<Void> doCommitAsync()
     {
         if ( state == State.TERMINATED )
@@ -252,7 +238,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         return protocol.commitTransaction( connection )
                 .thenApply( newBookmarks ->
                 {
-                    setBookmarks( newBookmarks );
+                    session.setBookmarks( newBookmarks );
                     return null;
                 } );
     }
@@ -283,7 +269,6 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     {
         state = newState;
         connection.release(); // release in background
-        session.setBookmarks( bookmarks );
     }
 
     private void terminateConnectionOnThreadInterrupt( String reason )
