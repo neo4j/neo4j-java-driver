@@ -23,15 +23,19 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Statement;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
+import static org.neo4j.driver.v1.Values.value;
 
 class SessionPullAllResponseHandlerTest
 {
@@ -57,10 +61,27 @@ class SessionPullAllResponseHandlerTest
         verify( connection ).release();
     }
 
+    @Test
+    void shouldUpdateBookmarksOnSuccess()
+    {
+        String bookmarkValue = "neo4j:bookmark:v1:tx42";
+        BookmarksHolder bookmarksHolder = mock( BookmarksHolder.class );
+        SessionPullAllResponseHandler handler = newHandler( newConnectionMock(), bookmarksHolder );
+
+        handler.onSuccess( singletonMap( "bookmark", value( bookmarkValue ) ) );
+
+        verify( bookmarksHolder ).setBookmarks( Bookmarks.from( bookmarkValue ) );
+    }
+
     private static SessionPullAllResponseHandler newHandler( Connection connection )
     {
+        return newHandler( connection, BookmarksHolder.NO_OP );
+    }
+
+    private static SessionPullAllResponseHandler newHandler( Connection connection, BookmarksHolder bookmarksHolder )
+    {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        return new SessionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
     }
 
     private static Connection newConnectionMock()

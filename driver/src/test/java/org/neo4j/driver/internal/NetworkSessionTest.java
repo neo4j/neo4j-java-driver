@@ -27,6 +27,7 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.retry.FixedRetryLogic;
@@ -62,6 +63,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -243,11 +245,17 @@ class NetworkSessionTest
     @Test
     void updatesBookmarkWhenTxIsClosed()
     {
-        Transaction tx = session.beginTransaction();
-        setBookmarks( tx, Bookmarks.from( "TheBookmark" ) );
+        Bookmarks bookmarkAfterCommit = Bookmarks.from( "TheBookmark" );
 
+        BoltProtocol protocol = spy( DEFAULT_TEST_PROTOCOL );
+        doReturn( completedFuture( bookmarkAfterCommit ) ).when( protocol ).commitTransaction( any( Connection.class ) );
+
+        when( connection.protocol() ).thenReturn( protocol );
+
+        Transaction tx = session.beginTransaction();
         assertNull( session.lastBookmark() );
 
+        tx.success();
         tx.close();
         assertEquals( "TheBookmark", session.lastBookmark() );
     }
@@ -309,18 +317,21 @@ class NetworkSessionTest
 
         NetworkSession session = newSession( connectionProvider, READ );
 
+        BoltProtocol protocol = spy( DEFAULT_TEST_PROTOCOL );
+        doReturn( completedFuture( bookmarks1 ), completedFuture( bookmarks2 ) ).when( protocol ).commitTransaction( any( Connection.class ) );
+
+        when( connection.protocol() ).thenReturn( protocol );
+
         try ( Transaction tx = session.beginTransaction() )
         {
-            setBookmarks( tx, bookmarks1 );
+            tx.success();
         }
-
         assertEquals( bookmarks1, Bookmarks.from( session.lastBookmark() ) );
 
         try ( Transaction tx = session.beginTransaction() )
         {
             verifyBeginTx( connection, bookmarks1 );
-            assertTrue( getBookmarks( tx ).isEmpty() );
-            setBookmarks( tx, bookmarks2 );
+            tx.success();
         }
         assertEquals( bookmarks2, Bookmarks.from( session.lastBookmark() ) );
     }
@@ -652,6 +663,37 @@ class NetworkSessionTest
         assertNotNull( session.beginTransaction() );
     }
 
+    @Test
+    void shouldAllowToGetAndSetBookmarks()
+    {
+        NetworkSession session = newSession( connectionProvider, READ );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        session.setBookmarks( null );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        session.setBookmarks( Bookmarks.empty() );
+        assertEquals( Bookmarks.empty(), session.getBookmarks() );
+
+        Bookmarks bookmarks1 = Bookmarks.from( "neo4j:bookmark:v1:tx1" );
+        session.setBookmarks( bookmarks1 );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        session.setBookmarks( null );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        session.setBookmarks( Bookmarks.empty() );
+        assertEquals( bookmarks1, session.getBookmarks() );
+
+        Bookmarks bookmarks2 = Bookmarks.from( "neo4j:bookmark:v1:tx2" );
+        session.setBookmarks( bookmarks2 );
+        assertEquals( bookmarks2, session.getBookmarks() );
+
+        Bookmarks bookmarks3 = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
+        session.setBookmarks( bookmarks3 );
+        assertEquals( bookmarks3, session.getBookmarks() );
+    }
+
     private void testConnectionAcquisition( AccessMode sessionMode, AccessMode transactionMode )
     {
         NetworkSession session = newSession( connectionProvider, sessionMode );
@@ -865,16 +907,6 @@ class NetworkSessionTest
     private static void verifyRunAndFlush( Connection connectionMock, String statement, VerificationMode mode )
     {
         verify( connectionMock, mode ).writeAndFlush( eq( new RunMessage( statement ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-    }
-
-    private static Bookmarks getBookmarks( Transaction tx )
-    {
-        return ((ExplicitTransaction) tx).bookmark();
-    }
-
-    private static void setBookmarks( Transaction tx, Bookmarks bookmarks )
-    {
-        ((ExplicitTransaction) tx).setBookmarks( bookmarks );
     }
 
     private static void setupFailingCommit( Connection connection, int times )

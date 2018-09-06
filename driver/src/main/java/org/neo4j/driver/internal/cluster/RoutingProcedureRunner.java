@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -62,7 +62,7 @@ public class RoutingProcedureRunner
     CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
         return connection.protocol()
-                .runInAutoCommitTransaction( connection, procedure, Bookmarks.empty(), TransactionConfig.empty(), true )
+                .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
                 .thenCompose( StatementResultCursor::listAsync );
     }
 

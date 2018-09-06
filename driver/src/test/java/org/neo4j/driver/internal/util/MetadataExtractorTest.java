@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -339,6 +341,40 @@ class MetadataExtractorTest
         ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
+    }
+
+    @Test
+    void shouldExtractBookmark()
+    {
+        String bookmarkValue = "neo4j:bookmark:v1:tx123456";
+
+        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", value( bookmarkValue ) ) );
+
+        assertEquals( Bookmarks.from( bookmarkValue ), bookmarks );
+    }
+
+    @Test
+    void shouldExtractNoBookmarkWhenMetadataContainsNull()
+    {
+        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", null ) );
+
+        assertEquals( Bookmarks.empty(), bookmarks );
+    }
+
+    @Test
+    void shouldExtractNoBookmarkWhenMetadataContainsNullValue()
+    {
+        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", Values.NULL ) );
+
+        assertEquals( Bookmarks.empty(), bookmarks );
+    }
+
+    @Test
+    void shouldExtractNoBookmarkWhenMetadataContainsValueOfIncorrectType()
+    {
+        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", value( 42 ) ) );
+
+        assertEquals( Bookmarks.empty(), bookmarks );
     }
 
     private ResultSummary createWithStatementType( Value typeValue )

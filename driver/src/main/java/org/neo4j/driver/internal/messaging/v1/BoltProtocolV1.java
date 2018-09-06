@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -142,7 +143,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     @Override
     public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
-            Bookmarks bookmarks, TransactionConfig config, boolean waitForRunResponse )
+            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
 
@@ -193,7 +194,7 @@ public class BoltProtocolV1 implements BoltProtocol
         {
             return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarksHolder.NO_OP, METADATA_EXTRACTOR );
     }
 
     private static <T> CompletionStage<T> txConfigNotSupported()

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -45,6 +46,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -191,6 +193,8 @@ public final class TestUtil
     public static Connection connectionMock()
     {
         Connection connection = mock( Connection.class );
+        when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
+        when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );

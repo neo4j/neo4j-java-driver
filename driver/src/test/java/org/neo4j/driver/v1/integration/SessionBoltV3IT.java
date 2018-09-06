@@ -41,6 +41,8 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -165,6 +167,86 @@ class SessionBoltV3IT
     void shouldSetTransactionMetadataWithAsyncWriteTransactionFunction()
     {
         testTransactionMetadataWithAsyncTransactionFunctions( false );
+    }
+
+    @Test
+    void shouldUseBookmarksForAutoCommitTransactions()
+    {
+        String initialBookmark = session.lastBookmark();
+
+        session.run( "CREATE ()" ).consume();
+        String bookmark1 = session.lastBookmark();
+        assertNotNull( bookmark1 );
+        assertNotEquals( initialBookmark, bookmark1 );
+
+        session.run( "CREATE ()" ).consume();
+        String bookmark2 = session.lastBookmark();
+        assertNotNull( bookmark2 );
+        assertNotEquals( initialBookmark, bookmark2 );
+        assertNotEquals( bookmark1, bookmark2 );
+
+        session.run( "CREATE ()" ).consume();
+        String bookmark3 = session.lastBookmark();
+        assertNotNull( bookmark3 );
+        assertNotEquals( initialBookmark, bookmark3 );
+        assertNotEquals( bookmark1, bookmark3 );
+        assertNotEquals( bookmark2, bookmark3 );
+    }
+
+    @Test
+    void shouldUseBookmarksForAutoCommitAndExplicitTransactions()
+    {
+        String initialBookmark = session.lastBookmark();
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" );
+            tx.success();
+        }
+        String bookmark1 = session.lastBookmark();
+        assertNotNull( bookmark1 );
+        assertNotEquals( initialBookmark, bookmark1 );
+
+        session.run( "CREATE ()" ).consume();
+        String bookmark2 = session.lastBookmark();
+        assertNotNull( bookmark2 );
+        assertNotEquals( initialBookmark, bookmark2 );
+        assertNotEquals( bookmark1, bookmark2 );
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            tx.run( "CREATE ()" );
+            tx.success();
+        }
+        String bookmark3 = session.lastBookmark();
+        assertNotNull( bookmark3 );
+        assertNotEquals( initialBookmark, bookmark3 );
+        assertNotEquals( bookmark1, bookmark3 );
+        assertNotEquals( bookmark2, bookmark3 );
+    }
+
+    @Test
+    void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions()
+    {
+        String initialBookmark = session.lastBookmark();
+
+        session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
+        String bookmark1 = session.lastBookmark();
+        assertNotNull( bookmark1 );
+        assertNotEquals( initialBookmark, bookmark1 );
+
+        session.run( "CREATE ()" ).consume();
+        String bookmark2 = session.lastBookmark();
+        assertNotNull( bookmark2 );
+        assertNotEquals( initialBookmark, bookmark2 );
+        assertNotEquals( bookmark1, bookmark2 );
+
+        session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
+        String bookmark3 = session.lastBookmark();
+        assertNotNull( bookmark3 );
+        assertNotEquals( initialBookmark, bookmark3 );
+        assertNotEquals( bookmark1, bookmark3 );
+        assertNotEquals( bookmark2, bookmark3 );
     }
 
     private static void testTransactionMetadataWithTransactionFunctions( boolean read )

@@ -46,7 +46,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class NetworkSession extends AbstractStatementRunner implements Session
+public class NetworkSession extends AbstractStatementRunner implements Session, BookmarksHolder
 {
     private static final String LOG_NAME = "Session";
 
@@ -247,7 +247,14 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         return transactionAsync( AccessMode.WRITE, work, config );
     }
 
-    void setBookmarks( Bookmarks bookmarks )
+    @Override
+    public Bookmarks getBookmarks()
+    {
+        return bookmarks;
+    }
+
+    @Override
+    public void setBookmarks( Bookmarks bookmarks )
     {
         if ( bookmarks != null && !bookmarks.isEmpty() )
         {
@@ -439,7 +446,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
-                        connection.protocol().runInAutoCommitTransaction( connection, statement, bookmarks, config, waitForRunResponse ) );
+                        connection.protocol().runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse ) );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
 

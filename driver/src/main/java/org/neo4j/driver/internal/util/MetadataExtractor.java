@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
@@ -40,6 +41,7 @@ import org.neo4j.driver.v1.summary.ServerInfo;
 import org.neo4j.driver.v1.summary.StatementType;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 public class MetadataExtractor
 {
@@ -87,6 +89,16 @@ public class MetadataExtractor
         return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
                 extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
                 extractNotifications( metadata ), resultAvailableAfter, extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
+    }
+
+    public Bookmarks extractBookmarks( Map<String,Value> metadata )
+    {
+        Value bookmarkValue = metadata.get( "bookmark" );
+        if ( bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType( TYPE_SYSTEM.STRING() ) )
+        {
+            return Bookmarks.from( bookmarkValue.asString() );
+        }
+        return Bookmarks.empty();
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

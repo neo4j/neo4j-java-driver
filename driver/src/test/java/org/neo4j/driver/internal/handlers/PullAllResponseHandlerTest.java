@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -1096,7 +1097,7 @@ class PullAllResponseHandlerTest
         }
 
         @Override
-        protected void afterSuccess()
+        protected void afterSuccess( Map<String,Value> metadata )
         {
         }
 

@@ -202,40 +202,6 @@ class ExplicitTransactionTest
     }
 
     @Test
-    void shouldHaveEmptyBookmarkInitially()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-        assertTrue( tx.bookmark().isEmpty() );
-    }
-
-    @Test
-    void shouldNotKeepInitialBookmark()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock(), Bookmarks.from( "Dog" ) );
-        assertTrue( tx.bookmark().isEmpty() );
-    }
-
-    @Test
-    void shouldNotOverwriteBookmarkWithNull()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-        tx.setBookmarks( Bookmarks.from( "Cat" ) );
-        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-        tx.setBookmarks( null );
-        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-    }
-
-    @Test
-    void shouldNotOverwriteBookmarkWithEmptyBookmark()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-        tx.setBookmarks( Bookmarks.from( "Cat" ) );
-        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-        tx.setBookmarks( Bookmarks.empty() );
-        assertEquals( "Cat", tx.bookmark().maxBookmarkAsString() );
-    }
-
-    @Test
     void shouldReleaseConnectionWhenBeginFails()
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );

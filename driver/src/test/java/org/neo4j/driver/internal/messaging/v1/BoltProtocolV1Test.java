@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.ChannelAttributes;
@@ -270,7 +271,7 @@ public class BoltProtocolV1Test
                 .build();
 
         CompletionStage<InternalStatementResultCursor> cursorFuture = protocol.runInAutoCommitTransaction( connectionMock(), new Statement( "RETURN 1" ),
-                Bookmarks.empty(), config, true );
+                BookmarksHolder.NO_OP, config, true );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursorFuture ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
@@ -294,7 +295,7 @@ public class BoltProtocolV1Test
         if ( autoCommitTx )
         {
 
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, Bookmarks.empty(), TransactionConfig.empty(), false );
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), false );
         }
         else
         {
@@ -314,7 +315,7 @@ public class BoltProtocolV1Test
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, Bookmarks.empty(), TransactionConfig.empty(), true );
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), true );
         }
         else
         {

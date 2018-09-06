@@ -53,7 +53,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
 
     private final Statement statement;
     private final RunResponseHandler runResponseHandler;
-    private final MetadataExtractor metadataExtractor;
+    protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
 
     // initialized lazily when first record arrives
@@ -81,13 +81,13 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         finished = true;
         summary = extractResultSummary( metadata );
 
-        afterSuccess();
+        afterSuccess( metadata );
 
         completeRecordFuture( null );
         completeFailureFuture( null );
     }
 
-    protected abstract void afterSuccess();
+    protected abstract void afterSuccess( Map<String,Value> metadata );
 
     @Override
     public synchronized void onFailure( Throwable error )
