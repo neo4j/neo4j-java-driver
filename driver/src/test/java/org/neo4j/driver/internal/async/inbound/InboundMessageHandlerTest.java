@@ -86,7 +86,7 @@ public class InboundMessageHandlerTest
     public void shouldReadSuccessMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        messageDispatcher.queue( responseHandler );
+        messageDispatcher.enqueue( responseHandler );
 
         Map<String,Value> metadata = new HashMap<>();
         metadata.put( "key1", value( 1 ) );
@@ -100,7 +100,7 @@ public class InboundMessageHandlerTest
     public void shouldReadFailureMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        messageDispatcher.queue( responseHandler );
+        messageDispatcher.enqueue( responseHandler );
 
         channel.writeInbound( writer.asByteBuf( new FailureMessage( "Neo.TransientError.General.ReadOnly", "Hi!" ) ) );
 
@@ -114,7 +114,7 @@ public class InboundMessageHandlerTest
     public void shouldReadRecordMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        messageDispatcher.queue( responseHandler );
+        messageDispatcher.enqueue( responseHandler );
 
         Value[] fields = {value( 1 ), value( 2 ), value( 3 )};
         channel.writeInbound( writer.asByteBuf( new RecordMessage( fields ) ) );
@@ -126,7 +126,7 @@ public class InboundMessageHandlerTest
     public void shouldReadIgnoredMessage()
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
-        messageDispatcher.queue( responseHandler );
+        messageDispatcher.enqueue( responseHandler );
 
         channel.writeInbound( writer.asByteBuf( new IgnoredMessage() ) );
         assertEquals( 0, messageDispatcher.queuedHandlersCount() );

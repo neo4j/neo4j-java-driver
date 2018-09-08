@@ -92,7 +92,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         Map<String,Value> metadata = new HashMap<>();
@@ -110,7 +110,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -128,7 +128,7 @@ public class InboundMessageDispatcherTest
         Channel channel = mock( Channel.class );
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -143,7 +143,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
         dispatcher.muteAckFailure();
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -159,7 +159,7 @@ public class InboundMessageDispatcherTest
 
         dispatcher.unMuteAckFailure();
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -173,7 +173,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
         dispatcher.muteAckFailure();
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -181,7 +181,7 @@ public class InboundMessageDispatcherTest
 
         dispatcher.unMuteAckFailure();
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -193,7 +193,7 @@ public class InboundMessageDispatcherTest
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        dispatcher.queue( mock( ResponseHandler.class ) );
+        dispatcher.enqueue( mock( ResponseHandler.class ) );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
@@ -208,7 +208,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
         assertEquals( 1, dispatcher.queuedHandlersCount() );
 
         Value[] fields1 = {new IntegerValue( 1 )};
@@ -234,9 +234,9 @@ public class InboundMessageDispatcherTest
         ResponseHandler handler2 = mock( ResponseHandler.class );
         ResponseHandler handler3 = mock( ResponseHandler.class );
 
-        dispatcher.queue( handler1 );
-        dispatcher.queue( handler2 );
-        dispatcher.queue( handler3 );
+        dispatcher.enqueue( handler1 );
+        dispatcher.enqueue( handler2 );
+        dispatcher.enqueue( handler3 );
 
         RuntimeException fatalError = new RuntimeException( "Fatal!" );
         dispatcher.handleFatalError( fatalError );
@@ -256,7 +256,7 @@ public class InboundMessageDispatcherTest
         dispatcher.handleFatalError( fatalError );
 
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
 
         verify( handler ).onFailure( fatalError );
     }
@@ -267,7 +267,7 @@ public class InboundMessageDispatcherTest
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
 
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
         dispatcher.handleIgnoredMessage();
 
         assertEquals( 0, dispatcher.queuedHandlersCount() );
@@ -280,8 +280,8 @@ public class InboundMessageDispatcherTest
         ResponseHandler handler1 = mock( ResponseHandler.class );
         ResponseHandler handler2 = mock( ResponseHandler.class );
 
-        dispatcher.queue( handler1 );
-        dispatcher.queue( handler2 );
+        dispatcher.enqueue( handler1 );
+        dispatcher.enqueue( handler2 );
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
         verifyFailure( handler1 );
@@ -296,7 +296,7 @@ public class InboundMessageDispatcherTest
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
 
         dispatcher.muteAckFailure();
         dispatcher.handleIgnoredMessage();
@@ -309,7 +309,7 @@ public class InboundMessageDispatcherTest
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
         ResponseHandler handler = mock( ResponseHandler.class );
-        dispatcher.queue( handler );
+        dispatcher.enqueue( handler );
 
         dispatcher.handleIgnoredMessage();
 
@@ -323,8 +323,8 @@ public class InboundMessageDispatcherTest
         ResponseHandler handler1 = mock( ResponseHandler.class );
         ResponseHandler handler2 = mock( ResponseHandler.class );
 
-        dispatcher.queue( handler1 );
-        dispatcher.queue( handler2 );
+        dispatcher.enqueue( handler1 );
+        dispatcher.enqueue( handler2 );
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
         dispatcher.handleIgnoredMessage();
 

@@ -54,7 +54,7 @@ public class InboundMessageDispatcher implements MessageHandler
         this.log = new ChannelActivityLogger( channel, logging, getClass() );
     }
 
-    public void queue( ResponseHandler handler )
+    public void enqueue( ResponseHandler handler )
     {
         if ( fatalErrorOccurred )
         {
@@ -245,7 +245,7 @@ public class InboundMessageDispatcher implements MessageHandler
     {
         if ( !ackFailureMuted )
         {
-            queue( new AckFailureResponseHandler( this ) );
+            enqueue( new AckFailureResponseHandler( this ) );
             channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
         }
     }
