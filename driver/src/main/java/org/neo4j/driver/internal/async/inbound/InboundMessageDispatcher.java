@@ -28,6 +28,7 @@ import java.util.Queue;
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
@@ -48,6 +49,8 @@ public class InboundMessageDispatcher implements MessageHandler
     private boolean fatalErrorOccurred;
     private boolean ackFailureMuted;
 
+    private AutoReadManagingResponseHandler autoReadManagingHandler;
+
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
         this.channel = requireNonNull( channel );
@@ -63,6 +66,7 @@ public class InboundMessageDispatcher implements MessageHandler
         else
         {
             handlers.add( handler );
+            updateAutoReadManagingHandlerIfNeeded( handler );
         }
     }
 
@@ -247,6 +251,22 @@ public class InboundMessageDispatcher implements MessageHandler
         {
             enqueue( new AckFailureResponseHandler( this ) );
             channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
+        }
+    }
+
+    private void updateAutoReadManagingHandlerIfNeeded( ResponseHandler handler )
+    {
+        if ( handler instanceof AutoReadManagingResponseHandler )
+        {
+            if ( autoReadManagingHandler != null )
+            {
+                // there already exists a handler that manages channel's auto-read
+                // make it stop because new managing handler is being added and there should only be a single such handler
+                autoReadManagingHandler.disableAutoReadManagement();
+                // restore the original auto-read value
+                channel.config().setAutoRead( true );
+            }
+            autoReadManagingHandler = (AutoReadManagingResponseHandler) handler;
         }
     }
 }

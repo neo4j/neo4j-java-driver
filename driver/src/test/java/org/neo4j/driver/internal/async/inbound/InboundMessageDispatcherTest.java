@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.v1.Value;
@@ -49,6 +51,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
 import static org.neo4j.driver.v1.Values.value;
@@ -443,6 +446,25 @@ public class InboundMessageDispatcherTest
         assertFalse( dispatcher.isAckFailureMuted() );
     }
 
+    @Test
+    public void shouldKeepSingleAutoReadManagingHandler()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+
+        AutoReadManagingResponseHandler handler1 = mock( AutoReadManagingResponseHandler.class );
+        AutoReadManagingResponseHandler handler2 = mock( AutoReadManagingResponseHandler.class );
+        AutoReadManagingResponseHandler handler3 = mock( AutoReadManagingResponseHandler.class );
+
+        dispatcher.enqueue( handler1 );
+        dispatcher.enqueue( handler2 );
+        dispatcher.enqueue( handler3 );
+
+        InOrder inOrder = inOrder( handler1, handler2, handler3 );
+        inOrder.verify( handler1 ).disableAutoReadManagement();
+        inOrder.verify( handler2 ).disableAutoReadManagement();
+        inOrder.verify( handler3, never() ).disableAutoReadManagement();
+    }
+
     private static void verifyFailure( ResponseHandler handler )
     {
         ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass( Neo4jException.class );
@@ -453,7 +475,10 @@ public class InboundMessageDispatcherTest
 
     private static InboundMessageDispatcher newDispatcher()
     {
-        return newDispatcher( mock( Channel.class ) );
+        Channel channel = mock( Channel.class );
+        ChannelConfig channelConfig = mock( ChannelConfig.class );
+        when( channel.config() ).thenReturn( channelConfig );
+        return newDispatcher( channel );
     }
 
     private static InboundMessageDispatcher newDispatcher( Channel channel )
