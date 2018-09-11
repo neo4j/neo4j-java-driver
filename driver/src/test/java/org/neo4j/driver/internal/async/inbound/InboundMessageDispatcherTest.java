@@ -44,6 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -501,6 +502,25 @@ public class InboundMessageDispatcherTest
         dispatcher.handleSuccessMessage( emptyMap() );
 
         assertNull( dispatcher.autoReadManagingHandler() );
+    }
+
+    @Test
+    public void shouldReEnableAutoReadWhenAutoReadManagingHandlerIsRemoved()
+    {
+        Channel channel = newChannelMock();
+        InboundMessageDispatcher dispatcher = newDispatcher( channel );
+
+        AutoReadManagingResponseHandler handler = mock( AutoReadManagingResponseHandler.class );
+        dispatcher.enqueue( handler );
+        assertEquals( handler, dispatcher.autoReadManagingHandler() );
+        verify( handler, never() ).disableAutoReadManagement();
+        verify( channel.config(), never() ).setAutoRead( anyBoolean() );
+
+        dispatcher.handleSuccessMessage( emptyMap() );
+
+        assertNull( dispatcher.autoReadManagingHandler() );
+        verify( handler ).disableAutoReadManagement();
+        verify( channel.config() ).setAutoRead( anyBoolean() );
     }
 
     private static void verifyFailure( ResponseHandler handler )

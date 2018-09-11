@@ -265,11 +265,11 @@ public class InboundMessageDispatcher implements MessageHandler
     private ResponseHandler removeHandler()
     {
         ResponseHandler handler = handlers.remove();
-        if ( autoReadManagingHandler == handler )
+        if ( handler == autoReadManagingHandler )
         {
-            // handler that is being removed is the auto-read managing handler
+            // the auto-read managing handler is being removed
             // make sure this dispatcher does not hold on to a removed handler
-            autoReadManagingHandler = null;
+            updateAutoReadManagingHandler( null );
         }
         return handler;
     }
@@ -278,15 +278,20 @@ public class InboundMessageDispatcher implements MessageHandler
     {
         if ( handler instanceof AutoReadManagingResponseHandler )
         {
-            if ( autoReadManagingHandler != null )
-            {
-                // there already exists a handler that manages channel's auto-read
-                // make it stop because new managing handler is being added and there should only be a single such handler
-                autoReadManagingHandler.disableAutoReadManagement();
-                // restore the default value of auto-read
-                channel.config().setAutoRead( true );
-            }
-            autoReadManagingHandler = (AutoReadManagingResponseHandler) handler;
+            updateAutoReadManagingHandler( (AutoReadManagingResponseHandler) handler );
         }
+    }
+
+    private void updateAutoReadManagingHandler( AutoReadManagingResponseHandler newHandler )
+    {
+        if ( autoReadManagingHandler != null )
+        {
+            // there already exists a handler that manages channel's auto-read
+            // make it stop because new managing handler is being added and there should only be a single such handler
+            autoReadManagingHandler.disableAutoReadManagement();
+            // restore the default value of auto-read
+            channel.config().setAutoRead( true );
+        }
+        autoReadManagingHandler = newHandler;
     }
 }
