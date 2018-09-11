@@ -119,7 +119,7 @@ public class InboundMessageDispatcher implements MessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         log.debug( "S: SUCCESS %s", meta );
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
         handler.onSuccess( meta );
     }
 
@@ -152,7 +152,7 @@ public class InboundMessageDispatcher implements MessageHandler
         // try to write ACK_FAILURE before notifying the next response handler
         ackFailureIfNeeded();
 
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
         handler.onFailure( currentError );
     }
 
@@ -161,7 +161,7 @@ public class InboundMessageDispatcher implements MessageHandler
     {
         log.debug( "S: IGNORED" );
 
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
 
         Throwable error;
         if ( currentError != null )
@@ -189,7 +189,7 @@ public class InboundMessageDispatcher implements MessageHandler
 
         while ( !handlers.isEmpty() )
         {
-            ResponseHandler handler = handlers.remove();
+            ResponseHandler handler = removeHandler();
             handler.onFailure( currentError );
         }
     }
@@ -245,6 +245,14 @@ public class InboundMessageDispatcher implements MessageHandler
         return ackFailureMuted;
     }
 
+    /**
+     * <b>Visible for testing</b>
+     */
+    AutoReadManagingResponseHandler autoReadManagingHandler()
+    {
+        return autoReadManagingHandler;
+    }
+
     private void ackFailureIfNeeded()
     {
         if ( !ackFailureMuted )
@@ -252,6 +260,18 @@ public class InboundMessageDispatcher implements MessageHandler
             enqueue( new AckFailureResponseHandler( this ) );
             channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
         }
+    }
+
+    private ResponseHandler removeHandler()
+    {
+        ResponseHandler handler = handlers.remove();
+        if ( autoReadManagingHandler == handler )
+        {
+            // handler that is being removed is the auto-read managing handler
+            // make sure this dispatcher does not hold on to a removed handler
+            autoReadManagingHandler = null;
+        }
+        return handler;
     }
 
     private void updateAutoReadManagingHandlerIfNeeded( ResponseHandler handler )
@@ -263,7 +283,7 @@ public class InboundMessageDispatcher implements MessageHandler
                 // there already exists a handler that manages channel's auto-read
                 // make it stop because new managing handler is being added and there should only be a single such handler
                 autoReadManagingHandler.disableAutoReadManagement();
-                // restore the original auto-read value
+                // restore the default value of auto-read
                 channel.config().setAutoRead( true );
             }
             autoReadManagingHandler = (AutoReadManagingResponseHandler) handler;

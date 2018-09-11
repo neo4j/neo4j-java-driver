@@ -465,6 +465,44 @@ public class InboundMessageDispatcherTest
         inOrder.verify( handler3, never() ).disableAutoReadManagement();
     }
 
+    @Test
+    public void shouldKeepTrackOfAutoReadManagingHandler()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+
+        AutoReadManagingResponseHandler handler1 = mock( AutoReadManagingResponseHandler.class );
+        AutoReadManagingResponseHandler handler2 = mock( AutoReadManagingResponseHandler.class );
+
+        assertNull( dispatcher.autoReadManagingHandler() );
+
+        dispatcher.enqueue( handler1 );
+        assertEquals( handler1, dispatcher.autoReadManagingHandler() );
+
+        dispatcher.enqueue( handler2 );
+        assertEquals( handler2, dispatcher.autoReadManagingHandler() );
+    }
+
+    @Test
+    public void shouldForgetAutoReadManagingHandlerWhenItIsRemoved()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+
+        ResponseHandler handler1 = mock( ResponseHandler.class );
+        ResponseHandler handler2 = mock( ResponseHandler.class );
+        AutoReadManagingResponseHandler handler3 = mock( AutoReadManagingResponseHandler.class );
+
+        dispatcher.enqueue( handler1 );
+        dispatcher.enqueue( handler2 );
+        dispatcher.enqueue( handler3 );
+        assertEquals( handler3, dispatcher.autoReadManagingHandler() );
+
+        dispatcher.handleSuccessMessage( emptyMap() );
+        dispatcher.handleSuccessMessage( emptyMap() );
+        dispatcher.handleSuccessMessage( emptyMap() );
+
+        assertNull( dispatcher.autoReadManagingHandler() );
+    }
+
     private static void verifyFailure( ResponseHandler handler )
     {
         ArgumentCaptor<Neo4jException> captor = ArgumentCaptor.forClass( Neo4jException.class );
@@ -475,14 +513,19 @@ public class InboundMessageDispatcherTest
 
     private static InboundMessageDispatcher newDispatcher()
     {
-        Channel channel = mock( Channel.class );
-        ChannelConfig channelConfig = mock( ChannelConfig.class );
-        when( channel.config() ).thenReturn( channelConfig );
-        return newDispatcher( channel );
+        return newDispatcher( newChannelMock() );
     }
 
     private static InboundMessageDispatcher newDispatcher( Channel channel )
     {
         return new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
+    }
+
+    private static Channel newChannelMock()
+    {
+        Channel channel = mock( Channel.class );
+        ChannelConfig channelConfig = mock( ChannelConfig.class );
+        when( channel.config() ).thenReturn( channelConfig );
+        return channel;
     }
 }
