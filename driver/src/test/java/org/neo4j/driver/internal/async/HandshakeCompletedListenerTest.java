@@ -113,7 +113,7 @@ class HandshakeCompletedListenerTest
         listener.operationComplete( handshakeCompletedPromise );
         assertTrue( channel.finish() );
 
-        verify( messageDispatcher ).queue( any( handlerType ) );
+        verify( messageDispatcher ).enqueue( any( handlerType ) );
         Object outboundMessage = channel.readOutbound();
         assertEquals( expectedMessage, outboundMessage );
     }

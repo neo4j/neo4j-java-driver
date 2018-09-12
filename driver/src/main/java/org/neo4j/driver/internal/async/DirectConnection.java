@@ -199,7 +199,7 @@ public class DirectConnection implements Connection
                 // auto-read could've been disabled, re-enable it to automatically receive response for RESET
                 setAutoRead( true );
 
-                messageDispatcher.queue( resetHandler );
+                messageDispatcher.enqueue( resetHandler );
                 channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
             }
         } );
@@ -209,7 +209,7 @@ public class DirectConnection implements Connection
     {
         channel.eventLoop().execute( () ->
         {
-            messageDispatcher.queue( handler );
+            messageDispatcher.enqueue( handler );
 
             if ( flush )
             {
@@ -226,8 +226,8 @@ public class DirectConnection implements Connection
     {
         channel.eventLoop().execute( () ->
         {
-            messageDispatcher.queue( handler1 );
-            messageDispatcher.queue( handler2 );
+            messageDispatcher.enqueue( handler1 );
+            messageDispatcher.enqueue( handler2 );
 
             channel.write( message1, channel.voidPromise() );
 

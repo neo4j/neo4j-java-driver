@@ -80,7 +80,7 @@ public class BoltProtocolV3 implements BoltProtocol
         HelloMessage message = new HelloMessage( userAgent, authToken );
         HelloResponseHandler handler = new HelloResponseHandler( channelInitializedPromise );
 
-        messageDispatcher( channel ).queue( handler );
+        messageDispatcher( channel ).enqueue( handler );
         channel.writeAndFlush( message, channel.voidPromise() );
     }
 

@@ -84,7 +84,7 @@ public class BoltProtocolV1 implements BoltProtocol
         InitMessage message = new InitMessage( userAgent, authToken );
         InitResponseHandler handler = new InitResponseHandler( channelInitializedPromise );
 
-        messageDispatcher( channel ).queue( handler );
+        messageDispatcher( channel ).enqueue( handler );
         channel.writeAndFlush( message, channel.voidPromise() );
     }
 

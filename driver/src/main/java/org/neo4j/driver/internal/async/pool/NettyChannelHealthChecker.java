@@ -103,7 +103,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
     private Future<Boolean> ping( Channel channel )
     {
         Promise<Boolean> result = channel.eventLoop().newPromise();
-        messageDispatcher( channel ).queue( new PingResponseHandler( result, channel, log ) );
+        messageDispatcher( channel ).enqueue( new PingResponseHandler( result, channel, log ) );
         channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
         return result;
     }

@@ -754,6 +754,21 @@ class PullAllResponseHandlerTest
     }
 
     @Test
+    void shouldNotDisableAutoReadWhenAutoReadManagementDisabled()
+    {
+        Connection connection = connectionMock();
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2" ), connection );
+        handler.disableAutoReadManagement();
+
+        for ( int i = 0; i < PullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 1; i++ )
+        {
+            handler.onRecord( values( 100, 200 ) );
+        }
+
+        verify( connection, never() ).disableAutoRead();
+    }
+
+    @Test
     void shouldPropagateFailureFromListAsync()
     {
         PullAllResponseHandler handler = newHandler();

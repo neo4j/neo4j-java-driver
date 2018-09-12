@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -44,7 +44,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public abstract class PullAllResponseHandler implements ResponseHandler
+public abstract class PullAllResponseHandler implements AutoReadManagingResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
 
@@ -59,6 +59,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     // initialized lazily when first record arrives
     private Queue<Record> records = UNINITIALIZED_RECORDS;
 
+    private boolean autoReadManagementEnabled = true;
     private boolean finished;
     private Throwable failure;
     private ResultSummary summary;
@@ -129,6 +130,12 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             enqueueRecord( record );
             completeRecordFuture( record );
         }
+    }
+
+    @Override
+    public synchronized void disableAutoReadManagement()
+    {
+        autoReadManagementEnabled = false;
     }
 
     public synchronized CompletionStage<Record> peekAsync()
@@ -211,7 +218,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
                 // neither SUCCESS nor FAILURE message has arrived, register future to be notified when it arrives
                 // future will be completed with null on SUCCESS and completed with Throwable on FAILURE
                 // enable auto-read, otherwise we might not read SUCCESS/FAILURE if records are not consumed
-                connection.enableAutoRead();
+                enableAutoRead();
                 failureFuture = new CompletableFuture<>();
             }
             return failureFuture;
@@ -236,7 +243,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
             // more than high watermark records are already queued, tell connection to stop auto-reading from network
             // this is needed to deal with slow consumers, we do not want to buffer all records in memory if they are
             // fetched from network faster than consumed
-            connection.disableAutoRead();
+            disableAutoRead();
         }
     }
 
@@ -248,7 +255,7 @@ public abstract class PullAllResponseHandler implements ResponseHandler
         {
             // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
             // and populate queue with new records from network
-            connection.enableAutoRead();
+            enableAutoRead();
         }
 
         return record;
@@ -320,5 +327,21 @@ public abstract class PullAllResponseHandler implements ResponseHandler
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
         return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
+    }
+
+    private void enableAutoRead()
+    {
+        if ( autoReadManagementEnabled )
+        {
+            connection.enableAutoRead();
+        }
+    }
+
+    private void disableAutoRead()
+    {
+        if ( autoReadManagementEnabled )
+        {
+            connection.disableAutoRead();
+        }
     }
 }
