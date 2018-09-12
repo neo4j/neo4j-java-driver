@@ -56,7 +56,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener
             InitMessage message = new InitMessage( userAgent, authToken );
             InitResponseHandler handler = new InitResponseHandler( connectionInitializedPromise );
 
-            messageDispatcher( channel ).queue( handler );
+            messageDispatcher( channel ).enqueue( handler );
             channel.writeAndFlush( message, channel.voidPromise() );
         }
         else

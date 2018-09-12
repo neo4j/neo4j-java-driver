@@ -28,6 +28,7 @@ import java.util.Queue;
 import org.neo4j.driver.internal.handlers.AckFailureResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.MessageHandler;
+import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
@@ -48,13 +49,15 @@ public class InboundMessageDispatcher implements MessageHandler
     private boolean fatalErrorOccurred;
     private boolean ackFailureMuted;
 
+    private AutoReadManagingResponseHandler autoReadManagingHandler;
+
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
         this.channel = requireNonNull( channel );
         this.log = new ChannelActivityLogger( channel, logging, getClass() );
     }
 
-    public void queue( ResponseHandler handler )
+    public void enqueue( ResponseHandler handler )
     {
         if ( fatalErrorOccurred )
         {
@@ -63,6 +66,7 @@ public class InboundMessageDispatcher implements MessageHandler
         else
         {
             handlers.add( handler );
+            updateAutoReadManagingHandlerIfNeeded( handler );
         }
     }
 
@@ -115,7 +119,7 @@ public class InboundMessageDispatcher implements MessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         log.debug( "S: SUCCESS %s", meta );
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
         handler.onSuccess( meta );
     }
 
@@ -148,7 +152,7 @@ public class InboundMessageDispatcher implements MessageHandler
         // try to write ACK_FAILURE before notifying the next response handler
         ackFailureIfNeeded();
 
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
         handler.onFailure( currentError );
     }
 
@@ -157,7 +161,7 @@ public class InboundMessageDispatcher implements MessageHandler
     {
         log.debug( "S: IGNORED" );
 
-        ResponseHandler handler = handlers.remove();
+        ResponseHandler handler = removeHandler();
 
         Throwable error;
         if ( currentError != null )
@@ -185,7 +189,7 @@ public class InboundMessageDispatcher implements MessageHandler
 
         while ( !handlers.isEmpty() )
         {
-            ResponseHandler handler = handlers.remove();
+            ResponseHandler handler = removeHandler();
             handler.onFailure( currentError );
         }
     }
@@ -241,12 +245,53 @@ public class InboundMessageDispatcher implements MessageHandler
         return ackFailureMuted;
     }
 
+    /**
+     * <b>Visible for testing</b>
+     */
+    AutoReadManagingResponseHandler autoReadManagingHandler()
+    {
+        return autoReadManagingHandler;
+    }
+
     private void ackFailureIfNeeded()
     {
         if ( !ackFailureMuted )
         {
-            queue( new AckFailureResponseHandler( this ) );
+            enqueue( new AckFailureResponseHandler( this ) );
             channel.writeAndFlush( ACK_FAILURE, channel.voidPromise() );
         }
+    }
+
+    private ResponseHandler removeHandler()
+    {
+        ResponseHandler handler = handlers.remove();
+        if ( handler == autoReadManagingHandler )
+        {
+            // the auto-read managing handler is being removed
+            // make sure this dispatcher does not hold on to a removed handler
+            updateAutoReadManagingHandler( null );
+        }
+        return handler;
+    }
+
+    private void updateAutoReadManagingHandlerIfNeeded( ResponseHandler handler )
+    {
+        if ( handler instanceof AutoReadManagingResponseHandler )
+        {
+            updateAutoReadManagingHandler( (AutoReadManagingResponseHandler) handler );
+        }
+    }
+
+    private void updateAutoReadManagingHandler( AutoReadManagingResponseHandler newHandler )
+    {
+        if ( autoReadManagingHandler != null )
+        {
+            // there already exists a handler that manages channel's auto-read
+            // make it stop because new managing handler is being added and there should only be a single such handler
+            autoReadManagingHandler.disableAutoReadManagement();
+            // restore the default value of auto-read
+            channel.config().setAutoRead( true );
+        }
+        autoReadManagingHandler = newHandler;
     }
 }

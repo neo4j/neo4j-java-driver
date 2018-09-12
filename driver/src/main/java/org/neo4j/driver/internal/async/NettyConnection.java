@@ -199,8 +199,8 @@ public class NettyConnection implements Connection
     private void writeMessages( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2,
             boolean flush )
     {
-        messageDispatcher.queue( handler1 );
-        messageDispatcher.queue( handler2 );
+        messageDispatcher.enqueue( handler1 );
+        messageDispatcher.enqueue( handler2 );
 
         channel.write( message1, channel.voidPromise() );
 
@@ -216,7 +216,7 @@ public class NettyConnection implements Connection
 
     private void writeAndFlushMessage( Message message, ResponseHandler handler )
     {
-        messageDispatcher.queue( handler );
+        messageDispatcher.enqueue( handler );
         channel.writeAndFlush( message, channel.voidPromise() );
     }
 

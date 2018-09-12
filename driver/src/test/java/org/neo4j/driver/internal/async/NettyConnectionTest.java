@@ -521,10 +521,10 @@ public class NettyConnectionTest
         }
 
         @Override
-        public void queue( ResponseHandler handler )
+        public void enqueue( ResponseHandler handler )
         {
             queueThreadNames.add( Thread.currentThread().getName() );
-            super.queue( handler );
+            super.enqueue( handler );
         }
 
     }

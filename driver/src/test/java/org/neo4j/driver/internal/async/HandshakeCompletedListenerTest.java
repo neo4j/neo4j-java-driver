@@ -94,7 +94,7 @@ public class HandshakeCompletedListenerTest
         listener.operationComplete( handshakeCompletedPromise );
         assertTrue( channel.finish() );
 
-        verify( messageDispatcher ).queue( any( InitResponseHandler.class ) );
+        verify( messageDispatcher ).enqueue( any( InitResponseHandler.class ) );
         Object outboundMessage = channel.readOutbound();
         assertThat( outboundMessage, instanceOf( InitMessage.class ) );
         InitMessage initMessage = (InitMessage) outboundMessage;
