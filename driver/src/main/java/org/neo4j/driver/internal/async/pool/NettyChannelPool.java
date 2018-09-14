@@ -45,9 +45,8 @@ public class NettyChannelPool extends FixedChannelPool
     private final ChannelConnector connector;
     private final NettyChannelTracker handler;
 
-    public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap,
-            NettyChannelTracker handler, ChannelHealthChecker healthCheck, long acquireTimeoutMillis,
-            int maxConnections )
+    public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker handler,
+            ChannelHealthChecker healthCheck, long acquireTimeoutMillis, int maxConnections )
     {
         super( bootstrap, handler, healthCheck, AcquireTimeoutAction.FAIL, acquireTimeoutMillis, maxConnections,
                 MAX_PENDING_ACQUIRES, RELEASE_HEALTH_CHECK );

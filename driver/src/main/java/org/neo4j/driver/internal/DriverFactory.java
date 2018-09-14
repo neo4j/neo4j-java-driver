@@ -86,7 +86,7 @@ public class DriverFactory
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         InternalAbstractMetrics metrics = createDriverMetrics( config );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, eventExecutorGroup, metrics, config );
 
         InternalDriver driver = createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metrics, config );
 
@@ -95,7 +95,8 @@ public class DriverFactory
         return driver;
     }
 
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, EventExecutorGroup eventExecutorGroup,
+            MetricsListener metrics, Config config )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
@@ -104,7 +105,7 @@ public class DriverFactory
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest()
         );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metrics, config.logging(), clock );
+        return new ConnectionPoolImpl( connector, bootstrap, eventExecutorGroup, poolSettings, metrics, config.logging(), clock );
     }
 
     protected static InternalAbstractMetrics createDriverMetrics( Config config )

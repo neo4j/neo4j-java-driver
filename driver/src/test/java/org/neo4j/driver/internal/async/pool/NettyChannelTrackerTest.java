@@ -20,12 +20,25 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.group.ChannelGroup;
+import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
@@ -33,7 +46,7 @@ import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL
 class NettyChannelTrackerTest
 {
     private final BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-    private final NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, DEV_NULL_LOGGING );
+    private final NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, mock( ChannelGroup.class ), DEV_NULL_LOGGING );
 
     @Test
     void shouldIncrementInUseCountWhenChannelCreated()
@@ -164,10 +177,73 @@ class NettyChannelTrackerTest
         assertEquals( 0, tracker.inUseChannelCount( address ) );
     }
 
+    @Test
+    void shouldAddChannelToGroupWhenChannelCreated()
+    {
+        Channel channel = newChannel();
+        Channel anotherChannel = newChannel();
+        ChannelGroup group = mock( ChannelGroup.class );
+        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
+
+        tracker.channelCreated( channel, null );
+        tracker.channelCreated( anotherChannel, null );
+
+        verify( group ).add( channel );
+        verify( group ).add( anotherChannel );
+    }
+
+    @Test
+    void shouldRemoveChannelFromGroupWhenChannelClosed()
+    {
+        Channel channel = newChannel();
+        Channel anotherChannel = newChannel();
+        ChannelGroup group = mock( ChannelGroup.class );
+        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
+
+        tracker.channelCreated( channel, null );
+        tracker.channelReleased( channel );
+        tracker.channelCreated( anotherChannel, null );
+        tracker.channelReleased( anotherChannel );
+
+        tracker.channelClosed( channel );
+        tracker.channelClosed( anotherChannel );
+
+        verify( group ).remove( channel );
+        verify( group ).remove( anotherChannel );
+    }
+
+    @Test
+    void shouldDelegateToProtocolDestruct()
+    {
+        EmbeddedChannel channel = newChannelWithProtocolV3();
+        EmbeddedChannel anotherChannel = newChannelWithProtocolV3();
+        ChannelGroup group = mock( ChannelGroup.class );
+        when( group.iterator() ).thenReturn( new Arrays.Iterator<>( new Channel[]{channel, anotherChannel} ) );
+
+        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
+
+        tracker.destructAllChannels();
+
+        assertThat( channel.outboundMessages().size(), equalTo( 1 ) );
+        assertThat( channel.outboundMessages(), hasItem( GoodbyeMessage.GOODBYE ) );
+
+        assertThat( anotherChannel.outboundMessages().size(), equalTo( 1 ) );
+        assertThat( anotherChannel.outboundMessages(), hasItem( GoodbyeMessage.GOODBYE ) );
+    }
+
     private Channel newChannel()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
         setServerAddress( channel, address );
+        return channel;
+    }
+
+    private EmbeddedChannel newChannelWithProtocolV3()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        setServerAddress( channel, address );
+        setProtocolVersion( channel, BoltProtocolV3.VERSION );
+        setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
         return channel;
     }
 }

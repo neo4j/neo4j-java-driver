@@ -60,6 +60,12 @@ public interface BoltProtocol
     void initializeChannel( String userAgent, Map<String,Value> authToken, ChannelPromise channelInitializedPromise );
 
     /**
+     * Destruct channel before it is destroyed.
+     * @param channel the channel to destroy.
+     */
+    void destructChannel( Channel channel );
+
+    /**
      * Begin an explicit transaction.
      *
      * @param connection the connection to use.

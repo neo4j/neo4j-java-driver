@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.pool;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelPool;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -205,7 +206,7 @@ class ConnectionPoolImplIT
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock );
+        return new ConnectionPoolImpl( connector, bootstrap, mock( EventExecutorGroup.class ), poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock );
     }
 
     private static PoolSettings newSettings()

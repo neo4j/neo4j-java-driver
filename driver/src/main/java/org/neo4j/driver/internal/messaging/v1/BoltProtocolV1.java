@@ -89,6 +89,12 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
+    public void destructChannel( Channel channel )
+    {
+        // left empty on purpose.
+    }
+
+    @Override
     public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
         if ( config != null && !config.isEmpty() )

@@ -22,6 +22,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 
 import java.util.Map;
@@ -60,10 +61,10 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, EventExecutorGroup eventExecutorGroup, PoolSettings settings,
             MetricsListener metricsListener, Logging logging, Clock clock )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, logging ), settings, metricsListener, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, eventExecutorGroup, logging ), settings, metricsListener, logging, clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
@@ -159,6 +160,7 @@ public class ConnectionPoolImpl implements ConnectionPool
                     ChannelPool pool = entry.getValue();
 
                     log.info( "Closing connection pool towards %s", address );
+                    nettyChannelTracker.destructAllChannels();
                     pool.close();
                 }
 

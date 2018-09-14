@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.util;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -41,9 +42,10 @@ public class FailingConnectionDriverFactory extends DriverFactory
     private final AtomicReference<Throwable> nextRunFailure = new AtomicReference<>();
 
     @Override
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, EventExecutorGroup eventExecutorGroup,
+            MetricsListener metrics, Config config )
     {
-        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
+        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, eventExecutorGroup, metrics, config );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );
     }
 
