@@ -26,7 +26,14 @@ import java.util.List;
 
 public class MessageDecoder extends ByteToMessageDecoder
 {
+    private static final Cumulator DEFAULT_CUMULATOR = determineDefaultCumulator();
+
     private boolean readMessageBoundary;
+
+    public MessageDecoder()
+    {
+        setCumulator( DEFAULT_CUMULATOR );
+    }
 
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
@@ -59,5 +66,15 @@ public class MessageDecoder extends ByteToMessageDecoder
 
             readMessageBoundary = false;
         }
+    }
+
+    private static Cumulator determineDefaultCumulator()
+    {
+        String value = System.getProperty( "messageDecoderCumulator", "" );
+        if ( "merge".equals( value ) )
+        {
+            return MERGE_CUMULATOR;
+        }
+        return COMPOSITE_CUMULATOR;
     }
 }
