@@ -127,7 +127,11 @@ class BoltProtocolV3Test
         assertEquals( 1, messageDispatcher.queuedHandlersCount() );
         assertFalse( promise.isDone() );
 
-        messageDispatcher.handleSuccessMessage( singletonMap( "server", value( v3_5_0.toString() ) ) );
+        Map<String,Value> metadata = new HashMap<>();
+        metadata.put( "server", value( v3_5_0.toString() ) );
+        metadata.put( "connection_id", value( "bolt-42" ) );
+
+        messageDispatcher.handleSuccessMessage( metadata );
 
         assertTrue( promise.isDone() );
         assertTrue( promise.isSuccess() );

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -37,11 +38,11 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.async.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
@@ -73,7 +74,7 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_2_0.toString() ) );
+        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, "bolt-1" );
         handler.onSuccess( metadata );
 
         assertTrue( channelPromise.isSuccess() );
@@ -86,19 +87,21 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( singletonMap( "server", null ) ) );
+        Map<String,Value> metadata = metadata( null, "bolt-1" );
+        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
         assertTrue( channel.closeFuture().isDone() ); // channel was closed
     }
 
     @Test
-    void shouldThrowWhenServerVersionInNull()
+    void shouldThrowWhenServerVersionIsNull()
     {
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( singletonMap( "server", Values.NULL ) ) );
+        Map<String,Value> metadata = metadata( Values.NULL, "bolt-x" );
+        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
         assertTrue( channel.closeFuture().isDone() ); // channel was closed
@@ -110,7 +113,47 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        assertThrows( IllegalArgumentException.class, () -> handler.onSuccess( singletonMap( "server", value( "WrongServerVersion" ) ) ) );
+        Map<String,Value> metadata = metadata( "WrongServerVersion", "bolt-x" );
+        assertThrows( IllegalArgumentException.class, () -> handler.onSuccess( metadata ) );
+
+        assertFalse( channelPromise.isSuccess() ); // initialization failed
+        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+    }
+
+    @Test
+    void shouldSetConnectionIdOnChannel()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+
+        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, "bolt-42" );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertEquals( "bolt-42", connectionId( channel ) );
+    }
+
+    @Test
+    void shouldThrowWhenConnectionIdNotReturned()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+
+        Map<String,Value> metadata = metadata( ServerVersion.v3_1_0, null );
+        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
+
+        assertFalse( channelPromise.isSuccess() ); // initialization failed
+        assertTrue( channel.closeFuture().isDone() ); // channel was closed
+    }
+
+    @Test
+    void shouldThrowWhenConnectionIdIsNull()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+
+        Map<String,Value> metadata = metadata( ServerVersion.v3_0_0, Values.NULL );
+        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
         assertTrue( channel.closeFuture().isDone() ); // channel was closed
@@ -131,5 +174,34 @@ class HelloResponseHandlerTest
         assertTrue( channelCloseFuture.isSuccess() );
         assertTrue( channelPromise.isDone() );
         assertEquals( error, channelPromise.cause() );
+    }
+
+    private static Map<String,Value> metadata( Object version, Object connectionId )
+    {
+        Map<String,Value> result = new HashMap<>();
+
+        if ( version == null )
+        {
+            result.put( "server", null );
+        }
+        else if ( version instanceof Value && ((Value) version).isNull() )
+        {
+            result.put( "server", Values.NULL );
+        }
+        else
+        {
+            result.put( "server", value( version.toString() ) );
+        }
+
+        if ( connectionId == null )
+        {
+            result.put( "connection_id", null );
+        }
+        else
+        {
+            result.put( "connection_id", value( connectionId ) );
+        }
+
+        return result;
     }
 }

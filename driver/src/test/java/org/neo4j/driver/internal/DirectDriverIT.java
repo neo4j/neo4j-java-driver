@@ -22,14 +22,18 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -37,11 +41,18 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.StubServer;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
 import static org.neo4j.driver.internal.util.Neo4jFeature.CONNECTOR_LISTEN_ADDRESS_CONFIGURATION;
@@ -181,6 +192,41 @@ class DirectDriverIT
 
             // Then
             assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
+        }
+    }
+
+    @Test
+    void shouldLogConnectionIdInDebugMode() throws Exception
+    {
+        StubServer server = StubServer.start( "hello_run_goodbye.script", 9001 );
+
+        Logger logger = mock( Logger.class );
+        when( logger.isDebugEnabled() ).thenReturn( true );
+
+        Config config = Config.build()
+                .withLogging( ignore -> logger )
+                .withoutEncryption().toConfig();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+              Session session = driver.session() )
+        {
+            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            assertEquals( asList( "Foo", "Bar" ), names );
+
+            ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
+            verify( logger, atLeastOnce() ).debug( messageCaptor.capture(), any() );
+
+            Optional<String> logMessageWithConnectionId = messageCaptor.getAllValues()
+                    .stream()
+                    .filter( line -> line.contains( "bolt-123456789" ) )
+                    .findAny();
+
+            assertTrue( logMessageWithConnectionId.isPresent(),
+                    "Expected log call did not happen. All debug log calls:\n" + String.join( "\n", messageCaptor.getAllValues() ) );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
         }
     }
 }

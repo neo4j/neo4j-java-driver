@@ -29,12 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.async.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverVersion;
+import static org.neo4j.driver.internal.async.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
@@ -48,6 +50,21 @@ import static org.neo4j.driver.internal.util.ServerVersion.version;
 class ChannelAttributesTest
 {
     private final EmbeddedChannel channel = new EmbeddedChannel();
+
+    @Test
+    void shouldSetAndGetConnectionId()
+    {
+        setConnectionId( channel, "bolt-42" );
+        assertEquals( "bolt-42", connectionId( channel ) );
+    }
+
+    @Test
+    void shouldFailToSetConnectionIdTwice()
+    {
+        setConnectionId( channel, "bolt-42" );
+
+        assertThrows( IllegalStateException.class, () -> setConnectionId( channel, "bolt-4242" ) );
+    }
 
     @Test
     void shouldSetAndGetProtocolVersion()
