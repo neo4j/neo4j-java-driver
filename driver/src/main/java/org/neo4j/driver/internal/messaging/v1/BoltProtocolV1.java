@@ -89,7 +89,7 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public void destructChannel( Channel channel )
+    public void prepareToCloseChannel( Channel channel )
     {
         // left empty on purpose.
     }

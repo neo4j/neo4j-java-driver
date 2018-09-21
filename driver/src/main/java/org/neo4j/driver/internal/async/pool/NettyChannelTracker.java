@@ -108,8 +108,6 @@ public class NettyChannelTracker implements ChannelPoolHandler
     {
         decrementIdle( channel );
         metricsListener.afterClosed( serverAddress( channel ) );
-
-        allChannels.remove( channel );
     }
 
     public int inUseChannelCount( BoltServerAddress address )
@@ -124,14 +122,14 @@ public class NettyChannelTracker implements ChannelPoolHandler
         return count == null ? 0 : count.get();
     }
 
-    public void destructAllChannels()
+    public void prepareToCloseChannels()
     {
         for ( Channel channel : allChannels )
         {
             BoltProtocol protocol = BoltProtocol.forChannel( channel );
             try
             {
-                protocol.destructChannel( channel );
+                protocol.prepareToCloseChannel( channel );
             }
             catch ( Throwable e )
             {

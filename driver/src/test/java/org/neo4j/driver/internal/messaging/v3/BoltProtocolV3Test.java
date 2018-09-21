@@ -134,9 +134,9 @@ class BoltProtocolV3Test
     }
 
     @Test
-    void shouldDestructChannel()
+    void shouldPrepareToCloseChannel()
     {
-        protocol.destructChannel( channel );
+        protocol.prepareToCloseChannel( channel );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( GoodbyeMessage.class ) );

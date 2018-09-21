@@ -193,27 +193,7 @@ class NettyChannelTrackerTest
     }
 
     @Test
-    void shouldRemoveChannelFromGroupWhenChannelClosed()
-    {
-        Channel channel = newChannel();
-        Channel anotherChannel = newChannel();
-        ChannelGroup group = mock( ChannelGroup.class );
-        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
-
-        tracker.channelCreated( channel, null );
-        tracker.channelReleased( channel );
-        tracker.channelCreated( anotherChannel, null );
-        tracker.channelReleased( anotherChannel );
-
-        tracker.channelClosed( channel );
-        tracker.channelClosed( anotherChannel );
-
-        verify( group ).remove( channel );
-        verify( group ).remove( anotherChannel );
-    }
-
-    @Test
-    void shouldDelegateToProtocolDestruct()
+    void shouldDelegateToProtocolPrepareToClose()
     {
         EmbeddedChannel channel = newChannelWithProtocolV3();
         EmbeddedChannel anotherChannel = newChannelWithProtocolV3();
@@ -222,7 +202,7 @@ class NettyChannelTrackerTest
 
         NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
 
-        tracker.destructAllChannels();
+        tracker.prepareToCloseChannels();
 
         assertThat( channel.outboundMessages().size(), equalTo( 1 ) );
         assertThat( channel.outboundMessages(), hasItem( GoodbyeMessage.GOODBYE ) );

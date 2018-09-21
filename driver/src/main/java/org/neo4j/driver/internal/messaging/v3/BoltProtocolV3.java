@@ -86,7 +86,7 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public void destructChannel( Channel channel )
+    public void prepareToCloseChannel( Channel channel )
     {
         GoodbyeMessage message = GoodbyeMessage.GOODBYE;
         messageDispatcher( channel ).enqueue( NoOpResponseHandler.INSTANCE );

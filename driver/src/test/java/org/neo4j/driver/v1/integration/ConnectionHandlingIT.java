@@ -20,7 +20,6 @@ package org.neo4j.driver.v1.integration;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -319,7 +317,7 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                EventExecutorGroup eventExecutorGroup, MetricsListener metrics, Config config )
+                MetricsListener metrics, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
@@ -341,7 +339,7 @@ class ConnectionHandlingIT
         MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
                 Logging logging, Clock clock )
         {
-            super( connector, bootstrap, new ImmediateSchedulingEventExecutor(), settings, DEV_NULL_METRICS, logging, clock );
+            super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock );
         }
 
 

@@ -9,4 +9,4 @@ S: SUCCESS {"fields": ["x"]}
    RECORD [1]
    SUCCESS {"bookmark": "bookmark:1"}
 C: GOODBYE
-S: SUCCESS {}
+S: <EXIT>

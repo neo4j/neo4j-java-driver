@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.util;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,9 +72,9 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 
     @Override
     protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            EventExecutorGroup eventExecutorGroup, MetricsListener metrics, Config config )
+            MetricsListener metrics, Config config )
     {
-        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, eventExecutorGroup, metrics, config );
+        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
         return pool;
     }
 
