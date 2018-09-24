@@ -23,7 +23,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.pool.ChannelPoolHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.EventExecutor;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,9 +47,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final ChannelFutureListener closeListener = future -> channelClosed( future.channel() );
     private final ChannelGroup allChannels;
 
-    public NettyChannelTracker( MetricsListener metricsListener, EventExecutorGroup eventExecutorGroup, Logging logging )
+    public NettyChannelTracker( MetricsListener metricsListener, EventExecutor eventExecutor, Logging logging )
     {
-        this( metricsListener, new DefaultChannelGroup( "all-connections", eventExecutorGroup.next() ), logging );
+        this( metricsListener, new DefaultChannelGroup( "all-connections", eventExecutor ), logging );
     }
 
     public NettyChannelTracker( MetricsListener metricsListener, ChannelGroup channels, Logging logging )
@@ -134,8 +134,8 @@ public class NettyChannelTracker implements ChannelPoolHandler
             catch ( Throwable e )
             {
                 // only logging it
-                log.debug( "Failed to destruct Channel %s due to error %s. " +
-                        "It is safe to ignore this error as the channel will be closed despite if it is successfully destructed.", channel, e.getMessage() );
+                log.debug( "Failed to prepare to close Channel %s due to error %s. " +
+                        "It is safe to ignore this error as the channel will be closed despite if it is successfully prepared to close or not.", channel, e.getMessage() );
             }
         }
     }
