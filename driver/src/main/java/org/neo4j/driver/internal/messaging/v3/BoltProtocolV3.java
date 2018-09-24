@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
+import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -81,6 +82,14 @@ public class BoltProtocolV3 implements BoltProtocol
         HelloResponseHandler handler = new HelloResponseHandler( channelInitializedPromise );
 
         messageDispatcher( channel ).enqueue( handler );
+        channel.writeAndFlush( message, channel.voidPromise() );
+    }
+
+    @Override
+    public void prepareToCloseChannel( Channel channel )
+    {
+        GoodbyeMessage message = GoodbyeMessage.GOODBYE;
+        messageDispatcher( channel ).enqueue( NoOpResponseHandler.INSTANCE );
         channel.writeAndFlush( message, channel.voidPromise() );
     }
 

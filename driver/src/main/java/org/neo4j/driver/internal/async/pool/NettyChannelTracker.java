@@ -20,13 +20,17 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.pool.ChannelPoolHandler;
+import io.netty.util.concurrent.EventExecutor;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.v1.Logger;
@@ -41,11 +45,18 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Logger log;
     private final MetricsListener metricsListener;
     private final ChannelFutureListener closeListener = future -> channelClosed( future.channel() );
+    private final ChannelGroup allChannels;
 
-    public NettyChannelTracker( MetricsListener metricsListener, Logging logging )
+    public NettyChannelTracker( MetricsListener metricsListener, EventExecutor eventExecutor, Logging logging )
+    {
+        this( metricsListener, new DefaultChannelGroup( "all-connections", eventExecutor ), logging );
+    }
+
+    public NettyChannelTracker( MetricsListener metricsListener, ChannelGroup channels, Logging logging )
     {
         this.metricsListener = metricsListener;
         this.log = logging.getLog( getClass().getSimpleName() );
+        this.allChannels = channels;
     }
 
     @Override
@@ -77,6 +88,8 @@ public class NettyChannelTracker implements ChannelPoolHandler
         log.debug( "Channel %s created", channel );
         incrementInUse( channel );
         metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
+
+        allChannels.add( channel );
     }
 
     public ListenerEvent channelCreating( BoltServerAddress address )
@@ -107,6 +120,24 @@ public class NettyChannelTracker implements ChannelPoolHandler
     {
         AtomicInteger count = addressToIdleChannelCount.get( address );
         return count == null ? 0 : count.get();
+    }
+
+    public void prepareToCloseChannels()
+    {
+        for ( Channel channel : allChannels )
+        {
+            BoltProtocol protocol = BoltProtocol.forChannel( channel );
+            try
+            {
+                protocol.prepareToCloseChannel( channel );
+            }
+            catch ( Throwable e )
+            {
+                // only logging it
+                log.debug( "Failed to prepare to close Channel %s due to error %s. " +
+                        "It is safe to ignore this error as the channel will be closed despite if it is successfully prepared to close or not.", channel, e.getMessage() );
+            }
+        }
     }
 
     private void incrementInUse( Channel channel )

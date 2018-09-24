@@ -47,6 +47,7 @@ import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
+import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
@@ -130,6 +131,16 @@ class BoltProtocolV3Test
 
         assertTrue( promise.isDone() );
         assertTrue( promise.isSuccess() );
+    }
+
+    @Test
+    void shouldPrepareToCloseChannel()
+    {
+        protocol.prepareToCloseChannel( channel );
+
+        assertThat( channel.outboundMessages(), hasSize( 1 ) );
+        assertThat( channel.outboundMessages().poll(), instanceOf( GoodbyeMessage.class ) );
+        assertEquals( 1, messageDispatcher.queuedHandlersCount() );
     }
 
     @Test

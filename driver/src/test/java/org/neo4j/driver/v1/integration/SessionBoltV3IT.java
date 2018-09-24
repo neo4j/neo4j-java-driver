@@ -26,7 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -35,9 +40,11 @@ import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.SessionExtension;
+import org.neo4j.driver.v1.util.StubServer;
 
 import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -247,6 +254,26 @@ class SessionBoltV3IT
         assertNotEquals( initialBookmark, bookmark3 );
         assertNotEquals( bookmark1, bookmark3 );
         assertNotEquals( bookmark2, bookmark3 );
+    }
+
+    @Test
+    void shouldSendGoodbyeWhenClosingDriver() throws Throwable
+    {
+        StubServer server = StubServer.start( "goodbye_message.script", 9001 );
+        try
+        {
+            Config config = Config.build().withLogging( DevNullLogging.DEV_NULL_LOGGING ).withoutEncryption().toConfig();
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ); Session session = driver.session() )
+            {
+                StatementResult result =
+                        session.run( "RETURN $x", singletonMap( "x", 1 ), TransactionConfig.builder().withMetadata( singletonMap( "mode", "r" ) ).build() );
+                assertEquals( 1, result.single().get( "x" ).asInt() );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
     }
 
     private static void testTransactionMetadataWithTransactionFunctions( boolean read )

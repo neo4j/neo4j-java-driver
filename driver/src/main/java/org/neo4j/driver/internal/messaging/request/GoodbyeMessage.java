@@ -24,7 +24,7 @@ public class GoodbyeMessage implements Message
 {
     public final static byte SIGNATURE = 0x02;
 
-    public static final Message GOODBYE = new GoodbyeMessage();
+    public static final GoodbyeMessage GOODBYE = new GoodbyeMessage();
 
     private GoodbyeMessage()
     {

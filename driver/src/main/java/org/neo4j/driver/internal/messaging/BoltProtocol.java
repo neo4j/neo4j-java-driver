@@ -60,6 +60,12 @@ public interface BoltProtocol
     void initializeChannel( String userAgent, Map<String,Value> authToken, ChannelPromise channelInitializedPromise );
 
     /**
+     * Prepare to close channel before it is closed.
+     * @param channel the channel to close.
+     */
+    void prepareToCloseChannel( Channel channel );
+
+    /**
      * Begin an explicit transaction.
      *
      * @param connection the connection to use.

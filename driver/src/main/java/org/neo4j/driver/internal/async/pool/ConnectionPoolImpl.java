@@ -60,10 +60,9 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
-            MetricsListener metricsListener, Logging logging, Clock clock )
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, logging ), settings, metricsListener, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
@@ -153,11 +152,11 @@ public class ConnectionPoolImpl implements ConnectionPool
         {
             try
             {
+                nettyChannelTracker.prepareToCloseChannels();
                 for ( Map.Entry<BoltServerAddress,ChannelPool> entry : pools.entrySet() )
                 {
                     BoltServerAddress address = entry.getKey();
                     ChannelPool pool = entry.getValue();
-
                     log.info( "Closing connection pool towards %s", address );
                     pool.close();
                 }

@@ -220,7 +220,8 @@ class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
+                MetricsListener metrics, Config config )
         {
             return connectionPool;
         }
@@ -255,7 +256,8 @@ class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
+                MetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }
@@ -277,7 +279,8 @@ class DriverFactoryTest
         }
 
         @Override
-        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+        protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
+                MetricsListener metrics, Config config )
         {
             return connectionPoolMock();
         }

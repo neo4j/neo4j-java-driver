@@ -41,7 +41,8 @@ public class FailingConnectionDriverFactory extends DriverFactory
     private final AtomicReference<Throwable> nextRunFailure = new AtomicReference<>();
 
     @Override
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
+            MetricsListener metrics, Config config )
     {
         ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );
