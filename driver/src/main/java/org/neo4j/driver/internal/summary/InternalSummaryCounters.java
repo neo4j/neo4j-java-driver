@@ -34,7 +34,7 @@ public class InternalSummaryCounters implements SummaryCounters
     private final int indexesAdded;
     private final int indexesRemoved;
     private final int constraintsAdded;
-    private final int constrainsRemoved;
+    private final int constraintsRemoved;
 
     public InternalSummaryCounters(
             int nodesCreated, int nodesDeleted,
@@ -42,7 +42,7 @@ public class InternalSummaryCounters implements SummaryCounters
             int propertiesSet,
             int labelsAdded, int labelsRemoved,
             int indexesAdded, int indexesRemoved,
-            int constraintsAdded, int constrainsRemoved )
+            int constraintsAdded, int constraintsRemoved )
     {
         this.nodesCreated = nodesCreated;
         this.nodesDeleted = nodesDeleted;
@@ -54,7 +54,7 @@ public class InternalSummaryCounters implements SummaryCounters
         this.indexesAdded = indexesAdded;
         this.indexesRemoved = indexesRemoved;
         this.constraintsAdded = constraintsAdded;
-        this.constrainsRemoved = constrainsRemoved;
+        this.constraintsRemoved = constraintsRemoved;
     }
 
     @Override
@@ -71,7 +71,7 @@ public class InternalSummaryCounters implements SummaryCounters
           || isPositive( indexesAdded )
           || isPositive( indexesRemoved )
           || isPositive( constraintsAdded )
-          || isPositive( constrainsRemoved );
+          || isPositive( constraintsRemoved );
     }
 
     @Override
@@ -137,7 +137,7 @@ public class InternalSummaryCounters implements SummaryCounters
     @Override
     public int constraintsRemoved()
     {
-        return constrainsRemoved;
+        return constraintsRemoved;
     }
 
     @Override
@@ -164,7 +164,7 @@ public class InternalSummaryCounters implements SummaryCounters
             && indexesAdded == that.indexesAdded
             && indexesRemoved == that.indexesRemoved
             && constraintsAdded == that.constraintsAdded
-            && constrainsRemoved == that.constrainsRemoved;
+            && constraintsRemoved == that.constraintsRemoved;
     }
 
     @Override
@@ -180,7 +180,7 @@ public class InternalSummaryCounters implements SummaryCounters
         result = 31 * result + indexesAdded;
         result = 31 * result + indexesRemoved;
         result = 31 * result + constraintsAdded;
-        result = 31 * result + constrainsRemoved;
+        result = 31 * result + constraintsRemoved;
         return result;
     }
 
