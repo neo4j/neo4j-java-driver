@@ -38,6 +38,7 @@ import org.neo4j.driver.v1.util.SessionExtension;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,8 +89,8 @@ class SummaryIT
         ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
         if ( STATEMENT_RESULT_TIMINGS.availableIn( serverVersion ) )
         {
-            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
-            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThan( 0L ) );
+            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
         }
         else
         {
