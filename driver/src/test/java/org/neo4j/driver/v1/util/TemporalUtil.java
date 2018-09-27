@@ -28,6 +28,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ValueRange;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -41,9 +42,16 @@ import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
+import static java.util.stream.Collectors.toSet;
 
 public final class TemporalUtil
 {
+    /**
+     * These zone ids were removed from the tz database and neo4j can re-map such ids to other ids.
+     * For example "Canada/East-Saskatchewan" will be returned as "Canada/Saskatchewan".
+     */
+    private static final Set<String> BLACKLISTED_ZONE_IDS = Collections.singleton( "Canada/East-Saskatchewan" );
+
     private TemporalUtil()
     {
     }
@@ -106,7 +114,11 @@ public final class TemporalUtil
 
     private static ZoneId randomZoneId()
     {
-        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds();
+        Set<String> availableZoneIds = ZoneId.getAvailableZoneIds()
+                .stream()
+                .filter( id -> !BLACKLISTED_ZONE_IDS.contains( id ) )
+                .collect( toSet() );
+
         int randomIndex = random().nextInt( availableZoneIds.size() );
         int index = 0;
         for ( String id : availableZoneIds )
