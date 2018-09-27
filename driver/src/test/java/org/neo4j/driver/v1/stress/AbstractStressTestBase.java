@@ -57,6 +57,7 @@ import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DaemonThreadFactory;
@@ -549,11 +550,11 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
         if ( async )
         {
-            tx.runAsync( query, params );
+            tx.runAsync( query, params ).thenCompose( StatementResultCursor::consumeAsync );
         }
         else
         {
-            tx.run( query, params );
+            tx.run( query, params ).consume();
         }
     }
 
