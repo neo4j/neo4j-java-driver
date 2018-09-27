@@ -18,20 +18,25 @@
  */
 package org.neo4j.driver.v1.integration;
 
+import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.logging.DevNullLogging;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
+import org.neo4j.driver.internal.messaging.request.HelloMessage;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
@@ -40,18 +45,19 @@ import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.SessionExtension;
-import org.neo4j.driver.v1.util.StubServer;
 
 import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
+import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 @EnabledOnNeo4jWith( BOLT_V3 )
@@ -257,22 +263,43 @@ class SessionBoltV3IT
     }
 
     @Test
-    void shouldSendGoodbyeWhenClosingDriver() throws Throwable
+    void shouldSendGoodbyeWhenClosingDriver()
     {
-        StubServer server = StubServer.start( "goodbye_message.script", 9001 );
-        try
+        int txCount = 13;
+        MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
+
+        try ( Driver driver = driverFactory.newInstance( session.uri(), session.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, defaultConfig() ) )
         {
-            Config config = Config.build().withLogging( DevNullLogging.DEV_NULL_LOGGING ).withoutEncryption().toConfig();
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ); Session session = driver.session() )
+            List<Session> sessions = new ArrayList<>();
+            List<Transaction> txs = new ArrayList<>();
+            for ( int i = 0; i < txCount; i++ )
             {
-                StatementResult result =
-                        session.run( "RETURN $x", singletonMap( "x", 1 ), TransactionConfig.builder().withMetadata( singletonMap( "mode", "r" ) ).build() );
-                assertEquals( 1, result.single().get( "x" ).asInt() );
+                Session session = driver.session();
+                sessions.add( session );
+                Transaction tx = session.beginTransaction();
+                txs.add( tx );
+            }
+
+            for ( int i = 0; i < txCount; i++ )
+            {
+                Session session = sessions.get( i );
+                Transaction tx = txs.get( i );
+
+                tx.run( "CREATE ()" );
+                tx.success();
+                tx.close();
+                session.close();
             }
         }
-        finally
+
+        Map<Channel,List<Message>> messagesByChannel = driverFactory.getMessagesByChannel();
+        assertEquals( txCount, messagesByChannel.size() );
+
+        for ( List<Message> messages : messagesByChannel.values() )
         {
-            assertEquals( 0, server.exitStatus() );
+            assertThat( messages.size(), greaterThan( 2 ) );
+            assertThat( messages.get( 0 ), instanceOf( HelloMessage.class ) ); // first message is HELLO
+            assertThat( messages.get( messages.size() - 1 ), instanceOf( GoodbyeMessage.class ) ); // last message is GOODBYE
         }
     }
 
