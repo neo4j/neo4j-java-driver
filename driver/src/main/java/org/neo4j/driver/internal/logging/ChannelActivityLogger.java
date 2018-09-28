@@ -29,8 +29,8 @@ import static java.lang.String.format;
 public class ChannelActivityLogger extends ReformattedLogger
 {
     private final Channel channel;
+    private final String localChannelId;
 
-    private String localChannelId;
     private String dbConnectionId;
 
     public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
@@ -42,6 +42,7 @@ public class ChannelActivityLogger extends ReformattedLogger
     {
         super( delegate );
         this.channel = channel;
+        this.localChannelId = channel != null ? channel.id().toString() : null;
     }
 
     @Override
@@ -52,7 +53,6 @@ public class ChannelActivityLogger extends ReformattedLogger
             return message;
         }
 
-        String localChannelId = getLocalChannelId();
         String dbConnectionId = getDbConnectionId();
 
         if ( localChannelId != null && dbConnectionId != null )
@@ -60,15 +60,6 @@ public class ChannelActivityLogger extends ReformattedLogger
             return format( "[0x%s][%s] %s", localChannelId, dbConnectionId, message );
         }
         return format( "[0x%s][] %s", localChannelId, message );
-    }
-
-    private String getLocalChannelId()
-    {
-        if ( localChannelId == null )
-        {
-            localChannelId = channel.id().toString();
-        }
-        return localChannelId;
     }
 
     private String getDbConnectionId()
