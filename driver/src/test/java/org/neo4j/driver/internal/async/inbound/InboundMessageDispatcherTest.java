@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.async.inbound;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.DefaultChannelId;
+import io.netty.util.Attribute;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -65,7 +67,7 @@ class InboundMessageDispatcherTest
     @Test
     void shouldFailWhenCreatedWithNullLogging()
     {
-        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( mock( Channel.class ), null ) );
+        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( newChannelMock(), null ) );
     }
 
     @Test
@@ -107,7 +109,7 @@ class InboundMessageDispatcherTest
     @Test
     void shouldSendResetOnFailure()
     {
-        Channel channel = mock( Channel.class );
+        Channel channel = newChannelMock();
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
 
         dispatcher.enqueue( mock( ResponseHandler.class ) );
@@ -353,11 +355,15 @@ class InboundMessageDispatcherTest
         return new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
     }
 
+    @SuppressWarnings( "unchecked" )
     private static Channel newChannelMock()
     {
         Channel channel = mock( Channel.class );
+        when( channel.id() ).thenReturn( DefaultChannelId.newInstance() );
         ChannelConfig channelConfig = mock( ChannelConfig.class );
         when( channel.config() ).thenReturn( channelConfig );
+        Attribute attribute = mock( Attribute.class );
+        when( channel.attr( any() ) ).thenReturn( attribute );
         return channel;
     }
 }

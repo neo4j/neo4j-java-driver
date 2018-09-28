@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.logging;
 
 import io.netty.channel.Channel;
 
+import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -28,6 +29,9 @@ import static java.lang.String.format;
 public class ChannelActivityLogger extends ReformattedLogger
 {
     private final Channel channel;
+    private final String localChannelId;
+
+    private String dbConnectionId;
 
     public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
     {
@@ -38,6 +42,7 @@ public class ChannelActivityLogger extends ReformattedLogger
     {
         super( delegate );
         this.channel = channel;
+        this.localChannelId = channel != null ? channel.id().toString() : null;
     }
 
     @Override
@@ -47,6 +52,22 @@ public class ChannelActivityLogger extends ReformattedLogger
         {
             return message;
         }
-        return format( "[0x%s] %s", channel.id(), message );
+
+        String dbConnectionId = getDbConnectionId();
+
+        if ( localChannelId != null && dbConnectionId != null )
+        {
+            return format( "[0x%s][%s] %s", localChannelId, dbConnectionId, message );
+        }
+        return format( "[0x%s][] %s", localChannelId, message );
+    }
+
+    private String getDbConnectionId()
+    {
+        if ( dbConnectionId == null )
+        {
+            dbConnectionId = ChannelAttributes.connectionId( channel );
+        }
+        return dbConnectionId;
     }
 }

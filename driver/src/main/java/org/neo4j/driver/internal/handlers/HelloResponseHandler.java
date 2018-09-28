@@ -27,10 +27,14 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.async.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
 
 public class HelloResponseHandler implements ResponseHandler
 {
+    private static final String SERVER_METADATA_KEY = "server";
+    private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
+
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
 
@@ -45,8 +49,12 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
-            ServerVersion serverVersion = extractServerVersion( metadata );
+            ServerVersion serverVersion = ServerVersion.version( extractMetadataValue( SERVER_METADATA_KEY, metadata ) );
             setServerVersion( channel, serverVersion );
+
+            String connectionId = extractMetadataValue( CONNECTION_ID_METADATA_KEY, metadata );
+            setConnectionId( channel, connectionId );
+
             connectionInitializedPromise.setSuccess();
         }
         catch ( Throwable error )
@@ -68,13 +76,13 @@ public class HelloResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    private static ServerVersion extractServerVersion( Map<String,Value> metadata )
+    private static String extractMetadataValue( String key, Map<String,Value> metadata )
     {
-        Value versionValue = metadata.get( "server" );
-        if ( versionValue == null || versionValue.isNull() )
+        Value value = metadata.get( key );
+        if ( value == null || value.isNull() )
         {
-            throw new IllegalStateException( "Unable to get server version from a response to HELLO message. Metadata: " + metadata );
+            throw new IllegalStateException( "Unable to extract " + key + " from a response to HELLO message. Metadata: " + metadata );
         }
-        return ServerVersion.version( versionValue.asString() );
+        return value.asString();
     }
 }

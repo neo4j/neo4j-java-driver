@@ -62,7 +62,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelReleased( Channel channel )
     {
-        log.debug( "Channel %s released back to the pool", channel );
+        log.debug( "Channel [%s] released back to the pool", channel.id() );
         decrementInUse( channel );
         incrementIdle( channel );
         channel.closeFuture().addListener( closeListener );
@@ -71,7 +71,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelAcquired( Channel channel )
     {
-        log.debug( "Channel %s acquired from the pool", channel );
+        log.debug( "Channel [%s] acquired from the pool. Local address: %s, remote address: %s",
+                channel.id(), channel.localAddress(), channel.remoteAddress() );
+
         incrementInUse( channel );
         decrementIdle( channel );
         channel.closeFuture().removeListener( closeListener );
@@ -85,7 +87,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
 
     public void channelCreated( Channel channel, ListenerEvent creatingEvent )
     {
-        log.debug( "Channel %s created", channel );
+        log.debug( "Channel [%s] created. Local address: %s, remote address: %s",
+                channel.id(), channel.localAddress(), channel.remoteAddress() );
+
         incrementInUse( channel );
         metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
 
