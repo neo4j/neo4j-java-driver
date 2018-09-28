@@ -67,7 +67,7 @@ class InboundMessageDispatcherTest
     @Test
     void shouldFailWhenCreatedWithNullLogging()
     {
-        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( mock( Channel.class ), null ) );
+        assertThrows( NullPointerException.class, () -> new InboundMessageDispatcher( newChannelMock(), null ) );
     }
 
     @Test
@@ -109,7 +109,7 @@ class InboundMessageDispatcherTest
     @Test
     void shouldSendResetOnFailure()
     {
-        Channel channel = mock( Channel.class );
+        Channel channel = newChannelMock();
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
 
         dispatcher.enqueue( mock( ResponseHandler.class ) );
