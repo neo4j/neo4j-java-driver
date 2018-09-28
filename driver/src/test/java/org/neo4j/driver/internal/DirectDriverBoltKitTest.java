@@ -52,12 +52,10 @@ class DirectDriverBoltKitTest
     @Test
     void shouldBeAbleRunCypher() throws Exception
     {
-        // Given
         StubServer server = StubServer.start( "return_x.script", 9001 );
         URI uri = URI.create( "bolt://127.0.0.1:9001" );
         int x;
 
-        // When
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
             try ( Session session = driver.session() )
@@ -67,10 +65,7 @@ class DirectDriverBoltKitTest
             }
         }
 
-        // Then
         assertThat( x, equalTo( 1 ) );
-
-        // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
@@ -103,7 +98,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldLogConnectionIdInDebugMode() throws Exception
     {
-        StubServer server = StubServer.start( "hello_run_goodbye.script", 9001 );
+        StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
 
         Logger logger = mock( Logger.class );
         when( logger.isDebugEnabled() ).thenReturn( true );
