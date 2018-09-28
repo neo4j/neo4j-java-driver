@@ -39,10 +39,10 @@ import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 public class Rediscovery
 {
@@ -204,7 +204,15 @@ public class Rediscovery
     private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
             ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
     {
-        List<BoltServerAddress> addresses = resolve( initialRouter );
+        List<BoltServerAddress> addresses;
+        try
+        {
+            addresses = resolve( initialRouter );
+        }
+        catch ( Throwable error )
+        {
+            return failedFuture( error );
+        }
         addresses.removeAll( seenServers );
 
         CompletableFuture<ClusterComposition> result = completedWithNull();
@@ -260,17 +268,9 @@ public class Rediscovery
 
     private List<BoltServerAddress> resolve( BoltServerAddress address )
     {
-        try
-        {
-            return resolver.resolve( address )
-                    .stream()
-                    .map( BoltServerAddress::from )
-                    .collect( toList() ); // collect to list to preserve the order
-        }
-        catch ( Throwable error )
-        {
-            logger.error( "Resolver function failed to resolve '" + address + "'. The address will be used as is", error );
-            return singletonList( address );
-        }
+        return resolver.resolve( address )
+                .stream()
+                .map( BoltServerAddress::from )
+                .collect( toList() ); // collect to list to preserve the order
     }
 }

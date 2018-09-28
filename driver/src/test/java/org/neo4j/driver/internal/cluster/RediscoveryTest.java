@@ -227,7 +227,7 @@ class RediscoveryTest
     }
 
     @Test
-    void shouldUseInitialRouterAddressAsIsWhenResolverFails()
+    void shouldPropagateFailureWhenResolverFails()
     {
         ClusterComposition expectedComposition = new ClusterComposition( 42,
                 asOrderedSet( A, B ), asOrderedSet( A, B ), asOrderedSet( A, B ) );
@@ -242,9 +242,9 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, resolver );
         RoutingTable table = routingTableMock();
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        RuntimeException error = assertThrows( RuntimeException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
+        assertEquals( "Resolver fails!", error.getMessage() );
 
-        assertEquals( expectedComposition, actualComposition );
         verify( resolver ).resolve( A );
         verify( table, never() ).forget( any() );
     }
