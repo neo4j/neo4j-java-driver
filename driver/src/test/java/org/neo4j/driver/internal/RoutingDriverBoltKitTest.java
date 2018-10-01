@@ -23,8 +23,9 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -45,10 +46,12 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
+import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.v1.net.ServerAddressResolver;
 import org.neo4j.driver.v1.util.StubServer;
 
 import static java.util.Arrays.asList;
-import static java.util.logging.Level.INFO;
+import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -57,13 +60,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.v1.Logging.console;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.driver.v1.Logging.none;
 
 class RoutingDriverBoltKitTest
 {
     private static final Config config = Config.build()
             .withoutEncryption()
-            .withLogging( console( INFO ) ).toConfig();
+            .withLogging( none() )
+            .toConfig();
 
     @Test
     void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
@@ -917,7 +925,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
 
-        List<String> bookmarks = Arrays.asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
+        List<String> bookmarks = asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
                 "neo4j:bookmark:v1:tx68" );
 
@@ -963,10 +971,82 @@ class RoutingDriverBoltKitTest
         }
         finally
         {
-            assertEquals( router1.exitStatus(), 0 );
-            assertEquals( writer1.exitStatus(), 0 );
-            assertEquals( router2.exitStatus(), 0 );
-            assertEquals( writer2.exitStatus(), 0 );
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, writer1.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, writer2.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldFailInitialDiscoveryWhenConfiguredResolverThrows()
+    {
+        ServerAddressResolver resolver = mock( ServerAddressResolver.class );
+        when( resolver.resolve( any( ServerAddress.class ) ) ).thenThrow( new RuntimeException( "Resolution failure!" ) );
+
+        Config config = Config.build()
+                .withLogging( none() )
+                .withoutEncryption()
+                .withResolver( resolver )
+                .toConfig();
+
+        RuntimeException error = assertThrows( RuntimeException.class, () -> GraphDatabase.driver( "bolt+routing://my.server.com:9001", config ) );
+        assertEquals( "Resolution failure!", error.getMessage() );
+        verify( resolver ).resolve( ServerAddress.of( "my.server.com", 9001 ) );
+    }
+
+    @Test
+    void shouldUseResolverDuringRediscoveryWhenExistingRoutersFail() throws Exception
+    {
+        StubServer router1 = StubServer.start( "get_routing_table.script", 9001 );
+        StubServer router2 = StubServer.start( "acquire_endpoints.script", 9042 );
+        StubServer reader = StubServer.start( "read_server.script", 9005 );
+
+        AtomicBoolean resolverInvoked = new AtomicBoolean();
+        ServerAddressResolver resolver = address ->
+        {
+            if ( resolverInvoked.compareAndSet( false, true ) )
+            {
+                // return the address first time
+                return singleton( address );
+            }
+            if ( "127.0.0.1".equals( address.host() ) && address.port() == 9001 )
+            {
+                // return list of addresses where onl 9042 is functional
+                return new HashSet<>( asList(
+                        ServerAddress.of( "127.0.0.1", 9010 ),
+                        ServerAddress.of( "127.0.0.1", 9011 ),
+                        ServerAddress.of( "127.0.0.1", 9042 ) ) );
+            }
+            throw new AssertionError();
+        };
+
+        Config config = Config.build()
+                .withLogging( none() )
+                .withoutEncryption()
+                .withResolver( resolver )
+                .toConfig();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                // run first query against 9001, which should return result and exit
+                List<String> names1 = session.run( "MATCH (n) RETURN n.name AS name" )
+                        .list( record -> record.get( "name" ).asString() );
+                assertEquals( asList( "Alice", "Bob", "Eve" ), names1 );
+
+                // run second query with retries, it should rediscover using 9042 returned by the resolver and read from 9005
+                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) )
+                        .list( record -> record.get( 0 ).asString() );
+                assertEquals( asList( "Bob", "Alice", "Tina" ), names2 );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
         }
     }
 
