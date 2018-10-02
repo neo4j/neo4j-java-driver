@@ -18,26 +18,24 @@
  */
 package org.neo4j.driver.internal.util;
 
+import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DirectConnectionProvider;
-import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.SessionFactory;
-import org.neo4j.driver.internal.SessionFactoryImpl;
+import org.neo4j.driver.internal.*;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabaseDriverCreator;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals;
 import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
 
 public final class Matchers
@@ -160,6 +158,19 @@ public final class Matchers
             public void describeTo( Description description )
             {
                 description.appendText( "cluster 'bolt+routing://' driver " );
+            }
+        };
+    }
+
+    public static Matcher<GraphDatabaseDriverCreator> isEqualTo(GraphDatabaseDriverCreator expectedValue) {
+        return new BaseMatcher<GraphDatabaseDriverCreator>() {
+            @Override
+            public boolean matches(Object actualValue) {
+                return reflectionEquals(actualValue, expectedValue, false, null, true);
+            }
+
+            @Override
+            public void describeTo(Description description) {
             }
         };
     }

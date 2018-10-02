@@ -18,13 +18,16 @@
  */
 package org.neo4j.driver.v1;
 
-import java.net.URI;
-
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import java.net.URI;
+import java.util.List;
+
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 
 /**
@@ -167,6 +170,39 @@ public class GraphDatabase
         throw new ServiceUnavailableException( "Failed to discover an available server" );
     }
 
+    /**
+     * <p>Starts the creation of a driver connection based on the number of parameters provided</p>
+     *
+     * <p>If a protocol (e.g.: "bolt://" or "bolt+routing://") is provided in the URL, it will be used.</p>
+     * <p>If no protocol is provided, one will be prefixed. The prefixed protocol is "bolt://" when only a single URI is available. The prefixed protocol is "bolt+routing://" when multiple URIs are provided.</p>
+     *
+     * @see URI#create(String)
+     * @see GraphDatabaseDriverCreator
+     * @param routingUriStrings URI strings to be used to setup the connection
+     * @return an instance of {@link GraphDatabaseDriverCreator}
+     */
+    public static GraphDatabaseDriverCreator fromUri(String... routingUriStrings) {
+        final String protocol = createProtocolString(routingUriStrings);
+        final List<URI> uris = stream(routingUriStrings)
+                .map(s -> prefixProtocolIfRequired(protocol, s))
+                .map(URI::create)
+                .collect(toList());
+
+        return new GraphDatabaseDriverCreator(uris);
+    }
+
+
+    /**
+     * <p>Starts the creation of a driver connection based on the number of parameters provided</p>
+     *
+     * @see GraphDatabaseDriverCreator
+     * @param routingUris {@link URI URIs} to be used to setup the connection
+     * @return an instance of {@link GraphDatabaseDriverCreator}
+     */
+    public static GraphDatabaseDriverCreator fromUri(URI... routingUris) {
+        return new GraphDatabaseDriverCreator(stream(routingUris).collect(toList()));
+    }
+
     private static void assertRoutingUris( Iterable<URI> uris )
     {
         for ( URI uri : uris )
@@ -188,5 +224,17 @@ public class GraphDatabase
     private static Config getOrDefault( Config config )
     {
         return config != null ? config : Config.defaultConfig();
+    }
+
+    private static String prefixProtocolIfRequired(String protocolString, String partialUriString) {
+        if (partialUriString.contains("://")) return partialUriString;
+        return protocolString + partialUriString;
+    }
+
+    private static String createProtocolString(String[] routingUriStrings) {
+        if (routingUriStrings.length == 1) {
+            return "bolt://";
+        }
+        return "bolt+routing://";
     }
 }

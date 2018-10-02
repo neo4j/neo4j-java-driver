@@ -18,20 +18,22 @@
  */
 package org.neo4j.driver.v1;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
-
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.StubServer;
-import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -40,12 +42,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
-import static org.neo4j.driver.internal.util.Matchers.directDriver;
+import static org.neo4j.driver.internal.util.Matchers.*;
 import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
@@ -168,6 +167,125 @@ class GraphDatabaseTest
     void shouldFailToCreateEncryptedDriverWhenServerDoesNotRespond() throws IOException
     {
         testFailureWhenServerDoesNotRespond( true );
+    }
+
+    @Nested
+    class FromUriTests {
+
+        @Nested
+        class MultipleUris {
+
+            @Nested
+            class WithProtocol {
+
+                @Test
+                void shouldCreateADriverCreatorWithUris() {
+                    // Given
+                    final URI uri1 = URI.create("bolt+routing://127.0.0.1:9001");
+                    final URI uri2 = URI.create("bolt+routing://127.0.0.1:9002");
+                    final List<URI> expectedUris = Arrays.stream(new URI[]{uri1, uri2}).collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri1, uri2);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+
+                @Test
+                void shouldCreateADriverCreatorWithStrings() {
+                    // Given
+                    final String uri1 = "bolt+routing://127.0.0.1:9001";
+                    final String uri2 = "bolt+routing://127.0.0.1:9002";
+                    final List<URI> expectedUris = Arrays.stream(new String[]{uri1, uri2}).map(URI::create).collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri1, uri2);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+            }
+
+            @Nested
+            class WithoutProtocol {
+                @Test
+                void shouldCreateADriverCreatorWithStrings() {
+                    // Given
+                    final String uri1 = "127.0.0.1:9001";
+                    final String uri2 = "127.0.0.1:9002";
+                    final List<URI> expectedUris = Arrays.stream(new String[]{uri1, uri2})
+                            .map(s -> "bolt+routing://" + s)
+                            .map(URI::create)
+                            .collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri1, uri2);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+            }
+        }
+
+        @Nested
+        class SingleUri {
+            @Nested
+            class WithProtocol {
+                @Test
+                void shouldCreateADriverCreatorWithUri() {
+                    // Given
+                    final URI uri = URI.create("bolt+routing://127.0.0.1:9001");
+                    final List<URI> expectedUris = Arrays.stream(new URI[]{uri}).collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+
+                @Test
+                void shouldCreateADriverCreatorWithStrings() {
+                    // Given
+                    final String uri = "bolt+routing://127.0.0.1:9001";
+                    final List<URI> expectedUris = Arrays.stream(new String[]{uri}).map(URI::create).collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+            }
+
+            @Nested
+            class WithoutProtocol {
+                @Test
+                void shouldCreateADriverCreatorWithStrings() {
+                    // Given
+                    final String uri = "127.0.0.1:9001";
+                    final List<URI> expectedUris = Arrays.stream(new String[]{uri})
+                            .map(s -> "bolt://" + s)
+                            .map(URI::create)
+                            .collect(toList());
+
+                    // When
+                    final GraphDatabaseDriverCreator actualValue = GraphDatabase.fromUri(uri);
+
+                    // Then
+                    final GraphDatabaseDriverCreator expectedValue = new GraphDatabaseDriverCreator(expectedUris, AuthTokens.none(), Config.build().toConfig());
+                    assertThat(actualValue, isEqualTo(expectedValue));
+                }
+            }
+        }
+
+
     }
 
     private static void testFailureWhenServerDoesNotRespond( boolean encrypted ) throws IOException
