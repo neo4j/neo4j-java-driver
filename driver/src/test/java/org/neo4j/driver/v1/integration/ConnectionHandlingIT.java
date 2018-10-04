@@ -70,10 +70,10 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 class ConnectionHandlingIT
@@ -277,10 +277,9 @@ class ConnectionHandlingIT
         try
         {
             URI uri = URI.create( "bolt://localhost:9001" );
-            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
             ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
 
-            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, INSECURE_CONFIG ) )
             {
                 try ( Session session = driver.session() )
                 {

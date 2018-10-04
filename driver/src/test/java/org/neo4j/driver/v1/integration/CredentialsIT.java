@@ -21,8 +21,6 @@ package org.neo4j.driver.v1.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 
 import org.neo4j.driver.internal.security.InternalAuthToken;
@@ -36,7 +34,6 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.containsString;
@@ -59,34 +56,24 @@ class CredentialsIT
     void shouldBePossibleToChangePassword() throws Exception
     {
         String newPassword = "secret";
-        String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString().replace( "\\", "/" );
-
-        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
-                .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.DATA_DIR, tmpDataDir ) );
-
-        AuthToken authToken = new InternalAuthToken( parameters(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j",
-                "new_credentials", newPassword ).asMap( ofValue() ) );
-
         // change the password
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), authToken );
-              Session session = driver.session() )
+        changePassword( PASSWORD, newPassword );
+
+        try
         {
-            session.run( "RETURN 1" ).consume();
+            // verify old password does not work
+            assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", PASSWORD ) ) );
+
+            // verify new password works
+            try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) ); Session session = driver.session() )
+            {
+                session.run( "RETURN 2" ).consume();
+            }
         }
-
-        // verify old password does not work
-        assertThrows( AuthenticationException.class,
-                () -> GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", PASSWORD ) ) );
-
-        // verify new password works
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
-              Session session = driver.session() )
+        finally
         {
-            session.run( "RETURN 2" ).consume();
+            // change back the password
+            changePassword( newPassword, PASSWORD );
         }
     }
 
@@ -176,5 +163,21 @@ class CredentialsIT
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrongSecret" );
 
         assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( uri, authToken, config ) );
+    }
+
+    private static void changePassword( String oldSecret, String newSecret )
+    {
+        AuthToken authToken = new InternalAuthToken( parameters(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", oldSecret,
+                "new_credentials", newSecret ).asMap( ofValue() ) );
+
+        // change the password
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), authToken );
+                Session session = driver.session() )
+        {
+            session.run( "RETURN 1" ).consume();
+        }
     }
 }

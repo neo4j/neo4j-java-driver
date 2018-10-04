@@ -42,6 +42,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.driver.v1.tck.Environment.driver;
+import static org.neo4j.driver.v1.util.NetworkUtil.getFreePort;
 
 public class ErrorReportingSteps
 {
@@ -162,7 +163,7 @@ public class ErrorReportingSteps
     @When( "^I set up a driver to an incorrect port" )
     public void iSetUpADriverToAnIncorrectPort() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + getFreePort() );
               Session session = driver.session() )
         {
             session.run( "RETURN 1" );

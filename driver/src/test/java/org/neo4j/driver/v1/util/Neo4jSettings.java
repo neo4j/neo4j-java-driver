@@ -36,9 +36,11 @@ public class Neo4jSettings
     public static final String IPV6_ENABLED_ADDR = "::";
     public static final String PAGE_CACHE_SIZE = "dbms.memory.pagecache.size";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
+    public static final String BOOKMARK_TIMEOUT = "dbms.transaction.bookmark_ready_timeout";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
     private static final String DEFAULT_CERT_DIR = "certificates";
+    private static final String DEFAULT_BOOKMARK_TIMEOUT = "1s";
     public static final String DEFAULT_TLS_CERT_PATH = DEFAULT_CERT_DIR + "/neo4j.cert";
     public static final String DEFAULT_TLS_KEY_PATH = DEFAULT_CERT_DIR + "/neo4j.key";
     public static final String DEFAULT_PAGE_CACHE_SIZE = "512m";
@@ -57,6 +59,7 @@ public class Neo4jSettings
             AUTH_ENABLED, "true",
             PAGE_CACHE_SIZE, DEFAULT_PAGE_CACHE_SIZE,
             BOLT_TLS_LEVEL, DEFAULT_BOLT_TLS_LEVEL,
+            BOOKMARK_TIMEOUT, DEFAULT_BOOKMARK_TIMEOUT,
             LISTEN_ADDR, IPV6_ENABLED_ADDR ), Collections.<String>emptySet() );
 
     public enum BoltTlsLevel

@@ -23,9 +23,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URL;
+import java.nio.file.Files;
+import java.util.Arrays;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -40,6 +40,8 @@ import static org.neo4j.driver.v1.util.Neo4jRunner.debug;
 import static org.neo4j.driver.v1.util.Neo4jRunner.getOrCreateGlobalRunner;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 import static org.neo4j.driver.v1.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
+import static org.neo4j.driver.v1.util.Neo4jSettings.IMPORT_DIR;
+import static org.neo4j.driver.v1.util.Neo4jSettings.TEST_SETTINGS;
 
 public class DatabaseExtension implements BeforeEachCallback
 {
@@ -53,7 +55,7 @@ public class DatabaseExtension implements BeforeEachCallback
         this( Neo4jSettings.TEST_SETTINGS );
     }
 
-    public DatabaseExtension( Neo4jSettings settings )
+    private DatabaseExtension( Neo4jSettings settings )
     {
         this.settings = settings;
     }
@@ -71,30 +73,19 @@ public class DatabaseExtension implements BeforeEachCallback
         return runner.driver();
     }
 
-    public void restartDb()
-    {
-        runner.restartNeo4j();
-    }
-
     public void forceRestartDb()
     {
         runner.forceToRestart();
     }
 
-    public void restartDb( Neo4jSettings neo4jSettings )
+    public String createTmpCsvFile( String prefix, String suffix, String... contents ) throws IOException
     {
-        runner.restartNeo4j( neo4jSettings );
-    }
-
-    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
-    {
-        File tmpFile = File.createTempFile( prefix, suffix, null );
+        File importDir = new File( HOME_DIR, TEST_SETTINGS.propertiesMap().get( IMPORT_DIR ) );
+        File tmpFile = File.createTempFile( prefix, suffix, importDir );
         tmpFile.deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( tmpFile ) )
-        {
-            out.println( contents );
-        }
-        return tmpFile.toURI().toURL();
+
+        Files.write( tmpFile.toPath(), Arrays.asList( contents ) );
+        return "file:///" + tmpFile.getName();
     }
 
     public URI uri()
@@ -130,21 +121,6 @@ public class DatabaseExtension implements BeforeEachCallback
         return new File( HOME_DIR, DEFAULT_TLS_KEY_PATH );
     }
 
-    public void ensureProcedures( String jarName ) throws IOException
-    {
-        File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
-        if ( !procedureJar.exists() )
-        {
-            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
-            debug( "Added a new procedure `%s`", jarName );
-            runner.forceToRestart(); // needs to force to restart as no configuration changed
-        }
-    }
-
-    public void startDb()
-    {
-        runner.startNeo4j();
-    }
 
     public void stopDb()
     {

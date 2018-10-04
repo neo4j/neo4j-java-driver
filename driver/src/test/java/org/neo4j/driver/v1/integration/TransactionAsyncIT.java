@@ -567,18 +567,6 @@ class TransactionAsyncIT
     }
 
     @Test
-    void shouldFailToCommitWhenServerIsRestarted()
-    {
-        Transaction tx = await( session.beginTransactionAsync() );
-
-        await( tx.runAsync( "CREATE ()" ) );
-
-        neo4j.killDb();
-
-        assertThrows( ServiceUnavailableException.class, () -> await( tx.commitAsync() ) );
-    }
-
-    @Test
     void shouldFailSingleWithEmptyCursor()
     {
         Transaction tx = await( session.beginTransactionAsync() );

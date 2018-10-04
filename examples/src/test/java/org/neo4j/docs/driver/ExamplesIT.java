@@ -321,27 +321,6 @@ class ExamplesIT
     }
 
     @Test
-    void testShouldRunServiceUnavailableExample() throws Exception
-    {
-        // Given
-        try ( ServiceUnavailableExample example = new ServiceUnavailableExample( uri, USER, PASSWORD ) )
-        {
-            try
-            {
-                // When
-                neo4j.stopDb();
-
-                // Then
-                assertThat( example.addItem(), equalTo( false ) );
-            }
-            finally
-            {
-                neo4j.startDb();
-            }
-        }
-    }
-
-    @Test
     void testShouldRunSessionExample() throws Exception
     {
         // Given

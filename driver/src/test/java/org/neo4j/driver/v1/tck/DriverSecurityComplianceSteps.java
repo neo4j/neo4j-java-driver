@@ -302,7 +302,7 @@ public class DriverSecurityComplianceSteps
     @After( "@modifies_db_config" )
     public void resetDbWithDefaultSettings() throws Throwable
     {
-        neo4j.restartDb();
+        neo4j.forceRestartDb();
     }
 
     private void closeExistingDriver()

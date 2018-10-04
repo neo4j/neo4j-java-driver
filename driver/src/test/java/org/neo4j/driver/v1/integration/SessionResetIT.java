@@ -27,11 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.channels.ClosedChannelException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -80,9 +76,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Neo4jFeature.TRANSACTION_TERMINATION_AWARE_LOCKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.v1.util.Neo4jRunner.HOME_DIR;
-import static org.neo4j.driver.v1.util.Neo4jSettings.IMPORT_DIR;
-import static org.neo4j.driver.v1.util.Neo4jSettings.TEST_SETTINGS;
 import static org.neo4j.driver.v1.util.TestUtil.activeQueryCount;
 import static org.neo4j.driver.v1.util.TestUtil.activeQueryNames;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
@@ -171,8 +164,6 @@ class SessionResetIT
     @Test
     void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
     {
-        neo4j.ensureProcedures( "longRunningStatement.jar" );
-
         try ( Session session = neo4j.driver().session() )
         {
             Transaction tx1 = session.beginTransaction();
@@ -197,8 +188,6 @@ class SessionResetIT
     @Test
     void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
     {
-        neo4j.ensureProcedures( "longRunningStatement.jar" );
-
         Session session = neo4j.driver().session();
         session.run( "CALL test.driver.longRunningStatement({seconds})",
                 parameters( "seconds", 10 ) );
@@ -213,8 +202,6 @@ class SessionResetIT
     @Test
     void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
     {
-        neo4j.ensureProcedures( "longRunningStatement.jar" );
-
         try ( Session session = neo4j.driver().session() )
         {
             Transaction tx1 = session.beginTransaction();
@@ -244,8 +231,6 @@ class SessionResetIT
     @Test
     void shouldKillLongRunningStatement() throws Throwable
     {
-        neo4j.ensureProcedures( "longRunningStatement.jar" );
-
         final int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
         final AtomicLong startTime = new AtomicLong( -1 );
@@ -275,7 +260,6 @@ class SessionResetIT
     @Test
     void shouldKillLongStreamingResult() throws Throwable
     {
-        neo4j.ensureProcedures( "longRunningStatement.jar" );
         // Given
         final int executionTimeout = 10; // 10s
         final int killTimeout = 1; // 1s
@@ -811,18 +795,17 @@ class SessionResetIT
 
     private static String longPeriodicCommitQuery()
     {
-        URI fileUri = createTmpCsvFile();
-        return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri );
+        String filePath = createTmpCsvFile();
+        return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, filePath );
     }
 
-    private static URI createTmpCsvFile()
+    private static String createTmpCsvFile()
     {
+        String[] lines = range( 0, CSV_FILE_SIZE ).mapToObj( i -> "Foo-" + i + ", Bar-" + i ).toArray( String[]::new );
+
         try
         {
-            Path importDir = Paths.get( HOME_DIR, TEST_SETTINGS.propertiesMap().get( IMPORT_DIR ) );
-            Path csvFile = Files.createTempFile( importDir, "test", ".csv" );
-            Iterable<String> lines = range( 0, CSV_FILE_SIZE ).mapToObj( i -> "Foo-" + i + ", Bar-" + i )::iterator;
-            return URI.create( "file:///" + Files.write( csvFile, lines ).getFileName() );
+            return neo4j.createTmpCsvFile( "test", ".csv", lines );
         }
         catch ( IOException e )
         {

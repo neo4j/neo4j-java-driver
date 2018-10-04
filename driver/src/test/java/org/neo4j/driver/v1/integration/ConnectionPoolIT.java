@@ -34,13 +34,13 @@ import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -72,23 +72,6 @@ class ConnectionPoolIT
         {
             sessionGrabber.stop();
         }
-    }
-
-    @Test
-    void shouldRecoverFromDownedServer() throws Throwable
-    {
-        // Given a driver
-        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
-
-        // and given I'm heavily using it to acquire and release sessions
-        sessionGrabber = new SessionGrabber( driver );
-        sessionGrabber.start();
-
-        // When
-        neo4j.restartDb();
-
-        // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin( 60 );
     }
 
     @Test
@@ -255,25 +238,6 @@ class ConnectionPoolIT
             {
                 stopped.countDown();
             }
-        }
-
-        void assertSessionsAvailableWithin( int timeoutSeconds ) throws InterruptedException
-        {
-            long deadline = System.currentTimeMillis() + 1000 * timeoutSeconds;
-            while( System.currentTimeMillis() < deadline )
-            {
-                if( sessionsAreAvailable )
-                {
-                    // Success!
-                    return;
-                }
-                Thread.sleep( 100 );
-            }
-
-            // Failure - timeout :(
-            lastExceptionFromDriver.printStackTrace();
-            fail( "sessions did not become available from the driver after the db restart within the specified " +
-                  "timeout. Last failure was: " + lastExceptionFromDriver.getMessage() );
         }
 
         public void stop() throws InterruptedException

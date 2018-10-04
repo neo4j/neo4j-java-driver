@@ -39,6 +39,7 @@ import static java.util.logging.Level.INFO;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Logging.console;
+import static org.neo4j.driver.v1.util.DatabaseExtension.TEST_RESOURCE_FOLDER_PATH;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
@@ -89,20 +90,6 @@ public class Neo4jRunner
         return globalInstance != null;
     }
 
-    private Neo4jRunner() throws IOException
-    {
-        try
-        {
-            installNeo4j();
-            startNeo4j();
-        }
-        finally
-        {
-            // Make sure we stop on JVM exit even if start failed
-            installShutdownHook();
-        }
-    }
-
     public void ensureRunning( Neo4jSettings neo4jSettings )
     {
         ServerStatus status = serverStatus();
@@ -135,34 +122,6 @@ public class Neo4jRunner
             driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN, DEFAULT_CONFIG );
         }
         return driver;
-    }
-
-    private void installNeo4j() throws IOException
-    {
-        // this is required for windows as python scripts cannot delete the file when it is used by driver tests
-        deleteDefaultKnownCertFileIfExists(); // Remove this once TrustOnFirstUse is removed.
-
-        File targetHomeFile = new File( HOME_DIR );
-        if( targetHomeFile.exists() )
-        {
-            debug( "Found and using server installed at `%s`. ", HOME_DIR );
-        }
-        else
-        {
-            List<String> commands = new ArrayList<>();
-            commands.add( "neoctrl-install" );
-            String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
-            commands.addAll( asList( split ) );
-            commands.add( NEO4J_DIR );
-
-            String tempHomeDir = executeCommand( commands ).trim();
-            debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
-
-            moveFile( new File( tempHomeDir ), targetHomeFile );
-            debug( "Installed server at `%s`.", HOME_DIR );
-        }
-
-        updateServerSettingsFile();
     }
 
     public void startNeo4j()
@@ -246,19 +205,74 @@ public class Neo4jRunner
         }
     }
 
-    private boolean updateServerSettings( Neo4jSettings settingsUpdate )
+    public static void debug( String text, Object... args )
     {
-        Neo4jSettings updatedSettings = currentSettings.updateWith( settingsUpdate );
-        if ( currentSettings.equals( updatedSettings ) )
+        System.out.println( String.format( text, args ) );
+    }
+
+    private Neo4jRunner() throws IOException
+    {
+        try
         {
-            return false;
+            installNeo4j();
+            startNeo4j();
+        }
+        finally
+        {
+            // Make sure we stop on JVM exit even if start failed
+            installShutdownHook();
+        }
+    }
+    private void installNeo4j() throws IOException
+    {
+        // this is required for windows as python scripts cannot delete the file when it is used by driver tests
+        deleteDefaultKnownCertFileIfExists(); // Remove this once TrustOnFirstUse is removed.
+
+        File targetHomeFile = new File( HOME_DIR );
+        if( targetHomeFile.exists() )
+        {
+            debug( "Found and using server installed at `%s`. ", HOME_DIR );
         }
         else
         {
-            currentSettings = updatedSettings;
+            List<String> commands = new ArrayList<>();
+            commands.add( "neoctrl-install" );
+            String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
+            commands.addAll( asList( split ) );
+            commands.add( NEO4J_DIR );
+
+            String tempHomeDir = executeCommand( commands ).trim();
+            debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
+
+            moveFile( new File( tempHomeDir ), targetHomeFile );
+            debug( "Installed server at `%s`.", HOME_DIR );
         }
+
+        configNeo4jOnInstallation();
+    }
+
+    private static void deleteDefaultKnownCertFileIfExists()
+    {
+        if ( DEFAULT_KNOWN_HOSTS.exists() )
+        {
+            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
+        }
+    }
+
+    private void configNeo4jOnInstallation() throws IOException
+    {
         updateServerSettingsFile();
-        return true;
+        installProcedures( "longRunningStatement.jar" );
+    }
+
+    private static void installProcedures( String jarName ) throws IOException
+    {
+        File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
+        if ( !procedureJar.exists() )
+        {
+            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
+            debug( "Added a new procedure `%s`", jarName );
+        }
     }
 
     /**
@@ -292,6 +306,21 @@ public class Neo4jRunner
         }
     }
 
+    private boolean updateServerSettings( Neo4jSettings settingsUpdate )
+    {
+        Neo4jSettings updatedSettings = currentSettings.updateWith( settingsUpdate );
+        if ( currentSettings.equals( updatedSettings ) )
+        {
+            return false;
+        }
+        else
+        {
+            currentSettings = updatedSettings;
+        }
+        updateServerSettingsFile();
+        return true;
+    }
+
     private void installShutdownHook()
     {
         Runtime.getRuntime().addShutdownHook( new Thread( () ->
@@ -311,19 +340,6 @@ public class Neo4jRunner
                 e.printStackTrace();
             }
         } ) );
-    }
-
-    public static void debug( String text, Object... args )
-    {
-        System.out.println( String.format( text, args ) );
-    }
-
-    private static void deleteDefaultKnownCertFileIfExists()
-    {
-        if ( DEFAULT_KNOWN_HOSTS.exists() )
-        {
-            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
-        }
     }
 }
 

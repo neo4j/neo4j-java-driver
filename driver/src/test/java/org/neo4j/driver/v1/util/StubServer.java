@@ -37,6 +37,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
 public class StubServer
@@ -44,6 +45,7 @@ public class StubServer
     private static final int SOCKET_CONNECT_ATTEMPTS = 20;
 
     public static final Config INSECURE_CONFIG = Config.build()
+            .withLogging( DEV_NULL_LOGGING )
             .withoutEncryption().toConfig();
 
     private static final ExecutorService executor = newCachedThreadPool( daemon( "stub-server-output-reader-" ) );
@@ -87,7 +89,7 @@ public class StubServer
         }
     }
 
-    private void exit() throws InterruptedException
+    public void exit() throws InterruptedException
     {
         process.destroy();
         process.waitFor();
@@ -98,7 +100,7 @@ public class StubServer
         File resource = new File( DatabaseExtension.TEST_RESOURCE_FOLDER_PATH, fileName );
         if ( !resource.exists() )
         {
-            fail( fileName + " does not exists" );
+            fail( fileName + " does not exists at path: " + resource.getAbsolutePath() );
         }
         return resource.getAbsolutePath();
     }

@@ -1174,18 +1174,6 @@ class SessionIT
     }
 
     @Test
-    void shouldPropagateTransactionCommitErrorWhenClosed() throws Exception
-    {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "commit_error.script", true, "Unable to commit" );
-    }
-
-    @Test
-    void shouldPropagateTransactionRollbackErrorWhenClosed() throws Exception
-    {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
-    }
-
-    @Test
     void shouldSupportNestedQueries()
     {
         try ( Session session = neo4j.driver().session() )
@@ -1405,45 +1393,6 @@ class SessionIT
         {
             Thread.currentThread().interrupt();
             throw new RuntimeException( e );
-        }
-    }
-
-    private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,
-            String expectedErrorMessage ) throws Exception
-    {
-        StubServer server = StubServer.start( script, 9001 );
-        try
-        {
-            Config config = Config.build()
-                    .withLogging( DEV_NULL_LOGGING )
-                    .withLogging( console( INFO ) )
-                    .withoutEncryption()
-                    .toConfig();
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ) )
-            {
-                Session session = driver.session();
-
-                Transaction tx = session.beginTransaction();
-                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
-                assertEquals( "Alice", result.single().get( "name" ).asString() );
-
-                if ( commit )
-                {
-                    tx.success();
-                }
-                else
-                {
-                    tx.failure();
-                }
-
-                TransientException e = assertThrows( TransientException.class, session::close );
-                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                assertEquals( expectedErrorMessage, e.getMessage() );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
         }
     }
 

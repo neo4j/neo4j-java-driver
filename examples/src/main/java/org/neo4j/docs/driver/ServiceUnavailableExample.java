@@ -20,7 +20,6 @@ package org.neo4j.docs.driver;
 
 // tag::service-unavailable-import[]
 
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -37,9 +36,9 @@ public class ServiceUnavailableExample implements AutoCloseable
 {
     protected final Driver driver;
 
-    public ServiceUnavailableExample( String uri, String user, String password )
+    public ServiceUnavailableExample( String uri )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build()
+        driver = GraphDatabase.driver( uri, Config.build().withoutEncryption()
                 .withMaxTransactionRetryTime( 3, SECONDS ).withLogging( DEV_NULL_LOGGING ).toConfig() );
     }
 

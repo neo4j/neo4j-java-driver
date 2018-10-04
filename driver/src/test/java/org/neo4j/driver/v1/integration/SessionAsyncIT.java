@@ -173,33 +173,6 @@ class SessionAsyncIT
     }
 
     @Test
-    void shouldFailWhenServerIsRestarted()
-    {
-        int queryCount = 10_000;
-
-        String query = "UNWIND range(1, 100) AS x " +
-                       "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
-                       "DETACH DELETE n1, n2 " +
-                       "RETURN x";
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            for ( int i = 0; i < queryCount; i++ )
-            {
-                StatementResultCursor cursor = await( session.runAsync( query ) );
-
-                if ( i == 0 )
-                {
-                    neo4j.killDb();
-                }
-
-                List<Record> records = await( cursor.listAsync() );
-                assertEquals( 100, records.size() );
-            }
-        } );
-    }
-
-    @Test
     void shouldAllowNestedQueries()
     {
         StatementResultCursor cursor =
@@ -578,23 +551,6 @@ class SessionAsyncIT
         testConsume( "UNWIND [42, 42] AS x RETURN x" );
     }
 
-    @Test
-    void shouldRunAfterRunFailureToAcquireConnection()
-    {
-        neo4j.killDb();
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.nextAsync() );
-        } );
-
-        neo4j.startDb();
-
-        StatementResultCursor cursor2 = await( session.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
-    }
 
     @Test
     @DisabledOnNeo4jWith( BOLT_V3 )
@@ -626,27 +582,6 @@ class SessionAsyncIT
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
-    }
-
-
-    @Test
-    void shouldBeginTxAfterRunFailureToAcquireConnection()
-    {
-        neo4j.killDb();
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.consumeAsync() );
-        } );
-
-        neo4j.startDb();
-
-        Transaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
-        assertNull( await( tx.rollbackAsync() ) );
     }
 
     @Test

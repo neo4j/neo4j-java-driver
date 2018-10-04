@@ -28,7 +28,6 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.Neo4jSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +37,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 class LoadCSVIT
 {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new DatabaseExtension( Neo4jSettings.TEST_SETTINGS.without( Neo4jSettings.IMPORT_DIR ) );
+    static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
     void shouldLoadCSV() throws Throwable
@@ -73,7 +72,7 @@ class LoadCSVIT
             session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) );
         }
 
-        return neo4j.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
+        return neo4j.createTmpCsvFile( "iris", ".csv", IRIS_DATA );
     }
 
     private static String[] IRIS_CLASS_NAMES =

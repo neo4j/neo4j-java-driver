@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
+import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 class TransactionIT
 {
@@ -462,8 +463,7 @@ class TransactionIT
         StubServer server = StubServer.start( script, 9001 );
         try
         {
-            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config );
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), INSECURE_CONFIG );
                   Session session = driver.session() )
             {
                 Transaction tx = session.beginTransaction();
