@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import io.netty.util.internal.PlatformDependent;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -121,7 +119,7 @@ public final class Futures
                 }
                 catch ( ExecutionException e )
                 {
-                    PlatformDependent.throwException( e.getCause() );
+                    ErrorUtil.rethrowAsyncException( e );
                 }
             }
         }

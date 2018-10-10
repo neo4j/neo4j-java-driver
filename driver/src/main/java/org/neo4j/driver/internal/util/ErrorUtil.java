@@ -18,6 +18,11 @@
  */
 package org.neo4j.driver.internal.util;
 
+import io.netty.util.internal.PlatformDependent;
+
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
+
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.DatabaseException;
@@ -85,6 +90,21 @@ public final class ErrorUtil
         return true;
     }
 
+    public static void rethrowAsyncException( ExecutionException e )
+    {
+        Throwable error = e.getCause();
+
+        InternalExceptionCause internalCause = new InternalExceptionCause( error.getStackTrace() );
+        error.addSuppressed( internalCause );
+
+        StackTraceElement[] currentStackTrace = Stream.of( Thread.currentThread().getStackTrace() )
+                .skip( 2 ) // do not include Thread.currentThread() and this method in the stacktrace
+                .toArray( StackTraceElement[]::new );
+        error.setStackTrace( currentStackTrace );
+
+        PlatformDependent.throwException( error );
+    }
+
     private static boolean isProtocolViolationError( Neo4jException error )
     {
         String errorCode = error.code();
@@ -105,5 +125,25 @@ public final class ErrorUtil
             return "";
         }
         return parts[1];
+    }
+
+    /**
+     * Exception which is merely a holder of an async stacktrace, which is not the primary stacktrace users are interested in.
+     * Used for blocking API calls that block on async API calls.
+     */
+    private static class InternalExceptionCause extends RuntimeException
+    {
+        InternalExceptionCause( StackTraceElement[] stackTrace )
+        {
+            setStackTrace( stackTrace );
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace()
+        {
+            // no need to fill in the stack trace
+            // this exception just uses the given stack trace
+            return this;
+        }
     }
 }

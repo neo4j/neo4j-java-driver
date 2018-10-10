@@ -20,13 +20,18 @@ package org.neo4j.driver.v1.integration;
 
 import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
@@ -46,10 +51,13 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.SessionExtension;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -228,6 +236,20 @@ class ErrorIT
         assertEquals( queryError.getMessage(), errorMessage );
     }
 
+    @Test
+    void shouldThrowErrorWithNiceStackTrace( TestInfo testInfo )
+    {
+        ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).consume() );
+
+        // thrown error should have this class & method in the stacktrace
+        StackTraceElement[] stackTrace = error.getStackTrace();
+        assertTrue( Stream.of( stackTrace ).anyMatch( element -> testClassAndMethodMatch( testInfo, element ) ),
+                () -> "Expected stacktrace element is absent:\n" + Arrays.toString( stackTrace ) );
+
+        // thrown error should have a suppressed error with an async stacktrace
+        assertThat( asList( error.getSuppressed() ), hasSize( greaterThanOrEqualTo( 1 ) ) );
+    }
+
     private Throwable testChannelErrorHandling( Consumer<FailingMessageFormat> messageFormatSetup )
             throws InterruptedException
     {
@@ -275,5 +297,24 @@ class ErrorIT
         List<Channel> channels = driverFactory.channels();
         Channel lastChannel = channels.get( channels.size() - 1 );
         assertTrue( lastChannel.isActive() );
+    }
+
+    private static boolean testClassAndMethodMatch( TestInfo testInfo, StackTraceElement element )
+    {
+        return testClassMatches( testInfo, element ) && testMethodMatches( testInfo, element );
+    }
+
+    private static boolean testClassMatches( TestInfo testInfo, StackTraceElement element )
+    {
+        String expectedName = testInfo.getTestClass().map( Class::getName ).orElse( "" );
+        String actualName = element.getClassName();
+        return Objects.equals( expectedName, actualName );
+    }
+
+    private static boolean testMethodMatches( TestInfo testInfo, StackTraceElement element )
+    {
+        String expectedName = testInfo.getTestMethod().map( Method::getName ).orElse( "" );
+        String actualName = element.getMethodName();
+        return Objects.equals( expectedName, actualName );
     }
 }
