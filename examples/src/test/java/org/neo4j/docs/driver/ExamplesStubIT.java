@@ -19,32 +19,31 @@
 package org.neo4j.docs.driver;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.driver.v1.net.ServerAddress;
-import org.neo4j.driver.v1.util.cc.Cluster;
-import org.neo4j.driver.v1.util.cc.ClusterExtension;
+import org.neo4j.driver.v1.util.StubServer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
-import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 
-class ExamplesClusterIT
+public class ExamplesStubIT
 {
-    @RegisterExtension
-    static final ClusterExtension neo4j = new ClusterExtension();
-
     @Test
     void testShouldRunConfigCustomResolverExample() throws Exception
     {
-        Cluster cluster = neo4j.getCluster();
+        StubServer server1 = StubServer.start( "get_routing_table_only.script", 9001 );
+        StubServer server2 = StubServer.start( "return_1.script", 9002 );
 
         // Given
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "bolt+routing://x.acme.com", USER, PASSWORD,
-                cluster.cores().stream().map( c -> c.getBoltAddress() ).toArray( i -> new ServerAddress[i] ) ) )
+        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "bolt+routing://x.acme.com", ServerAddress.of( "localhost", 9001 ) ) )
         {
             // Then
             assertTrue( example.canConnect() );
+        }
+        finally
+        {
+            assertEquals( 0, server1.exitStatus() );
+            assertEquals( 0, server2.exitStatus() );
         }
     }
 }

@@ -36,9 +36,11 @@ public class ConfigCustomResolverExample implements AutoCloseable
 {
     private final Driver driver;
 
-    public ConfigCustomResolverExample( String virtualUri, String user, String password, ServerAddress[] addresses )
+    public ConfigCustomResolverExample( String virtualUri, ServerAddress... addresses )
     {
-        driver = createDriver( virtualUri, user, password, addresses );
+        driver = GraphDatabase.driver( virtualUri, AuthTokens.none(),
+                Config.build().withoutEncryption().withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) ).toConfig() );
+
     }
 
     // tag::config-custom-resolver[]
@@ -72,7 +74,7 @@ public class ConfigCustomResolverExample implements AutoCloseable
 
     public boolean canConnect()
     {
-        StatementResult result = driver.session().run( "RETURN 1" );
+        StatementResult result = driver.session( AccessMode.READ ).run( "RETURN 1" );
         return result.single().get( 0 ).asInt() == 1;
     }
 }
