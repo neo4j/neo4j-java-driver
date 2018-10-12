@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
@@ -98,18 +97,16 @@ class EncryptionTest
 
     public final class DummyNettyServer
     {
-        private EventLoopGroup bossGroup;
         private EventLoopGroup workerGroup;
         private Channel serverChannel;
-        private final AtomicReference<ClientSocketStatus> clientStatus = new AtomicReference<>( ClientSocketStatus.Unknown );
+        private volatile ClientSocketStatus clientStatus = ClientSocketStatus.Unknown;
 
         public int start() throws Throwable
         {
-            bossGroup = new NioEventLoopGroup( 1 );
             workerGroup = new NioEventLoopGroup();
 
             ServerBootstrap server = new ServerBootstrap();
-            server.group( bossGroup, workerGroup ).channel( NioServerSocketChannel.class )
+            server.group( workerGroup ).channel( NioServerSocketChannel.class )
                     .childHandler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
@@ -128,6 +125,7 @@ class EncryptionTest
                             }
 
                             checkClientSocketStatus( in );
+                            ctx.pipeline().remove( this );
                             ctx.close();
                         }
 
@@ -148,44 +146,35 @@ class EncryptionTest
 
         public void stop() throws Throwable
         {
-            try
-            {
-                // Now shutting down
-                serverChannel.close().sync();
-            }
-            finally
-            {
-                // Shut down all event loops to terminate all threads.
-                bossGroup.shutdownGracefully();
-                workerGroup.shutdownGracefully();
-            }
+            // Shut down all event loops to terminate all threads.
+            workerGroup.shutdownGracefully().sync();
         }
 
         private void checkClientSocketStatus( ByteBuf buffer )
         {
             if ( SslHandler.isEncrypted( buffer ) )
             {
-                clientStatus.compareAndSet( ClientSocketStatus.Unknown, ClientSocketStatus.Encrypted );
+                clientStatus = ClientSocketStatus.Encrypted;
             }
             else if ( buffer.readInt() == BOLT_MAGIC_PREAMBLE )
             {
-                clientStatus.compareAndSet( ClientSocketStatus.Unknown, ClientSocketStatus.Unencrypted );
+                clientStatus = ClientSocketStatus.Unencrypted;
             }
             else
             {
-                clientStatus.compareAndSet( ClientSocketStatus.Unknown, ClientSocketStatus.FailedToRecognize );
+                clientStatus = ClientSocketStatus.FailedToRecognize;
             }
         }
 
-        public void assertClientEncryption( boolean isEncrypted )
+        private void assertClientEncryption( boolean isEncrypted )
         {
             if ( isEncrypted )
             {
-                assertThat( clientStatus.get(), equalTo( ClientSocketStatus.Encrypted ) );
+                assertThat( clientStatus, equalTo( ClientSocketStatus.Encrypted ) );
             }
             else
             {
-                assertThat( clientStatus.get(), equalTo( ClientSocketStatus.Unencrypted ) );
+                assertThat( clientStatus, equalTo( ClientSocketStatus.Unencrypted ) );
             }
         }
     }
