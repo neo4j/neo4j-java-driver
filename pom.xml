@@ -55,11 +55,21 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>1.0.2</version>
+      </dependency>
       <!-- Compile dependencies -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
         <version>4.1.22.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>3.2.1.RELEASE</version>
       </dependency>
       <!-- Optional dependencies -->
       <dependency>

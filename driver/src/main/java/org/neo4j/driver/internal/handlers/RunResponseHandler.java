@@ -32,6 +32,7 @@ public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Void> runCompletedFuture;
     private final MetadataExtractor metadataExtractor;
+    private long statementId = MetadataExtractor.ABSENT_STATEMENT_ID;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
@@ -47,6 +48,7 @@ public class RunResponseHandler implements ResponseHandler
     {
         statementKeys = metadataExtractor.extractStatementKeys( metadata );
         resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
+        statementId = metadataExtractor.extractStatementId( metadata );
 
         completeRunFuture();
     }
@@ -71,6 +73,11 @@ public class RunResponseHandler implements ResponseHandler
     public long resultAvailableAfter()
     {
         return resultAvailableAfter;
+    }
+
+    public long statementId()
+    {
+        return statementId;
     }
 
     /**

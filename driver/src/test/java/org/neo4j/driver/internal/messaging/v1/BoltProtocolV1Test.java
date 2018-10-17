@@ -34,7 +34,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.InternalStatementResultCursor;
+import org.neo4j.driver.internal.LegacyInternalStatementResultCursor;
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -270,8 +270,8 @@ public class BoltProtocolV1Test
                 .withMetadata( singletonMap( "hello", "world" ) )
                 .build();
 
-        CompletionStage<InternalStatementResultCursor> cursorFuture = protocol.runInAutoCommitTransaction( connectionMock(), new Statement( "RETURN 1" ),
-                BookmarksHolder.NO_OP, config, true );
+        CompletionStage<LegacyInternalStatementResultCursor> cursorFuture = protocol.runInAutoCommitTransaction( connectionMock(), new Statement( "RETURN 1" ),
+                BookmarksHolder.NO_OP, config, true ).thenApply( cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );;
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursorFuture ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
@@ -291,17 +291,19 @@ public class BoltProtocolV1Test
     {
         Connection connection = mock( Connection.class );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<LegacyInternalStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
 
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), false );
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), false )
+                    .thenApply( cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false );
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false )
+                    .thenApply( cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );;
         }
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<LegacyInternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
@@ -312,16 +314,18 @@ public class BoltProtocolV1Test
     {
         Connection connection = mock( Connection.class );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<LegacyInternalStatementResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), true );
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
+                    .thenApply( cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );;
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true );
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true )
+                    .thenApply( cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );;
         }
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<LegacyInternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertFalse( cursorFuture.isDone() );
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, session );

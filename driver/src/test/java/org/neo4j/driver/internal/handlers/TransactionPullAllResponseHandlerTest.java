@@ -63,7 +63,7 @@ class TransactionPullAllResponseHandlerTest
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        PullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler,
+        AbstractPullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler,
                 connection, tx, METADATA_EXTRACTOR );
 
         handler.onFailure( error );

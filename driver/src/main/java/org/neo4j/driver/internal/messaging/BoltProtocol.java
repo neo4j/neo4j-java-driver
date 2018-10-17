@@ -27,11 +27,12 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.react.result.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
@@ -103,7 +104,7 @@ public interface BoltProtocol
      * keys populated.
      * @return stage with cursor.
      */
-    CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
+    CompletionStage<StatementResultCursorFactory> runInAutoCommitTransaction( Connection connection, Statement statement,
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse );
 
     /**
@@ -117,7 +118,7 @@ public interface BoltProtocol
      * keys populated.
      * @return stage with cursor.
      */
-    CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
+    CompletionStage<StatementResultCursorFactory> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse );
 
     /**
@@ -149,6 +150,8 @@ public interface BoltProtocol
             return BoltProtocolV2.INSTANCE;
         case BoltProtocolV3.VERSION:
             return BoltProtocolV3.INSTANCE;
+        case BoltProtocolV4.VERSION:
+            return BoltProtocolV4.INSTANCE;
         default:
             throw new ClientException( "Unknown protocol version: " + version );
         }

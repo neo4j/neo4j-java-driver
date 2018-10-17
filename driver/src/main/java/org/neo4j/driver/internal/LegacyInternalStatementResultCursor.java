@@ -22,23 +22,23 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.react.result.InternalStatementResultCursor;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
-public class InternalStatementResultCursor implements StatementResultCursor
+public class LegacyInternalStatementResultCursor implements InternalStatementResultCursor
 {
     private final RunResponseHandler runResponseHandler;
-    private final PullAllResponseHandler pullAllHandler;
+    private final AbstractPullAllResponseHandler pullAllHandler;
 
-    public InternalStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
+    public LegacyInternalStatementResultCursor( RunResponseHandler runResponseHandler, AbstractPullAllResponseHandler pullAllHandler )
     {
         this.runResponseHandler = runResponseHandler;
         this.pullAllHandler = pullAllHandler;
@@ -84,8 +84,8 @@ public class InternalStatementResultCursor implements StatementResultCursor
                 {
                     throw new NoSuchRecordException(
                             "Expected a result with a single record, but this result " +
-                            "contains at least one more. Ensure your query returns only " +
-                            "one record." );
+                                    "contains at least one more. Ensure your query returns only " +
+                                    "one record." );
                 }
                 return firstRecord;
             } );
@@ -118,6 +118,7 @@ public class InternalStatementResultCursor implements StatementResultCursor
         return pullAllHandler.listAsync( mapFunction );
     }
 
+    @Override
     public CompletionStage<Throwable> failureAsync()
     {
         return pullAllHandler.failureAsync();

@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.PullNMessage;
 
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
@@ -34,5 +35,9 @@ public class PullAllMessageEncoder implements MessageEncoder
     {
         checkArgument( message, PullAllMessage.class );
         packer.packStructHeader( 0, PullAllMessage.SIGNATURE );
+        if ( message instanceof PullNMessage )
+        {
+            packer.pack( ((PullNMessage) message).metadata() );
+        }
     }
 }

@@ -29,6 +29,9 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.react.result.InternalStatementResultCursor;
+import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.react.result.StatementResultCursorFactory;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -58,7 +61,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
     private volatile Bookmarks bookmarks = Bookmarks.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
-    private volatile CompletionStage<InternalStatementResultCursor> resultCursorStage = completedWithNull();
+    private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -439,19 +442,57 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
         }
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
+    public CompletionStage<RxStatementResultCursor> runRx( Statement statement, TransactionConfig config )
     {
-        ensureSessionIsOpen();
-
-        CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection ->
-                        connection.protocol().runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse ) );
-
-        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
+        CompletableFuture<RxStatementResultCursor> newResultCursorStage = new CompletableFuture<>();
+        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, false, newResultCursorStage );
+        factoryFuture.whenComplete( ( factory, error ) -> {
+            if ( factory != null )
+            {
+                newResultCursorStage.complete( factory.rxResult() );
+            }
+            else
+            {
+                newResultCursorStage.completeExceptionally( error );
+            }
+        } );
 
         return newResultCursorStage;
     }
+
+    private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
+    {
+        CompletableFuture<InternalStatementResultCursor> newResultCursorStage = new CompletableFuture<>();
+        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, waitForRunResponse, newResultCursorStage );
+
+        factoryFuture.whenComplete( ( factory, error ) -> {
+            if ( factory != null )
+            {
+                newResultCursorStage.complete( factory.asyncResult() );
+            }
+            else
+            {
+                newResultCursorStage.completeExceptionally( error );
+            }
+        } );
+
+        return newResultCursorStage;
+    }
+
+    private CompletionStage<StatementResultCursorFactory> run( Statement statement, TransactionConfig config, boolean waitForRunResponse,
+            CompletionStage<? extends FailableCursor> newResultCursorStage )
+    {
+        ensureSessionIsOpen();
+
+        CompletionStage<StatementResultCursorFactory> factoryFuture =
+                ensureNoOpenTxBeforeRunningQuery().thenCompose( ignore -> acquireConnection( mode ) ).thenCompose(
+                        connection -> connection.protocol().runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse ) );
+
+
+        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
+        return factoryFuture;
+    }
+
 
     private Transaction beginTransaction( AccessMode mode, TransactionConfig config )
     {

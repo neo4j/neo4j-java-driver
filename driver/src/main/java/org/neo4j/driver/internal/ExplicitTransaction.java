@@ -187,10 +187,12 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         return (CompletionStage) run( statement, true );
     }
 
-    private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
+    private CompletionStage<LegacyInternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage = protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse );
+        CompletionStage<LegacyInternalStatementResultCursor> cursorStage =
+                protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse ).thenApply(
+                        cursorFactory -> (LegacyInternalStatementResultCursor) cursorFactory.asyncResult() );
         resultCursors.add( cursorStage );
         return cursorStage;
     }

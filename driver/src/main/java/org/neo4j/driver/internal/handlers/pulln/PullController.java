@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2009 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -16,34 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.request;
+package org.neo4j.driver.internal.handlers.pulln;
 
-import org.neo4j.driver.internal.messaging.Message;
-
-/**
- * PULL_ALL request message
- * <p>
- * Sent by clients to pull the entirety of the remaining stream down.
- */
-public class PullAllMessage implements Message
+public interface PullController
 {
-    public static final byte SIGNATURE = 0x3F;
+    void handleSuccessWithHasMore();
 
-    public static final PullAllMessage PULL_ALL = new PullAllMessage();
+    void afterEnqueueRecord( int queueSize );
 
-    protected PullAllMessage()
-    {
-    }
-
-    @Override
-    public byte signature()
-    {
-        return SIGNATURE;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PULL_ALL";
-    }
+    void afterDequeueRecord( int queueSize, boolean streamingPaused );
 }
+
+

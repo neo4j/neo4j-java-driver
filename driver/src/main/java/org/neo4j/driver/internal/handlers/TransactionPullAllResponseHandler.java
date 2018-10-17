@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionPullAllResponseHandler extends PullAllResponseHandler
+public class TransactionPullAllResponseHandler extends AbstractPullAllResponseHandler
 {
     private final ExplicitTransaction tx;
 

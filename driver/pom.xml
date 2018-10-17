@@ -24,10 +24,18 @@
   <description>Access to the Neo4j graph database through Java</description>
 
   <dependencies>
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams</artifactId>
+    </dependency>
     <!-- Compile dependencies -->
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
     </dependency>
 
     <!-- Optional dependencies -->
@@ -203,12 +211,17 @@
               <artifactSet>
                 <includes>
                   <include>io.netty:*</include>
+                  <include>io.projectreactor:*</include>
                 </includes>
               </artifactSet>
               <relocations>
                 <relocation>
                   <pattern>io.netty</pattern>
                   <shadedPattern>org.neo4j.driver.internal.shaded.io.netty</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>io.projectreactor</pattern>
+                  <shadedPattern>org.neo4j.driver.internal.shaded.io.projectreactor</shadedPattern>
                 </relocation>
               </relocations>
               <shadeTestJar>true</shadeTestJar>

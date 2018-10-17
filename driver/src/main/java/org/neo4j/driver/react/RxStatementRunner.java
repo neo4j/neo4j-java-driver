@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2009 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -16,27 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.react;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
+import java.util.Map;
 
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Value;
 
-public interface PullAllResponseHandler extends ResponseHandler
+public interface RxStatementRunner
 {
-    CompletionStage<ResultSummary> summaryAsync();
+    RxResult run( String statementTemplate, Value parameters );
 
-    CompletionStage<Record> nextAsync();
+    RxResult run( String statementTemplate, Map<String,Object> statementParameters );
 
-    CompletionStage<Record> peekAsync();
+    RxResult run( String statementTemplate, Record statementParameters );
 
-    CompletionStage<ResultSummary> consumeAsync();
+    RxResult run( String statementTemplate );
 
-    <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
-
-    CompletionStage<Throwable> failureAsync();
+    RxResult run( Statement statement );
 }

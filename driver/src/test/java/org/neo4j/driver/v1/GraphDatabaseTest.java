@@ -19,13 +19,19 @@
 package org.neo4j.driver.v1;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.util.List;
+import java.util.logging.Level;
 
+import org.neo4j.driver.react.InternalRxSession;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxSession;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.StubServer;
 import org.neo4j.driver.v1.util.TestUtil;
@@ -51,6 +57,62 @@ import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 class GraphDatabaseTest
 {
+    @Test
+    void should() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( "bolt://127.0.0.1:59248/",
+                Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        Session session = driver.session();
+        StatementResult result = session.run( "UNWIND [1, 2, 0, 4] as n RETURN 10/n" );
+
+        result.stream().forEach( r -> System.out.println( r ) );
+        driver.close();
+        // Then
+    }
+
+    @Test
+    void shouldRx() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( "bolt://127.0.0.1:61029/",
+                Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        //        RxSession session = new InternalRxSession( driver.session() );
+
+        RxSession session = driver.rxSession();
+        RxResult result = session.run( "UNWIND range(1, 1000) as n RETURN n" );
+
+        Flux.from( result.records() )
+                .limitRate( 300 ) // batch size
+                .doOnNext( System.out::println )
+                .then( Mono.from( result.summary() ) )
+                .doOnSuccess( System.out::println )
+                .then( Mono.from( session.close() ) )
+                .doOnTerminate( () -> System.out.println( "Session closed" ) )
+                .block();
+        driver.close();
+    }
+
+    @Test
+    void shouldHandleError() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( "bolt://127.0.0.1:59248/", Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        RxSession session = new InternalRxSession( driver.session() );
+        RxResult result = session.run( "UNWIND [1, 2, 1, 2, 0, 1] as n RETURN 10/n" );
+
+        Flux<Record> recordFlux = Flux.from( result.records() );
+        recordFlux.toStream( 2 ).forEach( record -> System.out.println( record ) );
+        recordFlux.blockLast();
+        driver.close();
+    }
+
     @Test
     void boltSchemeShouldInstantiateDirectDriver() throws Exception
     {

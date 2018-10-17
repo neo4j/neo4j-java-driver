@@ -46,6 +46,7 @@ import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 public class MetadataExtractor
 {
+    public static int ABSENT_STATEMENT_ID = -1;
     private final String resultAvailableAfterMetadataKey;
     private final String resultConsumedAfterMetadataKey;
 
@@ -73,6 +74,17 @@ public class MetadataExtractor
         }
         return emptyList();
     }
+
+    public long extractStatementId( Map<String,Value> metadata )
+    {
+        Value statementId = metadata.get( "stmt_id" );
+        if ( statementId != null )
+        {
+            return statementId.asLong();
+        }
+        return ABSENT_STATEMENT_ID;
+    }
+
 
     public long extractResultAvailableAfter( Map<String,Value> metadata )
     {

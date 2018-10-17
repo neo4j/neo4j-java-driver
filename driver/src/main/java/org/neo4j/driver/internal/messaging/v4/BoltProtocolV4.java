@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2009 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v3;
+package org.neo4j.driver.internal.messaging.v4;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -28,15 +28,12 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -44,10 +41,11 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.react.result.InternalStatementResultCursorFactory;
 import org.neo4j.driver.react.result.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
@@ -56,15 +54,14 @@ import org.neo4j.driver.v1.Value;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
-import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.v1.Values.ofValue;
 
-public class BoltProtocolV3 implements BoltProtocol
+public class BoltProtocolV4 implements BoltProtocol
 {
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
 
-    public static final BoltProtocol INSTANCE = new BoltProtocolV3();
+    public static final BoltProtocol INSTANCE = new BoltProtocolV4();
 
     public static final MetadataExtractor METADATA_EXTRACTOR = new MetadataExtractor( "t_first", "t_last" );
 
@@ -97,7 +94,7 @@ public class BoltProtocolV3 implements BoltProtocol
     @Override
     public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.mode() );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config );
 
         if ( bookmarks.isEmpty() )
         {
@@ -149,30 +146,19 @@ public class BoltProtocolV3 implements BoltProtocol
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
+        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
-        AbstractPullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
-
-        connection.writeAndFlush( runMessage, runHandler, PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( runMessage, runHandler );
 
         if ( waitForRunResponse )
         {
             // wait for response of RUN before proceeding
-            return runCompletedFuture.thenApply( ignore -> new AsyncResultCursorOnlyFactory( runHandler, pullAllHandler ) );
+            return runCompletedFuture.thenApply( ignore ->
+                    new InternalStatementResultCursorFactory( runHandler, statement, connection, bookmarksHolder, tx ) );
         }
         else
         {
-            return completedFuture( new AsyncResultCursorOnlyFactory( runHandler, pullAllHandler ) );
+            return completedFuture( new InternalStatementResultCursorFactory( runHandler, statement, connection, bookmarksHolder, tx ) );
         }
-    }
-
-    private static AbstractPullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
-            BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
-    {
-        if ( tx != null )
-        {
-            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
-        }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
     }
 }

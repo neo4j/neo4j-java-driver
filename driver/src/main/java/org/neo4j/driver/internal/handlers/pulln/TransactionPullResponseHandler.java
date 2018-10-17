@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2009 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.handlers.pulln;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.v1.Statement;
@@ -28,32 +29,28 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class SessionPullAllResponseHandler extends AbstractPullAllResponseHandler
+public class TransactionPullResponseHandler extends AbstractBasicPullResponseHandler
 {
-    private final BookmarksHolder bookmarksHolder;
+    private final ExplicitTransaction tx;
 
-    public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, BookmarksHolder bookmarksHolder, MetadataExtractor metadataExtractor )
+    public TransactionPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
+            Connection connection, ExplicitTransaction tx, MetadataExtractor metadataExtractor )
     {
         super( statement, runResponseHandler, connection, metadataExtractor );
-        this.bookmarksHolder = requireNonNull( bookmarksHolder );
+        this.tx = requireNonNull( tx );
     }
 
     @Override
     protected void afterSuccess( Map<String,Value> metadata )
     {
-        releaseConnection();
-        bookmarksHolder.setBookmarks( metadataExtractor.extractBookmarks( metadata ) );
     }
 
     @Override
     protected void afterFailure( Throwable error )
     {
-        releaseConnection();
-    }
-
-    private void releaseConnection()
-    {
-        connection.release(); // release in background
+        // always mark transaction as terminated because every error is "acknowledged" with a RESET message
+        // so database forgets about the transaction after the first error
+        // such transaction should not attempt to commit and can be considered as rolled back
+        tx.markTerminated();
     }
 }
