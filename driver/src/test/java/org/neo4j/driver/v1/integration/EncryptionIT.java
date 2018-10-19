@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jSettings;
 import org.neo4j.driver.v1.util.Neo4jSettings.BoltTlsLevel;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -42,6 +43,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 
+@ParallelizableIT
 class EncryptionIT
 {
     @RegisterExtension

@@ -31,12 +31,14 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@ParallelizableIT
 class ScalarTypeIT
 {
     @RegisterExtension

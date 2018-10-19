@@ -1050,6 +1050,38 @@ class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    void useSessionAfterDriverIsClosed() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer readServer = StubServer.start( "read_server.script", 9005 );
+
+        Config config = Config.build()
+                .withoutEncryption()
+                .withLogging( none() )
+                .toConfig();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        {
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
+                assertEquals( 3, records.size() );
+            }
+
+            Session session = driver.session( AccessMode.READ );
+
+            driver.close();
+
+            assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
+        }
+        finally
+        {
+            assertEquals( 0, readServer.exitStatus() );
+            assertEquals( 0, router.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );

@@ -46,6 +46,7 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.hamcrest.Matchers.instanceOf;
@@ -60,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@ParallelizableIT
 class ChannelConnectorImplIT
 {
     @RegisterExtension

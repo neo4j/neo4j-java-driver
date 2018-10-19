@@ -46,6 +46,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jRunner;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -62,6 +63,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Values.value;
 
+@ParallelizableIT
 class NettyChannelPoolIT
 {
     @RegisterExtension

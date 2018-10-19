@@ -18,152 +18,77 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.List;
-
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.TestInstance.Lifecycle;
-import static org.neo4j.driver.v1.Logging.none;
-import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
+@ParallelizableIT
 class DriverCloseIT
 {
-    public abstract static class DriverCloseITBase
+    @RegisterExtension
+    static final DatabaseExtension neo4j = new DatabaseExtension();
+
+    @Test
+    void isEncryptedThrowsForClosedDriver()
     {
-        protected abstract Driver createDriver();
+        Driver driver = createDriver();
 
-        @Test
-        void isEncryptedThrowsForClosedDriver()
-        {
-            Driver driver = createDriver();
+        driver.close();
 
-            driver.close();
-
-            assertThrows( IllegalStateException.class, driver::isEncrypted );
-        }
-
-        @Test
-        void sessionThrowsForClosedDriver()
-        {
-            Driver driver = createDriver();
-
-            driver.close();
-
-            assertThrows( IllegalStateException.class, driver::session );
-        }
-
-        @Test
-        void sessionWithModeThrowsForClosedDriver()
-        {
-            Driver driver = createDriver();
-
-            driver.close();
-
-            assertThrows( IllegalStateException.class, () -> driver.session( AccessMode.WRITE ) );
-        }
-
-        @Test
-        void closeClosedDriver()
-        {
-            Driver driver = createDriver();
-
-            driver.close();
-            driver.close();
-            driver.close();
-        }
+        assertThrows( IllegalStateException.class, driver::isEncrypted );
     }
 
-    @Nested
-    @TestInstance( Lifecycle.PER_CLASS )
-    public class DirectDriverCloseIT extends DriverCloseITBase
+    @Test
+    void sessionThrowsForClosedDriver()
     {
-        @RegisterExtension
-        public final DatabaseExtension neo4j = new DatabaseExtension();
+        Driver driver = createDriver();
 
-        @Override
-        protected Driver createDriver()
-        {
-            return GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
-        }
+        driver.close();
 
-        @Test
-        void useSessionAfterDriverIsClosed()
-        {
-            Driver driver = createDriver();
-            Session session = driver.session();
-
-            driver.close();
-
-            assertThrows( IllegalStateException.class, () -> session.run( "CREATE ()" ) );
-        }
+        assertThrows( IllegalStateException.class, driver::session );
     }
 
-    @Nested
-    public class RoutingDriverCloseIT extends DriverCloseITBase
+    @Test
+    void sessionWithModeThrowsForClosedDriver()
     {
-        private StubServer router;
+        Driver driver = createDriver();
 
-        @BeforeEach
-        void setUp() throws Exception
-        {
-            router = StubServer.start( "acquire_endpoints.script", 9001 );
-        }
+        driver.close();
 
-        @AfterEach
-        void tearDown() throws Exception
-        {
-            if ( router != null )
-            {
-                router.exitStatus();
-            }
-        }
+        assertThrows( IllegalStateException.class, () -> driver.session( AccessMode.WRITE ) );
+    }
 
-        @Override
-        protected Driver createDriver()
-        {
-            Config config = Config.build()
-                    .withoutEncryption()
-                    .withLogging( none() )
-                    .toConfig();
+    @Test
+    void closeClosedDriver()
+    {
+        Driver driver = createDriver();
 
-            return GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", DEFAULT_AUTH_TOKEN, config );
-        }
+        driver.close();
+        driver.close();
+        driver.close();
+    }
 
-        @Test
-        void useSessionAfterDriverIsClosed() throws Exception
-        {
-            StubServer readServer = StubServer.start( "read_server.script", 9005 );
+    @Test
+    void useSessionAfterDriverIsClosed()
+    {
+        Driver driver = createDriver();
+        Session session = driver.session();
 
-            Driver driver = createDriver();
+        driver.close();
 
-            try ( Session session = driver.session( AccessMode.READ ) )
-            {
-                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
-                assertEquals( 3, records.size() );
-            }
+        assertThrows( IllegalStateException.class, () -> session.run( "CREATE ()" ) );
+    }
 
-            Session session = driver.session( AccessMode.READ );
-
-            driver.close();
-
-            assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
-            assertEquals( 0, readServer.exitStatus() );
-        }
+    private static Driver createDriver()
+    {
+        return GraphDatabase.driver( neo4j.uri(), neo4j.authToken() );
     }
 }

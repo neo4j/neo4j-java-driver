@@ -57,6 +57,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
@@ -85,6 +86,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
 
+@ParallelizableIT
 class SessionAsyncIT
 {
     @RegisterExtension
@@ -628,7 +630,6 @@ class SessionAsyncIT
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
     }
 
-
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection()
     {
@@ -776,7 +777,6 @@ class SessionAsyncIT
         ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
-
 
     @Test
     void shouldPropagatePullAllFailureWhenClosed()
@@ -1113,7 +1113,7 @@ class SessionAsyncIT
 
         CompletionStage<StatementResultCursor> response =
                 session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
-                parameters( "id", id, "age", age ) );
+                        parameters( "id", id, "age", age ) );
 
         response.whenComplete( ( cursor, error ) ->
         {

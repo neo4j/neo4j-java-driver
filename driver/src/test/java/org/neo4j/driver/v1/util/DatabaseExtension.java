@@ -32,9 +32,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Driver;
 
-import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_ADDRESS;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
-import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_URI;
 import static org.neo4j.driver.v1.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.v1.util.Neo4jRunner.debug;
 import static org.neo4j.driver.v1.util.Neo4jRunner.getOrCreateGlobalRunner;
@@ -99,7 +97,22 @@ public class DatabaseExtension implements BeforeEachCallback
 
     public URI uri()
     {
-        return DEFAULT_URI;
+        return runner.boltUri();
+    }
+
+    public int httpPort()
+    {
+        return runner.httpPort();
+    }
+
+    public int httpsPort()
+    {
+        return runner.httpsPort();
+    }
+
+    public int boltPort()
+    {
+        return runner.boltPort();
     }
 
     public AuthToken authToken()
@@ -109,7 +122,7 @@ public class DatabaseExtension implements BeforeEachCallback
 
     public BoltServerAddress address()
     {
-        return DEFAULT_ADDRESS;
+        return runner.boltAddress();
     }
 
     public void updateEncryptionKeyAndCert( File key, File cert ) throws Exception

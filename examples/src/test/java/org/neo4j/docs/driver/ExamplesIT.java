@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.StdIOCapture;
 import org.neo4j.driver.v1.util.TestUtil;
 
@@ -55,6 +56,7 @@ import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@ParallelizableIT
 class ExamplesIT
 {
     @RegisterExtension
@@ -412,7 +414,7 @@ class ExamplesIT
             assertThat( personCount( "Bob" ), is( 1 ) );
 
             int employeeCountOfWayne = readInt(
-                "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Wayne Enterprises' RETURN count(emp)" );
+                    "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Wayne Enterprises' RETURN count(emp)" );
             assertThat( employeeCountOfWayne, is( 1 ) );
 
             int employeeCountOfLexCorp = readInt(

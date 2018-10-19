@@ -37,12 +37,14 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.GraphDatabase.driver;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 
+@ParallelizableIT
 class SessionPoolingStressIT
 {
     @RegisterExtension

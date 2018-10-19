@@ -46,11 +46,26 @@ public class Neo4jSettings
 
     public static final String DEFAULT_DATA_DIR = "data";
 
+    static final int TEST_JVM_ID = Integer.getInteger( "testJvmId", 0 );
+
+    private static final int DEFAULT_HTTP_PORT = 7000;
+    private static final int DEFAULT_HTTPS_PORT = 8000;
+    private static final int DEFAULT_BOLT_PORT = 9000;
+
+    static final int CURRENT_HTTP_PORT = DEFAULT_HTTP_PORT + TEST_JVM_ID;
+    static final int CURRENT_HTTPS_PORT = DEFAULT_HTTPS_PORT + TEST_JVM_ID;
+    static final int CURRENT_BOLT_PORT = DEFAULT_BOLT_PORT + TEST_JVM_ID;
 
     private final Map<String, String> settings;
     private final Set<String> excludes;
 
-    public static Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
+    public static final Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
+            "dbms.backup.enabled", "false",
+            "dbms.memory.pagecache.size", "100m",
+            "dbms.connector.http.listen_address", ":" + CURRENT_HTTP_PORT,
+            "dbms.connector.https.listen_address", ":" + CURRENT_HTTPS_PORT,
+            "dbms.connector.bolt.listen_address", ":" + CURRENT_BOLT_PORT,
+
             CERT_DIR, DEFAULT_CERT_DIR,
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,

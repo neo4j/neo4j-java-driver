@@ -60,6 +60,7 @@ import org.neo4j.driver.v1.exceptions.Neo4jException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -90,6 +91,7 @@ import static org.neo4j.driver.v1.util.TestUtil.awaitCondition;
 
 @SuppressWarnings( "deprecation" )
 @EnabledOnNeo4jWith( TRANSACTION_TERMINATION_AWARE_LOCKS )
+@ParallelizableIT
 class SessionResetIT
 {
     private static final int CSV_FILE_SIZE = 10_000;

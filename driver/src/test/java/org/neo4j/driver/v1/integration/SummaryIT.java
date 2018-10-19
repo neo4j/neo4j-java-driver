@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.hamcrest.Matchers.containsString;
@@ -47,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
 
+@ParallelizableIT
 class SummaryIT
 {
     @RegisterExtension
@@ -160,7 +162,6 @@ class SummaryIT
         assertEquals( 0, profile.dbHits() );
         assertEquals( 1, profile.records() );
     }
-
 
     @Test
     void shouldContainNotifications()

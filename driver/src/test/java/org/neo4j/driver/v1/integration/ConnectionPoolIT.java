@@ -40,6 +40,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
@@ -52,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 
+@ParallelizableIT
 class ConnectionPoolIT
 {
     @RegisterExtension

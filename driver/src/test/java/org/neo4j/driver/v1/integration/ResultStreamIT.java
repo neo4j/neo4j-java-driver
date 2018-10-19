@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@ParallelizableIT
 class ResultStreamIT
 {
     @RegisterExtension
@@ -157,7 +159,7 @@ class ResultStreamIT
 
         // Then
         assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
     }
 
@@ -192,7 +194,7 @@ class ResultStreamIT
 
         // Then
         assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
 
         assertThat( result.next().get( "a" ).asInt(), equalTo( 1 ) );
@@ -210,7 +212,7 @@ class ResultStreamIT
 
         // Then
         assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:7687" ) );
+        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
 
         assertThat( result.hasNext(), equalTo( false ) );

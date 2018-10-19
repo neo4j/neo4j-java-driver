@@ -342,7 +342,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire.and.failsafe.version}</version>
         <configuration>
-          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+          <argLine>${surefire.and.failsafe.argLine}</argLine>
           <trimStackTrace>false</trimStackTrace>
         </configuration>
       </plugin>
@@ -350,16 +350,37 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${surefire.and.failsafe.version}</version>
-        <configuration>
-          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
         <executions>
+          <!-- execution 1: execute all ITs that support parallel execution (regular single-instance tests)  -->
           <execution>
+            <id>parallelizable-integration-tests</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <argLine>-Dfile.encoding=${project.build.sourceEncoding} -DtestJvmId=${surefire.forkNumber}</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <forkCount>1C</forkCount>
+              <reuseForks>true</reuseForks>
+              <groups>parallelizableIT</groups>
+            </configuration>
+          </execution>
+
+          <!-- execution 2: execute all ITs that do not support parallel execution (stub server tests, causal cluster tests)  -->
+          <execution>
+            <id>sequential-integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <forkCount>1</forkCount>
+              <reuseForks>true</reuseForks>
+              <excludedGroups>parallelizableIT</excludedGroups>
+            </configuration>
           </execution>
         </executions>
       </plugin>

@@ -75,7 +75,7 @@ public class DriverSecurityComplianceSteps
         closeExistingDriver();
         knownHostsFile = tempFile( "known_hosts", ".tmp" );
         driver = GraphDatabase.driver(
-                Neo4jRunner.DEFAULT_URI,
+                neo4j.uri(),
                 Neo4jRunner.DEFAULT_AUTH_TOKEN,
                 Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                         .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
@@ -109,7 +109,7 @@ public class DriverSecurityComplianceSteps
         try
         {
             driver = GraphDatabase.driver(
-                    Neo4jRunner.DEFAULT_URI,
+                    neo4j.uri(),
                     Neo4jRunner.DEFAULT_AUTH_TOKEN,
                     Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
                             .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
@@ -162,12 +162,12 @@ public class DriverSecurityComplianceSteps
         assertThat( exception, instanceOf( SecurityException.class ) );
         Throwable rootCause = getRootCause( exception );
         assertThat( rootCause.toString(), containsString(
-                "Unable to connect to neo4j at `localhost:7687`, " +
+                "Unable to connect to neo4j at `localhost:" + neo4j.boltPort() + "`, " +
                 "because the certificate the server uses has changed. " +
                 "This is a security feature to protect against man-in-the-middle attacks." ) );
         assertThat( rootCause.toString(), containsString(
                 "If you trust the certificate the server uses now, simply remove the line that starts with " +
-                "`localhost:7687` in the file" ) );
+                "`localhost:" + neo4j.boltPort() + "` in the file" ) );
         assertThat( rootCause.toString(), containsString( "The old certificate saved in file is:" ) );
         assertThat( rootCause.toString(), containsString( "The New certificate received is:" ) );
     }
@@ -202,8 +202,7 @@ public class DriverSecurityComplianceSteps
         iShouldGetAHelpfulErrorExplainingThatCertificateChanged( "nah" );
 
         // However as driverKitten has not connected to the server, so driverKitten should just simply connect!
-        driverKitten = GraphDatabase.driver( Neo4jRunner.DEFAULT_URI, Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                driverKittenConfig );
+        driverKitten = GraphDatabase.driver( neo4j.uri(), Neo4jRunner.DEFAULT_AUTH_TOKEN, driverKittenConfig );
 
         try ( Session session = driverKitten.session() )
         {
@@ -249,7 +248,7 @@ public class DriverSecurityComplianceSteps
         {
             // give root certificate to driver
             driver = GraphDatabase.driver(
-                    Neo4jRunner.DEFAULT_URI,
+                    neo4j.uri(),
                     Neo4jRunner.DEFAULT_AUTH_TOKEN,
                     Config.build().withEncryption()
                             .withTrustStrategy( trustCustomCertificateSignedBy( certificate ) ).toConfig() );
