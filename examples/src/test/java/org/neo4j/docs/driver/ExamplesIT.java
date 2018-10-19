@@ -21,6 +21,8 @@ package org.neo4j.docs.driver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,6 +59,7 @@ import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 @ParallelizableIT
+@Execution( ExecutionMode.CONCURRENT )
 class ExamplesIT
 {
     @RegisterExtension
