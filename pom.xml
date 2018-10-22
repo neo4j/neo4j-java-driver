@@ -12,6 +12,7 @@
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
     <junit.version>5.3.1</junit.version>
     <junit.platform.version>1.3.1</junit.platform.version>
+    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -180,6 +181,19 @@
       <properties>
         <maven.compiler.source>9</maven.compiler.source>
         <maven.compiler.target>9</maven.compiler.target>
+      </properties>
+    </profile>
+
+    <!-- Disable parallel execution of integration tests with "-DsequentialITs" -->
+    <profile>
+      <id>sequentialIntegrationTests</id>
+      <activation>
+        <property>
+          <name>sequentialITs</name>
+        </property>
+      </activation>
+      <properties>
+        <parallelizable.it.forkCount>1</parallelizable.it.forkCount>
       </properties>
     </profile>
   </profiles>
@@ -379,7 +393,7 @@
             <configuration>
               <argLine>-Dfile.encoding=${project.build.sourceEncoding} -DtestJvmId=${surefire.forkNumber}</argLine>
               <trimStackTrace>false</trimStackTrace>
-              <forkCount>1C</forkCount>
+              <forkCount>${parallelizable.it.forkCount}</forkCount>
               <reuseForks>true</reuseForks>
               <groups>parallelizableIT</groups>
             </configuration>
