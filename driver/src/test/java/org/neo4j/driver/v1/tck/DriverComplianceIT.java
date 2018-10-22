@@ -21,11 +21,13 @@ package org.neo4j.driver.v1.tck;
 import cucumber.api.CucumberOptions;
 import org.junit.AfterClass;
 import org.junit.ClassRule;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.nio.file.Files;
 
 import org.neo4j.driver.v1.tck.tck.util.DatabaseRule;
+import org.neo4j.driver.v1.util.ParallelizableJUnit4IT;
 
 /**
  * The base class to run all cucumber tests
@@ -33,6 +35,7 @@ import org.neo4j.driver.v1.tck.tck.util.DatabaseRule;
 @RunWith( DriverCucumberAdapter.class )
 @CucumberOptions( features = {"target/resources/features"}, strict=true, tags={"~@db", "~@fixed_session_pool"},
         format = {"default_summary"})
+@Category( ParallelizableJUnit4IT.class )
 public class DriverComplianceIT
 {
     @ClassRule

@@ -18,20 +18,12 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.jupiter.api.Tag;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.junit.experimental.categories.Category;
 
 /**
- * Marker annotation for the Maven Failsafe plugin saying that the annotated test class can be executed in parallel with other tests.
- * It will get executed in a separately forked JVM. All tests will be split between a fixed number of JVMs.
+ * Marker interface with same semantics as {@link ParallelizableIT} annotation but used for JUnit 4 {@link Category categories}.
+ * Only useful for TCK tests. Others should use JUnit 5 and {@link ParallelizableIT} annotation.
  */
-@Target( ElementType.TYPE )
-@Retention( RetentionPolicy.RUNTIME )
-@Tag( "parallelizableIT" )
-public @interface ParallelizableIT
+public interface ParallelizableJUnit4IT
 {
 }
