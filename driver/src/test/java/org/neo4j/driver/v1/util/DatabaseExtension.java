@@ -105,11 +105,6 @@ public class DatabaseExtension implements BeforeEachCallback
         return runner.httpPort();
     }
 
-    public int httpsPort()
-    {
-        return runner.httpsPort();
-    }
-
     public int boltPort()
     {
         return runner.boltPort();

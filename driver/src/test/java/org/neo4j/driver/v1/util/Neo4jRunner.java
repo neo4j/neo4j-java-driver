@@ -42,7 +42,6 @@ import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
 import static org.neo4j.driver.v1.util.Neo4jSettings.CURRENT_BOLT_PORT;
-import static org.neo4j.driver.v1.util.Neo4jSettings.CURRENT_HTTPS_PORT;
 import static org.neo4j.driver.v1.util.Neo4jSettings.CURRENT_HTTP_PORT;
 import static org.neo4j.driver.v1.util.Neo4jSettings.TEST_JVM_ID;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
@@ -78,11 +77,6 @@ public class Neo4jRunner
     public int httpPort()
     {
         return CURRENT_HTTP_PORT;
-    }
-
-    public int httpsPort()
-    {
-        return CURRENT_HTTPS_PORT;
     }
 
     public int boltPort()
