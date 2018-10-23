@@ -43,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.stream.IntStream;
 
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
@@ -56,6 +57,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.Transaction;
@@ -421,15 +423,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
             for ( int i = 0; i < batchCount; i++ )
             {
                 int batchIndex = i;
-                session.writeTransaction( tx ->
-                {
-                    for ( int j = 0; j < batchSize; j++ )
-                    {
-                        int nodeIndex = batchIndex * batchSize + j;
-                        createNodeInTx( tx, false, nodeIndex );
-                    }
-                    return null;
-                } );
+                session.writeTransaction( tx -> createNodesInTx( tx, batchIndex, batchSize ) );
             }
             bookmark = session.lastBookmark();
         }
@@ -480,16 +474,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         for ( int i = 0; i < batchCount; i++ )
         {
             int batchIndex = i;
-
-            writeTransactions = writeTransactions.thenCompose( ignore -> session.writeTransactionAsync( tx ->
-            {
-                for ( int j = 0; j < batchSize; j++ )
-                {
-                    int nodeIndex = batchIndex * batchSize + j;
-                    createNodeInTx( tx, true, nodeIndex );
-                }
-                return completedFuture( null );
-            } ) );
+            writeTransactions = writeTransactions.thenCompose( ignore ->
+                    session.writeTransactionAsync( tx -> createNodesInTxAsync( tx, batchIndex, batchSize ) ) );
         }
         writeTransactions = writeTransactions.exceptionally( error -> error )
                 .thenCompose( error -> safeCloseSession( session, error ) );
@@ -543,19 +529,49 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.out.println( "Reading nodes with async API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
     }
 
-    private static void createNodeInTx( Transaction tx, boolean async, int nodeIndex )
+    private static Void createNodesInTx( Transaction tx, int batchIndex, int batchSize )
+    {
+        for ( int index = 0; index < batchSize; index++ )
+        {
+            int nodeIndex = batchIndex * batchSize + index;
+            createNodeInTx( tx, nodeIndex );
+        }
+        return null;
+    }
+
+    private static void createNodeInTx( Transaction tx, int nodeIndex )
+    {
+        Statement statement = createNodeInTxStatement( nodeIndex );
+        tx.run( statement ).consume();
+    }
+
+    private static CompletionStage<Throwable> createNodesInTxAsync( Transaction tx, int batchIndex, int batchSize )
+    {
+        @SuppressWarnings( "unchecked" )
+        CompletableFuture<Void>[] statementFutures = IntStream.range( 0, batchSize )
+                .map( index -> batchIndex * batchSize + index )
+                .mapToObj( nodeIndex -> createNodeInTxAsync( tx, nodeIndex ) )
+                .toArray( CompletableFuture[]::new );
+
+        return CompletableFuture.allOf( statementFutures )
+                .thenApply( ignored -> (Throwable) null )
+                .exceptionally( error -> error );
+    }
+
+    private static CompletableFuture<Void> createNodeInTxAsync( Transaction tx, int nodeIndex )
+    {
+        Statement statement = createNodeInTxStatement( nodeIndex );
+        return tx.runAsync( statement )
+                .thenCompose( StatementResultCursor::consumeAsync )
+                .thenApply( ignore -> (Void) null )
+                .toCompletableFuture();
+    }
+
+    private static Statement createNodeInTxStatement( int nodeIndex )
     {
         String query = "CREATE (n:Test:Node) SET n = $props";
         Map<String,Object> params = singletonMap( "props", createNodeProperties( nodeIndex ) );
-
-        if ( async )
-        {
-            tx.runAsync( query, params ).thenCompose( StatementResultCursor::consumeAsync );
-        }
-        else
-        {
-            tx.run( query, params ).consume();
-        }
+        return new Statement( query, params );
     }
 
     private static Map<String,Object> createNodeProperties( int nodeIndex )
