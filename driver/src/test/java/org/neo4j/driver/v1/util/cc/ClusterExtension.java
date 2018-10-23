@@ -126,7 +126,7 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     {
         String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
         String version = split[split.length - 1];
-        ServerVersion serverVersion = ServerVersion.version( version );
+        ServerVersion serverVersion = ServerVersion.version( "Neo4j/" + version );
         assumeTrue( CAUSAL_CLUSTER.availableIn( serverVersion ), "Server version `" + version + "` does not support Casual Cluster" );
         return version;
     }
