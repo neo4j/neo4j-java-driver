@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,28 +29,35 @@ import static java.lang.Integer.compare;
 
 public class ServerVersion
 {
-    public static final ServerVersion v3_5_0 = new ServerVersion( 3, 5, 0 );
-    public static final ServerVersion v3_4_0 = new ServerVersion( 3, 4, 0 );
-    public static final ServerVersion v3_2_0 = new ServerVersion( 3, 2, 0 );
-    public static final ServerVersion v3_1_0 = new ServerVersion( 3, 1, 0 );
-    public static final ServerVersion v3_0_0 = new ServerVersion( 3, 0, 0 );
-    public static final ServerVersion vInDev = new ServerVersion( Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE );
+    public static final ServerVersion v3_5_0 = new ServerVersion( "Neo4j", 3, 5, 0 );
+    public static final ServerVersion v3_4_0 = new ServerVersion( "Neo4j", 3, 4, 0 );
+    public static final ServerVersion v3_2_0 = new ServerVersion( "Neo4j", 3, 2, 0 );
+    public static final ServerVersion v3_1_0 = new ServerVersion( "Neo4j", 3, 1, 0 );
+    public static final ServerVersion v3_0_0 = new ServerVersion( "Neo4j", 3, 0, 0 );
+    public static final ServerVersion vInDev = new ServerVersion( "Neo4j", Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE );
 
     private static final String NEO4J_IN_DEV_VERSION_STRING = "Neo4j/dev";
     private static final Pattern PATTERN =
-            Pattern.compile( "(Neo4j/)?(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?" );
+            Pattern.compile( "([^/]*)/(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?" );
 
+    private final String product;
     private final int major;
     private final int minor;
     private final int patch;
     private final String stringValue;
 
-    private ServerVersion( int major, int minor, int patch )
+    private ServerVersion( String product, int major, int minor, int patch )
     {
+        this.product = product;
         this.major = major;
         this.minor = minor;
         this.patch = patch;
-        this.stringValue = stringValue( major, minor, patch );
+        this.stringValue = stringValue( product, major, minor, patch );
+    }
+
+    public String product()
+    {
+        return product;
     }
 
     public static ServerVersion version( Driver driver )
@@ -72,6 +80,7 @@ public class ServerVersion
             Matcher matcher = PATTERN.matcher( server );
             if ( matcher.matches() )
             {
+                String product = matcher.group( 1 );
                 int major = Integer.valueOf( matcher.group( 2 ) );
                 int minor = Integer.valueOf( matcher.group( 3 ) );
                 String patchString = matcher.group( 4 );
@@ -80,7 +89,7 @@ public class ServerVersion
                 {
                     patch = Integer.valueOf( patchString );
                 }
-                return new ServerVersion( major, minor, patch );
+                return new ServerVersion( product, major, minor, patch );
             }
             else if ( server.equalsIgnoreCase( NEO4J_IN_DEV_VERSION_STRING ) )
             {
@@ -103,6 +112,8 @@ public class ServerVersion
 
         ServerVersion that = (ServerVersion) o;
 
+        if ( !product.equals( that.product ) )
+        { return false; }
         if ( major != that.major )
         { return false; }
         if ( minor != that.minor )
@@ -113,10 +124,7 @@ public class ServerVersion
     @Override
     public int hashCode()
     {
-        int result = major;
-        result = 31 * result + minor;
-        result = 31 * result + patch;
-        return result;
+        return Objects.hash(product, major, minor, patch);
     }
 
     public boolean greaterThan(ServerVersion other)
@@ -141,6 +149,10 @@ public class ServerVersion
 
     private int compareTo( ServerVersion o )
     {
+        if ( !product.equals( o.product ) )
+        {
+            throw new IllegalArgumentException("Comparing different products");
+        }
         int c = compare( major, o.major );
         if (c == 0)
         {
@@ -160,12 +172,12 @@ public class ServerVersion
         return stringValue;
     }
 
-    private static String stringValue( int major, int minor, int patch )
+    private static String stringValue( String product, int major, int minor, int patch )
     {
         if ( major == Integer.MAX_VALUE && minor == Integer.MAX_VALUE && patch == Integer.MAX_VALUE )
         {
             return NEO4J_IN_DEV_VERSION_STRING;
         }
-        return String.format( "Neo4j/%s.%s.%s", major, minor, patch );
+        return String.format( "%s/%s.%s.%s", product, major, minor, patch );
     }
 }

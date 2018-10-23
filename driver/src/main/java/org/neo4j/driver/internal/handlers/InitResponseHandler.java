@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.UntrustedServerException;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
 
@@ -71,11 +72,25 @@ public class InitResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    private static ServerVersion extractServerVersion( Map<String,Value> metadata )
+    private static ServerVersion extractServerVersion( Map<String,Value> metadata ) throws UntrustedServerException
     {
         Value versionValue = metadata.get( "server" );
-        boolean versionAbsent = versionValue == null || versionValue.isNull();
-        return versionAbsent ? ServerVersion.v3_0_0 : ServerVersion.version( versionValue.asString() );
+        if ( versionValue == null || versionValue.isNull() )
+        {
+            return ServerVersion.v3_0_0;
+        }
+        else
+        {
+            ServerVersion server = ServerVersion.version(versionValue.asString());
+            if ( server.product().equalsIgnoreCase( "Neo4j" ) )
+            {
+                return server;
+            }
+            else
+            {
+                throw new UntrustedServerException( "Server does not identify as a genuine Neo4j instance" );
+            }
+        }
     }
 
     private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )
