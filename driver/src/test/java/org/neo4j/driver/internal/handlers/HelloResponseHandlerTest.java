@@ -152,7 +152,7 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = metadata( ServerVersion.v3_0_0, Values.NULL );
+        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, Values.NULL );
         assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed

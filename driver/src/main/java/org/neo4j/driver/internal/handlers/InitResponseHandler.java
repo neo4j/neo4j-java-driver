@@ -77,7 +77,7 @@ public class InitResponseHandler implements ResponseHandler
         Value versionValue = metadata.get( "server" );
         if ( versionValue == null || versionValue.isNull() )
         {
-            return ServerVersion.v3_0_0;
+            throw new UntrustedServerException( "Server provides no product identifier" );
         }
         else
         {

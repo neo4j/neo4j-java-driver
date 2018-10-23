@@ -71,34 +71,27 @@ public class ServerVersion
 
     public static ServerVersion version( String server )
     {
-        if ( server == null )
+        Matcher matcher = PATTERN.matcher( server );
+        if ( matcher.matches() )
         {
-            return v3_0_0;
+            String product = matcher.group( 1 );
+            int major = Integer.valueOf( matcher.group( 2 ) );
+            int minor = Integer.valueOf( matcher.group( 3 ) );
+            String patchString = matcher.group( 4 );
+            int patch = 0;
+            if ( patchString != null && !patchString.isEmpty() )
+            {
+                patch = Integer.valueOf( patchString );
+            }
+            return new ServerVersion( product, major, minor, patch );
+        }
+        else if ( server.equalsIgnoreCase( NEO4J_IN_DEV_VERSION_STRING ) )
+        {
+            return vInDev;
         }
         else
         {
-            Matcher matcher = PATTERN.matcher( server );
-            if ( matcher.matches() )
-            {
-                String product = matcher.group( 1 );
-                int major = Integer.valueOf( matcher.group( 2 ) );
-                int minor = Integer.valueOf( matcher.group( 3 ) );
-                String patchString = matcher.group( 4 );
-                int patch = 0;
-                if ( patchString != null && !patchString.isEmpty() )
-                {
-                    patch = Integer.valueOf( patchString );
-                }
-                return new ServerVersion( product, major, minor, patch );
-            }
-            else if ( server.equalsIgnoreCase( NEO4J_IN_DEV_VERSION_STRING ) )
-            {
-                return vInDev;
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Cannot parse " + server );
-            }
+            throw new IllegalArgumentException( "Cannot parse " + server );
         }
     }
 

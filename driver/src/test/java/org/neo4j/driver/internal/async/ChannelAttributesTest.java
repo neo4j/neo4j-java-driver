@@ -149,7 +149,7 @@ class ChannelAttributesTest
     @Test
     void shouldSetAndGetServerVersion()
     {
-        ServerVersion version = version( "3.2.1" );
+        ServerVersion version = version( "Neo4j/3.2.1" );
         setServerVersion( channel, version );
         assertEquals( version, serverVersion( channel ) );
     }
@@ -157,9 +157,9 @@ class ChannelAttributesTest
     @Test
     void shouldFailToSetServerVersionTwice()
     {
-        setServerVersion( channel, version( "3.2.2" ) );
+        setServerVersion( channel, version( "Neo4j/3.2.2" ) );
 
-        assertThrows( IllegalStateException.class, () -> setServerVersion( channel, version( "3.2.3" ) ) );
+        assertThrows( IllegalStateException.class, () -> setServerVersion( channel, version( "Neo4j/3.2.3" ) ) );
     }
 
     @Test
