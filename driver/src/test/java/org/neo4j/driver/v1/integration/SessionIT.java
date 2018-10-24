@@ -839,11 +839,11 @@ class SessionIT
     void shouldNotRetryOnConnectionAcquisitionTimeout()
     {
         int maxPoolSize = 3;
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withMaxConnectionPoolSize( maxPoolSize )
                 .withConnectionAcquisitionTimeout( 0, TimeUnit.SECONDS )
                 .withMaxTransactionRetryTime( 42, TimeUnit.DAYS ) // retry for a really long time
-                .toConfig();
+                .build();
 
         driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
 
@@ -999,10 +999,10 @@ class SessionIT
     void shouldAllowLongRunningQueryWithConnectTimeout() throws Exception
     {
         int connectionTimeoutMs = 3_000;
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( DEV_NULL_LOGGING )
                 .withConnectionTimeout( connectionTimeoutMs, TimeUnit.MILLISECONDS )
-                .toConfig();
+                .build();
 
         try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
         {
@@ -1299,16 +1299,16 @@ class SessionIT
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )
     {
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( maxTxRetryTime, unit )
-                .toConfig();
+                .build();
         return GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
     }
 
     private static Config noLoggingConfig()
     {
-        return Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        return Config.builder().withLogging( DEV_NULL_LOGGING ).build();
     }
 
     private static ThrowingWork newThrowingWorkSpy( String query, int failures )

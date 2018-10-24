@@ -33,8 +33,11 @@ public class ConfigUnencryptedExample implements AutoCloseable
     // tag::config-unencrypted[]
     public ConfigUnencryptedExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ),
-                Config.build().withoutEncryption().toConfig() );
+        Config config = Config.builder()
+                .withoutEncryption()
+                .build();
+
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }
     // end::config-unencrypted[]
 

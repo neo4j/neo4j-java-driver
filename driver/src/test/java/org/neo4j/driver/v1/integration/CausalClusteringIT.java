@@ -236,10 +236,10 @@ class CausalClusteringIT
         int concurrentSessionsCount = 9;
         int livenessCheckTimeoutMinutes = 2;
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, MINUTES )
                 .withLogging( DEV_NULL_LOGGING )
-                .toConfig();
+                .build();
 
         FakeClock clock = new FakeClock();
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
@@ -524,11 +524,11 @@ class CausalClusteringIT
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withMaxConnectionPoolSize( 2 )
                 .withConnectionAcquisitionTimeout( 42, MILLISECONDS )
                 .withLogging( DEV_NULL_LOGGING )
-                .toConfig();
+                .build();
 
         try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
         {
@@ -662,10 +662,10 @@ class CausalClusteringIT
         AtomicBoolean stop = new AtomicBoolean();
         executor = newExecutor();
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( DEV_NULL_LOGGING )
                 .withMaxTransactionRetryTime( testRunTimeMs, MILLISECONDS )
-                .toConfig();
+                .build();
 
         try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
                 defaultRoutingSettings(), RetrySettings.DEFAULT, config ) )
@@ -1023,7 +1023,7 @@ class CausalClusteringIT
 
     private static Config configWithoutLogging()
     {
-        return Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        return Config.builder().withLogging( DEV_NULL_LOGGING ).build();
     }
 
     private static ExecutorService newExecutor()

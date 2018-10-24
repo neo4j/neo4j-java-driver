@@ -141,11 +141,11 @@ class EncryptionIT
 
     private static Config configWithEncryption()
     {
-        return Config.build().withEncryption().toConfig();
+        return Config.builder().withEncryption().build();
     }
 
     private static Config configWithoutEncryption()
     {
-        return Config.build().withoutEncryption().toConfig();
+        return Config.builder().withoutEncryption().build();
     }
 }

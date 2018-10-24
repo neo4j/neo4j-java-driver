@@ -113,7 +113,7 @@ class DriverFactoryTest
     @MethodSource( "testUris" )
     void usesLeakLoggingSessionFactoryWhenConfigured( String uri )
     {
-        Config config = Config.build().withLeakedSessionsLogging().toConfig();
+        Config config = Config.builder().withLeakedSessionsLogging().build();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
         createDriver( uri, factory, config );

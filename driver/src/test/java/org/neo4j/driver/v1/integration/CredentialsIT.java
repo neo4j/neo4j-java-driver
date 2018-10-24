@@ -174,7 +174,7 @@ class CredentialsIT
 
     private void testDriverFailureOnWrongCredentials( String uri )
     {
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrongSecret" );
 
         assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( uri, authToken, config ) );

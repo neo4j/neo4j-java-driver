@@ -1073,7 +1073,7 @@ class TransactionAsyncIT
     private void testCommitAndRollbackFailurePropagation( boolean commit )
     {
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
 
         try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
         {

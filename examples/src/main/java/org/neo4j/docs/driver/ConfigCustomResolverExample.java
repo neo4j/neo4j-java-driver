@@ -38,16 +38,22 @@ public class ConfigCustomResolverExample implements AutoCloseable
 
     public ConfigCustomResolverExample( String virtualUri, ServerAddress... addresses )
     {
-        driver = GraphDatabase.driver( virtualUri, AuthTokens.none(),
-                Config.build().withoutEncryption().withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) ).toConfig() );
+        Config config = Config.builder()
+                .withoutEncryption()
+                .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
+                .build();
 
+        driver = GraphDatabase.driver( virtualUri, AuthTokens.none(), config );
     }
 
     // tag::config-custom-resolver[]
     private Driver createDriver( String virtualUri, String user, String password, ServerAddress... addresses )
     {
-        return GraphDatabase.driver( virtualUri, AuthTokens.basic( user, password ),
-                Config.build().withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) ).toConfig() );
+        Config config = Config.builder()
+                .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
+                .build();
+
+        return GraphDatabase.driver( virtualUri, AuthTokens.basic( user, password ), config );
     }
 
     private void addPerson( String name )

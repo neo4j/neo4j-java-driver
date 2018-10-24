@@ -82,9 +82,9 @@ class SessionPoolingStressIT
     @Test
     void shouldWorkFine() throws Throwable
     {
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withoutEncryption()
-                .toConfig();
+                .build();
 
         driver = driver( neo4j.uri(), neo4j.authToken(), config );
 

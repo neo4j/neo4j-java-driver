@@ -59,17 +59,17 @@ class ServerKilledIT
     private static Stream<Arguments> data()
     {
         return Stream.of(
-                Arguments.of( "plaintext", Config.build().withoutEncryption() ),
-                Arguments.of( "tls encrypted", Config.build().withEncryption() )
+                Arguments.of( "plaintext", Config.builder().withoutEncryption() ),
+                Arguments.of( "tls encrypted", Config.builder().withEncryption() )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "data" )
-    void shouldRecoverFromServerRestart( String name, Config.ConfigBuilder config )
+    void shouldRecoverFromServerRestart( String name, Config.ConfigBuilder configBuilder )
     {
         // Given config with sessionLivenessCheckTimeout not set, i.e. turned off
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), DEFAULT_AUTH_TOKEN, config.toConfig() ) )
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), DEFAULT_AUTH_TOKEN, configBuilder.build() ) )
         {
             acquireAndReleaseConnections( 4, driver );
 
@@ -98,15 +98,15 @@ class ServerKilledIT
 
     @ParameterizedTest
     @MethodSource( "data" )
-    void shouldDropBrokenOldSessions( String name, Config.ConfigBuilder config )
+    void shouldDropBrokenOldSessions( String name, Config.ConfigBuilder configBuilder )
     {
         // config with set liveness check timeout
         int livenessCheckTimeoutMinutes = 10;
-        config.withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES );
+        configBuilder.withConnectionLivenessCheckTimeout( livenessCheckTimeoutMinutes, TimeUnit.MINUTES );
 
         FakeClock clock = new FakeClock();
 
-        try ( Driver driver = createDriver( clock, config.toConfig() ) )
+        try ( Driver driver = createDriver( clock, configBuilder.build() ) )
         {
             acquireAndReleaseConnections( 5, driver );
 

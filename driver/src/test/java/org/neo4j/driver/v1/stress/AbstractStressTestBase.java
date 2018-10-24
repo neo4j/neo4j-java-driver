@@ -99,11 +99,11 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( logging )
                 .withMaxConnectionPoolSize( 100 )
                 .withConnectionAcquisitionTimeout( 1, MINUTES )
-                .toConfig();
+                .build();
 
         driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config );
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "false" );

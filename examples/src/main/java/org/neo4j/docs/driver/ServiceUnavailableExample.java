@@ -24,13 +24,13 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 // end::service-unavailable-import[]
 
 public class ServiceUnavailableExample implements AutoCloseable
@@ -39,8 +39,12 @@ public class ServiceUnavailableExample implements AutoCloseable
 
     public ServiceUnavailableExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build()
-                .withMaxTransactionRetryTime( 3, SECONDS ).withLogging( DEV_NULL_LOGGING ).toConfig() );
+        Config config = Config.builder()
+                .withMaxTransactionRetryTime( 3, SECONDS )
+                .withLogging( Logging.none() )
+                .build();
+
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }
 
     @Override

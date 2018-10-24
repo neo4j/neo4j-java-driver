@@ -33,10 +33,10 @@ import static org.neo4j.driver.v1.Logging.none;
 
 class TrustedServerProductTest
 {
-    private static final Config config = Config.build()
+    private static final Config config = Config.builder()
             .withoutEncryption()
             .withLogging( none() )
-            .toConfig();
+            .build();
 
     @Test
     void shouldRejectConnectionsToNonNeo4jServers() throws Exception

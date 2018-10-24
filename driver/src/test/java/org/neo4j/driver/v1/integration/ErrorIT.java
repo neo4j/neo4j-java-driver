@@ -177,7 +177,7 @@ class ErrorIT
         //the http server needs some time to start up
         Thread.sleep( 2000 );
 
-        Config config = Config.build().withoutEncryption().toConfig();
+        Config config = Config.builder().withoutEncryption().build();
 
         ClientException e = assertThrows( ClientException.class, () -> GraphDatabase.driver( "bolt://localhost:" + session.httpPort(), config ) );
         assertEquals( "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
@@ -261,7 +261,7 @@ class ErrorIT
         AuthToken authToken = session.authToken();
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         Throwable queryError = null;
 
         try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config );

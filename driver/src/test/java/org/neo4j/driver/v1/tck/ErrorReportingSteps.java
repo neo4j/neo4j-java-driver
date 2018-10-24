@@ -230,7 +230,7 @@ public class ErrorReportingSteps
     @Given( "^I have a driver with fixed pool size of (\\d+)$" )
     public void iHaveADriverWithFixedPoolSizeOf( int poolSize ) throws Throwable
     {
-        smallDriver = GraphDatabase.driver( "bolt://localhost:" + neo4j.boltPort(), Config.build().withMaxSessions( poolSize ).toConfig() );
+        smallDriver = GraphDatabase.driver( "bolt://localhost:" + neo4j.boltPort(), Config.builder().withMaxSessions( poolSize ).build() );
     }
 
     @And( "^I try to get a session$" )

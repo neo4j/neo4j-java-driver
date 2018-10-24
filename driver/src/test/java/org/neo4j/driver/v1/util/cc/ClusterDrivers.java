@@ -64,11 +64,11 @@ public class ClusterDrivers implements AutoCloseable
 
     private static Config driverConfig()
     {
-        return Config.build()
+        return Config.builder()
                 .withLogging( DEV_NULL_LOGGING )
                 .withoutEncryption()
                 .withMaxConnectionPoolSize( 1 )
                 .withConnectionLivenessCheckTimeout( 0, TimeUnit.MILLISECONDS )
-                .toConfig();
+                .build();
     }
 }

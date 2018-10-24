@@ -100,7 +100,7 @@ class ConnectionPoolIT
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
 
         int maxConnLifetimeHours = 3;
-        Config config = Config.build().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).toConfig();
+        Config config = Config.builder().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).build();
         RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
         driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, DEFAULT, config );
 
@@ -139,10 +139,10 @@ class ConnectionPoolIT
     void shouldRespectMaxConnectionPoolSize()
     {
         int maxPoolSize = 3;
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withMaxConnectionPoolSize( maxPoolSize )
                 .withConnectionAcquisitionTimeout( 542, TimeUnit.MILLISECONDS )
-                .toConfig();
+                .build();
 
         driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
 
