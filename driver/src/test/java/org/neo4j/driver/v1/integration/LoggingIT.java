@@ -28,6 +28,7 @@ import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ParallelizableIT
 class LoggingIT
 {
     @RegisterExtension

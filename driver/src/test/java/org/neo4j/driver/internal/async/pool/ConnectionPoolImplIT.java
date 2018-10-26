@@ -41,6 +41,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -61,6 +62,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@ParallelizableIT
 class ConnectionPoolImplIT
 {
     private static final BoltServerAddress ADDRESS_1 = new BoltServerAddress( "server:1" );

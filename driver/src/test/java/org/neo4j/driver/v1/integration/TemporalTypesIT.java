@@ -40,6 +40,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.IsoDuration;
 import org.neo4j.driver.v1.util.Function;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 import org.neo4j.driver.v1.util.TemporalUtil;
 
@@ -53,6 +54,7 @@ import static org.neo4j.driver.v1.Values.ofOffsetDateTime;
 import static org.neo4j.driver.v1.Values.parameters;
 
 @EnabledOnNeo4jWith( TEMPORAL_TYPES )
+@ParallelizableIT
 class TemporalTypesIT
 {
     private static final int RANDOM_VALUES_TO_TEST = 1_000;

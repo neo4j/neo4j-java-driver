@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Collections.singletonMap;
@@ -40,6 +41,7 @@ import static org.neo4j.driver.v1.Values.ofPoint;
 import static org.neo4j.driver.v1.Values.point;
 
 @EnabledOnNeo4jWith( SPATIAL_TYPES )
+@ParallelizableIT
 class SpatialTypesIT
 {
     private static final int WGS_84_CRS_CODE = 4326;

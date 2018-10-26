@@ -26,7 +26,7 @@ import org.neo4j.driver.v1.util.StubServer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ExamplesStubIT
+class ExamplesStubIT
 {
     @Test
     void testShouldRunConfigCustomResolverExample() throws Exception

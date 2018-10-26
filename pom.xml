@@ -9,8 +9,12 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
-    <surefire.and.failsafe.version>2.22.0</surefire.and.failsafe.version>
-    <junit.version>5.2.0</junit.version>
+    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+    <junit.version>5.3.1</junit.version>
+    <junit.platform.version>1.3.1</junit.platform.version>
+    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
+    <!-- JUnit 4 categories and JUnit 5 tags to be executed in parallel -->
+    <parallelizable.it.tags>parallelizableIT, org.neo4j.driver.v1.util.ParallelizableJUnit4IT</parallelizable.it.tags>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -181,6 +185,19 @@
         <maven.compiler.target>9</maven.compiler.target>
       </properties>
     </profile>
+
+    <!-- Disable parallel execution of integration tests with "-DsequentialITs" -->
+    <profile>
+      <id>sequentialIntegrationTests</id>
+      <activation>
+        <property>
+          <name>sequentialITs</name>
+        </property>
+      </activation>
+      <properties>
+        <parallelizable.it.forkCount>1</parallelizable.it.forkCount>
+      </properties>
+    </profile>
   </profiles>
 
   <build>
@@ -342,26 +359,81 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire.and.failsafe.version}</version>
         <configuration>
-          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+          <argLine>${surefire.and.failsafe.argLine}</argLine>
           <trimStackTrace>false</trimStackTrace>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit.platform.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>${junit.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${surefire.and.failsafe.version}</version>
-        <configuration>
-          <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
         <executions>
+          <!-- execution 1: execute all ITs that support parallel execution (regular single-instance tests)  -->
           <execution>
+            <id>parallelizable-integration-tests</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <argLine>-Dfile.encoding=${project.build.sourceEncoding} -DtestJvmId=${surefire.forkNumber}</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <forkCount>${parallelizable.it.forkCount}</forkCount>
+              <reuseForks>true</reuseForks>
+              <groups>${parallelizable.it.tags}</groups>
+            </configuration>
+          </execution>
+
+          <!-- execution 2: execute all ITs that do not support parallel execution (stub server tests, causal cluster tests)  -->
+          <execution>
+            <id>sequential-integration-tests</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
+              <trimStackTrace>false</trimStackTrace>
+              <forkCount>1</forkCount>
+              <reuseForks>true</reuseForks>
+              <excludedGroups>${parallelizable.it.tags}</excludedGroups>
+            </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit.platform.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>${junit.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

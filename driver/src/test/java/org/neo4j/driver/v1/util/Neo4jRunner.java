@@ -41,6 +41,9 @@ import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.util.FileTools.moveFile;
 import static org.neo4j.driver.v1.util.FileTools.updateProperties;
+import static org.neo4j.driver.v1.util.Neo4jSettings.CURRENT_BOLT_PORT;
+import static org.neo4j.driver.v1.util.Neo4jSettings.CURRENT_HTTP_PORT;
+import static org.neo4j.driver.v1.util.Neo4jSettings.TEST_JVM_ID;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.boltKitAvailable;
 import static org.neo4j.driver.v1.util.cc.CommandLineUtil.executeCommand;
 
@@ -56,8 +59,6 @@ public class Neo4jRunner
 
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.4.6";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
-    public static final URI DEFAULT_URI = URI.create( "bolt://localhost:7687" );
-    public static final BoltServerAddress DEFAULT_ADDRESS = new BoltServerAddress( DEFAULT_URI );
     public static final Config DEFAULT_CONFIG = Config.build().withLogging( console( INFO ) ).toConfig();
 
     public static final String USER = "neo4j";
@@ -67,11 +68,31 @@ public class Neo4jRunner
     private Neo4jSettings currentSettings = Neo4jSettings.TEST_SETTINGS;
 
     public static final String TARGET_DIR = new File( "../target" ).getAbsolutePath();
-    private static final String NEO4J_DIR = new File( TARGET_DIR, "test-server" ).getAbsolutePath();
+    private static final String NEO4J_DIR = new File( TARGET_DIR, "test-server-" + TEST_JVM_ID ).getAbsolutePath();
     public static final String HOME_DIR = new File( NEO4J_DIR, "neo4jHome" ).getAbsolutePath();
 
     private Driver driver;
     private boolean restartDriver;
+
+    public int httpPort()
+    {
+        return CURRENT_HTTP_PORT;
+    }
+
+    public int boltPort()
+    {
+        return CURRENT_BOLT_PORT;
+    }
+
+    public BoltServerAddress boltAddress()
+    {
+        return new BoltServerAddress( "localhost", boltPort() );
+    }
+
+    public URI boltUri()
+    {
+        return URI.create( "bolt://localhost:" + boltPort() );
+    }
 
     /** Global runner controlling a single server, used to avoid having to restart the server between tests */
     public static synchronized Neo4jRunner getOrCreateGlobalRunner() throws IOException
@@ -132,7 +153,7 @@ public class Neo4jRunner
 
         if ( driver == null )
         {
-            driver = GraphDatabase.driver( DEFAULT_URI, DEFAULT_AUTH_TOKEN, DEFAULT_CONFIG );
+            driver = GraphDatabase.driver( boltUri(), DEFAULT_AUTH_TOKEN, DEFAULT_CONFIG );
         }
         return driver;
     }
@@ -236,7 +257,7 @@ public class Neo4jRunner
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( DEFAULT_ADDRESS.toSocketAddress() );
+            soChannel.connect( boltAddress().toSocketAddress() );
             soChannel.close();
             return ServerStatus.ONLINE;
         }

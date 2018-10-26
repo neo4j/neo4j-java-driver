@@ -28,11 +28,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ParallelizableIT
 class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStressIT.Context>
 {
     @RegisterExtension

@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.exceptions.AuthenticationException;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.Neo4jSettings;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.containsString;
@@ -50,6 +51,7 @@ import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
 
+@ParallelizableIT
 class CredentialsIT
 {
     @RegisterExtension
@@ -80,7 +82,7 @@ class CredentialsIT
 
         // verify old password does not work
         assertThrows( AuthenticationException.class,
-                () -> GraphDatabase.driver( "bolt://localhost", AuthTokens.basic( "neo4j", PASSWORD ) ) );
+                () -> GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", PASSWORD ) ) );
 
         // verify new password works
         try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
@@ -161,13 +163,13 @@ class CredentialsIT
     @Test
     void directDriverShouldFailEarlyOnWrongCredentials()
     {
-        testDriverFailureOnWrongCredentials( "bolt://localhost" );
+        testDriverFailureOnWrongCredentials( "bolt://localhost:" + neo4j.boltPort() );
     }
 
     @Test
     void routingDriverShouldFailEarlyOnWrongCredentials()
     {
-        testDriverFailureOnWrongCredentials( "bolt+routing://localhost" );
+        testDriverFailureOnWrongCredentials( "bolt+routing://localhost:" + neo4j.boltPort() );
     }
 
     private void testDriverFailureOnWrongCredentials( String uri )

@@ -36,6 +36,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 import org.neo4j.driver.v1.util.TestUtil;
 
@@ -57,6 +58,7 @@ import static org.neo4j.driver.v1.Values.ofInteger;
 import static org.neo4j.driver.v1.Values.ofValue;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@ParallelizableIT
 class ParametersIT
 {
     private static final int LONG_VALUE_SIZE = 1_000_000;

@@ -30,6 +30,7 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
@@ -38,6 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@ParallelizableIT
 class StatementIT
 {
     @RegisterExtension

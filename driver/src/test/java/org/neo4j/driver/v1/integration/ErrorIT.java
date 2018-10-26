@@ -49,6 +49,7 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
@@ -68,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Iterables.single;
 
+@ParallelizableIT
 class ErrorIT
 {
     @RegisterExtension
@@ -177,7 +179,7 @@ class ErrorIT
 
         Config config = Config.build().withoutEncryption().toConfig();
 
-        ClientException e = assertThrows( ClientException.class, () -> GraphDatabase.driver( "bolt://localhost:7474", config ) );
+        ClientException e = assertThrows( ClientException.class, () -> GraphDatabase.driver( "bolt://localhost:" + session.httpPort(), config ) );
         assertEquals( "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
                       "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)", e.getMessage() );
     }

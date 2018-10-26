@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.net;
 import org.junit.jupiter.api.Test;
 
 import java.net.SocketAddress;
+import java.net.URI;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.net.ServerAddress;
@@ -114,5 +115,25 @@ class BoltServerAddressTest
         when( address3.host() ).thenReturn( "my.database.org" );
         when( address3.port() ).thenReturn( 99_000 );
         assertThrows( IllegalArgumentException.class, () -> BoltServerAddress.from( address3 ) );
+    }
+
+    @Test
+    void shouldUseUriWithHostButWithoutPort()
+    {
+        URI uri = URI.create( "bolt://neo4j.com" );
+        BoltServerAddress address = new BoltServerAddress( uri );
+
+        assertEquals( "neo4j.com", address.host() );
+        assertEquals( DEFAULT_PORT, address.port() );
+    }
+
+    @Test
+    void shouldUseUriWithHostAndPort()
+    {
+        URI uri = URI.create( "bolt://neo4j.com:12345" );
+        BoltServerAddress address = new BoltServerAddress( uri );
+
+        assertEquals( "neo4j.com", address.host() );
+        assertEquals( 12345, address.port() );
     }
 }

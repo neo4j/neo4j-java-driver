@@ -19,14 +19,12 @@
 package org.neo4j.driver.v1.integration;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -43,10 +41,8 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logging;
@@ -58,24 +54,22 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@ParallelizableIT
 class ConnectionHandlingIT
 {
     @RegisterExtension
@@ -270,36 +264,6 @@ class ConnectionHandlingIT
         verify( connection2 ).release();
     }
 
-    @Test
-    void shouldCloseChannelWhenResetFails() throws Exception
-    {
-        StubServer server = StubServer.start( "reset_error.script", 9001 );
-        try
-        {
-            URI uri = URI.create( "bolt://localhost:9001" );
-            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
-            ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
-
-            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
-            {
-                try ( Session session = driver.session() )
-                {
-                    assertEquals( 42, session.run( "RETURN 42 AS answer" ).single().get( 0 ).asInt() );
-                }
-
-                List<Channel> channels = driverFactory.pollChannels();
-                // there should be a single channel
-                assertEquals( 1, channels.size() );
-                // and it should be closed because it failed to RESET
-                assertNull( channels.get( 0 ).closeFuture().get( 30, SECONDS ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
     private StatementResult createNodesInNewSession( int nodesToCreate )
     {
         return createNodes( nodesToCreate, driver.session() );
@@ -341,7 +305,6 @@ class ConnectionHandlingIT
         {
             super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock );
         }
-
 
         void startMemorizing()
         {

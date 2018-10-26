@@ -44,7 +44,6 @@ import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -61,11 +60,10 @@ import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.INFO;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -88,11 +86,11 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
-import static org.neo4j.driver.v1.Logging.console;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
+@ParallelizableIT
 class SessionIT
 {
     @RegisterExtension
@@ -1174,18 +1172,6 @@ class SessionIT
     }
 
     @Test
-    void shouldPropagateTransactionCommitErrorWhenClosed() throws Exception
-    {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "commit_error.script", true, "Unable to commit" );
-    }
-
-    @Test
-    void shouldPropagateTransactionRollbackErrorWhenClosed() throws Exception
-    {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
-    }
-
-    @Test
     void shouldSupportNestedQueries()
     {
         try ( Session session = neo4j.driver().session() )
@@ -1405,45 +1391,6 @@ class SessionIT
         {
             Thread.currentThread().interrupt();
             throw new RuntimeException( e );
-        }
-    }
-
-    private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,
-            String expectedErrorMessage ) throws Exception
-    {
-        StubServer server = StubServer.start( script, 9001 );
-        try
-        {
-            Config config = Config.build()
-                    .withLogging( DEV_NULL_LOGGING )
-                    .withLogging( console( INFO ) )
-                    .withoutEncryption()
-                    .toConfig();
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", AuthTokens.none(), config ) )
-            {
-                Session session = driver.session();
-
-                Transaction tx = session.beginTransaction();
-                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
-                assertEquals( "Alice", result.single().get( "name" ).asString() );
-
-                if ( commit )
-                {
-                    tx.success();
-                }
-                else
-                {
-                    tx.failure();
-                }
-
-                TransientException e = assertThrows( TransientException.class, session::close );
-                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                assertEquals( expectedErrorMessage, e.getMessage() );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
         }
     }
 

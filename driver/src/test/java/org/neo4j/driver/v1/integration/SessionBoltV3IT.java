@@ -44,6 +44,7 @@ import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.time.Duration.ofMillis;
@@ -61,6 +62,7 @@ import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 @EnabledOnNeo4jWith( BOLT_V3 )
+@ParallelizableIT
 class SessionBoltV3IT
 {
     @RegisterExtension

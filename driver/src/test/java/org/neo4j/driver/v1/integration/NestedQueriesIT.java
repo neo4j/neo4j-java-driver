@@ -28,12 +28,14 @@ import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.StatementRunner;
 import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+@ParallelizableIT
 class NestedQueriesIT
 {
     private static final String OUTER_QUERY = "UNWIND range(1, 10000) AS x RETURN x";

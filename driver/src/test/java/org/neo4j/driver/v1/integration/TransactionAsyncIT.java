@@ -59,6 +59,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
@@ -82,6 +83,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@ParallelizableIT
 class TransactionAsyncIT
 {
     @RegisterExtension

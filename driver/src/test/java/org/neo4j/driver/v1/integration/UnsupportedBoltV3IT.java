@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.time.Duration.ofSeconds;
@@ -38,6 +39,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
 @DisabledOnNeo4jWith( BOLT_V3 )
+@ParallelizableIT
 class UnsupportedBoltV3IT
 {
     @RegisterExtension

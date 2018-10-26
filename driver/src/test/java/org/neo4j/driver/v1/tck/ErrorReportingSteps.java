@@ -41,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.driver.v1.tck.DriverComplianceIT.neo4j;
 import static org.neo4j.driver.v1.tck.Environment.driver;
 
 public class ErrorReportingSteps
@@ -186,7 +187,7 @@ public class ErrorReportingSteps
     @And( "^I get a session from the driver and close the driver$" )
     public void iGetASessionFromTheDriver() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:7687" ) )
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + neo4j.boltPort() ) )
         {
             transactionRunner = new TransactionRunner( driver.session() );
         }
@@ -215,7 +216,7 @@ public class ErrorReportingSteps
     @When( "^I set up a driver with wrong scheme$" )
     public void iSetUpADriverToAnIncorrectScheme() throws Throwable
     {
-        try ( Driver driver = GraphDatabase.driver( "wrong://localhost:7687" ) )
+        try ( Driver driver = GraphDatabase.driver( "wrong://localhost:" + neo4j.boltPort() ) )
         {
             driver.session();
         }
@@ -229,7 +230,7 @@ public class ErrorReportingSteps
     @Given( "^I have a driver with fixed pool size of (\\d+)$" )
     public void iHaveADriverWithFixedPoolSizeOf( int poolSize ) throws Throwable
     {
-        smallDriver = GraphDatabase.driver( "bolt://localhost:7687", Config.build().withMaxSessions( poolSize ).toConfig() );
+        smallDriver = GraphDatabase.driver( "bolt://localhost:" + neo4j.boltPort(), Config.build().withMaxSessions( poolSize ).toConfig() );
     }
 
     @And( "^I try to get a session$" )
