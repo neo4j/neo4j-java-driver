@@ -38,7 +38,7 @@ public class ServerVersion
     public static final ServerVersion v3_0_0 = new ServerVersion( NEO4J_PRODUCT, 3, 0, 0 );
     public static final ServerVersion vInDev = new ServerVersion( NEO4J_PRODUCT, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE );
 
-    private static final String NEO4J_IN_DEV_VERSION_STRING = "Neo4j/dev";
+    private static final String NEO4J_IN_DEV_VERSION_STRING = NEO4J_PRODUCT + "/dev";
     private static final Pattern PATTERN =
             Pattern.compile( "([^/]+)/(\\d+)\\.(\\d+)(?:\\.)?(\\d*)(\\.|-|\\+)?([0-9A-Za-z-.]*)?" );
 
