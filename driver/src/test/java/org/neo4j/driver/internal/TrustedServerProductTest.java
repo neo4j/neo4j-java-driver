@@ -20,6 +20,7 @@
 package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
+
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.exceptions.UntrustedServerException;
@@ -30,7 +31,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.v1.Logging.none;
 
-public class TrustedServerProductTest
+class TrustedServerProductTest
 {
     private static final Config config = Config.build()
             .withoutEncryption()
