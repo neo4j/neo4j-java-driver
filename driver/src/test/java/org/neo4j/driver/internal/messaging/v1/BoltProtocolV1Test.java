@@ -122,7 +122,7 @@ public class BoltProtocolV1Test
         assertEquals( 1, messageDispatcher.queuedHandlersCount() );
         assertFalse( promise.isDone() );
 
-        messageDispatcher.handleSuccessMessage( emptyMap() );
+        messageDispatcher.handleSuccessMessage( singletonMap( "server", value( "Neo4j/3.1.0" ) ) );
 
         assertTrue( promise.isDone() );
         assertTrue( promise.isSuccess() );

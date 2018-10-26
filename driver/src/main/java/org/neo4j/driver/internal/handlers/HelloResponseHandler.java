@@ -29,10 +29,10 @@ import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 
 public class HelloResponseHandler implements ResponseHandler
 {
-    private static final String SERVER_METADATA_KEY = "server";
     private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
 
     private final ChannelPromise connectionInitializedPromise;
@@ -49,10 +49,10 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
-            ServerVersion serverVersion = ServerVersion.version( extractMetadataValue( SERVER_METADATA_KEY, metadata ) );
+            ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
             setServerVersion( channel, serverVersion );
 
-            String connectionId = extractMetadataValue( CONNECTION_ID_METADATA_KEY, metadata );
+            String connectionId = extractConnectionId( metadata );
             setConnectionId( channel, connectionId );
 
             connectionInitializedPromise.setSuccess();
@@ -76,12 +76,13 @@ public class HelloResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    private static String extractMetadataValue( String key, Map<String,Value> metadata )
+    private static String extractConnectionId( Map<String,Value> metadata )
     {
-        Value value = metadata.get( key );
+        Value value = metadata.get( CONNECTION_ID_METADATA_KEY );
         if ( value == null || value.isNull() )
         {
-            throw new IllegalStateException( "Unable to extract " + key + " from a response to HELLO message. Metadata: " + metadata );
+            throw new IllegalStateException( "Unable to extract " + CONNECTION_ID_METADATA_KEY + " from a response to HELLO message. " +
+                                             "Received metadata: " + metadata );
         }
         return value.asString();
     }

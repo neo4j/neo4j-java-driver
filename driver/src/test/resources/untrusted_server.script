@@ -1,0 +1,4 @@
+!: AUTO RESET
+
+C: INIT "neo4j-java/dev" {"scheme": "none"}
+S: SUCCESS {"server": "AgentSmith/0.0.1"}

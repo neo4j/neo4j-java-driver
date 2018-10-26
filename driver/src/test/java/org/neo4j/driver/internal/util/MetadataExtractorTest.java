@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.UntrustedServerException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -43,10 +44,12 @@ import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
@@ -375,6 +378,29 @@ class MetadataExtractorTest
         Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", value( 42 ) ) );
 
         assertEquals( Bookmarks.empty(), bookmarks );
+    }
+
+    @Test
+    void shouldExtractServerVersion()
+    {
+        Map<String,Value> metadata = singletonMap( "server", value( "Neo4j/3.5.0" ) );
+
+        ServerVersion version = extractNeo4jServerVersion( metadata );
+
+        assertEquals( ServerVersion.v3_5_0, version );
+    }
+
+    @Test
+    void shouldFailToExtractServerVersionWhenMetadataDoesNotContainIt()
+    {
+        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", Values.NULL ) ) );
+        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", null ) ) );
+    }
+
+    @Test
+    void shouldFailToExtractServerVersionFromNonNeo4jProduct()
+    {
+        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", value( "NotNeo4j/1.2.3" ) ) ) );
     }
 
     private ResultSummary createWithStatementType( Value typeValue )

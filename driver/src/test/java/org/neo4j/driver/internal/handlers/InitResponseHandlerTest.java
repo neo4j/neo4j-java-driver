@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.UntrustedServerException;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.startsWith;
@@ -84,16 +85,13 @@ class InitResponseHandlerTest
     }
 
     @Test
-    void shouldSetServerVersionToDefaultValueWhenUnknown()
+    void shouldFailToConnectWhenNoServerIdentifierIsProvided()
     {
         ChannelPromise channelPromise = channel.newPromise();
         InitResponseHandler handler = new InitResponseHandler( channelPromise );
 
         Map<String,Value> metadata = singletonMap( "server", Values.NULL );
-        handler.onSuccess( metadata );
-
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( ServerVersion.v3_0_0, serverVersion( channel ) );
+        assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
     }
 
     @Test

@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 
 public class InitResponseHandler implements ResponseHandler
 {
@@ -47,7 +48,7 @@ public class InitResponseHandler implements ResponseHandler
     {
         try
         {
-            ServerVersion serverVersion = extractServerVersion( metadata );
+            ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
             setServerVersion( channel, serverVersion );
             updatePipelineIfNeeded( serverVersion, channel.pipeline() );
             connectionInitializedPromise.setSuccess();
@@ -69,13 +70,6 @@ public class InitResponseHandler implements ResponseHandler
     public void onRecord( Value[] fields )
     {
         throw new UnsupportedOperationException();
-    }
-
-    private static ServerVersion extractServerVersion( Map<String,Value> metadata )
-    {
-        Value versionValue = metadata.get( "server" );
-        boolean versionAbsent = versionValue == null || versionValue.isNull();
-        return versionAbsent ? ServerVersion.v3_0_0 : ServerVersion.version( versionValue.asString() );
     }
 
     private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )
