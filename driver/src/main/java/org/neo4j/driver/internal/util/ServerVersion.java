@@ -146,7 +146,7 @@ public class ServerVersion
     {
         if ( !product.equals( o.product ) )
         {
-            throw new IllegalArgumentException("Comparing different products");
+            throw new IllegalArgumentException( "Comparing different products '" + product + "' with '" + o.product + "'" );
         }
         int c = compare( major, o.major );
         if (c == 0)

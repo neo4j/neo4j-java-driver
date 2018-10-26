@@ -51,4 +51,13 @@ class ServerVersionTest
         assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j1.2.3" ) );
         assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j" ) );
     }
+
+    @Test
+    void shouldFailToCompareDifferentProducts()
+    {
+        ServerVersion version1 = ServerVersion.version( "MyNeo4j/1.2.3" );
+        ServerVersion version2 = ServerVersion.version( "OtherNeo4j/1.2.4" );
+
+        assertThrows( IllegalArgumentException.class, () -> version1.greaterThanOrEqual( version2 ) );
+    }
 }
