@@ -35,17 +35,20 @@ class ServerVersionTest
     }
 
     @Test
-    void versionShouldThrowExceptionIfServerVersionCantBeParsed()
-    {
-        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "" ) );
-    }
-
-    @Test
     void shouldHaveCorrectToString()
     {
         assertEquals( "Neo4j/dev", ServerVersion.vInDev.toString() );
         assertEquals( "Neo4j/3.1.0", ServerVersion.v3_1_0.toString() );
         assertEquals( "Neo4j/3.2.0", ServerVersion.v3_2_0.toString() );
         assertEquals( "Neo4j/3.5.7", ServerVersion.version( "Neo4j/3.5.7" ).toString() );
+    }
+
+    @Test
+    void shouldFailToParseIllegalVersions()
+    {
+        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "" ) );
+        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "/1.2.3" ) );
+        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j1.2.3" ) );
+        assertThrows( IllegalArgumentException.class, () -> ServerVersion.version( "Neo4j" ) );
     }
 }
