@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.UntrustedServerException;
 import org.neo4j.driver.v1.summary.Notification;
 import org.neo4j.driver.v1.summary.Plan;
 import org.neo4j.driver.v1.summary.ProfiledPlan;
@@ -99,6 +100,27 @@ public class MetadataExtractor
             return Bookmarks.from( bookmarkValue.asString() );
         }
         return Bookmarks.empty();
+    }
+
+    public static ServerVersion extractNeo4jServerVersion( Map<String,Value> metadata )
+    {
+        Value versionValue = metadata.get( "server" );
+        if ( versionValue == null || versionValue.isNull() )
+        {
+            throw new UntrustedServerException( "Server provides no product identifier" );
+        }
+        else
+        {
+            ServerVersion server = ServerVersion.version( versionValue.asString() );
+            if ( ServerVersion.NEO4J_PRODUCT.equalsIgnoreCase( server.product() ) )
+            {
+                return server;
+            }
+            else
+            {
+                throw new UntrustedServerException( "Server does not identify as a genuine Neo4j instance: '" + server.product() + "'" );
+            }
+        }
     }
 
     private static StatementType extractStatementType( Map<String,Value> metadata )

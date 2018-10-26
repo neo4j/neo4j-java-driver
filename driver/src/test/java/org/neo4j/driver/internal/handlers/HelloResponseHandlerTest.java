@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.v1.exceptions.UntrustedServerException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -88,7 +89,7 @@ class HelloResponseHandlerTest
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
         Map<String,Value> metadata = metadata( null, "bolt-1" );
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
+        assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
         assertTrue( channel.closeFuture().isDone() ); // channel was closed
@@ -101,7 +102,7 @@ class HelloResponseHandlerTest
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
         Map<String,Value> metadata = metadata( Values.NULL, "bolt-x" );
-        assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
+        assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
         assertTrue( channel.closeFuture().isDone() ); // channel was closed
