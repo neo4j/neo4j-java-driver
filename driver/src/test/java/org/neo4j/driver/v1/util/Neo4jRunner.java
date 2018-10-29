@@ -115,6 +115,7 @@ public class Neo4jRunner
         try
         {
             installNeo4j();
+            updateServerSettingsFile();
             startNeo4j();
         }
         finally
