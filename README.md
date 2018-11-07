@@ -17,7 +17,6 @@ The table below shows runtime compatibility for the currently-supported driver v
 
 | Driver Series | Java 7 | Java 8 | Java 11 |
 |---------------|:------:|:------:|:-------:|
-| 1.3           |   X    |   X    |         |
 | 1.4           |   X    |   X    |         |
 | 1.5           |        |   X    |   X     |
 | 1.6           |        |   X    |   X     |
