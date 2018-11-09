@@ -5,5 +5,7 @@ Export-Package: \
  *;version="${package-version}"
 
 Import-Package: \
+ !io.netty.*, \
+ !org.HdrHistogram.*, \
  *
 
