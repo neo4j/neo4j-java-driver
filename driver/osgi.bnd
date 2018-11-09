@@ -7,5 +7,6 @@ Export-Package: \
 Import-Package: \
  !io.netty.*, \
  !org.HdrHistogram.*, \
+ javax.security.cert, \
  *
 
