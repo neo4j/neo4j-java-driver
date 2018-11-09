@@ -237,6 +237,7 @@
                 </relocation>
               </relocations>
               <shadeTestJar>true</shadeTestJar>
+              <createSourcesJar>true</createSourcesJar>
             </configuration>
           </execution>
         </executions>
