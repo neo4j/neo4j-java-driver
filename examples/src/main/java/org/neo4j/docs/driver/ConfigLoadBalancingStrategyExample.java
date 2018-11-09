@@ -31,9 +31,11 @@ public class ConfigLoadBalancingStrategyExample implements AutoCloseable
     // tag::config-load-balancing-strategy[]
     public ConfigLoadBalancingStrategyExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build()
+        Config config = Config.builder()
                 .withLoadBalancingStrategy( Config.LoadBalancingStrategy.LEAST_CONNECTED )
-                .toConfig() );
+                .build();
+
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }
     // end::config-load-balancing-strategy[]
 

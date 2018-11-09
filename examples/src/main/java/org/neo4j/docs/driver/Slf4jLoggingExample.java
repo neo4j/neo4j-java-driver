@@ -22,10 +22,10 @@ import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Session;
 
 import static java.util.Collections.singletonMap;
-import static org.neo4j.driver.v1.Logging.slf4j;
 
 public class Slf4jLoggingExample implements AutoCloseable
 {
@@ -33,7 +33,11 @@ public class Slf4jLoggingExample implements AutoCloseable
 
     public Slf4jLoggingExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build().withLogging( slf4j() ).toConfig() );
+        Config config = Config.builder()
+                .withLogging( Logging.slf4j() )
+                .build();
+
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }
 
     public Object runReturnQuery( Object value )

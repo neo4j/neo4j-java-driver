@@ -93,10 +93,10 @@ class GraphDatabaseTest
     {
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withEncryption()
                 .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
-                .toConfig();
+                .build();
 
         assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, config ) );
     }
@@ -117,10 +117,10 @@ class GraphDatabaseTest
         Logger logger = mock( Logger.class );
         when( logging.getLog( anyString() ) ).thenReturn( logger );
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withoutEncryption()
                 .withLogging( logging )
-                .toConfig();
+                .build();
 
         List<URI> routingUris = asList(
                 URI.create( "bolt+routing://localhost:9001" ),
@@ -185,7 +185,7 @@ class GraphDatabaseTest
 
     private static Config createConfig( boolean encrypted, int timeoutMillis )
     {
-        Config.ConfigBuilder configBuilder = Config.build()
+        Config.ConfigBuilder configBuilder = Config.builder()
                 .withConnectionTimeout( timeoutMillis, MILLISECONDS )
                 .withLogging( DEV_NULL_LOGGING );
 
@@ -198,6 +198,6 @@ class GraphDatabaseTest
             configBuilder.withoutEncryption();
         }
 
-        return configBuilder.toConfig();
+        return configBuilder.build();
     }
 }

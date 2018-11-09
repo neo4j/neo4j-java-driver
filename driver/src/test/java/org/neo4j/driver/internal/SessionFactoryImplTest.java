@@ -36,7 +36,7 @@ class SessionFactoryImplTest
     @Test
     void createsNetworkSessions()
     {
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         SessionFactory factory = newSessionFactory( config );
 
         Session readSession = factory.newInstance( AccessMode.READ, null );
@@ -49,7 +49,7 @@ class SessionFactoryImplTest
     @Test
     void createsLeakLoggingNetworkSessions()
     {
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().build();
         SessionFactory factory = newSessionFactory( config );
 
         Session readSession = factory.newInstance( AccessMode.READ, null );

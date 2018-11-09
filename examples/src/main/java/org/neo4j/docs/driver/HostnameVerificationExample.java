@@ -34,10 +34,10 @@ public class HostnameVerificationExample implements AutoCloseable
 
     HostnameVerificationExample( String uri, String user, String password, File certFile )
     {
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withEncryption()
                 .withTrustStrategy( trustCustomCertificateSignedBy( certFile ).withHostnameVerification() )
-                .toConfig();
+                .build();
 
         driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }

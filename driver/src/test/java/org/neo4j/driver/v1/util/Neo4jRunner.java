@@ -59,7 +59,7 @@ public class Neo4jRunner
 
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.4.6";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
-    public static final Config DEFAULT_CONFIG = Config.build().withLogging( console( INFO ) ).toConfig();
+    public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( INFO ) ).build();
 
     public static final String USER = "neo4j";
     public static final String PASSWORD = "password";

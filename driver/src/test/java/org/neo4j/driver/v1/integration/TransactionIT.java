@@ -411,7 +411,7 @@ class TransactionIT
     {
         ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
         RoutingSettings instance = new RoutingSettings( 1, 0 );
-        Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+        Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
 
         try ( Driver driver = factory.newInstance( session.uri(), session.authToken(), instance, DEFAULT, config ) )
         {

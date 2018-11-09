@@ -115,9 +115,10 @@ class DirectDriverBoltKitTest
         Logger logger = mock( Logger.class );
         when( logger.isDebugEnabled() ).thenReturn( true );
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( ignore -> logger )
-                .withoutEncryption().toConfig();
+                .withoutEncryption()
+                .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
               Session session = driver.session() )
@@ -149,7 +150,7 @@ class DirectDriverBoltKitTest
         try
         {
             URI uri = URI.create( "bolt://localhost:9001" );
-            Config config = Config.build().withLogging( DEV_NULL_LOGGING ).withoutEncryption().toConfig();
+            Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withoutEncryption().build();
             ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
 
             try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )

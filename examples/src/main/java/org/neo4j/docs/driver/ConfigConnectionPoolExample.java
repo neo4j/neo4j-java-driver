@@ -33,11 +33,13 @@ public class ConfigConnectionPoolExample  implements AutoCloseable
     // tag::config-connection-pool[]
     public ConfigConnectionPoolExample( String uri, String user, String password )
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), Config.build()
+        Config config = Config.builder()
                 .withMaxConnectionLifetime( 30, TimeUnit.MINUTES )
                 .withMaxConnectionPoolSize( 50 )
                 .withConnectionAcquisitionTimeout( 2, TimeUnit.MINUTES )
-                .toConfig() );
+                .build();
+
+        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );
     }
     // end::config-connection-pool[]
 

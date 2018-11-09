@@ -242,10 +242,23 @@ public class Config
     }
 
     /**
-     * Return a {@link ConfigBuilder} instance
-     * @return a {@link ConfigBuilder} instance
+     * Start building a {@link Config} object using a newly created builder.
+     * <p>
+     * <b>Please use {@link #builder()} method instead.</b>
+     *
+     * @return a new {@link ConfigBuilder} instance.
      */
     public static ConfigBuilder build()
+    {
+        return builder();
+    }
+
+    /**
+     * Start building a {@link Config} object using a newly created builder.
+     *
+     * @return a new {@link ConfigBuilder} instance.
+     */
+    public static ConfigBuilder builder()
     {
         return new ConfigBuilder();
     }
@@ -255,7 +268,7 @@ public class Config
      */
     public static Config defaultConfig()
     {
-        return Config.build().toConfig();
+        return Config.builder().build();
     }
 
     RoutingSettings routingSettings()
@@ -748,9 +761,22 @@ public class Config
 
         /**
          * Create a config instance from this builder.
-         * @return a {@link Config} instance
+         * <p>
+         * <b>Please use {@link #build()} method instead.</b>
+         *
+         * @return a new {@link Config} instance.
          */
         public Config toConfig()
+        {
+            return build();
+        }
+
+        /**
+         * Create a config instance from this builder.
+         *
+         * @return a new {@link Config} instance.
+         */
+        public Config build()
         {
             return new Config( this );
         }

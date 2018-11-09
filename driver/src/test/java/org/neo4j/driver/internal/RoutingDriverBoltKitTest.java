@@ -68,10 +68,10 @@ import static org.neo4j.driver.v1.Logging.none;
 
 class RoutingDriverBoltKitTest
 {
-    private static final Config config = Config.build()
+    private static final Config config = Config.builder()
             .withoutEncryption()
             .withLogging( none() )
-            .toConfig();
+            .build();
 
     @Test
     void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
@@ -984,11 +984,11 @@ class RoutingDriverBoltKitTest
         ServerAddressResolver resolver = mock( ServerAddressResolver.class );
         when( resolver.resolve( any( ServerAddress.class ) ) ).thenThrow( new RuntimeException( "Resolution failure!" ) );
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( none() )
                 .withoutEncryption()
                 .withResolver( resolver )
-                .toConfig();
+                .build();
 
         RuntimeException error = assertThrows( RuntimeException.class, () -> GraphDatabase.driver( "bolt+routing://my.server.com:9001", config ) );
         assertEquals( "Resolution failure!", error.getMessage() );
@@ -1021,11 +1021,11 @@ class RoutingDriverBoltKitTest
             throw new AssertionError();
         };
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withLogging( none() )
                 .withoutEncryption()
                 .withResolver( resolver )
-                .toConfig();
+                .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
         {
@@ -1056,10 +1056,10 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
 
-        Config config = Config.build()
+        Config config = Config.builder()
                 .withoutEncryption()
                 .withLogging( none() )
-                .toConfig();
+                .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
         {

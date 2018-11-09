@@ -54,8 +54,11 @@ class LoggingIT
         when( logger.isDebugEnabled() ).thenReturn( true );
         when( logger.isTraceEnabled() ).thenReturn( true );
 
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
-                Config.build().withLogging( logging ).toConfig() ) )
+        Config config = Config.builder()
+                .withLogging( logging )
+                .build();
+
+        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
         {
             // When
             try ( Session session = driver.session() )

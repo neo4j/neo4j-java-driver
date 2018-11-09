@@ -77,8 +77,8 @@ public class DriverSecurityComplianceSteps
         driver = GraphDatabase.driver(
                 neo4j.uri(),
                 Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                        .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
+                Config.builder().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                        .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).build() );
 
     }
 
@@ -111,8 +111,8 @@ public class DriverSecurityComplianceSteps
             driver = GraphDatabase.driver(
                     neo4j.uri(),
                     Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                    Config.build().withEncryptionLevel( EncryptionLevel.REQUIRED )
-                            .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).toConfig() );
+                    Config.builder().withEncryptionLevel( EncryptionLevel.REQUIRED )
+                            .withTrustStrategy( trustOnFirstUse( knownHostsFile ) ).build() );
         }
         catch ( Exception e )
         {
@@ -186,10 +186,10 @@ public class DriverSecurityComplianceSteps
         sessionsShouldSimplyWork();
 
         File tempFile = tempFile( "known_hosts", ".tmp" );
-        driverKittenConfig = Config.build()
+        driverKittenConfig = Config.builder()
                 .withEncryptionLevel( EncryptionLevel.REQUIRED )
                 .withTrustStrategy( trustOnFirstUse( tempFile ) )
-                .toConfig();
+                .build();
     }
 
     @Then( "^the two drivers should not interfere with one another's known hosts files$" )
@@ -250,8 +250,8 @@ public class DriverSecurityComplianceSteps
             driver = GraphDatabase.driver(
                     neo4j.uri(),
                     Neo4jRunner.DEFAULT_AUTH_TOKEN,
-                    Config.build().withEncryption()
-                            .withTrustStrategy( trustCustomCertificateSignedBy( certificate ) ).toConfig() );
+                    Config.builder().withEncryption()
+                            .withTrustStrategy( trustCustomCertificateSignedBy( certificate ) ).build() );
         }
         catch ( Exception e )
         {
