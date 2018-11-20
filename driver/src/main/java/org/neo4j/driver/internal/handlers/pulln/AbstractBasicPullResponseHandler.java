@@ -84,11 +84,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     @Override
     public synchronized void onRecord( Value[] fields )
     {
-        if ( isFinishedOrCanceled() )
-        {
-            recordConsumer.accept( null, null );
-        }
-        else
+        if ( isStreaming() )
         {
             Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
             recordConsumer.accept( record, null );
@@ -98,30 +94,26 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     @Override
     public synchronized void request( long size )
     {
-        if ( isStreamingPaused() )
+        if ( isPaused() )
         {
             connection.writeAndFlush( new PullNMessage( size, runResponseHandler.statementId() ), this );
             this.status = Status.Streaming;
         }
-        else if ( !isFinishedOrCanceled() ) // is streaming
+        else if ( isStreaming() ) // is streaming
         {
             this.toRequest = safeAdd( this.toRequest, size );
-        }
-        else
-        {
-            recordConsumer.accept( null, null );
         }
     }
 
     @Override
     public synchronized void cancel()
     {
-        if ( isStreamingPaused() )
+        if ( isPaused() )
         {
             connection.writeAndFlush( DiscardAllMessage.DISCARD_ALL, this );
         }
 
-        if ( !isFinishedOrCanceled() ) // no need to change status if it is already done
+        if ( isStreaming() ) // no need to change status if it is already done
         {
             status = Status.Cancelled;
         }
@@ -131,12 +123,6 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     public synchronized void installSummaryConsumer( BiConsumer<ResultSummary, Throwable> summaryConsumer )
     {
         this.summaryConsumer = summaryConsumer;
-    }
-
-    @Override
-    public Status status()
-    {
-        return status;
     }
 
     @Override
@@ -179,14 +165,21 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         summaryConsumer.accept( summary, null );
     }
 
-    private boolean isFinishedOrCanceled()
+    @Override
+    public boolean isFinishedOrCanceled()
     {
         return status == Status.Done || status == Status.Failed || status == Status.Cancelled;
     }
 
-    private boolean isStreamingPaused()
+    @Override
+    public boolean isPaused()
     {
         return status == Status.Paused;
+    }
+
+    private boolean isStreaming()
+    {
+        return status == Status.Streaming;
     }
 
     private static long safeAdd( long n1, long n2 )

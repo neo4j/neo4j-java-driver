@@ -61,7 +61,7 @@ public class DatabaseExtension implements BeforeEachCallback
     {
         runner = getOrCreateGlobalRunner();
         runner.ensureRunning( settings );
-        TestUtil.cleanDb( driver() );
+//        TestUtil.cleanDb( driver() );
     }
 
     public Driver driver()

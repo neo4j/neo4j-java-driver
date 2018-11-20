@@ -28,7 +28,6 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 public class AsyncPullResponseHandler implements PullResponseHandler
 {
-    private boolean doneStreaming = false;
     private final Queue<Record> records = new ArrayDeque<>();
     private CompletableFuture<Record> recordFuture;
 
@@ -42,37 +41,9 @@ public class AsyncPullResponseHandler implements PullResponseHandler
         this.delegate = handler;
         this.controller = new AutoPullController( delegate );
 
-        delegate.installSummaryConsumer( ( summary, error ) -> {
-            if ( summary != null )
-            {
-                summaryFuture.complete( summary );
-            }
-            else if ( error != null )
-            {
-                summaryFuture.completeExceptionally( error );
-            }
-            else
-            {
-                // has_more
-                controller.handleSuccessWithHasMore();
-            }
-        } );
+        delegate.installSummaryConsumer( this::consumeSummary );
 
-        delegate.installRecordConsumer( ( record, throwable ) -> {
-            if ( record != null )
-            {
-                records.add( record );
-                controller.afterEnqueueRecord( record.size() );
-            }
-            else if ( throwable != null )
-            {
-                failRecordFuture( throwable );
-            }
-            else
-            {
-                doneStreaming = true;
-            }
-        } );
+        delegate.installRecordConsumer( this::consumeRecord );
     }
 
     @Override
@@ -82,26 +53,28 @@ public class AsyncPullResponseHandler implements PullResponseHandler
     }
 
     @Override
-    public void request( long n )
+    public synchronized void request( long n )
     {
         delegate.request( n );
     }
 
     @Override
-    public void cancel()
+    public synchronized void cancel()
     {
         delegate.cancel();
     }
 
+    @Override
     public synchronized CompletableFuture<Record> nextRecord()
     {
         return peekRecord().thenApply( ignored -> {
             Record record = records.poll();
-            controller.afterDequeueRecord( records.size(), delegate.status() == BasicPullResponseHandler.Status.Paused );
+            controller.afterDequeueRecord( records.size(), delegate.isPaused() );
             return record;
         } );
     }
 
+    @Override
     public synchronized CompletableFuture<Record> peekRecord()
     {
         if ( recordFuture != null )
@@ -110,10 +83,11 @@ public class AsyncPullResponseHandler implements PullResponseHandler
         }
 
         recordFuture = new CompletableFuture<>();
-        if ( doneStreaming )
+        if ( delegate.isFinishedOrCanceled() && records.size() == 0 )
         {
             CompletableFuture<Record> ret = recordFuture;
-            completeRecordFuture( null );
+            recordFuture = null;
+            ret.complete( null );
             return ret;
         }
         else
@@ -122,18 +96,52 @@ public class AsyncPullResponseHandler implements PullResponseHandler
             Record record = records.peek();
             if ( record != null )
             {
-                completeRecordFuture( record );
+                recordFuture = null;
+                ret.complete( record );
             }
             return ret;
         }
     }
 
+    @Override
     public synchronized CompletionStage<ResultSummary> summary()
     {
         return summaryFuture;
     }
 
-    private void failRecordFuture( Throwable error )
+    private synchronized void consumeRecord( Record record, Throwable throwable )
+    {
+        if ( record != null )
+        {
+            records.add( record );
+            completeRecordFuture( record );
+            controller.afterEnqueueRecord( record.size() );
+        }
+        else if ( throwable != null )
+        {
+            failRecordFuture( throwable );
+        }
+    }
+
+    private synchronized void consumeSummary( ResultSummary summary, Throwable throwable )
+    {
+        if ( summary != null )
+        {
+            summaryFuture.complete( summary );
+            completeRecordFuture( null );
+        }
+        else if ( throwable != null )
+        {
+            summaryFuture.completeExceptionally( throwable );
+        }
+        else
+        {
+            // has_more
+            controller.handleSuccessWithHasMore();
+        }
+    }
+
+    private synchronized void failRecordFuture( Throwable error )
     {
         if ( recordFuture != null )
         {
@@ -143,9 +151,9 @@ public class AsyncPullResponseHandler implements PullResponseHandler
         }
     }
 
-    private void completeRecordFuture( Record record )
+    private synchronized void completeRecordFuture( Record record )
     {
-        if ( recordFuture != null )
+        if( recordFuture != null )
         {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;

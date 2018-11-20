@@ -53,10 +53,9 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
      */
     void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
 
-    /**
-     * @return the current status of the handler
-     */
-    Status status();
+    boolean isFinishedOrCanceled();
+
+    boolean isPaused();
 
     enum Status
     {
