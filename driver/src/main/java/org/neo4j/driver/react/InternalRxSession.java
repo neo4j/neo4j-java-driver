@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -19,16 +19,21 @@
 package org.neo4j.driver.react;
 
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
+import org.neo4j.driver.v1.exceptions.TransientException;
 
 public class InternalRxSession extends AbstractRxStatementRunner implements RxSession
 {
@@ -40,39 +45,76 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     }
 
     @Override
-    public RxTransaction beginTransaction()
+    public Publisher<RxTransaction> beginTransaction()
     {
-        return null;
+        return beginTransaction( TransactionConfig.empty() );
     }
 
     @Override
-    public RxTransaction beginTransaction( TransactionConfig config )
+    public Publisher<RxTransaction> beginTransaction( TransactionConfig config )
     {
-        return null;
+        return Mono.create( sink -> {
+            CompletionStage<Transaction> txFuture = asyncSession.beginTransactionAsync();
+            CompletionStage<RxTransaction> rxTxFuture = txFuture.thenApply( transaction -> new InternalRxTransaction( (ExplicitTransaction) transaction ) );
+            rxTxFuture.whenComplete( ( tx, error ) -> {
+                if ( tx != null )
+                {
+                    sink.success( tx );
+                }
+                else if ( error != null )
+                {
+                    sink.error( error );
+                }
+                else
+                {
+                    sink.success();
+                }
+            } );
+        } );
     }
 
     @Override
     public <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work )
     {
-        return null;
+        return readTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
     public <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config )
     {
-        return null;
+        return runTransaction( AccessMode.READ, work, config );
     }
 
     @Override
     public <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work )
     {
-        return null;
+        return writeTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
     public <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config )
     {
-        return null;
+        return runTransaction( AccessMode.WRITE, work, config );
+    }
+
+    private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<Publisher<T>> work, TransactionConfig config )
+    {
+        // TODO read and write
+        Publisher<RxTransaction> publisher = beginTransaction( config );
+        Flux<T> txExecutor = Mono.from( publisher ).flatMapMany( tx -> Flux.from( work.execute( tx ) ).flatMap( t -> Mono.create( sink -> sink.success( t ) ),
+                throwable -> Mono.from( tx.rollback() ).then( Mono.error( throwable ) ), // TODO chain errors from rollback to throwable
+                () -> Mono.from( tx.commit() ).then( Mono.empty() ) ) );
+        return txExecutor.retry( throwable -> {
+            if ( throwable instanceof TransientException )
+            {
+                return true;
+            }
+            else
+            {
+                System.out.println( throwable );
+                return false;
+            }
+        } ); // TODO retry
     }
 
     @Override

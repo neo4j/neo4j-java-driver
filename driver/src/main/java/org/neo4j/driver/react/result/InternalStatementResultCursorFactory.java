@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -65,7 +65,7 @@ public class InternalStatementResultCursorFactory implements StatementResultCurs
     {
         if ( tx != null )
         {
-            new TransactionPullResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
+            return new TransactionPullResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
         return new SessionPullResponseHandler( statement, runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
     }

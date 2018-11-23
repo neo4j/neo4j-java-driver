@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -28,9 +28,9 @@ import org.neo4j.driver.v1.TransactionConfig;
 
 public interface RxSession extends RxStatementRunner
 {
-    RxTransaction beginTransaction();
+    Publisher<RxTransaction> beginTransaction();
 
-    RxTransaction beginTransaction( TransactionConfig config );
+    Publisher<RxTransaction> beginTransaction( TransactionConfig config );
 
     <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work );
 

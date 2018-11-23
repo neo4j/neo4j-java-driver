@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.integration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +30,7 @@ import java.util.logging.Level;
 import org.neo4j.driver.react.InternalRxSession;
 import org.neo4j.driver.react.RxResult;
 import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.react.RxTransaction;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -72,6 +74,72 @@ class RxSessionIT
 //        });
 //        result.stream().forEach( r -> System.out.println( r ) );
         System.out.println( result.summary() );
+        driver.close();
+        // Then
+    }
+
+    @Test
+    void shouldStreamInTxFunc() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        RxSession session = driver.rxSession();
+
+        Publisher<Record> records = session.readTransaction( tx -> {
+            RxResult result = tx.run( "UNWIND range(1, 100) as n RETURN n" );
+
+            return result.records();
+        } );
+
+        Publisher<Integer> numbers = Flux.from( records ).limitRate( 300 ) // batch size
+                .map( record -> record.get( "n" ).asInt() );
+        Flux.from( numbers ).doOnNext( System.out::println ).blockLast();
+        Mono.from( session.close() ).block();
+        driver.close();
+        // Then
+    }
+
+    @Test
+    void shouldRetryStreamInTxFunc() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        RxSession session = driver.rxSession();
+
+
+        Publisher<Integer> numbers = session.readTransaction( tx -> {
+            RxResult result = tx.run( "UN range(1, 100) as n RETURN n" );
+
+            return Flux.from( result.records() ).limitRate( 300 ) // batch size
+                    .map( record -> record.get( "n" ).asInt() );
+        } );
+
+        Flux.from( numbers ).doOnNext( System.out::println ).blockLast();
+        Mono.from( session.close() ).block();
+        driver.close();
+        // Then
+    }
+
+    @Test
+    void shouldStreamInTx() throws Throwable
+    {
+        // Give
+        Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
+
+        // When
+        RxSession session = driver.rxSession();
+        Publisher<RxTransaction> rxTransaction = session.beginTransaction();
+        Mono.from( rxTransaction ).subscribe( tx -> {
+            RxResult result = tx.run( "UNWIND range(1, 100) as n RETURN n" );
+            Flux<Integer> numbers = Flux.from( result.records() ).limitRate( 300 ).map( record -> record.get( "n" ).asInt() ).doOnNext( System.out::println );
+            numbers.then( Mono.from( tx.commit() ) ).block();
+        } );
+
+        Mono.from( session.close() ).block();
         driver.close();
         // Then
     }

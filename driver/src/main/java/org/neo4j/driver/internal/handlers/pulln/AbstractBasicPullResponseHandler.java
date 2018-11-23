@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -75,10 +75,10 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     @Override
     public synchronized void onFailure( Throwable error )
     {
-        recordConsumer.accept( null, error );
-        summaryConsumer.accept( null, error );
         status = Status.Failed;
         afterFailure( error );
+        recordConsumer.accept( null, error );
+        summaryConsumer.accept( null, error );
     }
 
     @Override
@@ -133,10 +133,10 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
 
     private void handleSuccessWithSummary( Map<String,Value> metadata )
     {
-        recordConsumer.accept( null, null );
-        extractResultSummary( metadata );
         status = Status.Done;
         afterSuccess( metadata );
+        recordConsumer.accept( null, null );
+        extractResultSummary( metadata );
     }
 
     private void handleSuccessWithHasMore( Map<String,Value> metadata )

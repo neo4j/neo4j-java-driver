@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2009 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -53,8 +53,16 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
      */
     void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
 
+    /**
+     * If the streaming is finished normally or with an error or cancelled.
+     * @return True if the stream is finished or cancelled.
+     */
     boolean isFinishedOrCanceled();
 
+    /**
+     * If the server is not sending more records until another {@link Subscription#request(long)}, but the streaming has not been finished.
+     * @return Ture if the stream is paused.
+     */
     boolean isPaused();
 
     enum Status
