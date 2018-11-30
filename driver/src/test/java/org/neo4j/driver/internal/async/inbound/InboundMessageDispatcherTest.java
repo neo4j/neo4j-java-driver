@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.v1.Value;
@@ -49,9 +48,9 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.AckFailureMessage.ACK_FAILURE;
@@ -289,7 +288,7 @@ public class InboundMessageDispatcherTest
 
         dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
         verifyFailure( handler1 );
-        verifyZeroInteractions( handler2 );
+        verify( handler2, only() ).canManageAutoRead();
 
         dispatcher.handleIgnoredMessage();
         verifyFailure( handler2 );
@@ -452,9 +451,9 @@ public class InboundMessageDispatcherTest
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        AutoReadManagingResponseHandler handler1 = mock( AutoReadManagingResponseHandler.class );
-        AutoReadManagingResponseHandler handler2 = mock( AutoReadManagingResponseHandler.class );
-        AutoReadManagingResponseHandler handler3 = mock( AutoReadManagingResponseHandler.class );
+        ResponseHandler handler1 = newAutoReadManagingResponseHandler();
+        ResponseHandler handler2 = newAutoReadManagingResponseHandler();
+        ResponseHandler handler3 = newAutoReadManagingResponseHandler();
 
         dispatcher.enqueue( handler1 );
         dispatcher.enqueue( handler2 );
@@ -471,8 +470,8 @@ public class InboundMessageDispatcherTest
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
-        AutoReadManagingResponseHandler handler1 = mock( AutoReadManagingResponseHandler.class );
-        AutoReadManagingResponseHandler handler2 = mock( AutoReadManagingResponseHandler.class );
+        ResponseHandler handler1 = newAutoReadManagingResponseHandler();
+        ResponseHandler handler2 = newAutoReadManagingResponseHandler();
 
         assertNull( dispatcher.autoReadManagingHandler() );
 
@@ -490,7 +489,7 @@ public class InboundMessageDispatcherTest
 
         ResponseHandler handler1 = mock( ResponseHandler.class );
         ResponseHandler handler2 = mock( ResponseHandler.class );
-        AutoReadManagingResponseHandler handler3 = mock( AutoReadManagingResponseHandler.class );
+        ResponseHandler handler3 = newAutoReadManagingResponseHandler();
 
         dispatcher.enqueue( handler1 );
         dispatcher.enqueue( handler2 );
@@ -510,7 +509,7 @@ public class InboundMessageDispatcherTest
         Channel channel = newChannelMock();
         InboundMessageDispatcher dispatcher = newDispatcher( channel );
 
-        AutoReadManagingResponseHandler handler = mock( AutoReadManagingResponseHandler.class );
+        ResponseHandler handler = newAutoReadManagingResponseHandler();
         dispatcher.enqueue( handler );
         assertEquals( handler, dispatcher.autoReadManagingHandler() );
         verify( handler, never() ).disableAutoReadManagement();
@@ -547,5 +546,12 @@ public class InboundMessageDispatcherTest
         ChannelConfig channelConfig = mock( ChannelConfig.class );
         when( channel.config() ).thenReturn( channelConfig );
         return channel;
+    }
+
+    private static ResponseHandler newAutoReadManagingResponseHandler()
+    {
+        ResponseHandler handler = mock( ResponseHandler.class );
+        when( handler.canManageAutoRead() ).thenReturn( true );
+        return handler;
     }
 }

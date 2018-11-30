@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.handlers;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,7 +24,6 @@ import org.mockito.ArgumentCaptor;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.exceptions.ClientException;
@@ -124,6 +123,30 @@ public class RoutingResponseHandlerTest
 
         assertEquals( error, handledError );
         verifyZeroInteractions( errorHandler );
+    }
+
+    @Test
+    public void shouldDelegateCanManageAutoRead()
+    {
+        ResponseHandler responseHandler = mock( ResponseHandler.class );
+        RoutingResponseHandler routingResponseHandler =
+                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, AccessMode.READ, null );
+
+        routingResponseHandler.canManageAutoRead();
+
+        verify( responseHandler ).canManageAutoRead();
+    }
+
+    @Test
+    public void shouldDelegateDisableAutoReadManagement()
+    {
+        ResponseHandler responseHandler = mock( ResponseHandler.class );
+        RoutingResponseHandler routingResponseHandler =
+                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, AccessMode.READ, null );
+
+        routingResponseHandler.disableAutoReadManagement();
+
+        verify( responseHandler ).disableAutoReadManagement();
     }
 
     private void testWriteFailureWithReadAccessMode( String code )
