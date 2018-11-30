@@ -3,7 +3,7 @@
 !: AUTO PULL_ALL
 !: AUTO ACK_FAILURE
 
-C: RUN "CALL dbms.cluster.routing.getServers" {}
+C: RUN "CALL dbms.cluster.routing.getRoutingTable({context})" {"context": {}}
 C: PULL_ALL
 S: FAILURE {"code": "Neo.ClientError.Procedure.ProcedureNotFound", "message": "blabla"}
 S: IGNORED
