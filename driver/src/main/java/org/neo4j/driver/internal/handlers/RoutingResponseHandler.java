@@ -69,6 +69,18 @@ public class RoutingResponseHandler implements ResponseHandler
         delegate.onRecord( fields );
     }
 
+    @Override
+    public boolean canManageAutoRead()
+    {
+        return delegate.canManageAutoRead();
+    }
+
+    @Override
+    public void disableAutoReadManagement()
+    {
+        delegate.disableAutoReadManagement();
+    }
+
     private Throwable handledError( Throwable receivedError )
     {
         Throwable error = Futures.completionExceptionCause( receivedError );

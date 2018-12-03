@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -44,7 +44,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public abstract class PullAllResponseHandler implements AutoReadManagingResponseHandler
+public abstract class PullAllResponseHandler implements ResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
 
@@ -130,6 +130,12 @@ public abstract class PullAllResponseHandler implements AutoReadManagingResponse
             enqueueRecord( record );
             completeRecordFuture( record );
         }
+    }
+
+    @Override
+    public boolean canManageAutoRead()
+    {
+        return true;
     }
 
     @Override

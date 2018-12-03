@@ -28,7 +28,6 @@ import java.util.Queue;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
-import org.neo4j.driver.internal.spi.AutoReadManagingResponseHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.v1.Logger;
@@ -48,7 +47,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     private Throwable currentError;
     private boolean fatalErrorOccurred;
 
-    private AutoReadManagingResponseHandler autoReadManagingHandler;
+    private ResponseHandler autoReadManagingHandler;
 
     public InboundMessageDispatcher( Channel channel, Logging logging )
     {
@@ -172,7 +171,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     /**
      * <b>Visible for testing</b>
      */
-    AutoReadManagingResponseHandler autoReadManagingHandler()
+    ResponseHandler autoReadManagingHandler()
     {
         return autoReadManagingHandler;
     }
@@ -191,13 +190,13 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
 
     private void updateAutoReadManagingHandlerIfNeeded( ResponseHandler handler )
     {
-        if ( handler instanceof AutoReadManagingResponseHandler )
+        if ( handler.canManageAutoRead() )
         {
-            updateAutoReadManagingHandler( (AutoReadManagingResponseHandler) handler );
+            updateAutoReadManagingHandler( handler );
         }
     }
 
-    private void updateAutoReadManagingHandler( AutoReadManagingResponseHandler newHandler )
+    private void updateAutoReadManagingHandler( ResponseHandler newHandler )
     {
         if ( autoReadManagingHandler != null )
         {
