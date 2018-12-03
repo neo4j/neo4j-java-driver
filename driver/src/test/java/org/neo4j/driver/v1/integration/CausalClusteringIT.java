@@ -92,7 +92,7 @@ import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAllFutures;
 
-public class CausalClusteringIT
+public class CausalClusteringIT extends NestedQueries
 {
     private static final long DEFAULT_TIMEOUT_MS = 120_000;
 
@@ -100,10 +100,27 @@ public class CausalClusteringIT
     public final ClusterRule clusterRule = new ClusterRule();
 
     private ExecutorService executor;
+    private Driver driver;
+
+    @Override
+    protected Session newSession( AccessMode mode )
+    {
+        if ( driver == null )
+        {
+            driver = createDriver( clusterRule.getCluster().leader().getRoutingUri() );
+        }
+
+        return driver.session( mode );
+    }
 
     @After
     public void tearDown()
     {
+        if ( driver != null )
+        {
+            driver.close();
+        }
+
         if ( executor != null )
         {
             executor.shutdownNow();
