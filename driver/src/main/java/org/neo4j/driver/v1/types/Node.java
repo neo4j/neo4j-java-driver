@@ -35,7 +35,7 @@ public interface Node extends Entity
      * Test if this node has a given label
      *
      * @param label the label
-     * @return <tt>true</tt> if this node has the label otherwise <tt>false</tt>
+     * @return {@code true} if this node has the label otherwise {@code false}
      */
     boolean hasLabel( String label );
 }

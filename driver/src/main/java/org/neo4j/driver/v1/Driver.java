@@ -37,7 +37,8 @@ import java.util.concurrent.CompletionStage;
  * The <a href="https://tools.ietf.org/html/rfc3986">URI</a> passed to
  * this method determines the type of Driver created.
  * <br>
- * <table border="1" cellpadding="4" style="border-collapse: collapse" summary="Available schemes and drivers">
+ * <table border="1" style="border-collapse: collapse">
+ *     <caption>Available schemes and drivers</caption>
  *     <thead>
  *         <tr><th>URI Scheme</th><th>Driver</th></tr>
  *     </thead>

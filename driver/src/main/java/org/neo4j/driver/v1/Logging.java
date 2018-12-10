@@ -45,7 +45,8 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
  * <p>
  * Driver logging API defines the following log levels: ERROR, INFO, WARN, DEBUG and TRACE. They are similar to levels defined by SLF4J but different from
  * log levels defined for {@link java.util.logging}. The following mapping takes place:
- * <table border="1" cellpadding="4" summary="Driver and JUL log levels">
+ * <table border="1" style="border-collapse: collapse">
+ * <caption>Driver and JUL log levels</caption>
  * <tr>
  * <th>Driver</th>
  * <th>java.util.logging</th>
