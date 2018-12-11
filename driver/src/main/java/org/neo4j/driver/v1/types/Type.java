@@ -39,7 +39,7 @@ public interface Type
      * Test if the given value has this type
      *
      * @param value the value
-     * @return <tt>true</tt> if the value is a value of this type otherwise <tt>false</tt>
+     * @return {@code true} if the value is a value of this type otherwise {@code false}
      */
     boolean isTypeOf( Value value );
 }

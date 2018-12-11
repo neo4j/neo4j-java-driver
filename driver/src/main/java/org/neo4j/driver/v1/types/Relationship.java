@@ -47,7 +47,7 @@ public interface Relationship extends Entity
      * Test if this relationship has the given type
      *
      * @param relationshipType the give relationship type
-     * @return <tt>true</tt> if this relationship has the given relationship type otherwise <tt>false</tt>
+     * @return {@code true} if this relationship has the given relationship type otherwise {@code false}
      */
     boolean hasType( String relationshipType );
 }

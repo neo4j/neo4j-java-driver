@@ -679,7 +679,7 @@ public abstract class Values
     }
 
     /**
-     * Converts values to {@link List} of <tt>T</tt>.
+     * Converts values to {@link List} of {@code T}.
      *
      * @param innerMap converter for the values inside the list
      * @param <T> the type of values inside the list

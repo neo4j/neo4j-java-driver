@@ -62,7 +62,7 @@ public interface Record extends MapAccessorWithDefaultValue
      * Check if the list of keys contains the given key
      *
      * @param key the key
-     * @return <tt>true</tt> if this map keys contains the given key otherwise <tt>false</tt>
+     * @return {@code true} if this map keys contains the given key otherwise {@code false}
      */
     boolean containsKey( String key );
 
