@@ -37,7 +37,7 @@ class FileToolsTest
     void shouldBeAbleToCreateTemporaryDirectory() throws Throwable
     {
         // Given
-        File dir = FileTools.tmpDir();
+        File dir = FileTools.tempFile( "test" );
 
         // Then
         try
