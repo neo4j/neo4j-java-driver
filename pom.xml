@@ -13,8 +13,8 @@
     <junit.version>5.3.1</junit.version>
     <junit.platform.version>1.3.1</junit.platform.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
-    <!-- JUnit 4 categories and JUnit 5 tags to be executed in parallel -->
-    <parallelizable.it.tags>parallelizableIT, org.neo4j.driver.v1.util.ParallelizableJUnit4IT</parallelizable.it.tags>
+    <!-- All tests tagged are to be executed in parallel -->
+    <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
   </properties>
 
   <groupId>org.neo4j.driver</groupId>
@@ -101,12 +101,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.junit.vintage</groupId>
-        <artifactId>junit-vintage-engine</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
         <version>0.7.1</version>
@@ -122,18 +116,6 @@
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
         <version>1.59</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>info.cukes</groupId>
-        <artifactId>cucumber-junit</artifactId>
-        <version>1.2.5</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>info.cukes</groupId>
-        <artifactId>cucumber-java</artifactId>
-        <version>1.2.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -363,11 +345,6 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
           </dependency>
-          <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-            <version>${junit.version}</version>
-          </dependency>
         </dependencies>
       </plugin>
       <plugin>
@@ -416,11 +393,6 @@
           <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
             <version>${junit.version}</version>
           </dependency>
         </dependencies>

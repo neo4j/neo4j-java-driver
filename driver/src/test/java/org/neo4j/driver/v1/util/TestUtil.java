@@ -406,4 +406,14 @@ public final class TestUtil
             buf.release();
         }
     }
+
+    public static Throwable getRootCause( Throwable th )
+    {
+        Throwable cause = th;
+        while ( cause.getCause() != null )
+        {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
 }

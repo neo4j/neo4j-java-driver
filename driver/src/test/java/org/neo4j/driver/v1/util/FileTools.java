@@ -63,13 +63,16 @@ public class FileTools
         file.delete();
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static File tmpDir() throws IOException
+    public static File tempFile( String prefix, String suffix ) throws Throwable
     {
-        File tmp = createTempFile( "neo", "compliance" );
-        tmp.delete();
-        tmp.mkdir();
-        return tmp;
+        File file = createTempFile( prefix, suffix );
+        file.deleteOnExit();
+        return file;
+    }
+
+    public static File tempFile( String prefix ) throws Throwable
+    {
+        return tempFile( prefix, ".tmp" );
     }
 
     public static boolean deleteFile( File file )
