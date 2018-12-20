@@ -15,12 +15,11 @@ Note that this driver is designed to be used only by Neo4j 3.0 and above and pro
 Recent drivers require the Java 8 or higher version of the runtime.
 The table below shows runtime compatibility for the currently-supported driver versions.
 
-| Driver Series | Java 7 | Java 8 | Java 11 |
-|---------------|:------:|:------:|:-------:|
-| 1.4           |   X    |   X    |         |
-| 1.5           |        |   X    |   X     |
-| 1.6           |        |   X    |   X     |
-| 1.7           |        |   X    |   X     |
+| Driver Series | Java 8 | Java 11 |
+|---------------|:------:|:-------:|
+| 1.6           |   X    |   X     |
+| 1.7           |   X    |   X     |
+| 2.0           |   X    |   X     |
 
 The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
 
