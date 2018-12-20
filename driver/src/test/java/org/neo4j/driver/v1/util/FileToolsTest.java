@@ -34,19 +34,19 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class FileToolsTest
 {
     @Test
-    void shouldBeAbleToCreateTemporaryDirectory() throws Throwable
+    void shouldBeAbleToCreateTemporaryFile() throws Throwable
     {
         // Given
-        File dir = FileTools.tempFile( "test" );
+        File file = FileTools.tempFile( "test" );
 
         // Then
         try
         {
-            assertThat( dir.exists(), equalTo( true ) );
+            assertThat( file.exists(), equalTo( true ) );
         }
         finally
         {
-            assertThat( FileTools.deleteFile( dir ), equalTo( true ) );
+            assertThat( FileTools.deleteFile( file ), equalTo( true ) );
         }
     }
 
