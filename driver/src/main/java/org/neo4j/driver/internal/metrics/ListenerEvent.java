@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.metrics;
 
 public interface ListenerEvent
 {
-    void start();
-    long elapsed();
+    void start( long currentTime );
+    long elapsed( long currentTime );
 }
 

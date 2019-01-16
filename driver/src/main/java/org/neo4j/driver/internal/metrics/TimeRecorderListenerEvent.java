@@ -16,9 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics.spi;
+package org.neo4j.driver.internal.metrics;
 
-public enum PoolStatus
+public class TimeRecorderListenerEvent implements ListenerEvent
 {
-    OPEN, CLOSED
+    private long startTime;
+
+    @Override
+    public void start( long currentTime )
+    {
+        startTime = currentTime;
+    }
+
+    @Override
+    public long elapsed( long currentTime )
+    {
+        return currentTime - startTime;
+    }
 }

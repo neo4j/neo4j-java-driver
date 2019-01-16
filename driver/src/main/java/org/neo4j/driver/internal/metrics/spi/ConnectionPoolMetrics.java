@@ -24,11 +24,16 @@ import org.neo4j.driver.v1.Config;
 
 public interface ConnectionPoolMetrics
 {
+    enum PoolStatus
+    {
+        OPEN, CLOSED
+    }
+
     /**
      * An unique name that identifies this connection pool metrics among all others
      * @return An unique name
      */
-    String uniqueName();
+    String id();
 
     /**
      * The status of the pool.
@@ -57,7 +62,7 @@ public interface ConnectionPoolMetrics
     int creating();
 
     /**
-     * An increasing-only number to record how many channels have been created by this pool successfully.
+     * An increasing-only number to record how many channels have been created by this pool successfully since the pool is created.
      * @return The amount of channels have ever been created by this pool.
      */
     long created();
@@ -82,7 +87,7 @@ public interface ConnectionPoolMetrics
     int acquiring();
 
     /**
-     * An increasing-only number to record how many connections have been acquired from the pool
+     * An increasing-only number to record how many connections have been acquired from the pool since the pool is created.
      * The connections acquired could hold either a newly created channel or a reused channel from the pool.
      * @return The amount of connections that have been acquired from the pool.
      */
@@ -95,11 +100,4 @@ public interface ConnectionPoolMetrics
      * @return The amount of failures to acquire a connection from the pool within maximum connection acquisition timeout.
      */
     long timedOutToAcquire();
-
-    /**
-     * An acquisition time histogram records how long it takes to acquire an connection from this pool.
-     * The connection acquired from the pool could contain either a channel idling inside the pool or a channel created by the pool.
-     * @return The acquisition time histogram.
-     */
-    Histogram acquisitionTimeHistogram();
 }

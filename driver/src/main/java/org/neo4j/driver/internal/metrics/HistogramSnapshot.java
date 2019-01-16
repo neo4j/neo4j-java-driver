@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.internal.metrics.spi.Histogram;
-
 public class HistogramSnapshot implements Histogram
 {
     private final Histogram copy;

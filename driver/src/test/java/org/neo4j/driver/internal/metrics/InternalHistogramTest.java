@@ -20,8 +20,6 @@ package org.neo4j.driver.internal.metrics;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.internal.metrics.spi.Histogram;
-
 import static java.lang.Math.abs;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;

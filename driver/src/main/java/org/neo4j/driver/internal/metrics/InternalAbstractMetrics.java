@@ -23,11 +23,10 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.metrics.spi.Metrics;
 
-public abstract class InternalAbstractMetrics implements Metrics, MetricsListener
+public abstract class InternalAbstractMetrics implements Metrics, InternalMetricsListener
 {
     public static final InternalAbstractMetrics DEV_NULL_METRICS = new InternalAbstractMetrics()
     {
@@ -99,19 +98,13 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )
+        public void putPoolMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )
         {
 
         }
 
         @Override
         public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
-        {
-            return Collections.emptyMap();
-        }
-
-        @Override
-        public Map<String,ConnectionMetrics> connectionMetrics()
         {
             return Collections.emptyMap();
         }

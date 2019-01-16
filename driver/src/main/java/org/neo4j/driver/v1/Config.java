@@ -26,6 +26,8 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.metrics.SimpleConnectionPoolMetricsTrackerProvider;
+import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetricsTrackerProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -93,7 +95,10 @@ public class Config
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final ServerAddressResolver resolver;
 
-    private Config( ConfigBuilder builder)
+    private final boolean isMetricsEnabled;
+    private final ConnectionPoolMetricsTrackerProvider metricsTrackerProvider;
+
+    private Config( ConfigBuilder builder )
     {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -111,11 +116,14 @@ public class Config
         this.retrySettings = builder.retrySettings;
         this.loadBalancingStrategy = builder.loadBalancingStrategy;
         this.resolver = builder.resolver;
+
+        this.isMetricsEnabled = builder.isMetricsEnabled;
+        this.metricsTrackerProvider = builder.metricsTrackerProvider;
     }
 
     /**
-     * Logging provider
-     * @return the logging provider to use
+     * Logging metricsTrackerProvider
+     * @return the logging metricsTrackerProvider to use
      */
     public Logging logging()
     {
@@ -281,6 +289,16 @@ public class Config
         return retrySettings;
     }
 
+    public boolean isMetricsEnabled()
+    {
+        return isMetricsEnabled;
+    }
+
+    public ConnectionPoolMetricsTrackerProvider metricsTrackerProvider()
+    {
+        return metricsTrackerProvider;
+    }
+
     /**
      * Used to build new config instances
      */
@@ -300,6 +318,8 @@ public class Config
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
+        private ConnectionPoolMetricsTrackerProvider metricsTrackerProvider = new SimpleConnectionPoolMetricsTrackerProvider();
+        private boolean isMetricsEnabled = false;
 
         private ConfigBuilder() {}
 
@@ -756,6 +776,23 @@ public class Config
         public ConfigBuilder withResolver( ServerAddressResolver resolver )
         {
             this.resolver = Objects.requireNonNull( resolver, "resolver" );
+            return this;
+        }
+
+        public ConfigBuilder withDriverMetrics( ConnectionPoolMetricsTrackerProvider provider )
+        {
+            this.isMetricsEnabled = true;
+            this.metricsTrackerProvider = Objects.requireNonNull( provider, "metricsTrackerProvider" );
+            return this;
+        }
+
+        /**
+         * Disable driver metrics reporting feature.
+         * @return this builder.
+         */
+        public ConfigBuilder withoutDriverMetrics()
+        {
+            this.isMetricsEnabled = false;
             return this;
         }
 

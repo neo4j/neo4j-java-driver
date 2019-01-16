@@ -20,20 +20,58 @@ package org.neo4j.driver.internal.metrics;
 
 public interface ConnectionPoolMetricsListener
 {
-    void beforeCreating();
+    /**
+     * Invoked before a connection is creating.
+     */
+    void beforeCreating( ListenerEvent listenerEvent );
 
-    void afterCreated();
+    /**
+     * Invoked after a connection is created successfully.
+     */
+    void afterCreated( ListenerEvent listenerEvent );
 
+    /**
+     * Invoked after a connection is failed to create due to timeout, any kind of error.
+     */
     void afterFailedToCreate();
 
+    /**
+     * Invoked after a connection is closed.
+     */
     void afterClosed();
 
-    void beforeAcquiringOrCreating( ListenerEvent listenerEvent );
+    /**
+     * Invoked before acquiring or creating a connection.
+     * @param acquireEvent
+     */
+    void beforeAcquiringOrCreating( ListenerEvent acquireEvent );
 
+    /**
+     * Invoked after a connection is being acquired or created regardless weather it is successful or not.
+     */
     void afterAcquiringOrCreating();
 
-    void afterAcquiredOrCreated( ListenerEvent listenerEvent );
+    /**
+     * Invoked after a connection is acquired or created successfully.
+     * @param acquireEvent
+     */
+    void afterAcquiredOrCreated( ListenerEvent acquireEvent );
 
+    /**
+     * Invoked after it is timed out to acquire or create a connection.
+     */
     void afterTimedOutToAcquireOrCreate();
+
+    /**
+     * After a connection is acquired from the pool.
+     * @param inUseEvent
+     */
+    void acquired( ListenerEvent inUseEvent );
+
+    /**
+     * After a connection is released back to pool.
+     * @param inUseEvent
+     */
+    void released( ListenerEvent inUseEvent );
 }
 

@@ -41,7 +41,7 @@ import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingSt
 import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.metrics.InternalAbstractMetrics;
 import org.neo4j.driver.internal.metrics.InternalMetrics;
-import org.neo4j.driver.internal.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.InternalMetricsListener;
 import org.neo4j.driver.internal.metrics.spi.Metrics;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -63,7 +63,6 @@ import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
-import static org.neo4j.driver.internal.metrics.spi.Metrics.isMetricsEnabled;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 
 public class DriverFactory
@@ -85,7 +84,7 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        InternalAbstractMetrics metrics = createDriverMetrics( config );
+        InternalAbstractMetrics metrics = createDriverMetrics( config, createClock() );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
 
         InternalDriver driver = createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metrics, config );
@@ -95,7 +94,7 @@ public class DriverFactory
         return driver;
     }
 
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, InternalMetricsListener metrics, Config config )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
@@ -107,11 +106,11 @@ public class DriverFactory
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metrics, config.logging(), clock );
     }
 
-    protected static InternalAbstractMetrics createDriverMetrics( Config config )
+    protected static InternalAbstractMetrics createDriverMetrics( Config config, Clock clock )
     {
-        if( isMetricsEnabled() )
+        if( config.isMetricsEnabled() )
         {
-            return new InternalMetrics( config );
+            return new InternalMetrics( clock, config.metricsTrackerProvider() );
         }
         else
         {
