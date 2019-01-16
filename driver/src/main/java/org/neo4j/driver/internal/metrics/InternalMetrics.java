@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetricsTrackerProvider;
+import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -36,21 +36,22 @@ public class InternalMetrics extends InternalAbstractMetrics
 {
     private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
     private final Clock clock;
-    private final ConnectionPoolMetricsTrackerProvider provider;
+    private final MetricsTracker tracker;
 
-    public InternalMetrics( Clock clock, ConnectionPoolMetricsTrackerProvider provider )
+    public InternalMetrics( Clock clock, MetricsTracker tracker )
     {
         Objects.requireNonNull( clock );
+        Objects.requireNonNull( tracker );
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.clock = clock;
-        this.provider = provider;
+        this.tracker = tracker;
     }
 
     @Override
     public void putPoolMetrics( BoltServerAddress serverAddress, ConnectionPoolImpl pool )
     {
         this.connectionPoolMetrics.put( serverAddressToUniqueName( serverAddress ),
-                new InternalConnectionPoolMetrics( serverAddress, pool, clock, provider ) );
+                new InternalConnectionPoolMetrics( serverAddress, pool, clock, tracker ) );
     }
 
     @Override

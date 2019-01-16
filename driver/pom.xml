@@ -29,10 +29,6 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.hdrhistogram</groupId>
-      <artifactId>HdrHistogram</artifactId>
-    </dependency>
 
     <!-- Optional dependencies -->
     <dependency>
@@ -223,17 +219,12 @@
               <artifactSet>
                 <includes>
                   <include>io.netty:*</include>
-                  <include>org.hdrhistogram:*</include>
                 </includes>
               </artifactSet>
               <relocations>
                 <relocation>
                   <pattern>io.netty</pattern>
                   <shadedPattern>org.neo4j.driver.internal.shaded.io.netty</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>org.HdrHistogram</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.shaded.org.HdrHistogram</shadedPattern>
                 </relocation>
               </relocations>
               <shadeTestJar>true</shadeTestJar>

@@ -33,12 +33,14 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.metrics.InternalMetrics;
 import org.neo4j.driver.internal.metrics.InternalMetricsListener;
 import org.neo4j.driver.internal.metrics.spi.Metrics;
+import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
@@ -157,8 +159,9 @@ class DriverFactoryTest
     {
         // Given
         Config config = mock( Config.class );
+        when( config.isMetricsEnabled() ).thenReturn( false );
         // When
-        InternalMetricsListener handler = DriverFactory.createDriverMetrics( config );
+        InternalMetricsListener handler = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
         // Then
         assertThat( handler, is( DEV_NULL_METRICS ) );
     }
@@ -168,10 +171,10 @@ class DriverFactoryTest
     {
         // Given
         Config config = mock( Config.class );
-        System.setProperty( "driver.metrics.enabled", "True" );
+        when( config.isMetricsEnabled() ).thenReturn( true );
+        when( config.metricsTracker() ).thenReturn( MetricsTracker.DEV_NULL_METRICS_TRACKER );
         // When
-        InternalMetricsListener handler = DriverFactory.createDriverMetrics( config );
-        System.setProperty( "driver.metrics.enabled", "False" );
+        InternalMetricsListener handler = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
         // Then
         assertThat( handler instanceof InternalMetrics, is( true ) );
     }

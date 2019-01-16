@@ -26,8 +26,7 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.SimpleConnectionPoolMetricsTrackerProvider;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetricsTrackerProvider;
+import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -96,7 +95,7 @@ public class Config
     private final ServerAddressResolver resolver;
 
     private final boolean isMetricsEnabled;
-    private final ConnectionPoolMetricsTrackerProvider metricsTrackerProvider;
+    private final MetricsTracker metricsTracker;
 
     private Config( ConfigBuilder builder )
     {
@@ -118,12 +117,12 @@ public class Config
         this.resolver = builder.resolver;
 
         this.isMetricsEnabled = builder.isMetricsEnabled;
-        this.metricsTrackerProvider = builder.metricsTrackerProvider;
+        this.metricsTracker = builder.metricsTracker;
     }
 
     /**
-     * Logging metricsTrackerProvider
-     * @return the logging metricsTrackerProvider to use
+     * Logging metricsTracker
+     * @return the logging metricsTracker to use
      */
     public Logging logging()
     {
@@ -294,9 +293,9 @@ public class Config
         return isMetricsEnabled;
     }
 
-    public ConnectionPoolMetricsTrackerProvider metricsTrackerProvider()
+    public MetricsTracker metricsTracker()
     {
-        return metricsTrackerProvider;
+        return metricsTracker;
     }
 
     /**
@@ -318,7 +317,7 @@ public class Config
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
-        private ConnectionPoolMetricsTrackerProvider metricsTrackerProvider = new SimpleConnectionPoolMetricsTrackerProvider();
+        private MetricsTracker metricsTracker = MetricsTracker.DEV_NULL_METRICS_TRACKER;
         private boolean isMetricsEnabled = false;
 
         private ConfigBuilder() {}
@@ -779,10 +778,10 @@ public class Config
             return this;
         }
 
-        public ConfigBuilder withDriverMetrics( ConnectionPoolMetricsTrackerProvider provider )
+        public ConfigBuilder withDriverMetrics( MetricsTracker tracker )
         {
             this.isMetricsEnabled = true;
-            this.metricsTrackerProvider = Objects.requireNonNull( provider, "metricsTrackerProvider" );
+            this.metricsTracker = Objects.requireNonNull( tracker, "metricsTracker" );
             return this;
         }
 

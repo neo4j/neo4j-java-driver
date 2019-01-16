@@ -47,6 +47,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.AuthToken;
@@ -76,7 +77,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.metrics.spi.Metrics.DRIVER_METRICS_ENABLED_KEY;
 
 abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -96,17 +96,16 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     @BeforeEach
     void setUp()
     {
-        System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
 
         Config config = Config.builder()
                 .withLogging( logging )
                 .withMaxConnectionPoolSize( 100 )
                 .withConnectionAcquisitionTimeout( 1, MINUTES )
+                .withDriverMetrics( MetricsTracker.DEV_NULL_METRICS_TRACKER )
                 .build();
 
         driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config );
-        System.setProperty( DRIVER_METRICS_ENABLED_KEY, "false" );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
         executor = Executors.newCachedThreadPool( threadFactory );

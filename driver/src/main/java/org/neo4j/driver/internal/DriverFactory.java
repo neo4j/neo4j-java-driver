@@ -110,7 +110,7 @@ public class DriverFactory
     {
         if( config.isMetricsEnabled() )
         {
-            return new InternalMetrics( clock, config.metricsTrackerProvider() );
+            return new InternalMetrics( clock, config.metricsTracker() );
         }
         else
         {

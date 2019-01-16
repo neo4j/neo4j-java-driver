@@ -21,28 +21,53 @@ package org.neo4j.driver.internal.metrics.spi;
 /**
  * Tracks events that happened in connection pool.
  * The methods in this class will be invoked in the critical driver threading and pooling code.
+ * We expect no blocking, no error, no deadlock in the your implementation.
  */
-public interface ConnectionPoolMetricsTracker
+public interface MetricsTracker
 {
+    MetricsTracker DEV_NULL_METRICS_TRACKER = new MetricsTracker()
+    {
+        @Override
+        public void recordAcquisitionTime( String poolId, long timeInMs )
+        {
+
+        }
+
+        @Override
+        public void recordConnectionTime( String poolId, long timeInMs )
+        {
+
+        }
+
+        @Override
+        public void recordInUseTime( String poolId, long timeInMs )
+        {
+
+        }
+    };
+
     /**
      * Record the connection acquisition time after a connection is acquired.
      * The connection acquisition time could either be spent to establish a new connection or direct grab an existing connection from the pool.
      * Note: This code will be invoked concurrently by multiple threads.
+     * @param poolId uniquely identifies a pool. See {@link ConnectionPoolMetrics#id()}.
      * @param timeInMs time spent to acquire or create a connection in millis.
      */
-    void recordAcquisitionTime( long timeInMs );
+    void recordAcquisitionTime( String poolId, long timeInMs );
 
     /**
      * Record the time in millis spent to establish a new connection.
      * Note: Method will be invoked concurrently by multiple threads.
+     * @param poolId uniquely identifies a pool. See {@link ConnectionPoolMetrics#id()}.
      * @param timeInMs connection establishing time in millis.
      */
-    void recordConnectionTime( long timeInMs );
+    void recordConnectionTime( String poolId, long timeInMs );
 
     /**
      * Record the time in millis spent outside pool, a.k.a. used by application code to run queries.
      * Note: Method will be invoked concurrently by multiple threads.
+     * @param poolId uniquely identifies a pool. See {@link ConnectionPoolMetrics#id()}.
      * @param timeInMs connection is used outside the pool in millis.
      */
-    void recordInUseTime( long timeInMs );
+    void recordInUseTime( String poolId, long timeInMs );
 }

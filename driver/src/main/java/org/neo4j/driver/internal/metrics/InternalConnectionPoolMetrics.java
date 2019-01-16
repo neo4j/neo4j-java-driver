@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetricsTracker;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetricsTrackerProvider;
+import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
@@ -37,25 +36,21 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final Clock clock;
     private final BoltServerAddress address;
     private final ConnectionPool pool;
+    private final MetricsTracker metricsTracker;
 
     private final AtomicLong closed = new AtomicLong();
-
 
     // creating = created + failedToCreate
     private final AtomicInteger creating = new AtomicInteger();
     private final AtomicLong created = new AtomicLong();
     private final AtomicLong failedToCreate = new AtomicLong();
 
-
     // acquiring = acquired + timedOutToAcquire + failedToAcquireDueToOtherFailures
     private final AtomicInteger acquiring = new AtomicInteger();
     private final AtomicLong acquired = new AtomicLong();
     private final AtomicLong timedOutToAcquire = new AtomicLong();
 
-
-    private final ConnectionPoolMetricsTrackerProvider trackerProvider;
-
-    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, Clock clock, ConnectionPoolMetricsTrackerProvider trackerProvider )
+    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, Clock clock, MetricsTracker metricsTracker )
     {
         Objects.requireNonNull( address );
         Objects.requireNonNull( pool );
@@ -63,7 +58,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         this.address = address;
         this.pool = pool;
         this.clock = clock;
-        this.trackerProvider = trackerProvider;
+        this.metricsTracker = metricsTracker;
     }
 
     @Override
@@ -87,7 +82,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         creating.decrementAndGet();
         long elapsed = connEvent.elapsed( clock.millis() );
 
-        metricsTracker().recordConnectionTime( elapsed );
+        metricsTracker.recordConnectionTime( id(), elapsed );
     }
 
     @Override
@@ -112,11 +107,10 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
     {
+        acquired.incrementAndGet();
         long elapsed = acquireEvent.elapsed( clock.millis() );
 
-        metricsTracker().recordAcquisitionTime( elapsed );
-
-        acquired.incrementAndGet();
+        metricsTracker.recordAcquisitionTime( id(), elapsed );
     }
 
     @Override
@@ -136,12 +130,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     {
         long elapsed = inUseEvent.elapsed( clock.millis() );
 
-        metricsTracker().recordInUseTime( elapsed );
-    }
-
-    private ConnectionPoolMetricsTracker metricsTracker()
-    {
-        return trackerProvider.metricsTrackerForPool( this.id() );
+        metricsTracker.recordInUseTime( id(), elapsed );
     }
 
     @Override
@@ -224,6 +213,6 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
                         "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s]",
                 created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                timedOutToAcquire(), inUse(), idle(), poolStatus());
+                timedOutToAcquire(), inUse(), idle(), poolStatus() );
     }
 }
