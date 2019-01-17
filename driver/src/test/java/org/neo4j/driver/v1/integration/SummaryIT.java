@@ -138,10 +138,14 @@ class SummaryIT
     void shouldContainCorrectPlan()
     {
         // When
-        Plan plan = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume().plan();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume();
 
         // Then
+        assertTrue( summary.hasPlan() );
+
+        Plan plan = summary.plan();
         assertThat( plan.operatorType(), notNullValue() );
+        assertThat( plan.identifiers().size(), greaterThan( 0 ) );
         assertThat( plan.arguments().size(), greaterThan( 0 ) );
         assertThat( plan.children().size(), greaterThan( 0 ) );
     }
@@ -170,11 +174,24 @@ class SummaryIT
         ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).consume();
 
         // Then
-        assertTrue( summary.hasPlan() );
         List<Notification> notifications = summary.notifications();
         assertNotNull( notifications );
         assertThat( notifications.size(), equalTo( 1 ) );
-        assertThat( notifications.get( 0 ).toString(), containsString("CartesianProduct") );
+        Notification notification = notifications.get( 0 );
+        assertThat( notification.code(), notNullValue() );
+        assertThat( notification.title(), notNullValue() );
+        assertThat( notification.description(), notNullValue() );
+        assertThat( notification.severity(), notNullValue() );
+        assertThat( notification.position(), notNullValue() );
+    }
 
+    @Test
+    void shouldContainNoNotifications() throws Throwable
+    {
+        // When
+        ResultSummary summary = session.run( "RETURN 1" ).consume();
+
+        // Then
+        assertThat( summary.notifications().size(), equalTo( 0 ) );
     }
 }

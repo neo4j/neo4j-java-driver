@@ -22,6 +22,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 import org.mockito.ArgumentMatcher;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -405,5 +407,15 @@ public final class TestUtil
         {
             buf.release();
         }
+    }
+
+    public static Throwable getRootCause( Throwable th )
+    {
+        Throwable cause = th;
+        while ( cause.getCause() != null )
+        {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 }
