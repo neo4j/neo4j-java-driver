@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.DirectConnection;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
-import org.neo4j.driver.internal.metrics.InternalMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -55,18 +55,18 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final PoolSettings settings;
     private final Clock clock;
     private final Logger log;
-    private final InternalMetricsListener metricsListener;
+    private final MetricsListener metricsListener;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, InternalMetricsListener metricsListener, Logging logging, Clock clock )
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
     {
         this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
-            PoolSettings settings, InternalMetricsListener metricsListener, Logging logging, Clock clock )
+            PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;

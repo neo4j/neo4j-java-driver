@@ -41,8 +41,8 @@ import org.neo4j.driver.internal.cluster.loadbalancing.RoundRobinLoadBalancingSt
 import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.metrics.InternalAbstractMetrics;
 import org.neo4j.driver.internal.metrics.InternalMetrics;
-import org.neo4j.driver.internal.metrics.InternalMetricsListener;
-import org.neo4j.driver.internal.metrics.spi.Metrics;
+import org.neo4j.driver.internal.metrics.MetricsListener;
+import org.neo4j.driver.v1.Metrics;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -94,7 +94,7 @@ public class DriverFactory
         return driver;
     }
 
-    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, InternalMetricsListener metrics, Config config )
+    protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap, MetricsListener metrics, Config config )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
@@ -110,7 +110,7 @@ public class DriverFactory
     {
         if( config.isMetricsEnabled() )
         {
-            return new InternalMetrics( clock, config.metricsTracker() );
+            return new InternalMetrics( clock );
         }
         else
         {

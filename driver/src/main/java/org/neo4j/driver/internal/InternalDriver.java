@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.metrics.spi.Metrics;
+import org.neo4j.driver.v1.Metrics;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;

@@ -23,8 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
+import org.neo4j.driver.v1.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
@@ -36,7 +35,6 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final Clock clock;
     private final BoltServerAddress address;
     private final ConnectionPool pool;
-    private final MetricsTracker metricsTracker;
 
     private final AtomicLong closed = new AtomicLong();
 
@@ -45,12 +43,18 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final AtomicLong created = new AtomicLong();
     private final AtomicLong failedToCreate = new AtomicLong();
 
-    // acquiring = acquired + timedOutToAcquire + failedToAcquireDueToOtherFailures
+    // acquiring = acquired + timedOutToAcquire + failedToAcquireDueToOtherFailures (which we do not keep track)
     private final AtomicInteger acquiring = new AtomicInteger();
     private final AtomicLong acquired = new AtomicLong();
     private final AtomicLong timedOutToAcquire = new AtomicLong();
 
-    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, Clock clock, MetricsTracker metricsTracker )
+    private final AtomicLong totalAcquisitionTime = new AtomicLong();
+    private final AtomicLong totalConnectionTime = new AtomicLong();
+    private final AtomicLong totalInUseTime = new AtomicLong();
+
+    private final AtomicLong totalInUseCount = new AtomicLong();
+
+    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, Clock clock )
     {
         Objects.requireNonNull( address );
         Objects.requireNonNull( pool );
@@ -58,7 +62,6 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         this.address = address;
         this.pool = pool;
         this.clock = clock;
-        this.metricsTracker = metricsTracker;
     }
 
     @Override
@@ -82,7 +85,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         creating.decrementAndGet();
         long elapsed = connEvent.elapsed( clock.millis() );
 
-        metricsTracker.recordConnectionTime( id(), elapsed );
+        totalConnectionTime.addAndGet( elapsed );
     }
 
     @Override
@@ -110,7 +113,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         acquired.incrementAndGet();
         long elapsed = acquireEvent.elapsed( clock.millis() );
 
-        metricsTracker.recordAcquisitionTime( id(), elapsed );
+        totalAcquisitionTime.addAndGet( elapsed );
     }
 
     @Override
@@ -128,9 +131,10 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public void released( ListenerEvent inUseEvent )
     {
+        totalInUseCount.incrementAndGet();
         long elapsed = inUseEvent.elapsed( clock.millis() );
 
-        metricsTracker.recordInUseTime( id(), elapsed );
+        totalInUseTime.addAndGet( elapsed );
     }
 
     @Override
@@ -189,6 +193,36 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
+    public long totalAcquisitionTime()
+    {
+        return totalAcquisitionTime.get();
+    }
+
+    @Override
+    public long totalConnectionTime()
+    {
+        return totalConnectionTime.get();
+    }
+
+    @Override
+    public long totalInUseTime()
+    {
+        return totalInUseTime.get();
+    }
+
+    @Override
+    public long totalInUseCount()
+    {
+        return totalInUseCount.get();
+    }
+
+    @Override
+    public ConnectionPoolMetrics snapshot()
+    {
+        return new SnapshotConnectionPoolMetrics( this );
+    }
+
+    @Override
     public long closed()
     {
         return closed.get();
@@ -211,8 +245,10 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     public String toString()
     {
         return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s]",
+                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, " +
+                        "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
                 created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                timedOutToAcquire(), inUse(), idle(), poolStatus() );
+                timedOutToAcquire(), inUse(), idle(), poolStatus(),
+                totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 }

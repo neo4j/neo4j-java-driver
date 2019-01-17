@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.InternalMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
@@ -281,7 +281,7 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                InternalMetricsListener metrics, Config config )
+                MetricsListener metrics, Config config )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),

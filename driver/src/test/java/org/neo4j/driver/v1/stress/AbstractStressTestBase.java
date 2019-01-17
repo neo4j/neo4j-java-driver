@@ -47,7 +47,6 @@ import java.util.stream.IntStream;
 
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.v1.AuthToken;
@@ -102,7 +101,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
                 .withLogging( logging )
                 .withMaxConnectionPoolSize( 100 )
                 .withConnectionAcquisitionTimeout( 1, MINUTES )
-                .withDriverMetrics( MetricsTracker.DEV_NULL_METRICS_TRACKER )
+                .withDriverMetrics()
                 .build();
 
         driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config );

@@ -33,7 +33,7 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
-import org.neo4j.driver.internal.metrics.InternalMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
@@ -54,10 +54,10 @@ public class DirectConnection implements Connection
     private final Clock clock;
 
     private final AtomicReference<Status> status = new AtomicReference<>( Status.OPEN );
-    private final InternalMetricsListener metricsListener;
+    private final MetricsListener metricsListener;
     private final ListenerEvent inUseEvent;
 
-    public DirectConnection( Channel channel, ChannelPool channelPool, Clock clock, InternalMetricsListener metricsListener )
+    public DirectConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );

@@ -25,7 +25,7 @@ import org.neo4j.driver.internal.async.DirectConnection;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.v1.Config;
 
-public interface InternalMetricsListener
+public interface MetricsListener
 {
     /**
      * Before creating a netty channel.

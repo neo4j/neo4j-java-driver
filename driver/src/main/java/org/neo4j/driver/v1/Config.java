@@ -26,7 +26,6 @@ import java.util.logging.Level;
 
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.spi.MetricsTracker;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
@@ -95,7 +94,6 @@ public class Config
     private final ServerAddressResolver resolver;
 
     private final boolean isMetricsEnabled;
-    private final MetricsTracker metricsTracker;
 
     private Config( ConfigBuilder builder )
     {
@@ -117,7 +115,6 @@ public class Config
         this.resolver = builder.resolver;
 
         this.isMetricsEnabled = builder.isMetricsEnabled;
-        this.metricsTracker = builder.metricsTracker;
     }
 
     /**
@@ -293,11 +290,6 @@ public class Config
         return isMetricsEnabled;
     }
 
-    public MetricsTracker metricsTracker()
-    {
-        return metricsTracker;
-    }
-
     /**
      * Used to build new config instances
      */
@@ -317,7 +309,6 @@ public class Config
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
-        private MetricsTracker metricsTracker = MetricsTracker.DEV_NULL_METRICS_TRACKER;
         private boolean isMetricsEnabled = false;
 
         private ConfigBuilder() {}
@@ -778,10 +769,9 @@ public class Config
             return this;
         }
 
-        public ConfigBuilder withDriverMetrics( MetricsTracker tracker )
+        public ConfigBuilder withDriverMetrics()
         {
             this.isMetricsEnabled = true;
-            this.metricsTracker = Objects.requireNonNull( tracker, "metricsTracker" );
             return this;
         }
 

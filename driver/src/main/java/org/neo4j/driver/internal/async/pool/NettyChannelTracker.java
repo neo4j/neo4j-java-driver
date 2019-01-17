@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
-import org.neo4j.driver.internal.metrics.InternalMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
@@ -43,16 +43,16 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final Map<BoltServerAddress,AtomicInteger> addressToInUseChannelCount = new ConcurrentHashMap<>();
     private final Map<BoltServerAddress,AtomicInteger> addressToIdleChannelCount = new ConcurrentHashMap<>();
     private final Logger log;
-    private final InternalMetricsListener metricsListener;
+    private final MetricsListener metricsListener;
     private final ChannelFutureListener closeListener = future -> channelClosed( future.channel() );
     private final ChannelGroup allChannels;
 
-    public NettyChannelTracker( InternalMetricsListener metricsListener, EventExecutor eventExecutor, Logging logging )
+    public NettyChannelTracker( MetricsListener metricsListener, EventExecutor eventExecutor, Logging logging )
     {
         this( metricsListener, new DefaultChannelGroup( "all-connections", eventExecutor ), logging );
     }
 
-    public NettyChannelTracker( InternalMetricsListener metricsListener, ChannelGroup channels, Logging logging )
+    public NettyChannelTracker( MetricsListener metricsListener, ChannelGroup channels, Logging logging )
     {
         this.metricsListener = metricsListener;
         this.log = logging.getLog( getClass().getSimpleName() );
