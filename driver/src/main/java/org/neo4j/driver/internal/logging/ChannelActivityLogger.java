@@ -20,11 +20,13 @@ package org.neo4j.driver.internal.logging;
 
 import io.netty.channel.Channel;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
 
 public class ChannelActivityLogger extends ReformattedLogger
 {
@@ -32,6 +34,7 @@ public class ChannelActivityLogger extends ReformattedLogger
     private final String localChannelId;
 
     private String dbConnectionId;
+    private String serverAddress;
 
     public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
     {
@@ -54,12 +57,9 @@ public class ChannelActivityLogger extends ReformattedLogger
         }
 
         String dbConnectionId = getDbConnectionId();
+        String serverAddress = getServerAddress();
 
-        if ( localChannelId != null && dbConnectionId != null )
-        {
-            return format( "[0x%s][%s] %s", localChannelId, dbConnectionId, message );
-        }
-        return format( "[0x%s][] %s", localChannelId, message );
+        return format( "[0x%s][%s][%s] %s", localChannelId, valueOrEmpty( serverAddress ), valueOrEmpty( dbConnectionId ), message );
     }
 
     private String getDbConnectionId()
@@ -69,5 +69,17 @@ public class ChannelActivityLogger extends ReformattedLogger
             dbConnectionId = ChannelAttributes.connectionId( channel );
         }
         return dbConnectionId;
+    }
+
+    private String getServerAddress()
+    {
+
+        if ( serverAddress == null )
+        {
+            BoltServerAddress serverAddress = ChannelAttributes.serverAddress( channel );
+            this.serverAddress = serverAddress != null ? serverAddress.toString() : null;
+        }
+
+        return serverAddress;
     }
 }
