@@ -22,15 +22,23 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.internal.metrics.InternalMetrics;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.v1.exceptions.ClientException;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
@@ -71,9 +79,35 @@ class InternalDriverTest
         assertEquals( connectivityStage, driver.verifyConnectivity() );
     }
 
+    @Test
+    void shouldThrowClientExceptionIfMetricsNotEnabled() throws Throwable
+    {
+        // Given
+        InternalDriver driver = newDriver( false );
+
+        // When
+        ClientException error = assertThrows( ClientException.class, driver::metrics );
+
+        // Then
+        assertTrue( error.getMessage().contains( "Driver metrics not enabled." ) );
+    }
+
+    @Test
+    void shouldReturnMetricsIfMetricsEnabled() throws Throwable
+    {
+        // Given
+        InternalDriver driver = newDriver( true );
+
+        // When
+        Metrics metrics = driver.metrics();
+
+        // Then we shall have no problem to get the metrics
+        assertTrue( metrics instanceof InternalMetrics );
+    }
+
     private static InternalDriver newDriver( SessionFactory sessionFactory )
     {
-        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, DEV_NULL_METRICS, DEV_NULL_LOGGING );
+        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, METRICS_DISABLED_PROVIDER, DEV_NULL_LOGGING );
     }
 
     private static SessionFactory sessionFactoryMock()
@@ -81,5 +115,18 @@ class InternalDriverTest
         SessionFactory sessionFactory = mock( SessionFactory.class );
         when( sessionFactory.close() ).thenReturn( completedWithNull() );
         return sessionFactory;
+    }
+
+    private static InternalDriver newDriver( boolean isMetricsEnabled )
+    {
+        SessionFactory sessionFactory = sessionFactoryMock();
+        Config config = Config.defaultConfig();
+        if ( isMetricsEnabled )
+        {
+            config = Config.build().withDriverMetrics().build();
+        }
+
+        MetricsProvider metricsProvider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        return new InternalDriver( SecurityPlan.insecure(), sessionFactory, metricsProvider, DEV_NULL_LOGGING );
     }
 }

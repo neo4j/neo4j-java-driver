@@ -93,7 +93,7 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         @Override
         public ListenerEvent createListenerEvent()
         {
-            return null;
+            return ListenerEvent.DEV_NULL_LISTENER_EVENT;
         }
 
         @Override

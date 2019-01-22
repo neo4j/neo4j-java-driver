@@ -20,6 +20,8 @@ package org.neo4j.driver.v1;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.v1.exceptions.ClientException;
+
 /**
  * Accessor for a specific Neo4j graph database.
  * <p>
@@ -156,4 +158,12 @@ public interface Driver extends AutoCloseable
      * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
      */
     CompletionStage<Void> closeAsync();
+
+    /**
+     * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
+     * Otherwise a {@link ClientException} will be thrown.
+     * @return the driver metrics if enabled.
+     * @throws ClientException if the driver metrics reporting is not enabled.
+     */
+    public Metrics metrics();
 }

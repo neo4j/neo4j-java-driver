@@ -769,6 +769,10 @@ public class Config
             return this;
         }
 
+        /**
+         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * @return this builder.
+         */
         public ConfigBuilder withDriverMetrics()
         {
             this.isMetricsEnabled = true;
@@ -776,7 +780,7 @@ public class Config
         }
 
         /**
-         * Disable driver metrics reporting feature.
+         * Disable driver metrics. When disabled, driver metrics cannot be accessed via {@link Driver#metrics()}.
          * @return this builder.
          */
         public ConfigBuilder withoutDriverMetrics()

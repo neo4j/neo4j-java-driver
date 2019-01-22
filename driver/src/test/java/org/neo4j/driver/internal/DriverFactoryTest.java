@@ -30,9 +30,8 @@ import java.util.stream.Stream;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.metrics.InternalMetrics;
-import org.neo4j.driver.internal.metrics.MetricsListener;
-import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -58,7 +57,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
@@ -160,9 +159,9 @@ class DriverFactoryTest
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( false );
         // When
-        MetricsListener handler = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
         // Then
-        assertThat( handler, is( DEV_NULL_METRICS ) );
+        assertThat( provider, is( METRICS_DISABLED_PROVIDER ) );
     }
 
     @Test
@@ -172,9 +171,9 @@ class DriverFactoryTest
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( true );
         // When
-        MetricsListener handler = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
         // Then
-        assertThat( handler instanceof InternalMetrics, is( true ) );
+        assertThat( provider instanceof InternalMetricsProvider, is( true ) );
     }
 
     private Driver createDriver( String uri, DriverFactory driverFactory )
@@ -208,21 +207,21 @@ class DriverFactoryTest
         }
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
         protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, Metrics metrics, Config config )
+                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsListener metrics, Config config )
+                MetricsProvider metricsProvider, Config config )
         {
             return connectionPool;
         }
@@ -233,7 +232,7 @@ class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
             when( driver.verifyConnectivity() ).thenReturn( completedWithNull() );
@@ -258,7 +257,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsListener metrics, Config config )
+                MetricsProvider metricsProvider, Config config )
         {
             return connectionPoolMock();
         }
@@ -281,7 +280,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsListener metrics, Config config )
+                MetricsProvider metricsProvider, Config config )
         {
             return connectionPoolMock();
         }
