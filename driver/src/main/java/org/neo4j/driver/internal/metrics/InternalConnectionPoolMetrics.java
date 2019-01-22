@@ -23,16 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.ConnectionPoolMetrics;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.InternalMetrics.serverAddressToUniqueName;
 
 public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
 {
-    private final Clock clock;
     private final BoltServerAddress address;
     private final ConnectionPool pool;
 
@@ -54,21 +52,20 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
 
     private final AtomicLong totalInUseCount = new AtomicLong();
 
-    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, Clock clock )
+    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool )
     {
         Objects.requireNonNull( address );
         Objects.requireNonNull( pool );
 
         this.address = address;
         this.pool = pool;
-        this.clock = clock;
     }
 
     @Override
     public void beforeCreating( ListenerEvent connEvent )
     {
         creating.incrementAndGet();
-        connEvent.start( clock.millis() );
+        connEvent.start();
     }
 
     @Override
@@ -83,7 +80,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     {
         created.incrementAndGet();
         creating.decrementAndGet();
-        long elapsed = connEvent.elapsed( clock.millis() );
+        long elapsed = connEvent.elapsed();
 
         totalConnectionTime.addAndGet( elapsed );
     }
@@ -97,7 +94,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public void beforeAcquiringOrCreating( ListenerEvent acquireEvent )
     {
-        acquireEvent.start( clock.millis() );
+        acquireEvent.start();
         acquiring.incrementAndGet();
     }
 
@@ -111,7 +108,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
     {
         acquired.incrementAndGet();
-        long elapsed = acquireEvent.elapsed( clock.millis() );
+        long elapsed = acquireEvent.elapsed();
 
         totalAcquisitionTime.addAndGet( elapsed );
     }
@@ -125,14 +122,14 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public void acquired( ListenerEvent inUseEvent )
     {
-        inUseEvent.start( clock.millis() );
+        inUseEvent.start();
     }
 
     @Override
     public void released( ListenerEvent inUseEvent )
     {
         totalInUseCount.incrementAndGet();
-        long elapsed = inUseEvent.elapsed( clock.millis() );
+        long elapsed = inUseEvent.elapsed();
 
         totalInUseTime.addAndGet( elapsed );
     }

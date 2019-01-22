@@ -48,7 +48,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     public void putPoolMetrics( BoltServerAddress serverAddress, ConnectionPoolImpl pool )
     {
         this.connectionPoolMetrics.put( serverAddressToUniqueName( serverAddress ),
-                new InternalConnectionPoolMetrics( serverAddress, pool, clock ) );
+                new InternalConnectionPoolMetrics( serverAddress, pool ) );
     }
 
     @Override
@@ -114,7 +114,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     @Override
     public ListenerEvent createListenerEvent()
     {
-        return new TimeRecorderListenerEvent();
+        return new TimeRecorderListenerEvent( clock );
     }
 
     @Override

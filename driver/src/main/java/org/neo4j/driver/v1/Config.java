@@ -118,8 +118,8 @@ public class Config
     }
 
     /**
-     * Logging metricsTracker
-     * @return the logging metricsTracker to use
+     * Logging provider
+     * @return the Logging provider to use
      */
     public Logging logging()
     {
