@@ -18,6 +18,7 @@
  */
 package org.neo4j.docs.driver;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.v1.net.ServerAddress;
@@ -28,6 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExamplesStubIT
 {
+
+    @BeforeAll
+    static void beforeAll() {
+        System.setProperty( "javax.net.debug", "ssl" );
+    }
+
     @Test
     void testShouldRunConfigCustomResolverExample() throws Exception
     {

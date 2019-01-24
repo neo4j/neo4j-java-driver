@@ -18,7 +18,10 @@
  */
 package org.neo4j.docs.driver;
 
+import org.junit.Ignore;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
@@ -105,6 +108,11 @@ class ExamplesIT
     private int companyCount( String name )
     {
         return readInt( "MATCH (a:Company {name: $name}) RETURN count(a)", parameters( "name", name ) );
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+        System.setProperty( "javax.net.debug", "ssl" );
     }
 
     @BeforeEach
@@ -257,6 +265,7 @@ class ExamplesIT
         }
     }
 
+    @Disabled
     @Test
     void testShouldRunHelloWorld() throws Exception
     {
@@ -375,6 +384,7 @@ class ExamplesIT
         }
     }
 
+    @Disabled
     @Test
     void testShouldRunAsyncTransactionFunctionExample() throws Exception
     {
@@ -430,6 +440,7 @@ class ExamplesIT
         }
     }
 
+    @Disabled
     @Test
     void testAsyncExplicitTransactionExample() throws Exception
     {
