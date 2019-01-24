@@ -63,4 +63,12 @@ public abstract class Format
     {
         return String.format( "%s: %s", entry.getKey(), String.valueOf( entry.getValue() ) );
     }
+
+    /**
+     * Returns the submitted value if it is not null or an empty string if it is.
+     */
+    public static String valueOrEmpty( String value )
+    {
+        return value != null ? value : "";
+    }
 }

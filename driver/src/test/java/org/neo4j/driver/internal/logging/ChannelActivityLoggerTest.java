@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.logging;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.v1.Logging;
 
@@ -46,7 +47,19 @@ class ChannelActivityLoggerTest
 
         String reformatted = activityLogger.reformat( "Hello!" );
 
-        assertEquals( "[0x" + channel.id() + "][] Hello!", reformatted );
+        assertEquals( "[0x" + channel.id() + "][][] Hello!", reformatted );
+    }
+
+    @Test
+    void shouldReformatWithChannelIdAndServerAddress()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        ChannelAttributes.setServerAddress( channel, new BoltServerAddress( "somewhere", 1234 ) );
+        ChannelActivityLogger activityLogger = new ChannelActivityLogger( channel, Logging.none(), getClass() );
+
+        String reformatted = activityLogger.reformat( "Hello!" );
+
+        assertEquals( "[0x" + channel.id() + "][somewhere:1234][] Hello!", reformatted );
     }
 
     @Test
@@ -58,6 +71,6 @@ class ChannelActivityLoggerTest
 
         String reformatted = activityLogger.reformat( "Hello!" );
 
-        assertEquals( "[0x" + channel.id() + "][bolt-12345] Hello!", reformatted );
+        assertEquals( "[0x" + channel.id() + "][][bolt-12345] Hello!", reformatted );
     }
 }
