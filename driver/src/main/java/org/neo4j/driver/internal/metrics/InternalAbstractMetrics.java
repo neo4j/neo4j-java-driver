@@ -23,15 +23,13 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.metrics.spi.ConnectionMetrics;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.Metrics;
+import org.neo4j.driver.v1.ConnectionPoolMetrics;
+import org.neo4j.driver.v1.Metrics;
 
 public abstract class InternalAbstractMetrics implements Metrics, MetricsListener
 {
     public static final InternalAbstractMetrics DEV_NULL_METRICS = new InternalAbstractMetrics()
     {
-
         @Override
         public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
         {
@@ -95,11 +93,11 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         @Override
         public ListenerEvent createListenerEvent()
         {
-            return null;
+            return ListenerEvent.DEV_NULL_LISTENER_EVENT;
         }
 
         @Override
-        public void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )
+        public void putPoolMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )
         {
 
         }
@@ -111,9 +109,9 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public Map<String,ConnectionMetrics> connectionMetrics()
+        public Metrics snapshot()
         {
-            return Collections.emptyMap();
+            return this;
         }
 
         @Override

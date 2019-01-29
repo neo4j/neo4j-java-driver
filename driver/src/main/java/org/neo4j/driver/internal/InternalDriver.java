@@ -21,13 +21,14 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.metrics.spi.Metrics;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.v1.Metrics;
 import org.neo4j.driver.v1.Session;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -39,13 +40,13 @@ public class InternalDriver implements Driver
     private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
-    private final Metrics metrics;
+    private final MetricsProvider metricsProvider;
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, Metrics metrics, Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
-        this.metrics = metrics;
+        this.metricsProvider = metricsProvider;
         this.log = logging.getLog( Driver.class.getSimpleName() );
     }
 
@@ -148,7 +149,7 @@ public class InternalDriver implements Driver
 
     public Metrics metrics()
     {
-        return this.metrics;
+        return metricsProvider.metrics();
     }
 
     private static RuntimeException driverCloseException()

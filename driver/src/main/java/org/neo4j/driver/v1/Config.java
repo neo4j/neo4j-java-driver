@@ -93,7 +93,9 @@ public class Config
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final ServerAddressResolver resolver;
 
-    private Config( ConfigBuilder builder)
+    private final boolean isMetricsEnabled;
+
+    private Config( ConfigBuilder builder )
     {
         this.logging = builder.logging;
         this.logLeakedSessions = builder.logLeakedSessions;
@@ -111,11 +113,13 @@ public class Config
         this.retrySettings = builder.retrySettings;
         this.loadBalancingStrategy = builder.loadBalancingStrategy;
         this.resolver = builder.resolver;
+
+        this.isMetricsEnabled = builder.isMetricsEnabled;
     }
 
     /**
      * Logging provider
-     * @return the logging provider to use
+     * @return the Logging provider to use
      */
     public Logging logging()
     {
@@ -281,6 +285,11 @@ public class Config
         return retrySettings;
     }
 
+    public boolean isMetricsEnabled()
+    {
+        return isMetricsEnabled;
+    }
+
     /**
      * Used to build new config instances
      */
@@ -300,6 +309,7 @@ public class Config
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
+        private boolean isMetricsEnabled = false;
 
         private ConfigBuilder() {}
 
@@ -756,6 +766,26 @@ public class Config
         public ConfigBuilder withResolver( ServerAddressResolver resolver )
         {
             this.resolver = Objects.requireNonNull( resolver, "resolver" );
+            return this;
+        }
+
+        /**
+         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * @return this builder.
+         */
+        public ConfigBuilder withDriverMetrics()
+        {
+            this.isMetricsEnabled = true;
+            return this;
+        }
+
+        /**
+         * Disable driver metrics. When disabled, driver metrics cannot be accessed via {@link Driver#metrics()}.
+         * @return this builder.
+         */
+        public ConfigBuilder withoutDriverMetrics()
+        {
+            this.isMetricsEnabled = false;
             return this;
         }
 

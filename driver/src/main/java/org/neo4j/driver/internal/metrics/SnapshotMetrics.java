@@ -18,19 +18,36 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-public class NanoTimeBasedListenerEvent implements ListenerEvent
-{
-    private long startNanoTime;
+import java.util.HashMap;
+import java.util.Map;
 
-    @Override
-    public void start()
+import org.neo4j.driver.v1.ConnectionPoolMetrics;
+import org.neo4j.driver.v1.Metrics;
+
+public class SnapshotMetrics implements Metrics
+{
+    private final Map<String,ConnectionPoolMetrics> poolMetrics;
+
+    public SnapshotMetrics( Metrics metrics )
     {
-        startNanoTime = System.nanoTime();
+        Map<String,ConnectionPoolMetrics> other = metrics.connectionPoolMetrics();
+        poolMetrics = new HashMap<>( other.size() );
+
+        for ( String id : other.keySet() )
+        {
+            poolMetrics.put( id, other.get( id ).snapshot() );
+        }
     }
 
     @Override
-    public long elapsed()
+    public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
     {
-        return System.nanoTime() - startNanoTime;
+        return poolMetrics;
+    }
+
+    @Override
+    public Metrics snapshot()
+    {
+        return this;
     }
 }

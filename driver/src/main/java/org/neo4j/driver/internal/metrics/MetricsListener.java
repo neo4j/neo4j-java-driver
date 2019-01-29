@@ -28,72 +28,72 @@ import org.neo4j.driver.v1.Config;
 public interface MetricsListener
 {
     /**
-     * Before creating a netty channel
+     * Before creating a netty channel.
      * @param serverAddress the server the netty channel binds to.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
     void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
 
     /**
-     * After a netty channel is created successfully
-     * @param serverAddress the server the netty channel binds to
+     * After a netty channel is created successfully.
+     * @param serverAddress the server the netty channel binds to.
      */
     void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
 
     /**
-     * After a netty channel is created with failure
-     * @param serverAddress the server the netty channel binds to
+     * After a netty channel is created with a failure.
+     * @param serverAddress the server the netty channel binds to.
      */
     void afterFailedToCreate( BoltServerAddress serverAddress );
 
     /**
-     * After a netty channel is closed successfully
-     * @param serverAddress the server the netty channel binds to
+     * After a netty channel is closed successfully.
+     * @param serverAddress the server the netty channel binds to.
      */
     void afterClosed( BoltServerAddress serverAddress );
 
     /**
-     * After failed to acquire a connection from pool within maximum connection acquisition timeout set by
-     * {@link Config.ConfigBuilder#withConnectionAcquisitionTimeout(long, TimeUnit)}
-     * @param serverAddress
-     */
-    void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress );
-
-    /**
-     * Before acquiring or creating a new netty channel from pool
-     * @param serverAddress the server the netty channel binds to
-     * @param acquireEvent a pool listener event registered in pool for this acquire event
+     * Before acquiring or creating a new netty channel from pool.
+     * @param serverAddress the server the netty channel binds to.
+     * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
     void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
 
     /**
-     * After acquiring or creating a new netty channel from pool regardless successfully or not.
-     * @param serverAddress the server the netty channel binds to
+     * After acquiring or creating a new netty channel from pool regardless it is successful or not.
+     * @param serverAddress the server the netty channel binds to.
      */
     void afterAcquiringOrCreating( BoltServerAddress serverAddress );
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param serverAddress the server the netty channel binds to
-     * @param acquireEvent a pool listener event registered in pool for this acquire event
+     * @param serverAddress the server the netty channel binds to.
+     * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
     void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
 
     /**
+     * After we failed to acquire a connection from pool within maximum connection acquisition timeout set by
+     * {@link Config.ConfigBuilder#withConnectionAcquisitionTimeout(long, TimeUnit)}.
+     * @param serverAddress
+     */
+    void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress );
+
+    /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param serverAddress the server the netty channel binds to
-     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when created
+     * @param serverAddress the server the netty channel binds to.
+     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when created.
      */
     void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 
     /**
-     * After releasing a netty channel back to pool successfully
-     * @param serverAddress the server the netty channel binds to
-     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when destroyed
+     * After releasing a netty channel back to pool successfully.
+     * @param serverAddress the server the netty channel binds to.
+     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when destroyed.
      */
     void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 
     ListenerEvent createListenerEvent();
 
-    void addMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool );
+    void putPoolMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool );
 }

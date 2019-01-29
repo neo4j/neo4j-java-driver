@@ -194,7 +194,7 @@ public class ConnectionPoolImpl implements ConnectionPool
                 return pool;
             }
 
-            metricsListener.addMetrics( address, this );
+            metricsListener.putPoolMetrics( address, this );
             pool = newPool( address );
             pools.put( address, pool );
         }

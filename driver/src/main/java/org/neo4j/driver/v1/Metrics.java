@@ -16,31 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics.spi;
+package org.neo4j.driver.v1;
 
 import java.util.Map;
 
 public interface Metrics
 {
-    // TODO Once this interface become public, find a better way to enable metrics and detect metrics availability.
-    String DRIVER_METRICS_ENABLED_KEY = "driver.metrics.enabled";
-    static boolean isMetricsEnabled()
-    {
-        return Boolean.getBoolean( DRIVER_METRICS_ENABLED_KEY );
-    }
-
     /**
      * A map of connection pool metrics.
-     * The {@link ConnectionPoolMetrics#uniqueName()} are used as the keys of the map.
+     * The {@link ConnectionPoolMetrics#id()} are used as the keys of the map.
      * @return The connection pool metrics.
      */
     Map<String, ConnectionPoolMetrics> connectionPoolMetrics();
 
-    /***
-     * A map of connection metrics.
-     * The {@link ConnectionMetrics#uniqueName()} are used as the keys of the map.
-     * @return The connection metrics.
+    /**
+     * Returns a snapshot of this metrics.
+     * @return a snapshot of this metrics.
      */
-    Map<String,ConnectionMetrics> connectionMetrics();
-
+    Metrics snapshot();
 }

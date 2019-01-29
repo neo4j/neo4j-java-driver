@@ -62,12 +62,6 @@
         <artifactId>netty-handler</artifactId>
         <version>4.1.22.Final</version>
       </dependency>
-      <dependency>
-        <groupId>org.hdrhistogram</groupId>
-        <artifactId>HdrHistogram</artifactId>
-        <version>2.1.10</version>
-      </dependency>
-
       <!-- Optional dependencies -->
       <dependency>
         <groupId>org.slf4j</groupId>

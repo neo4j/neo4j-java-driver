@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -42,9 +42,9 @@ public class FailingConnectionDriverFactory extends DriverFactory
 
     @Override
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsListener metrics, Config config )
+            MetricsProvider metricsProvider, Config config )
     {
-        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metrics, config );
+        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );
     }
 

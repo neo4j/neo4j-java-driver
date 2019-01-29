@@ -18,16 +18,13 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.spi.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.metrics.spi.Histogram;
-import org.neo4j.driver.internal.metrics.spi.PoolStatus;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.ConnectionPoolMetrics;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.InternalMetrics.serverAddressToUniqueName;
@@ -39,30 +36,36 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
 
     private final AtomicLong closed = new AtomicLong();
 
+    // creating = created + failedToCreate
     private final AtomicInteger creating = new AtomicInteger();
     private final AtomicLong created = new AtomicLong();
     private final AtomicLong failedToCreate = new AtomicLong();
 
+    // acquiring = acquired + timedOutToAcquire + failedToAcquireDueToOtherFailures (which we do not keep track)
     private final AtomicInteger acquiring = new AtomicInteger();
     private final AtomicLong acquired = new AtomicLong();
     private final AtomicLong timedOutToAcquire = new AtomicLong();
 
-    private InternalHistogram acquisitionTimeHistogram;
+    private final AtomicLong totalAcquisitionTime = new AtomicLong();
+    private final AtomicLong totalConnectionTime = new AtomicLong();
+    private final AtomicLong totalInUseTime = new AtomicLong();
 
-    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool, long connAcquisitionTimeoutMs )
+    private final AtomicLong totalInUseCount = new AtomicLong();
+
+    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool )
     {
         Objects.requireNonNull( address );
         Objects.requireNonNull( pool );
 
         this.address = address;
         this.pool = pool;
-        this.acquisitionTimeHistogram = new InternalHistogram( Duration.ofMillis( connAcquisitionTimeoutMs ).toNanos() );
     }
 
     @Override
-    public void beforeCreating()
+    public void beforeCreating( ListenerEvent connEvent )
     {
         creating.incrementAndGet();
+        connEvent.start();
     }
 
     @Override
@@ -73,10 +76,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterCreated()
+    public void afterCreated( ListenerEvent connEvent )
     {
         created.incrementAndGet();
         creating.decrementAndGet();
+        long elapsed = connEvent.elapsed();
+
+        totalConnectionTime.addAndGet( elapsed );
     }
 
     @Override
@@ -86,9 +92,9 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent listenerEvent )
+    public void beforeAcquiringOrCreating( ListenerEvent acquireEvent )
     {
-        listenerEvent.start();
+        acquireEvent.start();
         acquiring.incrementAndGet();
     }
 
@@ -99,22 +105,37 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent listenerEvent )
+    public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
     {
-        long elapsed = listenerEvent.elapsed();
-        acquisitionTimeHistogram.recordValue( elapsed );
+        acquired.incrementAndGet();
+        long elapsed = acquireEvent.elapsed();
 
-        this.acquired.incrementAndGet();
+        totalAcquisitionTime.addAndGet( elapsed );
     }
 
     @Override
     public void afterTimedOutToAcquireOrCreate()
     {
-        this.timedOutToAcquire.incrementAndGet();
+        timedOutToAcquire.incrementAndGet();
     }
 
     @Override
-    public String uniqueName()
+    public void acquired( ListenerEvent inUseEvent )
+    {
+        inUseEvent.start();
+    }
+
+    @Override
+    public void released( ListenerEvent inUseEvent )
+    {
+        totalInUseCount.incrementAndGet();
+        long elapsed = inUseEvent.elapsed();
+
+        totalInUseTime.addAndGet( elapsed );
+    }
+
+    @Override
+    public String id()
     {
         return serverAddressToUniqueName( address );
     }
@@ -169,6 +190,36 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
+    public long totalAcquisitionTime()
+    {
+        return totalAcquisitionTime.get();
+    }
+
+    @Override
+    public long totalConnectionTime()
+    {
+        return totalConnectionTime.get();
+    }
+
+    @Override
+    public long totalInUseTime()
+    {
+        return totalInUseTime.get();
+    }
+
+    @Override
+    public long totalInUseCount()
+    {
+        return totalInUseCount.get();
+    }
+
+    @Override
+    public ConnectionPoolMetrics snapshot()
+    {
+        return new SnapshotConnectionPoolMetrics( this );
+    }
+
+    @Override
     public long closed()
     {
         return closed.get();
@@ -186,18 +237,15 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         return this.acquired.get();
     }
 
-    @Override
-    public Histogram acquisitionTimeHistogram()
-    {
-        return this.acquisitionTimeHistogram.snapshot();
-    }
 
     @Override
     public String toString()
     {
         return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, acquisitionTimeHistogram=%s]",
+                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, " +
+                        "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
                 created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                timedOutToAcquire(), inUse(), idle(), poolStatus(), acquisitionTimeHistogram() );
+                timedOutToAcquire(), inUse(), idle(), poolStatus(),
+                totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 }

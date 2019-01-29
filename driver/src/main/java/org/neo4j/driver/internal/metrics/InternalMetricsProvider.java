@@ -18,14 +18,27 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.Metrics;
 
-public interface ConnectionMetricsListener
+public class InternalMetricsProvider implements MetricsProvider
 {
-    void beforeCreating( ListenerEvent listenerEvent );
+    private final InternalMetrics metrics;
 
-    void afterCreated( ListenerEvent listenerEvent );
+    public InternalMetricsProvider( Clock clock )
+    {
+        this.metrics = new InternalMetrics( clock );
+    }
 
-    void acquiredOrCreated( ListenerEvent listenerEvent );
+    @Override
+    public Metrics metrics()
+    {
+        return metrics;
+    }
 
-    void released(ListenerEvent listenerEvent);
+    @Override
+    public MetricsListener metricsListener()
+    {
+        return metrics;
+    }
 }
