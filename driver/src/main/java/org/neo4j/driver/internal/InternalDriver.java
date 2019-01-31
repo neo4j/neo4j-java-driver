@@ -95,10 +95,10 @@ public class InternalDriver implements Driver
         return newSession( mode, Bookmarks.from( bookmarks ) );
     }
 
-    private Session newSession( AccessMode mode, Bookmarks bookmarks )
+    private NetworkSession newSession( AccessMode mode, Bookmarks bookmarks )
     {
         assertOpen();
-        Session session = sessionFactory.newInstance( mode, bookmarks );
+        NetworkSession session = sessionFactory.newInstance( mode, bookmarks );
         if ( closed.get() )
         {
             // session does not immediately acquire connection, it is fine to just throw
@@ -127,7 +127,7 @@ public class InternalDriver implements Driver
     @Override
     public RxSession rxSession()
     {
-        return new InternalRxSession( session() );
+        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.empty() ) );
     }
 
     public CompletionStage<Void> verifyConnectivity()

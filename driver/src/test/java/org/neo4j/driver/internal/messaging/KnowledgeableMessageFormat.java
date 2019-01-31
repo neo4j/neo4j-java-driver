@@ -22,14 +22,14 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.FailureMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.IgnoredMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.response.FailureMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.response.IgnoredMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.RecordMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.response.RecordMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.RunMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.SuccessMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.response.SuccessMessageEncoder;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;

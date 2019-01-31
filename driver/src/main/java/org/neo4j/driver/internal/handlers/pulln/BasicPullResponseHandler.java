@@ -28,11 +28,6 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 public interface BasicPullResponseHandler extends ResponseHandler, Subscription
 {
-    BiConsumer<Record,Throwable> NULL_RECORD_CONSUMER = ( record, throwable ) -> {
-    };
-    BiConsumer<ResultSummary,Throwable> NULL_SUCCESS_CONSUMER = ( resultSummary, throwable ) -> {
-    };
-
     /**
      * Register a record consumer for each record received.
      * This consumer shall not be registered after streaming started.
@@ -63,14 +58,14 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
      * If the server is not sending more records until another {@link Subscription#request(long)}, but the streaming has not been finished.
      * @return Ture if the stream is paused.
      */
-    boolean isPaused();
+    boolean isStreamingPaused();
 
     enum Status
     {
         Done,
         Failed,
-        Cancelled,
+        Canceled,
         Streaming,
-        Paused
+        Ready
     }
 }

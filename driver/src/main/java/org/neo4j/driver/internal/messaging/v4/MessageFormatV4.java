@@ -16,29 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.request;
+package org.neo4j.driver.internal.messaging.v4;
 
-import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.v2.MessageReaderV2;
+import org.neo4j.driver.internal.packstream.PackInput;
+import org.neo4j.driver.internal.packstream.PackOutput;
 
-public class DiscardAllMessage implements Message
+public class MessageFormatV4 implements MessageFormat
 {
-    public final static byte SIGNATURE = 0x2F;
-
-    public static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
-
-    protected DiscardAllMessage()
+    @Override
+    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
+        return new MessageWriterV4( output );
     }
 
     @Override
-    public byte signature()
+    public Reader newReader( PackInput input )
     {
-        return SIGNATURE;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "DISCARD_ALL";
+        return new MessageReaderV2( input );
     }
 }

@@ -16,29 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.request;
+package org.neo4j.driver.internal.messaging.encode;
+
+import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageEncoder;
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.messaging.request.PullNMessage;
 
-public class DiscardAllMessage implements Message
+import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
+
+public class PullNMessageEncoder implements MessageEncoder
 {
-    public final static byte SIGNATURE = 0x2F;
-
-    public static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
-
-    protected DiscardAllMessage()
-    {
-    }
-
     @Override
-    public byte signature()
+    public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        return SIGNATURE;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "DISCARD_ALL";
+        checkArgument( message, PullNMessage.class );
+        packer.packStructHeader( 1, PullNMessage.SIGNATURE );
+        packer.pack( ((PullNMessage) message).metadata() );
     }
 }

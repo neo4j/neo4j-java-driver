@@ -25,7 +25,6 @@ import java.util.Map;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 
-
 public interface RxSession extends RxStatementRunner
 {
     Publisher<RxTransaction> beginTransaction();
@@ -49,7 +48,7 @@ public interface RxSession extends RxStatementRunner
     String lastBookmark();
 
     @Deprecated
-    void reset();
+    Publisher<Void> reset();
 
-    Publisher<Void> close();
+    Publisher<Void> close(); // TODO remove?
 }

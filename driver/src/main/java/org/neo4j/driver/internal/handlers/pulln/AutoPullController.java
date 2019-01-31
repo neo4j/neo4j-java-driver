@@ -24,13 +24,13 @@ public class AutoPullController implements PullController
 {
     private final Subscription subscription;
 
-    private static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
-    private static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
+    private static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 3000 );
+    private static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 10000 );
     private static final int AUTO_PULL_SIZE = RECORD_BUFFER_HIGH_WATERMARK;
 
     private boolean autoPullEnabled = true;
 
-    public AutoPullController(Subscription subscription)
+    public AutoPullController( Subscription subscription )
     {
         this.subscription = subscription;
         autoPull();
@@ -55,16 +55,16 @@ public class AutoPullController implements PullController
     }
 
     @Override
-    public void afterDequeueRecord( int queueSize, boolean streamingPaused )
+    public void afterDequeueRecord( int queueSize, boolean isStreamingPaused )
     {
         if ( queueSize < RECORD_BUFFER_LOW_WATERMARK )
         {
             autoPullEnabled = true;
 
-            if ( streamingPaused )
+            if ( isStreamingPaused )
             {
-                // only pull if streaming is paused has already consumed
-                // if streaming is still on, then handleSuccessWithHasMore wil pull for us
+                // only pull if streaming is paused
+                // if streaming is still on, then handleSuccessWithHasMore wil pull for us if there are still more records
                 autoPull();
             }
         }

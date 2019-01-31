@@ -27,21 +27,25 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
+import static org.neo4j.driver.react.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.react.RxUtils.createMono;
+
 public class InternalRxSession extends AbstractRxStatementRunner implements RxSession
 {
-    private final NetworkSession asyncSession;
+    private final NetworkSession session;
 
-    public InternalRxSession( Session asyncSession )
+    public InternalRxSession( NetworkSession session )
     {
-        this.asyncSession = (NetworkSession) asyncSession;
+        // RxSession accept a network session as input.
+        // The network session different from async session that it provides ways to both run for Rx and Async
+        // Note: Blocking result could just build on top of async result. However Rx result cannot just build on top of async result.
+        this.session = session;
     }
 
     @Override
@@ -53,23 +57,9 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     @Override
     public Publisher<RxTransaction> beginTransaction( TransactionConfig config )
     {
-        return Mono.create( sink -> {
-            CompletionStage<Transaction> txFuture = asyncSession.beginTransactionAsync();
-            CompletionStage<RxTransaction> rxTxFuture = txFuture.thenApply( transaction -> new InternalRxTransaction( (ExplicitTransaction) transaction ) );
-            rxTxFuture.whenComplete( ( tx, error ) -> {
-                if ( tx != null )
-                {
-                    sink.success( tx );
-                }
-                else if ( error != null )
-                {
-                    sink.error( error );
-                }
-                else
-                {
-                    sink.success();
-                }
-            } );
+        return createMono( () -> {
+            CompletionStage<Transaction> txFuture = session.beginTransactionAsync();
+            return txFuture.thenApply( transaction -> new InternalRxTransaction( (ExplicitTransaction) transaction ) );
         } );
     }
 
@@ -138,35 +128,24 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     @Override
     public RxResult run( Statement statement, TransactionConfig config )
     {
-        CompletionStage<RxStatementResultCursor> cursor = asyncSession.runRx( statement, config );
-        return new InternalRxResult( cursor );
+        return new InternalRxResult( () -> session.runRx( statement, config ) );
     }
 
     @Override
     public String lastBookmark()
     {
-        return null;
+        return session.lastBookmark();
     }
 
     @Override
-    public void reset()
+    public Publisher<Void> reset()
     {
+        return createEmptyPublisher( session::resetAsync );
     }
 
     @Override
     public Publisher<Void> close()
     {
-        return Mono.create( sink -> {
-            asyncSession.closeAsync().whenComplete( ( ignore, error ) -> {
-                if ( error != null )
-                {
-                    sink.error( error );
-                }
-                else
-                {
-                    sink.success();
-                }
-            } );
-        } );
+        return createEmptyPublisher( session::closeAsync );
     }
 }

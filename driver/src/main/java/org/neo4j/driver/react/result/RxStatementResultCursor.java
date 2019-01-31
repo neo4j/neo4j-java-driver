@@ -21,6 +21,7 @@ package org.neo4j.driver.react.result;
 import org.reactivestreams.Subscription;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
@@ -33,27 +34,39 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 public class RxStatementResultCursor implements Subscription, FailableCursor
 {
-    private final RunResponseHandler runResponseHandler;
+    private final RunResponseHandler runHandler;
     private final BasicPullResponseHandler pullHandler;
 
-    public RxStatementResultCursor( RunResponseHandler runResponseHandler, BasicPullResponseHandler pullHandler )
+    public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
     {
-        this.runResponseHandler = runResponseHandler;
+        this.runHandler = runHandler;
         this.pullHandler = pullHandler;
     }
 
-    public List<String> keys()
+    public CompletableFuture<List<String>> keys()
     {
-        return runResponseHandler.statementKeys();
+        return runHandler.runFuture().thenApply( ignored -> runHandler.statementKeys() );
     }
 
-    public void installSummaryConsumer(BiConsumer<ResultSummary, Throwable> successConsumer )
+    public void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> successConsumer )
     {
+        runHandler.runFuture().whenComplete( (ignored, error)-> {
+            if ( error != null )
+            {
+                successConsumer.accept( null, error );
+            }
+        } );
         pullHandler.installSummaryConsumer( successConsumer );
     }
 
     public void installRecordConsumer( BiConsumer<Record, Throwable> recordConsumer )
     {
+        runHandler.runFuture().whenComplete( (ignored, error)-> {
+            if ( error != null )
+            {
+                recordConsumer.accept( null, error );
+            }
+        } );
         pullHandler.installRecordConsumer( recordConsumer );
     }
 
@@ -71,6 +84,7 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     @Override
     public CompletionStage<Throwable> failureAsync()
     {
+        // TODO remove this method from reactive if not needed
         return Futures.completedWithNull();
     }
 }

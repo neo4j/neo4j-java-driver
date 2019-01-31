@@ -16,23 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.encode;
+package org.neo4j.driver.internal.messaging.encode.response;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
-import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
-
-public class PullAllMessageEncoder implements MessageEncoder
+public class FailureMessageEncoder implements MessageEncoder
 {
     @Override
     public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        checkArgument( message, PullAllMessage.class );
-        packer.packStructHeader( 0, PullAllMessage.SIGNATURE );
+        FailureMessage failureMessage = (FailureMessage) message;
+        packer.packStructHeader( 1, failureMessage.signature() );
+        Map<String,Value> body = new HashMap<>();
+        body.put( "code", Values.value( failureMessage.code() ) );
+        body.put( "message", Values.value( failureMessage.message() ) );
+        packer.pack( body );
     }
 }

@@ -19,13 +19,14 @@
 package org.neo4j.driver.react;
 
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.react.result.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
+
+import static org.neo4j.driver.react.RxUtils.createEmptyPublisher;
 
 public class InternalRxTransaction extends AbstractRxStatementRunner implements RxTransaction
 {
@@ -44,26 +45,15 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
 
     private Publisher<Void> close( boolean commit )
     {
-        return Mono.create( sink -> {
-            CompletionStage<Void> close;
+        return createEmptyPublisher( () -> {
             if ( commit )
             {
-                close = asyncTx.commitAsync();
+                return asyncTx.commitAsync();
             }
             else
             {
-                close = asyncTx.rollbackAsync();
+                return asyncTx.rollbackAsync();
             }
-            close.whenComplete( ( ignored, error ) -> {
-                if ( error != null )
-                {
-                    sink.error( error );
-                }
-                else
-                {
-                    sink.success();
-                }
-            } );
         } );
     }
 
@@ -77,6 +67,6 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     public RxResult run( Statement statement )
     {
         CompletionStage<RxStatementResultCursor> cursor = asyncTx.runRx( statement );
-        return new InternalRxResult( cursor );
+        return new InternalRxResult( () -> cursor );
     }
 }

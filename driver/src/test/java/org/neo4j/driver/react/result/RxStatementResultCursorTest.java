@@ -1,0 +1,113 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.react.result;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.summary.ResultSummary;
+
+import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.v1.Values.value;
+
+class RxStatementResultCursorTest
+{
+    @Test
+    void shouldReturnStatementKeys() throws Throwable
+    {
+        // Given
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        RunResponseHandler runHandler = newRunResponseHandler();
+
+        // When
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        CompletableFuture<List<String>> actual = cursor.keys();
+        assertFalse( actual.isDone() );
+
+        List<String> expected = asList( "key1", "key2", "key3" );
+        runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
+
+        // Then
+        assertTrue( actual.isDone() );
+        assertEquals( expected, actual.get() );
+    }
+
+    @Test
+    void shouldInformRecordConsumerOfRunError() throws Throwable
+    {
+        // Given
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        RunResponseHandler runHandler = newRunResponseHandler( runFuture );
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+
+        // When
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
+        cursor.installRecordConsumer( recordConsumer );
+
+        RuntimeException error = new RuntimeException( "Hi" );
+        runFuture.completeExceptionally( error );
+
+        // Then
+        verify( recordConsumer ).accept( null, error );
+    }
+
+    @Test
+    void shouldInformSummaryConsumerOfRunError() throws Throwable
+    {
+        // Given
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        RunResponseHandler runHandler = newRunResponseHandler( runFuture );
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+
+        // When
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
+        cursor.installSummaryConsumer( summaryConsumer );
+
+        RuntimeException error = new RuntimeException( "Hi" );
+        runFuture.completeExceptionally( error );
+
+        // Then
+        verify( summaryConsumer ).accept( null, error );
+    }
+
+    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Void> runCompletedFuture )
+    {
+        return new RunResponseHandler( runCompletedFuture, BoltProtocolV4.METADATA_EXTRACTOR );
+    }
+
+    private static RunResponseHandler newRunResponseHandler()
+    {
+        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV4.METADATA_EXTRACTOR );
+    }
+}

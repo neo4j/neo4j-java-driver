@@ -89,4 +89,9 @@ public class RunResponseHandler implements ResponseHandler
     {
         runCompletedFuture.complete( null );
     }
+
+    public CompletableFuture<Void> runFuture()
+    {
+        return runCompletedFuture;
+    }
 }

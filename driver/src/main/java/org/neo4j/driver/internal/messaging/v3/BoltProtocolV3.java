@@ -44,7 +44,7 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.react.result.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -142,15 +142,17 @@ public class BoltProtocolV3 implements BoltProtocol
         return runStatement( connection, statement, BookmarksHolder.NO_OP, tx, TransactionConfig.empty(), waitForRunResponse );
     }
 
-    private static CompletionStage<StatementResultCursorFactory> runStatement( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+    protected CompletionStage<StatementResultCursorFactory> runStatement( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
             ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
     {
+        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
         Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
+
         AbstractPullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
         connection.writeAndFlush( runMessage, runHandler, PULL_ALL, pullAllHandler );

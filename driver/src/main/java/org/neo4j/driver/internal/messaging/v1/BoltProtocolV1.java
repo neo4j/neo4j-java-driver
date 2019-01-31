@@ -28,7 +28,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.LegacyInternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
@@ -48,8 +47,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.react.result.InternalStatementResultCursor;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.react.result.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.react.result.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
@@ -210,29 +208,5 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         return Futures.failedFuture( new ClientException( "Driver is connected to the database that does not support transaction configuration. " +
                                                           "Please upgrade to neo4j 3.5.0 or later in order to use this functionality" ) );
-    }
-
-    public static class AsyncResultCursorOnlyFactory implements StatementResultCursorFactory
-    {
-        private final RunResponseHandler runHandler;
-        private final AbstractPullAllResponseHandler pullAllHandler;
-
-        public AsyncResultCursorOnlyFactory( RunResponseHandler runHandler, AbstractPullAllResponseHandler pullAllHandler )
-        {
-            this.runHandler = runHandler;
-            this.pullAllHandler = pullAllHandler;
-        }
-
-        @Override
-        public InternalStatementResultCursor asyncResult()
-        {
-            return new LegacyInternalStatementResultCursor( runHandler, pullAllHandler );
-        }
-
-        @Override
-        public RxStatementResultCursor rxResult()
-        {
-            throw new ClientException( "Earlier Bolt protocol does not support react API. In order to use the react API, make sure you have 4.0+ servers." );
-        }
     }
 }

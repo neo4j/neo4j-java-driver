@@ -166,5 +166,6 @@ public interface Driver extends AutoCloseable
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
     Metrics metrics();
+    
     RxSession rxSession();
 }

@@ -279,7 +279,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while resetting the session" ) );
     }
 
-    private CompletionStage<Void> resetAsync()
+    public CompletionStage<Void> resetAsync()
     {
         return existingTransactionOrNull()
                 .thenAccept( tx ->

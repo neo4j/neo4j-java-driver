@@ -18,64 +18,28 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-
-import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_ID;
-
 /**
  * PULL_N request message
- * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
-public class PullNMessage extends PullAllMessage
+public class PullNMessage extends AbstractHandleNMessage
 {
-    private final Map<String,Value> metadata = new HashMap<>();
+    public static final byte SIGNATURE = 0x3F;
 
     public PullNMessage( long n, long id )
     {
-        super();
-        this.metadata.put( "n", Values.value( n ) );
-        if ( id != ABSENT_STATEMENT_ID )
-        {
-            this.metadata.put( "stmt_id", Values.value( id ) );
-        }
-    }
-
-
-    public Map<String,Value> metadata()
-    {
-        return metadata;
+        super( n, id );
     }
 
     @Override
-    public boolean equals( Object o )
+    protected String name()
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        PullNMessage that = (PullNMessage) o;
-        return Objects.equals( metadata, that.metadata );
+        return "PULL_N";
     }
 
     @Override
-    public int hashCode()
+    public byte signature()
     {
-        return Objects.hash( metadata );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "PULL_N " + metadata;
+        return SIGNATURE;
     }
 }

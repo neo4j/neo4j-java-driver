@@ -22,7 +22,6 @@ import org.neo4j.driver.internal.messaging.Message;
 
 /**
  * PULL_ALL request message
- * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
 public class PullAllMessage implements Message

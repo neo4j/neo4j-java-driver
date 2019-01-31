@@ -27,7 +27,6 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
-import org.neo4j.driver.react.InternalRxSession;
 import org.neo4j.driver.react.RxResult;
 import org.neo4j.driver.react.RxSession;
 import org.neo4j.driver.react.RxTransaction;
@@ -40,19 +39,21 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.util.DatabaseExtension;
+import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ParallelizableIT
 class RxSessionIT
 {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
-    void shouldStream() throws Throwable
+    void shouldRunTxAndStreamResultBack() throws Throwable
     {
         // Give
         Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.build().withLogging( Logging.console( Level.FINE ) ).toConfig() );
@@ -175,7 +176,7 @@ class RxSessionIT
     @Test
     void shouldReceiveErrorInOrder() throws Throwable
     {
-        RxSession session = new InternalRxSession( neo4j.driver().session() );
+        RxSession session = neo4j.driver().rxSession();
         RxResult result = session.run( "UNWIND [1, 2, 1, 2, 0, 1] as n RETURN 10/n" );
         Flux<Record> recordFlux = Flux.from( result.records() );
         AtomicInteger count = new AtomicInteger();
