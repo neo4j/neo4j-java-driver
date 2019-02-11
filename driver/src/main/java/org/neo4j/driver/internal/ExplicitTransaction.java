@@ -67,16 +67,16 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
 
     private final Connection connection;
     private final BoltProtocol protocol;
-    private final NetworkSession session;
+    private final BookmarksHolder bookmarksHolder;
     private final ResultCursorsHolder resultCursors;
 
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection connection, NetworkSession session )
+    public ExplicitTransaction( Connection connection, BookmarksHolder bookmarksHolder )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
-        this.session = session;
+        this.bookmarksHolder = bookmarksHolder;
         this.resultCursors = new ResultCursorsHolder();
     }
 
@@ -247,12 +247,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
             return failedFuture( new ClientException( "Transaction can't be committed. " +
                                                       "It has been rolled back either because of an error or explicit termination" ) );
         }
-        return protocol.commitTransaction( connection )
-                .thenApply( newBookmarks ->
-                {
-                    session.setBookmarks( newBookmarks );
-                    return null;
-                } );
+        return protocol.commitTransaction( connection ).thenAccept( bookmarksHolder::setBookmarks );
     }
 
     private CompletionStage<Void> doRollbackAsync()
