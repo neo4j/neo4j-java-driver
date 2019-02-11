@@ -19,8 +19,7 @@
 package org.neo4j.driver.internal.retry;
 
 import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.internal.util.Supplier;
+import java.util.function.Supplier;
 
 public interface RetryLogic
 {
