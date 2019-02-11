@@ -55,27 +55,13 @@ class InternalRxResultTest
         RxResult rxResult = newRxResult( cursor );
 
         List<String> keys = Arrays.asList( "one", "two", "three" );
-        when( cursor.keys() ).thenReturn( Futures.completedWithValue( keys ) );
+        when( cursor.keys() ).thenReturn( keys );
 
         // When
         List<String> allKeys = Flux.from( rxResult.keys() ).toStream().collect( Collectors.toList() );
 
         // Then
         assertThat( allKeys, equalTo( keys ) );
-    }
-
-    @Test
-    void shouldErrorIfFailedToObtainKeys() throws Throwable
-    {
-        // Given
-        RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
-        RxResult rxResult = newRxResult( cursor );
-
-        List<String> keys = Arrays.asList( "one", "two", "three" );
-        when( cursor.keys() ).thenReturn( Futures.failedFuture( new RuntimeException( "Hi" ) ) );
-
-        // When & Then
-        assertThrows( RuntimeException.class, () -> Flux.from( rxResult.keys() ).toStream().collect( Collectors.toList() ) );
     }
 
     @Test

@@ -174,7 +174,7 @@ public class BoltProtocolV1 implements BoltProtocol
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         AbstractPullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
 

@@ -30,14 +30,14 @@ import static java.util.Collections.emptyList;
 
 public class RunResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<Void> runCompletedFuture;
+    private final CompletableFuture<Throwable> runCompletedFuture;
     private final MetadataExtractor metadataExtractor;
     private long statementId = MetadataExtractor.ABSENT_STATEMENT_ID;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
+    public RunResponseHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         this.runCompletedFuture = runCompletedFuture;
         this.metadataExtractor = metadataExtractor;
@@ -50,13 +50,13 @@ public class RunResponseHandler implements ResponseHandler
         resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
         statementId = metadataExtractor.extractStatementId( metadata );
 
-        completeRunFuture();
+        completeRunFuture( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        completeRunFuture();
+        completeRunFuture( error );
     }
 
     @Override
@@ -81,16 +81,17 @@ public class RunResponseHandler implements ResponseHandler
     }
 
     /**
-     * Complete the given future with {@code null}. Future is never completed exceptionally because callers are only
-     * interested in when RUN completes and not how. Async API needs to wait for RUN because it needs to access
-     * statement keys.
+     * Complete the given future with error if the future was failed.
+     * Future is never completed exceptionally.
+     * Async API needs to wait for RUN because it needs to access statement keys.
+     * Reactive API needs the error to abandon streaming.
      */
-    private void completeRunFuture()
+    private void completeRunFuture( Throwable error )
     {
-        runCompletedFuture.complete( null );
+        runCompletedFuture.complete( error );
     }
 
-    public CompletableFuture<Void> runFuture()
+    public CompletableFuture<Throwable> runFuture()
     {
         return runCompletedFuture;
     }

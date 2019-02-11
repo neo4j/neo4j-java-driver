@@ -145,7 +145,7 @@ public class BoltProtocolV3 implements BoltProtocol
     protected CompletionStage<StatementResultCursorFactory> runStatement( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
             ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
     {
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
 
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );

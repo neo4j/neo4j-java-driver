@@ -44,7 +44,7 @@ class RunResponseHandlerTest
     @Test
     void shouldNotifyCompletionFutureOnSuccess() throws Exception
     {
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
 
         assertFalse( runCompletedFuture.isDone() );
@@ -57,7 +57,7 @@ class RunResponseHandlerTest
     @Test
     void shouldNotifyCompletionFutureOnFailure() throws Exception
     {
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
 
         assertFalse( runCompletedFuture.isDone() );
@@ -132,7 +132,7 @@ class RunResponseHandlerTest
         return newHandler( BoltProtocolV1.METADATA_EXTRACTOR );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture )
+    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture )
     {
         return newHandler( runCompletedFuture, BoltProtocolV1.METADATA_EXTRACTOR );
     }
@@ -142,7 +142,7 @@ class RunResponseHandlerTest
         return newHandler( new CompletableFuture<>(), metadataExtractor );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
+    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         return new RunResponseHandler( runCompletedFuture, metadataExtractor );
     }

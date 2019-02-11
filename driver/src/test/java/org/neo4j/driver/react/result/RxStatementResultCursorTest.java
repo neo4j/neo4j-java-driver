@@ -33,8 +33,6 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.v1.Values.value;
@@ -50,22 +48,20 @@ class RxStatementResultCursorTest
 
         // When
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
-        CompletableFuture<List<String>> actual = cursor.keys();
-        assertFalse( actual.isDone() );
+        List<String> actual = cursor.keys();
 
         List<String> expected = asList( "key1", "key2", "key3" );
         runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
 
         // Then
-        assertTrue( actual.isDone() );
-        assertEquals( expected, actual.get() );
+        assertEquals( expected, actual );
     }
 
     @Test
     void shouldInformRecordConsumerOfRunError() throws Throwable
     {
         // Given
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
 
@@ -85,7 +81,7 @@ class RxStatementResultCursorTest
     void shouldInformSummaryConsumerOfRunError() throws Throwable
     {
         // Given
-        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
 
@@ -101,7 +97,7 @@ class RxStatementResultCursorTest
         verify( summaryConsumer ).accept( null, error );
     }
 
-    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Void> runCompletedFuture )
+    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Throwable> runCompletedFuture )
     {
         return new RunResponseHandler( runCompletedFuture, BoltProtocolV4.METADATA_EXTRACTOR );
     }

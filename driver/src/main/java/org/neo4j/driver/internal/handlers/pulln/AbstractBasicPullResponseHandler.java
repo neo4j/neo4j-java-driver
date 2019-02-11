@@ -80,7 +80,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         assertRecordAndSummaryConsumerInstalled();
         if ( metadata.getOrDefault( "has_more", BooleanValue.FALSE ).asBoolean() )
         {
-            handleSuccessWithHasMore( metadata );
+            handleSuccessWithHasMore();
         }
         else
         {
@@ -94,8 +94,8 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         assertRecordAndSummaryConsumerInstalled();
         status = Status.Failed;
         afterFailure( error );
-        recordConsumer.accept( null, error );
         summaryConsumer.accept( null, error );
+        recordConsumer.accept( null, error );
     }
 
     @Override
@@ -170,7 +170,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         extractResultSummary( metadata );
     }
 
-    private void handleSuccessWithHasMore( Map<String,Value> metadata )
+    private void handleSuccessWithHasMore()
     {
         if ( this.status == Status.Canceled )
         {
@@ -231,6 +231,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     {
         if( recordConsumer == null || summaryConsumer == null )
         {
+            System.out.println("record consumer or summary consumer not set.");
             throw new IllegalStateException( format("Access record stream without record consumer and/or summary consumer. " +
                     "Record consumer=%s, Summary consumer=%s", recordConsumer, summaryConsumer) );
         }

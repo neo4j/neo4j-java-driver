@@ -445,7 +445,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
     public CompletionStage<RxStatementResultCursor> runRx( Statement statement, TransactionConfig config )
     {
         CompletableFuture<RxStatementResultCursor> newResultCursorStage = new CompletableFuture<>();
-        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, false, newResultCursorStage );
+        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, true, newResultCursorStage );
         factoryFuture.whenComplete( ( factory, error ) -> {
             if ( factory != null )
             {

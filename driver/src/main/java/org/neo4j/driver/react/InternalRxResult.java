@@ -23,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -49,31 +50,24 @@ public class InternalRxResult implements RxResult
             getCursorFuture().whenComplete( ( cursor, error ) -> {
                 if ( cursor != null )
                 {
-                    cursor.keys().whenComplete( ( keys, runError ) -> {
-                        if( keys != null )
+                    List<String> keys = cursor.keys();
+
+                    Iterator<String> iterator = keys.iterator();
+                    sink.onRequest( n -> {
+                        while ( n-- > 0 )
                         {
-                            Iterator<String> iterator = keys.iterator();
-                            sink.onRequest( n -> {
-                                while ( n-- > 0 )
-                                {
-                                    if ( iterator.hasNext() )
-                                    {
-                                        sink.next( iterator.next() );
-                                    }
-                                    else
-                                    {
-                                        sink.complete();
-                                        break;
-                                    }
-                                }
-                            } );
-                            sink.onCancel( sink::complete );
-                        }
-                        else if( runError != null )
-                        {
-                            sink.error( runError );
+                            if ( iterator.hasNext() )
+                            {
+                                sink.next( iterator.next() );
+                            }
+                            else
+                            {
+                                sink.complete();
+                                break;
+                            }
                         }
                     } );
+                    sink.onCancel( sink::complete );
                 }
                 else
                 {
@@ -131,8 +125,9 @@ public class InternalRxResult implements RxResult
         }
 
         // now we obtained lock and we are going to be the one who assigns cursorFuture one and only once.
-        cursorFuture = cursorFutureSpplier.get();
-        this.cursorFuture.whenComplete( ( cursor, error ) -> {
+        CompletableFuture<RxStatementResultCursor> cursorWithSummaryConsumerInstalled = new CompletableFuture<>();
+        CompletionStage<RxStatementResultCursor> cursorFuture = cursorFutureSpplier.get();
+        cursorFuture.whenComplete( ( cursor, error ) -> {
             if ( cursor != null )
             {
                 cursor.installSummaryConsumer( ( summary, summaryError ) -> {
@@ -145,13 +140,17 @@ public class InternalRxResult implements RxResult
                         summaryFuture.completeExceptionally( summaryError );
                     }
                 } );
+                cursorWithSummaryConsumerInstalled.complete( cursor );
             }
             else
             {
                 summaryFuture.completeExceptionally( error );
+                cursorWithSummaryConsumerInstalled.completeExceptionally( error );
             }
         } );
-        return cursorFuture;
+
+        this.cursorFuture = cursorWithSummaryConsumerInstalled;
+        return this.cursorFuture;
     }
 
     @Override

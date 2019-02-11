@@ -28,9 +28,9 @@ public interface RxResult
 {
     /**
      * TODO: This method currently only start the run, it does not start any streaming.
-     * TODO: It means if a user forgot to call `records()`, then he will leave this connection with the session.
+     * TODO: Thia means if a user forgot to call `records()`, then he will leave this connection with the session.
      * TODO: 1) Bring back `RxSession#close` to avoid the connection left in result.
-     * TODO: 2) Change the method to `List<String> keys()`, which returns keys when it is available or IllegalStateException
+     * TODO: 2) Change the method to `List<String> keys()`, which returns keys when it is available or IllegalStateException.
      * @return TODO
      */
     Publisher<String> keys();

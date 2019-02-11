@@ -21,7 +21,7 @@ package org.neo4j.driver.react.result;
 import org.reactivestreams.Subscription;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
@@ -36,53 +36,69 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
 {
     private final RunResponseHandler runHandler;
     private final BasicPullResponseHandler pullHandler;
+    private final Throwable runResponseError;
 
     public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
     {
+        Objects.requireNonNull( runHandler );
+        Objects.requireNonNull( pullHandler );
+        assertRunResponseArrived( runHandler );
+
+        this.runResponseError = runHandler.runFuture().getNow( null );
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
     }
 
-    public CompletableFuture<List<String>> keys()
+    private void assertRunResponseArrived( RunResponseHandler runHandler )
     {
-        return runHandler.runFuture().thenApply( ignored -> runHandler.statementKeys() );
+        if ( !runHandler.runFuture().isDone() )
+        {
+            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL_N." );
+        }
     }
 
-    public void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> successConsumer )
+    public synchronized List<String> keys()
     {
-        runHandler.runFuture().whenComplete( (ignored, error)-> {
-            if ( error != null )
-            {
-                successConsumer.accept( null, error );
-            }
-        } );
-        pullHandler.installSummaryConsumer( successConsumer );
+        return runHandler.statementKeys();
     }
 
-    public void installRecordConsumer( BiConsumer<Record, Throwable> recordConsumer )
+    public synchronized void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer )
     {
-        runHandler.runFuture().whenComplete( (ignored, error)-> {
-            if ( error != null )
-            {
-                recordConsumer.accept( null, error );
-            }
-        } );
+        pullHandler.installSummaryConsumer( summaryConsumer );
+    }
+
+    public synchronized void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
+    {
         pullHandler.installRecordConsumer( recordConsumer );
     }
 
-    public void request( long n )
+    public synchronized void request( long n )
     {
-        pullHandler.request( n );
+        if ( runResponseError != null )
+        {
+            pullHandler.onFailure( runResponseError );
+        }
+        else
+        {
+            pullHandler.request( n );
+        }
     }
 
     @Override
-    public void cancel()
+    public synchronized void cancel()
     {
-        pullHandler.cancel();
+        if( runResponseError != null )
+        {
+            pullHandler.onFailure( runResponseError );
+        }
+        else
+        {
+            pullHandler.cancel();
+        }
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public synchronized CompletionStage<Throwable> failureAsync()
     {
         // TODO remove this method from reactive if not needed
         return Futures.completedWithNull();
