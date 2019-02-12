@@ -151,7 +151,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 }
                 // no result cursor exists so no error exists
                 return completedWithNull();
-            } ).thenCompose( cursorError -> closeTransactionAndReleaseConnection().thenApply( txCloseError ->
+            } ).thenCombine( closeTransactionAndReleaseConnection(), ( cursorError, txCloseError ) ->
             {
                 // now we have cursor error, active transaction has been closed and connection has been released
                 // back to the pool; try to propagate cursor and transaction close errors, if any
@@ -161,7 +161,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                     throw combinedError;
                 }
                 return null;
-            } ) );
+            } );
         }
         return completedWithNull();
     }
