@@ -19,14 +19,14 @@
 package org.neo4j.driver.react;
 
 import org.junit.jupiter.api.Test;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -39,8 +39,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.Values.values;
@@ -57,11 +56,12 @@ class InternalRxResultTest
         List<String> keys = Arrays.asList( "one", "two", "three" );
         when( cursor.keys() ).thenReturn( keys );
 
-        // When
-        List<String> allKeys = Flux.from( rxResult.keys() ).toStream().collect( Collectors.toList() );
-
-        // Then
-        assertThat( allKeys, equalTo( keys ) );
+        // When & Then
+        StepVerifier.create( Flux.from( rxResult.keys() ) )
+                .expectNext( "one" )
+                .expectNext( "two" )
+                .expectNext( "three" )
+                .verifyComplete();
     }
 
     @Test
@@ -74,19 +74,13 @@ class InternalRxResultTest
 
         BasicPullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
         RxResult rxResult = newRxResult( pullHandler );
-        Publisher<Record> publisher = rxResult.records();
-
-        TestRecordingSubscriber<Record> subscriber = new TestRecordingSubscriber<>();
-        publisher.subscribe( subscriber );
 
         // When
-        List<Record> records = Flux.from( rxResult.records() ).toStream().collect( Collectors.toList() );
-
-        // Then
-        assertThat( records.size(), equalTo( 3 ) );
-        assertThat( records.get( 0 ), equalTo( record1 ) );
-        assertThat( records.get( 1 ), equalTo( record2 ) );
-        assertThat( records.get( 2 ), equalTo( record3 ) );
+        StepVerifier.create( Flux.from( rxResult.records() ) )
+                .expectNext( record1 )
+                .expectNext( record2 )
+                .expectNext( record3 )
+                .verifyComplete();
     }
 
     @Test
@@ -99,13 +93,20 @@ class InternalRxResultTest
             @Override
             public void request( long n )
             {
-                summaryConsumer.accept( null, error );
                 recordConsumer.accept( null, error );
+                summaryConsumer.accept( null, error );
             }
         } );
 
         // When & Then
-        assertThrows( RuntimeException.class, () -> Flux.from( rxResult.records() ).toStream().collect( Collectors.toList() ) );
+        StepVerifier.create( Flux.from( rxResult.records() ) )
+                .verifyErrorSatisfies( e -> {
+                    assertThat( e, equalTo( error ) );
+                } );
+        StepVerifier.create( Mono.from( rxResult.summary() ) )
+                .verifyErrorSatisfies( e -> {
+                    assertThat( e, equalTo( error ) );
+                } );
     }
 
     private InternalRxResult newRxResult( BasicPullResponseHandler pullHandler )
@@ -119,7 +120,7 @@ class InternalRxResultTest
     private InternalRxResult newRxResult( RxStatementResultCursor cursor )
     {
         return new InternalRxResult( () -> {
-            // for rx, the cursor will not wait for run result and will immediately return.
+            // now we successfully run
             return Futures.completedWithValue( cursor );
         } );
     }

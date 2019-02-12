@@ -23,13 +23,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,58 +41,54 @@ class RxStatementResultCursorTest
     void shouldReturnStatementKeys() throws Throwable
     {
         // Given
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
         RunResponseHandler runHandler = newRunResponseHandler();
+        List<String> expected = asList( "key1", "key2", "key3" );
+        runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
+
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
 
         // When
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
         List<String> actual = cursor.keys();
-
-        List<String> expected = asList( "key1", "key2", "key3" );
-        runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
 
         // Then
         assertEquals( expected, actual );
     }
 
     @Test
-    void shouldInformRecordConsumerOfRunError() throws Throwable
+    void runErrorShouldFailPullHandlerWhenRequest() throws Throwable
     {
         // Given
-        CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
+        RuntimeException error = new RuntimeException( "Hi" );
+        CompletableFuture<Throwable> runFuture = Futures.completedWithValue( error );
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
+
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
-        BiConsumer<Record, Throwable> recordConsumer = mock(BiConsumer.class);
-        cursor.installRecordConsumer( recordConsumer );
-
-        RuntimeException error = new RuntimeException( "Hi" );
-        runFuture.completeExceptionally( error );
+        cursor.request( 100 );
 
         // Then
-        verify( recordConsumer ).accept( null, error );
+        verify( pullHandler ).onFailure( error );
     }
 
     @Test
-    void shouldInformSummaryConsumerOfRunError() throws Throwable
+    void runErrorShouldFailPullHandlerWhenCancel() throws Throwable
     {
         // Given
-        CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
+        RuntimeException error = new RuntimeException( "Hi" );
+        CompletableFuture<Throwable> runFuture = Futures.completedWithValue( error );
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
+
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
-        BiConsumer<ResultSummary, Throwable> summaryConsumer = mock(BiConsumer.class);
-        cursor.installSummaryConsumer( summaryConsumer );
-
-        RuntimeException error = new RuntimeException( "Hi" );
-        runFuture.completeExceptionally( error );
+        cursor.cancel();
 
         // Then
-        verify( summaryConsumer ).accept( null, error );
+        verify( pullHandler ).onFailure( error );
     }
 
     private static RunResponseHandler newRunResponseHandler( CompletableFuture<Throwable> runCompletedFuture )
@@ -104,6 +98,6 @@ class RxStatementResultCursorTest
 
     private static RunResponseHandler newRunResponseHandler()
     {
-        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV4.METADATA_EXTRACTOR );
+        return new RunResponseHandler( Futures.completedWithNull(), BoltProtocolV4.METADATA_EXTRACTOR );
     }
 }

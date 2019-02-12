@@ -143,9 +143,4 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
         return createEmptyPublisher( session::resetAsync );
     }
 
-    @Override
-    public Publisher<Void> close()
-    {
-        return createEmptyPublisher( session::closeAsync );
-    }
 }

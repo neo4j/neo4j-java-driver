@@ -17,24 +17,20 @@
  * limitations under the License.
  */
 package org.neo4j.driver.react;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.ParallelizableIT;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -57,9 +53,13 @@ class RxResultStreamIT
         RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
-        List<Integer> seen = new ArrayList<>();
-        Flux.from( res.records() ).doOnNext( r -> seen.add( r.get( "a" ).asInt() ) ).blockLast();
-        assertEquals( asList( 1, 2, 3, 4 ), seen );
+        StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
+                .expectNext( 1 )
+                .expectNext( 2 )
+                .expectNext( 3 )
+                .expectNext( 4 )
+                .expectComplete()
+                .verify();
     }
 
     @Test
@@ -69,10 +69,11 @@ class RxResultStreamIT
         RxSession session = neo4j.driver().rxSession();
         RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
-        // Then I should be able to iterate over the result
-        ResultSummary summary = Flux.from( res.records() ).then( Mono.from( res.summary() ) ).block();
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-        assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+        Mono<ResultSummary> summaryMono = Flux.from( res.records() ).then( Mono.from( res.summary() ) );
+        StepVerifier.create( summaryMono ).assertNext( summary -> {
+            assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+            assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+        } ).expectComplete().verify();
     }
 
     @Test
@@ -83,12 +84,13 @@ class RxResultStreamIT
         RxResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
-
-        String keys = Mono.from( res.keys() ).block();
-        String recordKeys = Mono.from( res.records() ).map( record -> record.keys().toString() ).block();
-
-        assertEquals( "n", keys );
-        assertEquals( "[n]", recordKeys );
+        StepVerifier.create( Mono.from( res.keys() ) ).expectNext( "n" ).expectComplete().verify();
+        StepVerifier.create( Mono.from( res.records() ) )
+                .assertNext( record -> {
+                    assertEquals( "[n]", record.keys().toString() );
+                } )
+                .expectComplete()
+                .verify();
     }
 
     @Test
@@ -100,10 +102,10 @@ class RxResultStreamIT
                 session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        Record single = Mono.from( rs.records() ).block();
-
-        // Then
-        assertTrue( single.get( "m" ).isNull() );
+        StepVerifier.create( Mono.from( rs.records() ) ).assertNext( record -> {
+            // Then
+            assertTrue( record.get( "m" ).isNull() );
+        } ).expectComplete().verify();
     }
 
     @Test
@@ -115,10 +117,10 @@ class RxResultStreamIT
                 session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
-        Record single = Mono.from( rs.records() ).block();
-
-        // Then
-        assertTrue( single.get( "n" ).get( "age" ).isNull() );
+        StepVerifier.create( Mono.from( rs.records() ) ).assertNext( record -> {
+            // Then
+            assertTrue( record.get( "n" ).get( "age" ).isNull() );
+        } ).expectComplete().verify();
     }
 
     @Test
@@ -129,8 +131,8 @@ class RxResultStreamIT
         RxResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
 
         // Then
-        assertThat( Mono.from( rs.keys() ).block(), nullValue() );
-        assertThat( Mono.from( rs.records() ).block(), nullValue() );
+        StepVerifier.create( Mono.from( rs.keys() ) ).expectComplete().verify();
+        StepVerifier.create( Mono.from( rs.records() ) ).expectComplete().verify();
     }
 
     @Test
@@ -140,14 +142,15 @@ class RxResultStreamIT
         RxSession session = neo4j.driver().rxSession();
         RxResult res1 = session.run( "INVALID" );
 
-        assertThrows( Exception.class, () -> Mono.from( res1.records() ).block() );
+        StepVerifier.create( Mono.from( res1.records() ) ).expectError( ClientException.class ).verify();
 
         // When
         RxResult res2 = session.run( "RETURN 1" );
 
         // Then
-        Record record = Mono.from( res2.records() ).single().block();
-        assertEquals( record.get("1").asLong(), 1L );
+        StepVerifier.create( Mono.from( res2.records() ) ).assertNext( record -> {
+            assertEquals( record.get("1").asLong(), 1L );
+        } ).expectComplete().verify();
     }
 
     @Test
@@ -173,15 +176,19 @@ class RxResultStreamIT
         RxResult result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
-        ResultSummary summary = Flux.from( result.records() )
+        StepVerifier.create( Flux.from( result.records() )
                 .limitRate( 1 ) // PULL_N, N=1
-                .take( 1 ) // DISCARD_ALL after 1 item
-                .then( Mono.from( result.summary() ) ) // I shall be able to receive summary
-                .block();
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+                .take( 1 )      // DISCARD_ALL after 1 item
+        )
+                .assertNext( record -> assertThat( record.get( "a" ).asInt(), equalTo( 1 ) ) )
+                .thenCancel()
+                .verify();
+        StepVerifier.create( Mono.from( result.summary() ) ) // I shall be able to receive summary
+                .assertNext( summary -> {
+                    // Then
+                    assertThat( summary, notNullValue() );
+                    assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+                } ).expectComplete().verify();
     }
 
     // @Test
@@ -189,16 +196,18 @@ class RxResultStreamIT
     void shouldStreamCorrectRecordsBackBeforeError()
     {
         RxSession session = neo4j.driver().rxSession();
-        List<Integer> seen = new ArrayList<>();
 
         RxResult result = session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" );
-        ClientException e = assertThrows( ClientException.class,
-                () -> Flux.from( result.records() ).doOnNext( record -> seen.add( record.get( 0 ).asInt() ) ).blockLast() ); // we shall be able to stream for v4
-
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
-
-        // stream should manage to consume all elements except the last one, which produces an error
-        assertEquals( asList( 1, 1, 1, 1, 1 ), seen );
+        StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( 0 ).asInt() ) )
+                .expectNext( 1 )
+                .expectNext( 1 )
+                .expectNext( 1 )
+                .expectNext( 1 )
+                .expectNext( 1 )
+                .expectErrorSatisfies( error -> {
+                    assertThat( error.getMessage(), containsString( "/ by zero" ) );
+                } )
+                .verify();
     }
 
 }

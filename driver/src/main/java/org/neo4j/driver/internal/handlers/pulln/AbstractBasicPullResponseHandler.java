@@ -163,11 +163,17 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
 
     private void handleSuccessWithSummary( Map<String,Value> metadata )
     {
+        Status enterState = status;
         status = Status.Done;
         afterSuccess( metadata );
         // record consumer use (null, null) to identify the end of record stream
         recordConsumer.accept( null, null );
         extractResultSummary( metadata );
+
+        if ( status == Status.Canceled )
+        {
+            dropReferenceToSubscriberAfterSubscriptionCancellation();
+        }
     }
 
     private void handleSuccessWithHasMore()
@@ -231,10 +237,15 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     {
         if( recordConsumer == null || summaryConsumer == null )
         {
-            System.out.println("record consumer or summary consumer not set.");
             throw new IllegalStateException( format("Access record stream without record consumer and/or summary consumer. " +
                     "Record consumer=%s, Summary consumer=%s", recordConsumer, summaryConsumer) );
         }
+    }
+
+    private void dropReferenceToSubscriberAfterSubscriptionCancellation()
+    {
+        this.recordConsumer = null;
+        this.summaryConsumer = null;
     }
 
     protected Status status()

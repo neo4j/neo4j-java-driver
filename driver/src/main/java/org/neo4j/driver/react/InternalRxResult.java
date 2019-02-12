@@ -20,12 +20,14 @@ package org.neo4j.driver.react;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.react.result.RxStatementResultCursor;
@@ -34,13 +36,13 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 public class InternalRxResult implements RxResult
 {
-    private final Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSpplier;
+    private Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier;
     private volatile CompletionStage<RxStatementResultCursor> cursorFuture;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
 
     public InternalRxResult( Supplier<CompletionStage<RxStatementResultCursor>> cursorFuture )
     {
-        this.cursorFutureSpplier = cursorFuture;
+        this.cursorFutureSupplier = cursorFuture;
     }
 
     @Override
@@ -77,10 +79,18 @@ public class InternalRxResult implements RxResult
         } );
     }
 
-    @Override
-    public Publisher<Record> records()
+    private static class RecordPublishingCursorConsumer implements BiConsumer<RxStatementResultCursor,Throwable>
     {
-        return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, error ) -> {
+        private FluxSink<Record> sink;
+
+        RecordPublishingCursorConsumer( FluxSink<Record> sink )
+        {
+            this.sink = sink;
+        }
+
+        @Override
+        public void accept( RxStatementResultCursor cursor, Throwable error )
+        {
             if ( error != null )
             {
                 sink.error( error );
@@ -103,8 +113,15 @@ public class InternalRxResult implements RxResult
                 } );
                 sink.onCancel( cursor::cancel );
                 sink.onRequest( cursor::request );
+                sink.onDispose( () -> this.sink = null ); // This is needed to release the reference to subscriber
             }
-        } ) );
+        }
+    }
+
+    @Override
+    public Publisher<Record> records()
+    {
+        return Flux.create( sink -> getCursorFuture().whenComplete( new RecordPublishingCursorConsumer( sink ) ) );
     }
 
     private CompletionStage<RxStatementResultCursor> getCursorFuture()
@@ -126,7 +143,8 @@ public class InternalRxResult implements RxResult
 
         // now we obtained lock and we are going to be the one who assigns cursorFuture one and only once.
         CompletableFuture<RxStatementResultCursor> cursorWithSummaryConsumerInstalled = new CompletableFuture<>();
-        CompletionStage<RxStatementResultCursor> cursorFuture = cursorFutureSpplier.get();
+        CompletionStage<RxStatementResultCursor> cursorFuture = cursorFutureSupplier.get();
+        cursorFutureSupplier = null; // we no longer need the reference to this object
         cursorFuture.whenComplete( ( cursor, error ) -> {
             if ( cursor != null )
             {
@@ -168,5 +186,11 @@ public class InternalRxResult implements RxResult
                 sink.success( summary );
             }
         } ) );
+    }
+
+    // For test purpose
+    Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier()
+    {
+        return this.cursorFutureSupplier;
     }
 }

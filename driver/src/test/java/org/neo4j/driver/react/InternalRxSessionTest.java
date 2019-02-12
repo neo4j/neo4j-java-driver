@@ -28,9 +28,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class InternalRxSessionTest
+class InternalRxSessionTest
 {
-
     @Test
     void shouldDelegateRun() throws Throwable
     {
@@ -39,9 +38,11 @@ public class InternalRxSessionTest
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When
-        rxSession.run( "RETURN 1" );
+        RxResult result = rxSession.run( "RETURN 1" );
+        // Execute the run
+        ((InternalRxResult)result).cursorFutureSupplier().get();
 
         // Then
-        verify(session).runRx( any( Statement.class), any( TransactionConfig.class ) );
+        verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
     }
 }

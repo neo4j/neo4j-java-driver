@@ -49,6 +49,4 @@ public interface RxSession extends RxStatementRunner
 
     @Deprecated
     Publisher<Void> reset();
-
-    Publisher<Void> close(); // TODO remove?
 }

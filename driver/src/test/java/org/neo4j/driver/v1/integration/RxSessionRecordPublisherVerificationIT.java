@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.driver.v1.integration;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.tck.PublisherVerification;
+import org.reactivestreams.tck.TestEnvironment;
+
+import java.time.Duration;
+
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.util.DatabaseExtension;
+
+import static org.neo4j.driver.v1.Values.parameters;
+
+public class RxSessionRecordPublisherVerificationIT extends PublisherVerification<Record>
+{
+    private static final DatabaseExtension neo4j = new DatabaseExtension();
+
+    private final static long MAX_NUMBER_OF_RECORDS = 30000;
+
+    private static final Duration TIMEOUT = Duration.ofSeconds( 10 );
+    private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds( 1 );
+    private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds( 1 );
+
+    private final static String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
+
+    public RxSessionRecordPublisherVerificationIT()
+    {
+        super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
+                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
+    }
+
+    @Override
+    public long maxElementsFromPublisher()
+    {
+        return MAX_NUMBER_OF_RECORDS;
+    }
+
+    @Override
+    public Publisher<Record> createPublisher( long elements )
+    {
+        ensureDriver();
+        RxSession session = neo4j.driver().rxSession();
+        RxResult result = session.run( QUERY, parameters( "numberOfRecords", elements ) );
+        return result.records();
+    }
+
+    @Override
+    public Publisher<Record> createFailedPublisher()
+    {
+        ensureDriver();
+        RxSession session = neo4j.driver().rxSession();
+        RxResult result = session.run( "INVALID" );
+        return result.records();
+    }
+
+    private void ensureDriver()
+    {
+        try
+        {
+            neo4j.beforeEach( null );
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+        }
+    }
+}

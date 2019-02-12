@@ -25,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
+import static java.util.Objects.requireNonNull;
+
 public class AsyncPullResponseHandler implements PullResponseHandler
 {
     private final Queue<Record> records = new LinkedList<>();
@@ -37,16 +39,14 @@ public class AsyncPullResponseHandler implements PullResponseHandler
 
     public AsyncPullResponseHandler( BasicPullResponseHandler handler )
     {
-        this( handler, new AutoPullController( handler ) );
-    }
+        requireNonNull( handler );
+        // First finish init handler
+        handler.installSummaryConsumer( this::consumeSummary );
+        handler.installRecordConsumer( this::consumeRecord );
 
-    private AsyncPullResponseHandler( BasicPullResponseHandler handler, PullController controller )
-    {
+        // Then they are good to be used
         this.delegate = handler;
-        this.controller = controller;
-
-        delegate.installSummaryConsumer( this::consumeSummary );
-        delegate.installRecordConsumer( this::consumeRecord );
+        this.controller = new AutoPullController( handler );
     }
 
     @Override

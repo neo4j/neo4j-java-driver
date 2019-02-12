@@ -70,6 +70,10 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     public synchronized void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
     {
         pullHandler.installRecordConsumer( recordConsumer );
+        if ( runResponseError != null )
+        {
+            pullHandler.onFailure( runResponseError );
+        }
     }
 
     public synchronized void request( long n )
