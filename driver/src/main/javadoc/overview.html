@@ -32,7 +32,7 @@ public class SmallExample
             // and makes handling errors much easier.
             try (Transaction tx = session.beginTransaction())
             {
-                tx.run("MERGE (a:Person {name: {x}})", parameters("x", name));
+                tx.run("MERGE (a:Person {name: $x})", parameters("x", name));
                 tx.success();  // Mark this write as successful.
             }
         }
@@ -44,7 +44,7 @@ public class SmallExample
         {
             // Auto-commit transactions are a quick and easy way to wrap a read.
             StatementResult result = session.run(
-                    "MATCH (a:Person) WHERE a.name STARTS WITH {x} RETURN a.name AS name",
+                    "MATCH (a:Person) WHERE a.name STARTS WITH $x RETURN a.name AS name",
                     parameters("x", initial));
             // Each Cypher execution returns a stream of records.
             while (result.hasNext())
