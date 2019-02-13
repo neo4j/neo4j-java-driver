@@ -16,17 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.react.internal;
 
 import org.reactivestreams.Publisher;
 
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxTransaction;
+import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
 
-import static org.neo4j.driver.react.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.react.internal.RxUtils.createEmptyPublisher;
 
 public class InternalRxTransaction extends AbstractRxStatementRunner implements RxTransaction
 {
@@ -66,7 +68,23 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     @Override
     public RxResult run( Statement statement )
     {
-        CompletionStage<RxStatementResultCursor> cursor = asyncTx.runRx( statement );
-        return new InternalRxResult( () -> cursor );
+        return new InternalRxResult( () -> {
+            CompletableFuture<RxStatementResultCursor> cursorFuture = new CompletableFuture<>();
+            asyncTx.runRx( statement ).whenComplete( ( cursor, error ) -> {
+                if ( cursor != null )
+                {
+                    cursorFuture.complete( cursor );
+                }
+                else
+                {
+                    // We failed to create a result cursor so we cannot rely on result cursor to handle failure.
+                    // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
+                    // This is optional as asyncTx still holds a reference to all cursor futures and they will be clean up properly in commit
+                    asyncTx.markTerminated();
+                    cursorFuture.completeExceptionally( error );
+                }
+            } );
+            return cursorFuture;
+        } );
     }
 }

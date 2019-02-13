@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.react.internal;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -32,7 +32,8 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;

@@ -23,16 +23,90 @@ import java.util.Map;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
+/**
+ * Common interface for components that can execute Neo4j statements using Reactive API.
+ * @see RxSession
+ * @see RxTransaction
+ * @since 2.0
+ */
 public interface RxStatementRunner
 {
+    /**
+     * Register running of a statement and return a reactive result stream.
+     * This method will not run any query until the result stream record publisher is subscribed.
+     *
+     * This method takes a set of parameters that will be injected into the
+     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * dangerous cypher injection attacks and improves database performance as
+     * Neo4j can re-use query plans more often.
+     *
+     * This particular method takes a {@link Value} as its input. This is useful
+     * if you want to take a map-like value that you've gotten from a prior result
+     * and send it back as parameters.
+     *
+     * If you are creating parameters programmatically, {@link #run(String, Map)}
+     * might be more helpful, it converts your map to a {@link Value} for you.
+     *
+     * @param statementTemplate text of a Neo4j statement
+     * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
+     * @return a reactive stream of result values and associated metadata
+     */
     RxResult run( String statementTemplate, Value parameters );
 
+    /**
+     * Register running of a statement and return a reactive result stream.
+     * This method will not run any query until the result stream record publisher is subscribed.
+     *
+     * This method takes a set of parameters that will be injected into the
+     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * dangerous cypher injection attacks and improves database performance as
+     * Neo4j can re-use query plans more often.
+     *
+     * This version of run takes a {@link Map} of parameters. The values in the map
+     * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
+     * a list of allowed types.
+     *
+     * @param statementTemplate text of a Neo4j statement
+     * @param statementParameters input data for the statement
+     * @return a reactive stream of result values and associated metadata
+     */
     RxResult run( String statementTemplate, Map<String,Object> statementParameters );
 
+    /**
+     * Register running of a statement and return a reactive result stream.
+     * This method will not run any query until the result stream record publisher is subscribed.
+     *
+     * This method takes a set of parameters that will be injected into the
+     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * dangerous cypher injection attacks and improves database performance as
+     * Neo4j can re-use query plans more often.
+     *
+     * This version of run takes a {@link Record} of parameters, which can be useful
+     * if you want to use the output of one statement as input for another.
+     *
+     * @param statementTemplate text of a Neo4j statement
+     * @param statementParameters input data for the statement
+     * @return a reactive stream of result values and associated metadata
+     */
     RxResult run( String statementTemplate, Record statementParameters );
 
+    /**
+     * Register running of a statement and return a reactive result stream.
+     * This method will not run any query until the result stream record publisher is subscribed.
+     *
+     * @param statementTemplate text of a Neo4j statement
+     * @return a reactive stream of result values and associated metadata
+     */
     RxResult run( String statementTemplate );
 
+    /**
+     * Register running of a statement and return a reactive result stream.
+     * This method will not run any query until the result stream record publisher is subscribed.
+     *
+     * @param statement a Neo4j statement
+     * @return a reactive stream of result values and associated metadata
+     */
     RxResult run( Statement statement );
 }

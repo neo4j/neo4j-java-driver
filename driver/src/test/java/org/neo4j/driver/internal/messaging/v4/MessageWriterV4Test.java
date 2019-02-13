@@ -44,6 +44,8 @@ import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
+import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
@@ -68,19 +70,26 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
                 GOODBYE,
-                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ) ),
+                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ ),
+                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE ),
                 COMMIT,
                 ROLLBACK,
 
                 RESET,
                 new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ) ),
+                        singletonMap( "key", value( 42 ) ), READ ),
+                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
+                        singletonMap( "key", value( 42 ) ), WRITE ),
 
                 // Bolt V3 messages with struct values
                 new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap() ),
+                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
+                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
+                        Duration.ofSeconds( 1 ), emptyMap(), WRITE ),
                 new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap() )
+                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
+                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
+                        Duration.ofSeconds( 1 ), emptyMap(), WRITE )
         );
     }
 

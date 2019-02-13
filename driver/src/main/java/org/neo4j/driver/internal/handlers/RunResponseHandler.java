@@ -37,6 +37,11 @@ public class RunResponseHandler implements ResponseHandler
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
+    public RunResponseHandler( MetadataExtractor metadataExtractor )
+    {
+        this( new CompletableFuture<Throwable>(), metadataExtractor );
+    }
+
     public RunResponseHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         this.runCompletedFuture = runCompletedFuture;
@@ -84,7 +89,7 @@ public class RunResponseHandler implements ResponseHandler
      * Complete the given future with error if the future was failed.
      * Future is never completed exceptionally.
      * Async API needs to wait for RUN because it needs to access statement keys.
-     * Reactive API needs the error to abandon streaming.
+     * Reactive API needs to know if RUN failed by checking the error.
      */
     private void completeRunFuture( Throwable error )
     {

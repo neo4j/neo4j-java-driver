@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.react.result.StatementResultCursorFactory;
+import org.neo4j.driver.react.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
@@ -104,7 +104,7 @@ public interface BoltProtocol
      * keys populated.
      * @return stage with cursor.
      */
-    CompletionStage<StatementResultCursorFactory> runInAutoCommitTransaction( Connection connection, Statement statement,
+    StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse );
 
     /**
@@ -118,7 +118,7 @@ public interface BoltProtocol
      * keys populated.
      * @return stage with cursor.
      */
-    CompletionStage<StatementResultCursorFactory> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
+    StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse );
 
     /**

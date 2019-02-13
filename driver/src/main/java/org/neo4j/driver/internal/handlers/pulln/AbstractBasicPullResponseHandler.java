@@ -48,7 +48,7 @@ import static java.util.Objects.requireNonNull;
  * | onRecord           | X    | X      | yield record ->Streaming       | X                  | ->Canceled     |
  * | onFailure          | X    | X      | ->Failed                       | X                  | ->Failed       |
  *
- * Currently the error state (marked with X on the table above) is not enforced.
+ * Currently the error state (marked with X on the table above) might not be enforced.
  */
 public abstract class AbstractBasicPullResponseHandler implements BasicPullResponseHandler
 {
@@ -94,8 +94,8 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         assertRecordAndSummaryConsumerInstalled();
         status = Status.Failed;
         afterFailure( error );
-        summaryConsumer.accept( null, error );
-        recordConsumer.accept( null, error );
+
+        complete( null, error );
     }
 
     @Override
@@ -161,19 +161,30 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         this.recordConsumer = recordConsumer;
     }
 
+    @Override
+    public boolean isFinishedOrCanceled()
+    {
+        return isFinished() || status == Status.Canceled;
+    }
+
+    @Override
+    public boolean isStreamingPaused()
+    {
+        return status == Status.Ready;
+    }
+
+    private boolean isFinished()
+    {
+        return status == Status.Done || status == Status.Failed;
+    }
+
     private void handleSuccessWithSummary( Map<String,Value> metadata )
     {
-        Status enterState = status;
         status = Status.Done;
         afterSuccess( metadata );
-        // record consumer use (null, null) to identify the end of record stream
-        recordConsumer.accept( null, null );
-        extractResultSummary( metadata );
+        ResultSummary summary = extractResultSummary( metadata );
 
-        if ( status == Status.Canceled )
-        {
-            dropReferenceToSubscriberAfterSubscriptionCancellation();
-        }
+        complete( summary, null );
     }
 
     private void handleSuccessWithHasMore()
@@ -196,23 +207,10 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         }
     }
 
-    private void extractResultSummary( Map<String,Value> metadata )
+    private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        ResultSummary summary = metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
-        summaryConsumer.accept( summary, null );
-    }
-
-    @Override
-    public boolean isFinishedOrCanceled()
-    {
-        return status == Status.Done || status == Status.Failed || status == Status.Canceled;
-    }
-
-    @Override
-    public boolean isStreamingPaused()
-    {
-        return status == Status.Ready;
+        return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
     }
 
     private boolean isStreaming()
@@ -235,6 +233,11 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
 
     private void assertRecordAndSummaryConsumerInstalled()
     {
+        if( isFinished() )
+        {
+            // no need to check if we've finished.
+            return;
+        }
         if( recordConsumer == null || summaryConsumer == null )
         {
             throw new IllegalStateException( format("Access record stream without record consumer and/or summary consumer. " +
@@ -242,8 +245,18 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         }
     }
 
-    private void dropReferenceToSubscriberAfterSubscriptionCancellation()
+    private void complete( ResultSummary summary, Throwable error )
     {
+        // we first inform the summary consumer to ensure when streaming finished, summary is definitely available.
+        summaryConsumer.accept( summary, error );
+        // record consumer use (null, null) to identify the end of record stream
+        recordConsumer.accept( null, error );
+        dispose();
+    }
+
+    private void dispose()
+    {
+        // release the reference to the consumers who hold the reference to subscribers which shall be released when subscription is completed.
         this.recordConsumer = null;
         this.summaryConsumer = null;
     }

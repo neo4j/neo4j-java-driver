@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.result;
+package org.neo4j.driver.react.internal.cursor;
 
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +68,7 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 /**
  * The tests here are very similar to the tests in {@link LegacyInternalStatementResultCursorTest},
- * as essentially they shall behaves in the same way.
+ * as essentially they shall behave in the same way.
  */
 class AsyncStatementResultCursorTest
 {

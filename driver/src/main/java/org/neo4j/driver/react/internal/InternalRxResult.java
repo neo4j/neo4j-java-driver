@@ -16,21 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.react.internal;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.util.Supplier;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
@@ -79,23 +78,11 @@ public class InternalRxResult implements RxResult
         } );
     }
 
-    private static class RecordPublishingCursorConsumer implements BiConsumer<RxStatementResultCursor,Throwable>
+    @Override
+    public Publisher<Record> records()
     {
-        private FluxSink<Record> sink;
-
-        RecordPublishingCursorConsumer( FluxSink<Record> sink )
-        {
-            this.sink = sink;
-        }
-
-        @Override
-        public void accept( RxStatementResultCursor cursor, Throwable error )
-        {
-            if ( error != null )
-            {
-                sink.error( error );
-            }
-            else
+        return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, error ) -> {
+            if( cursor != null )
             {
                 cursor.installRecordConsumer( ( r, e ) -> {
                     if ( r != null )
@@ -113,15 +100,12 @@ public class InternalRxResult implements RxResult
                 } );
                 sink.onCancel( cursor::cancel );
                 sink.onRequest( cursor::request );
-                sink.onDispose( () -> this.sink = null ); // This is needed to release the reference to subscriber
             }
-        }
-    }
-
-    @Override
-    public Publisher<Record> records()
-    {
-        return Flux.create( sink -> getCursorFuture().whenComplete( new RecordPublishingCursorConsumer( sink ) ) );
+            else
+            {
+                sink.error( error );
+            }
+        } ) );
     }
 
     private CompletionStage<RxStatementResultCursor> getCursorFuture()

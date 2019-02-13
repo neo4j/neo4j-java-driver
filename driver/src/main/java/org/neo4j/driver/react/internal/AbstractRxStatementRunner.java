@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.react.internal;
 
 import java.util.Map;
 
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxStatementRunner;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Value;

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.result;
+package org.neo4j.driver.react.internal.cursor;
 
 import org.reactivestreams.Subscription;
 
@@ -32,6 +32,8 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
+import static org.neo4j.driver.internal.util.Futures.getNow;
+
 public class RxStatementResultCursor implements Subscription, FailableCursor
 {
     private final RunResponseHandler runHandler;
@@ -44,7 +46,7 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
         Objects.requireNonNull( pullHandler );
         assertRunResponseArrived( runHandler );
 
-        this.runResponseError = runHandler.runFuture().getNow( null );
+        this.runResponseError = getNow( runHandler.runFuture() );
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
     }
@@ -104,7 +106,11 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     @Override
     public synchronized CompletionStage<Throwable> failureAsync()
     {
-        // TODO remove this method from reactive if not needed
+        // TODO need to discuss with session.close/result.keys/result.summary
+        // TODO shall this method serve as another place that we can enforce termination of streaming?
+        // TODO shall this method canceling the streaming and enforce draining of all messages?
+        // If we do not have result.keys and result.summary as publishers, then we shall never need to enforce streaming.
+        // If we have a session.close, then we shall fully implement this in some way as this is used by session to sync.
         return Futures.completedWithNull();
     }
 }

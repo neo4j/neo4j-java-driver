@@ -20,15 +20,28 @@ package org.neo4j.driver.react;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
+/**
+ * A result stream which provides record publisher to stream records in a reactive way.
+ * This result stream provides cold unicast record publishers.
+ * In other words, the query submitted to create this result is not actually being sent to server nor executed until the record publisher is subscribed.
+ * The records stream has to be finished (completed or errored) or cancelled once it is subscribed
+ * to ensure the resources used by this result will be freed correctly.
+ *
+ * @see Publisher
+ * @see Subscriber
+ * @see Subscription
+ * @since 2.0
+ */
 public interface RxResult
 {
     /**
      * TODO: This method currently only start the run, it does not start any streaming.
-     * TODO: Thia means if a user forgot to call `records()`, then he will leave this connection with the session.
+     * TODO: This means if a user forgot to call `records()`, then he will leave this connection with the session.
      * TODO: 1) Bring back `RxSession#close` to avoid the connection left in result.
      * TODO: 2) Change the method to `List<String> keys()`, which returns keys when it is available or IllegalStateException.
      * @return TODO

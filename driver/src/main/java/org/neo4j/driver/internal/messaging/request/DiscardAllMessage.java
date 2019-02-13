@@ -26,7 +26,7 @@ public class DiscardAllMessage implements Message
 
     public static final DiscardAllMessage DISCARD_ALL = new DiscardAllMessage();
 
-    protected DiscardAllMessage()
+    private DiscardAllMessage()
     {
     }
 

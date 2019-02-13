@@ -25,7 +25,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.result.InternalStatementResultCursor;
+import org.neo4j.driver.react.internal.cursor.InternalStatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
@@ -84,8 +84,8 @@ public class LegacyInternalStatementResultCursor implements InternalStatementRes
                 {
                     throw new NoSuchRecordException(
                             "Expected a result with a single record, but this result " +
-                                    "contains at least one more. Ensure your query returns only " +
-                                    "one record." );
+                            "contains at least one more. Ensure your query returns only " +
+                            "one record." );
                 }
                 return firstRecord;
             } );

@@ -30,42 +30,38 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
 {
     /**
      * Register a record consumer for each record received.
-     * This consumer shall not be registered after streaming started.
-     * A null record with no error indicates the termination of streaming.
-     * @param recordConsumer register a record consumer to be called back for each record received.
+     * Streaming shall not be started before this consumer is registered.
+     * A null record with no error indicates the end of streaming.
+     * @param recordConsumer register a record consumer to be notified for each record received.
      */
     void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer );
 
     /**
-     * Register a summary consumer to receive callbacks when a summary is received.
-     * The registered success consumer will be called back if
-     * 1) a success message with a summary is received,
-     * 2) a success message with has_more is received,
-     * 3) a failure message is received.
-     * This consumer shall not be registered after streaming started.
-     * Otherwise the summary might have arrived before the consumer is registered.
+     * Register a summary consumer to be notified when a summary is received.
+     * A null summary with no error indicates a SUCCESS message with has_more=true has arrived.
+     * Streaming shall not be started before this consumer is registered.
      * @param summaryConsumer register a summary consumer
      */
     void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
 
     /**
-     * If the streaming is finished normally or with an error or cancelled.
+     * If the streaming is finished successfully or with an error or cancelled.
      * @return True if the stream is finished or cancelled.
      */
     boolean isFinishedOrCanceled();
 
     /**
-     * If the server is not sending more records until another {@link Subscription#request(long)}, but the streaming has not been finished.
-     * @return Ture if the stream is paused.
+     * Returns true if the server is not sending more records until another {@link Subscription#request(long)} call, and the streaming has not yet finished.
+     * @return True if the streaming is paused.
      */
     boolean isStreamingPaused();
 
     enum Status
     {
-        Done,
-        Failed,
-        Canceled,
-        Streaming,
-        Ready
+        Done,       // successfully completed
+        Failed,     // failed
+        Canceled,   // canceled
+        Streaming,  // streaming records
+        Ready       // steaming is paused. ready to accept request or cancel commands from user
     }
 }

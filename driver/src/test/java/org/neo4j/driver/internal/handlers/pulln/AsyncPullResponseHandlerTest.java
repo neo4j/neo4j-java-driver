@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.handlers.pulln;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -33,6 +34,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.Values.values;
@@ -41,6 +45,23 @@ class AsyncPullResponseHandlerTest
 {
     private final Record record = new InternalRecord( asList( "key1", "key2" ), values( 1, 2 ) );
 
+    @Test
+    void shouldInitHandlerFirstBeforeUse() throws Throwable
+    {
+        // Given
+        BasicPullResponseHandler basicHandler = mock( BasicPullResponseHandler.class );
+
+        // When
+        AsyncPullResponseHandler asyncHandler = new AsyncPullResponseHandler( basicHandler );
+
+        // Then
+        InOrder order = inOrder( basicHandler );
+        order.verify( basicHandler ).installSummaryConsumer( any() );
+        order.verify( basicHandler ).installRecordConsumer( any() );
+
+        // we can only request after summary and record consumers have be installed
+        order.verify( basicHandler ).request( anyLong() );
+    }
     @Test
     void shouldReturnNullRecordIfNoMoreRecord() throws Throwable
     {

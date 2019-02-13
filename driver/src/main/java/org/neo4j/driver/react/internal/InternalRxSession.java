@@ -16,25 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.react.internal;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.react.RxTransaction;
+import org.neo4j.driver.react.RxTransactionWork;
+import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
-import static org.neo4j.driver.react.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.react.RxUtils.createMono;
+import static org.neo4j.driver.react.internal.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.react.internal.RxUtils.createMono;
 
 public class InternalRxSession extends AbstractRxStatementRunner implements RxSession
 {
@@ -128,7 +135,26 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     @Override
     public RxResult run( Statement statement, TransactionConfig config )
     {
-        return new InternalRxResult( () -> session.runRx( statement, config ) );
+        return new InternalRxResult( () -> {
+            CompletableFuture<RxStatementResultCursor> resultCursorFuture = new CompletableFuture<>();
+            session.runRx( statement, config ).whenComplete( ( cursor, error ) -> {
+                if ( cursor != null )
+                {
+                    resultCursorFuture.complete( cursor );
+                }
+                else
+                {
+                    // We failed to create a result cursor so we cannot rely on result cursor to cleanup resources.
+                    // Therefore we will first release the connection that might have been created in the session and then notify the error.
+                    // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
+                    // The reason we need to release connection in session is that we do not have a `rxSession.close()`;
+                    // Otherwise, session.close shall handle everything for us.
+                    session.releaseConnection().whenComplete( ( ignored, closeError ) ->
+                            resultCursorFuture.completeExceptionally( Futures.combineErrors( error, closeError ) ) );
+                }
+            } );
+            return resultCursorFuture;
+        } );
     }
 
     @Override
@@ -137,7 +163,6 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
         return session.lastBookmark();
     }
 
-    @Override
     public Publisher<Void> reset()
     {
         return createEmptyPublisher( session::resetAsync );

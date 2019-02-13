@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.v1.StatementResultCursor;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
@@ -62,7 +63,7 @@ public class RoutingProcedureRunner
     {
         return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
-                .thenCompose( cursorFactory -> cursorFactory.asyncResult().listAsync() );
+                .asyncResult().thenCompose( StatementResultCursor::listAsync );
     }
 
     private Statement procedureStatement( ServerVersion serverVersion )

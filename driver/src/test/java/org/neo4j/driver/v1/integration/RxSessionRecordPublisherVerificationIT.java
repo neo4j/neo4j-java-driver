@@ -24,11 +24,15 @@ import org.reactivestreams.tck.TestEnvironment;
 
 import java.time.Duration;
 
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.react.RxResult;
 import org.neo4j.driver.react.RxSession;
 import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.v1.Values.parameters;
 
 public class RxSessionRecordPublisherVerificationIT extends PublisherVerification<Record>
@@ -58,7 +62,7 @@ public class RxSessionRecordPublisherVerificationIT extends PublisherVerificatio
     @Override
     public Publisher<Record> createPublisher( long elements )
     {
-        ensureDriver();
+        beforeEach();
         RxSession session = neo4j.driver().rxSession();
         RxResult result = session.run( QUERY, parameters( "numberOfRecords", elements ) );
         return result.records();
@@ -67,10 +71,24 @@ public class RxSessionRecordPublisherVerificationIT extends PublisherVerificatio
     @Override
     public Publisher<Record> createFailedPublisher()
     {
-        ensureDriver();
+        beforeEach();
         RxSession session = neo4j.driver().rxSession();
         RxResult result = session.run( "INVALID" );
         return result.records();
+    }
+
+    private void beforeEach()
+    {
+        ensureDriver();
+        ensureBoltV4();
+    }
+
+    private void ensureBoltV4()
+    {
+        ResultSummary summary = neo4j.driver().session().run( "RETURN 1" ).consume();
+        ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
+        assumeTrue( BOLT_V4.availableIn( serverVersion ) );
+
     }
 
     private void ensureDriver()

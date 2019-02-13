@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.result;
+package org.neo4j.driver.react.internal.cursor;
 
-public interface StatementResultCursorFactory
+import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.v1.StatementResultCursor;
+
+public interface InternalStatementResultCursor extends StatementResultCursor, FailableCursor
 {
-    InternalStatementResultCursor asyncResult();
-    RxStatementResultCursor rxResult();
 }

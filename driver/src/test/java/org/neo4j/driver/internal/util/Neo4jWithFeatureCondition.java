@@ -76,14 +76,14 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
         if ( feature.availableIn( version ) )
         {
             return negated
-                   ? disabled( "Disabled on neo4j " + version + " because it does not support support " + feature )
+                   ? disabled( "Disabled on neo4j " + version + " because it supports " + feature )
                    : enabled( "Enabled on neo4j " + version + " because it supports " + feature );
         }
         else
         {
             return negated
                    ? enabled( "Enabled on neo4j " + version + " because it does not support " + feature )
-                   : disabled( "Disabled on neo4j " + version + " because it does not support support " + feature );
+                   : disabled( "Disabled on neo4j " + version + " because it does not support " + feature );
         }
     }
 

@@ -20,24 +20,25 @@ package org.neo4j.driver.internal.messaging.v4;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.SessionPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.TransactionPullResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.react.result.InternalStatementResultCursorFactory;
-import org.neo4j.driver.react.result.StatementResultCursorFactory;
+import org.neo4j.driver.react.internal.cursor.InternalStatementResultCursorFactory;
+import org.neo4j.driver.react.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.v1.Values.ofValue;
 
 public class BoltProtocolV4 extends BoltProtocolV3
@@ -51,27 +52,28 @@ public class BoltProtocolV4 extends BoltProtocolV3
         return new MessageFormatV4();
     }
 
-    protected CompletionStage<StatementResultCursorFactory> runStatement( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
             ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
     {
         CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
 
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config );
+        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
 
-        connection.writeAndFlush( runMessage, runHandler );
+        BasicPullResponseHandler pullHandler = newPullHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
-        if ( waitForRunResponse )
+        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
+    }
+
+    private static BasicPullResponseHandler newPullHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
+            BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
+    {
+        if ( tx != null )
         {
-            // wait for response of RUN before proceeding
-            return runCompletedFuture.thenApply( ignore ->
-                    new InternalStatementResultCursorFactory( runHandler, statement, connection, bookmarksHolder, tx ) );
+            return new TransactionPullResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
         }
-        else
-        {
-            return completedFuture( new InternalStatementResultCursorFactory( runHandler, statement, connection, bookmarksHolder, tx ) );
-        }
+        return new SessionPullResponseHandler( statement, runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
     }
 }

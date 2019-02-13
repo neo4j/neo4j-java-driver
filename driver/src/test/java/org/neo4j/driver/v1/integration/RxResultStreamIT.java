@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.v1.integration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,6 +24,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.react.RxResult;
+import org.neo4j.driver.react.RxSession;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
@@ -37,8 +41,11 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
+import static org.neo4j.driver.internal.util.Neo4jFeature.CYPHER_STREAMING;
 import static org.neo4j.driver.v1.Values.parameters;
 
+@EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
 class RxResultStreamIT
 {
@@ -191,8 +198,8 @@ class RxResultStreamIT
                 } ).expectComplete().verify();
     }
 
-    // @Test
-    // Re-enable this test once cypher execution engine support streaming
+    @Test
+    @DisabledOnNeo4jWith( CYPHER_STREAMING )
     void shouldStreamCorrectRecordsBackBeforeError()
     {
         RxSession session = neo4j.driver().rxSession();

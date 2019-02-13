@@ -30,7 +30,7 @@ public class PullAllMessage implements Message
 
     public static final PullAllMessage PULL_ALL = new PullAllMessage();
 
-    protected PullAllMessage()
+    private PullAllMessage()
     {
     }
 

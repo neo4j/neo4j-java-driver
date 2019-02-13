@@ -29,9 +29,9 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.result.InternalStatementResultCursor;
-import org.neo4j.driver.react.result.RxStatementResultCursor;
-import org.neo4j.driver.react.result.StatementResultCursorFactory;
+import org.neo4j.driver.react.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.react.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -444,55 +444,41 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
 
     public CompletionStage<RxStatementResultCursor> runRx( Statement statement, TransactionConfig config )
     {
-        CompletableFuture<RxStatementResultCursor> newResultCursorStage = new CompletableFuture<>();
-        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, true, newResultCursorStage );
-        factoryFuture.whenComplete( ( factory, error ) -> {
-            if ( factory != null )
-            {
-                newResultCursorStage.complete( factory.rxResult() );
-            }
-            else
-            {
-                newResultCursorStage.completeExceptionally( error );
-            }
-        } );
+        CompletionStage<RxStatementResultCursor> newResultCursorStage =
+                buildResultCursorFactory( statement, config, true ).thenCompose( StatementResultCursorFactory::rxResult );
 
+        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
         return newResultCursorStage;
     }
 
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
-        CompletableFuture<InternalStatementResultCursor> newResultCursorStage = new CompletableFuture<>();
-        CompletionStage<StatementResultCursorFactory> factoryFuture = run( statement, config, waitForRunResponse, newResultCursorStage );
+        CompletionStage<InternalStatementResultCursor> newResultCursorStage =
+                buildResultCursorFactory( statement, config, waitForRunResponse ).thenCompose( StatementResultCursorFactory::asyncResult );
 
-        factoryFuture.whenComplete( ( factory, error ) -> {
-            if ( factory != null )
-            {
-                newResultCursorStage.complete( factory.asyncResult() );
-            }
-            else
-            {
-                newResultCursorStage.completeExceptionally( error );
-            }
-        } );
-
+        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
         return newResultCursorStage;
     }
 
-    private CompletionStage<StatementResultCursorFactory> run( Statement statement, TransactionConfig config, boolean waitForRunResponse,
-            CompletionStage<? extends FailableCursor> newResultCursorStage )
+    private CompletionStage<StatementResultCursorFactory> buildResultCursorFactory( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
-        CompletionStage<StatementResultCursorFactory> factoryFuture =
-                ensureNoOpenTxBeforeRunningQuery().thenCompose( ignore -> acquireConnection( mode ) ).thenCompose(
-                        connection -> connection.protocol().runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse ) );
-
-
-        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
-        return factoryFuture;
+        return ensureNoOpenTxBeforeRunningQuery()
+                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( connection -> {
+                    try
+                    {
+                        StatementResultCursorFactory factory = connection.protocol()
+                                .runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse );
+                        return Futures.completedWithValue( factory );
+                    }
+                    catch ( Throwable e )
+                    {
+                        return Futures.failedFuture( e );
+                    }
+                } );
     }
-
 
     private Transaction beginTransaction( AccessMode mode, TransactionConfig config )
     {
@@ -594,7 +580,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 releaseConnection().thenApply( ignore -> txCloseError ) );
     }
 
-    private CompletionStage<Void> releaseConnection()
+    public CompletionStage<Void> releaseConnection()
     {
         return connectionStage.thenCompose( connection ->
         {
