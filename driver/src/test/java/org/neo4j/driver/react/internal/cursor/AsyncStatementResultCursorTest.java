@@ -306,7 +306,7 @@ class AsyncStatementResultCursorTest
 
         AsyncStatementResultCursor cursor = newCursor( pullHandler );
 
-        assertEquals( error, await( cursor.failureAsync() ).getCause() );
+        assertEquals( error, await( cursor.failureAsync() ) );
     }
 
     @Test
@@ -429,11 +429,6 @@ class AsyncStatementResultCursorTest
     private static AsyncStatementResultCursor newCursor( PullResponseHandler pullHandler )
     {
         return new AsyncStatementResultCursor( newRunResponseHandler(), pullHandler );
-    }
-
-    private static AsyncStatementResultCursor newCursor( RunResponseHandler runHandler, PullResponseHandler pullHandler )
-    {
-        return new AsyncStatementResultCursor( runHandler, pullHandler );
     }
 
     private static RunResponseHandler newRunResponseHandler()

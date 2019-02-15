@@ -23,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Supplier;
 
 public class RxUtils
@@ -35,7 +36,8 @@ public class RxUtils
      */
     public static Publisher<Void> createEmptyPublisher( Supplier<CompletionStage<Void>> supplier )
     {
-        return Mono.create( sink -> supplier.get().whenComplete( ( ignore, error ) -> {
+        return Mono.create( sink -> supplier.get().whenComplete( ( ignore, completionError ) -> {
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 sink.error( error );
@@ -55,7 +57,8 @@ public class RxUtils
      */
     public static <T> Publisher<T> createMono( Supplier<CompletionStage<T>> supplier )
     {
-        return Mono.create( sink -> supplier.get().whenComplete( ( item, error ) -> {
+        return Mono.create( sink -> supplier.get().whenComplete( ( item, completionError ) -> {
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( item != null )
             {
                 sink.success( item );

@@ -135,7 +135,7 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
     {
         return pullResponseHandler.summary()
                 .thenApply( summary -> (Throwable) null )
-                .exceptionally( error -> error );
+                .exceptionally( Futures::completionExceptionCause );
     }
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )

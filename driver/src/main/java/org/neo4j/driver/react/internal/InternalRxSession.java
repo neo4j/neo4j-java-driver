@@ -137,7 +137,7 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     {
         return new InternalRxResult( () -> {
             CompletableFuture<RxStatementResultCursor> resultCursorFuture = new CompletableFuture<>();
-            session.runRx( statement, config ).whenComplete( ( cursor, error ) -> {
+            session.runRx( statement, config ).whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )
                 {
                     resultCursorFuture.complete( cursor );
@@ -149,6 +149,7 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
                     // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
                     // The reason we need to release connection in session is that we do not have a `rxSession.close()`;
                     // Otherwise, session.close shall handle everything for us.
+                    Throwable error = Futures.completionExceptionCause( completionError );
                     session.releaseConnection().whenComplete( ( ignored, closeError ) ->
                             resultCursorFuture.completeExceptionally( Futures.combineErrors( error, closeError ) ) );
                 }

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.react.RxResult;
 import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
@@ -48,7 +49,7 @@ public class InternalRxResult implements RxResult
     public Publisher<String> keys()
     {
         return Flux.create( sink -> {
-            getCursorFuture().whenComplete( ( cursor, error ) -> {
+            getCursorFuture().whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )
                 {
                     List<String> keys = cursor.keys();
@@ -72,6 +73,7 @@ public class InternalRxResult implements RxResult
                 }
                 else
                 {
+                    Throwable error = Futures.completionExceptionCause( completionError );
                     sink.error( error );
                 }
             } );
@@ -81,7 +83,7 @@ public class InternalRxResult implements RxResult
     @Override
     public Publisher<Record> records()
     {
-        return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, error ) -> {
+        return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
             if( cursor != null )
             {
                 cursor.installRecordConsumer( ( r, e ) -> {
@@ -103,6 +105,7 @@ public class InternalRxResult implements RxResult
             }
             else
             {
+                Throwable error = Futures.completionExceptionCause( completionError );
                 sink.error( error );
             }
         } ) );
@@ -129,23 +132,24 @@ public class InternalRxResult implements RxResult
         CompletableFuture<RxStatementResultCursor> cursorWithSummaryConsumerInstalled = new CompletableFuture<>();
         CompletionStage<RxStatementResultCursor> cursorFuture = cursorFutureSupplier.get();
         cursorFutureSupplier = null; // we no longer need the reference to this object
-        cursorFuture.whenComplete( ( cursor, error ) -> {
+        cursorFuture.whenComplete( ( cursor, completionError ) -> {
             if ( cursor != null )
             {
                 cursor.installSummaryConsumer( ( summary, summaryError ) -> {
-                    if ( summary != null )
-                    {
-                        summaryFuture.complete( summary );
-                    }
-                    else if ( summaryError != null )
+                    if ( summaryError != null )
                     {
                         summaryFuture.completeExceptionally( summaryError );
+                    }
+                    else if ( summary != null )
+                    {
+                        summaryFuture.complete( summary );
                     }
                 } );
                 cursorWithSummaryConsumerInstalled.complete( cursor );
             }
             else
             {
+                Throwable error = Futures.completionExceptionCause( completionError );
                 summaryFuture.completeExceptionally( error );
                 cursorWithSummaryConsumerInstalled.completeExceptionally( error );
             }
@@ -160,7 +164,8 @@ public class InternalRxResult implements RxResult
     {
         // TODO currently, summary will not start running or streaming.
         // this means if a user just call summary, he will just hanging there forever.
-        return Mono.create( sink -> summaryFuture.whenComplete( ( summary, error ) -> {
+        return Mono.create( sink -> summaryFuture.whenComplete( ( summary, completionError ) -> {
+            Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
                 sink.error( error );

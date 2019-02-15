@@ -34,6 +34,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -95,7 +96,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         status = Status.Failed;
         afterFailure( error );
 
-        complete( null, error );
+        complete( extractResultSummary( emptyMap() ), error );
     }
 
     @Override

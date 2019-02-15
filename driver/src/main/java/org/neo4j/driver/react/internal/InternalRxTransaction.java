@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.react.RxResult;
 import org.neo4j.driver.react.RxTransaction;
 import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
@@ -70,7 +71,7 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     {
         return new InternalRxResult( () -> {
             CompletableFuture<RxStatementResultCursor> cursorFuture = new CompletableFuture<>();
-            asyncTx.runRx( statement ).whenComplete( ( cursor, error ) -> {
+            asyncTx.runRx( statement ).whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )
                 {
                     cursorFuture.complete( cursor );
@@ -80,6 +81,7 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
                     // We failed to create a result cursor so we cannot rely on result cursor to handle failure.
                     // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
                     // This is optional as asyncTx still holds a reference to all cursor futures and they will be clean up properly in commit
+                    Throwable error = Futures.completionExceptionCause( completionError );
                     asyncTx.markTerminated();
                     cursorFuture.completeExceptionally( error );
                 }

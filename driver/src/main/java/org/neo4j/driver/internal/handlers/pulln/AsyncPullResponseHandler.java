@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
@@ -35,7 +36,8 @@ public class AsyncPullResponseHandler implements PullResponseHandler
     private final BasicPullResponseHandler delegate;
     private final PullController controller;
 
-    private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+    private ResultSummary summary;
+    private CompletableFuture<Throwable> failureFuture = new CompletableFuture<>();
 
     public AsyncPullResponseHandler( BasicPullResponseHandler handler )
     {
@@ -109,6 +111,18 @@ public class AsyncPullResponseHandler implements PullResponseHandler
     @Override
     public synchronized CompletableFuture<ResultSummary> summary()
     {
+        CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+        failureFuture.thenAccept( error -> {
+            if ( error != null )
+            {
+                consumeFinishFuture();
+                summaryFuture.completeExceptionally( error );
+            }
+            else
+            {
+                summaryFuture.complete( summary );
+            }
+        } );
         return summaryFuture;
     }
 
@@ -122,11 +136,13 @@ public class AsyncPullResponseHandler implements PullResponseHandler
         }
         else if ( throwable != null )
         {
+            failureFuture.complete( throwable );
             failRecordFuture( throwable );
         }
         else
         {
             // done streaming
+            failureFuture.complete( null );
             completeRecordFuture( null );
         }
     }
@@ -135,13 +151,9 @@ public class AsyncPullResponseHandler implements PullResponseHandler
     {
         if ( summary != null )
         {
-            summaryFuture.complete( summary );
+            this.summary = summary;
         }
-        else if ( throwable != null )
-        {
-            summaryFuture.completeExceptionally( throwable );
-        }
-        else
+        if ( summary == null && throwable == null )
         {
             // has_more
             controller.handleSuccessWithHasMore();
@@ -154,13 +166,40 @@ public class AsyncPullResponseHandler implements PullResponseHandler
         {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
+            consumeFinishFuture();
             future.completeExceptionally( error );
         }
     }
 
+    private synchronized void consumeFinishFuture()
+    {
+        failureFuture = Futures.completedWithNull();
+    }
+
     private synchronized void completeRecordFuture( Record record )
     {
-        if( recordFuture != null )
+        if ( record == null ) // streaming is finished
+        {
+            failureFuture.thenAccept( error -> {
+                if ( error != null )
+                {
+                    failRecordFuture( error );
+                }
+                else
+                {
+                    succeedRecordFuture( null );
+                }
+            } );
+        }
+        else
+        {
+            succeedRecordFuture( record );
+        }
+    }
+
+    private synchronized void succeedRecordFuture( Record record )
+    {
+        if ( recordFuture != null )
         {
             CompletableFuture<Record> future = recordFuture;
             recordFuture = null;
