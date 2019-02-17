@@ -91,7 +91,7 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
-import static org.neo4j.driver.internal.util.Neo4jFeature.CYPHER_STREAMING;
+import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
@@ -830,7 +830,7 @@ class SessionIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( CYPHER_STREAMING )
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldConsumePreviousResultBeforeRunningNewQuery()
     {
         try ( Session session = neo4j.driver().session() )
@@ -868,7 +868,7 @@ class SessionIT
         assertEquals( 0, invocations.get() );
     }
 
-    @DisabledOnNeo4jWith( CYPHER_STREAMING )
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     @Test
     void shouldAllowConsumingRecordsAfterFailureInSessionClose()
     {
@@ -934,7 +934,7 @@ class SessionIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( CYPHER_STREAMING )
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
     {
         Session session = neo4j.driver().session();

@@ -30,6 +30,7 @@ import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +49,7 @@ class InternalRxSessionTest
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
 
         // Run succeeded with a cursor
-        when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.completedWithValue( cursor ) );
+        when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( cursor ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When

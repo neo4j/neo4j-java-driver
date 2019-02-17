@@ -32,8 +32,6 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.util.Futures.getNow;
-
 public class RxStatementResultCursor implements Subscription, FailableCursor
 {
     private final RunResponseHandler runHandler;
@@ -42,11 +40,16 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
 
     public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
     {
+        this( null, runHandler, pullHandler );
+    }
+
+    public RxStatementResultCursor( Throwable runError, RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
+    {
         Objects.requireNonNull( runHandler );
         Objects.requireNonNull( pullHandler );
         assertRunResponseArrived( runHandler );
 
-        this.runResponseError = getNow( runHandler.runFuture() );
+        this.runResponseError = runError;
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
     }

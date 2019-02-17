@@ -20,14 +20,16 @@ package org.neo4j.driver.react.internal.cursor;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.AsyncPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.PullNMessage;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class InternalStatementResultCursorFactory implements StatementResultCursorFactory
 {
@@ -35,35 +37,41 @@ public class InternalStatementResultCursorFactory implements StatementResultCurs
     private final Connection connection;
 
     private final BasicPullResponseHandler pullHandler;
+    private final PullAllResponseHandler pullAllHandler;
     private final boolean waitForRunResponse;
     private final Message runMessage;
 
     public InternalStatementResultCursorFactory( Connection connection, Message runMessage, RunResponseHandler runHandler, BasicPullResponseHandler pullHandler,
-            boolean waitForRunResponse )
+            PullAllResponseHandler pullAllHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
         requireNonNull( runHandler );
         requireNonNull( pullHandler );
+        requireNonNull( pullAllHandler );
 
         this.connection = connection;
         this.runMessage = runMessage;
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
+        this.pullAllHandler = pullAllHandler;
         this.waitForRunResponse = waitForRunResponse;
     }
 
     @Override
     public CompletionStage<InternalStatementResultCursor> asyncResult()
     {
-        connection.writeAndFlush( runMessage, runHandler );
+        // only write and flush messages when async result is wanted.
+        connection.writeAndFlush( runMessage, runHandler, PullNMessage.PULL_ALL, pullAllHandler );
+
         if ( waitForRunResponse )
         {
-            return runHandler.runFuture().thenApply( ignored -> composeAsyncCursor() );
+            // wait for response of RUN before proceeding
+            return runHandler.runFuture().thenApply( ignore -> new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
         }
         else
         {
-            return Futures.completedWithValue( composeAsyncCursor() );
+            return completedFuture( new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
         }
     }
 
@@ -71,23 +79,12 @@ public class InternalStatementResultCursorFactory implements StatementResultCurs
     public CompletionStage<RxStatementResultCursor> rxResult()
     {
         connection.writeAndFlush( runMessage, runHandler );
-        if ( waitForRunResponse )
-        {
-            return runHandler.runFuture().thenApply( ignored -> composeRxCursor() );
-        }
-        else
-        {
-            return Futures.completedWithValue( composeRxCursor() );
-        }
+        // we always wait for run reply
+        return runHandler.runFuture().thenApply( this::composeRxCursor );
     }
 
-    private AsyncStatementResultCursor composeAsyncCursor()
+    private RxStatementResultCursor composeRxCursor( Throwable runError )
     {
-        return new AsyncStatementResultCursor( runHandler, new AsyncPullResponseHandler( pullHandler ) );
-    }
-
-    private RxStatementResultCursor composeRxCursor()
-    {
-        return new RxStatementResultCursor( runHandler, pullHandler );
+        return new RxStatementResultCursor( runError, runHandler, pullHandler );
     }
 }

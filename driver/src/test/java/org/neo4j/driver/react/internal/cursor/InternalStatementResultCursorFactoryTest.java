@@ -27,11 +27,14 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.internal.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -41,7 +44,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.completedWithValue;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getNow;
 
@@ -75,7 +77,7 @@ class InternalStatementResultCursorFactoryTest
         // Given
         Connection connection = mock( Connection.class );
         Throwable error = new RuntimeException( "Hi there" );
-        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedWithValue( error ), waitForRun );
+        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedFuture( error ), waitForRun );
 
         // When
         CompletionStage<InternalStatementResultCursor> cursorFuture = cursorFactory.asyncResult();
@@ -137,7 +139,7 @@ class InternalStatementResultCursorFactoryTest
         // Given
         Connection connection = mock( Connection.class );
         Throwable error = new RuntimeException( "Hi there" );
-        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedWithValue( error ), waitForRun );
+        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedFuture( error ), waitForRun );
 
         // When
         CompletionStage<RxStatementResultCursor> cursorFuture = cursorFactory.rxResult();
@@ -165,7 +167,7 @@ class InternalStatementResultCursorFactoryTest
         // Given
         Connection connection = mock( Connection.class );
         Throwable error = new RuntimeException( "Hi there" );
-        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedWithValue( error ), false );
+        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedFuture( error ), false );
 
         // When
         CompletionStage<RxStatementResultCursor> cursorFuture = cursorFactory.rxResult();
@@ -182,8 +184,9 @@ class InternalStatementResultCursorFactoryTest
         when( runHandler.runFuture() ).thenReturn( runFuture );
 
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
-        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, waitForRun );
+        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRun );
     }
 
     private InternalStatementResultCursorFactory newResultCursorFactory( CompletableFuture<Throwable> runFuture, boolean waitForRun )
@@ -194,7 +197,7 @@ class InternalStatementResultCursorFactoryTest
 
     private void verifyRunCompleted( Connection connection, CompletionStage<InternalStatementResultCursor> cursorFuture )
     {
-        verify( connection ).writeAndFlush( any( Message.class ), any( RunResponseHandler.class ) );
+        verify( connection ).writeAndFlush( any( Message.class ), any( RunResponseHandler.class ), any( Message.class ), any( PullAllResponseHandler.class ) );
         assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursor.class ) );
     }
 

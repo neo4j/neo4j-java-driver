@@ -39,7 +39,7 @@ public class RunResponseHandler implements ResponseHandler
 
     public RunResponseHandler( MetadataExtractor metadataExtractor )
     {
-        this( new CompletableFuture<Throwable>(), metadataExtractor );
+        this( new CompletableFuture<>(), metadataExtractor );
     }
 
     public RunResponseHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )

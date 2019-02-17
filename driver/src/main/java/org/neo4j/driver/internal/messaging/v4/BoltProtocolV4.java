@@ -23,10 +23,9 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.SessionPullResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.TransactionPullResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -39,6 +38,8 @@ import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV3PullAllHandler;
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4PullHandler;
 import static org.neo4j.driver.v1.Values.ofValue;
 
 public class BoltProtocolV4 extends BoltProtocolV3
@@ -62,18 +63,9 @@ public class BoltProtocolV4 extends BoltProtocolV3
         Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
 
-        BasicPullResponseHandler pullHandler = newPullHandler( statement, runHandler, connection, bookmarksHolder, tx );
+        AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
+        BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
-        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
-    }
-
-    private static BasicPullResponseHandler newPullHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
-            BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
-    {
-        if ( tx != null )
-        {
-            return new TransactionPullResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
-        }
-        return new SessionPullResponseHandler( statement, runHandler, connection, bookmarksHolder, METADATA_EXTRACTOR );
+        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }
 }

@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
@@ -356,7 +356,7 @@ class InternalStatementResultTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
-        AbstractPullAllResponseHandler pullAllHandler =
+        PullAllResponseHandler pullAllHandler =
                 new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarksHolder.NO_OP, METADATA_EXTRACTOR );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
@@ -365,7 +365,7 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = new LegacyInternalStatementResultCursor( runHandler, pullAllHandler );
+        StatementResultCursor cursor = new AsyncStatementResultCursor( runHandler, pullAllHandler );
         return new InternalStatementResult( connection, cursor );
     }
 

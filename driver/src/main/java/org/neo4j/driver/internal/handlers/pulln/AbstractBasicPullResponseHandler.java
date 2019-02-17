@@ -36,18 +36,19 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.messaging.request.AbstractHandleNMessage.PULL_OR_DISCARD_ALL_N_VALUE;
 
 /**
  * In this class we have a hidden state machine.
  * Here is how it looks like:
- * |                    | Done | Failed | Streaming                      | Ready              | Canceled       |
+ * |                    | DONE | FAILED | STREAMING                      | READY              | CANCELED       |
  * |--------------------|------|--------|--------------------------------|--------------------|----------------|
- * | request            | X    | X      | toRequest++ ->Streaming        | PULL ->Streaming   | X              |
- * | cancel             | X    | X      | ->Canceled                     | DISCARD ->Canceled | ->Canceled     |
- * | onSuccess has_more | X    | X      | ->Ready request if toRequest>0 | X                  | ->Ready cancel |
- * | onSuccess          | X    | X      | summary ->Done                 | X                  | summary ->Done |
- * | onRecord           | X    | X      | yield record ->Streaming       | X                  | ->Canceled     |
- * | onFailure          | X    | X      | ->Failed                       | X                  | ->Failed       |
+ * | request            | X    | X      | toRequest++ ->STREAMING        | PULL ->STREAMING   | X              |
+ * | cancel             | X    | X      | ->CANCELED                     | DISCARD ->CANCELED | ->CANCELED     |
+ * | onSuccess has_more | X    | X      | ->READY request if toRequest>0 | X                  | ->READY cancel |
+ * | onSuccess          | X    | X      | summary ->DONE                 | X                  | summary ->DONE |
+ * | onRecord           | X    | X      | yield record ->STREAMING       | X                  | ->CANCELED     |
+ * | onFailure          | X    | X      | ->FAILED                       | X                  | ->FAILED       |
  *
  * Currently the error state (marked with X on the table above) might not be enforced.
  */
@@ -58,7 +59,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
 
-    private Status status = Status.Ready;
+    private Status status = Status.READY;
     private long toRequest;
     private BiConsumer<Record,Throwable> recordConsumer = null;
     private BiConsumer<ResultSummary, Throwable> summaryConsumer = null;
@@ -93,7 +94,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     public synchronized void onFailure( Throwable error )
     {
         assertRecordAndSummaryConsumerInstalled();
-        status = Status.Failed;
+        status = Status.FAILED;
         afterFailure( error );
 
         complete( extractResultSummary( emptyMap() ), error );
@@ -117,7 +118,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         if ( isStreamingPaused() )
         {
             connection.writeAndFlush( new PullNMessage( size, runResponseHandler.statementId() ), this );
-            status = Status.Streaming;
+            status = Status.STREAMING;
         }
         else if ( isStreaming() )
         {
@@ -132,12 +133,12 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         if ( isStreamingPaused() )
         {
             // Reactive API does not provide a way to discard N. Only discard all.
-            connection.writeAndFlush( new DiscardNMessage( Long.MAX_VALUE, runResponseHandler.statementId() ), this );
-            status = Status.Canceled;
+            connection.writeAndFlush( new DiscardNMessage( PULL_OR_DISCARD_ALL_N_VALUE, runResponseHandler.statementId() ), this );
+            status = Status.CANCELED;
         }
         else if ( isStreaming() )
         {
-            status = Status.Canceled;
+            status = Status.CANCELED;
         }
         // no need to change status if it is already done
     }
@@ -162,26 +163,19 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         this.recordConsumer = recordConsumer;
     }
 
-    @Override
-    public boolean isFinishedOrCanceled()
+    private boolean isStreamingPaused()
     {
-        return isFinished() || status == Status.Canceled;
-    }
-
-    @Override
-    public boolean isStreamingPaused()
-    {
-        return status == Status.Ready;
+        return status == Status.READY;
     }
 
     private boolean isFinished()
     {
-        return status == Status.Done || status == Status.Failed;
+        return status == Status.DONE || status == Status.FAILED;
     }
 
     private void handleSuccessWithSummary( Map<String,Value> metadata )
     {
-        status = Status.Done;
+        status = Status.DONE;
         afterSuccess( metadata );
         ResultSummary summary = extractResultSummary( metadata );
 
@@ -190,14 +184,14 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
 
     private void handleSuccessWithHasMore()
     {
-        if ( this.status == Status.Canceled )
+        if ( this.status == Status.CANCELED )
         {
-            this.status = Status.Ready; // cancel request accepted.
+            this.status = Status.READY; // cancel request accepted.
             cancel();
         }
-        else if ( this.status == Status.Streaming )
+        else if ( this.status == Status.STREAMING )
         {
-            this.status = Status.Ready;
+            this.status = Status.READY;
             if ( toRequest > 0 )
             {
                 request( toRequest );
@@ -216,7 +210,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
 
     private boolean isStreaming()
     {
-        return status == Status.Streaming;
+        return status == Status.STREAMING;
     }
 
     private void addToRequest( long toAdd )

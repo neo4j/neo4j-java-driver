@@ -20,6 +20,7 @@ package org.neo4j.driver.v1.integration;
 
 import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -60,11 +61,11 @@ class RxStatementResultCursorTest
     {
         // Given
         RuntimeException error = new RuntimeException( "Hi" );
-        CompletableFuture<Throwable> runFuture = Futures.completedWithValue( error );
+        CompletableFuture<Throwable> runFuture = completedFuture( error );
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
 
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
 
         // When
         cursor.request( 100 );
@@ -78,11 +79,11 @@ class RxStatementResultCursorTest
     {
         // Given
         RuntimeException error = new RuntimeException( "Hi" );
-        CompletableFuture<Throwable> runFuture = Futures.completedWithValue( error );
+        CompletableFuture<Throwable> runFuture = completedFuture( error );
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
 
         BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
 
         // When
         cursor.cancel();

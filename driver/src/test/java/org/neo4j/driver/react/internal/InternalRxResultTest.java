@@ -39,6 +39,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -122,7 +123,7 @@ class InternalRxResultTest
     {
         return new InternalRxResult( () -> {
             // now we successfully run
-            return Futures.completedWithValue( cursor );
+            return completedFuture( cursor );
         } );
     }
 
@@ -148,18 +149,6 @@ class InternalRxResultTest
         public void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer )
         {
             this.summaryConsumer = summaryConsumer;
-        }
-
-        @Override
-        public boolean isFinishedOrCanceled()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isStreamingPaused()
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override

@@ -27,12 +27,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.LegacyInternalStatementResultCursor;
+import org.neo4j.driver.internal.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -45,7 +46,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.Futures.completedWithValue;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.getNow;
 
@@ -80,7 +80,7 @@ class AsyncResultCursorOnlyFactoryTest
         // Given
         Connection connection = mock( Connection.class );
         Throwable error = new RuntimeException( "Hi there" );
-        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedWithValue( error ), waitForRun );
+        StatementResultCursorFactory cursorFactory = newResultCursorFactory( connection, completedFuture( error ), waitForRun );
 
         // When
         CompletionStage<InternalStatementResultCursor> cursorFuture = cursorFactory.asyncResult();
@@ -155,6 +155,6 @@ class AsyncResultCursorOnlyFactoryTest
     {
         verify( connection ).writeAndFlush( any( Message.class ), any( RunResponseHandler.class ), eq( PULL_ALL ),
                 any( AbstractPullAllResponseHandler.class ) );
-        assertThat( getNow( cursorFuture ), instanceOf( LegacyInternalStatementResultCursor.class ) );
+        assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursor.class ) );
     }
 }

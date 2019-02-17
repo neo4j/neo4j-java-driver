@@ -26,7 +26,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
@@ -62,18 +62,18 @@ import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-public class LegacyInternalStatementResultCursorTest
+class AsyncStatementResultCursorTest
 {
     @Test
     void shouldReturnStatementKeys()
     {
         RunResponseHandler runHandler = newRunResponseHandler();
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         List<String> keys = asList( "key1", "key2", "key3" );
         runHandler.onSuccess( singletonMap( "fields", value( keys ) ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( runHandler, pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( runHandler, pullAllHandler );
 
         assertEquals( keys, cursor.keys() );
     }
@@ -81,7 +81,7 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnSummary()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ResultSummary summary = new InternalResultSummary( new Statement( "RETURN 42" ),
                 new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, ServerVersion.v3_1_0 ),
@@ -89,7 +89,7 @@ public class LegacyInternalStatementResultCursorTest
                 null, null, emptyList(), 42, 42 );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( summary, await( cursor.summaryAsync() ) );
     }
@@ -97,12 +97,12 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnNextExistingRecord()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record = new InternalRecord( asList( "key1", "key2" ), values( 1, 2 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( record, await( cursor.nextAsync() ) );
     }
@@ -110,10 +110,10 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnNextNonExistingRecord()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertNull( await( cursor.nextAsync() ) );
     }
@@ -121,12 +121,12 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldPeekExistingRecord()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 2, 1 ) );
         when( pullAllHandler.peekAsync() ).thenReturn( completedFuture( record ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( record, await( cursor.peekAsync() ) );
     }
@@ -134,10 +134,10 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldPeekNonExistingRecord()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.peekAsync() ).thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertNull( await( cursor.peekAsync() ) );
     }
@@ -145,13 +145,13 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnSingleRecord()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record = new InternalRecord( asList( "key1", "key2" ), values( 42, 42 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
                 .thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( record, await( cursor.singleAsync() ) );
     }
@@ -159,10 +159,10 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldFailWhenAskedForSingleRecordButResultIsEmpty()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), containsString( "result is empty" ) );
@@ -171,14 +171,14 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldFailWhenAskedForSingleRecordButResultContainsMore()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record1 = new InternalRecord( asList( "key1", "key2" ), values( 1, 1 ) );
         Record record2 = new InternalRecord( asList( "key1", "key2" ), values( 2, 2 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record1 ) )
                 .thenReturn( completedFuture( record2 ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), containsString( "Ensure your query returns only one record" ) );
@@ -187,7 +187,7 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldForEachAsyncWhenResultContainsMultipleRecords()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record1 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
         Record record2 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 2, 2, 2 ) );
@@ -199,7 +199,7 @@ public class LegacyInternalStatementResultCursorTest
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         List<Record> records = new CopyOnWriteArrayList<>();
         CompletionStage<ResultSummary> summaryStage = cursor.forEachAsync( records::add );
@@ -211,7 +211,7 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldForEachAsyncWhenResultContainsOneRecords()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
         when( pullAllHandler.nextAsync() ).thenReturn( completedFuture( record ) )
@@ -220,7 +220,7 @@ public class LegacyInternalStatementResultCursorTest
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         List<Record> records = new CopyOnWriteArrayList<>();
         CompletionStage<ResultSummary> summaryStage = cursor.forEachAsync( records::add );
@@ -232,13 +232,13 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldForEachAsyncWhenResultContainsNoRecords()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         List<Record> records = new CopyOnWriteArrayList<>();
         CompletionStage<ResultSummary> summaryStage = cursor.forEachAsync( records::add );
@@ -250,7 +250,7 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldFailForEachWhenGivenActionThrows()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record1 = new InternalRecord( asList( "key1", "key2" ), values( 1, 1 ) );
         Record record2 = new InternalRecord( asList( "key1", "key2" ), values( 2, 2 ) );
@@ -259,7 +259,7 @@ public class LegacyInternalStatementResultCursorTest
                 .thenReturn( completedFuture( record2 ) ).thenReturn( completedFuture( record3 ) )
                 .thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         AtomicInteger recordsProcessed = new AtomicInteger();
         RuntimeException error = new RuntimeException( "Hello" );
@@ -286,12 +286,12 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnFailureWhenExists()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
         when( pullAllHandler.failureAsync() ).thenReturn( completedFuture( error ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( error, await( cursor.failureAsync() ) );
     }
@@ -299,10 +299,10 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldReturnNullFailureWhenDoesNotExist()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertNull( await( cursor.failureAsync() ) );
     }
@@ -310,7 +310,7 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldListAsyncWithoutMapFunction()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         Record record1 = new InternalRecord( asList( "key1", "key2" ), values( 1, 1 ) );
         Record record2 = new InternalRecord( asList( "key1", "key2" ), values( 2, 2 ) );
@@ -318,7 +318,7 @@ public class LegacyInternalStatementResultCursorTest
 
         when( pullAllHandler.listAsync( Functions.identity() ) ).thenReturn( completedFuture( records ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( records, await( cursor.listAsync() ) );
         verify( pullAllHandler ).listAsync( Functions.identity() );
@@ -328,12 +328,12 @@ public class LegacyInternalStatementResultCursorTest
     void shouldListAsyncWithMapFunction()
     {
         Function<Record,String> mapFunction = record -> record.get( 0 ).asString();
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         List<String> values = asList( "a", "b", "c", "d", "e" );
         when( pullAllHandler.listAsync( mapFunction ) ).thenReturn( completedFuture( values ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( values, await( cursor.listAsync( mapFunction ) ) );
         verify( pullAllHandler ).listAsync( mapFunction );
@@ -342,11 +342,11 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldPropagateFailureFromListAsyncWithoutMapFunction()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
         when( pullAllHandler.listAsync( Functions.identity() ) ).thenReturn( failedFuture( error ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.listAsync() ) );
         assertEquals( error, e );
@@ -357,11 +357,11 @@ public class LegacyInternalStatementResultCursorTest
     void shouldPropagateFailureFromListAsyncWithMapFunction()
     {
         Function<Record,String> mapFunction = record -> record.get( 0 ).asString();
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
         when( pullAllHandler.listAsync( mapFunction ) ).thenReturn( failedFuture( error ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.listAsync( mapFunction ) ) );
         assertEquals( error, e );
@@ -372,11 +372,11 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldConsumeAsync()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         ResultSummary summary = mock( ResultSummary.class );
         when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( summary, await( cursor.consumeAsync() ) );
     }
@@ -384,24 +384,24 @@ public class LegacyInternalStatementResultCursorTest
     @Test
     void shouldPropagateFailureInConsumeAsync()
     {
-        AbstractPullAllResponseHandler pullAllHandler = mock( AbstractPullAllResponseHandler.class );
+        PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
         when( pullAllHandler.consumeAsync() ).thenReturn( failedFuture( error ) );
 
-        LegacyInternalStatementResultCursor cursor = newCursor( pullAllHandler );
+        AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.consumeAsync() ) );
         assertEquals( error, e );
     }
 
-    private static LegacyInternalStatementResultCursor newCursor( AbstractPullAllResponseHandler pullAllHandler )
+    private static AsyncStatementResultCursor newCursor( PullAllResponseHandler pullAllHandler )
     {
-        return new LegacyInternalStatementResultCursor( newRunResponseHandler(), pullAllHandler );
+        return new AsyncStatementResultCursor( newRunResponseHandler(), pullAllHandler );
     }
 
-    private static LegacyInternalStatementResultCursor newCursor( RunResponseHandler runHandler, AbstractPullAllResponseHandler pullAllHandler )
+    private static AsyncStatementResultCursor newCursor( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
-        return new LegacyInternalStatementResultCursor( runHandler, pullAllHandler );
+        return new AsyncStatementResultCursor( runHandler, pullAllHandler );
     }
 
     private static RunResponseHandler newRunResponseHandler()

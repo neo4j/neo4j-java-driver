@@ -58,4 +58,6 @@ public interface Connection
     {
         return AccessMode.WRITE;
     }
+
+    void flush();
 }

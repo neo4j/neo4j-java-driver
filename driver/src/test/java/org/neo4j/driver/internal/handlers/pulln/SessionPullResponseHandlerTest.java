@@ -36,8 +36,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Done;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Failed;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.DONE;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.FAILED;
 
 class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTestBase
 {
@@ -55,7 +55,7 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
         handler.onSuccess( Collections.emptyMap() );
 
         // Then
-        assertThat( handler.status(), equalTo( Done ) );
+        assertThat( handler.status(), equalTo( DONE ) );
         verify( conn ).release();
         verify( bookmarksHolder ).setBookmarks( any() );
         verify( recordConsumer ).accept( null, null );
@@ -76,7 +76,7 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
         handler.onFailure( error );
 
         // Then
-        assertThat( handler.status(), equalTo( Failed ) );
+        assertThat( handler.status(), equalTo( FAILED ) );
         verify( conn ).release();
         verify( recordConsumer ).accept( null, error );
         verify( summaryConsumer ).accept( null, error );

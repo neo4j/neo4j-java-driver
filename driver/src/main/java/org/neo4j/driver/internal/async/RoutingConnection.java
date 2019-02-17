@@ -121,6 +121,12 @@ public class RoutingConnection implements Connection
         return delegate.protocol();
     }
 
+    @Override
+    public void flush()
+    {
+        delegate.flush();
+    }
+
     private RoutingResponseHandler newRoutingResponseHandler( ResponseHandler handler )
     {
         return new RoutingResponseHandler( handler, serverAddress(), accessMode, errorHandler );

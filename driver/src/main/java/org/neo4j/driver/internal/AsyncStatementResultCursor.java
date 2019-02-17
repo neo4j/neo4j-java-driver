@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.react.internal.cursor.InternalStatementResultCursor;
@@ -33,12 +33,12 @@ import org.neo4j.driver.v1.util.Consumer;
 import org.neo4j.driver.v1.util.Function;
 import org.neo4j.driver.v1.util.Functions;
 
-public class LegacyInternalStatementResultCursor implements InternalStatementResultCursor
+public class AsyncStatementResultCursor implements InternalStatementResultCursor
 {
     private final RunResponseHandler runResponseHandler;
-    private final AbstractPullAllResponseHandler pullAllHandler;
+    private final PullAllResponseHandler pullAllHandler;
 
-    public LegacyInternalStatementResultCursor( RunResponseHandler runResponseHandler, AbstractPullAllResponseHandler pullAllHandler )
+    public AsyncStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
     {
         this.runResponseHandler = runResponseHandler;
         this.pullAllHandler = pullAllHandler;

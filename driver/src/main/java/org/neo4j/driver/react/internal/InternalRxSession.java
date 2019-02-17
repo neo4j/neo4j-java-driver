@@ -108,7 +108,6 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
             }
             else
             {
-                System.out.println( throwable );
                 return false;
             }
         } ); // TODO retry

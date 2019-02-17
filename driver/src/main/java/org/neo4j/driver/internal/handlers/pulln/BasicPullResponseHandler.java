@@ -30,7 +30,7 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
 {
     /**
      * Register a record consumer for each record received.
-     * Streaming shall not be started before this consumer is registered.
+     * STREAMING shall not be started before this consumer is registered.
      * A null record with no error indicates the end of streaming.
      * @param recordConsumer register a record consumer to be notified for each record received.
      */
@@ -38,30 +38,18 @@ public interface BasicPullResponseHandler extends ResponseHandler, Subscription
 
     /**
      * Register a summary consumer to be notified when a summary is received.
+     * STREAMING shall not be started before this consumer is registered.
      * A null summary with no error indicates a SUCCESS message with has_more=true has arrived.
-     * Streaming shall not be started before this consumer is registered.
      * @param summaryConsumer register a summary consumer
      */
     void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
 
-    /**
-     * If the streaming is finished successfully or with an error or cancelled.
-     * @return True if the stream is finished or cancelled.
-     */
-    boolean isFinishedOrCanceled();
-
-    /**
-     * Returns true if the server is not sending more records until another {@link Subscription#request(long)} call, and the streaming has not yet finished.
-     * @return True if the streaming is paused.
-     */
-    boolean isStreamingPaused();
-
     enum Status
     {
-        Done,       // successfully completed
-        Failed,     // failed
-        Canceled,   // canceled
-        Streaming,  // streaming records
-        Ready       // steaming is paused. ready to accept request or cancel commands from user
+        DONE,       // successfully completed
+        FAILED,     // failed
+        CANCELED,   // canceled
+        STREAMING,  // streaming records
+        READY       // steaming is paused. ready to accept request or cancel commands from user
     }
 }

@@ -20,8 +20,8 @@ package org.neo4j.driver.react.internal.cursor;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.LegacyInternalStatementResultCursor;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
@@ -37,14 +37,14 @@ import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_AL
  */
 public class AsyncResultCursorOnlyFactory implements StatementResultCursorFactory
 {
-    private final Connection connection;
-    private final Message runMessage;
-    private final RunResponseHandler runHandler;
-    private final AbstractPullAllResponseHandler pullAllHandler;
+    protected final Connection connection;
+    protected final Message runMessage;
+    protected final RunResponseHandler runHandler;
+    protected final PullAllResponseHandler pullAllHandler;
     private final boolean waitForRunResponse;
 
     public AsyncResultCursorOnlyFactory( Connection connection, Message runMessage, RunResponseHandler runHandler,
-            AbstractPullAllResponseHandler pullHandler, boolean waitForRunResponse )
+            PullAllResponseHandler pullHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
@@ -67,11 +67,11 @@ public class AsyncResultCursorOnlyFactory implements StatementResultCursorFactor
         if ( waitForRunResponse )
         {
             // wait for response of RUN before proceeding
-            return runHandler.runFuture().thenApply( ignore -> new LegacyInternalStatementResultCursor( runHandler, pullAllHandler ) );
+            return runHandler.runFuture().thenApply( ignore -> new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
         }
         else
         {
-            return completedFuture( new LegacyInternalStatementResultCursor( runHandler, pullAllHandler ) );
+            return completedFuture( new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
         }
     }
 

@@ -207,12 +207,25 @@ public class FailingConnectionDriverFactory extends DriverFactory
             return delegate.protocol();
         }
 
+        @Override
+        public void flush()
+        {
+            if ( tryFail( null, null ) )
+            {
+                return;
+            }
+            delegate.flush();
+        }
+
         private boolean tryFail( ResponseHandler handler1, ResponseHandler handler2 )
         {
             Throwable failure = nextRunFailure.getAndSet( null );
             if ( failure != null )
             {
-                handler1.onFailure( failure );
+                if ( handler1 != null )
+                {
+                    handler1.onFailure( failure );
+                }
                 if ( handler2 != null )
                 {
                     handler2.onFailure( failure );

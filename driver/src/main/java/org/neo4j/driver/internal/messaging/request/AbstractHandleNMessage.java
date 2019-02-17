@@ -31,6 +31,7 @@ import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_
 public abstract class AbstractHandleNMessage implements Message
 {
     private final Map<String,Value> metadata = new HashMap<>();
+    public static long PULL_OR_DISCARD_ALL_N_VALUE = Long.MAX_VALUE;
 
     AbstractHandleNMessage( long n, long id )
     {

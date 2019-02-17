@@ -60,7 +60,7 @@ import static org.neo4j.driver.v1.Values.value;
 import static org.neo4j.driver.v1.Values.values;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
-class PullAllResponseHandlerTest
+class AbstractPullAllResponseHandlerTest
 {
     @Test
     void shouldReturnNoFailureWhenAlreadySucceeded()
@@ -212,7 +212,7 @@ class PullAllResponseHandlerTest
         CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
 
-        IOException failure = new IOException( "Failed to write" );
+        IOException failure = new IOException( "FAILED to write" );
         handler.onFailure( failure );
 
         assertTrue( summaryFuture.isDone() );
@@ -562,7 +562,7 @@ class PullAllResponseHandlerTest
     void shouldPropagateExistingFailureInNextAsync()
     {
         AbstractPullAllResponseHandler handler = newHandler();
-        RuntimeException error = new RuntimeException( "Failed to read" );
+        RuntimeException error = new RuntimeException( "FAILED to read" );
         handler.onFailure( error );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.nextAsync() ) );

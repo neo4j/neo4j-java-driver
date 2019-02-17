@@ -45,11 +45,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Canceled;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Done;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Failed;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Ready;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.Streaming;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.CANCELED;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.DONE;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.FAILED;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.READY;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.STREAMING;
 
 abstract class AbstractBasicPullResponseHandlerTestBase
 {
@@ -72,7 +72,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given a handler in streaming state
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Streaming );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.request( 100 ); // I append a request to ask for more
@@ -81,7 +81,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
 
         // Then
         verify( conn ).writeAndFlush( any( PullNMessage.class ), eq( handler ) );
-        assertThat( handler.status(), equalTo( Streaming ) );
+        assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
     @Test
@@ -91,7 +91,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, Streaming );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
         // When
 
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
@@ -100,7 +100,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         verifyNoMoreInteractions( conn );
         verifyNoMoreInteractions( recordConsumer );
         verify( summaryConsumer ).accept( null, null );
-        assertThat( handler.status(), equalTo( Ready ) );
+        assertThat( handler.status(), equalTo( READY ) );
     }
 
     @Test
@@ -108,12 +108,12 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given a handler in streaming state
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Canceled );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
 
         // Then
         verify( conn ).writeAndFlush( any( DiscardNMessage.class ), eq( handler ) );
-        assertThat( handler.status(), equalTo( Canceled ) );
+        assertThat( handler.status(), equalTo( CANCELED ) );
     }
 
     // on failure
@@ -132,7 +132,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, Streaming );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
 
         // When
         handler.onRecord( new Value[0] );
@@ -141,7 +141,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         verify( recordConsumer ).accept( any( Record.class ), eq( null ) );
         verifyNoMoreInteractions( summaryConsumer );
         verifyNoMoreInteractions( conn );
-        assertThat( handler.status(), equalTo( Streaming ) );
+        assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
     @ParameterizedTest
@@ -169,13 +169,13 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Streaming );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.request( 100 );
 
         // Then
-        assertThat( handler.status(), equalTo( Streaming ) );
+        assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
     @Test
@@ -183,14 +183,14 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Ready );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
 
         // When
         handler.request( 100 );
 
         // Then
         verify( conn ).writeAndFlush( any( PullNMessage.class ), eq( handler ) );
-        assertThat( handler.status(), equalTo( Streaming ) );
+        assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
     // cancel
@@ -199,14 +199,14 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Canceled );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
 
         // When
         handler.cancel();
 
         // Then
         verifyNoMoreInteractions( conn );
-        assertThat( handler.status(), equalTo( Canceled ) );
+        assertThat( handler.status(), equalTo( CANCELED ) );
     }
 
     @Test
@@ -214,14 +214,14 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Streaming );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.cancel();
 
         // Then
         verifyNoMoreInteractions( conn );
-        assertThat( handler.status(), equalTo( Canceled ) );
+        assertThat( handler.status(), equalTo( CANCELED ) );
     }
 
     @Test
@@ -229,14 +229,14 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, Ready );
+        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
 
         // When
         handler.cancel();
 
         // Then
         verify( conn ).writeAndFlush( any( DiscardNMessage.class ), eq( handler ) );
-        assertThat( handler.status(), equalTo( Canceled ) );
+        assertThat( handler.status(), equalTo( CANCELED ) );
     }
 
     static Connection mockConnection()
@@ -263,11 +263,11 @@ abstract class AbstractBasicPullResponseHandlerTestBase
 
     private static Stream<Status> allStatusExceptStreaming()
     {
-        return Stream.of( Done, Failed, Canceled, Ready );
+        return Stream.of( DONE, FAILED, CANCELED, READY );
     }
 
     private static Stream<Status> allStatus()
     {
-        return Stream.of( Done, Failed, Canceled, Streaming, Ready );
+        return Stream.of( DONE, FAILED, CANCELED, STREAMING, READY );
     }
 }

@@ -28,9 +28,11 @@ import java.util.function.BiFunction;
 
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 public final class Futures
 {
-    private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedWithValue( null );
+    private static final CompletableFuture<?> COMPLETED_WITH_NULL = completedFuture( null );
 
     private Futures()
     {

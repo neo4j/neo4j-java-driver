@@ -471,7 +471,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                     {
                         StatementResultCursorFactory factory = connection.protocol()
                                 .runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse );
-                        return Futures.completedWithValue( factory );
+                        return completedFuture( factory );
                     }
                     catch ( Throwable e )
                     {

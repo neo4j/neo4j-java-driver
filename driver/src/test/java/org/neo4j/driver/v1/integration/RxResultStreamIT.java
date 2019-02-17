@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.internal.util.Neo4jFeature.CYPHER_STREAMING;
+import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.v1.Values.parameters;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
@@ -67,6 +67,24 @@ class RxResultStreamIT
                 .expectNext( 4 )
                 .expectComplete()
                 .verify();
+    }
+
+    @Test
+    void shouldAllowIteratingOverLargeResultStream()
+    {
+        // When
+        int size = 100000;
+        RxSession session = neo4j.driver().rxSession();
+        RxResult res = session.run( "UNWIND range(1, $size) AS x RETURN x", parameters( "size", size ) );
+
+        // Then I should be able to iterate over the result
+        StepVerifier.FirstStep<Integer> step = StepVerifier.create( Flux.from( res.records() ).limitRate( 100 ).map( r -> r.get( "x" ).asInt() ) );
+
+        for ( int i = 1; i <= size; i++ )
+        {
+            step.expectNext( i );
+        }
+        step.expectComplete().verify();
     }
 
     @Test
@@ -199,7 +217,7 @@ class RxResultStreamIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( CYPHER_STREAMING )
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldStreamCorrectRecordsBackBeforeError()
     {
         RxSession session = neo4j.driver().rxSession();
