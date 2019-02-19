@@ -20,7 +20,7 @@ package org.neo4j.driver.v1;
 
 import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.reactive.RxSession;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -169,4 +169,6 @@ public interface Driver extends AutoCloseable
 
     // TODO more method overloads with parameters. Leaving this to refactoring PR for different sessions.
     RxSession rxSession();
+
+    RxSession rxSession( String bookmark );
 }

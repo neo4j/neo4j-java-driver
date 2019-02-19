@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal.cursor;
+package org.neo4j.driver.reactive.internal.cursor;
 
 import org.reactivestreams.Subscription;
 
@@ -75,35 +75,18 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     public synchronized void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
     {
         pullHandler.installRecordConsumer( recordConsumer );
-        if ( runResponseError != null )
-        {
-            pullHandler.onFailure( runResponseError );
-        }
+        assertRunCompletedSuccessfully();
     }
 
     public synchronized void request( long n )
     {
-        if ( runResponseError != null )
-        {
-            pullHandler.onFailure( runResponseError );
-        }
-        else
-        {
-            pullHandler.request( n );
-        }
+        pullHandler.request( n );
     }
 
     @Override
     public synchronized void cancel()
     {
-        if( runResponseError != null )
-        {
-            pullHandler.onFailure( runResponseError );
-        }
-        else
-        {
-            pullHandler.cancel();
-        }
+        pullHandler.cancel();
     }
 
     @Override
@@ -115,5 +98,13 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
         // If we do not have result.keys and result.summary as publishers, then we shall never need to enforce streaming.
         // If we have a session.close, then we shall fully implement this in some way as this is used by session to sync.
         return Futures.completedWithNull();
+    }
+
+    private void assertRunCompletedSuccessfully()
+    {
+        if ( runResponseError != null )
+        {
+            pullHandler.onFailure( runResponseError );
+        }
     }
 }

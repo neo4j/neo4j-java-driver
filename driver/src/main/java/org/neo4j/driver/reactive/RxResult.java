@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.reactive;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -27,8 +27,9 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 
 /**
  * A result stream which provides record publisher to stream records in a reactive way.
- * This result stream provides cold unicast record publishers.
- * In other words, the query submitted to create this result is not actually being sent to server nor executed until the record publisher is subscribed.
+ * This result stream provides a cold unicast record publisher.
+ * That is to say the query submitted to create this result will not be sent to server nor executed until the record publisher is subscribed.
+ * Also the record publisher could only be subscribed once.
  * The records stream has to be finished (completed or errored) or cancelled once it is subscribed
  * to ensure the resources used by this result will be freed correctly.
  *
@@ -49,12 +50,22 @@ public interface RxResult
     Publisher<String> keys();
 
     /**
-     * Returns a cold publisher of records.
-     * If the publisher is not subscribed {@link Publisher#subscribe(Subscriber)}, then the query submitted to obtain this result will not run at all.
-     * In other words, no network connection creation or traffic for running the query will happen until the publisher is subscribed.
-     * The connection used by result will be automatically returned back to the pool once the {@link Subscriber} is terminated.
-     * This publisher cannot be subscribed multiple times.
-     * @return A cold publisher of records.
+     * Returns a cold unicast publisher of records.
+     * The query submitted to obtain this result will not be sent to server
+     * nor executed until the publisher is subscribed {@link Publisher#subscribe(Subscriber)}.
+     *
+     * Once the record publisher is subscribed, a termination signal (complete or error) is expected by the .
+     * to ensure resources used by this result are released properly.
+     *
+     * Cancelling of the record streaming will immediately stop the driver from producing more records.
+     * But it will not cancel the query execution.
+     * A termination signal (complete or error) will be sent to the {@link Subscriber} once the query execution is finished.
+     *
+     * Once the termination signal is received, the resources used by the result (such as network connections) will be released properly.
+     * And the session is ready to run more queries.
+     *
+     * This publisher can only be subscribed by one {@link Subscriber} once.
+     * @return A cold unicast publisher of records.
      */
     Publisher<Record> records();
 

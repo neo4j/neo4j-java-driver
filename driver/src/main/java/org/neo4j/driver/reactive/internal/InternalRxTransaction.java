@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal;
+package org.neo4j.driver.reactive.internal;
 
 import org.reactivestreams.Publisher;
 
@@ -24,12 +24,12 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.RxResult;
-import org.neo4j.driver.react.RxTransaction;
-import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
 
-import static org.neo4j.driver.react.internal.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.reactive.internal.RxUtils.createEmptyPublisher;
 
 public class InternalRxTransaction extends AbstractRxStatementRunner implements RxTransaction
 {
@@ -41,12 +41,12 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     }
 
     @Override
-    public Publisher<Void> commit()
+    public <T> Publisher<T> commit()
     {
         return close( true );
     }
 
-    private Publisher<Void> close( boolean commit )
+    private <T> Publisher<T> close( boolean commit )
     {
         return createEmptyPublisher( () -> {
             if ( commit )
@@ -61,7 +61,7 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     }
 
     @Override
-    public Publisher<Void> rollback()
+    public <T> Publisher<T> rollback()
     {
         return close( false );
     }

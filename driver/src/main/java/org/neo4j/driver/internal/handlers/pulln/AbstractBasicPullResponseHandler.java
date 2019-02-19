@@ -54,8 +54,10 @@ import static org.neo4j.driver.internal.messaging.request.AbstractHandleNMessage
  */
 public abstract class AbstractBasicPullResponseHandler implements BasicPullResponseHandler
 {
+    public static final BiConsumer<Record,Throwable> DISCARD_RECORD_CONSUMER = ( record, throwable ) -> {/*do nothing*/};
+
     private final Statement statement;
-    private final RunResponseHandler runResponseHandler;
+    protected final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
 
@@ -163,6 +165,11 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         this.recordConsumer = recordConsumer;
     }
 
+    private boolean isStreaming()
+    {
+        return status == Status.STREAMING;
+    }
+
     private boolean isStreamingPaused()
     {
         return status == Status.READY;
@@ -208,11 +215,6 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
     }
 
-    private boolean isStreaming()
-    {
-        return status == Status.STREAMING;
-    }
-
     private void addToRequest( long toAdd )
     {
         if ( toAdd <= 0 )
@@ -243,7 +245,17 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
     private void complete( ResultSummary summary, Throwable error )
     {
         // we first inform the summary consumer to ensure when streaming finished, summary is definitely available.
-        summaryConsumer.accept( summary, error );
+        if ( recordConsumer == DISCARD_RECORD_CONSUMER )
+        {
+            // we will report the error to summary if there is no record consumer
+            summaryConsumer.accept( summary, error );
+        }
+        else
+        {
+            // we will not inform the error to summary as the error will be reported to record consumer
+            summaryConsumer.accept( summary, null );
+        }
+
         // record consumer use (null, null) to identify the end of record stream
         recordConsumer.accept( null, error );
         dispose();

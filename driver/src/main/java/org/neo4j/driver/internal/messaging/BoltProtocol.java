@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.react.internal.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.reactive.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;

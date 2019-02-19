@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.integration;
+package org.neo4j.driver.v1.integration.reactive;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
@@ -31,8 +31,8 @@ import java.util.List;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.react.RxResult;
-import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
@@ -41,7 +41,7 @@ import org.neo4j.driver.v1.util.DatabaseExtension;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class RxSessionRecordPublisherVerificationIT extends PublisherVerification<Record>
+public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record>
 {
     private static final DatabaseExtension neo4j = new DatabaseExtension();
 
@@ -53,7 +53,7 @@ public class RxSessionRecordPublisherVerificationIT extends PublisherVerificatio
 
     private final static String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
 
-    public RxSessionRecordPublisherVerificationIT()
+    public RxResultRecordPublisherVerificationIT()
     {
         super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
                 PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );

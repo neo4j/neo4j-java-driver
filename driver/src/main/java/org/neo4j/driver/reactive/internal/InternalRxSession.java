@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal;
+package org.neo4j.driver.reactive.internal;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -29,19 +29,19 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.RxResult;
-import org.neo4j.driver.react.RxSession;
-import org.neo4j.driver.react.RxTransaction;
-import org.neo4j.driver.react.RxTransactionWork;
-import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.RxTransactionWork;
+import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
-import static org.neo4j.driver.react.internal.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.react.internal.RxUtils.createMono;
+import static org.neo4j.driver.reactive.internal.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.reactive.internal.RxUtils.createMono;
 
 public class InternalRxSession extends AbstractRxStatementRunner implements RxSession
 {

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.v1.integration;
+package org.neo4j.driver.v1.integration.reactive;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,8 +26,9 @@ import reactor.test.StepVerifier;
 
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.react.RxResult;
-import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
@@ -35,11 +36,12 @@ import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.ParallelizableIT;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
@@ -47,7 +49,7 @@ import static org.neo4j.driver.v1.Values.parameters;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
-class RxResultStreamIT
+class RxResultIT
 {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
@@ -56,17 +58,10 @@ class RxResultStreamIT
     void shouldAllowIteratingOverResultStream()
     {
         // When
-        RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxResult res = sessionRunUnwind();
 
         // Then I should be able to iterate over the result
-        StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
-                .expectNext( 1 )
-                .expectNext( 2 )
-                .expectNext( 3 )
-                .expectNext( 4 )
-                .expectComplete()
-                .verify();
+        verifyCanAccessFullRecords( res );
     }
 
     @Test
@@ -88,16 +83,94 @@ class RxResultStreamIT
     }
 
     @Test
-    void shouldAccessSummaryAfterIteratingOverResultStream()
+    void shouldReturnKeysRecordsAndSummaryInOrder()
     {
         // When
-        RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxResult res = sessionRunUnwind();
 
-        Mono<ResultSummary> summaryMono = Flux.from( res.records() ).then( Mono.from( res.summary() ) );
-        StepVerifier.create( summaryMono ).assertNext( summary -> {
-            assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-            assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+        // Then I should be able to iterate over the result
+        verifyCanAccessKeys( res );
+        verifyCanAccessFullRecords( res );
+        verifyCanAccessSummary( res );
+    }
+
+    @Test
+    void shouldSecondVisitOfRecordReceiveEmptyRecordStream() throws Throwable
+    {
+        // When
+        RxResult res = sessionRunUnwind();
+
+        // Then I should be able to iterate over the result
+        verifyCanAccessFullRecords( res );
+        // Second visit shall return empty record stream
+        verifyRecordsAlreadyDiscarded( res );
+    }
+
+    @Test
+    void shouldReturnKeysSummaryAndDiscardRecords()
+    {
+        // When
+        RxResult res = sessionRunUnwind();
+
+        verifyCanAccessKeys( res );
+        verifyCanAccessSummary( res );
+        verifyRecordsAlreadyDiscarded( res );
+    }
+
+    @Test
+    void shouldAllowOnlySummary()
+    {
+        // When
+        RxResult res = sessionRunUnwind();
+
+        verifyCanAccessSummary( res );
+    }
+
+    @Test
+    void shouldAllowAccessKeysAndSummaryAfterRecord() throws Throwable
+    {
+        // Given
+        RxResult res = sessionRunUnwind();
+
+        // Then I should be able to iterate over the result
+        verifyCanAccessFullRecords( res );
+
+        // Access keys and summary after records
+        verifyCanAccessKeys( res );
+        verifyCanAccessSummary( res );
+
+        // Multiple times allowed
+        verifyCanAccessKeys( res );
+        verifyCanAccessSummary( res );
+    }
+
+    @Test
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxResult rs =
+                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+
+        // When
+        StepVerifier.create( Flux.from( rs.records() ).single() ).assertNext( record -> {
+            // Then
+            assertTrue( record.get( "m" ).isNull() );
+        } ).expectComplete().verify();
+    }
+
+    @Test
+    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxResult rs =
+                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+
+        // When
+        StepVerifier.create( Flux.from( rs.records() ).single() ).assertNext( record -> {
+            // Then
+            assertTrue( record.get( "n" ).get( "age" ).isNull() );
         } ).expectComplete().verify();
     }
 
@@ -119,37 +192,7 @@ class RxResultStreamIT
     }
 
     @Test
-    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField()
-    {
-        // Given
-        RxSession session = neo4j.driver().rxSession();
-        RxResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
-
-        // When
-        StepVerifier.create( Mono.from( rs.records() ) ).assertNext( record -> {
-            // Then
-            assertTrue( record.get( "m" ).isNull() );
-        } ).expectComplete().verify();
-    }
-
-    @Test
-    void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode()
-    {
-        // Given
-        RxSession session = neo4j.driver().rxSession();
-        RxResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
-
-        // When
-        StepVerifier.create( Mono.from( rs.records() ) ).assertNext( record -> {
-            // Then
-            assertTrue( record.get( "n" ).get( "age" ).isNull() );
-        } ).expectComplete().verify();
-    }
-
-    @Test
-    void shouldReturnNullKeyNullRecordOnEmptyResult()
+    void shouldReturnEmptyKeyAndRecordOnEmptyResult()
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
@@ -161,36 +204,58 @@ class RxResultStreamIT
     }
 
     @Test
-    void shouldBeAbleToReuseSessionAfterFailure()
-    {
-        // Given
-        RxSession session = neo4j.driver().rxSession();
-        RxResult res1 = session.run( "INVALID" );
-
-        StepVerifier.create( Mono.from( res1.records() ) ).expectError( ClientException.class ).verify();
-
-        // When
-        RxResult res2 = session.run( "RETURN 1" );
-
-        // Then
-        StepVerifier.create( Mono.from( res2.records() ) ).assertNext( record -> {
-            assertEquals( record.get("1").asLong(), 1L );
-        } ).expectComplete().verify();
-    }
-
-    @Test
-    void shouldErrorBothOnRecordAndSummaryAfterFailure()
+    void shouldOnlyErrorRecordAfterFailure()
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
         RxResult result = session.run( "INVALID" );
 
         // When
-        ClientException errorFromRecords = assertThrows( ClientException.class, () -> Mono.from( result.records() ).block() );
+        Flux<String> keys = Flux.from( result.keys() );
+        Flux<Record> records = Flux.from( result.records() );
+        Mono<ResultSummary> summaryMono = Mono.from( result.summary() );
 
         // Then
-        ClientException errorFromSummary = assertThrows( ClientException.class, () -> Mono.from( result.summary() ).block() );
-        assertThat( errorFromSummary, equalTo( errorFromRecords ) ); // they shall throw the same error
+        StepVerifier.create( keys ).verifyComplete();
+
+        StepVerifier.create( records ).expectErrorSatisfies( error -> {
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), containsString( "Invalid input" ) );
+        } ).verify();
+
+        StepVerifier.create( summaryMono )
+                .assertNext( summary -> {
+                    assertThat( summary.statement().text(), equalTo( "INVALID" ) );
+                    assertNotNull( summary.server().address() );
+                    assertNotNull( summary.server().version() );
+                } ).verifyComplete();
+    }
+
+
+    @Test
+    void shouldErrorOnSummaryIfNoRecord() throws Throwable
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxResult result = session.run( "INVALID" );
+
+        // When
+        Flux<String> keys = Flux.from( result.keys() );
+        Mono<ResultSummary> summaryMono = Mono.from( result.summary() );
+
+        // Then
+        StepVerifier.create( keys ).verifyComplete();
+
+        StepVerifier.create( summaryMono ).expectErrorSatisfies( error -> {
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), containsString( "Invalid input" ) );
+        } ).verify();
+
+        // The error stick with the summary forever
+        StepVerifier.create( summaryMono ).expectErrorSatisfies( error -> {
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), containsString( "Invalid input" ) );
+        } ).verify();
     }
 
     @Test
@@ -208,6 +273,7 @@ class RxResultStreamIT
                 .assertNext( record -> assertThat( record.get( "a" ).asInt(), equalTo( 1 ) ) )
                 .thenCancel()
                 .verify();
+
         StepVerifier.create( Mono.from( result.summary() ) ) // I shall be able to receive summary
                 .assertNext( summary -> {
                     // Then
@@ -235,4 +301,36 @@ class RxResultStreamIT
                 .verify();
     }
 
+    private void verifyCanAccessSummary( RxResult res )
+    {
+        StepVerifier.create( Mono.from( res.summary() ) ).assertNext( summary -> {
+            assertThat( summary.statement().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
+            assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+            assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+        } ).verifyComplete();
+    }
+
+    private void verifyRecordsAlreadyDiscarded( RxResult res )
+    {
+        StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
+                .expectComplete()
+                .verify();
+    }
+
+    private void verifyCanAccessFullRecords( RxResult res )
+    {
+        StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) ).expectNext( 1 ).expectNext( 2 ).expectNext( 3 ).expectNext(
+                4 ).expectComplete().verify();
+    }
+
+    private void verifyCanAccessKeys( RxResult res )
+    {
+        StepVerifier.create( Flux.from( res.keys() ) ).expectNext( "a" ).verifyComplete();
+    }
+
+    private RxResult sessionRunUnwind()
+    {
+        RxSession session = neo4j.driver().rxSession();
+        return session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+    }
 }

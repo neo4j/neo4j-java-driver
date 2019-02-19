@@ -195,7 +195,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
 
     // cancel
     @Test
-    void shouldStateInCancel() throws Throwable
+    void shouldStayInCancel() throws Throwable
     {
         // Given
         Connection conn = mockConnection();

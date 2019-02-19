@@ -16,13 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.reactive.internal.cursor;
 
-import org.reactivestreams.Publisher;
+import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.v1.StatementResultCursor;
 
-public interface RxTransaction extends RxStatementRunner
+public interface InternalStatementResultCursor extends StatementResultCursor, FailableCursor
 {
-    Publisher<Void> commit();
-
-    Publisher<Void> rollback();
 }

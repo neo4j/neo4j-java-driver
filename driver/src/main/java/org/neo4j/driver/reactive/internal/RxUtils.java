@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal;
+package org.neo4j.driver.reactive.internal;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
@@ -28,13 +28,12 @@ import org.neo4j.driver.internal.util.Supplier;
 
 public class RxUtils
 {
-
     /**
      * The publisher created by this method will either succeed without publishing anything or fail with an error.
      * @param supplier supplies a {@link CompletionStage<Void>}.
      * @return A publisher that publishes nothing on completion or fails with an error.
      */
-    public static Publisher<Void> createEmptyPublisher( Supplier<CompletionStage<Void>> supplier )
+    public static <T> Publisher<T> createEmptyPublisher( Supplier<CompletionStage<Void>> supplier )
     {
         return Mono.create( sink -> supplier.get().whenComplete( ( ignore, completionError ) -> {
             Throwable error = Futures.completionExceptionCause( completionError );

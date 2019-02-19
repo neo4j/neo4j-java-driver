@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.react.internal.InternalRxSession;
-import org.neo4j.driver.react.RxSession;
+import org.neo4j.driver.reactive.internal.InternalRxSession;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Logger;
@@ -128,6 +128,12 @@ public class InternalDriver implements Driver
     public RxSession rxSession()
     {
         return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.empty() ) );
+    }
+
+    @Override
+    public RxSession rxSession( String bookmark )
+    {
+        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.from( bookmark ) ) );
     }
 
     public CompletionStage<Void> verifyConnectivity()

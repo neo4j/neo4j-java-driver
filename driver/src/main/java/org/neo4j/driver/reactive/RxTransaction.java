@@ -16,13 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal.cursor;
+package org.neo4j.driver.reactive;
 
-import java.util.concurrent.CompletionStage;
+import org.reactivestreams.Publisher;
 
-public interface StatementResultCursorFactory
+public interface RxTransaction extends RxStatementRunner
 {
-    CompletionStage<InternalStatementResultCursor> asyncResult();
+    <T> Publisher<T> commit();
 
-    CompletionStage<RxStatementResultCursor> rxResult();
+    <T> Publisher<T> rollback();
 }

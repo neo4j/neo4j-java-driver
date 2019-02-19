@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react.internal;
+package org.neo4j.driver.reactive.internal;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -29,10 +29,12 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Supplier;
-import org.neo4j.driver.react.RxResult;
-import org.neo4j.driver.react.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
+
+import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
 
 public class InternalRxResult implements RxResult
 {
@@ -86,22 +88,29 @@ public class InternalRxResult implements RxResult
         return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
             if( cursor != null )
             {
-                cursor.installRecordConsumer( ( r, e ) -> {
-                    if ( r != null )
-                    {
-                        sink.next( r );
-                    }
-                    else if ( e != null )
-                    {
-                        sink.error( e );
-                    }
-                    else
-                    {
-                        sink.complete();
-                    }
-                } );
-                sink.onCancel( cursor::cancel );
-                sink.onRequest( cursor::request );
+                if( summaryFuture.isDone() )
+                {
+                    sink.complete();
+                }
+                else
+                {
+                    cursor.installRecordConsumer( ( r, e ) -> {
+                        if ( r != null )
+                        {
+                            sink.next( r );
+                        }
+                        else if ( e != null )
+                        {
+                            sink.error( e );
+                        }
+                        else
+                        {
+                            sink.complete();
+                        }
+                    } );
+                    sink.onCancel( cursor::cancel );
+                    sink.onRequest( cursor::request );
+                }
             }
             else
             {
@@ -120,7 +129,7 @@ public class InternalRxResult implements RxResult
         return initCursorFuture();
     }
 
-    private synchronized CompletionStage<RxStatementResultCursor> initCursorFuture()
+    synchronized CompletionStage<RxStatementResultCursor> initCursorFuture()
     {
         // A quick path to return
         if ( cursorFuture != null )
@@ -140,10 +149,11 @@ public class InternalRxResult implements RxResult
                     {
                         summaryFuture.completeExceptionally( summaryError );
                     }
-                    else if ( summary != null )
+                    else if( summary != null )
                     {
                         summaryFuture.complete( summary );
                     }
+                    //else (null, null) to indicate a has_more success
                 } );
                 cursorWithSummaryConsumerInstalled.complete( cursor );
             }
@@ -162,17 +172,33 @@ public class InternalRxResult implements RxResult
     @Override
     public Publisher<ResultSummary> summary()
     {
-        // TODO currently, summary will not start running or streaming.
-        // this means if a user just call summary, he will just hanging there forever.
-        return Mono.create( sink -> summaryFuture.whenComplete( ( summary, completionError ) -> {
-            Throwable error = Futures.completionExceptionCause( completionError );
-            if ( error != null )
+        return Mono.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
+            // first register callback when summary future finishes
+            summaryFuture.whenComplete( ( summary, summaryCompletionError ) -> {
+                Throwable error = Futures.completionExceptionCause( summaryCompletionError );
+                if ( summary != null )
+                {
+                    sink.success( summary );
+                }
+                else
+                {
+                    sink.error( error );
+                }
+            } );
+
+            if ( cursor != null )
             {
-                sink.error( error );
+                if ( !summaryFuture.isDone() )
+                {
+                    // the summary is called before record streaming
+                    cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER );
+                    cursor.cancel();
+                }
             }
             else
             {
-                sink.success( summary );
+                Throwable error = Futures.completionExceptionCause( completionError );
+                summaryFuture.completeExceptionally( error );
             }
         } ) );
     }

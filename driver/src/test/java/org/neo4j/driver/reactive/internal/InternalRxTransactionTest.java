@@ -16,9 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.react;
+package org.neo4j.driver.reactive.internal;
 
-public interface RxTransactionWork<T>
+import org.junit.Test;
+
+import org.neo4j.driver.internal.ExplicitTransaction;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+public class InternalRxTransactionTest
 {
-    T execute( RxTransaction tx );
+    @Test
+    public void commitShouldDelegateToAsyncTxCommit()
+    {
+        ExplicitTransaction asyncTx = mock( ExplicitTransaction.class );
+        InternalRxTransaction tx = new InternalRxTransaction( asyncTx );
+        tx.commit();
+
+        verify( asyncTx ).commitAsync();
+    }
+
+    @Test
+    public void rollback()
+    {
+    }
+
+    @Test
+    public void run()
+    {
+    }
 }

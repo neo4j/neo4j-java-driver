@@ -35,7 +35,7 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3Test;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.react.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
 import org.neo4j.driver.v1.TransactionConfig;
 
 import static java.util.Collections.emptyMap;

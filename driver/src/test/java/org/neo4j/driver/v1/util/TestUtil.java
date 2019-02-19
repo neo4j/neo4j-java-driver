@@ -21,7 +21,11 @@ package org.neo4j.driver.v1.util;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 import org.mockito.ArgumentMatcher;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,7 +47,7 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -67,11 +71,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
-import static org.neo4j.driver.v1.AccessMode.*;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 
 public final class TestUtil
 {
-    public static final int DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV2.VERSION;
+    public static final int DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV4.VERSION;
     public static final BoltProtocol DEFAULT_TEST_PROTOCOL = BoltProtocol.forVersion( DEFAULT_TEST_PROTOCOL_VERSION );
 
     private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
@@ -79,6 +83,21 @@ public final class TestUtil
 
     private TestUtil()
     {
+    }
+
+    public static <T> List<T> await( Publisher<T> publisher )
+    {
+        return await( Flux.from( publisher ) );
+    }
+
+    public static <T> T await( Mono<T> publisher )
+    {
+        return publisher.block( Duration.ofMillis( DEFAULT_WAIT_TIME_MS ) );
+    }
+
+    public static <T> List<T> await( Flux<T> publisher )
+    {
+        return publisher.collectList().block( Duration.ofMillis( DEFAULT_WAIT_TIME_MS ) );
     }
 
     @SafeVarargs
