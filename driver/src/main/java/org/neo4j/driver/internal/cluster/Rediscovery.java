@@ -208,6 +208,7 @@ public class Rediscovery
         try
         {
             addresses = resolve( initialRouter );
+            addresses.add( initialRouter );
         }
         catch ( Throwable error )
         {
