@@ -22,18 +22,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
@@ -69,6 +73,14 @@ class InternalRxSessionTest
                 rxSession -> rxSession.run( new Statement( "RETURN $x", parameters( "x", 1 ) ), empty() ),
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ), empty() ),
                 rxSession -> rxSession.run( "RETURN 1", empty() )
+        );
+    }
+
+    private static Stream<Function<RxSession,Publisher<RxTransaction>>> allBeginTxMethods()
+    {
+        return Stream.of(
+                rxSession -> rxSession.beginTransaction(),
+                rxSession -> rxSession.beginTransaction( TransactionConfig.empty() )
         );
     }
 
@@ -117,6 +129,51 @@ class InternalRxSessionTest
         verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
+        verify( session ).releaseConnection();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "allBeginTxMethods" )
+    void shouldDelegateBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx ) throws Throwable
+    {
+        // Given
+        NetworkSession session = mock( NetworkSession.class );
+        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+
+        when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        Publisher<RxTransaction> rxTx = beginTx.apply( rxSession );
+        StepVerifier.create( Mono.from( rxTx ) ).expectNextCount( 1 ).verifyComplete();
+
+        // Then
+        verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "allBeginTxMethods" )
+    void shouldReleaseConnectionIfFailedToBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx ) throws Throwable
+    {
+        // Given
+        Throwable error = new RuntimeException( "Hi there" );
+        NetworkSession session = mock( NetworkSession.class );
+
+        // Run failed with error
+        when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
+        when( session.releaseConnection() ).thenReturn( Futures.completedWithNull() );
+
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        Publisher<RxTransaction> rxTx = beginTx.apply( rxSession );
+        CompletableFuture<RxTransaction> txFuture = Mono.from( rxTx ).toFuture();
+
+        // Then
+        verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
+        RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( txFuture ) );
+        assertThat( t.getCause(), equalTo( error ) );
+        verify( session ).releaseConnection();
     }
 
     @Test
@@ -151,4 +208,20 @@ class InternalRxSessionTest
         verifyNoMoreInteractions( session );
     }
 
+    @Test
+    void shouldDelegateClose() throws Throwable
+    {
+        // Given
+        NetworkSession session = mock( NetworkSession.class );
+        when( session.closeAsync() ).thenReturn( completedWithNull() );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        Publisher<Void> mono = rxSession.close();
+
+        // Then
+        StepVerifier.create( mono ).verifyComplete();
+        verify( session ).closeAsync();
+        verifyNoMoreInteractions( session );
+    }
 }

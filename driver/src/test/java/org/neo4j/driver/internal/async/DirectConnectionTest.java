@@ -134,6 +134,12 @@ class DirectConnectionTest
     }
 
     @Test
+    void shouldFlushInEventLoopThread() throws Exception
+    {
+        testWriteInEventLoop( "ReleaseTestEventLoop", DirectConnection::flush );
+    }
+
+    @Test
     void shouldEnableAutoReadWhenReleased()
     {
         EmbeddedChannel channel = newChannel();

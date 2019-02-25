@@ -22,6 +22,7 @@ import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_
 
 /**
  * PULL_N request message
+ * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
 public class PullNMessage extends AbstractHandleNMessage

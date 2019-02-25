@@ -22,6 +22,11 @@ public class DiscardNMessage extends AbstractHandleNMessage
 {
     public final static byte SIGNATURE = 0x2F;
 
+    public static DiscardNMessage newDiscardAllMessage( long id )
+    {
+        return new DiscardNMessage( PULL_OR_DISCARD_ALL_N_VALUE, id );
+    }
+
     public DiscardNMessage( long n, long id )
     {
         super( n, id );

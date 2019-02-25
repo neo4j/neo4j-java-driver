@@ -35,7 +35,8 @@ public interface RxStatementRunner
 {
     /**
      * Register running of a statement and return a reactive result stream.
-     * This method will not run any query until the result stream record publisher is subscribed.
+     * The statement is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the statement.
      *
      * This method takes a set of parameters that will be injected into the
      * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
@@ -51,13 +52,14 @@ public interface RxStatementRunner
      *
      * @param statementTemplate text of a Neo4j statement
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
-     * @return a reactive stream of result values and associated metadata
+     * @return a reactive result.
      */
     RxResult run( String statementTemplate, Value parameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
-     * This method will not run any query until the result stream record publisher is subscribed.
+     * The statement is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the statement.
      *
      * This method takes a set of parameters that will be injected into the
      * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
@@ -70,13 +72,14 @@ public interface RxStatementRunner
      *
      * @param statementTemplate text of a Neo4j statement
      * @param statementParameters input data for the statement
-     * @return a reactive stream of result values and associated metadata
+     * @return a reactive result.
      */
     RxResult run( String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
-     * This method will not run any query until the result stream record publisher is subscribed.
+     * The statement is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the statement.
      *
      * This method takes a set of parameters that will be injected into the
      * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
@@ -88,25 +91,27 @@ public interface RxStatementRunner
      *
      * @param statementTemplate text of a Neo4j statement
      * @param statementParameters input data for the statement
-     * @return a reactive stream of result values and associated metadata
+     * @return a reactive result.
      */
     RxResult run( String statementTemplate, Record statementParameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
-     * This method will not run any query until the result stream record publisher is subscribed.
+     * The statement is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the statement.
      *
      * @param statementTemplate text of a Neo4j statement
-     * @return a reactive stream of result values and associated metadata
+     * @return a reactive result.
      */
     RxResult run( String statementTemplate );
 
     /**
      * Register running of a statement and return a reactive result stream.
-     * This method will not run any query until the result stream record publisher is subscribed.
+     * The statement is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the statement.
      *
      * @param statement a Neo4j statement
-     * @return a reactive stream of result values and associated metadata
+     * @return a reactive result.
      */
     RxResult run( Statement statement );
 }

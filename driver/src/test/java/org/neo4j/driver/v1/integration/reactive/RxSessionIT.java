@@ -21,7 +21,6 @@ package org.neo4j.driver.v1.integration.reactive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -65,13 +64,13 @@ class RxSessionIT
         RxSession session = neo4j.driver().rxSession();
         RxResult res1 = session.run( "INVALID" );
 
-        StepVerifier.create( Mono.from( res1.records() ) ).expectError( ClientException.class ).verify();
+        StepVerifier.create( res1.records() ).expectError( ClientException.class ).verify();
 
         // When
         RxResult res2 = session.run( "RETURN 1" );
 
         // Then
-        StepVerifier.create( Mono.from( res2.records() ) ).assertNext( record -> {
+        StepVerifier.create( res2.records() ).assertNext( record -> {
             assertEquals( record.get("1").asLong(), 1L );
         } ).expectComplete().verify();
     }

@@ -22,32 +22,27 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
 import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 import static org.neo4j.driver.v1.Values.value;
 
 class RxStatementResultCursorTest
@@ -64,6 +59,22 @@ class RxStatementResultCursorTest
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> new RxStatementResultCursor( runHandler, pullHandler ) );
         // Then
         assertThat( error.getMessage(), containsString( "Should wait for response of RUN" ) );
+    }
+
+    @Test
+    void shouldInstallSummaryConsumerWithoutReportingError() throws Throwable
+    {
+        // Given
+        RuntimeException error = new RuntimeException( "Hi" );
+        RunResponseHandler runHandler = newRunResponseHandler( error );
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+
+        // When
+        new RxStatementResultCursor( error, runHandler, pullHandler );
+
+        // Then
+        verify( pullHandler ).installSummaryConsumer( any( BiConsumer.class ) );
+        verifyNoMoreInteractions( pullHandler );
     }
 
     @Test
@@ -110,7 +121,7 @@ class RxStatementResultCursorTest
     }
 
     @Test
-    void shouldSendPullReequestToPullHandler() throws Throwable
+    void shouldPull() throws Throwable
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -125,7 +136,7 @@ class RxStatementResultCursorTest
     }
 
     @Test
-    void runErrorShouldFailPullHandlerWhenCancel() throws Throwable
+    void shouldCancel() throws Throwable
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -140,24 +151,6 @@ class RxStatementResultCursorTest
     }
 
     @Test
-    void shouldInstallSummaryConsumerWithoutReportingError() throws Throwable
-    {
-        // Given
-        RuntimeException error = new RuntimeException( "Hi" );
-        RunResponseHandler runHandler = newRunResponseHandler( error );
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
-
-        // When
-        BiConsumer summaryConsumer = mock( BiConsumer.class );
-        cursor.installSummaryConsumer( summaryConsumer );
-
-        // Then
-        verify( pullHandler ).installSummaryConsumer( summaryConsumer );
-        verifyNoMoreInteractions( pullHandler );
-    }
-
-    @Test
     void shouldInstallRecordConsumerAndReportError() throws Throwable
     {
         // Given
@@ -165,11 +158,48 @@ class RxStatementResultCursorTest
         BiConsumer recordConsumer = mock( BiConsumer.class );
 
         // When
-        newCursor( error, recordConsumer );
+        RunResponseHandler runHandler = newRunResponseHandler( error );
+        BasicPullResponseHandler pullHandler = new ListBasedPullHandler();
+        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
+        cursor.installRecordConsumer( recordConsumer );
 
         // Then
         verify( recordConsumer ).accept( null, error );
         verifyNoMoreInteractions( recordConsumer );
+    }
+
+    @Test
+    void shouldReturnSummaryFuture() throws Throwable
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        BasicPullResponseHandler pullHandler = new ListBasedPullHandler();
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+
+        // When
+        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER );
+        cursor.request( 10 );
+        cursor.summaryAsync();
+
+        // Then
+        assertTrue( cursor.isDone() );
+    }
+
+    @Test
+    void shouldCancelIfNotPulled() throws Throwable
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+
+        // When
+        cursor.summaryAsync();
+
+        // Then
+        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
+        verify( pullHandler ).cancel();
+        assertFalse( cursor.isDone() );
     }
 
     private static RunResponseHandler newRunResponseHandler( CompletableFuture<Throwable> runFuture )
@@ -185,39 +215,5 @@ class RxStatementResultCursorTest
     private static RunResponseHandler newRunResponseHandler()
     {
         return newRunResponseHandler( completedWithNull() );
-    }
-
-    private static BasicPullResponseHandler newPullResponseHandler( RunResponseHandler runHandler )
-    {
-        Connection connection = mock( Connection.class );
-        when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( v4_0_0 );
-        AbstractBasicPullResponseHandler pullHandler =
-                new AbstractBasicPullResponseHandler( new Statement( "Any statement" ), runHandler, connection, METADATA_EXTRACTOR )
-                {
-                    @Override
-                    protected void afterSuccess( Map<String,Value> metadata )
-                    {
-
-                    }
-
-                    @Override
-                    protected void afterFailure( Throwable error )
-                    {
-
-                    }
-                };
-        pullHandler.installSummaryConsumer( ( s, e ) -> {
-        } );
-        return pullHandler;
-    }
-
-    private static RxStatementResultCursor newCursor( Throwable error, BiConsumer<Record,Throwable> recordConsumer )
-    {
-        RunResponseHandler runHandler = newRunResponseHandler( error );
-        BasicPullResponseHandler pullHandler = newPullResponseHandler( runHandler );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
-        cursor.installRecordConsumer( recordConsumer );
-        return cursor;
     }
 }

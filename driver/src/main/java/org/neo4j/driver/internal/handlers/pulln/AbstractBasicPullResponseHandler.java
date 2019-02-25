@@ -23,7 +23,6 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.messaging.request.DiscardNMessage;
 import org.neo4j.driver.internal.messaging.request.PullNMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -36,7 +35,7 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.messaging.request.AbstractHandleNMessage.PULL_OR_DISCARD_ALL_N_VALUE;
+import static org.neo4j.driver.internal.messaging.request.DiscardNMessage.newDiscardAllMessage;
 
 /**
  * In this class we have a hidden state machine.
@@ -135,7 +134,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         if ( isStreamingPaused() )
         {
             // Reactive API does not provide a way to discard N. Only discard all.
-            connection.writeAndFlush( new DiscardNMessage( PULL_OR_DISCARD_ALL_N_VALUE, runResponseHandler.statementId() ), this );
+            connection.writeAndFlush( newDiscardAllMessage( runResponseHandler.statementId() ), this );
             status = Status.CANCELED;
         }
         else if ( isStreaming() )

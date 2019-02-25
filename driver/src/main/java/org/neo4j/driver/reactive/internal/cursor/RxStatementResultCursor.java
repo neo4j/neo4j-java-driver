@@ -22,21 +22,25 @@ import org.reactivestreams.Subscription;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
+
+import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
 
 public class RxStatementResultCursor implements Subscription, FailableCursor
 {
     private final RunResponseHandler runHandler;
     private final BasicPullResponseHandler pullHandler;
     private final Throwable runResponseError;
+    private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+    boolean isRecordHandlerInstalled = false;
 
     public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
     {
@@ -52,52 +56,57 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
         this.runResponseError = runError;
         this.runHandler = runHandler;
         this.pullHandler = pullHandler;
+        installSummaryConsumer();
     }
 
-    private void assertRunResponseArrived( RunResponseHandler runHandler )
-    {
-        if ( !runHandler.runFuture().isDone() )
-        {
-            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL_N." );
-        }
-    }
-
-    public synchronized List<String> keys()
+    public List<String> keys()
     {
         return runHandler.statementKeys();
     }
 
-    public synchronized void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer )
+    public void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
     {
-        pullHandler.installSummaryConsumer( summaryConsumer );
-    }
-
-    public synchronized void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
-    {
+        if ( isRecordHandlerInstalled )
+        {
+            return;
+        }
+        isRecordHandlerInstalled = true;
         pullHandler.installRecordConsumer( recordConsumer );
         assertRunCompletedSuccessfully();
     }
 
-    public synchronized void request( long n )
+    public void request( long n )
     {
         pullHandler.request( n );
     }
 
     @Override
-    public synchronized void cancel()
+    public void cancel()
     {
         pullHandler.cancel();
     }
 
     @Override
-    public synchronized CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> failureAsync()
     {
-        // TODO need to discuss with session.close/result.keys/result.summary
-        // TODO shall this method serve as another place that we can enforce termination of streaming?
-        // TODO shall this method canceling the streaming and enforce draining of all messages?
-        // If we do not have result.keys and result.summary as publishers, then we shall never need to enforce streaming.
-        // If we have a session.close, then we shall fully implement this in some way as this is used by session to sync.
-        return Futures.completedWithNull();
+        // calling this method will enforce discarding record stream and finish running cypher query
+        return summaryAsync().thenApply( summary -> (Throwable) null ).exceptionally( error -> error );
+    }
+
+    public CompletionStage<ResultSummary> summaryAsync()
+    {
+        if ( !isDone() ) // the summary is called before record streaming
+        {
+            installRecordConsumer( DISCARD_RECORD_CONSUMER );
+            cancel();
+        }
+
+        return this.summaryFuture;
+    }
+
+    public boolean isDone()
+    {
+        return summaryFuture.isDone();
     }
 
     private void assertRunCompletedSuccessfully()
@@ -105,6 +114,29 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
         if ( runResponseError != null )
         {
             pullHandler.onFailure( runResponseError );
+        }
+    }
+
+    private void installSummaryConsumer()
+    {
+        pullHandler.installSummaryConsumer( ( summary, error ) -> {
+            if ( error != null )
+            {
+                summaryFuture.completeExceptionally( error );
+            }
+            else if ( summary != null )
+            {
+                summaryFuture.complete( summary );
+            }
+            //else (null, null) to indicate a has_more success
+        } );
+    }
+
+    private void assertRunResponseArrived( RunResponseHandler runHandler )
+    {
+        if ( !runHandler.runFuture().isDone() )
+        {
+            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL_N." );
         }
     }
 }

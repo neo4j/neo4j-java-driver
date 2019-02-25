@@ -20,9 +20,32 @@ package org.neo4j.driver.reactive;
 
 import org.reactivestreams.Publisher;
 
+import org.neo4j.driver.v1.Transaction;
+
+/**
+ * Same as {@link Transaction} except this reactive transaction exposes a reactive API.
+ * @see Transaction
+ * @see RxSession
+ * @see Publisher
+ * @since 2.0
+ */
 public interface RxTransaction extends RxStatementRunner
 {
+    /**
+     * Commits the transaction.
+     * It completes without publishing anything if transaction is committed successfully.
+     * Otherwise, errors when there is any error to commit.
+     * @param <T> makes it easier to be chained after other publishers.
+     * @return an empty publisher.
+     */
     <T> Publisher<T> commit();
 
+    /**
+     * Rolls back the transaction.
+     * It completes without publishing anything if transaction is rolled back successfully.
+     * Otherwise, errors when there is any error to roll back.
+     * @param <T> makes it easier to be chained after other publishers.
+     * @return an empty publisher.
+     */
     <T> Publisher<T> rollback();
 }

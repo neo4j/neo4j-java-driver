@@ -25,29 +25,19 @@ import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.internal.cursor.ListBasedPullHandler;
 import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.function.Predicate.isEqual;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,10 +45,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.Values.values;
@@ -66,7 +53,7 @@ import static org.neo4j.driver.v1.Values.values;
 class InternalRxResultTest
 {
     @Test
-    void shouldInitCursorFutureAndInstallSummaryConsumer()
+    void shouldInitCursorFuture()
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
@@ -76,7 +63,6 @@ class InternalRxResultTest
         CompletableFuture<RxStatementResultCursor> cursorFuture = rxResult.initCursorFuture().toCompletableFuture();
 
         // Then
-        verify( cursor ).installSummaryConsumer( any( BiConsumer.class ) );
         assertTrue( cursorFuture.isDone() );
         assertThat( Futures.getNow( cursorFuture ), equalTo( cursor ) );
     }
@@ -231,84 +217,4 @@ class InternalRxResultTest
             return failedFuture( error );
         } );
     }
-
-    private static class ListBasedPullHandler extends AbstractBasicPullResponseHandler
-    {
-        private final List<Record> list;
-        private final Throwable error;
-        private int index = 0;
-
-        ListBasedPullHandler( List<Record> list )
-        {
-            this( list, null );
-        }
-
-        ListBasedPullHandler( Throwable error )
-        {
-            this( emptyList(), error );
-        }
-
-        ListBasedPullHandler( List<Record> list, Throwable error )
-        {
-            super( mock( Statement.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ) );
-            this.list = list;
-            this.error = error;
-            when( super.metadataExtractor.extractSummary( any( Statement.class ), any( Connection.class ), anyLong(), any( Map.class ) ) )
-                    .thenReturn( mock( ResultSummary.class ) );
-            if( list.size() > 1)
-            {
-                Record record = list.get( 0 );
-                when( super.runResponseHandler.statementKeys() ).thenReturn( record.keys() );
-            }
-        }
-
-        @Override
-        protected void afterSuccess( Map<String,Value> metadata )
-        {
-        }
-
-        @Override
-        protected void afterFailure( Throwable error )
-        {
-        }
-
-        @Override
-        public void request( long n )
-        {
-            super.request( n );
-            while ( index < list.size() && n-- > 0 )
-            {
-                onRecord( list.get( index++ ).values().toArray( new Value[0] ) );
-            }
-
-            if ( index == list.size() )
-            {
-                complete();
-            }
-            else
-            {
-                onSuccess( singletonMap( "has_more", BooleanValue.TRUE ) );
-            }
-        }
-
-        @Override
-        public void cancel()
-        {
-            super.cancel();
-            complete();
-        }
-
-        private void complete()
-        {
-            if( error != null )
-            {
-                onFailure( error );
-            }
-            else
-            {
-                onSuccess( emptyMap() );
-            }
-        }
-    }
-
 }

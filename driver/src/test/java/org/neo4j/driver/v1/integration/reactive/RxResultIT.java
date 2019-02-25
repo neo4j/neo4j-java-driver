@@ -182,8 +182,8 @@ class RxResultIT
         RxResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
-        StepVerifier.create( Mono.from( res.keys() ) ).expectNext( "n" ).expectComplete().verify();
-        StepVerifier.create( Mono.from( res.records() ) )
+        StepVerifier.create( res.keys() ).expectNext( "n" ).expectComplete().verify();
+        StepVerifier.create( res.records() )
                 .assertNext( record -> {
                     assertEquals( "[n]", record.keys().toString() );
                 } )
@@ -199,8 +199,8 @@ class RxResultIT
         RxResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
 
         // Then
-        StepVerifier.create( Mono.from( rs.keys() ) ).expectComplete().verify();
-        StepVerifier.create( Mono.from( rs.records() ) ).expectComplete().verify();
+        StepVerifier.create( rs.keys() ).expectComplete().verify();
+        StepVerifier.create( rs.records() ).expectComplete().verify();
     }
 
     @Test
@@ -274,7 +274,7 @@ class RxResultIT
                 .thenCancel()
                 .verify();
 
-        StepVerifier.create( Mono.from( result.summary() ) ) // I shall be able to receive summary
+        StepVerifier.create( result.summary() ) // I shall be able to receive summary
                 .assertNext( summary -> {
                     // Then
                     assertThat( summary, notNullValue() );
@@ -303,7 +303,7 @@ class RxResultIT
 
     private void verifyCanAccessSummary( RxResult res )
     {
-        StepVerifier.create( Mono.from( res.summary() ) ).assertNext( summary -> {
+        StepVerifier.create( res.summary() ).assertNext( summary -> {
             assertThat( summary.statement().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
             assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
             assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
@@ -325,7 +325,7 @@ class RxResultIT
 
     private void verifyCanAccessKeys( RxResult res )
     {
-        StepVerifier.create( Flux.from( res.keys() ) ).expectNext( "a" ).verifyComplete();
+        StepVerifier.create( res.keys() ).expectNext( "a" ).verifyComplete();
     }
 
     private RxResult sessionRunUnwind()

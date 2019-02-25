@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.stress;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;

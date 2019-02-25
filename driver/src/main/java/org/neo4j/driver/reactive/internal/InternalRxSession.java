@@ -24,7 +24,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
@@ -36,7 +35,6 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.TransientException;
 
@@ -64,9 +62,20 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     @Override
     public Publisher<RxTransaction> beginTransaction( TransactionConfig config )
     {
-        return createMono( () -> {
-            CompletionStage<Transaction> txFuture = session.beginTransactionAsync();
-            return txFuture.thenApply( transaction -> new InternalRxTransaction( (ExplicitTransaction) transaction ) );
+        return createMono( () ->
+        {
+            CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
+            session.beginTransactionAsync( config ).whenComplete( ( tx, completionError ) -> {
+                if ( tx != null )
+                {
+                    txFuture.complete( new InternalRxTransaction( (ExplicitTransaction) tx ) );
+                }
+                else
+                {
+                    releaseConnectionBeforeReturning( txFuture, completionError );
+                }
+            } );
+            return txFuture;
         } );
     }
 
@@ -143,18 +152,23 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
                 }
                 else
                 {
-                    // We failed to create a result cursor so we cannot rely on result cursor to cleanup resources.
-                    // Therefore we will first release the connection that might have been created in the session and then notify the error.
-                    // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
-                    // The reason we need to release connection in session is that we do not have a `rxSession.close()`;
-                    // Otherwise, session.close shall handle everything for us.
-                    Throwable error = Futures.completionExceptionCause( completionError );
-                    session.releaseConnection().whenComplete( ( ignored, closeError ) ->
-                            resultCursorFuture.completeExceptionally( Futures.combineErrors( error, closeError ) ) );
+                    releaseConnectionBeforeReturning( resultCursorFuture, completionError );
                 }
             } );
             return resultCursorFuture;
         } );
+    }
+
+    private <T> void releaseConnectionBeforeReturning( CompletableFuture<T> returnFuture, Throwable completionError )
+    {
+        // We failed to create a result cursor so we cannot rely on result cursor to cleanup resources.
+        // Therefore we will first release the connection that might have been created in the session and then notify the error.
+        // The logic here shall be the same as `SessionPullResponseHandler#afterFailure`.
+        // The reason we need to release connection in session is that we do not have a `rxSession.close()`;
+        // Otherwise, session.close shall handle everything for us.
+        Throwable error = Futures.completionExceptionCause( completionError );
+        session.releaseConnection().whenComplete( ( ignored, closeError ) ->
+                returnFuture.completeExceptionally( Futures.combineErrors( error, closeError ) ) );
     }
 
     @Override
@@ -168,4 +182,9 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
         return createEmptyPublisher( session::resetAsync );
     }
 
+    @Override
+    public <T> Publisher<T> close()
+    {
+        return createEmptyPublisher( session::closeAsync );
+    }
 }

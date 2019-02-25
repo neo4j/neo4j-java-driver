@@ -41,32 +41,6 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     }
 
     @Override
-    public <T> Publisher<T> commit()
-    {
-        return close( true );
-    }
-
-    private <T> Publisher<T> close( boolean commit )
-    {
-        return createEmptyPublisher( () -> {
-            if ( commit )
-            {
-                return asyncTx.commitAsync();
-            }
-            else
-            {
-                return asyncTx.rollbackAsync();
-            }
-        } );
-    }
-
-    @Override
-    public <T> Publisher<T> rollback()
-    {
-        return close( false );
-    }
-
-    @Override
     public RxResult run( Statement statement )
     {
         return new InternalRxResult( () -> {
@@ -87,6 +61,32 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
                 }
             } );
             return cursorFuture;
+        } );
+    }
+
+    @Override
+    public <T> Publisher<T> commit()
+    {
+        return close( true );
+    }
+
+    @Override
+    public <T> Publisher<T> rollback()
+    {
+        return close( false );
+    }
+
+    private <T> Publisher<T> close( boolean commit )
+    {
+        return createEmptyPublisher( () -> {
+            if ( commit )
+            {
+                return asyncTx.commitAsync();
+            }
+            else
+            {
+                return asyncTx.rollbackAsync();
+            }
         } );
     }
 }

@@ -24,6 +24,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +46,10 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -56,6 +64,8 @@ import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.ParallelizableIT;
 
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -63,8 +73,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -262,6 +274,155 @@ class ConnectionHandlingIT
 
         // connection should have been released after failed node creation
         verify( connection2 ).release();
+    }
+
+    @Test
+    void connectionUsedForSessionRunReturnedToThePoolWhenSessionClose()
+    {
+        Session session = driver.session();
+        StatementResult result = createNodes( 12, session );
+
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection1, never() ).release();
+
+        session.close();
+
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertSame( connection1, connection2 );
+        verify( connection1, times( 2 ) ).release();
+    }
+
+    @Test
+    void connectionUsedForBeginTxReturnedToThePoolWhenSessionClose()
+    {
+        Session session = driver.session();
+        Transaction tx = session.beginTransaction();
+
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection1, never() ).release();
+
+        session.close();
+
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertSame( connection1, connection2 );
+        verify( connection1, times( 2 ) ).release();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void sessionCloseShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    {
+        RxSession session = driver.rxSession();
+        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+
+        // When we only run but not pull
+        StepVerifier.create( Flux.from( res.keys() ) ).expectNext( "a" ).verifyComplete();
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection1, never() ).release();
+
+        // Then we shall discard all results and commit
+        StepVerifier.create( Mono.from( session.close() ) ).verifyComplete();
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertSame( connection1, connection2 );
+        verify( connection1, times( 2 ) ).release();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void resultRecordsShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    {
+        RxSession session = driver.rxSession();
+        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        assertNull( connection1 );
+
+        // When we run and pull
+        StepVerifier.create( Flux.from( res.records() ).map( record -> record.get( "a" ).asInt() ) )
+                .expectNext( 1, 2, 3, 4 ).verifyComplete();
+
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertNotSame( connection1, connection2 );
+        verify( connection2 ).release();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void resultSummaryShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    {
+        RxSession session = driver.rxSession();
+        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        assertNull( connection1 );
+
+        StepVerifier.create( Mono.from( res.summary() ) ).expectNextCount( 1 ).verifyComplete();
+
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertNotSame( connection1, connection2 );
+        verify( connection2 ).release();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void txCommitShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    {
+        RxSession session = driver.rxSession();
+
+        StepVerifier.create( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+            verify( connection1, never() ).release();
+
+            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+            StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
+                    .expectNext( 1, 2, 3, 4 ).verifyComplete();
+
+            StepVerifier.create( Mono.from( tx.commit() ) ).verifyComplete();
+            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+            assertSame( connection1, connection2 );
+            verify( connection1 ).release();
+
+        } ) ).expectNextCount( 1 ).verifyComplete();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void txRollbackShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    {
+        RxSession session = driver.rxSession();
+
+        StepVerifier.create( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+            verify( connection1, never() ).release();
+
+            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+            StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
+                    .expectNext( 1, 2, 3, 4 ).verifyComplete();
+
+            StepVerifier.create( Mono.from( tx.rollback() ) ).verifyComplete();
+            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+            assertSame( connection1, connection2 );
+            verify( connection1 ).release();
+
+        } ) ).expectNextCount( 1 ).verifyComplete();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void sessionCloseShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    {
+        // Given
+        RxSession session = driver.rxSession();
+        Publisher<RxTransaction> tx = session.beginTransaction();
+
+        // When we created a tx
+        StepVerifier.create( Mono.from( tx ) ).expectNextCount( 1 ).verifyComplete();
+        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection1, never() ).release();
+
+        // Then we shall discard all results and commit
+        StepVerifier.create( Mono.from( session.close() ) ).verifyComplete();
+        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+        assertSame( connection1, connection2 );
+        verify( connection1, times( 2 ) ).release();
     }
 
     private StatementResult createNodesInNewSession( int nodesToCreate )

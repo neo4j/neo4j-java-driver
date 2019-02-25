@@ -38,13 +38,6 @@ public final class Futures
     {
     }
 
-    public static <T> CompletableFuture<T> completedWithValue( T value )
-    {
-        CompletableFuture<T> future = new CompletableFuture<>();
-        future.complete( value );
-        return future;
-    }
-
     @SuppressWarnings( "unchecked" )
     public static <T> CompletableFuture<T> completedWithNull()
     {

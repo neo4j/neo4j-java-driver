@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1.integration.reactive;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,7 +38,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
@@ -70,10 +70,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 
+@EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
 class RxTransactionIT
 {
@@ -118,26 +120,25 @@ class RxTransactionIT
     void shouldBePossibleToRunSingleStatementAndCommit()
     {
 
-        Mono<RxTransaction> txRun = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<Integer> ids = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( "CREATE (n:Node {id: 42}) RETURN n" );
-            Flux<Integer> nodeIds = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .map( record -> record.get( 0 ).asNode().get( "id" ).asInt() )
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-            StepVerifier.create( nodeIds ).expectNext( 42 ).verifyComplete();
         } );
 
-        StepVerifier.create( txRun ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( ids ).expectNext( 42 ).verifyComplete();
         assertEquals( 1, countNodes( 42 ) );
     }
 
     @Test
     void shouldBePossibleToRunSingleStatementAndRollback()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanRollback( tx );
-        } ) );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanRollback( tx );
+
 
         assertEquals( 0, countNodes( 4242 ) );
     }
@@ -146,19 +147,18 @@ class RxTransactionIT
     @MethodSource( "commit" )
     void shouldBePossibleToRunMultipleStatements( boolean commit )
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-            RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
-            await( cursor1.records() );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        await( cursor1.records() );
 
-            RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
-            await( cursor2.records() );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        await( cursor2.records() );
 
-            RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
-            await( cursor3.records() );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        await( cursor3.records() );
 
-            assertCanCommitOrRollback( commit, tx );
-        } ) );
+        assertCanCommitOrRollback( commit, tx );
 
         verifyCommittedOrRolledBack( commit );
     }
@@ -167,15 +167,14 @@ class RxTransactionIT
     @MethodSource( "commit" )
     void shouldBePossibleToRunMultipleStatementsWithoutWaiting( boolean commit )
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-            RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
-            RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
-            RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
 
-            await( Flux.from( cursor1.records() ).concatWith( cursor2.records() ).concatWith( cursor3.records() ) );
-            assertCanCommitOrRollback( commit, tx );
-        } ) );
+        await( Flux.from( cursor1.records() ).concatWith( cursor2.records() ).concatWith( cursor3.records() ) );
+        assertCanCommitOrRollback( commit, tx );
 
         verifyCommittedOrRolledBack( commit );
     }
@@ -184,15 +183,14 @@ class RxTransactionIT
     @MethodSource( "commit" )
     void shouldBePossibleToRunMultipleStatementsWithoutStreaming( boolean commit )
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-            RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
-            RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
-            RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
 
-            await( Flux.from( cursor1.keys() ).concatWith( cursor2.keys() ).concatWith( cursor3.keys() ) );
-            assertCanCommitOrRollback( commit, tx );
-        } ) );
+        await( Flux.from( cursor1.keys() ).concatWith( cursor2.keys() ).concatWith( cursor3.keys() ) );
+        assertCanCommitOrRollback( commit, tx );
 
         verifyCommittedOrRolledBack( commit );
     }
@@ -200,57 +198,54 @@ class RxTransactionIT
     @Test
     void shouldFailToCommitAfterSingleWrongStatement()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
-            assertThrows( ClientException.class, () -> await( tx.commit() ) );
-        } ) );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
+        assertThrows( ClientException.class, () -> await( tx.commit() ) );
     }
 
     @Test
     void shouldAllowRollbackAfterSingleWrongStatement()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
-            assertCanRollback( tx );
-        } ) );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
+        assertCanRollback( tx );
+
     }
 
     @Test
     void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanRunReturnOne( tx );
-            assertFailToRunWrongStatement( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-            assertThrows( ClientException.class, () -> await( tx.commit() ) );
-        }));
+        assertCanRunCreate( tx );
+        assertCanRunReturnOne( tx );
+        assertFailToRunWrongStatement( tx );
+
+        assertThrows( ClientException.class, () -> await( tx.commit() ) );
     }
 
     @Test
     void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanRunReturnOne( tx );
-            assertFailToRunWrongStatement( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanRunReturnOne( tx );
+        assertFailToRunWrongStatement( tx );
 
-            assertCanRollback( tx );
-        }));
+        assertCanRollback( tx );
     }
 
     @Test
     void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
 
-            RxResult result = tx.run( "CREATE ()" );
-            Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        RxResult result = tx.run( "CREATE ()" );
+        Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
 
-            assertCanRollback( tx );
-        }));
+        assertCanRollback( tx );
     }
 
     @Test
@@ -266,201 +261,193 @@ class RxTransactionIT
     @Test
     void shouldBePossibleToCommitWhenCommitted()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanCommit( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanCommit( tx );
 
-            Mono<Void> secondCommit = Mono.from( tx.commit() );
-            // second commit should wrap around a completed future
-            StepVerifier.create( secondCommit ).verifyComplete();
-        }));
+        Mono<Void> secondCommit = Mono.from( tx.commit() );
+        // second commit should wrap around a completed future
+        StepVerifier.create( secondCommit ).verifyComplete();
+
     }
 
     @Test
     void shouldBePossibleToRollbackWhenRolledBack()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanRollback( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanRollback( tx );
 
-            Mono<Void> secondRollback = Mono.from( tx.rollback() );
-            // second rollback should wrap around a completed future
-            StepVerifier.create( secondRollback ).verifyComplete();
-        } ) );
+        Mono<Void> secondRollback = Mono.from( tx.rollback() );
+        // second rollback should wrap around a completed future
+        StepVerifier.create( secondRollback ).verifyComplete();
     }
 
     @Test
     void shouldFailToCommitWhenRolledBack()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanRollback( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanRollback( tx );
 
-            // should not be possible to commit after rollback
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
-            assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );
-        } ) );
+        // should not be possible to commit after rollback
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );
     }
 
     @Test
     void shouldFailToRollbackWhenCommitted()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRunCreate( tx );
-            assertCanCommit( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRunCreate( tx );
+        assertCanCommit( tx );
 
-            // should not be possible to rollback after commit
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
-            assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
-        } ) );
+        // should not be possible to rollback after commit
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
+
     }
 
     @Test
     void shouldAllowRollbackAfterFailedCommit()
     {
-        Mono<RxTransaction> txRun = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<Record> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( "WRONG" );
-            Flux<Record> records = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .concatWith( tx.commit() ) // if we completed without error then we commit
                     .onErrorResume( error -> Mono.from( tx.rollback() ) // otherwise we rollback and then return the original error
                             .then( Mono.error( error ) ) );
-            StepVerifier.create( records ).verifyErrorSatisfies( error ->
-                    assertThat( error.getMessage(), containsString( "Invalid input" ) ) );
         } );
 
-        StepVerifier.create( txRun ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( records ).verifyErrorSatisfies( error ->
+                assertThat( error.getMessage(), containsString( "Invalid input" ) ) );
     }
 
     @Test
     void shouldExposeStatementKeysForColumnsWithAliases()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            RxResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
 
-            List<String> keys = await( result.keys() );
-            assertEquals( Arrays.asList( "one", "two", "three", "five" ), keys );
+        List<String> keys = await( result.keys() );
+        assertEquals( Arrays.asList( "one", "two", "three", "five" ), keys );
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
     }
 
     @Test
     void shouldExposeStatementKeysForColumnsWithoutAliases()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            RxResult result = tx.run( "RETURN 1, 2, 3, 5" );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxResult result = tx.run( "RETURN 1, 2, 3, 5" );
 
-            List<String> keys = await( result.keys() );
-            assertEquals( Arrays.asList( "1", "2", "3", "5" ), keys );
+        List<String> keys = await( result.keys() );
+        assertEquals( Arrays.asList( "1", "2", "3", "5" ), keys );
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
     }
 
     @Test
     void shouldExposeResultSummaryForSimpleQuery()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
-            Value params = parameters( "name1", "Bob", "name2", "John" );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
+        Value params = parameters( "name1", "Bob", "name2", "John" );
 
-            RxResult result = tx.run( query, params );
-            await( result.records() ); // we run and stream
+        RxResult result = tx.run( query, params );
+        await( result.records() ); // we run and stream
 
-            ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.summary() ) );
 
-            assertEquals( new Statement( query, params ), summary.statement() );
-            assertEquals( 2, summary.counters().nodesCreated() );
-            assertEquals( 2, summary.counters().labelsAdded() );
-            assertEquals( 2, summary.counters().propertiesSet() );
-            assertEquals( 1, summary.counters().relationshipsCreated() );
-            assertEquals( StatementType.READ_WRITE, summary.statementType() );
-            assertFalse( summary.hasPlan() );
-            assertFalse( summary.hasProfile() );
-            assertNull( summary.plan() );
-            assertNull( summary.profile() );
-            assertEquals( 0, summary.notifications().size() );
-            assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
+        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( 2, summary.counters().nodesCreated() );
+        assertEquals( 2, summary.counters().labelsAdded() );
+        assertEquals( 2, summary.counters().propertiesSet() );
+        assertEquals( 1, summary.counters().relationshipsCreated() );
+        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertFalse( summary.hasPlan() );
+        assertFalse( summary.hasProfile() );
+        assertNull( summary.plan() );
+        assertNull( summary.profile() );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
+
     }
 
     @Test
     void shouldExposeResultSummaryForExplainQuery()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            String query = "EXPLAIN MATCH (n) RETURN n";
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        String query = "EXPLAIN MATCH (n) RETURN n";
 
-            RxResult result = tx.run( query );
-            await( result.records() ); // we run and stream
+        RxResult result = tx.run( query );
+        await( result.records() ); // we run and stream
 
-            ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.summary() ) );
 
-            assertEquals( new Statement( query ), summary.statement() );
-            assertEquals( 0, summary.counters().nodesCreated() );
-            assertEquals( 0, summary.counters().propertiesSet() );
-            assertEquals( StatementType.READ_ONLY, summary.statementType() );
-            assertTrue( summary.hasPlan() );
-            assertFalse( summary.hasProfile() );
-            assertNotNull( summary.plan() );
-            // asserting on plan is a bit fragile and can break when server side changes or with different
-            // server versions; that is why do fuzzy assertions in this test based on string content
-            assertThat( summary.plan().toString().toLowerCase(), containsString( "scan" ) );
-            assertNull( summary.profile() );
-            assertEquals( 0, summary.notifications().size() );
-            assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
+        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( 0, summary.counters().nodesCreated() );
+        assertEquals( 0, summary.counters().propertiesSet() );
+        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertTrue( summary.hasPlan() );
+        assertFalse( summary.hasProfile() );
+        assertNotNull( summary.plan() );
+        // asserting on plan is a bit fragile and can break when server side changes or with different
+        // server versions; that is why do fuzzy assertions in this test based on string content
+        assertThat( summary.plan().toString().toLowerCase(), containsString( "scan" ) );
+        assertNull( summary.profile() );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
     }
 
     @Test
     void shouldExposeResultSummaryForProfileQuery()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            String query = "PROFILE MERGE (n {name: $name}) " +
-                    "ON CREATE SET n.created = timestamp() " +
-                    "ON MATCH SET n.counter = coalesce(n.counter, 0) + 1";
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        String query = "PROFILE MERGE (n {name: $name}) " +
+                "ON CREATE SET n.created = timestamp() " +
+                "ON MATCH SET n.counter = coalesce(n.counter, 0) + 1";
 
-            Value params = parameters( "name", "Bob" );
+        Value params = parameters( "name", "Bob" );
 
-            RxResult result = tx.run( query, params );
-            await( result.records() ); // we run and stream
+        RxResult result = tx.run( query, params );
+        await( result.records() ); // we run and stream
 
-            ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.summary() ) );
 
-            assertEquals( new Statement( query, params ), summary.statement() );
-            assertEquals( 1, summary.counters().nodesCreated() );
-            assertEquals( 2, summary.counters().propertiesSet() );
-            assertEquals( 0, summary.counters().relationshipsCreated() );
-            assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
-            assertTrue( summary.hasPlan() );
-            assertTrue( summary.hasProfile() );
-            assertNotNull( summary.plan() );
-            assertNotNull( summary.profile() );
-            // asserting on profile is a bit fragile and can break when server side changes or with different
-            // server versions; that is why do fuzzy assertions in this test based on string content
-            String profileAsString = summary.profile().toString().toLowerCase();
-            assertThat( profileAsString, containsString( "hits" ) );
-            assertEquals( 0, summary.notifications().size() );
-            assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
+        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( 1, summary.counters().nodesCreated() );
+        assertEquals( 2, summary.counters().propertiesSet() );
+        assertEquals( 0, summary.counters().relationshipsCreated() );
+        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertTrue( summary.hasPlan() );
+        assertTrue( summary.hasProfile() );
+        assertNotNull( summary.plan() );
+        assertNotNull( summary.profile() );
+        // asserting on profile is a bit fragile and can break when server side changes or with different
+        // server versions; that is why do fuzzy assertions in this test based on string content
+        String profileAsString = summary.profile().toString().toLowerCase();
+        assertThat( profileAsString, containsString( "hits" ) );
+        assertEquals( 0, summary.notifications().size() );
+        assertThat( summary, containsResultAvailableAfterAndResultConsumedAfter() );
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
     }
 
     @Test
     void shouldCancelRecordStream()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            RxResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
 
-            Flux<String> abc = Flux.from( result.records() ).limitRate( 1 ).take( 1 ).map( record -> record.get( 0 ).asString() );
-            StepVerifier.create( abc ).expectNext( "a" ).verifyComplete();
+        Flux<String> abc = Flux.from( result.records() ).limitRate( 1 ).take( 1 ).map( record -> record.get( 0 ).asString() );
+        StepVerifier.create( abc ).expectNext( "a" ).verifyComplete();
 
-            assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
-        } ) );
+        assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
     }
 
     @Test
@@ -480,19 +467,17 @@ class RxTransactionIT
     {
         RuntimeException e = new RuntimeException();
 
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<Record> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( "RETURN 'Hi!'" );
-            Flux<Record> records = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .doOnNext( record -> { throw e; } )
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-
-            StepVerifier.create( records ).expectErrorSatisfies( error -> {
-                assertEquals( e, error );
-            } ).verify();
         } );
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete(); // we created a tx and did all the things inside.
+        StepVerifier.create( records ).expectErrorSatisfies( error -> {
+            assertEquals( e, error );
+        } ).verify();
     }
 
     @Test
@@ -532,20 +517,19 @@ class RxTransactionIT
     void shouldFailWhenListTransformationFunctionFails()
     {
         RuntimeException e = new RuntimeException();
-        
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+
+        Flux<Object> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( "RETURN 'Hi!'" );
-            Flux<Object> records = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .map( record -> { throw e; } )
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
 
-            StepVerifier.create( records ).expectErrorSatisfies( error -> {
-                assertEquals( e, error );
-            } ).verify();
         } );
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete(); // we created a tx and did all the things inside.
+        StepVerifier.create( records ).expectErrorSatisfies( error -> {
+            assertEquals( e, error );
+        } ).verify();
     }
 
     @Test
@@ -634,66 +618,62 @@ class RxTransactionIT
     @Test
     void shouldDoNothingWhenCommittedSecondTime()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanCommit( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanCommit( tx );
 
-            CompletableFuture<Object> future = Mono.from( tx.commit() ).toFuture();
-            assertTrue( future.isDone() );
-        }));
+        CompletableFuture<Object> future = Mono.from( tx.commit() ).toFuture();
+        assertTrue( future.isDone() );
     }
 
     @Test
     void shouldFailToCommitAfterRollback()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRollback( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRollback( tx );
 
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
-            assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
-        }));
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
+        assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
+
     }
 
     @Test
     void shouldFailToCommitAfterTermination()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
 
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
-            assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
-            assertCanRollback( tx );
-        }));
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
+        assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
+        assertCanRollback( tx );
     }
 
     @Test
     void shouldDoNothingWhenRolledBackSecondTime()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanRollback( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanRollback( tx );
 
-            CompletableFuture<Object> future = Mono.from( tx.rollback() ).toFuture();
-            assertTrue( future.isDone() );
-        }));
+        CompletableFuture<Object> future = Mono.from( tx.rollback() ).toFuture();
+        assertTrue( future.isDone() );
+
     }
 
     @Test
     void shouldFailToRollbackAfterCommit()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertCanCommit( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertCanCommit( tx );
 
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
-            assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
-        }));
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
+        assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
     }
 
     @Test
     void shouldRollbackAfterTermination()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
-            assertCanRollback( tx );
-        }));
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
+        assertCanRollback( tx );
     }
 
     @ParameterizedTest
@@ -723,14 +703,13 @@ class RxTransactionIT
     @Test
     void shouldFailToRunQueryWhenTerminated()
     {
-        await( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            assertFailToRunWrongStatement( tx );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        assertFailToRunWrongStatement( tx );
 
-            ClientException e = assertThrows( ClientException.class, () -> await( tx.run( "CREATE (:MyOtherLabel)" ).records() ) );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.run( "CREATE (:MyOtherLabel)" ).records() ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
 
-            assertCanRollback( tx );
-        }));
+        assertCanRollback( tx );
     }
 
     @Test
@@ -739,12 +718,12 @@ class RxTransactionIT
     {
         String bookmarkBefore = session.lastBookmark();
 
-        await( Mono.from( session.beginTransaction()).doOnSuccess( tx -> {
-            RxResult result = tx.run( "CREATE (:MyNode)" );
-            await( Flux.from( result.records() )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) );
-        } ) );
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxResult result = tx.run( "CREATE (:MyNode)" );
+        await( Flux.from( result.records() )
+                .concatWith( tx.commit() )
+                .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) );
+
 
         String bookmarkAfter = session.lastBookmark();
 
@@ -846,9 +825,9 @@ class RxTransactionIT
     {
         int size = 12555;
 
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<Integer> nodeIds = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) );
-            Flux<Integer> nodeIds = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .limitRate( 20 ) // batch size
                     .flatMap( record -> {
                         int x = record.get( "x" ).asInt();
@@ -858,11 +837,9 @@ class RxTransactionIT
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) )
                     .map( record -> record.get( 0 ).asInt() );
-
-            StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
         } );
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
     }
 
     private int countNodes( Object id )
@@ -873,10 +850,10 @@ class RxTransactionIT
 
     private void testForEach( String query, int expectedSeenRecords )
     {
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<ResultSummary> summary = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( query );
             AtomicInteger recordsSeen = new AtomicInteger();
-            Flux<ResultSummary> summary = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .doOnNext( record -> recordsSeen.incrementAndGet() )
                     .then( Mono.from( result.summary() ) )
                     .doOnSuccess( s -> {
@@ -887,48 +864,44 @@ class RxTransactionIT
                     } )
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-
-            StepVerifier.create( summary ).expectNextCount( 1 ).verifyComplete(); // we indeed get a summary.
         } );
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete(); // we created a tx and did all the things inside.
+        StepVerifier.create( summary ).expectNextCount( 1 ).verifyComplete(); // we indeed get a summary.
     }
 
     private <T> void testList( String query, List<T> expectedList )
     {
         List<Object> actualList = new ArrayList<>();
 
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<List<Record>> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( query );
-            Flux<List<Record>> records = Flux.from( result.records() )
+            return Flux.from( result.records() )
                     .collectList()
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
+        } );
 
-            List<Record> allRecords = await( records.single() );
+        StepVerifier.create( records.single() ).consumeNextWith( allRecords -> {
             for ( Record record : allRecords )
             {
                 actualList.add( record.get( 0 ).asObject() );
             }
-        } );
+        } ).verifyComplete();
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete(); // we created a tx and did all the things inside.
         assertEquals( expectedList, actualList );
     }
 
     private void testConsume( String query )
     {
-        Mono<RxTransaction> rxTx = Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
+        Flux<ResultSummary> summary = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
             RxResult result = tx.run( query );
-            Flux<Record> records = Flux.from( result.records() )
-                    .next() // get at most one result to return
+            return Mono.from( result.summary() )
                     .concatWith( tx.commit() )
                     .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-            Record single = await( records.single( new InternalRecord( Collections.emptyList(), new Value[0] ) ) );
-            assertNotNull( single );
+
         } );
 
-        StepVerifier.create( rxTx ).expectNextCount( 1 ).verifyComplete(); // we created a tx and did all the things inside.
+        StepVerifier.create( summary.single() ).consumeNextWith( Assertions::assertNotNull ).verifyComplete();
     }
 
     private void verifyCommittedOrRolledBack( boolean commit )
@@ -965,6 +938,7 @@ class RxTransactionIT
     private void assertCanRollback( RxTransaction tx )
     {
         assertThat( await( tx.rollback() ), equalTo( emptyList() ) );
+        System.out.println("rolled back");
     }
 
     private static Stream<Boolean> commit()

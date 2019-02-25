@@ -24,7 +24,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.util.Futures;
@@ -34,13 +33,10 @@ import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
-
 public class InternalRxResult implements RxResult
 {
     private Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier;
     private volatile CompletionStage<RxStatementResultCursor> cursorFuture;
-    private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
 
     public InternalRxResult( Supplier<CompletionStage<RxStatementResultCursor>> cursorFuture )
     {
@@ -88,7 +84,7 @@ public class InternalRxResult implements RxResult
         return Flux.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
             if( cursor != null )
             {
-                if( summaryFuture.isDone() )
+                if( cursor.isDone() )
                 {
                     sink.complete();
                 }
@@ -138,34 +134,8 @@ public class InternalRxResult implements RxResult
         }
 
         // now we obtained lock and we are going to be the one who assigns cursorFuture one and only once.
-        CompletableFuture<RxStatementResultCursor> cursorWithSummaryConsumerInstalled = new CompletableFuture<>();
-        CompletionStage<RxStatementResultCursor> cursorFuture = cursorFutureSupplier.get();
+        cursorFuture = cursorFutureSupplier.get();
         cursorFutureSupplier = null; // we no longer need the reference to this object
-        cursorFuture.whenComplete( ( cursor, completionError ) -> {
-            if ( cursor != null )
-            {
-                cursor.installSummaryConsumer( ( summary, summaryError ) -> {
-                    if ( summaryError != null )
-                    {
-                        summaryFuture.completeExceptionally( summaryError );
-                    }
-                    else if( summary != null )
-                    {
-                        summaryFuture.complete( summary );
-                    }
-                    //else (null, null) to indicate a has_more success
-                } );
-                cursorWithSummaryConsumerInstalled.complete( cursor );
-            }
-            else
-            {
-                Throwable error = Futures.completionExceptionCause( completionError );
-                summaryFuture.completeExceptionally( error );
-                cursorWithSummaryConsumerInstalled.completeExceptionally( error );
-            }
-        } );
-
-        this.cursorFuture = cursorWithSummaryConsumerInstalled;
         return this.cursorFuture;
     }
 
@@ -173,37 +143,29 @@ public class InternalRxResult implements RxResult
     public Publisher<ResultSummary> summary()
     {
         return Mono.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
-            // first register callback when summary future finishes
-            summaryFuture.whenComplete( ( summary, summaryCompletionError ) -> {
-                Throwable error = Futures.completionExceptionCause( summaryCompletionError );
-                if ( summary != null )
-                {
-                    sink.success( summary );
-                }
-                else
-                {
-                    sink.error( error );
-                }
-            } );
-
             if ( cursor != null )
             {
-                if ( !summaryFuture.isDone() )
-                {
-                    // the summary is called before record streaming
-                    cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER );
-                    cursor.cancel();
-                }
+                cursor.summaryAsync().whenComplete( ( summary, summaryCompletionError ) -> {
+                    Throwable error = Futures.completionExceptionCause( summaryCompletionError );
+                    if ( summary != null )
+                    {
+                        sink.success( summary );
+                    }
+                    else
+                    {
+                        sink.error( error );
+                    }
+                } );
             }
             else
             {
                 Throwable error = Futures.completionExceptionCause( completionError );
-                summaryFuture.completeExceptionally( error );
+                sink.error( error );
             }
         } ) );
     }
 
-    // For test purpose
+    // For testing purpose
     Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier()
     {
         return this.cursorFutureSupplier;

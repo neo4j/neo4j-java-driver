@@ -101,7 +101,7 @@ public class DirectConnection implements Connection
     {
         if ( verifyOpen( null, null ) )
         {
-            channel.flush();
+            flushInEventLoop();
         }
     }
 

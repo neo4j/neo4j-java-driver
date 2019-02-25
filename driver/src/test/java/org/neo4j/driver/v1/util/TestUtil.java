@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -92,11 +93,13 @@ public final class TestUtil
 
     public static <T> T await( Mono<T> publisher )
     {
+        EventLoopGroupFactory.assertNotInEventLoopThread();
         return publisher.block( Duration.ofMillis( DEFAULT_WAIT_TIME_MS ) );
     }
 
     public static <T> List<T> await( Flux<T> publisher )
     {
+        EventLoopGroupFactory.assertNotInEventLoopThread();
         return publisher.collectList().block( Duration.ofMillis( DEFAULT_WAIT_TIME_MS ) );
     }
 
