@@ -55,12 +55,12 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Compile dependencies -->
       <dependency>
         <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams</artifactId>
         <version>1.0.2</version>
       </dependency>
-      <!-- Compile dependencies -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
@@ -69,7 +69,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.2.1.RELEASE</version>
+        <version>3.2.6.RELEASE</version>
       </dependency>
       <!-- Optional dependencies -->
       <dependency>
@@ -130,13 +130,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-test</artifactId>
-        <version>3.1.0.RELEASE</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.reactivestreams</groupId>
-        <artifactId>reactive-streams-tck</artifactId>
-        <version>1.0.2</version>
+        <version>3.2.6.RELEASE</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

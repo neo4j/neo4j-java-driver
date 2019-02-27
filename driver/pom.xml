@@ -24,11 +24,11 @@
   <description>Access to the Neo4j graph database through Java</description>
 
   <dependencies>
+    <!-- Compile dependencies -->
     <dependency>
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
     </dependency>
-    <!-- Compile dependencies -->
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
@@ -77,10 +77,6 @@
     <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.reactivestreams</groupId>
-      <artifactId>reactive-streams-tck</artifactId>
     </dependency>
   </dependencies>
 
