@@ -76,6 +76,12 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
     }
 
     @Override
+    public boolean canManageAutoRead()
+    {
+        return true;
+    }
+
+    @Override
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
         finished = true;

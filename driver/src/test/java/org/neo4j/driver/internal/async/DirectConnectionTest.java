@@ -136,7 +136,15 @@ class DirectConnectionTest
     @Test
     void shouldFlushInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "ReleaseTestEventLoop", DirectConnection::flush );
+        EmbeddedChannel channel = spy( new EmbeddedChannel() );
+        initializeEventLoop( channel, "Flush" );
+        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
+
+        DirectConnection connection = newConnection( channel );
+        connection.flush();
+
+        shutdownEventLoop();
+        verify( channel ).flush();
     }
 
     @Test

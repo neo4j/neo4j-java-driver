@@ -79,7 +79,7 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
         assertThat( handler.status(), equalTo( FAILED ) );
         verify( conn ).release();
         verify( recordConsumer ).accept( null, error );
-        verify( summaryConsumer ).accept( null, error );
+        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
     }
 
     @Override

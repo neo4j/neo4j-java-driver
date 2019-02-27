@@ -1223,8 +1223,8 @@ class SessionIT
         // When trying to run the query on a server that is using a protocol that is lower than V4
         StepVerifier.create( result.records() ).expectErrorSatisfies( error -> {
             // Then
-            assertThat( error.getCause(), instanceOf( ClientException.class ) );
-            assertThat( error.getCause().getMessage(), containsString( "Driver is connected to the database that does not support driver reactive API" ) );
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), containsString( "Driver is connected to the database that does not support driver reactive API" ) );
         } ).verify();
     }
 
