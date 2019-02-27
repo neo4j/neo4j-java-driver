@@ -34,6 +34,13 @@ public interface ServerAddress
     String host();
 
     /**
+     * Returns the original host name of this {@link ServerAddress}.
+     * This value might different from {@link #host()} when the host is a resolved IP address.
+     * @return the original host name, never {@code null}.
+     */
+    String originalHost();
+
+    /**
      * Retrieve the port portion of this {@link ServerAddress}.
      *
      * @return the port, always in range [0, 65535].
@@ -49,6 +56,6 @@ public interface ServerAddress
      */
     static ServerAddress of( String host, int port )
     {
-        return new BoltServerAddress( host, port );
+        return new BoltServerAddress( host, host, port );
     }
 }

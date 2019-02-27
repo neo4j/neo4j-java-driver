@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.Objects;
 
 import org.neo4j.driver.v1.net.ServerAddress;
 
@@ -36,7 +37,8 @@ public class BoltServerAddress implements ServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
 
-    private final String host;
+    private final String originalHost; // This keeps the original host name provided by the user.
+    private final String host; // This could either be the same as originalHost or it is an IP address resolved from the original host.
     private final int port;
     private final String stringValue;
 
@@ -52,6 +54,12 @@ public class BoltServerAddress implements ServerAddress
 
     public BoltServerAddress( String host, int port )
     {
+        this( host, host, port );
+    }
+
+    public BoltServerAddress( String originalHost, String host, int port )
+    {
+        this.originalHost = requireNonNull( originalHost, "original host" );
         this.host = requireNonNull( host, "host" );
         this.port = requireValidPort( port );
         this.stringValue = String.format( "%s:%d", host, port );
@@ -76,13 +84,13 @@ public class BoltServerAddress implements ServerAddress
             return false;
         }
         BoltServerAddress that = (BoltServerAddress) o;
-        return port == that.port && host.equals( that.host );
+        return port == that.port && originalHost.equals( that.originalHost ) && host.equals( that.host );
     }
 
     @Override
     public int hashCode()
     {
-        return 31 * host.hashCode() + port;
+        return Objects.hash( originalHost, host, port );
     }
 
     @Override
@@ -112,14 +120,14 @@ public class BoltServerAddress implements ServerAddress
      */
     public BoltServerAddress resolve() throws UnknownHostException
     {
-        String hostAddress = InetAddress.getByName( host ).getHostAddress();
-        if ( hostAddress.equals( host ) )
+        String ipAddress = InetAddress.getByName( host ).getHostAddress();
+        if ( ipAddress.equals( host ) )
         {
             return this;
         }
         else
         {
-            return new BoltServerAddress( hostAddress, port );
+            return new BoltServerAddress( host, ipAddress, port );
         }
     }
 
@@ -127,6 +135,12 @@ public class BoltServerAddress implements ServerAddress
     public String host()
     {
         return host;
+    }
+
+    @Override
+    public String originalHost()
+    {
+        return originalHost;
     }
 
     @Override
