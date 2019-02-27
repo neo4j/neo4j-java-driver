@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.util.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -26,14 +26,18 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.internal.util.ByteBufOutput;
+import org.neo4j.driver.internal.util.io.ByteBufOutput;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.singletonMap;

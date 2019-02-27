@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.util.io;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -32,6 +32,8 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
 

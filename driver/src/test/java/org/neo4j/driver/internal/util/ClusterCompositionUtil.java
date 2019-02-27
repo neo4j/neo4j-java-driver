@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.internal.util;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.cluster.ClusterComposition;
 
 import static java.util.Arrays.asList;
 

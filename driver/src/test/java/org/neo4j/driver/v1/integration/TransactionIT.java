@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;

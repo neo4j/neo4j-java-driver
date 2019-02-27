@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.internal.retry.FixedRetryLogic;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;

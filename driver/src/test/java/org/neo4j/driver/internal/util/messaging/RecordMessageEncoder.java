@@ -16,20 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.encode.response;
+package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.v1.Value;
 
-public class IgnoredMessageEncoder implements MessageEncoder
+import static org.neo4j.driver.v1.Values.value;
+
+public class RecordMessageEncoder implements MessageEncoder
 {
     @Override
     public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        packer.packStructHeader( 0, IgnoredMessage.SIGNATURE );
+        RecordMessage recordMessage = (RecordMessage) message;
+        Value[] fields = recordMessage.fields();
+        packer.packStructHeader( 1, recordMessage.signature() );
+        packer.pack( value( fields ) ); // pack list of fields
     }
 }

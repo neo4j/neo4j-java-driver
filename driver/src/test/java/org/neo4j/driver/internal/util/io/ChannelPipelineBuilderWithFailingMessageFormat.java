@@ -16,13 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.util.io;
 
 import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
 import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.v1.Logging;
 
 public class ChannelPipelineBuilderWithFailingMessageFormat implements ChannelPipelineBuilder

@@ -16,22 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.encode.response;
+package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.Values;
 
-public class SuccessMessageEncoder implements MessageEncoder
+public class FailureMessageEncoder implements MessageEncoder
 {
     @Override
     public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        SuccessMessage successMessage = (SuccessMessage) message;
-        packer.packStructHeader( 1, successMessage.signature() );
-        packer.pack( successMessage.metadata() );
+        FailureMessage failureMessage = (FailureMessage) message;
+        packer.packStructHeader( 1, failureMessage.signature() );
+        Map<String,Value> body = new HashMap<>();
+        body.put( "code", Values.value( failureMessage.code() ) );
+        body.put( "message", Values.value( failureMessage.message() ) );
+        packer.pack( body );
     }
 }

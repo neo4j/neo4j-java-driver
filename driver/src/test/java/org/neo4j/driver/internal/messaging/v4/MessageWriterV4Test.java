@@ -23,7 +23,7 @@ import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.messaging.AbstractMessageWriterTestBase;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;

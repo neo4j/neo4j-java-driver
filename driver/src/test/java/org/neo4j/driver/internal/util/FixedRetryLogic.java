@@ -16,12 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.retry;
+package org.neo4j.driver.internal.util;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
-import org.neo4j.driver.internal.util.SleeplessClock;
+import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
+import org.neo4j.driver.internal.retry.RetrySettings;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 

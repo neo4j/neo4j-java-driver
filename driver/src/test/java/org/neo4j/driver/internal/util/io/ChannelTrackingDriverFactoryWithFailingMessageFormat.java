@@ -16,12 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.util;
+package org.neo4j.driver.internal.util.io;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.v1.Config;
 
 public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory

@@ -16,20 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging;
+package org.neo4j.driver.internal.util.messaging;
 
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
+import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.response.FailureMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.response.IgnoredMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.response.RecordMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.RunMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.response.SuccessMessageEncoder;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
@@ -57,7 +55,7 @@ import org.neo4j.driver.v1.types.Relationship;
 public class KnowledgeableMessageFormat extends MessageFormatV2
 {
     @Override
-    public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
     {
         return new KnowledgeableMessageWriter( output );
     }
