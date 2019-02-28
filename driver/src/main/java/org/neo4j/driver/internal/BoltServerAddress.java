@@ -137,7 +137,6 @@ public class BoltServerAddress implements ServerAddress
         return host;
     }
 
-    @Override
     public String originalHost()
     {
         return originalHost;
