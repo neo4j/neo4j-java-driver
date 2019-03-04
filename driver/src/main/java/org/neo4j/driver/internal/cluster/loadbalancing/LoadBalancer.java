@@ -25,6 +25,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.async.AccessModeConnection;
 import org.neo4j.driver.internal.async.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
@@ -95,7 +96,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     {
         return freshRoutingTable( mode )
                 .thenCompose( routingTable -> acquire( mode, routingTable ) )
-                .thenApply( connection -> new RoutingConnection( connection, mode, this ) );
+                .thenApply( connection -> new RoutingConnection( connection, mode, this ) )
+                .thenApply( connection -> new AccessModeConnection( connection, mode ) );
     }
 
     @Override

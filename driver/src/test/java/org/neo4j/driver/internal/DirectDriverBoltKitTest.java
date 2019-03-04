@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -136,6 +137,48 @@ class DirectDriverBoltKitTest
 
             assertTrue( logMessageWithConnectionId.isPresent(),
                     "Expected log call did not happen. All debug log calls:\n" + String.join( "\n", messageCaptor.getAllValues() ) );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldSendReadAccessModeInStatementMetadata() throws Exception
+    {
+        StubServer server = StubServer.start( "hello_run_exit_read.script", 9001 );
+
+        Config config = Config.builder()
+                .withoutEncryption()
+                .build();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+                Session session = driver.session( AccessMode.READ ) )
+        {
+            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            assertEquals( asList( "Foo", "Bar" ), names );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldNotSendWriteAccessModeInStatementMetadata() throws Exception
+    {
+        StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
+
+        Config config = Config.builder()
+                .withoutEncryption()
+                .build();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+                Session session = driver.session( AccessMode.READ ) )
+        {
+            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            assertEquals( asList( "Foo", "Bar" ), names );
         }
         finally
         {

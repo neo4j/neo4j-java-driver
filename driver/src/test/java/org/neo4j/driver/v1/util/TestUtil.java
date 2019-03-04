@@ -22,8 +22,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 import org.mockito.ArgumentMatcher;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -49,6 +47,7 @@ import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
@@ -68,6 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.v1.AccessMode.*;
 
 public final class TestUtil
 {
@@ -194,10 +194,16 @@ public final class TestUtil
 
     public static Connection connectionMock()
     {
+        return connectionMock( WRITE );
+    }
+
+    public static Connection connectionMock( AccessMode mode )
+    {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.mode() ).thenReturn( mode );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );

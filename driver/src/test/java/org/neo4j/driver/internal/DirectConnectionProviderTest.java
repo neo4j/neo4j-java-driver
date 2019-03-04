@@ -19,14 +19,20 @@
 package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.internal.async.AccessModeConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.v1.AccessMode;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
@@ -48,8 +54,26 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection1, connection2 );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        assertSame( connection1, await( provider.acquireConnection( READ ) ) );
-        assertSame( connection2, await( provider.acquireConnection( WRITE ) ) );
+        Connection acquired1 = await( provider.acquireConnection( READ ) );
+        assertThat( acquired1, instanceOf( AccessModeConnection.class ) );
+        assertSame( connection1, ((AccessModeConnection) acquired1).connection() );
+
+        Connection acquired2 = await( provider.acquireConnection( WRITE ) );
+        assertThat( acquired2, instanceOf( AccessModeConnection.class ) );
+        assertSame( connection2, ((AccessModeConnection) acquired2).connection() );
+    }
+
+    @ParameterizedTest
+    @EnumSource( AccessMode.class )
+    void returnsCorrectAccessMode( AccessMode mode )
+    {
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+        ConnectionPool pool = poolMock( address, mock( Connection.class ) );
+        DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
+
+        Connection acquired = await( provider.acquireConnection( mode ) );
+
+        assertEquals( mode, acquired.mode() );
     }
 
     @Test

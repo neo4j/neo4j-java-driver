@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.messaging.encode;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 
 import java.time.Duration;
@@ -28,6 +30,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.singletonMap;
@@ -35,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Values.value;
 
 class RunWithMetadataMessageEncoderTest
@@ -42,8 +46,9 @@ class RunWithMetadataMessageEncoderTest
     private final RunWithMetadataMessageEncoder encoder = new RunWithMetadataMessageEncoder();
     private final ValuePacker packer = mock( ValuePacker.class );
 
-    @Test
-    void shouldEncodeRunWithMetadataMessage() throws Exception
+    @ParameterizedTest
+    @EnumSource( AccessMode.class )
+    void shouldEncodeRunWithMetadataMessage( AccessMode mode ) throws Exception
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
@@ -56,7 +61,7 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmarks, txTimeout, txMetadata ), packer );
+        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmarks, txTimeout, txMetadata, mode ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );
@@ -67,6 +72,10 @@ class RunWithMetadataMessageEncoderTest
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
         expectedMetadata.put( "tx_timeout", value( 42 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
+        if ( mode == READ )
+        {
+            expectedMetadata.put( "mode", value( "r" ) );
+        }
 
         order.verify( packer ).pack( expectedMetadata );
     }
