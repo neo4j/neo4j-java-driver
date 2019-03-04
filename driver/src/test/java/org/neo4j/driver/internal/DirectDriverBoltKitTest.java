@@ -175,7 +175,7 @@ class DirectDriverBoltKitTest
                 .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-                Session session = driver.session( AccessMode.READ ) )
+                Session session = driver.session( AccessMode.WRITE ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
