@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.async.AccessModeConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -45,7 +46,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
-        return connectionPool.acquire( address );
+        return connectionPool.acquire( address ).thenApply( connection -> new AccessModeConnection( connection, mode ) );
     }
 
     @Override

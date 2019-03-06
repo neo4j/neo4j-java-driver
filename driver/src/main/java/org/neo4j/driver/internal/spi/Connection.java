@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.v1.AccessMode;
 
 public interface Connection
 {
@@ -52,4 +53,9 @@ public interface Connection
     ServerVersion serverVersion();
 
     BoltProtocol protocol();
+
+    default AccessMode mode()
+    {
+        return AccessMode.WRITE;
+    }
 }

@@ -77,7 +77,7 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints.script", 9001 );
+        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
@@ -94,6 +94,45 @@ class RoutingDriverBoltKitTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
+
+    @Test
+    void shouldSendReadAccessModeOnStatementMetadata() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+
+        //START a read server
+        StubServer readServer = StubServer.start( "read_server_v3_read.script", 9005 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+                Session session = driver.session( AccessMode.READ ) )
+        {
+            session.run( "MATCH (n) RETURN n.name" );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldSendReadAccessModeOnStatementMetadataOnReadTx() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+
+        //START a read server
+        StubServer readServer = StubServer.start( "read_server_v3_read_tx.script", 9005 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+                Session session = driver.session( AccessMode.READ ) )
+        {
+            session.readTransaction( t -> t.run( "MATCH (n) RETURN n.name" ) );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( readServer.exitStatus(), equalTo( 0 ) );
+    }
+
 
     @Test
     void shouldHandleAcquireReadSessionPlusTransaction()
@@ -287,6 +326,44 @@ class RoutingDriverBoltKitTest
               Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldNotSendWriteAccessModeOnStatementMetadata() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+
+        //START a write server
+        StubServer writeServer = StubServer.start( "write_server_v3_write.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+                Session session = driver.session( AccessMode.WRITE ) )
+        {
+            session.run( "CREATE (n {name:'Bob'})" );
+        }
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldNotSendWriteAccessModeOnStatementMetadataWithWriteTx() throws IOException, InterruptedException, StubServer.ForceKilled
+    {
+        // Given
+        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+
+        //START a write server
+        StubServer writeServer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
+        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, config );
+                Session session = driver.session() )
+        {
+            session.writeTransaction( t -> t.run( "CREATE (n {name:'Bob'})" ) );
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );

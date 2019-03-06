@@ -96,7 +96,7 @@ public class BoltProtocolV3 implements BoltProtocol
     @Override
     public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.mode() );
 
         if ( bookmarks.isEmpty() )
         {
@@ -148,7 +148,7 @@ public class BoltProtocolV3 implements BoltProtocol
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config );
+        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
 

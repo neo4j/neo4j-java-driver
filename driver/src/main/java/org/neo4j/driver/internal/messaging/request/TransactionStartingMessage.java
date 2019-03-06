@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.Iterables;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyMap;
@@ -34,12 +35,14 @@ abstract class TransactionStartingMessage implements Message
     private static final String BOOKMARKS_METADATA_KEY = "bookmarks";
     private static final String TX_TIMEOUT_METADATA_KEY = "tx_timeout";
     private static final String TX_METADATA_METADATA_KEY = "tx_metadata";
+    private static final String MODE_KEY = "mode";
+    private static final String MODE_READ_VALUE = "r";
 
     final Map<String,Value> metadata;
 
-    TransactionStartingMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
+    TransactionStartingMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
     {
-        this.metadata = buildMetadata( bookmarks, txTimeout, txMetadata );
+        this.metadata = buildMetadata( bookmarks, txTimeout, txMetadata, mode );
     }
 
     public final Map<String,Value> metadata()
@@ -47,13 +50,14 @@ abstract class TransactionStartingMessage implements Message
         return metadata;
     }
 
-    private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
+    private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
     {
         boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
+        boolean accessModePresent = mode == AccessMode.READ;
 
-        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent )
+        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent && !accessModePresent )
         {
             return emptyMap();
         }
@@ -71,6 +75,13 @@ abstract class TransactionStartingMessage implements Message
         if ( txMetadataPresent )
         {
             result.put( TX_METADATA_METADATA_KEY, value( txMetadata ) );
+        }
+
+        switch ( mode )
+        {
+        case READ:
+            result.put( MODE_KEY, value( MODE_READ_VALUE ) );
+            break;
         }
 
         return result;

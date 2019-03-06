@@ -18,23 +18,27 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Values.value;
 
 class BeginMessageTest
 {
-    @Test
-    void shouldHaveCorrectMetadata()
+    @ParameterizedTest
+    @EnumSource( AccessMode.class )
+    void shouldHaveCorrectMetadata( AccessMode mode )
     {
         Bookmarks bookmarks = Bookmarks.from( asList( "neo4j:bookmark:v1:tx42", "neo4j:bookmark:v1:tx4242", "neo4j:bookmark:v1:tx424242" ) );
 
@@ -45,12 +49,16 @@ class BeginMessageTest
 
         Duration txTimeout = Duration.ofSeconds( 13 );
 
-        BeginMessage message = new BeginMessage( bookmarks, txTimeout, txMetadata );
+        BeginMessage message = new BeginMessage( bookmarks, txTimeout, txMetadata, mode );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
         expectedMetadata.put( "tx_timeout", value( 13_000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
+        if ( mode == READ )
+        {
+            expectedMetadata.put( "mode", value( "r" ) );
+        }
 
         assertEquals( expectedMetadata, message.metadata() );
     }
