@@ -580,7 +580,7 @@ public class Config
 
         /**
          * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
-         * This defaults to {@link TrustStrategy#trustOnFirstUse(File)}.
+         * This defaults to {@link TrustStrategy#trustAllCertificates()}.
          * See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to verify
          * trust.
          * <p>
