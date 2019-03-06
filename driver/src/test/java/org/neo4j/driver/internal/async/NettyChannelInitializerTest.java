@@ -114,7 +114,7 @@ class NettyChannelInitializerTest
     @Test
     void shouldIncludeSniHostName() throws Exception
     {
-        BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
+        BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", "10.0.0.18", 8989 );
         NettyChannelInitializer initializer = new NettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
@@ -125,7 +125,7 @@ class NettyChannelInitializerTest
         List<SNIServerName> sniServerNames = sslParameters.getServerNames();
         assertThat( sniServerNames, hasSize( 1 ) );
         assertThat( sniServerNames.get( 0 ), instanceOf( SNIHostName.class ) );
-        assertThat( ((SNIHostName) sniServerNames.get( 0 )).getAsciiName(), equalTo( address.host() ) );
+        assertThat( ((SNIHostName) sniServerNames.get( 0 )).getAsciiName(), equalTo( address.originalHost() ) );
     }
 
     @Test

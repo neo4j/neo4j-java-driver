@@ -77,7 +77,7 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
     private SSLEngine createSslEngine()
     {
         SSLContext sslContext = securityPlan.sslContext();
-        SSLEngine sslEngine = sslContext.createSSLEngine( address.host(), address.port() );
+        SSLEngine sslEngine = sslContext.createSSLEngine( address.originalHost(), address.port() );
         sslEngine.setUseClientMode( true );
         if ( securityPlan.requiresHostnameVerification() )
         {

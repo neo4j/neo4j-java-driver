@@ -31,6 +31,7 @@ public class ServerVersion
 {
     public static final String NEO4J_PRODUCT = "Neo4j";
 
+    public static final ServerVersion v4_0_0 = new ServerVersion( NEO4J_PRODUCT, 4, 0, 0 );
     public static final ServerVersion v3_5_0 = new ServerVersion( NEO4J_PRODUCT, 3, 5, 0 );
     public static final ServerVersion v3_4_0 = new ServerVersion( NEO4J_PRODUCT, 3, 4, 0 );
     public static final ServerVersion v3_2_0 = new ServerVersion( NEO4J_PRODUCT, 3, 2, 0 );

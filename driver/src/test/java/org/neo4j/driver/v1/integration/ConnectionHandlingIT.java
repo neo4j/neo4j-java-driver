@@ -189,7 +189,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        assertThrows( ClientException.class, result::hasNext );
+        assertThrows( ClientException.class, result::consume );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
