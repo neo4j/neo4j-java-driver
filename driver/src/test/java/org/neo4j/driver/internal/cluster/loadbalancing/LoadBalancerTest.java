@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.AccessModeConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
@@ -44,6 +47,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -71,6 +76,29 @@ import static org.neo4j.driver.v1.util.TestUtil.await;
 
 class LoadBalancerTest
 {
+    @ParameterizedTest
+    @EnumSource( AccessMode.class )
+    void returnsCorrectAccessMode( AccessMode mode )
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+        RoutingTable routingTable = mock( RoutingTable.class );
+        AddressSet readerAddresses = mock( AddressSet.class );
+        AddressSet writerAddresses = mock( AddressSet.class );
+        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
+        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{B} );
+        when( routingTable.readers() ).thenReturn( readerAddresses );
+        when( routingTable.writers() ).thenReturn( writerAddresses );
+        Rediscovery rediscovery = mock( Rediscovery.class );
+
+        LoadBalancer loadBalancer = new LoadBalancer( connectionPool, routingTable, rediscovery,
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
+
+        Connection acquired = await( loadBalancer.acquireConnection( mode ) );
+
+        assertThat( acquired, instanceOf( AccessModeConnection.class ) );
+        assertThat( acquired.mode(), equalTo( mode ) );
+    }
+
     @Test
     void acquireShouldUpdateRoutingTableWhenKnownRoutingTableIsStale()
     {

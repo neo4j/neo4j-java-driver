@@ -86,7 +86,7 @@ public class Neo4jRunner
 
     public BoltServerAddress boltAddress()
     {
-        return new BoltServerAddress( "localhost", boltPort() );
+        return new BoltServerAddress( boltUri() );
     }
 
     public URI boltUri()

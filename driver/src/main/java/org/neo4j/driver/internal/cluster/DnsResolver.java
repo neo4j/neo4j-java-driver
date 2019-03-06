@@ -47,7 +47,7 @@ public class DnsResolver implements ServerAddressResolver
         try
         {
             return Stream.of( InetAddress.getAllByName( initialRouter.host() ) )
-                    .map( address -> new BoltServerAddress( address.getHostAddress(), initialRouter.port() ) )
+                    .map( address -> new BoltServerAddress( initialRouter.host(), address.getHostAddress(), initialRouter.port() ) )
                     .collect( toSet() );
         }
         catch ( UnknownHostException e )

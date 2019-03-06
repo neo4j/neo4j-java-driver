@@ -30,6 +30,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.util.CertificateExtension;
 import org.neo4j.driver.v1.util.CertificateToolUtil;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.ParallelizableIT;
@@ -46,7 +47,7 @@ import static org.neo4j.driver.v1.util.TestUtil.getRootCause;
 class TrustOnFirstUseIT
 {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new DatabaseExtension();
+    static final DatabaseExtension neo4j = new CertificateExtension();
 
     @Test
     void shouldTrustOnFirstUse() throws Throwable

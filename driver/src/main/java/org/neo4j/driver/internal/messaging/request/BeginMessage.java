@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 
@@ -30,14 +31,14 @@ public class BeginMessage extends TransactionStartingMessage
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmarks bookmarks, TransactionConfig config )
+    public BeginMessage( Bookmarks bookmarks, TransactionConfig config, AccessMode mode )
     {
-        this( bookmarks, config.timeout(), config.metadata() );
+        this( bookmarks, config.timeout(), config.metadata(), mode );
     }
 
-    public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata )
+    public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
     {
-        super( bookmarks, txTimeout, txMetadata );
+        super( bookmarks, txTimeout, txMetadata, mode );
     }
 
     @Override

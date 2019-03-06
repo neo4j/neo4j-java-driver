@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -86,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.TestUtil.await;
@@ -137,6 +139,7 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
@@ -157,6 +160,7 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
     void sessionCreationShouldFailIfCallingDiscoveryProcedureOnEdgeServer()
     {
         Cluster cluster = clusterRule.getCluster();

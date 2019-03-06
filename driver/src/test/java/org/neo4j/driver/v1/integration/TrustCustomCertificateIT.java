@@ -18,16 +18,10 @@
  */
 package org.neo4j.driver.v1.integration;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.v1.Config;
@@ -36,6 +30,7 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.exceptions.SecurityException;
+import org.neo4j.driver.v1.util.CertificateExtension;
 import org.neo4j.driver.v1.util.CertificateToolUtil.CertificateKeyPair;
 import org.neo4j.driver.v1.util.DatabaseExtension;
 import org.neo4j.driver.v1.util.ParallelizableIT;
@@ -51,28 +46,7 @@ import static org.neo4j.driver.v1.util.CertificateToolUtil.createNewCertificateA
 class TrustCustomCertificateIT
 {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new DatabaseExtension();
-
-    private static Path originalKeyFile;
-    private static Path originalCertFile;
-
-    @BeforeAll
-    static void beforeAll() throws IOException
-    {
-        originalKeyFile = Files.createTempFile( "key-file-", "" );
-        originalCertFile = Files.createTempFile( "cert-file-", "" );
-
-        Files.copy( neo4j.tlsKeyFile().toPath(), originalKeyFile , StandardCopyOption.REPLACE_EXISTING);
-        Files.copy( neo4j.tlsCertFile().toPath(), originalCertFile, StandardCopyOption.REPLACE_EXISTING );
-    }
-
-    @AfterAll
-    static void afterAll() throws Exception
-    {
-        neo4j.updateEncryptionKeyAndCert( originalKeyFile.toFile(), originalCertFile.toFile() );
-        Files.deleteIfExists( originalKeyFile );
-        Files.deleteIfExists( originalCertFile );
-    }
+    static final DatabaseExtension neo4j = new CertificateExtension();
 
     @Test
     void shouldAcceptServerWithCertificateSignedByDriverCertificate() throws Throwable

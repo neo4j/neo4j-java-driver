@@ -23,6 +23,7 @@ import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
+import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
 public enum Neo4jFeature
 {
@@ -36,7 +37,8 @@ public enum Neo4jFeature
     STATEMENT_RESULT_TIMINGS( v3_1_0 ),
     LIST_QUERIES_PROCEDURE( v3_1_0 ),
     CONNECTOR_LISTEN_ADDRESS_CONFIGURATION( v3_1_0 ),
-    BOLT_V3( v3_5_0 );
+    BOLT_V3( v3_5_0 ),
+    BOLT_V4( v4_0_0 );
 
     private final ServerVersion availableFromVersion;
 
