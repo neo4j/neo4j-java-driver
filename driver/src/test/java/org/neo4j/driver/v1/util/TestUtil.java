@@ -214,17 +214,17 @@ public final class TestUtil
         }
     }
 
-    public static Connection connectionMock()
+    public static Connection connectionMock( BoltProtocol protocol )
     {
-        return connectionMock( WRITE );
+        return connectionMock( WRITE, protocol );
     }
 
-    public static Connection connectionMock( AccessMode mode )
+    public static Connection connectionMock( AccessMode mode, BoltProtocol protocol )
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );

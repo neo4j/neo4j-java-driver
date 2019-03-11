@@ -70,7 +70,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     protected void testFailedRunInAutoCommitTxWithWaitingForResponse( Bookmarks bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
     {
         // Given
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
@@ -92,7 +92,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Bookmarks bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
     {
         // Given
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
@@ -110,10 +110,11 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         assertNotNull( cursorFuture.get() );
     }
 
+    @Override
     protected void testRunInExplicitTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
     {
         // Given
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
                 protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
@@ -140,7 +141,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     protected void testRunWithoutWaitingForRunResponse( boolean autoCommitTx, TransactionConfig config, AccessMode mode ) throws Exception
     {
         // Given
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         Bookmarks initialBookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx987" );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;

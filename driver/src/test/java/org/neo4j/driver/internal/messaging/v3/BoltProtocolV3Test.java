@@ -56,8 +56,8 @@ import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
@@ -83,7 +83,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
@@ -183,7 +182,7 @@ public class BoltProtocolV3Test
     @Test
     void shouldBeginTransactionWithoutBookmark()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), TransactionConfig.empty() );
 
@@ -194,7 +193,7 @@ public class BoltProtocolV3Test
     @Test
     void shouldBeginTransactionWithBookmarks()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx100" );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
@@ -206,7 +205,7 @@ public class BoltProtocolV3Test
     @Test
     void shouldBeginTransactionWithConfig()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), txConfig );
 
@@ -217,7 +216,7 @@ public class BoltProtocolV3Test
     @Test
     void shouldBeginTransactionWithBookmarksAndConfig()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx4242" );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, txConfig );
@@ -231,8 +230,8 @@ public class BoltProtocolV3Test
     {
         String bookmarkString = "neo4j:bookmark:v1:tx4242";
 
-        Connection connection = connectionMock();
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        Connection connection = connectionMock( protocol );
+        when( connection.protocol() ).thenReturn( protocol );
         doAnswer( invocation ->
         {
             ResponseHandler commitHandler = invocation.getArgument( 1 );
@@ -249,7 +248,7 @@ public class BoltProtocolV3Test
     @Test
     void shouldRollbackTransaction()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.rollbackTransaction( connection );
 
@@ -310,18 +309,6 @@ public class BoltProtocolV3Test
     @EnumSource( AccessMode.class )
     void shouldRunInExplicitTransactionAndWaitForSuccessRunResponse( AccessMode mode ) throws Exception
     {
-        Connection connection = connectionMock( mode );
-
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
-        assertFalse( cursorFuture.isDone() );
-
-        ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, Bookmarks.empty(), TransactionConfig.empty(), mode ).runHandler;
-
-        runResponseHandler.onSuccess( emptyMap() );
-
-        assertTrue( cursorFuture.isDone() );
-        assertNotNull( cursorFuture.get() );
         testRunInExplicitTransactionAndWaitForRunResponse( true, mode );
     }
 
@@ -329,14 +316,13 @@ public class BoltProtocolV3Test
     @EnumSource( AccessMode.class )
     void shouldRunInExplicitTransactionAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
     {
-
         testRunInExplicitTransactionAndWaitForRunResponse( false, mode );
     }
 
     protected void testRunInExplicitTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
     {
         // Given
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
                 protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
@@ -361,7 +347,7 @@ public class BoltProtocolV3Test
 
     protected void testRunWithoutWaitingForRunResponse( boolean autoCommitTx, TransactionConfig config, AccessMode mode ) throws Exception
     {
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         Bookmarks initialBookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx987" );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;
@@ -391,7 +377,7 @@ public class BoltProtocolV3Test
 
     protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Bookmarks bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
     {
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
@@ -411,7 +397,7 @@ public class BoltProtocolV3Test
 
     protected void testFailedRunInAutoCommitTxWithWaitingForResponse( Bookmarks bookmarks, TransactionConfig config, AccessMode mode ) throws Exception
     {
-        Connection connection = connectionMock( mode );
+        Connection connection = connectionMock( mode, protocol );
         BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =

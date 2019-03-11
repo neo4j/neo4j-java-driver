@@ -16,13 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.messaging.v2;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.function.Consumer;
 
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -30,6 +33,7 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,9 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
-import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
 
 class ExplicitTransactionTest
@@ -273,10 +275,15 @@ class ExplicitTransactionTest
         return await( tx.beginAsync( initialBookmarks, TransactionConfig.empty() ) );
     }
 
+    static Connection connectionMock()
+    {
+        return TestUtil.connectionMock( BoltProtocolV2.INSTANCE );
+    }
+
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
     {
         Connection connection = mock( Connection.class );
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.protocol() ).thenReturn( BoltProtocolV2.INSTANCE );
 
         doAnswer( invocation ->
         {

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.messaging.v2;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,14 +27,17 @@ import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
@@ -72,13 +75,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.v2.ExplicitTransactionTest.connectionMock;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.AccessMode.WRITE;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
-import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 import static org.neo4j.driver.v1.util.TestUtil.runMessageWithStatementMatcher;
 
 class NetworkSessionTest
@@ -95,7 +97,7 @@ class NetworkSessionTest
         when( connection.reset() ).thenReturn( completedWithNull() );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.protocol() ).thenReturn( BoltProtocolV2.INSTANCE );
         connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
                 .thenReturn( completedFuture( connection ) );
@@ -247,7 +249,7 @@ class NetworkSessionTest
     {
         Bookmarks bookmarkAfterCommit = Bookmarks.from( "TheBookmark" );
 
-        BoltProtocol protocol = spy( DEFAULT_TEST_PROTOCOL );
+        BoltProtocol protocol = spy( BoltProtocolV2.INSTANCE );
         doReturn( completedFuture( bookmarkAfterCommit ) ).when( protocol ).commitTransaction( any( Connection.class ) );
 
         when( connection.protocol() ).thenReturn( protocol );
@@ -317,7 +319,7 @@ class NetworkSessionTest
 
         NetworkSession session = newSession( connectionProvider, READ );
 
-        BoltProtocol protocol = spy( DEFAULT_TEST_PROTOCOL );
+        BoltProtocol protocol = spy( BoltProtocolV2.INSTANCE );
         doReturn( completedFuture( bookmarks1 ), completedFuture( bookmarks2 ) ).when( protocol ).commitTransaction( any( Connection.class ) );
 
         when( connection.protocol() ).thenReturn( protocol );

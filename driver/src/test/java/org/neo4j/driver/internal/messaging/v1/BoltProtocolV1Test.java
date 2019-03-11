@@ -78,7 +78,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
@@ -149,7 +148,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldBeginTransactionWithoutBookmark()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), TransactionConfig.empty() );
 
@@ -163,7 +162,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldBeginTransactionWithBookmarks()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx100" );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
@@ -181,7 +180,7 @@ public class BoltProtocolV1Test
         String bookmarkString = "neo4j:bookmark:v1:tx1909";
 
         Connection connection = mock( Connection.class );
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.protocol() ).thenReturn( protocol );
         doAnswer( invocation ->
         {
             ResponseHandler commitHandler = invocation.getArgument( 3 );
@@ -201,7 +200,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldRollbackTransaction()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.rollbackTransaction( connection );
 
@@ -256,7 +255,7 @@ public class BoltProtocolV1Test
                 .withMetadata( singletonMap( "key", "value" ) )
                 .build();
 
-        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock(), Bookmarks.empty(), config );
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( protocol ), Bookmarks.empty(), config );
 
         ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
@@ -271,7 +270,7 @@ public class BoltProtocolV1Test
                 .build();
 
         ClientException e = assertThrows( ClientException.class,
-                () -> protocol.runInAutoCommitTransaction( connectionMock(), new Statement( "RETURN 1" ), BookmarksHolder.NO_OP, config, true ) );
+                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarksHolder.NO_OP, config, true ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
