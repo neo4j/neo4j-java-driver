@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;

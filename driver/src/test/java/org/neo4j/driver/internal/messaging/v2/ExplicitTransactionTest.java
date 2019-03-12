@@ -24,8 +24,8 @@ import org.mockito.InOrder;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;

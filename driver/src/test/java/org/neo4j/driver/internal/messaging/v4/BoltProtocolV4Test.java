@@ -26,7 +26,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.SimpleBookmarksHolder;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -71,7 +71,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
-        BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarksHolder, config, true ).asyncResult().toCompletableFuture();
@@ -93,7 +93,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
-        BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( bookmarks );
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( bookmarks );
 
         CompletableFuture<InternalStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarksHolder, config, true ).asyncResult().toCompletableFuture();
@@ -147,7 +147,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
-            BookmarksHolder bookmarksHolder = new SimpleBookmarksHolder( initialBookmarks );
+            BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( initialBookmarks );
             cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarksHolder, config, false ).asyncResult();
         }
         else
