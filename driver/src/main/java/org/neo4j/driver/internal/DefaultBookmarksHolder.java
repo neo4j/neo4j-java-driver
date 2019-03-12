@@ -18,11 +18,19 @@
  */
 package org.neo4j.driver.internal;
 
-public class SimpleBookmarksHolder implements BookmarksHolder
+/**
+ * @since 2.0
+ */
+public class DefaultBookmarksHolder implements BookmarksHolder
 {
     private volatile Bookmarks bookmarks;
 
-    public SimpleBookmarksHolder( Bookmarks bookmarks )
+    public DefaultBookmarksHolder()
+    {
+        this( Bookmarks.empty() );
+    }
+
+    public DefaultBookmarksHolder( Bookmarks bookmarks )
     {
         this.bookmarks = bookmarks;
     }
@@ -36,6 +44,15 @@ public class SimpleBookmarksHolder implements BookmarksHolder
     @Override
     public void setBookmarks( Bookmarks bookmarks )
     {
-        this.bookmarks = bookmarks;
+        if ( bookmarks != null && !bookmarks.isEmpty() )
+        {
+            this.bookmarks = bookmarks;
+        }
+    }
+
+    @Override
+    public String lastBookmark()
+    {
+        return bookmarks == null ? null : bookmarks.maxBookmarkAsString();
     }
 }

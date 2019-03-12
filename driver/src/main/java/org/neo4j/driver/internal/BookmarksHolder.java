@@ -24,6 +24,8 @@ public interface BookmarksHolder
 
     void setBookmarks( Bookmarks bookmarks );
 
+    String lastBookmark();
+
     BookmarksHolder NO_OP = new BookmarksHolder()
     {
         @Override
@@ -35,6 +37,12 @@ public interface BookmarksHolder
         @Override
         public void setBookmarks( Bookmarks bookmarks )
         {
+        }
+
+        @Override
+        public String lastBookmark()
+        {
+            return null;
         }
     };
 }

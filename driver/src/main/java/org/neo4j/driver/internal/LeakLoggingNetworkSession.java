@@ -30,9 +30,9 @@ class LeakLoggingNetworkSession extends NetworkSession
 {
     private final String stackTrace;
 
-    LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging )
+    LeakLoggingNetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging, BookmarksHolder bookmarksHolder )
     {
-        super( connectionProvider, mode, retryLogic, logging );
+        super( connectionProvider, mode, retryLogic, logging, bookmarksHolder );
         this.stackTrace = captureStackTrace();
     }
 

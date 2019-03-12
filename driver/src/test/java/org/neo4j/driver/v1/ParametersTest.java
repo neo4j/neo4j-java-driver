@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -105,6 +106,6 @@ class ParametersTest
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
-        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING );
+        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING, new DefaultBookmarksHolder() );
     }
 }
