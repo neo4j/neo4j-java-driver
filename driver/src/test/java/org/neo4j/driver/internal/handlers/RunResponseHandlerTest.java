@@ -33,6 +33,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,7 +45,7 @@ class RunResponseHandlerTest
     @Test
     void shouldNotifyCompletionFutureOnSuccess() throws Exception
     {
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
 
         assertFalse( runCompletedFuture.isDone() );
@@ -57,14 +58,14 @@ class RunResponseHandlerTest
     @Test
     void shouldNotifyCompletionFutureOnFailure() throws Exception
     {
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
+        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
         RunResponseHandler handler = newHandler( runCompletedFuture );
 
         assertFalse( runCompletedFuture.isDone() );
         handler.onFailure( new RuntimeException() );
 
         assertTrue( runCompletedFuture.isDone() );
-        assertNull( runCompletedFuture.get() );
+        assertNotNull( runCompletedFuture.get() );
     }
 
     @Test
@@ -132,7 +133,7 @@ class RunResponseHandlerTest
         return newHandler( BoltProtocolV1.METADATA_EXTRACTOR );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture )
+    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture )
     {
         return newHandler( runCompletedFuture, BoltProtocolV1.METADATA_EXTRACTOR );
     }
@@ -142,7 +143,7 @@ class RunResponseHandlerTest
         return newHandler( new CompletableFuture<>(), metadataExtractor );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
+    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         return new RunResponseHandler( runCompletedFuture, metadataExtractor );
     }

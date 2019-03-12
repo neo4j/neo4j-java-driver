@@ -34,7 +34,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -52,6 +51,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
@@ -78,7 +78,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
 
@@ -149,7 +148,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldBeginTransactionWithoutBookmark()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), TransactionConfig.empty() );
 
@@ -163,7 +162,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldBeginTransactionWithBookmarks()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx100" );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
@@ -181,7 +180,7 @@ public class BoltProtocolV1Test
         String bookmarkString = "neo4j:bookmark:v1:tx1909";
 
         Connection connection = mock( Connection.class );
-        when( connection.protocol() ).thenReturn( DEFAULT_TEST_PROTOCOL );
+        when( connection.protocol() ).thenReturn( protocol );
         doAnswer( invocation ->
         {
             ResponseHandler commitHandler = invocation.getArgument( 3 );
@@ -201,7 +200,7 @@ public class BoltProtocolV1Test
     @Test
     void shouldRollbackTransaction()
     {
-        Connection connection = connectionMock();
+        Connection connection = connectionMock( protocol );
 
         CompletionStage<Void> stage = protocol.rollbackTransaction( connection );
 
@@ -256,7 +255,7 @@ public class BoltProtocolV1Test
                 .withMetadata( singletonMap( "key", "value" ) )
                 .build();
 
-        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock(), Bookmarks.empty(), config );
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( protocol ), Bookmarks.empty(), config );
 
         ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
@@ -270,10 +269,8 @@ public class BoltProtocolV1Test
                 .withMetadata( singletonMap( "hello", "world" ) )
                 .build();
 
-        CompletionStage<InternalStatementResultCursor> cursorFuture = protocol.runInAutoCommitTransaction( connectionMock(), new Statement( "RETURN 1" ),
-                BookmarksHolder.NO_OP, config, true );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( cursorFuture ) );
+        ClientException e = assertThrows( ClientException.class,
+                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarksHolder.NO_OP, config, true ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
@@ -294,12 +291,15 @@ public class BoltProtocolV1Test
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
-
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), false );
+            cursorStage = protocol
+                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), false )
+                    .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false );
+            cursorStage = protocol
+                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false )
+                    .asyncResult();
         }
         CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
@@ -315,11 +315,13 @@ public class BoltProtocolV1Test
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), true );
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
+                    .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true );
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true )
+                    .asyncResult();
         }
         CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 

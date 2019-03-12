@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.messaging.encode;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.PullNMessage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -44,6 +44,6 @@ class PullAllMessageEncoderTest
     @Test
     void shouldFailToEncodeWrongMessage()
     {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( DiscardAllMessage.DISCARD_ALL, packer ) );
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new PullNMessage( 100, 200 ), packer ) );
     }
 }

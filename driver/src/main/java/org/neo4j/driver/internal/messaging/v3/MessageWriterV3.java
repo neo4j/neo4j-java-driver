@@ -56,9 +56,11 @@ public class MessageWriterV3 extends AbstractMessageWriter
         Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 9 );
         result.put( HelloMessage.SIGNATURE, new HelloMessageEncoder() );
         result.put( GoodbyeMessage.SIGNATURE, new GoodbyeMessageEncoder() );
+
         result.put( RunWithMetadataMessage.SIGNATURE, new RunWithMetadataMessageEncoder() );
         result.put( DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder() );
         result.put( PullAllMessage.SIGNATURE, new PullAllMessageEncoder() );
+
         result.put( BeginMessage.SIGNATURE, new BeginMessageEncoder() );
         result.put( CommitMessage.SIGNATURE, new CommitMessageEncoder() );
         result.put( RollbackMessage.SIGNATURE, new RollbackMessageEncoder() );

@@ -29,6 +29,9 @@ import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.reactive.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
@@ -58,7 +61,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
     private volatile Bookmarks bookmarks = Bookmarks.empty();
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
-    private volatile CompletionStage<InternalStatementResultCursor> resultCursorStage = completedWithNull();
+    private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
@@ -276,7 +279,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while resetting the session" ) );
     }
 
-    private CompletionStage<Void> resetAsync()
+    public CompletionStage<Void> resetAsync()
     {
         return existingTransactionOrNull()
                 .thenAccept( tx ->
@@ -439,18 +442,42 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
         }
     }
 
+    public CompletionStage<RxStatementResultCursor> runRx( Statement statement, TransactionConfig config )
+    {
+        CompletionStage<RxStatementResultCursor> newResultCursorStage =
+                buildResultCursorFactory( statement, config, true ).thenCompose( StatementResultCursorFactory::rxResult );
+
+        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
+        return newResultCursorStage;
+    }
+
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
+    {
+        CompletionStage<InternalStatementResultCursor> newResultCursorStage =
+                buildResultCursorFactory( statement, config, waitForRunResponse ).thenCompose( StatementResultCursorFactory::asyncResult );
+
+        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
+        return newResultCursorStage;
+    }
+
+    private CompletionStage<StatementResultCursorFactory> buildResultCursorFactory( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
-        CompletionStage<InternalStatementResultCursor> newResultCursorStage = ensureNoOpenTxBeforeRunningQuery()
+        return ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection ->
-                        connection.protocol().runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse ) );
-
-        resultCursorStage = newResultCursorStage.exceptionally( error -> null );
-
-        return newResultCursorStage;
+                .thenCompose( connection -> {
+                    try
+                    {
+                        StatementResultCursorFactory factory = connection.protocol()
+                                .runInAutoCommitTransaction( connection, statement, this, config, waitForRunResponse );
+                        return completedFuture( factory );
+                    }
+                    catch ( Throwable e )
+                    {
+                        return Futures.failedFuture( e );
+                    }
+                } );
     }
 
     private Transaction beginTransaction( AccessMode mode, TransactionConfig config )
@@ -553,7 +580,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 releaseConnection().thenApply( ignore -> txCloseError ) );
     }
 
-    private CompletionStage<Void> releaseConnection()
+    public CompletionStage<Void> releaseConnection()
     {
         return connectionStage.thenCompose( connection ->
         {

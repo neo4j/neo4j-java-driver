@@ -33,7 +33,7 @@ import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.TypeSystem;
 
-abstract class AbstractStatementRunner implements StatementRunner
+public abstract class AbstractStatementRunner implements StatementRunner
 {
     @Override
     public final StatementResult run( String statementTemplate, Value parameters )
@@ -89,12 +89,12 @@ abstract class AbstractStatementRunner implements StatementRunner
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    private static Value parameters( Record record )
+    public static Value parameters( Record record )
     {
         return record == null ? Values.EmptyMap : parameters( record.asMap() );
     }
 
-    private static Value parameters( Map<String,Object> map )
+    public static Value parameters( Map<String,Object> map )
     {
         if ( map == null || map.isEmpty() )
         {

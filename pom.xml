@@ -57,9 +57,19 @@
     <dependencies>
       <!-- Compile dependencies -->
       <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+      <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
         <version>4.1.22.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>3.2.6.RELEASE</version>
       </dependency>
       <!-- Optional dependencies -->
       <dependency>
@@ -115,6 +125,12 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>1.2.3</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-test</artifactId>
+        <version>3.2.6.RELEASE</version>
         <scope>test</scope>
       </dependency>
     </dependencies>

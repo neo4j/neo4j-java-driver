@@ -26,6 +26,8 @@ import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.StatementResult;
@@ -149,7 +151,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( ( ignore, error ) -> transactionClosed( State.COMMITTED ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( error == null ) );
         }
     }
 
@@ -168,7 +170,7 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         {
             return resultCursors.retrieveNotConsumedError()
                     .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( ( ignore, error ) -> transactionClosed( State.ROLLED_BACK ) );
+                    .whenComplete( ( ignore, error ) -> transactionClosed( false ) );
         }
     }
 
@@ -190,7 +192,17 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage = protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse );
+        CompletionStage<InternalStatementResultCursor> cursorStage =
+                protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse ).asyncResult();
+        resultCursors.add( cursorStage );
+        return cursorStage;
+    }
+
+    public CompletionStage<RxStatementResultCursor> runRx( Statement statement )
+    {
+        ensureCanRunQueries();
+        CompletionStage<RxStatementResultCursor> cursorStage =
+                protocol.runInExplicitTransaction( connection, statement, this, false ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -265,9 +277,16 @@ public class ExplicitTransaction extends AbstractStatementRunner implements Tran
         };
     }
 
-    private void transactionClosed( State newState )
+    private void transactionClosed( boolean isCommitted )
     {
-        state = newState;
+        if ( isCommitted )
+        {
+            state = State.COMMITTED;
+        }
+        else
+        {
+            state = State.ROLLED_BACK;
+        }
         connection.release(); // release in background
     }
 

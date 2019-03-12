@@ -21,6 +21,7 @@ package org.neo4j.driver.v1.integration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import reactor.test.StepVerifier;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,9 +40,12 @@ import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Config;
@@ -85,7 +89,9 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
+import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.v1.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
@@ -824,6 +830,7 @@ class SessionIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldConsumePreviousResultBeforeRunningNewQuery()
     {
         try ( Session session = neo4j.driver().session() )
@@ -861,6 +868,7 @@ class SessionIT
         assertEquals( 0, invocations.get() );
     }
 
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     @Test
     void shouldAllowConsumingRecordsAfterFailureInSessionClose()
     {
@@ -926,6 +934,7 @@ class SessionIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
     {
         Session session = neo4j.driver().session();
@@ -1201,6 +1210,22 @@ class SessionIT
             assertEquals( 100, seenProperties );
             assertEquals( 1000, seenResources );
         }
+    }
+
+    @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
+    void shouldErrorWhenTryingToUseRxAPIWithoutBoltV4() throws Throwable
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxResult result = session.run( "RETURN 1" );
+
+        // When trying to run the query on a server that is using a protocol that is lower than V4
+        StepVerifier.create( result.records() ).expectErrorSatisfies( error -> {
+            // Then
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), containsString( "Driver is connected to the database that does not support driver reactive API" ) );
+        } ).verify();
     }
 
     private void testExecuteReadTx( AccessMode sessionMode )

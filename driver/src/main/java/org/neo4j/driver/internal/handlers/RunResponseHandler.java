@@ -30,13 +30,19 @@ import static java.util.Collections.emptyList;
 
 public class RunResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<Void> runCompletedFuture;
+    private final CompletableFuture<Throwable> runCompletedFuture;
     private final MetadataExtractor metadataExtractor;
+    private long statementId = MetadataExtractor.ABSENT_STATEMENT_ID;
 
     private List<String> statementKeys = emptyList();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( CompletableFuture<Void> runCompletedFuture, MetadataExtractor metadataExtractor )
+    public RunResponseHandler( MetadataExtractor metadataExtractor )
+    {
+        this( new CompletableFuture<>(), metadataExtractor );
+    }
+
+    public RunResponseHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
     {
         this.runCompletedFuture = runCompletedFuture;
         this.metadataExtractor = metadataExtractor;
@@ -47,14 +53,15 @@ public class RunResponseHandler implements ResponseHandler
     {
         statementKeys = metadataExtractor.extractStatementKeys( metadata );
         resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
+        statementId = metadataExtractor.extractStatementId( metadata );
 
-        completeRunFuture();
+        completeRunFuture( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        completeRunFuture();
+        completeRunFuture( error );
     }
 
     @Override
@@ -73,13 +80,24 @@ public class RunResponseHandler implements ResponseHandler
         return resultAvailableAfter;
     }
 
-    /**
-     * Complete the given future with {@code null}. Future is never completed exceptionally because callers are only
-     * interested in when RUN completes and not how. Async API needs to wait for RUN because it needs to access
-     * statement keys.
-     */
-    private void completeRunFuture()
+    public long statementId()
     {
-        runCompletedFuture.complete( null );
+        return statementId;
+    }
+
+    /**
+     * Complete the given future with error if the future was failed.
+     * Future is never completed exceptionally.
+     * Async API needs to wait for RUN because it needs to access statement keys.
+     * Reactive API needs to know if RUN failed by checking the error.
+     */
+    private void completeRunFuture( Throwable error )
+    {
+        runCompletedFuture.complete( error );
+    }
+
+    public CompletableFuture<Throwable> runFuture()
+    {
+        return runCompletedFuture;
     }
 }

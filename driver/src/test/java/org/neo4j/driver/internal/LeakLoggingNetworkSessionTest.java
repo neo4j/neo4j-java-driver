@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
 
-import org.neo4j.driver.internal.retry.FixedRetryLogic;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
@@ -44,6 +44,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 
 class LeakLoggingNetworkSessionTest
 {
@@ -107,7 +108,7 @@ class LeakLoggingNetworkSessionTest
 
     private static Connection connectionMock( boolean open )
     {
-        Connection connection = TestUtil.connectionMock();
+        Connection connection = TestUtil.connectionMock( DEFAULT_TEST_PROTOCOL );
         when( connection.isOpen() ).thenReturn( open );
         return connection;
     }

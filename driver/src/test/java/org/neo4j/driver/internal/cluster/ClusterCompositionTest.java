@@ -38,12 +38,12 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.A;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.B;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.C;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.D;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.E;
-import static org.neo4j.driver.internal.cluster.ClusterCompositionUtil.F;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.v1.Values.value;
 
 class ClusterCompositionTest

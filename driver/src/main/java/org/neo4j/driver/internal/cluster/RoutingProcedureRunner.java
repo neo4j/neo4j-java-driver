@@ -63,7 +63,7 @@ public class RoutingProcedureRunner
     {
         return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
-                .thenCompose( StatementResultCursor::listAsync );
+                .asyncResult().thenCompose( StatementResultCursor::listAsync );
     }
 
     private Statement procedureStatement( ServerVersion serverVersion )

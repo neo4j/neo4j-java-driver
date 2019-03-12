@@ -28,7 +28,7 @@ import org.neo4j.driver.v1.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class SessionPullAllResponseHandler extends PullAllResponseHandler
+public class SessionPullAllResponseHandler extends AbstractPullAllResponseHandler
 {
     private final BookmarksHolder bookmarksHolder;
 

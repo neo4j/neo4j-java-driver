@@ -97,6 +97,15 @@ public class DirectConnection implements Connection
     }
 
     @Override
+    public void flush()
+    {
+        if ( verifyOpen( null, null ) )
+        {
+            flushInEventLoop();
+        }
+    }
+
+    @Override
     public void write( Message message, ResponseHandler handler )
     {
         if ( verifyOpen( handler, null ) )
@@ -205,6 +214,11 @@ public class DirectConnection implements Connection
         } );
     }
 
+    private void flushInEventLoop()
+    {
+        channel.eventLoop().execute( channel::flush );
+    }
+
     private void writeMessageInEventLoop( Message message, ResponseHandler handler, boolean flush )
     {
         channel.eventLoop().execute( () ->
@@ -256,7 +270,10 @@ public class DirectConnection implements Connection
             return true;
         case RELEASED:
             Exception error = new IllegalStateException( "Connection has been released to the pool and can't be used" );
-            handler1.onFailure( error );
+            if ( handler1 != null )
+            {
+                handler1.onFailure( error );
+            }
             if ( handler2 != null )
             {
                 handler2.onFailure( error );
@@ -264,7 +281,10 @@ public class DirectConnection implements Connection
             return false;
         case TERMINATED:
             Exception terminatedError = new IllegalStateException( "Connection has been terminated and can't be used" );
-            handler1.onFailure( terminatedError );
+            if ( handler1 != null )
+            {
+                handler1.onFailure( terminatedError );
+            }
             if ( handler2 != null )
             {
                 handler2.onFailure( terminatedError );

@@ -365,7 +365,7 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = new InternalStatementResultCursor( runHandler, pullAllHandler );
+        StatementResultCursor cursor = new AsyncStatementResultCursor( runHandler, pullAllHandler );
         return new InternalStatementResult( connection, cursor );
     }
 

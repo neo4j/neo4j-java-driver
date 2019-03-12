@@ -21,11 +21,10 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Session;
 
 public interface SessionFactory
 {
-    Session newInstance( AccessMode mode, Bookmarks bookmarks );
+    NetworkSession newInstance( AccessMode mode, Bookmarks bookmarks );
 
     CompletionStage<Void> verifyConnectivity();
 

@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 
-import org.neo4j.driver.internal.messaging.AbstractMessageReaderTestBase;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageReaderTestBase;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-import org.neo4j.driver.internal.messaging.AbstractMessageReaderTestBase;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageReaderTestBase;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.v1.Value;

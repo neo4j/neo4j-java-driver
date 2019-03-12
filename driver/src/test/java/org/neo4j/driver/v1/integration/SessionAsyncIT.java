@@ -82,6 +82,7 @@ import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAft
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
+import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.v1.Values.parameters;
 import static org.neo4j.driver.v1.util.TestUtil.await;
 import static org.neo4j.driver.v1.util.TestUtil.awaitAll;
@@ -158,6 +159,7 @@ class SessionAsyncIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldFailWhenQueryFailsAtRuntime()
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );

@@ -24,15 +24,15 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.InternalStatementResultCursor;
+import org.neo4j.driver.internal.FailableCursor;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class ResultCursorsHolder
 {
-    private final List<CompletionStage<InternalStatementResultCursor>> cursorStages = new ArrayList<>();
+    private final List<CompletionStage<? extends FailableCursor>> cursorStages = new ArrayList<>();
 
-    public void add( CompletionStage<InternalStatementResultCursor> cursorStage )
+    public void add( CompletionStage<? extends FailableCursor> cursorStage )
     {
         Objects.requireNonNull( cursorStage );
         cursorStages.add( cursorStage );
@@ -70,7 +70,7 @@ public class ResultCursorsHolder
         return null;
     }
 
-    private static CompletionStage<Throwable> retrieveFailure( CompletionStage<InternalStatementResultCursor> cursorStage )
+    private static CompletionStage<Throwable> retrieveFailure( CompletionStage<? extends FailableCursor> cursorStage )
     {
         return cursorStage
                 .exceptionally( cursor -> null )

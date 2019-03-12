@@ -28,16 +28,14 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.InternalStatementResultCursor;
+import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullHandlers;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -48,12 +46,13 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.reactive.internal.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.reactive.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.v1.Values.ofValue;
 
@@ -99,7 +98,7 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         if ( config != null && !config.isEmpty() )
         {
-            return txConfigNotSupported();
+            return Futures.failedFuture( txConfigNotSupported() );
         }
 
         if ( bookmarks.isEmpty() )
@@ -148,64 +147,42 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
+    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
 
         if ( config != null && !config.isEmpty() )
         {
-            return txConfigNotSupported();
+            throw txConfigNotSupported();
         }
-        return runStatement( connection, statement, null, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, null, waitForRunResponse );
     }
 
     @Override
-    public CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
+    public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, tx, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, tx, waitForRunResponse );
     }
 
-    private static CompletionStage<InternalStatementResultCursor> runStatement( Connection connection, Statement statement,
+    private static StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement,
             ExplicitTransaction tx, boolean waitForRunResponse )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
-        CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
-        PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, tx );
+        RunMessage runMessage = new RunMessage( query, params );
+        RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
+        AbstractPullAllResponseHandler pullAllHandler = PullHandlers.newBoltV1PullAllHandler( statement, runHandler, connection, tx );
 
-        connection.writeAndFlush(
-                new RunMessage( query, params ), runHandler,
-                PullAllMessage.PULL_ALL, pullAllHandler );
-
-        if ( waitForRunResponse )
-        {
-            // wait for response of RUN before proceeding
-            return runCompletedFuture.thenApply( ignore ->
-                    new InternalStatementResultCursor( runHandler, pullAllHandler ) );
-        }
-        else
-        {
-            return completedFuture( new InternalStatementResultCursor( runHandler, pullAllHandler ) );
-        }
+        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
     }
 
-    private static PullAllResponseHandler newPullAllHandler( Statement statement, RunResponseHandler runHandler,
-            Connection connection, ExplicitTransaction tx )
+    private static ClientException txConfigNotSupported()
     {
-        if ( tx != null )
-        {
-            return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, METADATA_EXTRACTOR );
-        }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarksHolder.NO_OP, METADATA_EXTRACTOR );
+        return new ClientException( "Driver is connected to the database that does not support transaction configuration. " +
+                "Please upgrade to neo4j 3.5.0 or later in order to use this functionality" );
     }
 
-    private static <T> CompletionStage<T> txConfigNotSupported()
-    {
-        return Futures.failedFuture( new ClientException( "Driver is connected to the database that does not support transaction configuration. " +
-                                                          "Please upgrade to neo4j 3.5.0 or later in order to use this functionality" ) );
-    }
 }

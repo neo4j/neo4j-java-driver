@@ -127,4 +127,10 @@ public class AccessModeConnection implements Connection
     {
         return mode;
     }
+
+    @Override
+    public void flush()
+    {
+        delegate.flush();
+    }
 }

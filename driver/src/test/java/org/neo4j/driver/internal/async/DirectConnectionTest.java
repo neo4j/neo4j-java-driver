@@ -134,6 +134,20 @@ class DirectConnectionTest
     }
 
     @Test
+    void shouldFlushInEventLoopThread() throws Exception
+    {
+        EmbeddedChannel channel = spy( new EmbeddedChannel() );
+        initializeEventLoop( channel, "Flush" );
+        ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
+
+        DirectConnection connection = newConnection( channel );
+        connection.flush();
+
+        shutdownEventLoop();
+        verify( channel ).flush();
+    }
+
+    @Test
     void shouldEnableAutoReadWhenReleased()
     {
         EmbeddedChannel channel = newChannel();

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.v2;
 import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.messaging.AbstractMessageWriterTestBase;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;

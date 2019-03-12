@@ -25,7 +25,6 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Session;
 
 public class SessionFactoryImpl implements SessionFactory
 {
@@ -43,7 +42,7 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public Session newInstance( AccessMode mode, Bookmarks bookmarks )
+    public NetworkSession newInstance( AccessMode mode, Bookmarks bookmarks )
     {
         NetworkSession session = createSession( connectionProvider, retryLogic, mode, logging );
         session.setBookmarks( bookmarks );

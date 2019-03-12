@@ -38,7 +38,8 @@ public enum Neo4jFeature
     LIST_QUERIES_PROCEDURE( v3_1_0 ),
     CONNECTOR_LISTEN_ADDRESS_CONFIGURATION( v3_1_0 ),
     BOLT_V3( v3_5_0 ),
-    BOLT_V4( v4_0_0 );
+    BOLT_V4( v4_0_0 ),
+    NO_CYPHER_STREAMING( v4_0_0 ); // This is temporary and shall be removed once cypher engine support streaming records
 
     private final ServerVersion availableFromVersion;
 
