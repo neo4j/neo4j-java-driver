@@ -18,34 +18,51 @@
  */
 package org.neo4j.driver.v1.util;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 
-public class CertificateExtension extends DatabaseExtension implements BeforeAllCallback, AfterAllCallback
+import static org.neo4j.driver.v1.util.Neo4jRunner.debug;
+
+public class CertificateExtension extends DatabaseExtension implements AfterEachCallback
 {
-    private static Path originalKeyFile;
-    private static Path originalCertFile;
+    private Path originalKeyFile;
+    private Path originalCertFile;
 
     @Override
-    public void beforeAll( ExtensionContext extensionContext ) throws Exception
+    public void beforeEach( ExtensionContext context ) throws Exception
     {
+        super.beforeEach( context );
+
         originalKeyFile = Files.createTempFile( "key-file-", "" );
         originalCertFile = Files.createTempFile( "cert-file-", "" );
 
-        Files.copy( tlsKeyFile().toPath(), originalKeyFile , StandardCopyOption.REPLACE_EXISTING);
+        Files.copy( tlsKeyFile().toPath(), originalKeyFile, StandardCopyOption.REPLACE_EXISTING );
         Files.copy( tlsCertFile().toPath(), originalCertFile, StandardCopyOption.REPLACE_EXISTING );
     }
 
     @Override
-    public void afterAll( ExtensionContext extensionContext ) throws Exception
+    public void afterEach( ExtensionContext context ) throws Exception
     {
-        updateEncryptionKeyAndCert( originalKeyFile.toFile(), originalCertFile.toFile() );
+        // if the key and cert file changed, then we restore the file and restart the server.
+        if ( !smallFileContentEquals( tlsKeyFile().toPath(), originalKeyFile ) || !smallFileContentEquals( tlsCertFile().toPath(), originalCertFile ) )
+        {
+            debug( "Restoring original key and certificate file after certificate test." );
+            updateEncryptionKeyAndCert( originalKeyFile.toFile(), originalCertFile.toFile() );
+        }
         Files.deleteIfExists( originalKeyFile );
         Files.deleteIfExists( originalCertFile );
+    }
+
+    private boolean smallFileContentEquals( Path path, Path pathAnother ) throws IOException
+    {
+        byte[] fileContent = Files.readAllBytes( path );
+        byte[] fileContentAnother = Files.readAllBytes( pathAnother );
+        return Arrays.equals( fileContent, fileContentAnother );
     }
 }

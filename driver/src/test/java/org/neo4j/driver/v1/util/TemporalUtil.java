@@ -28,7 +28,9 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ValueRange;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -47,10 +49,18 @@ import static java.util.stream.Collectors.toSet;
 public final class TemporalUtil
 {
     /**
-     * These zone ids were removed from the tz database and neo4j can re-map such ids to other ids.
+     * A list of zone ids whose use might lead to unexpected results.
+     * <p>
+     * Some ids were removed from the tz database and neo4j can re-map such ids to other ids.
      * For example "Canada/East-Saskatchewan" will be returned as "Canada/Saskatchewan".
+     * Other time zones are not working correctly in some Java versions
      */
-    private static final Set<String> BLACKLISTED_ZONE_IDS = Collections.singleton( "Canada/East-Saskatchewan" );
+    private static final List<String> BLACKLISTED_ZONE_IDS = Arrays.asList(
+            // removed
+            "Canada/East-Saskatchewan",
+            // is broken for years in distant future in Java 11 (example of a misbehaving date: +71235332-08-09T22:41:50.738292551-06:00[Chile/EasterIsland])
+            "Chile/EasterIsland"
+            );
 
     private TemporalUtil()
     {
