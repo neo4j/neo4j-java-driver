@@ -25,9 +25,9 @@ import reactor.core.publisher.Mono;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Record;
