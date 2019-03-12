@@ -42,7 +42,7 @@ import org.neo4j.driver.reactive.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;

@@ -64,7 +64,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.cc.Cluster;
 import org.neo4j.driver.v1.util.cc.ClusterExtension;
 import org.neo4j.driver.v1.util.cc.ClusterMember;

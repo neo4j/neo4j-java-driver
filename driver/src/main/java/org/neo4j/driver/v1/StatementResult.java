@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.Resource;
 
 

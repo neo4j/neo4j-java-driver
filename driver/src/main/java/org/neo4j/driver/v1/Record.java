@@ -25,7 +25,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.Immutable;
 import org.neo4j.driver.v1.util.Pair;
 

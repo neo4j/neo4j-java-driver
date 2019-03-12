@@ -42,7 +42,7 @@ import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
 import org.neo4j.driver.v1.types.TypeSystem;
 import org.neo4j.driver.v1.util.Experimental;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.Immutable;
 
 /**

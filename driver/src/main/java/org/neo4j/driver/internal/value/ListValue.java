@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.driver.v1.types.Type;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static org.neo4j.driver.v1.Values.ofObject;
 

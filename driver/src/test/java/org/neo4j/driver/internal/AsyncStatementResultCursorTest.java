@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -39,8 +40,6 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.util.Function;
-import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -316,12 +315,12 @@ class AsyncStatementResultCursorTest
         Record record2 = new InternalRecord( asList( "key1", "key2" ), values( 2, 2 ) );
         List<Record> records = asList( record1, record2 );
 
-        when( pullAllHandler.listAsync( Functions.identity() ) ).thenReturn( completedFuture( records ) );
+        when( pullAllHandler.listAsync( Function.identity() ) ).thenReturn( completedFuture( records ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         assertEquals( records, await( cursor.listAsync() ) );
-        verify( pullAllHandler ).listAsync( Functions.identity() );
+        verify( pullAllHandler ).listAsync( Function.identity() );
     }
 
     @Test
@@ -344,13 +343,13 @@ class AsyncStatementResultCursorTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
-        when( pullAllHandler.listAsync( Functions.identity() ) ).thenReturn( failedFuture( error ) );
+        when( pullAllHandler.listAsync( Function.identity() ) ).thenReturn( failedFuture( error ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.listAsync() ) );
         assertEquals( error, e );
-        verify( pullAllHandler ).listAsync( Functions.identity() );
+        verify( pullAllHandler ).listAsync( Function.identity() );
     }
 
     @Test

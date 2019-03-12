@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 public interface PullAllResponseHandler extends ResponseHandler
 {

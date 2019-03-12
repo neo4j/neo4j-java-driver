@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 /**
  * Provides methods to access the value of an underlying unordered map by key.

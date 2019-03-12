@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
@@ -38,7 +39,6 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.util.Functions;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -775,7 +775,7 @@ class AbstractPullAllResponseHandlerTest
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Functions.identity() ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Function.identity() ) ) );
         assertEquals( error, e );
     }
 
@@ -789,7 +789,7 @@ class AbstractPullAllResponseHandlerTest
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Functions.identity() ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.listAsync( Function.identity() ) ) );
         assertEquals( error, e );
     }
 
@@ -823,7 +823,7 @@ class AbstractPullAllResponseHandlerTest
 
         handler.onSuccess( emptyMap() );
 
-        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+        assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 
     @Test
@@ -836,7 +836,7 @@ class AbstractPullAllResponseHandlerTest
 
         // consume the error
         assertEquals( error, await( handler.failureAsync() ) );
-        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+        assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 
     @Test
@@ -870,7 +870,7 @@ class AbstractPullAllResponseHandlerTest
         handler.onRecord( fields3 );
         handler.onSuccess( emptyMap() );
 
-        List<Record> list = await( handler.listAsync( Functions.identity() ) );
+        List<Record> list = await( handler.listAsync( Function.identity() ) );
 
         List<InternalRecord> expectedRecords = asList(
                 new InternalRecord( keys, fields1 ),
@@ -1101,7 +1101,7 @@ class AbstractPullAllResponseHandlerTest
     {
         assertNull( await( handler.peekAsync() ) );
         assertNull( await( handler.nextAsync() ) );
-        assertEquals( emptyList(), await( handler.listAsync( Functions.identity() ) ) );
+        assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 
     private static class TestPullAllResponseHandler extends AbstractPullAllResponseHandler

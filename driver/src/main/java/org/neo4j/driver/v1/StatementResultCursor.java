@@ -21,11 +21,11 @@ package org.neo4j.driver.v1;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
 import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.util.Consumer;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 /**
  * The result of asynchronous execution of a Cypher statement, conceptually an asynchronous stream of

@@ -34,7 +34,7 @@ import org.neo4j.driver.v1.types.MapAccessor;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.util.Collections.emptyList;
