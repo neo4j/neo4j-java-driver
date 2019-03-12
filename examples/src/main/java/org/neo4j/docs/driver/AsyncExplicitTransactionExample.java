@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResultCursor;
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.Transaction;
 
 public class AsyncExplicitTransactionExample extends BaseApplication
 {

@@ -18,9 +18,9 @@
  */
 package org.neo4j.docs.driver;
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 
 public abstract class BaseApplication implements AutoCloseable
 {

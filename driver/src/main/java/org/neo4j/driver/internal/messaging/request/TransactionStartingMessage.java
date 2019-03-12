@@ -24,11 +24,11 @@ import java.util.Map;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Value;
 
 import static java.util.Collections.emptyMap;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 abstract class TransactionStartingMessage implements Message
 {

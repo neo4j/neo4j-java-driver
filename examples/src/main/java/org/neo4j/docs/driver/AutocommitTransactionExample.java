@@ -20,9 +20,9 @@ package org.neo4j.docs.driver;
 
 // tag::autocommit-transaction-import[]
 
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.Session;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 // end::autocommit-transaction-import[]
 
 public class AutocommitTransactionExample extends BaseApplication

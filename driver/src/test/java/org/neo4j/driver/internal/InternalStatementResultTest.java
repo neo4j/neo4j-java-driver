@@ -31,13 +31,13 @@ import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.NullValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.StatementResultCursor;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.util.Pair;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -53,9 +53,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
-import static org.neo4j.driver.v1.Records.column;
-import static org.neo4j.driver.v1.Values.ofString;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Records.column;
+import static org.neo4j.driver.Values.ofString;
+import static org.neo4j.driver.Values.value;
 
 class InternalStatementResultTest
 {

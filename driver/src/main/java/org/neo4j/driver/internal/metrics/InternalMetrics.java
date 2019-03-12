@@ -24,10 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.v1.ConnectionPoolMetrics;
-import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableMap;

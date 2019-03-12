@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.AccessMode;
 
 public interface SessionFactory
 {

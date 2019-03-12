@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

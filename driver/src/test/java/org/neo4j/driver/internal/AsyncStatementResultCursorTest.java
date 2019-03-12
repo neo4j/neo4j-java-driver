@@ -34,12 +34,12 @@ import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.summary.StatementType;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.summary.StatementType;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -57,9 +57,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.Values.values;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class AsyncStatementResultCursorTest
 {

@@ -25,7 +25,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
-import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.net.ServerAddress;
 
 import static java.util.Objects.requireNonNull;
 

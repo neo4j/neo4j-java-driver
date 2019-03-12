@@ -26,7 +26,7 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logging;
 
 public class ChannelPipelineBuilderImpl implements ChannelPipelineBuilder
 {

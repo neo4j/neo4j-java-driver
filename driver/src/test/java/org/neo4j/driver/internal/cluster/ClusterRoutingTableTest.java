@@ -38,8 +38,8 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.EMPTY;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.createClusterComposition;
-import static org.neo4j.driver.v1.AccessMode.READ;
-import static org.neo4j.driver.v1.AccessMode.WRITE;
+import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.AccessMode.WRITE;
 
 class ClusterRoutingTableTest
 {

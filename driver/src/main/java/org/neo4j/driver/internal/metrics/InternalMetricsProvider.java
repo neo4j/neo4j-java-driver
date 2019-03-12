@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.Metrics;
 
 public class InternalMetricsProvider implements MetricsProvider
 {

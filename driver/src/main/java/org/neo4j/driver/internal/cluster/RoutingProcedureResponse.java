@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
 
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
 
 public class RoutingProcedureResponse
 {

@@ -21,15 +21,15 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.exceptions.UntrustedServerException;
-import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.util.StubServer;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.v1.Logging.none;
+import static org.neo4j.driver.Logging.none;
 
 class TrustedServerProductTest
 {

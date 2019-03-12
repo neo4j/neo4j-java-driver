@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.response;
 import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static java.lang.String.format;
 

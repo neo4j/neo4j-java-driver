@@ -22,7 +22,7 @@ import io.netty.util.internal.logging.AbstractInternalLogger;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.Logger;
 
 import static java.lang.String.format;
 

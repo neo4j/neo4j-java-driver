@@ -20,10 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::basic-auth-import[]
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.StatementResult;
 // end::basic-auth-import[]
 
 public class BasicAuthExample implements AutoCloseable

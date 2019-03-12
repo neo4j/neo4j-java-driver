@@ -24,7 +24,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.net.ServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

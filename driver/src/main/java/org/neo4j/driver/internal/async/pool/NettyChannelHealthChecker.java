@@ -26,8 +26,8 @@ import io.netty.util.concurrent.Promise;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;

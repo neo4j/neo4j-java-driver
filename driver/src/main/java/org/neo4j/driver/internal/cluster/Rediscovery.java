@@ -32,10 +32,10 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.exceptions.SecurityException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.net.ServerAddressResolver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;

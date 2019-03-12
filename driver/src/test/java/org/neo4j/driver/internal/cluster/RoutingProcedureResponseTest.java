@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -25,9 +25,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.util.Neo4jRunner;
-import org.neo4j.driver.v1.util.Neo4jSettings;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.util.Neo4jRunner;
+import org.neo4j.driver.util.Neo4jSettings;
 
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;

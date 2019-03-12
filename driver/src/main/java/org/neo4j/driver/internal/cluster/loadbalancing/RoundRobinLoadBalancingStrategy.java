@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 /**
  * Load balancing strategy that selects addresses in round-robin fashion. It maintains separate indices for readers and

@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Session;
 
 import static java.lang.String.format;
 

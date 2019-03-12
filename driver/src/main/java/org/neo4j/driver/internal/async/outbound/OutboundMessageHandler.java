@@ -29,8 +29,8 @@ import org.neo4j.driver.internal.async.BoltProtocolUtil;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 

@@ -24,8 +24,8 @@ import io.netty.util.concurrent.Promise;
 import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Value;
 
 public class PingResponseHandler implements ResponseHandler
 {

@@ -22,9 +22,9 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Logging;
 
 public class SessionFactoryImpl implements SessionFactory
 {

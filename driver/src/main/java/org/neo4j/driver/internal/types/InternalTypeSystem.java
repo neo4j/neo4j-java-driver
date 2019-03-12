@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.types;
 
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.types.Type;
-import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.types.Type;
+import org.neo4j.driver.types.TypeSystem;
 
 import static org.neo4j.driver.internal.types.TypeConstructor.ANY;
 import static org.neo4j.driver.internal.types.TypeConstructor.BOOLEAN;

@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.summary;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.summary.ServerInfo;
+import org.neo4j.driver.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo
 {

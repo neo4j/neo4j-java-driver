@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.logging;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logging;
 
 /**
  * This is the logging factory to delegate netty's logging to our logging system

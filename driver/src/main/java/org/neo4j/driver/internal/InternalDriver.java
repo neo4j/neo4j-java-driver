@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.internal.InternalRxSession;
+import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Metrics;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.Session;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 

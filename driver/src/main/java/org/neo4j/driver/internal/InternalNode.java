@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.Value;
 
 /**
  * {@link Node} implementation that directly contains labels and properties.

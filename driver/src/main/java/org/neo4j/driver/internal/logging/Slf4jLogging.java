@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.logging;
 
 import org.slf4j.LoggerFactory;
 
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 /**
  * Internal implementation of the SLF4J logging.

@@ -38,8 +38,8 @@ import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Logging;
 
 public class MessageRecordingDriverFactory extends DriverFactory
 {

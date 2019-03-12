@@ -25,7 +25,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static java.util.Objects.requireNonNull;
 

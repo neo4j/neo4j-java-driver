@@ -20,10 +20,10 @@ package org.neo4j.docs.driver;
 
 // tag::config-trust-import[]
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 // end::config-trust-import[]
 
 public class ConfigTrustExample implements AutoCloseable

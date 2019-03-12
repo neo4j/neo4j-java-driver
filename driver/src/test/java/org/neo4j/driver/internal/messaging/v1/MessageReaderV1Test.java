@@ -26,12 +26,12 @@ import java.time.LocalDateTime;
 import org.neo4j.driver.internal.util.messaging.AbstractMessageReaderTestBase;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Reader;
-import static org.neo4j.driver.v1.Values.point;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
 
 class MessageReaderV1Test extends AbstractMessageReaderTestBase
 {

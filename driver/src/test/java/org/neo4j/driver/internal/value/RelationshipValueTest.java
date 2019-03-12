@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.value;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

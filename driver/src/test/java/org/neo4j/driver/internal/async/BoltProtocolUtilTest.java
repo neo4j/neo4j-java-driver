@@ -34,7 +34,7 @@ import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeString;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeChunkHeader;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeEmptyChunkHeader;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.writeMessageBoundary;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class BoltProtocolUtilTest
 {

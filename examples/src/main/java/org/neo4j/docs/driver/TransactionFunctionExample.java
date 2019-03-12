@@ -20,11 +20,11 @@ package org.neo4j.docs.driver;
 
 // tag::transaction-function-import[]
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionWork;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 // end::transaction-function-import[]
 
 public class TransactionFunctionExample extends BaseApplication

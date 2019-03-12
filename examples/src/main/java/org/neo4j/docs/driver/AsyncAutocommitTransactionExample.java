@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.Session;
 
 public class AsyncAutocommitTransactionExample extends BaseApplication
 {

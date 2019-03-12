@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;

@@ -26,14 +26,14 @@ import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.StatementResultCursor;
-import org.neo4j.driver.v1.TransactionConfig;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class RoutingProcedureRunner
 {

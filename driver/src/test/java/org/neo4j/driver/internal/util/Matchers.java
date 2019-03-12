@@ -34,9 +34,9 @@ import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
 

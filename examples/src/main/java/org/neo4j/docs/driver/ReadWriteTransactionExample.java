@@ -20,12 +20,12 @@ package org.neo4j.docs.driver;
 
 // tag::read-write-transaction-import[]
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionWork;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 // end::read-write-transaction-import[]
 
 public class ReadWriteTransactionExample extends BaseApplication

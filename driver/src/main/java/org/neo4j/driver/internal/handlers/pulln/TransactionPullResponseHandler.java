@@ -24,8 +24,8 @@ import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 
 import static java.util.Objects.requireNonNull;
 

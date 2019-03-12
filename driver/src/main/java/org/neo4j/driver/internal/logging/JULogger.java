@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.logging;
 
 import java.util.logging.Level;
 
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.Logger;
 
 public class JULogger implements Logger
 {

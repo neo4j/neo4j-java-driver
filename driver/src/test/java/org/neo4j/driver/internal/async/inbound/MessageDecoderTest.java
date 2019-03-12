@@ -26,7 +26,7 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufEquals;
+import static org.neo4j.driver.util.TestUtil.assertByteBufEquals;
 
 class MessageDecoderTest
 {

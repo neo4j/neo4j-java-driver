@@ -24,8 +24,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {

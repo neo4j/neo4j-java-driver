@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.response;
 import java.util.Arrays;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 public class RecordMessage implements Message
 {

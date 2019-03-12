@@ -22,13 +22,13 @@ package org.neo4j.docs.driver;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Transaction;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 // end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication

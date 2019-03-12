@@ -44,10 +44,10 @@ import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.util.io.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.types.IsoDuration;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
 
 import static java.time.Month.APRIL;
 import static java.time.Month.AUGUST;
@@ -66,9 +66,9 @@ import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
 import static org.neo4j.driver.internal.packstream.PackStream.STRING_8;
-import static org.neo4j.driver.v1.Values.point;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class MessageFormatV2Test
 {

@@ -30,7 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.Session;
 
 /**
  * Manages creation of Netty {@link EventLoopGroup}s, which are basically {@link Executor}s that perform IO operations.

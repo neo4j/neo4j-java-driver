@@ -28,11 +28,11 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.exceptions.TransientException;
 
 import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -56,7 +56,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class ExponentialBackoffRetryLogicTest
 {

@@ -20,10 +20,10 @@ package org.neo4j.driver.reactive;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 
 /**
  * Common interface for components that can execute Neo4j statements using Reactive API.

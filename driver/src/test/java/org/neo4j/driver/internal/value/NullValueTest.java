@@ -28,7 +28,7 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
@@ -36,9 +36,9 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.v1.Values.isoDuration;
-import static org.neo4j.driver.v1.Values.ofValue;
-import static org.neo4j.driver.v1.Values.point;
+import static org.neo4j.driver.Values.isoDuration;
+import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.Values.point;
 
 class NullValueTest
 {

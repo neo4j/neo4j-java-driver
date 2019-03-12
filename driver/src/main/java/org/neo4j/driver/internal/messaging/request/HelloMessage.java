@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 public class HelloMessage implements Message
 {

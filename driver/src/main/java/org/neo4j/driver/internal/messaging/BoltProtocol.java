@@ -32,13 +32,13 @@ import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.reactive.internal.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionConfig;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.protocolVersion;
 

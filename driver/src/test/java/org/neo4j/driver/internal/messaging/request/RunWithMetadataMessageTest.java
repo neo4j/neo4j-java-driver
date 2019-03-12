@@ -27,14 +27,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Value;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.driver.v1.AccessMode.READ;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.Values.value;
 
 class RunWithMetadataMessageTest
 {

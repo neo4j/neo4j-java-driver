@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.AccessMode;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;

@@ -27,15 +27,15 @@ import org.neo4j.driver.internal.InternalPair;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.MapAccessor;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.types.MapAccessor;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Relationship;
 import java.util.function.Function;
-import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.util.Pair;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -44,7 +44,7 @@ import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 /**
  * Utility class for extracting data.

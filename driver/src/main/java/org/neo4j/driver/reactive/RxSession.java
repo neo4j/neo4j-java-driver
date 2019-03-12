@@ -22,10 +22,10 @@ import org.reactivestreams.Publisher;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.TransactionConfig;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Values;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.

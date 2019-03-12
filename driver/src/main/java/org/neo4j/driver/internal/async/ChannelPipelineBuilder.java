@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.async;
 import io.netty.channel.ChannelPipeline;
 
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logging;
 
 public interface ChannelPipelineBuilder
 {

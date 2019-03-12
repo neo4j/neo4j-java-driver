@@ -30,7 +30,7 @@ import java.util.Scanner;
 import java.util.logging.Level;
 
 import org.neo4j.driver.internal.logging.ConsoleLogging.ConsoleLogger;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
