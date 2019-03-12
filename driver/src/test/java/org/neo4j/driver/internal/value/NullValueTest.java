@@ -29,7 +29,7 @@ import java.time.ZonedDateTime;
 
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;

@@ -24,10 +24,10 @@ import org.mockito.ArgumentCaptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;

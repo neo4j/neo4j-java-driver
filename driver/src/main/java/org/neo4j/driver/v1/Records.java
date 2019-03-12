@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 /**
  * Static utility methods for retaining records

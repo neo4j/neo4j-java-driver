@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.Bookmarks;
@@ -40,7 +41,6 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.internal.util.Supplier;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;

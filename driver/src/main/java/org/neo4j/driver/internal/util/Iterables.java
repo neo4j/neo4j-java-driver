@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 public class Iterables
 {

@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 public abstract class EntityValueAdapter<V extends Entity> extends ObjectValueAdapter<V>
 {

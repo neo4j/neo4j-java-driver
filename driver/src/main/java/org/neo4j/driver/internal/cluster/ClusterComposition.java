@@ -25,7 +25,7 @@ import java.util.Set;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 public final class ClusterComposition
 {

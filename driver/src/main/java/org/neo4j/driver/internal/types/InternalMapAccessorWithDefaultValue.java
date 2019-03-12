@@ -29,7 +29,7 @@ import org.neo4j.driver.v1.types.MapAccessorWithDefaultValue;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 public abstract class InternalMapAccessorWithDefaultValue implements MapAccessorWithDefaultValue
 {

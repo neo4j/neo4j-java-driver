@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

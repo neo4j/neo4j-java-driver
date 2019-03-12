@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 import org.neo4j.driver.v1.util.Pair;
 
 import static java.lang.String.format;

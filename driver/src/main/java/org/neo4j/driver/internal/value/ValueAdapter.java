@@ -41,7 +41,7 @@ import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.Type;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.v1.Values.ofObject;

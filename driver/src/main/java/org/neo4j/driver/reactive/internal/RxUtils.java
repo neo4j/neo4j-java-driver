@@ -22,9 +22,9 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.Supplier;
 
 public class RxUtils
 {

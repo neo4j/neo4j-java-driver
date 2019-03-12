@@ -64,7 +64,7 @@ import org.neo4j.driver.v1.types.Path;
 import org.neo4j.driver.v1.types.Point;
 import org.neo4j.driver.v1.types.Relationship;
 import org.neo4j.driver.v1.types.TypeSystem;
-import org.neo4j.driver.v1.util.Function;
+import java.util.function.Function;
 
 import static org.neo4j.driver.internal.util.Extract.assertParameter;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
