@@ -80,7 +80,7 @@ class GraphDatabaseTest
     {
         // Given
         StubServer server = StubServer.start( "discover_servers.script", 9001 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         // When
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
@@ -97,7 +97,7 @@ class GraphDatabaseTest
     @SuppressWarnings( "deprecation" )
     void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
     {
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         Config config = Config.builder()
                 .withEncryption()
@@ -129,15 +129,15 @@ class GraphDatabaseTest
                 .build();
 
         List<URI> routingUris = asList(
-                URI.create( "bolt+routing://localhost:9001" ),
-                URI.create( "bolt+routing://localhost:9002" ) );
+                URI.create( "neo4j://localhost:9001" ),
+                URI.create( "neo4j://localhost:9002" ) );
 
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: bolt+routing://localhost:9001" ),
+        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9001" ),
                 any( Throwable.class ) );
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: bolt+routing://localhost:9002" ),
+        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9002" ),
                 any( Throwable.class ) );
 
         assertEquals( 0, server1.exitStatus() );

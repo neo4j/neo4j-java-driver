@@ -120,7 +120,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         }
         if ( uri != null && !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
         {
-            throw new IllegalStateException( "Cluster uri should have bolt+routing scheme: '" + uri + "'" );
+            throw new IllegalStateException( "Cluster uri should have neo4j scheme: '" + uri + "'" );
         }
     }
 

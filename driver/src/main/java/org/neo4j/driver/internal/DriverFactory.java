@@ -66,7 +66,7 @@ import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 public class DriverFactory
 {
     public static final String BOLT_URI_SCHEME = "bolt";
-    public static final String BOLT_ROUTING_URI_SCHEME = "bolt+routing";
+    public static final String BOLT_ROUTING_URI_SCHEME = "neo4j";
 
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
@@ -165,7 +165,7 @@ public class DriverFactory
     }
 
     /**
-     * Creates new a new driver for "bolt+routing" scheme.
+     * Creates new a new driver for "neo4j" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */

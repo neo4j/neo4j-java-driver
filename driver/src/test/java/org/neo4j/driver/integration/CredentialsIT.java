@@ -169,7 +169,7 @@ class CredentialsIT
     @Test
     void routingDriverShouldFailEarlyOnWrongCredentials()
     {
-        testDriverFailureOnWrongCredentials( "bolt+routing://localhost:" + neo4j.boltPort() );
+        testDriverFailureOnWrongCredentials( "neo4j://localhost:" + neo4j.boltPort() );
     }
 
     private void testDriverFailureOnWrongCredentials( String uri )

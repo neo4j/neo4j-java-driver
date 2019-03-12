@@ -137,12 +137,12 @@ public class GraphDatabase
     }
 
     /**
-     * Try to create a bolt+routing driver from the <b>first</b> available address.
+     * Try to create a neo4j driver from the <b>first</b> available address.
      * This is wrapper for the {@link #driver} method that finds the <b>first</b>
      * server to respond positively.
      *
      * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
-     * have 'bolt+routing' scheme.
+     * have 'neo4j' scheme.
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver instance

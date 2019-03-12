@@ -159,7 +159,7 @@ public final class Matchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "cluster 'bolt+routing://' driver " );
+                description.appendText( "cluster 'neo4j://' driver " );
             }
         };
     }

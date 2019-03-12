@@ -81,7 +81,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ ) )
         {
@@ -103,7 +103,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer readServer = StubServer.start( "read_server_v3_read.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
                 Session session = driver.session( AccessMode.READ ) )
         {
@@ -122,7 +122,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer readServer = StubServer.start( "read_server_v3_read_tx.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
                 Session session = driver.session( AccessMode.READ ) )
         {
@@ -143,7 +143,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.READ );
               Transaction tx = session.beginTransaction() )
@@ -167,7 +167,7 @@ class RoutingDriverBoltKitTest
         //START two read servers
         StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
         StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             // Run twice, one on each read server
@@ -196,7 +196,7 @@ class RoutingDriverBoltKitTest
         //START two read servers
         StubServer readServer1 = StubServer.start( "read_server.script", 9005 );
         StubServer readServer2 = StubServer.start( "read_server.script", 9006 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             // Run twice, one on each read server
@@ -225,7 +225,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer.start( "dead_read_server.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
         assertThrows( SessionExpiredException.class, () ->
@@ -248,7 +248,7 @@ class RoutingDriverBoltKitTest
 
         //START a read server
         StubServer.start( "dead_read_server.script", 9005 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
         SessionExpiredException e = assertThrows( SessionExpiredException.class, () ->
@@ -274,7 +274,7 @@ class RoutingDriverBoltKitTest
 
         //START a dead write servers
         StubServer.start( "dead_read_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, config );
@@ -298,7 +298,7 @@ class RoutingDriverBoltKitTest
         //START a dead write servers
         StubServer.start( "dead_read_server.script", 9007 );
 
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
@@ -321,7 +321,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -340,7 +340,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server
         StubServer writeServer = StubServer.start( "write_server_v3_write.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
                 Session session = driver.session( AccessMode.WRITE ) )
         {
@@ -359,7 +359,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server
         StubServer writeServer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
                 Session session = driver.session() )
         {
@@ -379,7 +379,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session( AccessMode.WRITE );
               Transaction tx = session.beginTransaction() )
@@ -401,7 +401,7 @@ class RoutingDriverBoltKitTest
         //START a write server
         StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
         StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             for ( int i = 0; i < 2; i++ )
@@ -427,7 +427,7 @@ class RoutingDriverBoltKitTest
         //START a write server
         StubServer writeServer1 = StubServer.start( "write_server.script", 9007 );
         StubServer writeServer2 = StubServer.start( "write_server.script", 9008 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config ) )
         {
             for ( int i = 0; i < 2; i++ )
@@ -451,7 +451,7 @@ class RoutingDriverBoltKitTest
     {
         // Given
         StubServer.start( "non_discovery_server.script", 9001 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( uri, config ) );
@@ -462,7 +462,7 @@ class RoutingDriverBoltKitTest
     {
         // Given
         StubServer.start( "failed_discovery.script", 9001 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( uri, config ) );
@@ -477,7 +477,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
@@ -505,7 +505,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE ) )
@@ -533,7 +533,7 @@ class RoutingDriverBoltKitTest
 
         //START a write server that doesn't accept writes
         StubServer.start( "not_able_to_write_server.script", 9007 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE );
@@ -560,7 +560,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session() )
         {
             // intentionally test deprecated API
@@ -583,7 +583,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session( "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
@@ -605,7 +605,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
@@ -627,7 +627,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
@@ -652,7 +652,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
         StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session( "BookmarkA" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
@@ -685,7 +685,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenReader = StubServer.start( "dead_read_server.script", 9005 );
         StubServer reader = StubServer.start( "read_server.script", 9006 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -709,7 +709,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9007 );
         StubServer writer = StubServer.start( "write_server.script", 9008 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -733,7 +733,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenReader1 = StubServer.start( "dead_read_server.script", 9005 );
         StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
 
-        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
+        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -756,7 +756,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
 
-        try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
+        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -781,7 +781,7 @@ class RoutingDriverBoltKitTest
         StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
         StubServer reader = StubServer.start( "read_server.script", 9004 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -809,7 +809,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
         StubServer writer = StubServer.start( "write_server.script", 9007 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -834,7 +834,7 @@ class RoutingDriverBoltKitTest
         // initial router does not have itself in the returned set of routers
         StubServer router = StubServer.start( "acquire_endpoints.script", 9010 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", config ) )
         {
             try ( Session session = driver.session( AccessMode.READ ) )
             {
@@ -856,7 +856,7 @@ class RoutingDriverBoltKitTest
         // stub server is both a router and reader
         StubServer server = StubServer.start( "get_routing_table.script", 9001 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
               Session session = driver.session() )
         {
             List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
@@ -877,7 +877,7 @@ class RoutingDriverBoltKitTest
         // stub server is both a router and reader
         StubServer server = StubServer.start( "get_routing_table_with_context.script", 9001 );
 
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy&region=china" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session() )
         {
@@ -898,7 +898,7 @@ class RoutingDriverBoltKitTest
         // stub server is both a router and reader
         StubServer server = StubServer.start( "rediscover_and_read_with_init.script", 9001 );
 
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy" );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
               Session session = driver.session() )
         {
@@ -920,7 +920,7 @@ class RoutingDriverBoltKitTest
         StubServer router2 = StubServer.start( "discover_no_writers.script", 9004 );
         StubServer reader = StubServer.start( "read_server.script", 9003 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", config );
               Session session = driver.session() )
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
@@ -946,7 +946,7 @@ class RoutingDriverBoltKitTest
         StubServer reader = StubServer.start( "read_server.script", 9003 );
         StubServer writer = StubServer.start( "write_server.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", config );
               Session session = driver.session() )
         {
             // start another router which knows about writes, use same address as the initial router
@@ -974,7 +974,7 @@ class RoutingDriverBoltKitTest
         StubServer reader1 = StubServer.start( "read_server.script", 9003 );
         StubServer reader2 = StubServer.start( "read_server.script", 9004 );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", config );
               Session session = driver.session( AccessMode.READ ) )
         {
             // returned routing table contains only one router, this should be fine and we should be able to
@@ -1006,7 +1006,7 @@ class RoutingDriverBoltKitTest
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
                 "neo4j:bookmark:v1:tx68" );
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://localhost:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", config );
               Session session = driver.session( bookmarks ) )
         {
             try ( Transaction tx = session.beginTransaction() )
@@ -1037,7 +1037,7 @@ class RoutingDriverBoltKitTest
         // write on writer2 should be successful
         StubServer writer2 = StubServer.start( "write_server.script", 9007 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://localhost:9010" );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://localhost:9010" );
               Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -1067,7 +1067,7 @@ class RoutingDriverBoltKitTest
                 .withResolver( resolver )
                 .build();
 
-        RuntimeException error = assertThrows( RuntimeException.class, () -> GraphDatabase.driver( "bolt+routing://my.server.com:9001", config ) );
+        RuntimeException error = assertThrows( RuntimeException.class, () -> GraphDatabase.driver( "neo4j://my.server.com:9001", config ) );
         assertEquals( "Resolution failure!", error.getMessage() );
         verify( resolver ).resolve( ServerAddress.of( "my.server.com", 9001 ) );
     }
@@ -1104,7 +1104,7 @@ class RoutingDriverBoltKitTest
                 .withResolver( resolver )
                 .build();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config ) )
         {
             try ( Session session = driver.session( AccessMode.READ ) )
             {
@@ -1138,7 +1138,7 @@ class RoutingDriverBoltKitTest
                 .withLogging( none() )
                 .build();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config ) )
         {
             try ( Session session = driver.session( AccessMode.READ ) )
             {

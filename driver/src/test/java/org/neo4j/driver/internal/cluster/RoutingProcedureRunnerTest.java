@@ -70,7 +70,7 @@ class RoutingProcedureRunnerTest
     @Test
     void shouldCallGetRoutingTableWithParam()
     {
-        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
 
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
@@ -87,7 +87,7 @@ class RoutingProcedureRunnerTest
     @Test
     void shouldCallGetServers()
     {
-        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
 
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,

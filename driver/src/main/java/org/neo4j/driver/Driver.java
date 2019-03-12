@@ -52,13 +52,13 @@ import org.neo4j.driver.reactive.RxSession;
  *             <td>Direct driver: connects directly to the host and port specified in the URI.</td>
  *         </tr>
  *         <tr>
- *             <td><code>bolt+routing</code></td>
+ *             <td><code>neo4j</code></td>
  *             <td>Routing driver: can automatically discover members of a Causal Cluster and route {@link Session sessions} based on {@link AccessMode}.</td>
  *         </tr>
  *     </tbody>
  * </table>
  *
- * @since 1.0 (<em>bolt+routing</em> URIs since 1.1)
+ * @since 1.0 (<em>neo4j</em> URIs since 1.1)
  */
 public interface Driver extends AutoCloseable
 {

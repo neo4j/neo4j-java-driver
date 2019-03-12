@@ -35,7 +35,7 @@ class ExamplesStubIT
         StubServer server2 = StubServer.start( "return_1.script", 9002 );
 
         // Given
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "bolt+routing://x.acme.com", ServerAddress.of( "localhost", 9001 ) ) )
+        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "neo4j://x.acme.com", ServerAddress.of( "localhost", 9001 ) ) )
         {
             // Then
             assertTrue( example.canConnect() );

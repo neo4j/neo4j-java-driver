@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 public class ClusterMember
 {
     public static final String SIMPLE_SCHEME = "bolt://";
-    public static final String ROUTING_SCHEME = "bolt+routing://";
+    public static final String ROUTING_SCHEME = "neo4j://";
 
     private final URI boltUri;
     private final BoltServerAddress boltAddress;
