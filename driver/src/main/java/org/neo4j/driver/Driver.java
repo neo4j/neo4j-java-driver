@@ -19,6 +19,8 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.reactive.RxSession;
 
@@ -167,8 +169,13 @@ public interface Driver extends AutoCloseable
      */
     Metrics metrics();
 
-    // TODO more method overloads with parameters. Leaving this to refactoring PR for different sessions.
+    // TODO more method overloads with parameters. Leaving this to multi-database db name PR.
     RxSession rxSession();
-
     RxSession rxSession( String bookmark );
+
+    // TODO add more method overloads, leaving this to multi-database db name PR
+    AsyncSession asyncSession();
+    AsyncSession asyncSession( AccessMode mode );
+    AsyncSession asyncSession( String bookmark );
+    AsyncSession asyncSession( AccessMode mode, String bookmark );
 }

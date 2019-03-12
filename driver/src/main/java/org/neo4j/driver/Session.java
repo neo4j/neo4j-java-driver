@@ -19,9 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.function.Function;
 
 import org.neo4j.driver.util.Resource;
 
@@ -70,9 +67,6 @@ public interface Session extends Resource, StatementRunner
      * most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
-     * <p>
-     * This operation works the same way as {@link #beginTransactionAsync()} but blocks until transaction is actually
-     * started.
      *
      * @return a new {@link Transaction}
      */
@@ -83,9 +77,6 @@ public interface Session extends Resource, StatementRunner
      * At most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
-     * <p>
-     * This operation works the same way as {@link #beginTransactionAsync(TransactionConfig)} but blocks until
-     * transaction is actually started.
      *
      * @param config configuration for the new transaction.
      * @return a new {@link Transaction}
@@ -107,56 +98,10 @@ public interface Session extends Resource, StatementRunner
     Transaction beginTransaction( String bookmark );
 
     /**
-     * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
-     * most one transaction may exist in a session at any point in time. To
-     * maintain multiple concurrent transactions, use multiple concurrent
-     * sessions.
-     * <p>
-     * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with a new
-     * {@link Transaction} object when begin operation is successful. It is completed exceptionally if
-     * transaction can't be started.
-     * <p>
-     * Returned stage can be completed by an IO thread which should never block. Otherwise IO operations on this and
-     * potentially other network connections might deadlock. Please do not chain blocking operations like
-     * {@link #run(String)} on the returned stage. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @return a {@link CompletionStage completion stage} that represents the asynchronous begin of a transaction.
-     */
-    CompletionStage<Transaction> beginTransactionAsync();
-
-    /**
-     * Begin a new <em>explicit {@linkplain Transaction transaction}</em> with the specified {@link TransactionConfig configuration}.
-     * At most one transaction may exist in a session at any point in time. To
-     * maintain multiple concurrent transactions, use multiple concurrent
-     * sessions.
-     * <p>
-     * This operation is asynchronous and returns a {@link CompletionStage}. This stage is completed with a new
-     * {@link Transaction} object when begin operation is successful. It is completed exceptionally if
-     * transaction can't be started.
-     * <p>
-     * Returned stage can be completed by an IO thread which should never block. Otherwise IO operations on this and
-     * potentially other network connections might deadlock. Please do not chain blocking operations like
-     * {@link #run(String)} on the returned stage. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param config configuration for the new transaction.
-     * @return a {@link CompletionStage completion stage} that represents the asynchronous begin of a transaction.
-     */
-    CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config );
-
-    /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.
      * <p>
      * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
      * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
-     * <p>
-     * This operation works the same way as {@link #readTransactionAsync(TransactionWork)} but blocks until given
-     * blocking unit of work is completed.
      *
      * @param work the {@link TransactionWork} to be applied to a new read transaction.
      * @param <T> the return type of the given unit of work.
@@ -169,9 +114,6 @@ public interface Session extends Resource, StatementRunner
      * <p>
      * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
      * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
-     * <p>
-     * This operation works the same way as {@link #readTransactionAsync(TransactionWork)} but blocks until given
-     * blocking unit of work is completed.
      *
      * @param work the {@link TransactionWork} to be applied to a new read transaction.
      * @param config configuration for all transactions started to execute the unit of work.
@@ -181,61 +123,10 @@ public interface Session extends Resource, StatementRunner
     <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link Transaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link Transaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link TransactionWork} can be completed/executed by an IO thread which should never
-     * block. Otherwise IO operations on this and potentially other network connections might deadlock. Please do not
-     * chain blocking operations like {@link #run(String)} on the returned stage and do not use them inside the
-     * {@link TransactionWork}. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link TransactionWork} to be applied to a new read transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     */
-    <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work );
-
-    /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction with
-     * the specified {@link TransactionConfig configuration}.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link Transaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link Transaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link TransactionWork} can be completed/executed by an IO thread which should never
-     * block. Otherwise IO operations on this and potentially other network connections might deadlock. Please do not
-     * chain blocking operations like {@link #run(String)} on the returned stage and do not use them inside the
-     * {@link TransactionWork}. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link TransactionWork} to be applied to a new read transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     */
-    <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config );
-
-    /**
      * Execute given unit of work in a  {@link AccessMode#WRITE write} transaction.
      * <p>
      * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
      * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
-     * <p>
-     * This operation works the same way as {@link #writeTransactionAsync(TransactionWork)} but blocks until given
-     * blocking unit of work is completed.
      *
      * @param work the {@link TransactionWork} to be applied to a new write transaction.
      * @param <T> the return type of the given unit of work.
@@ -248,9 +139,6 @@ public interface Session extends Resource, StatementRunner
      * <p>
      * Transaction will automatically be committed unless exception is thrown from the unit of work itself or from
      * {@link Transaction#close()} or transaction is explicitly marked for failure via {@link Transaction#failure()}.
-     * <p>
-     * This operation works the same way as {@link #writeTransactionAsync(TransactionWork)} but blocks until given
-     * blocking unit of work is completed.
      *
      * @param work the {@link TransactionWork} to be applied to a new write transaction.
      * @param config configuration for all transactions started to execute the unit of work.
@@ -258,54 +146,6 @@ public interface Session extends Resource, StatementRunner
      * @return a result as returned by the given unit of work.
      */
     <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
-
-    /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link Transaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link Transaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link TransactionWork} can be completed/executed by an IO thread which should never
-     * block. Otherwise IO operations on this and potentially other network connections might deadlock. Please do not
-     * chain blocking operations like {@link #run(String)} on the returned stage and do not use them inside the
-     * {@link TransactionWork}. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link TransactionWork} to be applied to a new write transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     */
-    <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work );
-
-    /**
-     * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction with
-     * the specified {@link TransactionConfig configuration}.
-     * <p>
-     * Transaction will automatically be committed unless given unit of work fails or
-     * {@link Transaction#commitAsync() async transaction commit} fails. It will also not be committed if explicitly
-     * rolled back via {@link Transaction#rollbackAsync()}.
-     * <p>
-     * Returned stage and given {@link TransactionWork} can be completed/executed by an IO thread which should never
-     * block. Otherwise IO operations on this and potentially other network connections might deadlock. Please do not
-     * chain blocking operations like {@link #run(String)} on the returned stage and do not use them inside the
-     * {@link TransactionWork}. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @param work the {@link TransactionWork} to be applied to a new write transaction. Operation executed by the
-     * given work must be asynchronous.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
-     * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
-     * unit of work. Stage can be completed exceptionally if given work or commit fails.
-     */
-    <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config );
 
     /**
      * Run a statement in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a result stream.
@@ -378,91 +218,6 @@ public interface Session extends Resource, StatementRunner
     StatementResult run( Statement statement, TransactionConfig config );
 
     /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
-     * {@link CompletionStage} with a result cursor.
-     * <p>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link StatementRunner} for
-     * more information.
-     *
-     * @param statement text of a Neo4j statement.
-     * @param config configuration for the new transaction.
-     * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
-     * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
-     */
-    CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config );
-
-    /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
-     * {@link CompletionStage} with a result cursor.
-     * <p>
-     * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
-     * dangerous cypher injection attacks and improves database performance as
-     * Neo4j can re-use query plans more often.
-     * <p>
-     * This version of runAsync takes a {@link Map} of parameters. The values in the map
-     * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
-     * a list of allowed types.
-     * <h2>Example</h2>
-     * <pre>
-     * {@code
-     * Map<String, Object> metadata = new HashMap<>();
-     * metadata.put("type", "update name");
-     *
-     * TransactionConfig config = TransactionConfig.builder()
-     *                 .withTimeout(Duration.ofSeconds(3))
-     *                 .withMetadata(metadata)
-     *                 .build();
-     *
-     * Map<String, Object> parameters = new HashMap<String, Object>();
-     * parameters.put("myNameParam", "Bob");
-     *
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(
-     *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
-     *             parameters,
-     *             config);
-     * }
-     * </pre>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link StatementRunner} for
-     * more information.
-     *
-     * @param statement text of a Neo4j statement.
-     * @param parameters input data for the statement.
-     * @param config configuration for the new transaction.
-     * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
-     * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
-     */
-    CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config );
-
-    /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
-     * {@link CompletionStage} with a result cursor.
-     * <h2>Example</h2>
-     * <pre>
-     * {@code
-     * Map<String, Object> metadata = new HashMap<>();
-     * metadata.put("type", "update name");
-     *
-     * TransactionConfig config = TransactionConfig.builder()
-     *                 .withTimeout(Duration.ofSeconds(3))
-     *                 .withMetadata(metadata)
-     *                 .build();
-     *
-     * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement, config);
-     * }
-     * </pre>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link StatementRunner} for
-     * more information.
-     *
-     * @param statement a Neo4j statement.
-     * @param config configuration for the new transaction.
-     * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
-     * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
-     */
-    CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config );
-
-    /**
      * Return the bookmark received following the last completed
      * {@linkplain Transaction transaction}. If no bookmark was received
      * or if this transaction was rolled back, the bookmark value will
@@ -492,21 +247,7 @@ public interface Session extends Resource, StatementRunner
     /**
      * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is
      * very low cost.
-     * <p>
-     * This operation works the same way as {@link #closeAsync()} but blocks until session is actually closed.
      */
     @Override
     void close();
-
-    /**
-     * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is
-     * very low cost.
-     * <p>
-     * This operation is asynchronous and returns a {@link CompletionStage}. Stage is completed when all outstanding
-     * statements in the session have completed, meaning any writes you performed are guaranteed to be durably stored.
-     * It might be completed exceptionally when there are unconsumed errors from previous statements or transactions.
-     *
-     * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
-     */
-    CompletionStage<Void> closeAsync();
 }

@@ -26,14 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
@@ -83,12 +84,12 @@ class TransactionBoltV3IT
                 .withMetadata( metadata )
                 .build();
 
-        CompletionStage<Transaction> txFuture = session.beginTransactionAsync( config )
+        CompletionStage<AsyncTransaction> txFuture = session.beginTransactionAsync( config )
                 .thenCompose( tx -> tx.runAsync( "RETURN 1" )
                         .thenCompose( StatementResultCursor::consumeAsync )
                         .thenApply( ignore -> tx ) );
 
-        Transaction transaction = await( txFuture );
+        AsyncTransaction transaction = await( txFuture );
         try
         {
             verifyTransactionMetadata( metadata );

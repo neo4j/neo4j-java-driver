@@ -45,10 +45,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
-import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -59,8 +55,14 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.logging.DevNullLogger;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DaemonThreadFactory;
 
@@ -466,7 +468,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        Session session = driver.session();
+        AsyncSession session = driver.asyncSession();
         CompletableFuture<Throwable> writeTransactions = completedFuture( null );
 
         for ( int i = 0; i < batchCount; i++ )
@@ -494,7 +496,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        Session session = driver.session( bookmark );
+        AsyncSession session = driver.asyncSession( bookmark );
         AtomicInteger nodesSeen = new AtomicInteger();
 
         CompletionStage<Throwable> readQuery = session.readTransactionAsync( tx ->
@@ -543,7 +545,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         tx.run( statement ).consume();
     }
 
-    private static CompletionStage<Throwable> createNodesInTxAsync( Transaction tx, int batchIndex, int batchSize )
+    private static CompletionStage<Throwable> createNodesInTxAsync( AsyncTransaction tx, int batchIndex, int batchSize )
     {
         @SuppressWarnings( "unchecked" )
         CompletableFuture<Void>[] statementFutures = IntStream.range( 0, batchSize )
@@ -556,7 +558,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
                 .exceptionally( error -> error );
     }
 
-    private static CompletableFuture<Void> createNodeInTxAsync( Transaction tx, int nodeIndex )
+    private static CompletableFuture<Void> createNodeInTxAsync( AsyncTransaction tx, int nodeIndex )
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
         return tx.runAsync( statement )
@@ -594,7 +596,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         assertEquals( nCopies( 10, nodeIndex % 2 == 0 ), node.get( "booleans" ).asList() );
     }
 
-    private static <T> CompletionStage<T> safeCloseSession( Session session, T result )
+    private static <T> CompletionStage<T> safeCloseSession( AsyncSession session, T result )
     {
         return session.closeAsync()
                 .exceptionally( ignore -> null )

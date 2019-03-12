@@ -23,9 +23,9 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResultCursor;
-import org.neo4j.driver.Transaction;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
@@ -41,7 +41,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
     @Override
     public CompletionStage<Void> execute( C ctx )
     {
-        Session session = newSession( AccessMode.READ, ctx );
+        AsyncSession session = newSession( AccessMode.READ, ctx );
 
         CompletionStage<Void> txCommitted = session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "MATCH (n) RETURN n LIMIT 1" )
@@ -64,7 +64,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
         return cursor.summaryAsync();
     }
 
-    private CompletionStage<Void> processSummaryAndCommit( ResultSummary summary, Transaction tx, C context )
+    private CompletionStage<Void> processSummaryAndCommit( ResultSummary summary, AsyncTransaction tx, C context )
     {
         context.readCompleted( summary );
         return tx.commitAsync();

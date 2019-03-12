@@ -16,11 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.reactive.cursor;
+package org.neo4j.driver.async;
 
-import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.Transaction;
 
-public interface InternalStatementResultCursor extends StatementResultCursor, FailableCursor
+/**
+ * Callback that executes operations against a given {@link Transaction}.
+ * To be used with {@link AsyncSession#readTransactionAsync(AsyncTransactionWork)} and
+ * {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork)} (AsyncTransactionWork)} methods.
+ *
+ * @param <T> the return type of this work.
+ * @since 2.0
+ */
+public interface AsyncTransactionWork<T>
 {
+    /**
+     * Executes all given operations against the same transaction.
+     *
+     * @param tx the transaction to use.
+     * @return some result object or {@code null} if none.
+     */
+    T execute( AsyncTransaction tx );
 }

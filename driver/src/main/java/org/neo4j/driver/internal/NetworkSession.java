@@ -24,32 +24,35 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.internal.logging.PrefixedLogger;
-import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class NetworkSession extends AbstractStatementRunner implements Session
+public class NetworkSession extends AbstractStatementRunner implements Session, AsyncSession
 {
     private static final String LOG_NAME = "Session";
 
@@ -191,13 +194,13 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public CompletionStage<Transaction> beginTransactionAsync()
+    public CompletionStage<AsyncTransaction> beginTransactionAsync()
     {
         return beginTransactionAsync( TransactionConfig.empty() );
     }
 
     @Override
-    public CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config )
+    public CompletionStage<AsyncTransaction> beginTransactionAsync( TransactionConfig config )
     {
         //noinspection unchecked
         return (CompletionStage) beginTransactionAsync( mode, config );
@@ -216,13 +219,13 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
+    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
     {
         return readTransactionAsync( work, TransactionConfig.empty() );
     }
 
     @Override
-    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return transactionAsync( AccessMode.READ, work, config );
     }
@@ -240,13 +243,13 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
+    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
     {
         return writeTransactionAsync( work, TransactionConfig.empty() );
     }
 
     @Override
-    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return transactionAsync( AccessMode.WRITE, work, config );
     }
@@ -322,7 +325,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         } );
     }
 
-    private <T> CompletionStage<T> transactionAsync( AccessMode mode, TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    private <T> CompletionStage<T> transactionAsync( AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return retryLogic.retryAsync( () ->
         {
@@ -347,7 +350,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
     }
 
     private <T> void executeWork( CompletableFuture<T> resultFuture, ExplicitTransaction tx,
-            TransactionWork<CompletionStage<T>> work )
+            AsyncTransactionWork<CompletionStage<T>> work )
     {
         CompletionStage<T> workFuture = safeExecuteWork( tx, work );
         workFuture.whenComplete( ( result, completionError ) ->
@@ -364,7 +367,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session
         } );
     }
 
-    private <T> CompletionStage<T> safeExecuteWork( ExplicitTransaction tx, TransactionWork<CompletionStage<T>> work )
+    private <T> CompletionStage<T> safeExecuteWork( ExplicitTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )
     {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned

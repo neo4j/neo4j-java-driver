@@ -16,16 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.async;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Records;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
-import java.util.function.Function;
 
 /**
  * The result of asynchronous execution of a Cypher statement, conceptually an asynchronous stream of
@@ -40,18 +43,17 @@ import java.util.function.Function;
  * <h2>Important note on semantics</h2>
  * <p>
  * In order to handle very large results, and to minimize memory overhead and maximize
- * performance, results are retrieved lazily. Please see {@link StatementRunner} for
+ * performance, results are retrieved lazily. Please see {@link AsyncStatementRunner} for
  * important details on the effects of this.
  * <p>
  * The short version is that, if you want a hard guarantee that the underlying statement
- * has completed, you need to either call {@link Transaction#commitAsync()} on the {@link Transaction transaction}
- * or {@link Session#closeAsync()} on the {@link Session session} that created this result, or you need to use
+ * has completed, you need to either call {@link AsyncTransaction#commitAsync()} on the {@link AsyncTransaction transaction}
+ * or {@link AsyncSession#closeAsync()} on the {@link AsyncSession session} that created this result, or you need to use
  * the result.
  * <p>
  * <b>Note:</b> Every returned {@link CompletionStage} can be completed by an IO thread which should never block.
  * Otherwise IO operations on this and potentially other network connections might deadlock. Please do not chain
- * blocking operations like {@link Session#run(String)} on the returned stages. Driver will throw
- * {@link IllegalStateException} when blocking API call is executed in IO thread. Consider using asynchronous calls
+ * blocking operations like {@link CompletableFuture#get()} on the returned stages. Consider using asynchronous calls
  * throughout the chain or offloading blocking operation to a different {@link Executor}. This can be done using
  * methods with "Async" suffix like {@link CompletionStage#thenApplyAsync(java.util.function.Function)} or
  * {@link CompletionStage#thenApplyAsync(java.util.function.Function, Executor)}.

@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 

@@ -18,17 +18,11 @@
  */
 package org.neo4j.driver;
 
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executor;
-import java.util.function.Function;
-
 import org.neo4j.driver.util.Resource;
 
 /**
  * Logical container for an atomic unit of work.
  * A driver Transaction object corresponds to a server transaction.
- * <p>
- * Blocking API:
  * <p>
  * Transactions are typically wrapped in a try-with-resources block
  * which ensures that <code>COMMIT</code> or <code>ROLLBACK</code>
@@ -45,28 +39,6 @@ import org.neo4j.driver.util.Resource;
  * </pre>
  * Blocking calls are: {@link #success()}, {@link #failure()}, {@link #close()}
  * and various overloads of {@link #run(Statement)}.
- * <p>
- * Asynchronous API:
- * <p>
- * Transactions are typically obtained in a {@link CompletionStage} and all
- * operations chain on this stage. Explicit commit with {@link #commitAsync()}
- * or rollback with {@link #rollbackAsync()} is required. Without explicit
- * commit/rollback corresponding transaction will remain open in the database.
- * <pre>
- * {@code
- * session.beginTransactionAsync()
- *        .thenCompose(tx ->
- *               tx.runAsync("CREATE (a:Person {name: {x}})", parameters("x", "Alice"))
- *                 .exceptionally(e -> {
- *                    e.printStackTrace();
- *                    return null;
- *                 })
- *                 .thenApply(ignore -> tx)
- *        ).thenCompose(Transaction::commitAsync);
- * }
- * </pre>
- * Async calls are: {@link #commitAsync()}, {@link #rollbackAsync()} and various overloads of
- * {@link #runAsync(Statement)}.
  *
  * @see Session#run
  * @see StatementRunner
@@ -108,42 +80,4 @@ public interface Transaction extends Resource, StatementRunner
      */
     @Override
     void close();
-
-    /**
-     * Commit this transaction in asynchronous fashion. This operation is typically executed as part of the
-     * {@link CompletionStage} chain that starts with a transaction. It is logically equivalent to a combination of
-     * blocking {@link #success()} and {@link #close()}. However, it is asynchronous and returns new
-     * {@link CompletionStage}. There is no need to close transaction after calling this method. Transaction object
-     * should not be used after calling this method.
-     * <p>
-     * Returned stage can be completed by an IO thread which should never block. Otherwise IO operations on this and
-     * potentially other network connections might deadlock. Please do not chain blocking operations like
-     * {@link #run(String)} on the returned stage. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @return new {@link CompletionStage} that gets completed with {@code null} when commit is successful. Stage can
-     * be completed exceptionally when commit fails.
-     */
-    CompletionStage<Void> commitAsync();
-
-    /**
-     * Rollback this transaction in asynchronous fashion. This operation is typically executed as part of the
-     * {@link CompletionStage} chain that starts with a transaction. It is logically equivalent to a combination of
-     * blocking {@link #failure()} and {@link #close()}. However, it is asynchronous and returns new
-     * {@link CompletionStage}. There is no need to close transaction after calling this method. Transaction object
-     * should not be used after calling this method.
-     * <p>
-     * Returned stage can be completed by an IO thread which should never block. Otherwise IO operations on this and
-     * potentially other network connections might deadlock. Please do not chain blocking operations like
-     * {@link #run(String)} on the returned stage. Driver will throw {@link IllegalStateException} when blocking API
-     * call is executed in IO thread. Consider using asynchronous calls throughout the chain or offloading blocking
-     * operation to a different {@link Executor}. This can be done using methods with "Async" suffix like
-     * {@link CompletionStage#thenApplyAsync(Function)} or {@link CompletionStage#thenApplyAsync(Function, Executor)}.
-     *
-     * @return new {@link CompletionStage} that gets completed with {@code null} when rollback is successful. Stage can
-     * be completed exceptionally when rollback fails.
-     */
-    CompletionStage<Void> rollbackAsync();
 }

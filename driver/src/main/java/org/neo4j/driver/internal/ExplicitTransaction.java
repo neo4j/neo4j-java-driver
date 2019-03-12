@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
+import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.internal.async.ResultCursorsHolder;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
@@ -31,7 +32,7 @@ import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
@@ -39,7 +40,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class ExplicitTransaction extends AbstractStatementRunner implements Transaction
+public class ExplicitTransaction extends AbstractStatementRunner implements Transaction, AsyncTransaction
 {
     private enum State
     {

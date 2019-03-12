@@ -35,24 +35,22 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.async.EventLoopGroupFactory;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.types.Node;
@@ -74,16 +72,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
-import static org.neo4j.driver.internal.util.Matchers.blockingOperationInEventLoopError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAll;
 
@@ -93,12 +90,12 @@ class SessionAsyncIT
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
-    private Session session;
+    private AsyncSession session;
 
     @BeforeEach
     void setUp()
     {
-        session = neo4j.driver().session();
+        session = neo4j.driver().asyncSession();
     }
 
     @AfterEach
@@ -257,7 +254,7 @@ class SessionAsyncIT
         awaitAll( records );
 
         await( session.closeAsync() );
-        session = neo4j.driver().session();
+        session = neo4j.driver().asyncSession();
 
         StatementResultCursor cursor = await( session.runAsync( "MATCH (p:Person) RETURN count(p)" ) );
         Record record = await( cursor.nextAsync() );
@@ -604,7 +601,7 @@ class SessionAsyncIT
     @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().session( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( "Illegal Bookmark" );
 
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
 
@@ -617,7 +614,7 @@ class SessionAsyncIT
     @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().session( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( "Illegal Bookmark" );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
     }
@@ -626,7 +623,7 @@ class SessionAsyncIT
     @EnabledOnNeo4jWith( BOLT_V3 )
     void shouldNotRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().session( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( "Illegal Bookmark" );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
@@ -645,7 +642,7 @@ class SessionAsyncIT
 
         neo4j.startDb();
 
-        Transaction tx = await( session.beginTransactionAsync() );
+        AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
         Record record = await( cursor2.singleAsync() );
         assertEquals( 42, record.get( 0 ).asInt() );
@@ -657,12 +654,12 @@ class SessionAsyncIT
     {
         int maxFailures = 1;
 
-        CompletionStage<Integer> result = session.readTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        CompletionStage<Integer> result = session.readTransactionAsync( new AsyncTransactionWork<CompletionStage<Integer>>()
         {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute( Transaction tx )
+            public CompletionStage<Integer> execute( AsyncTransaction tx )
             {
                 if ( failures.getAndIncrement() < maxFailures )
                 {
@@ -682,12 +679,12 @@ class SessionAsyncIT
     {
         int maxFailures = 2;
 
-        CompletionStage<Integer> result = session.writeTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        CompletionStage<Integer> result = session.writeTransactionAsync( new AsyncTransactionWork<CompletionStage<Integer>>()
         {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute( Transaction tx )
+            public CompletionStage<Integer> execute( AsyncTransaction tx )
             {
                 if ( failures.getAndIncrement() < maxFailures )
                 {
@@ -708,12 +705,12 @@ class SessionAsyncIT
     {
         int maxFailures = 3;
 
-        CompletionStage<Integer> result = session.readTransactionAsync( new TransactionWork<CompletionStage<Integer>>()
+        CompletionStage<Integer> result = session.readTransactionAsync( new AsyncTransactionWork<CompletionStage<Integer>>()
         {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<Integer> execute( Transaction tx )
+            public CompletionStage<Integer> execute( AsyncTransaction tx )
             {
                 return tx.runAsync( "RETURN 42" )
                         .thenCompose( StatementResultCursor::singleAsync )
@@ -737,12 +734,12 @@ class SessionAsyncIT
     {
         int maxFailures = 2;
 
-        CompletionStage<String> result = session.writeTransactionAsync( new TransactionWork<CompletionStage<String>>()
+        CompletionStage<String> result = session.writeTransactionAsync( new AsyncTransactionWork<CompletionStage<String>>()
         {
             final AtomicInteger failures = new AtomicInteger();
 
             @Override
-            public CompletionStage<String> execute( Transaction tx )
+            public CompletionStage<String> execute( AsyncTransaction tx )
             {
                 return tx.runAsync( "CREATE (:MyNode) RETURN 'Hello'" )
                         .thenCompose( StatementResultCursor::singleAsync )
@@ -878,74 +875,6 @@ class SessionAsyncIT
         assertEquals( 1, countNodesByLabel( "Node1" ) );
         assertEquals( 1, countNodesByLabel( "Node2" ) );
         assertEquals( 0, countNodesByLabel( "Node3" ) );
-    }
-
-    @Test
-    void shouldBePossibleToMixRunAsyncAndBlockingSessionClose()
-    {
-        long nodeCount = 5_000;
-
-        try ( Session session = neo4j.driver().session() )
-        {
-            session.runAsync( "UNWIND range(1, " + nodeCount + ") AS x CREATE (n:AsyncNode {x: x}) RETURN n" );
-        }
-
-        assertEquals( nodeCount, countNodesByLabel( "AsyncNode" ) );
-    }
-
-    @Test
-    void shouldFailToExecuteBlockingRunInAsyncTransactionFunction()
-    {
-        TransactionWork<CompletionStage<Void>> completionStageTransactionWork = tx ->
-        {
-            if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
-            {
-                IllegalStateException e = assertThrows( IllegalStateException.class,
-                        () -> tx.run( "UNWIND range(1, 10000) AS x CREATE (n:AsyncNode {x: x}) RETURN n" ) );
-
-                assertThat( e, is( blockingOperationInEventLoopError() ) );
-            }
-            return completedFuture( null );
-        };
-
-        CompletionStage<Void> result = session.readTransactionAsync( completionStageTransactionWork );
-        assertNull( await( result ) );
-    }
-
-    @Test
-    void shouldFailToExecuteBlockingRunChainedWithAsyncRun()
-    {
-        CompletionStage<Void> result = session.runAsync( "RETURN 1" )
-                .thenCompose( StatementResultCursor::singleAsync )
-                .thenApply( record ->
-                {
-                    if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
-                    {
-                        IllegalStateException e = assertThrows( IllegalStateException.class,
-                                () -> session.run( "RETURN $x", parameters( "x", record.get( 0 ).asInt() ) ) );
-
-                        assertThat( e, is( blockingOperationInEventLoopError() ) );
-                    }
-                    return null;
-                } );
-
-        assertNull( await( result ) );
-    }
-
-    @Test
-    void shouldAllowBlockingOperationInCommonPoolWhenChaining()
-    {
-        CompletionStage<Node> nodeStage = session.runAsync( "RETURN 42 AS value" )
-                .thenCompose( StatementResultCursor::singleAsync )
-                // move execution to ForkJoinPool.commonPool()
-                .thenApplyAsync( record -> session.run( "CREATE (n:Node {value: $value}) RETURN n", record ) )
-                .thenApply( StatementResult::single )
-                .thenApply( record -> record.get( 0 ).asNode() );
-
-        Node node = await( nodeStage );
-
-        assertEquals( 42, node.get( "value" ).asInt() );
-        assertEquals( 1, countNodesByLabel( "Node" ) );
     }
 
     @Test
@@ -1179,7 +1108,7 @@ class SessionAsyncIT
         assertNull( await( cursor.nextAsync() ) );
     }
 
-    private static class InvocationTrackingWork implements TransactionWork<CompletionStage<Record>>
+    private static class InvocationTrackingWork implements AsyncTransactionWork<CompletionStage<Record>>
     {
         final String query;
         final AtomicInteger invocationCount;
@@ -1211,7 +1140,7 @@ class SessionAsyncIT
         }
 
         @Override
-        public CompletionStage<Record> execute( Transaction tx )
+        public CompletionStage<Record> execute( AsyncTransaction tx )
         {
             invocationCount.incrementAndGet();
 

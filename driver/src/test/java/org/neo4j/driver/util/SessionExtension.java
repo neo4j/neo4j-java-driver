@@ -29,26 +29,30 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.types.TypeSystem;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
  * If you want more direct control, have a look at {@link DatabaseExtension} instead.
  */
-public class SessionExtension extends DatabaseExtension implements Session, BeforeEachCallback, AfterEachCallback
+public class SessionExtension extends DatabaseExtension implements Session, AsyncSession, BeforeEachCallback, AfterEachCallback
 {
-    private Session realSession;
+    private NetworkSession realSession;
 
     @Override
     public void beforeEach( ExtensionContext context ) throws Exception
     {
         super.beforeEach( context );
-        realSession = driver().session();
+        realSession = (NetworkSession) driver().session(); // TODO This shall only return a blocking driver
     }
 
     @Override
@@ -104,13 +108,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    public CompletionStage<Transaction> beginTransactionAsync()
+    public CompletionStage<AsyncTransaction> beginTransactionAsync()
     {
         return realSession.beginTransactionAsync();
     }
 
     @Override
-    public CompletionStage<Transaction> beginTransactionAsync( TransactionConfig config )
+    public CompletionStage<AsyncTransaction> beginTransactionAsync( TransactionConfig config )
     {
         return realSession.beginTransactionAsync( config );
     }
@@ -128,13 +132,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work )
+    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
     {
         return realSession.readTransactionAsync( work );
     }
 
     @Override
-    public <T> CompletionStage<T> readTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return realSession.readTransactionAsync( work, config );
     }
@@ -152,13 +156,13 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work )
+    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
     {
         return realSession.writeTransactionAsync( work );
     }
 
     @Override
-    public <T> CompletionStage<T> writeTransactionAsync( TransactionWork<CompletionStage<T>> work, TransactionConfig config )
+    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return realSession.writeTransactionAsync( work, config );
     }

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.Session;
+import org.neo4j.driver.async.AsyncSession;
 
 public class AsyncAutocommitTransactionExample extends BaseApplication
 {
@@ -38,7 +38,7 @@ public class AsyncAutocommitTransactionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        Session session = driver.session();
+        AsyncSession session = driver.asyncSession();
 
         return session.runAsync( query, parameters )
                 .thenCompose( cursor -> cursor.listAsync( record -> record.get( 0 ).asString() ) )

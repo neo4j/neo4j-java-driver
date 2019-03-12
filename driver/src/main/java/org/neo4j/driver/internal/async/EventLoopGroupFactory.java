@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.driver.Session;
+import org.neo4j.driver.async.AsyncSession;
 
 /**
  * Manages creation of Netty {@link EventLoopGroup}s, which are basically {@link Executor}s that perform IO operations.
@@ -81,7 +82,7 @@ public final class EventLoopGroupFactory
     /**
      * Assert that current thread is not an event loop used for async IO operations. This check is needed because
      * blocking API methods like {@link Session#run(String)} are implemented on top of corresponding async API methods
-     * like {@link Session#runAsync(String)} using basically {@link Future#get()} calls. Deadlocks might happen when IO
+     * like {@link AsyncSession#runAsync(String)} using basically {@link Future#get()} calls. Deadlocks might happen when IO
      * thread executes blocking API call and has to wait for itself to read from the network.
      *
      * @throws IllegalStateException when current thread is an event loop IO thread.

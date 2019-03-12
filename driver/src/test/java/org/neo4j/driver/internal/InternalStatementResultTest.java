@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.util.Pair;

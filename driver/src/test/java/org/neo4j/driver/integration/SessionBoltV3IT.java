@@ -39,7 +39,7 @@ import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.TransientException;

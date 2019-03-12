@@ -20,11 +20,11 @@ package org.neo4j.driver.stress;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.util.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -41,7 +41,7 @@ public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQue
     @Override
     public CompletionStage<Void> execute( C context )
     {
-        Session session = newSession( AccessMode.WRITE, context );
+        AsyncSession session = newSession( AccessMode.WRITE, context );
 
         return session.runAsync( "CREATE ()" )
                 .thenCompose( StatementResultCursor::summaryAsync )

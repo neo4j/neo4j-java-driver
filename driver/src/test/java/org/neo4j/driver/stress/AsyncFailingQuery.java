@@ -20,11 +20,11 @@ package org.neo4j.driver.stress;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.util.Futures;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -41,7 +41,7 @@ public class AsyncFailingQuery<C extends AbstractContext> extends AbstractAsyncQ
     @Override
     public CompletionStage<Void> execute( C context )
     {
-        Session session = newSession( AccessMode.READ, context );
+        AsyncSession session = newSession( AccessMode.READ, context );
 
         return session.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
                 .thenCompose( StatementResultCursor::listAsync )

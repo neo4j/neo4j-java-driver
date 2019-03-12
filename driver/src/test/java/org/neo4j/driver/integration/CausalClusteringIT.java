@@ -37,15 +37,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
-import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
@@ -54,17 +47,25 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
+import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
+import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.summary.ResultSummary;
-import java.util.function.Function;
 import org.neo4j.driver.util.cc.Cluster;
 import org.neo4j.driver.util.cc.ClusterExtension;
 import org.neo4j.driver.util.cc.ClusterMember;
@@ -84,11 +85,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
@@ -509,7 +510,7 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
-            Session session = driver.session( AccessMode.READ );
+            AsyncSession session = driver.asyncSession( AccessMode.READ );
 
             CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
                     .thenCompose( cursor1 ->
@@ -529,7 +530,7 @@ public class CausalClusteringIT implements NestedQueries
             assertNotEquals( first.summary.server().address(), second.summary.server().address() );
 
             CompletionStage<Integer> countStage =
-                    session.readTransaction( tx -> tx.runAsync( "MATCH (n:Node1) RETURN count(n)" )
+                    session.readTransactionAsync( tx -> tx.runAsync( "MATCH (n:Node1) RETURN count(n)" )
                             .thenCompose( StatementResultCursor::singleAsync ) )
                             .thenApply( record -> record.get( 0 ).asInt() );
 

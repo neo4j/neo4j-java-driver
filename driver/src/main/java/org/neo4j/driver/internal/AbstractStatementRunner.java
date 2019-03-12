@@ -21,19 +21,20 @@ package org.neo4j.driver.internal;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.async.AsyncStatementRunner;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementResultCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.types.TypeSystem;
 
-public abstract class AbstractStatementRunner implements StatementRunner
+public abstract class AbstractStatementRunner implements StatementRunner, AsyncStatementRunner
 {
     @Override
     public final StatementResult run( String statementTemplate, Value parameters )
