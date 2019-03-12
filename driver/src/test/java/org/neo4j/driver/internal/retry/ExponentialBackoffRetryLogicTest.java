@@ -20,7 +20,11 @@ package org.neo4j.driver.internal.retry;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -36,9 +40,14 @@ import org.neo4j.driver.exceptions.TransientException;
 
 import static java.lang.Long.MAX_VALUE;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -739,6 +748,56 @@ class ExponentialBackoffRetryLogicTest
                 startsWith( "Async transaction failed and is scheduled to retry" ),
                 any( SessionExpiredException.class )
         );
+    }
+
+    @Test
+    void shouldRetryWithBackOff() {
+        Exception exception = new TransientException( "Unknown", "Retry this error." );
+        List<Long> elapsedList = new ArrayList<>();
+
+        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 1000, 100, 2, 0,
+                null, Clock.SYSTEM, DEV_NULL_LOGGING );
+
+        Flux<Integer> source = Flux.concat( Flux.range( 0, 2 ), Flux.error( exception ) );
+        StepVerifier.withVirtualTime( () -> // This test uses a virtual time. So do not panic if you saw this test runs faster than it should be.
+                Flux.from( retryLogic.retryRx( source ) )
+                        .elapsed()
+                        .doOnNext( elapsed -> { if ( elapsed.getT2() == 0 ) elapsedList.add( elapsed.getT1() ); } )
+                        .map( Tuple2::getT2 ) )
+                .thenAwait( Duration.ofSeconds( 2 ) )
+                .expectNext( 0, 1 ) // first run
+                .expectNext( 0, 1, 0, 1, 0, 1, 0, 1 ) //4 retry attempts
+                .verifyErrorSatisfies( e -> assertThat( e, equalTo( exception ) ) );
+
+        assertThat( elapsedList.size(), equalTo( 5 ) );
+        assertThat( elapsedList, contains( 0L, 100L, 200L, 400L, 800L ) );
+    }
+
+    @Test
+    void shouldRetryWithRandomBackOff() {
+        List<Long> elapsedList = new ArrayList<>();
+        Exception exception = new TransientException( "Unknown", "Retry this error." );
+
+        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 1000, 100, 2, 0.1,
+                null, Clock.SYSTEM, DEV_NULL_LOGGING );
+
+        Flux<Integer> source = Flux.concat( Flux.range( 0, 2 ), Flux.error( exception ) );
+        StepVerifier.withVirtualTime( () -> // This test uses a virtual time. So do not panic if you saw this test runs faster than it should be.
+                Flux.from( retryLogic.retryRx( source ) )
+                        .elapsed()
+                        .doOnNext( elapsed -> { if ( elapsed.getT2() == 0 ) elapsedList.add( elapsed.getT1() ); } )
+                        .map( Tuple2::getT2 ) )
+                .thenAwait( Duration.ofSeconds( 2 ) )
+                .expectNext( 0, 1 ) // first run
+                .expectNext( 0, 1, 0, 1, 0, 1, 0, 1 ) // 4 retry attempts
+                .verifyErrorSatisfies( e -> assertThat( e, equalTo( exception ) ) );
+
+        assertThat( elapsedList.size(), equalTo( 5 ) );
+        assertThat( elapsedList.get( 0 ), equalTo( 0L ) );
+        assertThat( elapsedList.get( 1 ), allOf( greaterThanOrEqualTo( 90L ), lessThanOrEqualTo( 110L ) ) );
+        assertThat( elapsedList.get( 2 ), allOf( greaterThanOrEqualTo( 180L ), lessThanOrEqualTo( 220L ) ) );
+        assertThat( elapsedList.get( 3 ), allOf( greaterThanOrEqualTo( 260L ), lessThanOrEqualTo( 440L ) ) );
+        assertThat( elapsedList.get( 4 ), allOf( greaterThanOrEqualTo( 720L ), lessThanOrEqualTo( 880L ) ) );
     }
 
     private static void retry( ExponentialBackoffRetryLogic retryLogic, final int times )

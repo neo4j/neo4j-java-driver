@@ -25,18 +25,17 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.exceptions.TransientException;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createMono;
@@ -106,20 +105,14 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<Publisher<T>> work, TransactionConfig config )
     {
         // TODO read and write
-        Publisher<RxTransaction> publisher = beginTransaction( config );
-        Flux<T> txExecutor = Mono.from( publisher ).flatMapMany( tx -> Flux.from( work.execute( tx ) ).flatMap( t -> Mono.create( sink -> sink.success( t ) ),
-                throwable -> Mono.from( tx.rollback() ).then( Mono.error( throwable ) ), // TODO chain errors from rollback to throwable
-                () -> Mono.from( tx.commit() ).then( Mono.empty() ) ) );
-        return txExecutor.retry( throwable -> {
-            if ( throwable instanceof TransientException )
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        } ); // TODO retry
+        Publisher<RxTransaction> publisher = beginTransaction( /*mode,*/ config );
+        Flux<T> txResult = Mono.from( publisher )
+                .flatMapMany( tx -> Flux.from( work.execute( tx ) )
+                        .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) // if failed then we rollback and rethrow the error
+                        .concatWith( tx.commit() ) // if succeeded then we commit.
+                );
+
+        return session.retryLogic().retryRx( txResult );
     }
 
     @Override

@@ -443,6 +443,11 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
         return newResultCursorStage;
     }
 
+    public RetryLogic retryLogic()
+    {
+        return retryLogic;
+    }
+
     private CompletionStage<InternalStatementResultCursor> run( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
         CompletionStage<InternalStatementResultCursor> newResultCursorStage =

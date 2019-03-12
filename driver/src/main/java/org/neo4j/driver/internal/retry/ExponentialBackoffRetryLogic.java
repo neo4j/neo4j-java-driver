@@ -20,7 +20,13 @@ package org.neo4j.driver.internal.retry;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
+import reactor.util.function.Tuples;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +34,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
@@ -128,11 +135,59 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         return resultFuture;
     }
 
+    @Override
+    public <T> Publisher<T> retryRx( Publisher<T> work )
+    {
+        return Flux.from( work ).retryWhen( retryRxCondition() );
+    }
+
     protected boolean canRetryOn( Throwable error )
     {
         return error instanceof SessionExpiredException ||
                error instanceof ServiceUnavailableException ||
                isTransientError( error );
+    }
+
+    private Function<Flux<Throwable>,Publisher<Context>> retryRxCondition()
+    {
+        return errorCurrentAttempt -> errorCurrentAttempt.flatMap( e -> Mono.subscriberContext().map( ctx -> Tuples.of( e, ctx ) ) ).flatMap( t2 -> {
+            Throwable lastError = t2.getT1();
+            Context ctx = t2.getT2();
+
+            List<Throwable> errors = ctx.getOrDefault( "errors", null );
+
+            long startTime  = ctx.getOrDefault( "startTime", -1L );
+            long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
+
+            if( !canRetryOn( lastError ) )
+            {
+                addSuppressed( lastError, errors );
+                return Mono.error( lastError );
+            }
+
+            long currentTime = clock.millis();
+            if ( startTime == -1 )
+            {
+                startTime = currentTime;
+            }
+
+            long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+            if ( delayWithJitterMs < maxRetryTimeMs )
+            {
+                log.warn( "Transaction failed and will be retried in " + delayWithJitterMs + "ms", lastError );
+
+                nextDelayMs = (long) (nextDelayMs * multiplier);
+                errors = recordError( lastError, errors );
+
+                return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) )
+                        .delayElement( Duration.ofMillis( delayWithJitterMs ) );
+            }
+            else
+            {
+                addSuppressed( lastError, errors );
+                return Mono.error( lastError );
+            }
+        } );
     }
 
     private <T> void executeWorkInEventLoop( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work )
