@@ -30,7 +30,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 
 /**
- * Common interface for components that can execute Neo4j statements.
+ * Asynchronous interface for components that can execute Neo4j statements.
  *
  * <h2>Important notes on semantics</h2>
  * <p>
