@@ -21,14 +21,15 @@ package org.neo4j.driver.internal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.async.AccessModeConnection;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.async.DecoratedConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.AccessMode;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectConnectionProviderTest
@@ -54,13 +56,13 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection1, connection2 );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired1 = await( provider.acquireConnection( READ ) );
-        assertThat( acquired1, instanceOf( AccessModeConnection.class ) );
-        assertSame( connection1, ((AccessModeConnection) acquired1).connection() );
+        Connection acquired1 = await( provider.acquireConnection( READ, ABSENT_DB_NAME ) );
+        assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
+        assertSame( connection1, ((DecoratedConnection) acquired1).connection() );
 
-        Connection acquired2 = await( provider.acquireConnection( WRITE ) );
-        assertThat( acquired2, instanceOf( AccessModeConnection.class ) );
-        assertSame( connection2, ((AccessModeConnection) acquired2).connection() );
+        Connection acquired2 = await( provider.acquireConnection( WRITE, ABSENT_DB_NAME ) );
+        assertThat( acquired2, instanceOf( DecoratedConnection.class ) );
+        assertSame( connection2, ((DecoratedConnection) acquired2).connection() );
     }
 
     @ParameterizedTest
@@ -71,7 +73,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired = await( provider.acquireConnection( mode ) );
+        Connection acquired = await( provider.acquireConnection( mode, ABSENT_DB_NAME ) );
 
         assertEquals( mode, acquired.mode() );
     }
@@ -96,6 +98,36 @@ class DirectConnectionProviderTest
         DirectConnectionProvider provider = new DirectConnectionProvider( address, mock( ConnectionPool.class ) );
 
         assertEquals( address, provider.getAddress() );
+    }
+
+    @Test
+    void shouldIgnoreDatabaseNameAndAccessModeWhenObtainConnectionFromPool() throws Throwable
+    {
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+        Connection connection = mock( Connection.class );
+
+        ConnectionPool pool = poolMock( address, connection );
+        DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
+
+        Connection acquired1 = await( provider.acquireConnection( READ, ABSENT_DB_NAME ) );
+        assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
+        assertSame( connection, ((DecoratedConnection) acquired1).connection() );
+
+        verify( pool ).acquire( address );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource( strings = {"", "foo", "data", ABSENT_DB_NAME} )
+    void shouldObtainDatabaseNameOnConnection( String databaseName ) throws Throwable
+    {
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+        ConnectionPool pool = poolMock( address, mock( Connection.class ) );
+        DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
+
+        Connection acquired = await( provider.acquireConnection( READ, databaseName ) );
+
+        assertEquals( databaseName, acquired.databaseName() );
     }
 
     @SuppressWarnings( "unchecked" )

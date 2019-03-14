@@ -20,11 +20,12 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.retry.RetryLogic;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.SessionParameters;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 
 public class SessionFactoryImpl implements SessionFactory
 {
@@ -42,11 +43,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public NetworkSession newInstance( AccessMode mode, Bookmarks bookmarks )
+    public NetworkSession newInstance( SessionParameters parameters )
     {
-        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( bookmarks );
-        NetworkSession session = createSession( connectionProvider, retryLogic, mode, logging, bookmarksHolder );
-        return session;
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( Bookmarks.from( parameters.bookmark() ) );
+        return createSession( connectionProvider, retryLogic, parameters.accessMode(), logging, bookmarksHolder, parameters.databaseName() );
     }
 
     @Override
@@ -74,10 +74,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            AccessMode mode, Logging logging, BookmarksHolder bookmarksHolder )
+            AccessMode mode, Logging logging, BookmarksHolder bookmarksHolder, String databaseName )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder )
-               : new NetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder );
+               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder, databaseName )
+               : new NetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder, databaseName );
     }
 }

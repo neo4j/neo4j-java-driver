@@ -28,15 +28,22 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AccessMode;
 
-public class AccessModeConnection implements Connection
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+
+/**
+ * This is a connection with extra parameters such as database name and access mode
+ */
+public class DecoratedConnection implements Connection
 {
     private final Connection delegate;
     private final AccessMode mode;
+    private final String databaseName;
 
-    public AccessModeConnection( Connection delegate, AccessMode mode )
+    public DecoratedConnection( Connection delegate, AccessMode mode, String databaseName )
     {
         this.delegate = delegate;
         this.mode = mode;
+        this.databaseName = databaseName;
     }
 
     public Connection connection()
@@ -126,6 +133,12 @@ public class AccessModeConnection implements Connection
     public AccessMode mode()
     {
         return mode;
+    }
+
+    @Override
+    public String databaseName()
+    {
+        return this.databaseName;
     }
 
     @Override

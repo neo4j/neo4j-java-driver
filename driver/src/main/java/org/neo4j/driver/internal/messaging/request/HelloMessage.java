@@ -22,28 +22,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.Value;
 
-import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
 
-public class HelloMessage implements Message
+public class HelloMessage extends MessageWithMetadata
 {
     public final static byte SIGNATURE = 0x01;
 
     private static final String USER_AGENT_METADATA_KEY = "user_agent";
 
-    private final Map<String,Value> metadata;
-
     public HelloMessage( String userAgent, Map<String,Value> authToken )
     {
-        this.metadata = buildMetadata( userAgent, authToken );
-    }
-
-    public Map<String,Value> metadata()
-    {
-        return metadata;
+        super( buildMetadata( userAgent, authToken ) );
     }
 
     @Override
@@ -64,19 +56,19 @@ public class HelloMessage implements Message
             return false;
         }
         HelloMessage that = (HelloMessage) o;
-        return Objects.equals( metadata, that.metadata );
+        return Objects.equals( metadata(), that.metadata() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( metadata );
+        return Objects.hash( metadata() );
     }
 
     @Override
     public String toString()
     {
-        Map<String,Value> metadataCopy = new HashMap<>( metadata );
+        Map<String,Value> metadataCopy = new HashMap<>( metadata() );
         metadataCopy.replace( CREDENTIALS_KEY, value( "******" ) );
         return "HELLO " + metadataCopy;
     }

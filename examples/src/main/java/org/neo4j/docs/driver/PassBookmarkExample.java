@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 
@@ -109,7 +110,7 @@ public class PassBookmarkExample extends BaseApplication
         }
 
         // Create a friendship between the two people created above.
-        try ( Session session3 = driver.session( AccessMode.WRITE, savedBookmarks ) )
+        try ( Session session3 = driver.session( SessionParameters.builder().withAccessMode( AccessMode.WRITE ).withBookmark( savedBookmarks ).build() ) )
         {
             session3.writeTransaction( tx -> makeFriends( tx, "Alice", "Bob" ) );
 

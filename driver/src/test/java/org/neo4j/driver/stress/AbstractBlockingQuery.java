@@ -21,6 +21,7 @@ package org.neo4j.driver.stress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.TransientException;
 
@@ -39,7 +40,7 @@ public abstract class AbstractBlockingQuery<C extends AbstractContext> implement
     {
         if ( useBookmark )
         {
-            return driver.session( mode, context.getBookmark() );
+            return driver.session( SessionParameters.builder().withAccessMode( mode ).withBookmark( context.getBookmark() ).build() );
         }
         return driver.session( mode );
     }

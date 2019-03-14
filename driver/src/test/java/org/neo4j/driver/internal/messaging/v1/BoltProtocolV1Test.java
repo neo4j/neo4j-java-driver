@@ -274,6 +274,24 @@ public class BoltProtocolV1Test
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
+    @Test
+    void shouldNotSupportDatabaseNameInBeginTransaction()
+    {
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), Bookmarks.empty(), TransactionConfig.empty() );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    void shouldNotSupportDatabaseNameForAutoCommitTransactions()
+    {
+        ClientException e = assertThrows( ClientException.class,
+                () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
+                        new Statement( "RETURN 1" ), BookmarksHolder.NO_OP, TransactionConfig.empty(), true ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
     protected BoltProtocol createProtocol()
     {
         return BoltProtocolV1.INSTANCE;

@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
@@ -41,20 +44,19 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.reactive.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.internal.reactive.cursor.AsyncResultCursorOnlyFactory;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV3PullAllHandler;
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.assertEmptyDatabaseName;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
-import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
 
 public class BoltProtocolV3 implements BoltProtocol
 {
@@ -93,7 +95,16 @@ public class BoltProtocolV3 implements BoltProtocol
     @Override
     public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.mode() );
+        try
+        {
+            verifyDatabaseNameBeforeTransaction( connection.databaseName() );
+        }
+        catch ( Exception error )
+        {
+            return Futures.failedFuture( error );
+        }
+
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.mode(), connection.databaseName() );
 
         if ( bookmarks.isEmpty() )
         {
@@ -128,26 +139,37 @@ public class BoltProtocolV3 implements BoltProtocol
     public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
-        return buildResultCursorFactory( connection, statement, bookmarksHolder, null, config, waitForRunResponse );
+        verifyDatabaseNameBeforeTransaction( connection.databaseName() );
+        RunWithMetadataMessage runMessage =
+                autoCommitTxRunMessage( statement, bookmarksHolder.getBookmarks(), config, connection.mode(), connection.databaseName() );
+        return buildResultCursorFactory( connection, statement, bookmarksHolder, null, runMessage, waitForRunResponse );
     }
 
     @Override
     public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse )
     {
-        return buildResultCursorFactory( connection, statement, BookmarksHolder.NO_OP, tx, TransactionConfig.empty(), waitForRunResponse );
+        RunWithMetadataMessage runMessage = explicitTxRunMessage( statement );
+        return buildResultCursorFactory( connection, statement, BookmarksHolder.NO_OP, tx, runMessage, waitForRunResponse );
     }
 
-    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder, ExplicitTransaction tx,
-            TransactionConfig config, boolean waitForRunResponse )
+    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
     {
-        String query = statement.text();
-        Map<String,Value> params = statement.parameters().asMap( ofValue() );
-
-        RunWithMetadataMessage runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
         AbstractPullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
+    }
+
+    protected void verifyDatabaseNameBeforeTransaction( String databaseName )
+    {
+        assertEmptyDatabaseName( databaseName, version() );
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
     }
 }

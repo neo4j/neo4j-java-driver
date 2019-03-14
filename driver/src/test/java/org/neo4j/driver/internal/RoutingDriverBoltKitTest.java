@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
@@ -65,6 +66,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
+import static org.neo4j.driver.SessionParameters.builder;
 
 class RoutingDriverBoltKitTest
 {
@@ -606,7 +608,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
-              Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
+                Session session = driver.session( builder().withAccessMode( AccessMode.WRITE ).withBookmark( "OldBookmark" ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -628,7 +630,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
-              Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
+              Session session = driver.session( builder().withAccessMode( AccessMode.READ ).withBookmark( "OldBookmark" ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -1007,7 +1009,7 @@ class RoutingDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", config );
-              Session session = driver.session( bookmarks ) )
+              Session session = driver.session( SessionParameters.builder().withBookmark( bookmarks ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {

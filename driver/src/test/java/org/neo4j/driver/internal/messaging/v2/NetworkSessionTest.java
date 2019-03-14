@@ -76,6 +76,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.v2.ExplicitTransactionTest.connectionMock;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -100,7 +101,7 @@ class NetworkSessionTest
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         when( connection.protocol() ).thenReturn( BoltProtocolV2.INSTANCE );
         connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( AccessMode.class ), ABSENT_DB_NAME ) )
                 .thenReturn( completedFuture( connection ) );
         session = newSession( connectionProvider, READ );
     }
@@ -189,12 +190,12 @@ class NetworkSessionTest
     {
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         Connection connection = connectionMock();
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( completedFuture( connection ) );
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) ).thenReturn( completedFuture( connection ) );
         NetworkSession session = newSession( connectionProvider, READ );
 
         session.run( "RETURN 1" );
 
-        verify( connectionProvider ).acquireConnection( READ );
+        verify( connectionProvider ).acquireConnection( READ, ABSENT_DB_NAME );
         verify( connection ).writeAndFlush( eq( new RunMessage( "RETURN 1" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
     }
 
@@ -222,7 +223,7 @@ class NetworkSessionTest
 
         session.reset();
 
-        verify( connectionProvider, never() ).acquireConnection( any( AccessMode.class ) );
+        verify( connectionProvider, never() ).acquireConnection( any( AccessMode.class ), any( String.class ) );
     }
 
     @Test
@@ -233,7 +234,7 @@ class NetworkSessionTest
 
         session.close();
 
-        verify( connectionProvider, never() ).acquireConnection( any( AccessMode.class ) );
+        verify( connectionProvider, never() ).acquireConnection( any( AccessMode.class ), any( String.class ) );
     }
 
     @Test
@@ -242,7 +243,7 @@ class NetworkSessionTest
         Transaction tx = session.beginTransaction();
 
         assertNotNull( tx );
-        verify( connectionProvider ).acquireConnection( READ );
+        verify( connectionProvider ).acquireConnection( READ, ABSENT_DB_NAME );
     }
 
     @Test
@@ -272,7 +273,7 @@ class NetworkSessionTest
         Transaction tx = session.beginTransaction();
         tx.run( query );
 
-        verify( connectionProvider ).acquireConnection( READ );
+        verify( connectionProvider ).acquireConnection( READ, ABSENT_DB_NAME );
         verify( connection ).writeAndFlush( eq( new RunMessage( query ) ), any(), any(), any() );
 
         tx.close();
@@ -333,11 +334,11 @@ class NetworkSessionTest
     {
         NetworkSession session1 = newSession( connectionProvider, READ );
         session1.beginTransaction();
-        verify( connectionProvider ).acquireConnection( READ );
+        verify( connectionProvider ).acquireConnection( READ, ABSENT_DB_NAME );
 
         NetworkSession session2 = newSession( connectionProvider, WRITE );
         session2.beginTransaction();
-        verify( connectionProvider ).acquireConnection( WRITE );
+        verify( connectionProvider ).acquireConnection( WRITE, ABSENT_DB_NAME );
     }
 
 
@@ -492,7 +493,7 @@ class NetworkSessionTest
     void shouldDoNothingWhenClosingWithoutAcquiredConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( READ ) ).thenReturn( failedFuture( error ) );
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) ).thenReturn( failedFuture( error ) );
 
         Exception e = assertThrows( Exception.class, () -> session.run( "RETURN 1" ) );
         assertEquals( error, e );
@@ -504,7 +505,7 @@ class NetworkSessionTest
     void shouldRunAfterRunFailureToAcquireConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( READ ) )
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) )
                 .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
 
         Exception e = assertThrows( Exception.class, () -> session.run( "RETURN 1" ) );
@@ -512,7 +513,7 @@ class NetworkSessionTest
 
         session.run( "RETURN 2" );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ, ABSENT_DB_NAME );
         verifyRunAndFlush( connection, "RETURN 2", times( 1 ) );
     }
 
@@ -524,7 +525,7 @@ class NetworkSessionTest
         setupFailingBegin( connection1, error );
         Connection connection2 = connectionMock();
 
-        when( connectionProvider.acquireConnection( READ ) )
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
@@ -535,7 +536,7 @@ class NetworkSessionTest
 
         session.run( "RETURN 2" );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ, ABSENT_DB_NAME );
         verifyBeginTx( connection1, bookmarks );
         verifyRunAndFlush( connection2, "RETURN 2", times( 1 ) );
     }
@@ -548,7 +549,7 @@ class NetworkSessionTest
         setupFailingBegin( connection1, error );
         Connection connection2 = connectionMock();
 
-        when( connectionProvider.acquireConnection( READ ) )
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
@@ -559,7 +560,7 @@ class NetworkSessionTest
 
         session.beginTransaction();
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ, ABSENT_DB_NAME );
         verifyBeginTx( connection1, bookmarks );
         verifyBeginTx( connection2, bookmarks );
     }
@@ -568,7 +569,7 @@ class NetworkSessionTest
     void shouldBeginTxAfterRunFailureToAcquireConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( READ ) )
+        when( connectionProvider.acquireConnection( READ, ABSENT_DB_NAME ) )
                 .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
 
         Exception e = assertThrows( Exception.class, () -> session.run( "RETURN 1" ) );
@@ -576,7 +577,7 @@ class NetworkSessionTest
 
         session.beginTransaction();
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( READ );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( READ, ABSENT_DB_NAME );
         verifyBeginTx( connection, times( 1 ) );
     }
 
@@ -635,7 +636,7 @@ class NetworkSessionTest
 
         int result = executeTransaction( session, transactionMode, work );
 
-        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connectionProvider ).acquireConnection( transactionMode, ABSENT_DB_NAME );
         verifyBeginTx( connection, times( 1 ) );
         verifyCommitTx( connection, times( 1 ) );
         assertEquals( 42, result );
@@ -660,7 +661,7 @@ class NetworkSessionTest
 
         int result = executeTransaction( session, transactionMode, work );
 
-        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connectionProvider ).acquireConnection( transactionMode, ABSENT_DB_NAME );
         verifyBeginTx( connection, times( 1 ) );
         if ( commit )
         {
@@ -688,7 +689,7 @@ class NetworkSessionTest
         Exception e = assertThrows( Exception.class, () -> executeTransaction( session, transactionMode, work ) );
         assertEquals( error, e );
 
-        verify( connectionProvider ).acquireConnection( transactionMode );
+        verify( connectionProvider ).acquireConnection( transactionMode, ABSENT_DB_NAME );
         verifyBeginTx( connection, times( 1 ) );
         verifyRollbackTx( connection, times( 1 ) );
     }
@@ -799,7 +800,7 @@ class NetworkSessionTest
     private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, Bookmarks bookmarks )
     {
-        return new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING, new DefaultBookmarksHolder( bookmarks ) );
+        return new NetworkSession( connectionProvider, mode, retryLogic, DEV_NULL_LOGGING, new DefaultBookmarksHolder( bookmarks ), ABSENT_DB_NAME   );
     }
 
     private static void verifyInvocationCount( TransactionWork<?> workSpy, int expectedInvocationCount )

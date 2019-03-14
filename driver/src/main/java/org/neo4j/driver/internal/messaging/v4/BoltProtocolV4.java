@@ -18,29 +18,24 @@
  */
 package org.neo4j.driver.internal.messaging.v4;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursorFactory;
 import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV3PullAllHandler;
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4PullHandler;
-import static org.neo4j.driver.Values.ofValue;
 
 public class BoltProtocolV4 extends BoltProtocolV3
 {
@@ -53,19 +48,28 @@ public class BoltProtocolV4 extends BoltProtocolV3
         return new MessageFormatV4();
     }
 
+    @Override
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
-            ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
     {
         CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
 
-        String query = statement.text();
-        Map<String,Value> params = statement.parameters().asMap( ofValue() );
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
 
         AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
         BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarksHolder, tx );
 
         return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
+    }
+
+    protected void verifyDatabaseNameBeforeTransaction( String databaseName )
+    {
+        // Bolt V4 accepts database name
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
     }
 }

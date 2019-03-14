@@ -122,6 +122,12 @@ public interface BoltProtocol
             boolean waitForRunResponse );
 
     /**
+     * Returns the protocol version. It can be used for version specific error messages.
+     * @return the protocol version.
+     */
+    int version();
+
+    /**
      * Obtain an instance of the protocol for the given channel.
      *
      * @param channel the channel to get protocol for.

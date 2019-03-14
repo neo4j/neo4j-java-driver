@@ -16,27 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v2;
+package org.neo4j.driver.internal.messaging.request;
 
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import java.util.Map;
 
-public class BoltProtocolV2 extends BoltProtocolV1
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.messaging.Message;
+
+abstract class MessageWithMetadata implements Message
 {
-    public static final int VERSION = 2;
+    private final Map<String,Value> metadata;
 
-    public static final BoltProtocol INSTANCE = new BoltProtocolV2();
-
-    @Override
-    public MessageFormat createMessageFormat()
+    public MessageWithMetadata( Map<String,Value> metadata )
     {
-        return new MessageFormatV2();
+        this.metadata = metadata;
     }
 
-    @Override
-    public int version()
+    public Map<String,Value> metadata()
     {
-        return VERSION;
+        return metadata;
     }
 }

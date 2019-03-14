@@ -28,7 +28,7 @@ import org.neo4j.driver.reactive.RxSession;
  * Accessor for a specific Neo4j graph database.
  * <p>
  * Driver implementations are typically thread-safe, act as a template
- * for {@link Session} creation and host a connection pool. All configuration
+ * for session creation and host a connection pool. All configuration
  * and authentication settings are held immutably by the Driver. Should
  * different settings be required, a new Driver instance should be created.
  * <p>
@@ -58,7 +58,7 @@ import org.neo4j.driver.reactive.RxSession;
  *     </tbody>
  * </table>
  *
- * @since 1.0 (<em>neo4j</em> URIs since 1.1)
+ * @since 1.0 (Modified and Added {@link AsyncSession} and {@link RxSession} since 2.0)
  */
 public interface Driver extends AutoCloseable
 {
@@ -70,18 +70,28 @@ public interface Driver extends AutoCloseable
     boolean isEncrypted();
 
     /**
-     * Create a new general purpose {@link Session}.
+     * Create a new general purpose {@link Session} with default {@link SessionParameters#empty() session parameters}.
      * <p>
-     * Alias to {@code session(AccessMode.WRITE, null)}.
+     * Alias to {@link #session(SessionParameters)}}.
      *
      * @return a new {@link Session} object.
      */
     Session session();
 
     /**
-     * Create a new {@link Session} for a specific type of work.
+     * Create a new {@link Session} for a specific database.
      * <p>
-     * Alias to {@code session(mode, null)}.
+     * Alias to {@link #session(SessionParameters)}}.
+     *
+     * @param databaseName the database the session connects to.
+     * @return a new {@link Session} object.
+     */
+    Session session( String databaseName );
+
+    /**
+     * Create a new {@link Session} for a specific type of work on the default database.
+     * <p>
+     * Alias to {@link #session(SessionParameters)}}.
      *
      * @param mode the type of access required by units of work in this session,
      * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
@@ -90,58 +100,25 @@ public interface Driver extends AutoCloseable
     Session session( AccessMode mode );
 
     /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with the specified initial bookmark.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * transaction referenced by the supplied <em>bookmark</em>.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmark)}.
+     * Create a new {@link Session} towards a specific database for a specific type of work.
+     *<p>
+     * Alias to {@link #session(SessionParameters)}}.
      *
-     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
-     * indicates that the bookmark does not exist or is unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( String bookmark );
-
-    /**
-     * Create a new {@link Session} for a specific type of work with the specified initial bookmark.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * transaction referenced by the supplied <em>bookmark</em>.
-     *
+     * @param databaseName the database the session connects to.
      * @param mode the type of access required by units of work in this session,
      * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
-     * indicates that the bookmark does not exist or is unknown.
+     *
      * @return a new {@link Session} object.
      */
-    Session session( AccessMode mode, String bookmark );
+    Session session( String databaseName, AccessMode mode );
 
     /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * latest transaction referenced by the supplied iterable of bookmarks.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
-     *
-     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
-     * are permitted, and indicate that the bookmarks do not exist or are unknown.
+     * Create a new {@link Session} with a specified {@link SessionParameters}.
+     * @param parameters the session parameters which specifies the attribute of the session.
      * @return a new {@link Session} object.
+     * @see SessionParameters
      */
-    Session session( Iterable<String> bookmarks );
-
-    /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * latest transaction referenced by the supplied iterable of bookmarks.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
-     * are permitted, and indicate that the bookmarks do not exist or are unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( AccessMode mode, Iterable<String> bookmarks );
+    Session session( SessionParameters parameters );
 
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
@@ -169,13 +146,111 @@ public interface Driver extends AutoCloseable
      */
     Metrics metrics();
 
-    // TODO more method overloads with parameters. Leaving this to multi-database db name PR.
+    /**
+     * Create a new general purpose {@link RxSession} with default {@link SessionParameters#empty() session parameters}.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(SessionParameters)}}.
+     *
+     * @return @return a new {@link RxSession} object.
+     */
     RxSession rxSession();
-    RxSession rxSession( String bookmark );
 
-    // TODO add more method overloads, leaving this to multi-database db name PR
+    /**
+     * Create a new {@link RxSession} for a specific database.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(SessionParameters)}}.
+     *
+     * @param databaseName the database the session connects to.
+     * @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( String databaseName );
+    /**
+     * Create a new {@link RxSession} for a specific type of work on the default database.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(SessionParameters)}}.
+     *
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     * @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( AccessMode mode );
+
+    /**
+     * Create a new {@link RxSession} towards a specific database for a specific type of work.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     *<p>
+     * Alias to {@link #rxSession(SessionParameters)}}.
+     *
+     * @param databaseName the database the session connects to.
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     *
+     * @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( String databaseName, AccessMode mode );
+
+    /**
+     * Create a new {@link RxSession} with specified {@link SessionParameters}.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     *
+     * @param parameters the session parameters which specifies the attribute of the session.
+     * @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( SessionParameters parameters );
+
+    /**
+     * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters#empty() session parameters}.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * <p>
+     * Alias to {@link #asyncSession(SessionParameters)}}.
+     *
+     * @return @return a new {@link AsyncSession} object.
+     */
     AsyncSession asyncSession();
+
+    /**
+     * Create a new {@link AsyncSession} for a specific database.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * <p>
+     * Alias to {@link #asyncSession(SessionParameters)}}.
+     *
+     * @param databaseName the database the session connects to.
+     * @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession( String databaseName );
+    /**
+     * Create a new {@link AsyncSession} for a specific type of work on the default database.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * <p>
+     * Alias to {@link #asyncSession(SessionParameters)}}.
+     *
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     * @return a new {@link AsyncSession} object.
+     */
     AsyncSession asyncSession( AccessMode mode );
-    AsyncSession asyncSession( String bookmark );
-    AsyncSession asyncSession( AccessMode mode, String bookmark );
+    /**
+     * Create a new {@link AsyncSession} towards a specific database for a specific type of work.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     *<p>
+     * Alias to {@link #asyncSession(SessionParameters)}}.
+     *
+     * @param databaseName the database the session connects to.
+     * @param mode the type of access required by units of work in this session,
+     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     *
+     * @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession( String databaseName, AccessMode mode );
+    /**
+     * Create a new {@link AsyncSession} with specified {@link SessionParameters}.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     *
+     * @param parameters the session parameters which specifies the attribute of the session.
+     * @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession( SessionParameters parameters );
 }

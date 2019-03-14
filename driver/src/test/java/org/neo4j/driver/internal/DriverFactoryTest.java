@@ -27,6 +27,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.net.URI;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.SessionParameters;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
@@ -39,11 +45,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.instanceOf;
@@ -57,11 +58,10 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.Config.defaultConfig;
 
 class DriverFactoryTest
 {
@@ -106,7 +106,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( NetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( SessionParameters.empty() ), instanceOf( NetworkSession.class ) );
     }
 
     @ParameterizedTest
@@ -119,7 +119,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( READ, null ), instanceOf( LeakLoggingNetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( SessionParameters.empty() ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     @ParameterizedTest

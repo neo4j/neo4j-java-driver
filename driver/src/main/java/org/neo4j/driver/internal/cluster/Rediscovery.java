@@ -233,6 +233,7 @@ public class Rediscovery
     private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
             RoutingTable routingTable, ConnectionPool connectionPool )
     {
+        // Routing procedure will be called on the default database
         CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 
         return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
