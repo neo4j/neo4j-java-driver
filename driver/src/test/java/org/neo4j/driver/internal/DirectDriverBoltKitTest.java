@@ -26,6 +26,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -92,7 +93,7 @@ class DirectDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session( bookmarks ) )
+              Session session = driver.session( SessionParameters.builder().withBookmark( bookmarks ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {

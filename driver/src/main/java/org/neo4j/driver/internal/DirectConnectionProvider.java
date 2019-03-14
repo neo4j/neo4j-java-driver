@@ -20,13 +20,14 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AccessModeConnection;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.async.DecoratedConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.AccessMode;
 
 import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
@@ -44,15 +45,16 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( AccessMode mode )
+    public CompletionStage<Connection> acquireConnection( AccessMode mode, String databaseName )
     {
-        return connectionPool.acquire( address ).thenApply( connection -> new AccessModeConnection( connection, mode ) );
+        return connectionPool.acquire( address ).thenApply( connection -> new DecoratedConnection( connection, mode, databaseName ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return acquireConnection( READ ).thenCompose( Connection::release );
+        // we verify the connection by establishing the connection to the default database
+        return acquireConnection( READ, ABSENT_DB_NAME ).thenCompose( Connection::release );
     }
 
     @Override

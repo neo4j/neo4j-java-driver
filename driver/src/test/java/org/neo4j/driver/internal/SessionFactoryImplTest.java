@@ -20,6 +20,7 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.AccessMode;
@@ -39,10 +40,10 @@ class SessionFactoryImplTest
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         SessionFactory factory = newSessionFactory( config );
 
-        Session readSession = factory.newInstance( AccessMode.READ, null );
+        Session readSession = factory.newInstance( SessionParameters.builder().withAccessMode( AccessMode.READ ).build() );
         assertThat( readSession, instanceOf( NetworkSession.class ) );
 
-        Session writeSession = factory.newInstance( AccessMode.WRITE, null );
+        Session writeSession = factory.newInstance( SessionParameters.builder().withAccessMode( AccessMode.WRITE ).build() );
         assertThat( writeSession, instanceOf( NetworkSession.class ) );
     }
 
@@ -52,10 +53,10 @@ class SessionFactoryImplTest
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().build();
         SessionFactory factory = newSessionFactory( config );
 
-        Session readSession = factory.newInstance( AccessMode.READ, null );
+        Session readSession = factory.newInstance( SessionParameters.builder().withAccessMode( AccessMode.READ ).build() );
         assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
 
-        Session writeSession = factory.newInstance( AccessMode.WRITE, null );
+        Session writeSession = factory.newInstance( SessionParameters.builder().withAccessMode( AccessMode.WRITE ).build() );
         assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
     }
 

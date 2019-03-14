@@ -85,6 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.SessionParameters.builder;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
@@ -373,7 +374,7 @@ public class CausalClusteringIT implements NestedQueries
                 return session.lastBookmark();
             } );
 
-            try ( Session session2 = driver.session( AccessMode.READ, bookmark );
+            try ( Session session2 = driver.session( builder().withAccessMode( AccessMode.READ ).withBookmark( bookmark ).build() );
                   Transaction tx2 = session2.beginTransaction() )
             {
                 Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
@@ -494,7 +495,7 @@ public class CausalClusteringIT implements NestedQueries
             executor.shutdown();
             assertTrue( executor.awaitTermination( 5, SECONDS ) );
 
-            try ( Session session = driver.session( AccessMode.READ, bookmarks ) )
+            try ( Session session = driver.session( builder().withAccessMode( AccessMode.READ ).withBookmark( bookmarks ).build() ) )
             {
                 int count = countNodes( session, label, property, value );
                 assertEquals( count, threadCount );
@@ -771,7 +772,7 @@ public class CausalClusteringIT implements NestedQueries
 
     private Function<Driver,Session> createWritableSession( final String bookmark )
     {
-        return driver -> driver.session( AccessMode.WRITE, bookmark );
+        return driver -> driver.session( builder().withAccessMode( AccessMode.WRITE ).withBookmark( bookmark ).build() );
     }
 
     private Function<Session,Integer> executeWriteAndRead()

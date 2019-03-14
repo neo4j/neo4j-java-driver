@@ -20,11 +20,13 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.AccessMode;
+
+import static java.lang.String.format;
 
 public interface Connection
 {
@@ -56,7 +58,12 @@ public interface Connection
 
     default AccessMode mode()
     {
-        return AccessMode.WRITE;
+        throw new UnsupportedOperationException( format( "%s does not support access mode.", getClass() ) );
+    }
+
+    default String databaseName()
+    {
+        throw new UnsupportedOperationException( format( "%s does not support database name.", getClass() ) );
     }
 
     void flush();

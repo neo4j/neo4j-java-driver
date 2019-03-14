@@ -24,13 +24,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
 
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
@@ -195,7 +195,7 @@ class BookmarkIT
     void createSessionWithAccessModeAndInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( AccessMode.WRITE, bookmark ) )
+        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }

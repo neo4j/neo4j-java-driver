@@ -24,11 +24,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.NetworkSession;
@@ -45,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -111,6 +107,6 @@ class ParametersTest
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
-        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING, new DefaultBookmarksHolder() );
+        return new NetworkSession( provider, AccessMode.WRITE, retryLogic, DEV_NULL_LOGGING, new DefaultBookmarksHolder(), ABSENT_DB_NAME );
     }
 }

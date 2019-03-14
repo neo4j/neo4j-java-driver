@@ -20,6 +20,7 @@ package org.neo4j.driver;
 
 import java.util.Map;
 
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.Resource;
 
 /**
@@ -58,7 +59,7 @@ import org.neo4j.driver.util.Resource;
  * Similarly, multiple sessions should be used when working with concurrency;
  * session implementations are not thread safe.
  *
- * @since 1.0
+ * @since 1.0 (Removed async API to {@link AsyncSession} in 2.0)
  */
 public interface Session extends Resource, StatementRunner
 {

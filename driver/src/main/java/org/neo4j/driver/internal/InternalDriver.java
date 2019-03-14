@@ -21,19 +21,21 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.reactive.InternalRxSession;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParameters;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.reactive.InternalRxSession;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.RxSession;
 
+import static org.neo4j.driver.SessionParameters.builder;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalDriver implements Driver
@@ -54,48 +56,107 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public boolean isEncrypted()
+    public Session session()
     {
-        assertOpen();
-        return securityPlan.requiresEncryption();
+        return session( SessionParameters.empty() );
     }
 
     @Override
-    public Session session()
+    public Session session( SessionParameters parameters )
     {
-        return session( AccessMode.WRITE );
+        return newSession( parameters );
+    }
+
+    @Override
+    public Session session( String databaseName )
+    {
+        return session( builder().withDatabaseName( databaseName ).build() );
     }
 
     @Override
     public Session session( AccessMode mode )
     {
-        return newSession( mode, Bookmarks.empty() );
+        return session( builder().withAccessMode( mode ).build() );
     }
 
     @Override
-    public Session session( String bookmark )
+    public Session session( String databaseName, AccessMode mode )
     {
-        return session( AccessMode.WRITE, bookmark );
+        return session( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
     }
 
     @Override
-    public Session session( AccessMode mode, String bookmark )
+    public RxSession rxSession()
     {
-        return newSession( mode, Bookmarks.from( bookmark ) );
+        return rxSession( SessionParameters.empty() );
     }
 
     @Override
-    public Session session( Iterable<String> bookmarks )
+    public RxSession rxSession( SessionParameters parameters )
     {
-        return session( AccessMode.WRITE, bookmarks );
+        return new InternalRxSession( newSession( parameters ) );
     }
 
     @Override
-    public Session session( AccessMode mode, Iterable<String> bookmarks )
+    public RxSession rxSession( String databaseName )
     {
-        return newSession( mode, Bookmarks.from( bookmarks ) );
+        return rxSession( builder().withDatabaseName( databaseName ).build() );
     }
 
+    @Override
+    public RxSession rxSession( AccessMode mode )
+    {
+        return rxSession( builder().withAccessMode( mode ).build() );
+    }
+
+    @Override
+    public RxSession rxSession( String databaseName, AccessMode mode )
+    {
+        return rxSession( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
+    }
+
+    @Override
+    public AsyncSession asyncSession()
+    {
+        return asyncSession( SessionParameters.empty() );
+    }
+
+    @Override
+    public AsyncSession asyncSession( SessionParameters parameters )
+    {
+        return newSession( parameters );
+    }
+
+    @Override
+    public AsyncSession asyncSession( String databaseName )
+    {
+        return asyncSession( builder().withDatabaseName( databaseName ).build() );
+    }
+
+    @Override
+    public AsyncSession asyncSession( AccessMode mode )
+    {
+        return asyncSession( builder().withAccessMode( mode ).build() );
+    }
+
+    @Override
+    public AsyncSession asyncSession( String databaseName, AccessMode mode )
+    {
+        return asyncSession( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
+    }
+
+    @Override
+    public Metrics metrics()
+    {
+        return metricsProvider.metrics();
+    }
+
+    @Override
+    public boolean isEncrypted()
+    {
+        assertOpen();
+        return securityPlan.requiresEncryption();
+    }
 
     @Override
     public void close()
@@ -112,42 +173,6 @@ public class InternalDriver implements Driver
             return sessionFactory.close();
         }
         return completedWithNull();
-    }
-
-    @Override
-    public RxSession rxSession()
-    {
-        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.empty() ) );
-    }
-
-    @Override
-    public RxSession rxSession( String bookmark )
-    {
-        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.from( bookmark ) ) );
-    }
-
-    @Override
-    public AsyncSession asyncSession()
-    {
-        return asyncSession( AccessMode.WRITE );
-    }
-
-    @Override
-    public AsyncSession asyncSession( AccessMode mode )
-    {
-        return newSession( mode, Bookmarks.empty() );
-    }
-
-    @Override
-    public AsyncSession asyncSession( String bookmark )
-    {
-        return asyncSession( AccessMode.WRITE, bookmark );
-    }
-
-    @Override
-    public AsyncSession asyncSession( AccessMode mode, String bookmark )
-    {
-        return newSession( mode, Bookmarks.from( bookmark ) );
     }
 
     public CompletionStage<Void> verifyConnectivity()
@@ -167,10 +192,15 @@ public class InternalDriver implements Driver
         return sessionFactory;
     }
 
-    private NetworkSession newSession( AccessMode mode, Bookmarks bookmarks )
+    private static RuntimeException driverCloseException()
+    {
+        return new IllegalStateException( "This driver instance has already been closed" );
+    }
+
+    private NetworkSession newSession( SessionParameters parameters )
     {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance( mode, bookmarks );
+        NetworkSession session = sessionFactory.newInstance( parameters );
         if ( closed.get() )
         {
             // session does not immediately acquire connection, it is fine to just throw
@@ -185,15 +215,5 @@ public class InternalDriver implements Driver
         {
             throw driverCloseException();
         }
-    }
-
-    public Metrics metrics()
-    {
-        return metricsProvider.metrics();
-    }
-
-    private static RuntimeException driverCloseException()
-    {
-        return new IllegalStateException( "This driver instance has already been closed" );
     }
 }
