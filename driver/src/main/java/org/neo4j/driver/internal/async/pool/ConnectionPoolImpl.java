@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -165,7 +166,10 @@ public class ConnectionPoolImpl implements ConnectionPool
             }
             finally
             {
-                eventLoopGroup().shutdownGracefully();
+                // This is an attempt to speed up the shut down procedure of the driver
+                // Feel free return this back to shutdownGracefully() method with default values
+                // if this proves troublesome!!!
+                eventLoopGroup().shutdownGracefully(200, 15_000, TimeUnit.MILLISECONDS);
             }
         }
         return Futures.asCompletionStage( eventLoopGroup().terminationFuture() )
