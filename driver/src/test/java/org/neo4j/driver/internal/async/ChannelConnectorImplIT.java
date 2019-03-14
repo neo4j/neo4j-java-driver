@@ -41,12 +41,12 @@ import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.exceptions.AuthenticationException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.ParallelizableIT;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.util.ParallelizableIT;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.hamcrest.Matchers.instanceOf;
@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
 class ChannelConnectorImplIT

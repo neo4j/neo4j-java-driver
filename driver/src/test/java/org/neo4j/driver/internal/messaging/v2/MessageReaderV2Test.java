@@ -29,11 +29,11 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.v1.Values.point;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
 
 class MessageReaderV2Test extends AbstractMessageReaderTestBase
 {

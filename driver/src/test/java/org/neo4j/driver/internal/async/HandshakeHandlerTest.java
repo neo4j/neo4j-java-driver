@@ -40,10 +40,10 @@ import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.SecurityException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static io.netty.buffer.Unpooled.copyInt;
 import static org.hamcrest.Matchers.instanceOf;
@@ -57,7 +57,7 @@ import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class HandshakeHandlerTest
 {

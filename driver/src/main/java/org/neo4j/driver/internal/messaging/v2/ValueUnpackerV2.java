@@ -31,7 +31,7 @@ import java.time.ZonedDateTime;
 import org.neo4j.driver.internal.messaging.v1.ValueUnpackerV1;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE;
@@ -51,9 +51,9 @@ import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_3D_ST
 import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_3D_STRUCT_TYPE;
 import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.TIME;
 import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.TIME_STRUCT_SIZE;
-import static org.neo4j.driver.v1.Values.isoDuration;
-import static org.neo4j.driver.v1.Values.point;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.isoDuration;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
 
 public class ValueUnpackerV2 extends ValueUnpackerV1
 {

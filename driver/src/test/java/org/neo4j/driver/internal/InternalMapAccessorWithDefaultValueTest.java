@@ -36,19 +36,19 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.types.Entity;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.types.Entity;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Relationship;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.v1.Values.ofInteger;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.ofInteger;
+import static org.neo4j.driver.Values.value;
 
 class InternalMapAccessorWithDefaultValueTest
 {

@@ -49,15 +49,15 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.net.ServerAddressResolver;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
@@ -66,7 +66,7 @@ import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 public class DriverFactory
 {
     public static final String BOLT_URI_SCHEME = "bolt";
-    public static final String BOLT_ROUTING_URI_SCHEME = "bolt+routing";
+    public static final String BOLT_ROUTING_URI_SCHEME = "neo4j";
 
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
@@ -165,7 +165,7 @@ public class DriverFactory
     }
 
     /**
-     * Creates new a new driver for "bolt+routing" scheme.
+     * Creates new a new driver for "neo4j" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */

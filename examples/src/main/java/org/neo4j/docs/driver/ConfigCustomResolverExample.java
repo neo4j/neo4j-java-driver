@@ -21,16 +21,16 @@ package org.neo4j.docs.driver;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.net.ServerAddress;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 
 public class ConfigCustomResolverExample implements AutoCloseable
 {
@@ -61,7 +61,7 @@ public class ConfigCustomResolverExample implements AutoCloseable
         String username = "neo4j";
         String password = "some password";
 
-        try ( Driver driver = createDriver( "bolt+routing://x.acme.com", username, password, ServerAddress.of( "a.acme.com", 7676 ),
+        try ( Driver driver = createDriver( "neo4j://x.acme.com", username, password, ServerAddress.of( "a.acme.com", 7676 ),
                 ServerAddress.of( "b.acme.com", 8787 ), ServerAddress.of( "c.acme.com", 9898 ) ) )
         {
             try ( Session session = driver.session( AccessMode.WRITE ) )

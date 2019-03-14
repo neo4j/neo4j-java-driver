@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;

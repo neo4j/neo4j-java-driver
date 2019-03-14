@@ -26,9 +26,9 @@ import org.neo4j.driver.internal.metrics.InternalMetrics;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Metrics;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class InternalDriverTest
 {

@@ -32,12 +32,12 @@ import org.neo4j.driver.internal.cluster.ClusterCompositionResponse.Success;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.exceptions.AuthenticationException;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.net.ServerAddressResolver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.ProtocolException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -60,8 +60,8 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.v1.util.TestUtil.asOrderedSet;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.asOrderedSet;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class RediscoveryTest
 {

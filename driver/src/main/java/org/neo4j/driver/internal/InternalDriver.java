@@ -21,17 +21,18 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.internal.InternalRxSession;
+import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Metrics;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.Session;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
@@ -95,17 +96,6 @@ public class InternalDriver implements Driver
         return newSession( mode, Bookmarks.from( bookmarks ) );
     }
 
-    private NetworkSession newSession( AccessMode mode, Bookmarks bookmarks )
-    {
-        assertOpen();
-        NetworkSession session = sessionFactory.newInstance( mode, bookmarks );
-        if ( closed.get() )
-        {
-            // session does not immediately acquire connection, it is fine to just throw
-            throw driverCloseException();
-        }
-        return session;
-    }
 
     @Override
     public void close()
@@ -136,6 +126,30 @@ public class InternalDriver implements Driver
         return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.from( bookmark ) ) );
     }
 
+    @Override
+    public AsyncSession asyncSession()
+    {
+        return asyncSession( AccessMode.WRITE );
+    }
+
+    @Override
+    public AsyncSession asyncSession( AccessMode mode )
+    {
+        return newSession( mode, Bookmarks.empty() );
+    }
+
+    @Override
+    public AsyncSession asyncSession( String bookmark )
+    {
+        return asyncSession( AccessMode.WRITE, bookmark );
+    }
+
+    @Override
+    public AsyncSession asyncSession( AccessMode mode, String bookmark )
+    {
+        return newSession( mode, Bookmarks.from( bookmark ) );
+    }
+
     public CompletionStage<Void> verifyConnectivity()
     {
         return sessionFactory.verifyConnectivity();
@@ -151,6 +165,18 @@ public class InternalDriver implements Driver
     public SessionFactory getSessionFactory()
     {
         return sessionFactory;
+    }
+
+    private NetworkSession newSession( AccessMode mode, Bookmarks bookmarks )
+    {
+        assertOpen();
+        NetworkSession session = sessionFactory.newInstance( mode, bookmarks );
+        if ( closed.get() )
+        {
+            // session does not immediately acquire connection, it is fine to just throw
+            throw driverCloseException();
+        }
+        return session;
     }
 
     private void assertOpen()

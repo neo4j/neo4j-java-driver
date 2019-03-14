@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.summary.InputPosition;
+import org.neo4j.driver.summary.InputPosition;
 
 /**
  * An input position refers to a specific point in a query string.

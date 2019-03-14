@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.exceptions.value.Uncoercible;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 
 import static java.time.Month.AUGUST;
 import static java.time.Month.FEBRUARY;

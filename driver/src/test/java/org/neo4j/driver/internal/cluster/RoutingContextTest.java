@@ -47,20 +47,20 @@ class RoutingContextTest
     @Test
     void uriWithoutQueryIsParsedToEmptyContext()
     {
-        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/" ) );
+        testEmptyRoutingContext( URI.create( "neo4j://localhost:7687/" ) );
     }
 
     @Test
     void uriWithEmptyQueryIsParsedToEmptyContext()
     {
-        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687?" ) );
-        testEmptyRoutingContext( URI.create( "bolt+routing://localhost:7687/?" ) );
+        testEmptyRoutingContext( URI.create( "neo4j://localhost:7687?" ) );
+        testEmptyRoutingContext( URI.create( "neo4j://localhost:7687/?" ) );
     }
 
     @Test
     void uriWithQueryIsParsed()
     {
-        URI uri = URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key3=value3" );
+        URI uri = URI.create( "neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3" );
         RoutingContext context = new RoutingContext( uri );
 
         assertTrue( context.isDefined() );
@@ -74,31 +74,31 @@ class RoutingContextTest
     @Test
     void throwsForInvalidUriQuery()
     {
-        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?justKey" ) );
+        testIllegalUri( URI.create( "neo4j://localhost:7687/?justKey" ) );
     }
 
     @Test
     void throwsForInvalidUriQueryKey()
     {
-        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?=value1&key2=value2" ) );
+        testIllegalUri( URI.create( "neo4j://localhost:7687/?=value1&key2=value2" ) );
     }
 
     @Test
     void throwsForInvalidUriQueryValue()
     {
-        testIllegalUri( URI.create( "bolt+routing://localhost:7687/key1?=value1&key2=" ) );
+        testIllegalUri( URI.create( "neo4j://localhost:7687/key1?=value1&key2=" ) );
     }
 
     @Test
     void throwsForDuplicatedUriQueryParameters()
     {
-        testIllegalUri( URI.create( "bolt+routing://localhost:7687/?key1=value1&key2=value2&key1=value2" ) );
+        testIllegalUri( URI.create( "neo4j://localhost:7687/?key1=value1&key2=value2&key1=value2" ) );
     }
 
     @Test
     void mapRepresentationIsUnmodifiable()
     {
-        URI uri = URI.create( "bolt+routing://localhost:7687/?key1=value1" );
+        URI uri = URI.create( "neo4j://localhost:7687/?key1=value1" );
         RoutingContext context = new RoutingContext( uri );
 
         assertEquals( singletonMap( "key1", "value1" ), context.asMap() );

@@ -23,7 +23,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 /**
  * Handler needed to limit amount of time connection performs TLS and Bolt handshakes.

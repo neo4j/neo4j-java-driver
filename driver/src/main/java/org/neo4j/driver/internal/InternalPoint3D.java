@@ -20,7 +20,7 @@ package org.neo4j.driver.internal;
 
 import java.util.Objects;
 
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.types.Point;
 
 public class InternalPoint3D implements Point
 {

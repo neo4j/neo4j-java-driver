@@ -23,15 +23,15 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class CommitTxResponseHandlerTest
 {

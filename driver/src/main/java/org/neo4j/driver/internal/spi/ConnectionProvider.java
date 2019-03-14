@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.AccessMode;
 
 /**
  * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that

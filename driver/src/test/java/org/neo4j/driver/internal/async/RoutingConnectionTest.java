@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.AccessMode.READ;
 
 class RoutingConnectionTest
 {

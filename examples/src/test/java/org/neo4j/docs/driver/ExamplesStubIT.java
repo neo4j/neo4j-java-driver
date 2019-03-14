@@ -20,8 +20,8 @@ package org.neo4j.docs.driver;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.v1.net.ServerAddress;
-import org.neo4j.driver.v1.util.StubServer;
+import org.neo4j.driver.net.ServerAddress;
+import org.neo4j.driver.util.StubServer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,7 +35,7 @@ class ExamplesStubIT
         StubServer server2 = StubServer.start( "return_1.script", 9002 );
 
         // Given
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "bolt+routing://x.acme.com", ServerAddress.of( "localhost", 9001 ) ) )
+        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "neo4j://x.acme.com", ServerAddress.of( "localhost", 9001 ) ) )
         {
             // Then
             assertTrue( example.canConnect() );

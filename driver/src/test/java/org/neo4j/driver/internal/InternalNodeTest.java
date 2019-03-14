@@ -25,14 +25,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.driver.v1.Values.NULL;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.NULL;
+import static org.neo4j.driver.Values.value;
 
 class InternalNodeTest
 {

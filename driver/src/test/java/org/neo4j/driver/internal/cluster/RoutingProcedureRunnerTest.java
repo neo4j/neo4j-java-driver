@@ -26,10 +26,10 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_MAP;
@@ -48,8 +48,8 @@ import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVE
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingProcedureRunnerTest
 {
@@ -70,7 +70,7 @@ class RoutingProcedureRunnerTest
     @Test
     void shouldCallGetRoutingTableWithParam()
     {
-        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
 
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
@@ -87,7 +87,7 @@ class RoutingProcedureRunnerTest
     @Test
     void shouldCallGetServers()
     {
-        URI uri = URI.create( "bolt+routing://localhost/?key1=value1&key2=value2" );
+        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
 
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,

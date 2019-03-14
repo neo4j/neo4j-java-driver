@@ -42,9 +42,9 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {

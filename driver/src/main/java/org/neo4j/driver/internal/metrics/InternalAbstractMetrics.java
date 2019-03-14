@@ -23,8 +23,8 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.v1.ConnectionPoolMetrics;
-import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.Metrics;
 
 public abstract class InternalAbstractMetrics implements Metrics, MetricsListener
 {

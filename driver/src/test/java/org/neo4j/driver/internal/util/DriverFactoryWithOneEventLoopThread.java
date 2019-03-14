@@ -26,9 +26,9 @@ import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.v1.AuthToken;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
 
 public class DriverFactoryWithOneEventLoopThread extends DriverFactory
 {

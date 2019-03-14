@@ -20,7 +20,7 @@ package org.neo4j.driver.reactive;
 
 import org.reactivestreams.Publisher;
 
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.Transaction;
 
 /**
  * Same as {@link Transaction} except this reactive transaction exposes a reactive API.

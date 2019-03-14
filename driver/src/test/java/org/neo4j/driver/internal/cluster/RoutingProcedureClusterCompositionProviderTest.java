@@ -31,11 +31,11 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ProtocolException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -48,8 +48,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingProcedureClusterCompositionProviderTest
 {

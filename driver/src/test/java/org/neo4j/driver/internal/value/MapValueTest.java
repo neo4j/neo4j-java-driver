@@ -23,12 +23,12 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 class MapValueTest
 {

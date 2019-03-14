@@ -23,8 +23,8 @@ import org.reactivestreams.Subscription;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.summary.ResultSummary;
 
 public interface BasicPullResponseHandler extends ResponseHandler, Subscription
 {

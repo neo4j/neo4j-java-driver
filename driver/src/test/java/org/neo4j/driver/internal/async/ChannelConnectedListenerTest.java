@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.handshakeBuf;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class ChannelConnectedListenerTest
 {

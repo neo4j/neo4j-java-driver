@@ -29,15 +29,15 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.net.ServerAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.AccessMode.READ;
 
 class AccessModeConnectionTest
 {

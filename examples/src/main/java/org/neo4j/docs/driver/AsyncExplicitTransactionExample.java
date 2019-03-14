@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResultCursor;
-import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.StatementResultCursor;
 
 public class AsyncExplicitTransactionExample extends BaseApplication
 {
@@ -40,9 +40,9 @@ public class AsyncExplicitTransactionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        Session session = driver.session();
+        AsyncSession session = driver.asyncSession();
 
-        Function<Transaction,CompletionStage<Void>> printSingleTitle = tx ->
+        Function<AsyncTransaction,CompletionStage<Void>> printSingleTitle = tx ->
                 tx.runAsync( query, parameters )
                         .thenCompose( StatementResultCursor::singleAsync )
                         .thenApply( record -> record.get( 0 ).asString() )

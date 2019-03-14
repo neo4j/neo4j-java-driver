@@ -27,12 +27,12 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.StatementResultCursor;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.summary.ResultSummary;
 import java.util.function.Function;
 
 public class InternalStatementResult implements StatementResult

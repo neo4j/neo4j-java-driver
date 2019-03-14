@@ -63,8 +63,8 @@ import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_AL
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Iterables.single;
-import static org.neo4j.driver.v1.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.v1.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
+import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
+import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
 
 class DirectConnectionTest
 {

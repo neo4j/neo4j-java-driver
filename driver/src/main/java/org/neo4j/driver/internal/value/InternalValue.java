@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.value;
 
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 public interface InternalValue extends Value, AsValue
 {

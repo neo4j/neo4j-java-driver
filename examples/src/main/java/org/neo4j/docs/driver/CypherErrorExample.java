@@ -20,13 +20,13 @@ package org.neo4j.docs.driver;
 
 // tag::cypher-error-import[]
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionWork;
+import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.v1.Values.parameters;
+import static org.neo4j.driver.Values.parameters;
 // end::cypher-error-import[]
 
 public class CypherErrorExample extends BaseApplication

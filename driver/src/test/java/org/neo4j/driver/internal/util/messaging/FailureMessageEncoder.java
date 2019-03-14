@@ -26,8 +26,8 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 
 public class FailureMessageEncoder implements MessageEncoder
 {

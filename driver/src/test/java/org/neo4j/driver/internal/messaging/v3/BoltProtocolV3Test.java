@@ -56,12 +56,12 @@ import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.TransactionConfig;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
@@ -81,10 +81,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
-import static org.neo4j.driver.v1.AccessMode.WRITE;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.await;
-import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
+import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.connectionMock;
 
 public class BoltProtocolV3Test
 {

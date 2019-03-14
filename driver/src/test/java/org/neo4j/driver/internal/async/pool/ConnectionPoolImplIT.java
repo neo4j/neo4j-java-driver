@@ -39,9 +39,9 @@ import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.ParallelizableIT;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.util.ParallelizableIT;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
 class ConnectionPoolImplIT

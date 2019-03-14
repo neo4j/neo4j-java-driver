@@ -33,8 +33,8 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
 

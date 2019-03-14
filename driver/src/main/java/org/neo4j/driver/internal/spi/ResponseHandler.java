@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.spi;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 public interface ResponseHandler
 {

@@ -27,10 +27,10 @@ import java.util.function.Function;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.summary.ResultSummary;
 
 public class AsyncStatementResultCursor implements InternalStatementResultCursor
 {

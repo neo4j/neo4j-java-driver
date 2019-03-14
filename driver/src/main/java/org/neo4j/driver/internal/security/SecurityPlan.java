@@ -30,7 +30,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.Logger;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 

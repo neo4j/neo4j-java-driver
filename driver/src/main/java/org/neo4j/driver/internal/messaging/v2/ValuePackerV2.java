@@ -33,8 +33,8 @@ import org.neo4j.driver.internal.messaging.v1.ValuePackerV1;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.value.InternalValue;
-import org.neo4j.driver.v1.types.IsoDuration;
-import org.neo4j.driver.v1.types.Point;
+import org.neo4j.driver.types.IsoDuration;
+import org.neo4j.driver.types.Point;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE;

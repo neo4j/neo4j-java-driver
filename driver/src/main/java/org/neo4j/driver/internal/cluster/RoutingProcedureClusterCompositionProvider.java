@@ -23,11 +23,11 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.exceptions.ProtocolException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.value.ValueException;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.exceptions.ProtocolException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.value.ValueException;
 
 import static java.lang.String.format;
 

@@ -22,7 +22,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

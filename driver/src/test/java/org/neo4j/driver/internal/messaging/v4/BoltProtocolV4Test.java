@@ -36,9 +36,9 @@ import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3Test;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.reactive.internal.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.v1.TransactionConfig;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.TransactionConfig;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.instanceOf;
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.v1.util.TestUtil.connectionMock;
+import static org.neo4j.driver.util.TestUtil.connectionMock;
 
 class BoltProtocolV4Test extends BoltProtocolV3Test
 {

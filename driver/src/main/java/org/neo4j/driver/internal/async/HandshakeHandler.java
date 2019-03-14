@@ -31,11 +31,11 @@ import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.util.ErrorUtil;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.SecurityException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.BoltProtocolUtil.NO_PROTOCOL_VERSION;

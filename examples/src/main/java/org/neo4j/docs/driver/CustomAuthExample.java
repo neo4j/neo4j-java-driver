@@ -22,9 +22,9 @@ package org.neo4j.docs.driver;
 
 import java.util.Map;
 
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
 // end::custom-auth-import[]
 
 public class CustomAuthExample implements AutoCloseable

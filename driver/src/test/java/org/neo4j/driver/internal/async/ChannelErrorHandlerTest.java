@@ -28,7 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;

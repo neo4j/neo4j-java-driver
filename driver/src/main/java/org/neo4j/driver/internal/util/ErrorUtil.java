@@ -23,12 +23,12 @@ import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.v1.exceptions.AuthenticationException;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.DatabaseException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.DatabaseException;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TransientException;
 
 public final class ErrorUtil
 {

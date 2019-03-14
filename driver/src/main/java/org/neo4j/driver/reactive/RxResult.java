@@ -22,9 +22,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * A reactive result provides a reactive way to execute query on the server and receives records back.

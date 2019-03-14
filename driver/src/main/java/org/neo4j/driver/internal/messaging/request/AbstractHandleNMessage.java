@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 
 import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_ID;
 

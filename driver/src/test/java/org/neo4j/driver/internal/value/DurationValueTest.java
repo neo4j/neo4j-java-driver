@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.v1.exceptions.value.Uncoercible;
-import org.neo4j.driver.v1.types.IsoDuration;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.types.IsoDuration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -33,14 +33,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.summary.ResultSummary;
-import org.neo4j.driver.v1.summary.StatementType;
-import org.neo4j.driver.v1.util.DatabaseExtension;
-import org.neo4j.driver.v1.util.ParallelizableIT;
-import org.neo4j.driver.v1.util.StdIOCapture;
-import org.neo4j.driver.v1.util.TestUtil;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.util.DatabaseExtension;
+import org.neo4j.driver.util.ParallelizableIT;
+import org.neo4j.driver.util.StdIOCapture;
+import org.neo4j.driver.util.TestUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -53,10 +53,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.util.Neo4jRunner.PASSWORD;
-import static org.neo4j.driver.v1.util.Neo4jRunner.USER;
-import static org.neo4j.driver.v1.util.TestUtil.await;
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
+import static org.neo4j.driver.util.Neo4jRunner.USER;
+import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
 @Execution( ExecutionMode.CONCURRENT )

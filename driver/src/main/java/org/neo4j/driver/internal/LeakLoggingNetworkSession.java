@@ -21,8 +21,8 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Logging;
 
 import static java.lang.System.lineSeparator;
 

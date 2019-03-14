@@ -31,9 +31,9 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 class InboundMessageDispatcherTest
 {

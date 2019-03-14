@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.AccessMode;
 
 public class RoutingConnection implements Connection
 {

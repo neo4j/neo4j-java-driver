@@ -25,16 +25,16 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
 import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import java.util.function.Function;
-import org.neo4j.driver.v1.util.Pair;
+import org.neo4j.driver.util.Pair;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Format.formatPairs;
-import static org.neo4j.driver.v1.Values.ofObject;
-import static org.neo4j.driver.v1.Values.ofValue;
+import static org.neo4j.driver.Values.ofObject;
+import static org.neo4j.driver.Values.ofValue;
 
 public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record
 {

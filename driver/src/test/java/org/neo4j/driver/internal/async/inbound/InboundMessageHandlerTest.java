@@ -40,8 +40,8 @@ import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.io.MessageToByteBufWriter;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.Neo4jException;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.Neo4jException;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 class InboundMessageHandlerTest
 {

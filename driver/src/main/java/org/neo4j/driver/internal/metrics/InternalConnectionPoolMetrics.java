@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.v1.ConnectionPoolMetrics;
+import org.neo4j.driver.ConnectionPoolMetrics;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.InternalMetrics.serverAddressToUniqueName;

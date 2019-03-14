@@ -31,11 +31,11 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.exceptions.TransientException;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.exceptions.TransientException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 

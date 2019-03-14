@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.AccessMode;
 
 public interface RoutingTable
 {

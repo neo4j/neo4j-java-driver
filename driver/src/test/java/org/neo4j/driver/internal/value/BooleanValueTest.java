@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.v1.types.TypeSystem;
+import org.neo4j.driver.types.TypeSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;

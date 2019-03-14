@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.summary.ResultSummary;
 
 public class AsyncTransactionFunctionExample extends BaseApplication
 {
@@ -38,7 +38,7 @@ public class AsyncTransactionFunctionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        Session session = driver.session();
+        AsyncSession session = driver.asyncSession();
 
         return session.readTransactionAsync( tx ->
                 tx.runAsync( query, parameters )

@@ -40,12 +40,12 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.exceptions.SessionExpiredException;
-import org.neo4j.driver.v1.net.ServerAddressResolver;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 

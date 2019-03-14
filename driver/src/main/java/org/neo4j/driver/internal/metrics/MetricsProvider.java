@@ -18,8 +18,8 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.v1.Metrics;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 

@@ -42,8 +42,8 @@ import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -63,8 +63,8 @@ import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue
 import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
-import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.Values.value;
 
 class MessageFormatTest
 {

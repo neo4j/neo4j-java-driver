@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class ChunkAwareByteBufOutputTest
 {

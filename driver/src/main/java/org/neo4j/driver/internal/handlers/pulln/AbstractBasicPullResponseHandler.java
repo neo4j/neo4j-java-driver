@@ -27,10 +27,10 @@ import org.neo4j.driver.internal.messaging.request.PullNMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.value.BooleanValue;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;

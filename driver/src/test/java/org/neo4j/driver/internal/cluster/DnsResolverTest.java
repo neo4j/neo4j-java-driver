@@ -24,9 +24,9 @@ import java.net.UnknownHostException;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
-import org.neo4j.driver.v1.Logging;
-import org.neo4j.driver.v1.net.ServerAddress;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.net.ServerAddress;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

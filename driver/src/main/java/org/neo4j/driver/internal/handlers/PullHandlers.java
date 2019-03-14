@@ -26,7 +26,7 @@ import org.neo4j.driver.internal.handlers.pulln.TransactionPullResponseHandler;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Statement;
+import org.neo4j.driver.Statement;
 
 public class PullHandlers
 {

@@ -25,9 +25,9 @@ import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Statement;
-import org.neo4j.driver.v1.summary.ResultSummary;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;

@@ -39,13 +39,13 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.types.Node;
-import org.neo4j.driver.v1.types.Path;
-import org.neo4j.driver.v1.types.Relationship;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.types.Node;
+import org.neo4j.driver.types.Path;
+import org.neo4j.driver.types.Relationship;
 
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 public class ValueUnpackerV1 implements ValueUnpacker
 {

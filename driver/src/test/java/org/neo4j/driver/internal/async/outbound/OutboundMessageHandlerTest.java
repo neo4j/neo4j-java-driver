@@ -38,7 +38,7 @@ import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -53,8 +53,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-import static org.neo4j.driver.v1.Values.value;
-import static org.neo4j.driver.v1.util.TestUtil.assertByteBufContains;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class OutboundMessageHandlerTest
 {

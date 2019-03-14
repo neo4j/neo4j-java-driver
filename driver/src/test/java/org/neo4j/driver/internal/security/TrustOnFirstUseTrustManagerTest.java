@@ -32,7 +32,7 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.v1.Logger;
+import org.neo4j.driver.Logger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.containsString;

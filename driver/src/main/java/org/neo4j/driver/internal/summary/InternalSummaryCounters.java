@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.v1.summary.SummaryCounters;
+import org.neo4j.driver.summary.SummaryCounters;
 
 public class InternalSummaryCounters implements SummaryCounters
 {

@@ -23,10 +23,10 @@ package org.neo4j.docs.driver;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionWork;
 // end::result-consume-import[]
 
 public class ResultConsumeExample extends BaseApplication

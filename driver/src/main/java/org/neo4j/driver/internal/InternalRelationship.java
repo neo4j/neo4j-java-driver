@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.v1.types.Relationship;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.types.Relationship;
+import org.neo4j.driver.Value;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties.

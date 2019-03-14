@@ -29,8 +29,8 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
@@ -44,7 +44,7 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 class ClusterCompositionTest
 {

@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 public interface AsValue
 {

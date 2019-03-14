@@ -23,12 +23,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.Value;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
-import static org.neo4j.driver.v1.Values.value;
+import static org.neo4j.driver.Values.value;
 
 public final class Bookmarks
 {

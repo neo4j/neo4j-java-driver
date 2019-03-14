@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.v1.AccessMode;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Session;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

@@ -43,15 +43,15 @@ class BoltServerAddressParsingTest
 
                 // Hostname with scheme
                 Arguments.of( "bolt://localhost", "localhost", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://localhost", "localhost", DEFAULT_PORT ),
+                Arguments.of( "neo4j://localhost", "localhost", DEFAULT_PORT ),
                 Arguments.of( "bolt://localhost:9193", "localhost", 9193 ),
-                Arguments.of( "bolt+routing://localhost:9193", "localhost", 9193 ),
+                Arguments.of( "neo4j://localhost:9193", "localhost", 9193 ),
                 Arguments.of( "bolt://neo4j.com", "neo4j.com", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://neo4j.com", "neo4j.com", DEFAULT_PORT ),
+                Arguments.of( "neo4j://neo4j.com", "neo4j.com", DEFAULT_PORT ),
                 Arguments.of( "bolt://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
+                Arguments.of( "neo4j://royal-server.com.uk", "royal-server.com.uk", DEFAULT_PORT ),
                 Arguments.of( "bolt://royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
-                Arguments.of( "bolt+routing://royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
+                Arguments.of( "neo4j://royal-server.com.uk:4546", "royal-server.com.uk", 4546 ),
 
                 // IPv4
                 Arguments.of( "127.0.0.1", "127.0.0.1", DEFAULT_PORT ),
@@ -63,8 +63,8 @@ class BoltServerAddressParsingTest
                 // IPv4 with scheme
                 Arguments.of( "bolt://198.51.100.0", "198.51.100.0", DEFAULT_PORT ),
                 Arguments.of( "bolt://65.21.10.12:5656", "65.21.10.12", 5656 ),
-                Arguments.of( "bolt+routing://12.0.0.5", "12.0.0.5", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://155.55.20.6:9191", "155.55.20.6", 9191 ),
+                Arguments.of( "neo4j://12.0.0.5", "12.0.0.5", DEFAULT_PORT ),
+                Arguments.of( "neo4j://155.55.20.6:9191", "155.55.20.6", 9191 ),
 
                 // IPv6
                 Arguments.of( "::1", "[::1]", DEFAULT_PORT ),
@@ -75,13 +75,13 @@ class BoltServerAddressParsingTest
 
                 // IPv6 with scheme
                 Arguments.of( "bolt://[::1]", "[::1]", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://[::1]", "[::1]", DEFAULT_PORT ),
+                Arguments.of( "neo4j://[::1]", "[::1]", DEFAULT_PORT ),
                 Arguments.of( "bolt://[ff02::d]", "[ff02::d]", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://[fe80::b279:2f]", "[fe80::b279:2f]", DEFAULT_PORT ),
+                Arguments.of( "neo4j://[fe80::b279:2f]", "[fe80::b279:2f]", DEFAULT_PORT ),
                 Arguments.of( "bolt://[::1]:8687", "[::1]", 8687 ),
-                Arguments.of( "bolt+routing://[::1]:1212", "[::1]", 1212 ),
+                Arguments.of( "neo4j://[::1]:1212", "[::1]", 1212 ),
                 Arguments.of( "bolt://[ff02::d]:9090", "[ff02::d]", 9090 ),
-                Arguments.of( "bolt+routing://[fe80::b279:2f]:7878", "[fe80::b279:2f]", 7878 ),
+                Arguments.of( "neo4j://[fe80::b279:2f]:7878", "[fe80::b279:2f]", 7878 ),
 
                 // IPv6 with zone id
                 Arguments.of( "::1%eth0", "[::1%eth0]", DEFAULT_PORT ),
@@ -92,13 +92,13 @@ class BoltServerAddressParsingTest
 
                 // IPv6 with scheme and zone id
                 Arguments.of( "bolt://[::1%eth5]", "[::1%eth5]", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://[::1%12]", "[::1%12]", DEFAULT_PORT ),
+                Arguments.of( "neo4j://[::1%12]", "[::1%12]", DEFAULT_PORT ),
                 Arguments.of( "bolt://[ff02::d%3]", "[ff02::d%3]", DEFAULT_PORT ),
-                Arguments.of( "bolt+routing://[fe80::b279:2f%eth0]", "[fe80::b279:2f%eth0]", DEFAULT_PORT ),
+                Arguments.of( "neo4j://[fe80::b279:2f%eth0]", "[fe80::b279:2f%eth0]", DEFAULT_PORT ),
                 Arguments.of( "bolt://[::1%eth3]:8687", "[::1%eth3]", 8687 ),
-                Arguments.of( "bolt+routing://[::1%2]:1212", "[::1%2]", 1212 ),
+                Arguments.of( "neo4j://[::1%2]:1212", "[::1%2]", 1212 ),
                 Arguments.of( "bolt://[ff02::d%3]:9090", "[ff02::d%3]", 9090 ),
-                Arguments.of( "bolt+routing://[fe80::b279:2f%eth1]:7878", "[fe80::b279:2f%eth1]", 7878 )
+                Arguments.of( "neo4j://[fe80::b279:2f%eth1]:7878", "[fe80::b279:2f%eth1]", 7878 )
         );
     }
 

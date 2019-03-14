@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.metrics;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.v1.ConnectionPoolMetrics;
-import org.neo4j.driver.v1.Metrics;
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.Metrics;
 
 public class SnapshotMetrics implements Metrics
 {

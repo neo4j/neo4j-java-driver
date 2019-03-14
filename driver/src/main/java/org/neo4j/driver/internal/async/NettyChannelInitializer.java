@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.v1.Logging;
+import org.neo4j.driver.Logging;
 
 import static org.neo4j.driver.internal.async.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
