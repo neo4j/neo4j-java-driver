@@ -45,16 +45,16 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( AccessMode mode, String databaseName )
+    public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
     {
-        return connectionPool.acquire( address ).thenApply( connection -> new DecoratedConnection( connection, mode, databaseName ) );
+        return connectionPool.acquire( address ).thenApply( connection -> new DecoratedConnection( connection, databaseName, mode ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
         // we verify the connection by establishing the connection to the default database
-        return acquireConnection( READ, ABSENT_DB_NAME ).thenCompose( Connection::release );
+        return acquireConnection( ABSENT_DB_NAME, READ ).thenCompose( Connection::release );
     }
 
     @Override

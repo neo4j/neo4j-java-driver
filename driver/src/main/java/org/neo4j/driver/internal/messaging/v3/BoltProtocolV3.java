@@ -104,7 +104,7 @@ public class BoltProtocolV3 implements BoltProtocol
             return Futures.failedFuture( error );
         }
 
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.mode(), connection.databaseName() );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.databaseName(), connection.mode() );
 
         if ( bookmarks.isEmpty() )
         {
@@ -141,7 +141,7 @@ public class BoltProtocolV3 implements BoltProtocol
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
-                autoCommitTxRunMessage( statement, bookmarksHolder.getBookmarks(), config, connection.mode(), connection.databaseName() );
+                autoCommitTxRunMessage( statement, config, connection.databaseName(), connection.mode(), bookmarksHolder.getBookmarks() );
         return buildResultCursorFactory( connection, statement, bookmarksHolder, null, runMessage, waitForRunResponse );
     }
 

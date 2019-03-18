@@ -28,7 +28,7 @@ import org.neo4j.driver.AccessMode;
  */
 public interface ConnectionProvider
 {
-    CompletionStage<Connection> acquireConnection( AccessMode mode, String databaseName );
+    CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode );
 
     /**
      * The validation of connectivity will happen with the default database.

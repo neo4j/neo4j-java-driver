@@ -56,11 +56,11 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection1, connection2 );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired1 = await( provider.acquireConnection( READ, ABSENT_DB_NAME ) );
+        Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
         assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
         assertSame( connection1, ((DecoratedConnection) acquired1).connection() );
 
-        Connection acquired2 = await( provider.acquireConnection( WRITE, ABSENT_DB_NAME ) );
+        Connection acquired2 = await( provider.acquireConnection( ABSENT_DB_NAME, WRITE ) );
         assertThat( acquired2, instanceOf( DecoratedConnection.class ) );
         assertSame( connection2, ((DecoratedConnection) acquired2).connection() );
     }
@@ -73,7 +73,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired = await( provider.acquireConnection( mode, ABSENT_DB_NAME ) );
+        Connection acquired = await( provider.acquireConnection( ABSENT_DB_NAME, mode ) );
 
         assertEquals( mode, acquired.mode() );
     }
@@ -109,7 +109,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired1 = await( provider.acquireConnection( READ, ABSENT_DB_NAME ) );
+        Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
         assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
         assertSame( connection, ((DecoratedConnection) acquired1).connection() );
 
@@ -125,7 +125,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired = await( provider.acquireConnection( READ, databaseName ) );
+        Connection acquired = await( provider.acquireConnection( databaseName, READ ) );
 
         assertEquals( databaseName, acquired.databaseName() );
     }

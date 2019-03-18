@@ -190,7 +190,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), TransactionConfig.empty() );
 
-        verify( connection ).write( new BeginMessage( Bookmarks.empty(), TransactionConfig.empty(), WRITE, ABSENT_DB_NAME ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( Bookmarks.empty(), TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -202,7 +202,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, TransactionConfig.empty(), WRITE, ABSENT_DB_NAME ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -213,7 +213,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), txConfig );
 
-        verify( connection ).write( new BeginMessage( Bookmarks.empty(), txConfig, WRITE, ABSENT_DB_NAME ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( Bookmarks.empty(), txConfig, ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -225,7 +225,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, txConfig );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, txConfig, WRITE, ABSENT_DB_NAME ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, txConfig, ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -462,7 +462,7 @@ public class BoltProtocolV3Test
         RunWithMetadataMessage expectedMessage;
         if ( session )
         {
-            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, bookmarks, config, mode, ABSENT_DB_NAME );
+            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, ABSENT_DB_NAME, mode, bookmarks );
         }
         else
         {

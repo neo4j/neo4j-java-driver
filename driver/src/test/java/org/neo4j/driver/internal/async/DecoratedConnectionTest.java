@@ -210,7 +210,7 @@ class DecoratedConnectionTest
     @EnumSource( AccessMode.class )
     void shouldReturnModeFromConstructor( AccessMode mode )
     {
-        DecoratedConnection connection = new DecoratedConnection( mock( Connection.class ), mode, ABSENT_DB_NAME );
+        DecoratedConnection connection = new DecoratedConnection( mock( Connection.class ), ABSENT_DB_NAME, mode );
 
         assertEquals( mode, connection.mode() );
     }
@@ -226,6 +226,6 @@ class DecoratedConnectionTest
     
     private static DecoratedConnection newConnection( Connection connection )
     {
-        return new DecoratedConnection( connection, READ, ABSENT_DB_NAME );
+        return new DecoratedConnection( connection, ABSENT_DB_NAME, READ );
     }
 }

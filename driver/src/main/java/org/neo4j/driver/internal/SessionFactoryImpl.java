@@ -46,7 +46,7 @@ public class SessionFactoryImpl implements SessionFactory
     public NetworkSession newInstance( SessionParameters parameters )
     {
         BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( Bookmarks.from( parameters.bookmark() ) );
-        return createSession( connectionProvider, retryLogic, parameters.accessMode(), logging, bookmarksHolder, parameters.databaseName() );
+        return createSession( connectionProvider, retryLogic, parameters.databaseName(), parameters.accessMode(), bookmarksHolder, logging );
     }
 
     @Override
@@ -73,11 +73,11 @@ public class SessionFactoryImpl implements SessionFactory
         return connectionProvider;
     }
 
-    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic,
-            AccessMode mode, Logging logging, BookmarksHolder bookmarksHolder, String databaseName )
+    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode,
+            BookmarksHolder bookmarksHolder, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder, databaseName )
-               : new NetworkSession( connectionProvider, mode, retryLogic, logging, bookmarksHolder, databaseName );
+               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, logging )
+               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, logging );
     }
 }

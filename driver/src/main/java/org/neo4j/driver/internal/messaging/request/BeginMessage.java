@@ -33,14 +33,14 @@ public class BeginMessage extends MessageWithMetadata
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmarks bookmarks, TransactionConfig config, AccessMode mode, String databaseName )
+    public BeginMessage( Bookmarks bookmarks, TransactionConfig config, String databaseName, AccessMode mode )
     {
         this( bookmarks, config.timeout(), config.metadata(), mode, databaseName );
     }
 
     public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, String databaseName )
     {
-        super( buildMetadata( bookmarks, txTimeout, txMetadata, mode, databaseName ) );
+        super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks ) );
     }
 
     @Override

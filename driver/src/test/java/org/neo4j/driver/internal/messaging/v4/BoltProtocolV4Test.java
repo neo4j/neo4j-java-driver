@@ -203,7 +203,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
 
     private ResponseHandler verifySessionRunInvoked( Connection connection, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, String databaseName )
     {
-        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, bookmarks, config, mode, databaseName );
+        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, databaseName, mode, bookmarks );
         return verifyRunInvoked( connection, runMessage );
     }
 
@@ -223,7 +223,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     private void verifyBeginInvoked( Connection connection, Bookmarks bookmarks, TransactionConfig config, AccessMode mode, String databaseName )
     {
         ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, mode, databaseName );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config, databaseName, mode );
 
         if( bookmarks.isEmpty() )
         {
