@@ -20,7 +20,6 @@ package org.neo4j.driver.stress;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.async.AsyncSession;
 
 public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C>
@@ -38,8 +37,8 @@ public abstract class AbstractAsyncQuery<C extends AbstractContext> implements A
     {
         if ( useBookmark )
         {
-            return driver.asyncSession( SessionParameters.builder().withAccessMode( mode ).withBookmark( context.getBookmark() ).build() );
+            return driver.asyncSession( p -> p.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
         }
-        return driver.asyncSession( mode );
+        return driver.asyncSession( p -> p.withDefaultAccessMode( mode ) );
     }
 }

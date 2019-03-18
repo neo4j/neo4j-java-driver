@@ -63,7 +63,7 @@ class DriverCloseIT
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, () -> driver.session( AccessMode.WRITE ) );
+        assertThrows( IllegalStateException.class, () -> driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) );
     }
 
     @Test

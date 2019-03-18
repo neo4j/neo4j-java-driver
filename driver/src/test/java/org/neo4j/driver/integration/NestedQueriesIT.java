@@ -34,6 +34,6 @@ public class NestedQueriesIT implements NestedQueries
     @Override
     public Session newSession( AccessMode mode )
     {
-        return server.driver().session( mode );
+        return server.driver().session( p -> p.withDefaultAccessMode( mode ) );
     }
 }

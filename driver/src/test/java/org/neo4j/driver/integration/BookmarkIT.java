@@ -26,7 +26,6 @@ import java.util.HashSet;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -77,7 +76,7 @@ class BookmarkIT
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try ( Session session = driver.session( SessionParameters.builder().withBookmark( invalidBookmark ).build() ) )
+        try ( Session session = driver.session( b -> b.withBookmarks( invalidBookmark ) ) )
         {
             assertThrows( ClientException.class, session::beginTransaction );
         }
@@ -183,7 +182,7 @@ class BookmarkIT
     void createSessionWithInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
+        try ( Session session = driver.session( s -> s.withBookmarks( bookmark ) ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }
@@ -193,7 +192,7 @@ class BookmarkIT
     void createSessionWithAccessModeAndInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
+        try ( Session session = driver.session( s -> s.withBookmarks( bookmark ) ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }

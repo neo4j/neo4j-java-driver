@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -198,7 +197,7 @@ public final class TestUtil
 
     public static long countNodes( Driver driver, String bookmark )
     {
-        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
+        try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) ) )
         {
             return session.readTransaction( tx -> tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asLong() );
         }

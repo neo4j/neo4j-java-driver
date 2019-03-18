@@ -26,7 +26,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -93,7 +92,7 @@ class DirectDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session( SessionParameters.builder().withBookmark( bookmarks ).build() ) )
+              Session session = driver.session( p -> p.withBookmarks( bookmarks ) ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -155,7 +154,7 @@ class DirectDriverBoltKitTest
                 .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-                Session session = driver.session( AccessMode.READ ) )
+                Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -176,7 +175,7 @@ class DirectDriverBoltKitTest
                 .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-                Session session = driver.session( AccessMode.WRITE ) )
+                Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );

@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
@@ -70,56 +71,21 @@ public interface Driver extends AutoCloseable
     boolean isEncrypted();
 
     /**
-     * Create a new general purpose {@link Session} with default {@link SessionParameters#empty() session parameters}.
+     * Create a new general purpose {@link Session} with default {@link SessionParameters session parameters}.
      * <p>
-     * Alias to {@link #session(SessionParameters)}}.
+     * Alias to {@link #session(Consumer)}}.
      *
      * @return a new {@link Session} object.
      */
     Session session();
 
     /**
-     * Create a new {@link Session} for a specific database.
-     * <p>
-     * Alias to {@link #session(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @return a new {@link Session} object.
-     */
-    Session session( String databaseName );
-
-    /**
-     * Create a new {@link Session} for a specific type of work on the default database.
-     * <p>
-     * Alias to {@link #session(SessionParameters)}}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @return a new {@link Session} object.
-     */
-    Session session( AccessMode mode );
-
-    /**
-     * Create a new {@link Session} towards a specific database for a specific type of work.
-     *<p>
-     * Alias to {@link #session(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     *
-     * @return a new {@link Session} object.
-     */
-    Session session( String databaseName, AccessMode mode );
-
-    /**
      * Create a new {@link Session} with a specified {@link SessionParameters}.
-     * @param parameters the session parameters which specifies the attribute of the session.
+     * @param parameterConsumer specifies how the session parameter shall be built for this session.
      * @return a new {@link Session} object.
      * @see SessionParameters
      */
-    Session session( SessionParameters parameters );
-
+    Session session( Consumer<SessionParameters> parameterConsumer );
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
      * <p>
@@ -147,110 +113,39 @@ public interface Driver extends AutoCloseable
     Metrics metrics();
 
     /**
-     * Create a new general purpose {@link RxSession} with default {@link SessionParameters#empty() session parameters}.
+     * Create a new general purpose {@link RxSession} with default {@link SessionParameters session parameters}.
      * The {@link RxSession} provides a reactive way to run queries and process results.
      * <p>
-     * Alias to {@link #rxSession(SessionParameters)}}.
+     * Alias to {@link #rxSession(Consumer)}}.
      *
      * @return @return a new {@link RxSession} object.
      */
     RxSession rxSession();
 
     /**
-     * Create a new {@link RxSession} for a specific database.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
-     * <p>
-     * Alias to {@link #rxSession(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @return a new {@link RxSession} object.
-     */
-    RxSession rxSession( String databaseName );
-    /**
-     * Create a new {@link RxSession} for a specific type of work on the default database.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
-     * <p>
-     * Alias to {@link #rxSession(SessionParameters)}}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @return a new {@link RxSession} object.
-     */
-    RxSession rxSession( AccessMode mode );
-
-    /**
-     * Create a new {@link RxSession} towards a specific database for a specific type of work.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
-     *<p>
-     * Alias to {@link #rxSession(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     *
-     * @return a new {@link RxSession} object.
-     */
-    RxSession rxSession( String databaseName, AccessMode mode );
-
-    /**
      * Create a new {@link RxSession} with specified {@link SessionParameters}.
      * The {@link RxSession} provides a reactive way to run queries and process results.
-     *
-     * @param parameters the session parameters which specifies the attribute of the session.
-     * @return a new {@link RxSession} object.
+     * @param parametersConsumer used to customize the session parameters.
+     * @return @return a new {@link RxSession} object.
      */
-    RxSession rxSession( SessionParameters parameters );
+    RxSession rxSession( Consumer<SessionParameters> parametersConsumer );
 
     /**
-     * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters#empty() session parameters}.
+     * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters session parameters}.
      * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
      * <p>
-     * Alias to {@link #asyncSession(SessionParameters)}}.
+     * Alias to {@link #asyncSession(Consumer)}}.
      *
      * @return @return a new {@link AsyncSession} object.
      */
     AsyncSession asyncSession();
 
     /**
-     * Create a new {@link AsyncSession} for a specific database.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     * <p>
-     * Alias to {@link #asyncSession(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @return a new {@link AsyncSession} object.
-     */
-    AsyncSession asyncSession( String databaseName );
-    /**
-     * Create a new {@link AsyncSession} for a specific type of work on the default database.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     * <p>
-     * Alias to {@link #asyncSession(SessionParameters)}}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @return a new {@link AsyncSession} object.
-     */
-    AsyncSession asyncSession( AccessMode mode );
-    /**
-     * Create a new {@link AsyncSession} towards a specific database for a specific type of work.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     *<p>
-     * Alias to {@link #asyncSession(SessionParameters)}}.
-     *
-     * @param databaseName the database the session connects to.
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     *
-     * @return a new {@link AsyncSession} object.
-     */
-    AsyncSession asyncSession( String databaseName, AccessMode mode );
-    /**
      * Create a new {@link AsyncSession} with specified {@link SessionParameters}.
      * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
      *
-     * @param parameters the session parameters which specifies the attribute of the session.
+     * @param parametersConsumer used to customize the session parameters.
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession( SessionParameters parameters );
+    AsyncSession asyncSession( Consumer<SessionParameters> parametersConsumer );
 }

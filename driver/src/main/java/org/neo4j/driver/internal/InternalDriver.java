@@ -20,8 +20,8 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -35,7 +35,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
 
-import static org.neo4j.driver.SessionParameters.builder;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalDriver implements Driver
@@ -58,91 +57,46 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return session( SessionParameters.empty() );
+        return session( s -> {
+        } );
     }
 
     @Override
-    public Session session( SessionParameters parameters )
+    public Session session( Consumer<SessionParameters> parametersConsumer )
     {
-        return newSession( parameters );
-    }
-
-    @Override
-    public Session session( String databaseName )
-    {
-        return session( builder().withDatabaseName( databaseName ).build() );
-    }
-
-    @Override
-    public Session session( AccessMode mode )
-    {
-        return session( builder().withAccessMode( mode ).build() );
-    }
-
-    @Override
-    public Session session( String databaseName, AccessMode mode )
-    {
-        return session( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
+        SessionParameters sessionParameters = new SessionParameters();
+        parametersConsumer.accept( sessionParameters );
+        return newSession( sessionParameters.clone() );
     }
 
     @Override
     public RxSession rxSession()
     {
-        return rxSession( SessionParameters.empty() );
+        return rxSession( s -> {
+        } );
     }
 
     @Override
-    public RxSession rxSession( SessionParameters parameters )
+    public RxSession rxSession( Consumer<SessionParameters> parametersConsumer )
     {
-        return new InternalRxSession( newSession( parameters ) );
-    }
-
-    @Override
-    public RxSession rxSession( String databaseName )
-    {
-        return rxSession( builder().withDatabaseName( databaseName ).build() );
-    }
-
-    @Override
-    public RxSession rxSession( AccessMode mode )
-    {
-        return rxSession( builder().withAccessMode( mode ).build() );
-    }
-
-    @Override
-    public RxSession rxSession( String databaseName, AccessMode mode )
-    {
-        return rxSession( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
+        SessionParameters sessionParameters = new SessionParameters();
+        parametersConsumer.accept( sessionParameters );
+        return new InternalRxSession( newSession( sessionParameters.clone() ) );
     }
 
     @Override
     public AsyncSession asyncSession()
     {
-        return asyncSession( SessionParameters.empty() );
+        return asyncSession( s -> {
+        } );
     }
 
     @Override
-    public AsyncSession asyncSession( SessionParameters parameters )
+    public AsyncSession asyncSession( Consumer<SessionParameters> parametersConsumer )
     {
-        return newSession( parameters );
-    }
-
-    @Override
-    public AsyncSession asyncSession( String databaseName )
-    {
-        return asyncSession( builder().withDatabaseName( databaseName ).build() );
-    }
-
-    @Override
-    public AsyncSession asyncSession( AccessMode mode )
-    {
-        return asyncSession( builder().withAccessMode( mode ).build() );
-    }
-
-    @Override
-    public AsyncSession asyncSession( String databaseName, AccessMode mode )
-    {
-        return asyncSession( builder().withDatabaseName( databaseName ).withAccessMode( mode ).build() );
+        SessionParameters sessionParameters = new SessionParameters();
+        parametersConsumer.accept( sessionParameters );
+        return newSession( sessionParameters.clone() );
     }
 
     @Override

@@ -1223,7 +1223,7 @@ class SessionIT
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( "foo" );
+        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 1" ) );
@@ -1236,7 +1236,7 @@ class SessionIT
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( "foo" );
+        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, session::beginTransaction );
@@ -1249,7 +1249,7 @@ class SessionIT
     void shouldAllowDatabaseName() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( "foo" );
+        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
 
         ClientException error = assertThrows( ClientException.class, () -> {
             StatementResult result = session.run( "RETURN 1" );
@@ -1265,7 +1265,7 @@ class SessionIT
     void shouldAllowDatabaseNameUsingTx() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( "foo" );
+        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, () -> {
@@ -1289,7 +1289,7 @@ class SessionIT
         }
 
         // read previously committed data
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
         {
             Set<String> names = session.readTransaction( tx ->
             {
@@ -1311,7 +1311,7 @@ class SessionIT
         Driver driver = neo4j.driver();
 
         // write some test data
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
         {
             String material = session.writeTransaction( tx ->
             {
@@ -1336,7 +1336,7 @@ class SessionIT
     {
         Driver driver = neo4j.driver();
 
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
         {
             assertThrows( ClientException.class, () ->
                     session.writeTransaction( tx ->

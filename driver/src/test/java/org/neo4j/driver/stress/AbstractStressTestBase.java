@@ -53,7 +53,6 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
@@ -437,7 +436,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static void readNodesBlocking( Driver driver, String bookmark, int expectedNodeCount )
     {
         long start = System.nanoTime();
-        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
+        try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) ) )
         {
             int nodesProcessed = session.readTransaction( tx ->
             {
@@ -497,7 +496,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        AsyncSession session = driver.asyncSession( SessionParameters.builder().withBookmark( bookmark ).build() );
+        AsyncSession session = driver.asyncSession( p -> p.withBookmarks( bookmark ) );
         AtomicInteger nodesSeen = new AtomicInteger();
 
         CompletionStage<Throwable> readQuery = session.readTransactionAsync( tx ->

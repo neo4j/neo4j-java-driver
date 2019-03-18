@@ -38,7 +38,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
@@ -251,7 +250,7 @@ class RxTransactionIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        RxSession session = neo4j.driver().rxSession( SessionParameters.builder().withBookmark( "InvalidBookmark" ).build() );
+        RxSession session = neo4j.driver().rxSession( c ->c.withBookmarks( "InvalidBookmark" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransaction() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
