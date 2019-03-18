@@ -27,20 +27,20 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Value;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 
@@ -53,7 +53,7 @@ class RunWithMetadataMessageEncoderTest
     @EnumSource( AccessMode.class )
     void shouldEncodeRunWithMetadataMessage( AccessMode mode ) throws Exception
     {
-        Map<String,Object> params = singletonMap( "answer", 42L );
+        Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
         Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx999" );
 
@@ -64,12 +64,13 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        encoder.encode( autoCommitTxRunMessage( new Statement( "RETURN $answer", params ), bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
+        Statement statement = new Statement( "RETURN $answer", value( params ) );
+        encoder.encode( autoCommitTxRunMessage( statement, bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );
         order.verify( packer ).pack( "RETURN $answer" );
-        order.verify( packer ).pack( value( params ) );
+        order.verify( packer ).pack( params );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );

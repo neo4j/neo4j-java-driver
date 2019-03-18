@@ -28,8 +28,6 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AccessMode;
 
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-
 /**
  * This is a connection with extra parameters such as database name and access mode
  */

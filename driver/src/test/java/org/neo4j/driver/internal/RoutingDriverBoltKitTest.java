@@ -27,9 +27,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
@@ -586,7 +588,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
-              Session session = driver.session( "OldBookmark" ) )
+              Session session = driver.session( SessionParameters.builder().withBookmark( "OldBookmark" ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -655,7 +657,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
-              Session session = driver.session( "BookmarkA" ) )
+              Session session = driver.session( SessionParameters.builder().withBookmark( "BookmarkA" ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {

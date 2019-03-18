@@ -79,7 +79,7 @@ class BookmarkIT
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try ( Session session = driver.session( invalidBookmark ) )
+        try ( Session session = driver.session( SessionParameters.builder().withBookmark( invalidBookmark ).build() ) )
         {
             assertThrows( ClientException.class, session::beginTransaction );
         }
@@ -185,7 +185,7 @@ class BookmarkIT
     void createSessionWithInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( bookmark ) )
+        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }

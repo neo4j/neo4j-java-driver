@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.runMessageWithStatementMatcher;
 
@@ -279,6 +280,7 @@ class ExplicitTransactionTest
     {
         Connection connection = mock( Connection.class );
         when( connection.protocol() ).thenReturn( BoltProtocolV2.INSTANCE );
+        when( connection.databaseName() ).thenReturn( ABSENT_DB_NAME );
 
         doAnswer( invocation ->
         {
