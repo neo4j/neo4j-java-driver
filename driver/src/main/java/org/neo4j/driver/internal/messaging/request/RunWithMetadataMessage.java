@@ -39,19 +39,18 @@ public class RunWithMetadataMessage extends MessageWithMetadata
     private final String statement;
     private final Map<String,Value> parameters;
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Bookmarks bookmarks, TransactionConfig config, AccessMode mode,
-            String databaseName )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, String databaseName, AccessMode mode,
+            Bookmarks bookmarks )
     {
-        return autoCommitTxRunMessage( statement, bookmarks, config.timeout(), config.metadata(), mode, databaseName );
+        return autoCommitTxRunMessage( statement, config.timeout(), config.metadata(), databaseName, mode, bookmarks );
     }
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata,
-            AccessMode mode, String databaseName )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, String databaseName,
+            AccessMode mode, Bookmarks bookmarks )
     {
-        Map<String,Value> metadata = buildMetadata( bookmarks, txTimeout, txMetadata, mode, databaseName );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks );
         return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), metadata );
     }
-
 
     public static RunWithMetadataMessage explicitTxRunMessage( Statement statement )
     {

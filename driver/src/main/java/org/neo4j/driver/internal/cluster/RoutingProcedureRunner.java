@@ -55,7 +55,8 @@ public class RoutingProcedureRunner
     {
         return connectionStage.thenCompose( connection ->
         {
-            DecoratedConnection delegate = new DecoratedConnection( connection, AccessMode.WRITE, ABSENT_DB_NAME );
+            // Routing procedure will be called on the default database
+            DecoratedConnection delegate = new DecoratedConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
             Statement procedure = procedureStatement( delegate.serverVersion() );
             return runProcedure( delegate, procedure )
                     .thenCompose( records -> releaseConnection( delegate, records ) )

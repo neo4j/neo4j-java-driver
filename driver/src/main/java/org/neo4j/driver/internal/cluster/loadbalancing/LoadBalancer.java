@@ -92,12 +92,12 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( AccessMode mode, String databaseName )
+    public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
     {
         return freshRoutingTable( mode )
                 .thenCompose( routingTable -> acquire( mode, routingTable ) )
                 .thenApply( connection -> new RoutingConnection( connection, mode, this ) )
-                .thenApply( connection -> new DecoratedConnection( connection, mode, databaseName ) );
+                .thenApply( connection -> new DecoratedConnection( connection, databaseName, mode ) );
     }
 
     @Override

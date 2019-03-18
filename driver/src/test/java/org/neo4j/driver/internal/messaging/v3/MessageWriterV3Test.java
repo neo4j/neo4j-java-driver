@@ -70,20 +70,20 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                 new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, ABSENT_DB_NAME ),
                 COMMIT,
                 ROLLBACK,
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), WRITE, ABSENT_DB_NAME ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, READ,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, WRITE,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
                 explicitTxRunMessage( new Statement( "RETURN 1" ) ),
                 PULL_ALL,
                 DISCARD_ALL,
                 RESET,
 
                 // Bolt V3 messages with struct values
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ),
-                        Bookmarks.empty(), ofSeconds( 1 ), emptyMap(), READ, ABSENT_DB_NAME ),
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ),
-                        Bookmarks.empty(), ofSeconds( 1 ), emptyMap(), WRITE, ABSENT_DB_NAME ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                        ABSENT_DB_NAME, READ, Bookmarks.empty() ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                        ABSENT_DB_NAME, WRITE, Bookmarks.empty() ),
                 explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }

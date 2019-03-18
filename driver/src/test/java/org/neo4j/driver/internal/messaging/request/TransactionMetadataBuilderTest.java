@@ -54,7 +54,7 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
@@ -81,7 +81,7 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( bookmarks, txTimeout, txMetadata, WRITE, databaseName );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, WRITE, bookmarks );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );

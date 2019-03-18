@@ -39,12 +39,12 @@ public class TransactionMetadataBuilder
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
 
-    public static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmarks bookmarks )
     {
-        return buildMetadata( bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME );
+        return buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
     }
 
-    public static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, String databaseName )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, String databaseName, AccessMode mode, Bookmarks bookmarks )
     {
         boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;

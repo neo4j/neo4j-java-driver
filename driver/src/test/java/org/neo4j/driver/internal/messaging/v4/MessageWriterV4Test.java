@@ -79,17 +79,17 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 ROLLBACK,
 
                 RESET,
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), WRITE, "foo" ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, READ,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), "foo", WRITE,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
                 explicitTxRunMessage( new Statement( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ),
-                        Bookmarks.empty(), ofSeconds( 1 ), emptyMap(), READ, ABSENT_DB_NAME ),
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ),
-                        Bookmarks.empty(), ofSeconds( 1 ), emptyMap(), WRITE, "foo" ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                        ABSENT_DB_NAME, READ, Bookmarks.empty() ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), "foo",
+                        WRITE, Bookmarks.empty() ),
                 explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }

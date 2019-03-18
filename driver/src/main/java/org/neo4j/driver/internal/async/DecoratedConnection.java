@@ -37,7 +37,7 @@ public class DecoratedConnection implements Connection
     private final AccessMode mode;
     private final String databaseName;
 
-    public DecoratedConnection( Connection delegate, AccessMode mode, String databaseName )
+    public DecoratedConnection( Connection delegate, String databaseName, AccessMode mode )
     {
         this.delegate = delegate;
         this.mode = mode;
