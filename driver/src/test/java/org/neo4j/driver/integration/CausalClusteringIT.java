@@ -46,6 +46,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Transaction;
@@ -194,7 +195,7 @@ public class CausalClusteringIT implements NestedQueries
 
             assertNotNull( bookmark );
 
-            try ( Session session = driver.session( bookmark );
+            try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() );
                   Transaction tx = session.beginTransaction() )
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
@@ -311,7 +312,7 @@ public class CausalClusteringIT implements NestedQueries
         ClusterMember leader = clusterRule.getCluster().leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() );
-              Session session = driver.session( invalidBookmark ) )
+              Session session = driver.session( SessionParameters.builder().withBookmark( invalidBookmark ).build() ) )
         {
             ClientException e = assertThrows( ClientException.class, session::beginTransaction );
             assertThat( e.getMessage(), containsString( invalidBookmark ) );
@@ -600,7 +601,7 @@ public class CausalClusteringIT implements NestedQueries
             closeTx( tx2 );
             closeTx( tx1 );
 
-            try ( Session session3 = driver.session( session1.lastBookmark() ) )
+            try ( Session session3 = driver.session( SessionParameters.builder().withBookmark( session1.lastBookmark() ).build() ) )
             {
                 // tx1 should not be terminated and should commit successfully
                 assertEquals( 1, countNodes( session3, "Node1", "name", "Node1" ) );
@@ -610,7 +611,7 @@ public class CausalClusteringIT implements NestedQueries
 
             // rediscovery should happen for the new write query
             String session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
-            try ( Session session5 = driver.session( session4Bookmark ) )
+            try ( Session session5 = driver.session( SessionParameters.builder().withBookmark( session4Bookmark ).build() ) )
             {
                 assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
             }
@@ -820,7 +821,7 @@ public class CausalClusteringIT implements NestedQueries
     private int countNodesUsingDirectDriver( ClusterMember member, final String name, String bookmark )
     {
         Driver driver = clusterRule.getCluster().getDirectDriver( member );
-        try ( Session session = driver.session( bookmark ) )
+        try ( Session session = driver.session( SessionParameters.builder().withBookmark( bookmark ).build() ) )
         {
             return session.readTransaction( tx ->
             {

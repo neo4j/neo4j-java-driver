@@ -101,7 +101,7 @@ class NetworkSessionTest
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
         when( connection.protocol() ).thenReturn( BoltProtocolV2.INSTANCE );
         connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( AccessMode.class ), ABSENT_DB_NAME ) )
+        when( connectionProvider.acquireConnection( any( AccessMode.class ), eq( ABSENT_DB_NAME ) ) )
                 .thenReturn( completedFuture( connection ) );
         session = newSession( connectionProvider, READ );
     }

@@ -34,6 +34,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.Record;
+import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
@@ -298,7 +299,7 @@ class TransactionAsyncIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        AsyncSession session = neo4j.driver().asyncSession( "InvalidBookmark" );
+        AsyncSession session = neo4j.driver().asyncSession( SessionParameters.builder().withBookmark( "InvalidBookmark" ).build() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
