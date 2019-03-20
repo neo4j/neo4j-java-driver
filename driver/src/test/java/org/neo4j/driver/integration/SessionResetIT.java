@@ -73,6 +73,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -144,9 +145,11 @@ class SessionResetIT
 
     /**
      * It is currently unsafe to terminate periodic commit query because it'll then be half-committed.
+     * So the driver give no guarantee when the periodic commit could be terminated.
+     * For a user who want to terminate a periodic commit, he or she should use kill query by id.
      */
     @Test
-    void shouldNotTerminatePeriodicCommitQuery()
+    void shouldTerminatePeriodicCommitQueryRandomly()
     {
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( longPeriodicCommitQuery(), true );
 
@@ -155,7 +158,7 @@ class SessionResetIT
 
         awaitNoActiveQueries();
 
-        assertEquals( CSV_FILE_SIZE * LOAD_CSV_BATCH_SIZE, countNodes() );
+        assertThat( countNodes(), lessThanOrEqualTo( ((long) CSV_FILE_SIZE) * LOAD_CSV_BATCH_SIZE ) );
     }
 
     @Test

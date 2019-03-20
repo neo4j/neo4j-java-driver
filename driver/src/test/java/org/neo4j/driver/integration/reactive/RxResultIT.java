@@ -24,12 +24,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -43,9 +42,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
@@ -283,7 +281,6 @@ class RxResultIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldStreamCorrectRecordsBackBeforeError()
     {
         RxSession session = neo4j.driver().rxSession();
