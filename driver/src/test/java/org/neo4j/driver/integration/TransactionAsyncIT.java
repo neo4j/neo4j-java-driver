@@ -66,7 +66,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -99,12 +98,8 @@ class TransactionAsyncIT
 
         String bookmarkAfter = session.lastBookmark();
 
-        if ( BOOKMARKS.availableIn( neo4j.version() ) )
-        {
-            // bookmarks are only supported in 3.1.0+
-            assertNotNull( bookmarkAfter );
-            assertNotEquals( bookmarkBefore, bookmarkAfter );
-        }
+        assertNotNull( bookmarkAfter );
+        assertNotEquals( bookmarkBefore, bookmarkAfter );
     }
 
     @Test
@@ -301,7 +296,6 @@ class TransactionAsyncIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
         AsyncSession session = neo4j.driver().asyncSession( "InvalidBookmark" );
@@ -658,7 +652,6 @@ class TransactionAsyncIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldUpdateSessionBookmarkAfterCommit()
     {
         String bookmarkBefore = session.lastBookmark();

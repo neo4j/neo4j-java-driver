@@ -79,7 +79,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAll;
 
@@ -609,7 +608,6 @@ class SessionAsyncIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
         session = neo4j.driver().asyncSession( "Illegal Bookmark" );

@@ -79,7 +79,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.Neo4jFeature.TRANSACTION_TERMINATION_AWARE_LOCKS;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
@@ -91,7 +90,6 @@ import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.util.TestUtil.awaitCondition;
 
 @SuppressWarnings( "deprecation" )
-@EnabledOnNeo4jWith( TRANSACTION_TERMINATION_AWARE_LOCKS )
 @ParallelizableIT
 class SessionResetIT
 {

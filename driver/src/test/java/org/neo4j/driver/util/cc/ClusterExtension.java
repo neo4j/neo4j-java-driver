@@ -27,14 +27,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.util.Neo4jRunner;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.neo4j.driver.internal.util.Neo4jFeature.CAUSAL_CLUSTER;
-import static org.neo4j.driver.internal.util.ServerVersion.NEO4J_PRODUCT;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.TARGET_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
@@ -126,10 +123,7 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     private static String parseNeo4jVersion()
     {
         String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
-        String version = split[split.length - 1];
-        ServerVersion serverVersion = ServerVersion.version( NEO4J_PRODUCT + "/" + version );
-        assumeTrue( CAUSAL_CLUSTER.availableIn( serverVersion ), "Server version `" + version + "` does not support Casual Cluster" );
-        return version;
+        return split[split.length - 1];
     }
 
     private static void stopSingleInstanceDatabase() throws IOException

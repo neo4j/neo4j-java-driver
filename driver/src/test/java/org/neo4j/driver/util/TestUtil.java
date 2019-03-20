@@ -64,13 +64,11 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Neo4jFeature.LIST_QUERIES_PROCEDURE;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
 import static org.neo4j.driver.AccessMode.WRITE;
 
@@ -270,8 +268,6 @@ public final class TestUtil
 
     public static List<String> activeQueryNames( Driver driver )
     {
-        assumeTrue( LIST_QUERIES_PROCEDURE.availableIn( version( driver ) ) );
-
         try ( Session session = driver.session() )
         {
             return session.run( "CALL dbms.listQueries() YIELD query RETURN query" )
