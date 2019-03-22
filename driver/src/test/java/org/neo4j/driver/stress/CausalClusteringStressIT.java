@@ -47,7 +47,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.internal.util.Neo4jFeature.READ_ON_FOLLOWERS_BY_DEFAULT;
 import static org.neo4j.driver.util.cc.ClusterMember.SIMPLE_SCHEME;
 
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
@@ -105,25 +104,15 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         Map<String,Long> readQueriesByServer = context.getReadQueriesByServer();
         ClusterAddresses clusterAddresses = fetchClusterAddresses( driver );
 
-        // before 3.2.0 only read replicas serve reads
-        ServerVersion version = ServerVersion.version( driver );
-        boolean readsOnFollowersEnabled = READ_ON_FOLLOWERS_BY_DEFAULT.availableIn( version );
-
-        if ( readsOnFollowersEnabled )
-        {
-            // expect all followers to serve more than zero read queries
-            assertAllAddressesServedReadQueries( "Follower", clusterAddresses.followers, readQueriesByServer );
-        }
+        // expect all followers to serve more than zero read queries
+        assertAllAddressesServedReadQueries( "Follower", clusterAddresses.followers, readQueriesByServer );
 
         // expect all read replicas to serve more than zero read queries
         assertAllAddressesServedReadQueries( "Read replica", clusterAddresses.readReplicas, readQueriesByServer );
 
-        if ( readsOnFollowersEnabled )
-        {
-            // expect all followers to serve same order of magnitude read queries
-            assertAllAddressesServedSimilarAmountOfReadQueries( "Followers", clusterAddresses.followers,
-                    readQueriesByServer, clusterAddresses );
-        }
+        // expect all followers to serve same order of magnitude read queries
+        assertAllAddressesServedSimilarAmountOfReadQueries( "Followers", clusterAddresses.followers,
+                readQueriesByServer, clusterAddresses );
 
         // expect all read replicas to serve same order of magnitude read queries
         assertAllAddressesServedSimilarAmountOfReadQueries( "Read replicas", clusterAddresses.readReplicas,

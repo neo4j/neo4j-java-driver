@@ -71,7 +71,6 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -249,7 +248,6 @@ class RxTransactionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
         RxSession session = neo4j.driver().rxSession( "InvalidBookmark" );
@@ -713,7 +711,6 @@ class RxTransactionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldUpdateSessionBookmarkAfterCommit()
     {
         String bookmarkBefore = session.lastBookmark();

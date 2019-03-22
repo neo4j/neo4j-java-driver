@@ -38,8 +38,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
-
 public final class Matchers
 {
     private Matchers()
@@ -171,17 +169,8 @@ public final class Matchers
             @Override
             protected boolean matchesSafely( ResultSummary summary )
             {
-                ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
-                if ( STATEMENT_RESULT_TIMINGS.availableIn( serverVersion ) )
-                {
-                    return summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) >= 0L &&
-                           summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) >= 0L;
-                }
-                else
-                {
-                    return summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) == -1L &&
-                           summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) == -1L;
-                }
+                return summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) >= 0L &&
+                        summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) >= 0L;
             }
 
             @Override

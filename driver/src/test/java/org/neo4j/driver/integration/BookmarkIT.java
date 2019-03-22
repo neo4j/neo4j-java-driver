@@ -41,9 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
 
-@EnabledOnNeo4jWith( BOOKMARKS )
 @ParallelizableIT
 class BookmarkIT
 {

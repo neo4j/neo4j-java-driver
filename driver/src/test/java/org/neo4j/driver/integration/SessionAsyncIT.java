@@ -79,8 +79,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAll;
 
@@ -156,7 +154,6 @@ class SessionAsyncIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldFailWhenQueryFailsAtRuntime()
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );
@@ -611,7 +608,6 @@ class SessionAsyncIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
         session = neo4j.driver().asyncSession( "Illegal Bookmark" );

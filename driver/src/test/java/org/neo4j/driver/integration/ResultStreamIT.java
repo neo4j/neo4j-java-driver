@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.Values.parameters;
 
 @ParallelizableIT
@@ -282,7 +281,6 @@ class ResultStreamIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldConvertEventuallyFailingStatementResultToStream()
     {
         List<Integer> seen = new ArrayList<>();

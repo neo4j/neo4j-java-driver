@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.Neo4jFeature.STATEMENT_RESULT_TIMINGS;
 
 @ParallelizableIT
 class SummaryIT
@@ -87,18 +86,8 @@ class SummaryIT
         ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
 
         // Then
-        ServerVersion serverVersion = ServerVersion.version( summary.server().version() );
-        if ( STATEMENT_RESULT_TIMINGS.availableIn( serverVersion ) )
-        {
-            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
-        }
-        else
-        {
-            //Not passed through by older versions of the server
-            assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), equalTo( -1L ) );
-            assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), equalTo( -1L ) );
-        }
+        assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
+        assertThat( summary.resultConsumedAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
     }
 
     @Test

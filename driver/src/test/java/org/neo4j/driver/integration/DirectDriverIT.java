@@ -39,7 +39,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
-import static org.neo4j.driver.internal.util.Neo4jFeature.CONNECTOR_LISTEN_ADDRESS_CONFIGURATION;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 @ParallelizableIT
@@ -60,7 +59,6 @@ class DirectDriverIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( CONNECTOR_LISTEN_ADDRESS_CONFIGURATION )
     void shouldAllowIPv6Address()
     {
         // Given

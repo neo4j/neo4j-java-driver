@@ -27,19 +27,10 @@ import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
 public enum Neo4jFeature
 {
-    BOOKMARKS( v3_1_0 ),
-    CAUSAL_CLUSTER( v3_1_0 ),
     SPATIAL_TYPES( v3_4_0 ),
     TEMPORAL_TYPES( v3_4_0 ),
-    TRANSACTION_TERMINATION_AWARE_LOCKS( v3_1_0 ),
-    BYTE_ARRAYS( v3_2_0 ),
-    READ_ON_FOLLOWERS_BY_DEFAULT( v3_2_0 ),
-    STATEMENT_RESULT_TIMINGS( v3_1_0 ),
-    LIST_QUERIES_PROCEDURE( v3_1_0 ),
-    CONNECTOR_LISTEN_ADDRESS_CONFIGURATION( v3_1_0 ),
     BOLT_V3( v3_5_0 ),
-    BOLT_V4( v4_0_0 ),
-    NO_CYPHER_STREAMING( v4_0_0 ); // This is temporary and shall be removed once cypher engine support streaming records
+    BOLT_V4( v4_0_0 );
 
     private final ServerVersion availableFromVersion;
 

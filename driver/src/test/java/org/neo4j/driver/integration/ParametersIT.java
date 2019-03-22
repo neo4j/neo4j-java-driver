@@ -50,7 +50,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BYTE_ARRAYS;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -165,7 +164,6 @@ class ParametersIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BYTE_ARRAYS )
     void shouldBeAbleToSetAndReturnBytesProperty()
     {
         testBytesProperty( new byte[0] );
@@ -175,22 +173,6 @@ class ParametersIT
             testBytesProperty( randomByteArray( length ) );
             testBytesProperty( randomByteArray( length - 1 ) );
         }
-    }
-
-    @Test
-    @DisabledOnNeo4jWith( BYTE_ARRAYS )
-    void shouldThrowExceptionWhenServerDoesNotSupportBytes()
-    {
-        // Given
-        byte[] byteArray = "hello, world".getBytes();
-
-        // When
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () ->
-        {
-            StatementResult result = session.run( "CREATE (a {value:{value}}) RETURN a.value", parameters( "value", byteArray ) );
-            result.single();
-        } );
-        assertThat( e.getCause().getMessage(), containsString( "Packing bytes is not supported" ) );
     }
 
     @Test
@@ -463,7 +445,6 @@ class ParametersIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BYTE_ARRAYS )
     void shouldSendAndReceiveLongArrayOfBytes()
     {
         byte[] bytes = new byte[LONG_VALUE_SIZE];

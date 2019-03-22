@@ -90,8 +90,6 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOOKMARKS;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_CYPHER_STREAMING;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
@@ -322,7 +320,6 @@ class SessionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxCommittedWithoutTxSuccess()
     {
         try ( Driver driver = newDriverWithoutRetries();
@@ -359,7 +356,6 @@ class SessionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWithTxFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
@@ -406,7 +402,6 @@ class SessionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenExceptionIsThrown()
     {
         try ( Driver driver = newDriverWithoutRetries();
@@ -454,7 +449,6 @@ class SessionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenMarkedBothSuccessAndFailure()
     {
         try ( Driver driver = newDriverWithoutRetries();
@@ -503,7 +497,6 @@ class SessionIT
     }
 
     @Test
-    @EnabledOnNeo4jWith( BOOKMARKS )
     void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries();
@@ -830,7 +823,6 @@ class SessionIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldConsumePreviousResultBeforeRunningNewQuery()
     {
         try ( Session session = neo4j.driver().session() )
@@ -868,7 +860,6 @@ class SessionIT
         assertEquals( 0, invocations.get() );
     }
 
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     @Test
     void shouldAllowConsumingRecordsAfterFailureInSessionClose()
     {
@@ -934,7 +925,6 @@ class SessionIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_CYPHER_STREAMING )
     void shouldAllowToConsumeRecordsSlowlyAndCloseSession() throws InterruptedException
     {
         Session session = neo4j.driver().session();
