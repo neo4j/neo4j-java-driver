@@ -57,8 +57,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return session( s -> {
-        } );
+        return newSession( SessionParameters.empty() );
     }
 
     @Override
@@ -72,8 +71,7 @@ public class InternalDriver implements Driver
     @Override
     public RxSession rxSession()
     {
-        return rxSession( s -> {
-        } );
+        return new InternalRxSession( newSession( SessionParameters.empty() ) );
     }
 
     @Override
@@ -87,8 +85,7 @@ public class InternalDriver implements Driver
     @Override
     public AsyncSession asyncSession()
     {
-        return asyncSession( s -> {
-        } );
+        return newSession( SessionParameters.empty() );
     }
 
     @Override
