@@ -18,16 +18,16 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-public class DiscardNMessage extends AbstractHandleNMessage
+public class DiscardMessage extends AbstractStreamingMessage
 {
     public final static byte SIGNATURE = 0x2F;
 
-    public static DiscardNMessage newDiscardAllMessage( long id )
+    public static DiscardMessage newDiscardAllMessage( long id )
     {
-        return new DiscardNMessage( PULL_OR_DISCARD_ALL_N_VALUE, id );
+        return new DiscardMessage( STREAM_LIMIT_UNLIMITED, id );
     }
 
-    public DiscardNMessage( long n, long id )
+    public DiscardMessage( long n, long id )
     {
         super( n, id );
     }
@@ -35,7 +35,7 @@ public class DiscardNMessage extends AbstractHandleNMessage
     @Override
     protected String name()
     {
-        return "DISCARD_N";
+        return "DISCARD";
     }
 
     @Override

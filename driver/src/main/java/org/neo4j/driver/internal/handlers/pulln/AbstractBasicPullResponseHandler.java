@@ -23,7 +23,7 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.value.BooleanValue;
@@ -35,7 +35,7 @@ import org.neo4j.driver.summary.ResultSummary;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.messaging.request.DiscardNMessage.newDiscardAllMessage;
+import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDiscardAllMessage;
 
 /**
  * In this class we have a hidden state machine.
@@ -118,7 +118,7 @@ public abstract class AbstractBasicPullResponseHandler implements BasicPullRespo
         assertRecordAndSummaryConsumerInstalled();
         if ( isStreamingPaused() )
         {
-            connection.writeAndFlush( new PullNMessage( size, runResponseHandler.statementId() ), this );
+            connection.writeAndFlush( new PullMessage( size, runResponseHandler.statementId() ), this );
             status = Status.STREAMING;
         }
         else if ( isStreaming() )

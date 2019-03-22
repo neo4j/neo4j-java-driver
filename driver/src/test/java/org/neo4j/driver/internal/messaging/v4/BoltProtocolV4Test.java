@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3Test;
 import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursor;
@@ -212,7 +212,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture(), eq( PullNMessage.PULL_ALL ), pullHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture(), eq( PullMessage.PULL_ALL ), pullHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
         assertThat( pullHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );

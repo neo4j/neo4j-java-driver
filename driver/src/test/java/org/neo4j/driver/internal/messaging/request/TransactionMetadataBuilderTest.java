@@ -89,7 +89,7 @@ public class TransactionMetadataBuilderTest
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( !ABSENT_DB_NAME.equals( databaseName ) )
         {
-            expectedMetadata.put( "db_name", value( databaseName ) );
+            expectedMetadata.put( "db", value( databaseName ) );
         }
 
         assertEquals( expectedMetadata, metadata );

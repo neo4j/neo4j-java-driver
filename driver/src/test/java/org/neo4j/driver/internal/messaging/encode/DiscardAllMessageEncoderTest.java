@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-import org.neo4j.driver.internal.messaging.request.DiscardNMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -44,6 +44,6 @@ class DiscardAllMessageEncoderTest
     @Test
     void shouldFailToEncodeWrongMessage()
     {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new DiscardNMessage( 100, 200 ), packer ) );
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new DiscardMessage( 100, 200 ), packer ) );
     }
 }

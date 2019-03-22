@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status;
-import org.neo4j.driver.internal.messaging.request.DiscardNMessage;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.BooleanValue;
@@ -80,7 +80,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
 
         // Then
-        verify( conn ).writeAndFlush( any( PullNMessage.class ), eq( handler ) );
+        verify( conn ).writeAndFlush( any( PullMessage.class ), eq( handler ) );
         assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
@@ -112,7 +112,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
 
         // Then
-        verify( conn ).writeAndFlush( any( DiscardNMessage.class ), eq( handler ) );
+        verify( conn ).writeAndFlush( any( DiscardMessage.class ), eq( handler ) );
         assertThat( handler.status(), equalTo( CANCELED ) );
     }
 
@@ -189,7 +189,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         handler.request( 100 );
 
         // Then
-        verify( conn ).writeAndFlush( any( PullNMessage.class ), eq( handler ) );
+        verify( conn ).writeAndFlush( any( PullMessage.class ), eq( handler ) );
         assertThat( handler.status(), equalTo( STREAMING ) );
     }
 
@@ -235,7 +235,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         handler.cancel();
 
         // Then
-        verify( conn ).writeAndFlush( any( DiscardNMessage.class ), eq( handler ) );
+        verify( conn ).writeAndFlush( any( DiscardMessage.class ), eq( handler ) );
         assertThat( handler.status(), equalTo( CANCELED ) );
     }
 

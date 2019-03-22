@@ -265,7 +265,7 @@ class RxResultIT
 
         // When
         StepVerifier.create( Flux.from( result.records() )
-                .limitRate( 1 ) // PULL_N, N=1
+                .limitRate( 1 ) // PULL, N=1
                 .take( 1 )      // DISCARD_ALL after 1 item
         )
                 .assertNext( record -> assertThat( record.get( "a" ).asInt(), equalTo( 1 ) ) )

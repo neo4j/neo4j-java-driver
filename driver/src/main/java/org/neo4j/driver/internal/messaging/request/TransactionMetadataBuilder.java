@@ -33,7 +33,7 @@ import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSE
 public class TransactionMetadataBuilder
 {
     private static final String BOOKMARKS_METADATA_KEY = "bookmarks";
-    private static final String DATABASE_NAME_KEY = "db_name";
+    private static final String DATABASE_NAME_KEY = "db";
     private static final String TX_TIMEOUT_METADATA_KEY = "tx_timeout";
     private static final String TX_METADATA_METADATA_KEY = "tx_metadata";
     private static final String MODE_KEY = "mode";
