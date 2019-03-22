@@ -20,8 +20,6 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.SessionParameters;
-
 public interface SessionFactory
 {
     NetworkSession newInstance( SessionParameters parameters );

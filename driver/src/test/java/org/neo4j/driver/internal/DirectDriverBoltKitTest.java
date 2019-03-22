@@ -92,7 +92,7 @@ class DirectDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session( p -> p.withBookmarks( bookmarks ) ) )
+              Session session = driver.session( t -> t.withBookmarks( bookmarks ) ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -154,7 +154,7 @@ class DirectDriverBoltKitTest
                 .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-                Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) ) )
+                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -175,7 +175,7 @@ class DirectDriverBoltKitTest
                 .build();
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-                Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );

@@ -436,7 +436,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static void readNodesBlocking( Driver driver, String bookmark, int expectedNodeCount )
     {
         long start = System.nanoTime();
-        try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             int nodesProcessed = session.readTransaction( tx ->
             {
@@ -496,7 +496,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        AsyncSession session = driver.asyncSession( p -> p.withBookmarks( bookmark ) );
+        AsyncSession session = driver.asyncSession( t -> t.withBookmarks( bookmark ) );
         AtomicInteger nodesSeen = new AtomicInteger();
 
         CompletionStage<Throwable> readQuery = session.readTransactionAsync( tx ->

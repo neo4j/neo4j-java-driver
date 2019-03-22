@@ -197,7 +197,7 @@ public final class TestUtil
 
     public static long countNodes( Driver driver, String bookmark )
     {
-        try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             return session.readTransaction( tx -> tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asLong() );
         }

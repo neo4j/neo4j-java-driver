@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.SessionParameters;
 import org.neo4j.driver.reactive.RxSession;
 
 /**
@@ -80,12 +81,12 @@ public interface Driver extends AutoCloseable
     Session session();
 
     /**
-     * Create a new {@link Session} with a specified {@link SessionParameters}.
-     * @param parameterConsumer specifies how the session parameter shall be built for this session.
+     * Create a new {@link Session} with a specified {@link SessionParametersTemplate}.
+     * @param templateConsumer specifies how the session parameter shall be built for this session.
      * @return a new {@link Session} object.
      * @see SessionParameters
      */
-    Session session( Consumer<SessionParameters> parameterConsumer );
+    Session session( Consumer<SessionParametersTemplate> templateConsumer );
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
      * <p>
@@ -123,12 +124,12 @@ public interface Driver extends AutoCloseable
     RxSession rxSession();
 
     /**
-     * Create a new {@link RxSession} with specified {@link SessionParameters}.
+     * Create a new {@link RxSession} with a specified {@link SessionParametersTemplate}.
      * The {@link RxSession} provides a reactive way to run queries and process results.
-     * @param parametersConsumer used to customize the session parameters.
+     * @param templateConsumer used to customize the session parameters.
      * @return @return a new {@link RxSession} object.
      */
-    RxSession rxSession( Consumer<SessionParameters> parametersConsumer );
+    RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer );
 
     /**
      * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters session parameters}.
@@ -141,11 +142,11 @@ public interface Driver extends AutoCloseable
     AsyncSession asyncSession();
 
     /**
-     * Create a new {@link AsyncSession} with specified {@link SessionParameters}.
+     * Create a new {@link AsyncSession} with a specified {@link SessionParametersTemplate}.
      * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
      *
-     * @param parametersConsumer used to customize the session parameters.
+     * @param templateConsumer used to customize the session parameters.
      * @return a new {@link AsyncSession} object.
      */
-    AsyncSession asyncSession( Consumer<SessionParameters> parametersConsumer );
+    AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer );
 }

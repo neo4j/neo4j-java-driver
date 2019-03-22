@@ -27,7 +27,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionParameters;
+import org.neo4j.driver.SessionParametersTemplate;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
@@ -62,11 +62,11 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public Session session( Consumer<SessionParameters> parametersConsumer )
+    public Session session( Consumer<SessionParametersTemplate> templateConsumer )
     {
-        SessionParameters sessionParameters = new SessionParameters();
-        parametersConsumer.accept( sessionParameters );
-        return newSession( sessionParameters.clone() );
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return newSession( template.build() );
     }
 
     @Override
@@ -77,11 +77,11 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public RxSession rxSession( Consumer<SessionParameters> parametersConsumer )
+    public RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer )
     {
-        SessionParameters sessionParameters = new SessionParameters();
-        parametersConsumer.accept( sessionParameters );
-        return new InternalRxSession( newSession( sessionParameters.clone() ) );
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return new InternalRxSession( newSession( template.build() ) );
     }
 
     @Override
@@ -92,11 +92,11 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public AsyncSession asyncSession( Consumer<SessionParameters> parametersConsumer )
+    public AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer )
     {
-        SessionParameters sessionParameters = new SessionParameters();
-        parametersConsumer.accept( sessionParameters );
-        return newSession( sessionParameters.clone() );
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return newSession( template.build() );
     }
 
     @Override

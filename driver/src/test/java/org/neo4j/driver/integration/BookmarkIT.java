@@ -76,7 +76,7 @@ class BookmarkIT
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try ( Session session = driver.session( b -> b.withBookmarks( invalidBookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( invalidBookmark ) ) )
         {
             assertThrows( ClientException.class, session::beginTransaction );
         }
@@ -182,7 +182,7 @@ class BookmarkIT
     void createSessionWithInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( s -> s.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }
@@ -192,7 +192,7 @@ class BookmarkIT
     void createSessionWithAccessModeAndInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( s -> s.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }

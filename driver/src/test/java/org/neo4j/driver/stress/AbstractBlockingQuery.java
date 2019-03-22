@@ -39,9 +39,9 @@ public abstract class AbstractBlockingQuery<C extends AbstractContext> implement
     {
         if ( useBookmark )
         {
-            return driver.session( p -> p.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
+            return driver.session( t -> t.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
         }
-        return driver.session( p -> p.withDefaultAccessMode( mode ) );
+        return driver.session( t -> t.withDefaultAccessMode( mode ) );
     }
 
     public Transaction beginTransaction( Session session, C context )

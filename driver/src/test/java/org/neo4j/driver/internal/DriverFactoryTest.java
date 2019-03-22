@@ -31,7 +31,6 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.async.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -59,6 +58,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Config.defaultConfig;
+import static org.neo4j.driver.internal.SessionParameters.empty;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -106,7 +106,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( new SessionParameters() ), instanceOf( NetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( empty() ), instanceOf( NetworkSession.class ) );
     }
 
     @ParameterizedTest
@@ -119,7 +119,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( new SessionParameters() ), instanceOf( LeakLoggingNetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( empty() ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     @ParameterizedTest

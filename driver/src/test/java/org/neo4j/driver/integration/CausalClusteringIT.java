@@ -112,7 +112,7 @@ public class CausalClusteringIT implements NestedQueries
             driver = createDriver( clusterRule.getCluster().leader().getRoutingUri() );
         }
 
-        return driver.session( r -> r.withDefaultAccessMode( mode ) );
+        return driver.session( t -> t.withDefaultAccessMode( mode ) );
     }
 
     @AfterEach
@@ -193,7 +193,7 @@ public class CausalClusteringIT implements NestedQueries
 
             assertNotNull( bookmark );
 
-            try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) );
+            try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) );
                   Transaction tx = session.beginTransaction() )
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
@@ -218,7 +218,7 @@ public class CausalClusteringIT implements NestedQueries
             } );
 
             final String bookmark;
-            try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) ) )
+            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
@@ -288,7 +288,7 @@ public class CausalClusteringIT implements NestedQueries
 
             // now all idle channels should be considered too old and will be verified during acquisition
             // they will appear broken because they were closed and new valid connection will be created
-            try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
             {
                 List<Record> records = session.run( "MATCH (n) RETURN count(n)" ).list();
                 assertEquals( 1, records.size() );
@@ -310,7 +310,7 @@ public class CausalClusteringIT implements NestedQueries
         ClusterMember leader = clusterRule.getCluster().leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() );
-              Session session = driver.session( p -> p.withBookmarks( invalidBookmark ) ) )
+              Session session = driver.session( t -> t.withBookmarks( invalidBookmark ) ) )
         {
             ClientException e = assertThrows( ClientException.class, session::beginTransaction );
             assertThat( e.getMessage(), containsString( invalidBookmark ) );
@@ -373,7 +373,7 @@ public class CausalClusteringIT implements NestedQueries
                 return session.lastBookmark();
             } );
 
-            try ( Session session2 = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmark ) );
+            try ( Session session2 = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmark ) );
                   Transaction tx2 = session2.beginTransaction() )
             {
                 Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
@@ -403,7 +403,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 assertThrows( SessionExpiredException.class, () ->
                 {
-                    try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                    try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
                     {
                         session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
                     }
@@ -445,7 +445,7 @@ public class CausalClusteringIT implements NestedQueries
             // now we should be unable to write because majority of cores is down
             assertThrows( SessionExpiredException.class, () ->
             {
-                try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
                 {
                     session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
                 }
@@ -494,7 +494,7 @@ public class CausalClusteringIT implements NestedQueries
             executor.shutdown();
             assertTrue( executor.awaitTermination( 5, SECONDS ) );
 
-            try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmarks ) ) )
+            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmarks ) ) )
             {
                 int count = countNodes( session, label, property, value );
                 assertEquals( count, threadCount );
@@ -510,7 +510,7 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
-            AsyncSession session = driver.asyncSession( p -> p.withDefaultAccessMode( AccessMode.READ ) );
+            AsyncSession session = driver.asyncSession( t -> t.withDefaultAccessMode( AccessMode.READ ) );
 
             CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
                     .thenCompose( cursor1 ->
@@ -554,20 +554,20 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
         {
-            Session writeSession1 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) );
+            Session writeSession1 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) );
             writeSession1.beginTransaction();
 
-            Session writeSession2 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) );
+            Session writeSession2 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) );
             writeSession2.beginTransaction();
 
             // should not be possible to acquire more connections towards leader because limit is 2
-            Session writeSession3 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) );
+            Session writeSession3 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) );
             ClientException e = assertThrows( ClientException.class, writeSession3::beginTransaction );
             assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
 
             // should be possible to acquire new connection towards read server
             // it's a different machine, not leader, so different max connection pool size limit applies
-            Session readSession = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) );
+            Session readSession = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) );
             Record record = readSession.readTransaction( tx -> tx.run( "RETURN 1" ).single() );
             assertEquals( 1, record.get( 0 ).asInt() );
         }
@@ -599,7 +599,7 @@ public class CausalClusteringIT implements NestedQueries
             closeTx( tx2 );
             closeTx( tx1 );
 
-            try ( Session session3 = driver.session( p -> p.withBookmarks( session1.lastBookmark() ) ) )
+            try ( Session session3 = driver.session( t -> t.withBookmarks( session1.lastBookmark() ) ) )
             {
                 // tx1 should not be terminated and should commit successfully
                 assertEquals( 1, countNodes( session3, "Node1", "name", "Node1" ) );
@@ -609,7 +609,7 @@ public class CausalClusteringIT implements NestedQueries
 
             // rediscovery should happen for the new write query
             String session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
-            try ( Session session5 = driver.session( p -> p.withBookmarks( session4Bookmark ) ) )
+            try ( Session session5 = driver.session( t -> t.withBookmarks( session4Bookmark ) ) )
             {
                 assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
             }
@@ -642,7 +642,7 @@ public class CausalClusteringIT implements NestedQueries
             makeAllChannelsFailToRunQueries( driverFactory, ServerVersion.version( driver ) );
 
             // observe that connection towards writer is broken
-            try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
             {
                 SessionExpiredException e = assertThrows( SessionExpiredException.class,
                         () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
@@ -653,7 +653,7 @@ public class CausalClusteringIT implements NestedQueries
             int readersCount = cluster.followers().size() + cluster.readReplicas().size();
             for ( int i = 0; i < readersCount; i++ )
             {
-                try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) ) )
+                try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
                 {
                     runCountNodes( session, "Person", "name", "Vision" );
                 }
@@ -771,7 +771,7 @@ public class CausalClusteringIT implements NestedQueries
 
     private Function<Driver,Session> createWritableSession( final String bookmark )
     {
-        return driver -> driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( bookmark ) );
+        return driver -> driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( bookmark ) );
     }
 
     private Function<Session,Integer> executeWriteAndRead()
@@ -819,7 +819,7 @@ public class CausalClusteringIT implements NestedQueries
     private int countNodesUsingDirectDriver( ClusterMember member, final String name, String bookmark )
     {
         Driver driver = clusterRule.getCluster().getDirectDriver( member );
-        try ( Session session = driver.session( p -> p.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             return session.readTransaction( tx ->
             {
@@ -916,7 +916,7 @@ public class CausalClusteringIT implements NestedQueries
             executor.submit( () ->
             {
                 beforeRunLatch.countDown();
-                try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
                 {
                     runQueryLatch.await();
                     session.run( "CREATE ()" );
@@ -938,7 +938,7 @@ public class CausalClusteringIT implements NestedQueries
         {
             while ( !stop.get() )
             {
-                try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
                 {
                     createNode( session, label, property, value );
                 }
@@ -958,7 +958,7 @@ public class CausalClusteringIT implements NestedQueries
         {
             while ( !stop.get() )
             {
-                try ( Session session = driver.session( p -> p.withDefaultAccessMode( AccessMode.READ ) ) )
+                try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
                 {
                     List<Long> ids = readNodeIds( session, label, property, value );
                     assertNotNull( ids );

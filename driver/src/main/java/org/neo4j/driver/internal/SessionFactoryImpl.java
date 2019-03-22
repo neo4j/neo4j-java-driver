@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.SessionParameters;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 

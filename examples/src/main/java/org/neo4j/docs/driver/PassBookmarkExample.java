@@ -89,7 +89,7 @@ public class PassBookmarkExample extends BaseApplication
         List<String> savedBookmarks = new ArrayList<>();
 
         // Create the first person and employment relationship.
-        try ( Session session1 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+        try ( Session session1 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
         {
             session1.writeTransaction( tx -> addCompany( tx, "Wayne Enterprises" ) );
             session1.writeTransaction( tx -> addPerson( tx, "Alice" ) );
@@ -99,7 +99,7 @@ public class PassBookmarkExample extends BaseApplication
         }
 
         // Create the second person and employment relationship.
-        try ( Session session2 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ) ) )
+        try ( Session session2 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
         {
             session2.writeTransaction( tx -> addCompany( tx, "LexCorp" ) );
             session2.writeTransaction( tx -> addPerson( tx, "Bob" ) );
@@ -109,7 +109,7 @@ public class PassBookmarkExample extends BaseApplication
         }
 
         // Create a friendship between the two people created above.
-        try ( Session session3 = driver.session( p -> p.withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( savedBookmarks ) ) )
+        try ( Session session3 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( savedBookmarks ) ) )
         {
             session3.writeTransaction( tx -> makeFriends( tx, "Alice", "Bob" ) );
 

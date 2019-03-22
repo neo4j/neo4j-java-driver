@@ -1223,7 +1223,7 @@ class SessionIT
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 1" ) );
@@ -1236,7 +1236,7 @@ class SessionIT
     void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, session::beginTransaction );
@@ -1249,14 +1249,14 @@ class SessionIT
     void shouldAllowDatabaseName() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
 
         ClientException error = assertThrows( ClientException.class, () -> {
             StatementResult result = session.run( "RETURN 1" );
             result.consume();
         } );
 
-        assertThat( error.getMessage(), containsString( "The database requested does not exists. Requested database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
         session.close();
     }
 
@@ -1265,7 +1265,7 @@ class SessionIT
     void shouldAllowDatabaseNameUsingTx() throws Throwable
     {
         // Given
-        Session session = neo4j.driver().session( p -> p.withDatabase( "foo" ) );
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         ClientException error = assertThrows( ClientException.class, () -> {
@@ -1273,7 +1273,7 @@ class SessionIT
             StatementResult result = transaction.run( "RETURN 1" );
             result.consume();
         });
-        assertThat( error.getMessage(), containsString( "The database requested does not exists. Requested database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
         session.close();
     }
 
@@ -1289,7 +1289,7 @@ class SessionIT
         }
 
         // read previously committed data
-        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             Set<String> names = session.readTransaction( tx ->
             {
@@ -1311,7 +1311,7 @@ class SessionIT
         Driver driver = neo4j.driver();
 
         // write some test data
-        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             String material = session.writeTransaction( tx ->
             {
@@ -1336,7 +1336,7 @@ class SessionIT
     {
         Driver driver = neo4j.driver();
 
-        try ( Session session = driver.session( p -> p.withDefaultAccessMode( sessionMode ) ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             assertThrows( ClientException.class, () ->
                     session.writeTransaction( tx ->
