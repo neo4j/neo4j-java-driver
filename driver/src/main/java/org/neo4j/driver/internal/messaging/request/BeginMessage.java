@@ -22,23 +22,25 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.Bookmarks;
 
-public class BeginMessage extends TransactionStartingMessage
+import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
+
+public class BeginMessage extends MessageWithMetadata
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmarks bookmarks, TransactionConfig config, AccessMode mode )
+    public BeginMessage( Bookmarks bookmarks, TransactionConfig config, String databaseName, AccessMode mode )
     {
-        this( bookmarks, config.timeout(), config.metadata(), mode );
+        this( bookmarks, config.timeout(), config.metadata(), mode, databaseName );
     }
 
-    public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, String databaseName )
     {
-        super( bookmarks, txTimeout, txMetadata, mode );
+        super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks ) );
     }
 
     @Override
@@ -59,18 +61,18 @@ public class BeginMessage extends TransactionStartingMessage
             return false;
         }
         BeginMessage that = (BeginMessage) o;
-        return Objects.equals( metadata, that.metadata );
+        return Objects.equals( metadata(), that.metadata() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( metadata );
+        return Objects.hash( metadata() );
     }
 
     @Override
     public String toString()
     {
-        return "BEGIN " + metadata;
+        return "BEGIN " + metadata();
     }
 }

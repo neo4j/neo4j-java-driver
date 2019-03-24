@@ -18,12 +18,11 @@
  */
 package org.neo4j.driver.internal.messaging.v4;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -32,23 +31,27 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullNMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
+import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
-import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
-import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
-import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
+import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
 
 class MessageWriterV4Test extends AbstractMessageWriterTestBase
 {
@@ -70,26 +73,24 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
                 GOODBYE,
-                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ ),
-                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE ),
+                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
+                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, "foo" ),
                 COMMIT,
                 ROLLBACK,
 
                 RESET,
-                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), READ ),
-                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), WRITE ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, READ,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), "foo", WRITE,
+                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                explicitTxRunMessage( new Statement( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), WRITE ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), WRITE )
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                        ABSENT_DB_NAME, READ, Bookmarks.empty() ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), "foo",
+                        WRITE, Bookmarks.empty() ),
+                explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
 

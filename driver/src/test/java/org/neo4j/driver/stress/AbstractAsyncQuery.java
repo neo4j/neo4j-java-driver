@@ -37,8 +37,8 @@ public abstract class AbstractAsyncQuery<C extends AbstractContext> implements A
     {
         if ( useBookmark )
         {
-            return driver.asyncSession( mode, context.getBookmark() );
+            return driver.asyncSession( t -> t.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
         }
-        return driver.asyncSession( mode );
+        return driver.asyncSession( t -> t.withDefaultAccessMode( mode ) );
     }
 }

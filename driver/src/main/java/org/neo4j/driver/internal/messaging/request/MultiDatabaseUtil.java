@@ -16,27 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v2;
+package org.neo4j.driver.internal.messaging.request;
 
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import java.util.Objects;
 
-public class BoltProtocolV2 extends BoltProtocolV1
+import org.neo4j.driver.exceptions.ClientException;
+
+public final class MultiDatabaseUtil
 {
-    public static final int VERSION = 2;
+    public static final String ABSENT_DB_NAME = "";
 
-    public static final BoltProtocol INSTANCE = new BoltProtocolV2();
-
-    @Override
-    public MessageFormat createMessageFormat()
+    public static void assertEmptyDatabaseName( String databaseName, int version )
     {
-        return new MessageFormatV2();
-    }
-
-    @Override
-    public int version()
-    {
-        return VERSION;
+        if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
+        {
+            throw new ClientException( String.format( "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. " +
+                    "Database name: `%s`", version, databaseName ) );
+        }
     }
 }

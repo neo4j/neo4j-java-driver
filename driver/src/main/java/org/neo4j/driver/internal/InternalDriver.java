@@ -20,19 +20,20 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.reactive.InternalRxSession;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionParametersTemplate;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.reactive.InternalRxSession;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.RxSession;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
@@ -54,48 +55,59 @@ public class InternalDriver implements Driver
     }
 
     @Override
+    public Session session()
+    {
+        return newSession( SessionParameters.empty() );
+    }
+
+    @Override
+    public Session session( Consumer<SessionParametersTemplate> templateConsumer )
+    {
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return newSession( template.build() );
+    }
+
+    @Override
+    public RxSession rxSession()
+    {
+        return new InternalRxSession( newSession( SessionParameters.empty() ) );
+    }
+
+    @Override
+    public RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer )
+    {
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return new InternalRxSession( newSession( template.build() ) );
+    }
+
+    @Override
+    public AsyncSession asyncSession()
+    {
+        return newSession( SessionParameters.empty() );
+    }
+
+    @Override
+    public AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer )
+    {
+        SessionParameters.Template template = SessionParameters.template();
+        templateConsumer.accept( template );
+        return newSession( template.build() );
+    }
+
+    @Override
+    public Metrics metrics()
+    {
+        return metricsProvider.metrics();
+    }
+
+    @Override
     public boolean isEncrypted()
     {
         assertOpen();
         return securityPlan.requiresEncryption();
     }
-
-    @Override
-    public Session session()
-    {
-        return session( AccessMode.WRITE );
-    }
-
-    @Override
-    public Session session( AccessMode mode )
-    {
-        return newSession( mode, Bookmarks.empty() );
-    }
-
-    @Override
-    public Session session( String bookmark )
-    {
-        return session( AccessMode.WRITE, bookmark );
-    }
-
-    @Override
-    public Session session( AccessMode mode, String bookmark )
-    {
-        return newSession( mode, Bookmarks.from( bookmark ) );
-    }
-
-    @Override
-    public Session session( Iterable<String> bookmarks )
-    {
-        return session( AccessMode.WRITE, bookmarks );
-    }
-
-    @Override
-    public Session session( AccessMode mode, Iterable<String> bookmarks )
-    {
-        return newSession( mode, Bookmarks.from( bookmarks ) );
-    }
-
 
     @Override
     public void close()
@@ -112,42 +124,6 @@ public class InternalDriver implements Driver
             return sessionFactory.close();
         }
         return completedWithNull();
-    }
-
-    @Override
-    public RxSession rxSession()
-    {
-        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.empty() ) );
-    }
-
-    @Override
-    public RxSession rxSession( String bookmark )
-    {
-        return new InternalRxSession( newSession( AccessMode.WRITE, Bookmarks.from( bookmark ) ) );
-    }
-
-    @Override
-    public AsyncSession asyncSession()
-    {
-        return asyncSession( AccessMode.WRITE );
-    }
-
-    @Override
-    public AsyncSession asyncSession( AccessMode mode )
-    {
-        return newSession( mode, Bookmarks.empty() );
-    }
-
-    @Override
-    public AsyncSession asyncSession( String bookmark )
-    {
-        return asyncSession( AccessMode.WRITE, bookmark );
-    }
-
-    @Override
-    public AsyncSession asyncSession( AccessMode mode, String bookmark )
-    {
-        return newSession( mode, Bookmarks.from( bookmark ) );
     }
 
     public CompletionStage<Void> verifyConnectivity()
@@ -167,10 +143,15 @@ public class InternalDriver implements Driver
         return sessionFactory;
     }
 
-    private NetworkSession newSession( AccessMode mode, Bookmarks bookmarks )
+    private static RuntimeException driverCloseException()
+    {
+        return new IllegalStateException( "This driver instance has already been closed" );
+    }
+
+    private NetworkSession newSession( SessionParameters parameters )
     {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance( mode, bookmarks );
+        NetworkSession session = sessionFactory.newInstance( parameters );
         if ( closed.get() )
         {
             // session does not immediately acquire connection, it is fine to just throw
@@ -185,15 +166,5 @@ public class InternalDriver implements Driver
         {
             throw driverCloseException();
         }
-    }
-
-    public Metrics metrics()
-    {
-        return metricsProvider.metrics();
-    }
-
-    private static RuntimeException driverCloseException()
-    {
-        return new IllegalStateException( "This driver instance has already been closed" );
     }
 }

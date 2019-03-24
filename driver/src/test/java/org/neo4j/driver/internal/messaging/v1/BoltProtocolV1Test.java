@@ -76,6 +76,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -274,6 +275,24 @@ public class BoltProtocolV1Test
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
+    @Test
+    void shouldNotSupportDatabaseNameInBeginTransaction()
+    {
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), Bookmarks.empty(), TransactionConfig.empty() );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    void shouldNotSupportDatabaseNameForAutoCommitTransactions()
+    {
+        ClientException e = assertThrows( ClientException.class,
+                () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
+                        new Statement( "RETURN 1" ), BookmarksHolder.NO_OP, TransactionConfig.empty(), true ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
     protected BoltProtocol createProtocol()
     {
         return BoltProtocolV1.INSTANCE;
@@ -287,6 +306,7 @@ public class BoltProtocolV1Test
     private void testRunWithoutWaitingForRunResponse( boolean autoCommitTx ) throws Exception
     {
         Connection connection = mock( Connection.class );
+        when( connection.databaseName() ).thenReturn( ABSENT_DB_NAME );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( autoCommitTx )
@@ -311,6 +331,7 @@ public class BoltProtocolV1Test
     private void testRunWithWaitingForResponse( boolean success, boolean session ) throws Exception
     {
         Connection connection = mock( Connection.class );
+        when( connection.databaseName() ).thenReturn( ABSENT_DB_NAME );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( session )

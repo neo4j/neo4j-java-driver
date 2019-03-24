@@ -27,19 +27,22 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Value;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 
 class RunWithMetadataMessageEncoderTest
 {
@@ -61,7 +64,8 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmarks, txTimeout, txMetadata, mode ), packer );
+        Statement statement = new Statement( "RETURN $answer", value( params ) );
+        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );

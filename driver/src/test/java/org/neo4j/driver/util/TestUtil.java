@@ -69,7 +69,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.AccessMode.WRITE;
 
 public final class TestUtil
@@ -197,7 +197,7 @@ public final class TestUtil
 
     public static long countNodes( Driver driver, String bookmark )
     {
-        try ( Session session = driver.session( bookmark ) )
+        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
         {
             return session.readTransaction( tx -> tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asLong() );
         }
@@ -219,11 +219,22 @@ public final class TestUtil
 
     public static Connection connectionMock( AccessMode mode, BoltProtocol protocol )
     {
+        return connectionMock( ABSENT_DB_NAME, mode, protocol );
+    }
+
+    public static Connection connectionMock( String databaseName, BoltProtocol protocol )
+    {
+        return connectionMock( databaseName, WRITE, protocol );
+    }
+
+    public static Connection connectionMock( String databaseName, AccessMode mode, BoltProtocol protocol )
+    {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
+        when( connection.databaseName() ).thenReturn( databaseName );
         setupSuccessfulPullAll( connection, "COMMIT" );
         setupSuccessfulPullAll( connection, "ROLLBACK" );
         setupSuccessfulPullAll( connection, "BEGIN" );

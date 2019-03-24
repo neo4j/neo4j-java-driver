@@ -20,23 +20,26 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.Bookmarks;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
 
-class RunWithMetadataMessageTest
+public class TransactionMetadataBuilderTest
 {
     @ParameterizedTest
     @EnumSource( AccessMode.class )
@@ -51,7 +54,7 @@ class RunWithMetadataMessageTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        RunWithMetadataMessage message = new RunWithMetadataMessage( "RETURN 1", emptyMap(), bookmarks, txTimeout, txMetadata, mode );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
@@ -62,6 +65,33 @@ class RunWithMetadataMessageTest
             expectedMetadata.put( "mode", value( "r" ) );
         }
 
-        assertEquals( expectedMetadata, message.metadata() );
+        assertEquals( expectedMetadata, metadata );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"", "foo", "data", ABSENT_DB_NAME} )
+    void shouldHaveCorrectMetadataForDatabaseName( String databaseName )
+    {
+        Bookmarks bookmarks = Bookmarks.from( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
+
+        Map<String,Value> txMetadata = new HashMap<>();
+        txMetadata.put( "foo", value( "bar" ) );
+        txMetadata.put( "baz", value( 111 ) );
+        txMetadata.put( "time", value( LocalDateTime.now() ) );
+
+        Duration txTimeout = Duration.ofSeconds( 7 );
+
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, WRITE, bookmarks );
+
+        Map<String,Value> expectedMetadata = new HashMap<>();
+        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
+        expectedMetadata.put( "tx_timeout", value( 7000 ) );
+        expectedMetadata.put( "tx_metadata", value( txMetadata ) );
+        if ( !ABSENT_DB_NAME.equals( databaseName ) )
+        {
+            expectedMetadata.put( "db_name", value( databaseName ) );
+        }
+
+        assertEquals( expectedMetadata, metadata );
     }
 }

@@ -58,6 +58,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
 
     private final ConnectionProvider connectionProvider;
     private final AccessMode mode;
+    private final String databaseName;
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
@@ -68,13 +69,15 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, AccessMode mode, RetryLogic retryLogic, Logging logging, BookmarksHolder bookmarksHolder )
+    public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode, BookmarksHolder bookmarksHolder,
+            Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
         this.bookmarksHolder = bookmarksHolder;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -454,7 +457,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
         ensureSessionIsOpen();
 
         return ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( ignore -> acquireConnection( databaseName, mode ) )
                 .thenCompose( connection -> {
                     try
                     {
@@ -481,7 +484,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
 
         // create a chain that acquires connection and starts a transaction
         CompletionStage<ExplicitTransaction> newTransactionStage = ensureNoOpenTxBeforeStartingTx()
-                .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenCompose( ignore -> acquireConnection( databaseName, mode ) )
                 .thenCompose( connection ->
                 {
                     ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarksHolder );
@@ -507,7 +510,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
         return newTransactionStage;
     }
 
-    private CompletionStage<Connection> acquireConnection( AccessMode mode )
+    private CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
     {
         CompletionStage<Connection> currentConnectionStage = connectionStage;
 
@@ -543,7 +546,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
                 // there somehow is an existing open connection, this should not happen, just a precondition
                 throw new IllegalStateException( "Existing open connection detected" );
             }
-            return connectionProvider.acquireConnection( mode );
+            return connectionProvider.acquireConnection( databaseName, mode );
         } );
 
         connectionStage = newConnectionStage.exceptionally( error -> null );

@@ -36,16 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
@@ -61,6 +51,16 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -86,11 +86,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
@@ -1218,6 +1218,65 @@ class SessionIT
         } ).verify();
     }
 
+    @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
+    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4() throws Throwable
+    {
+        // Given
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
+
+        // When trying to run the query on a server that is using a protocol that is lower than V4
+        ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 1" ) );
+        assertThat( error, instanceOf( ClientException.class ) );
+        assertThat( error.getMessage(), containsString( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
+    void shouldErrorWhenTryingToUseDatabaseNameWithoutBoltV4UsingTx() throws Throwable
+    {
+        // Given
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
+
+        // When trying to run the query on a server that is using a protocol that is lower than V4
+        ClientException error = assertThrows( ClientException.class, session::beginTransaction );
+        assertThat( error, instanceOf( ClientException.class ) );
+        assertThat( error.getMessage(), containsString( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldAllowDatabaseName() throws Throwable
+    {
+        // Given
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
+
+        ClientException error = assertThrows( ClientException.class, () -> {
+            StatementResult result = session.run( "RETURN 1" );
+            result.consume();
+        } );
+
+        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        session.close();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldAllowDatabaseNameUsingTx() throws Throwable
+    {
+        // Given
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
+
+        // When trying to run the query on a server that is using a protocol that is lower than V4
+        ClientException error = assertThrows( ClientException.class, () -> {
+            Transaction transaction = session.beginTransaction();
+            StatementResult result = transaction.run( "RETURN 1" );
+            result.consume();
+        });
+        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        session.close();
+    }
+
     private void testExecuteReadTx( AccessMode sessionMode )
     {
         Driver driver = neo4j.driver();
@@ -1230,7 +1289,7 @@ class SessionIT
         }
 
         // read previously committed data
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             Set<String> names = session.readTransaction( tx ->
             {
@@ -1252,7 +1311,7 @@ class SessionIT
         Driver driver = neo4j.driver();
 
         // write some test data
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             String material = session.writeTransaction( tx ->
             {
@@ -1277,7 +1336,7 @@ class SessionIT
     {
         Driver driver = neo4j.driver();
 
-        try ( Session session = driver.session( sessionMode ) )
+        try ( Session session = driver.session( t -> t.withDefaultAccessMode( sessionMode ) ) )
         {
             assertThrows( ClientException.class, () ->
                     session.writeTransaction( tx ->

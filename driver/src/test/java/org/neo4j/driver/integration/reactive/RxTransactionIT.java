@@ -250,7 +250,7 @@ class RxTransactionIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        RxSession session = neo4j.driver().rxSession( "InvalidBookmark" );
+        RxSession session = neo4j.driver().rxSession( t ->t.withBookmarks( "InvalidBookmark" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransaction() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );

@@ -38,10 +38,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
-class AccessModeConnectionTest
+class DecoratedConnectionTest
 {
-
     @ParameterizedTest
     @ValueSource( strings = {"true", "false"} )
     void shouldDelegateIsOpen( String open )
@@ -49,7 +49,7 @@ class AccessModeConnectionTest
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.isOpen() ).thenReturn( Boolean.valueOf( open ) );
 
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         assertEquals( Boolean.valueOf( open ).booleanValue(), connection.isOpen() );
         verify( mockConnection ).isOpen();
@@ -59,7 +59,7 @@ class AccessModeConnectionTest
     void shouldDelegateEnableAutoRead()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         connection.enableAutoRead();
 
@@ -70,7 +70,7 @@ class AccessModeConnectionTest
     void shouldDelegateDisableAutoRead()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         connection.disableAutoRead();
 
@@ -81,7 +81,7 @@ class AccessModeConnectionTest
     void shouldDelegateWrite()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         Message message = mock( Message.class );
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -95,7 +95,7 @@ class AccessModeConnectionTest
     void shouldDelegateWriteTwoMessages()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         Message message1 = mock( Message.class );
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -111,7 +111,7 @@ class AccessModeConnectionTest
     void shouldDelegateWriteAndFlush()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         Message message = mock( Message.class );
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -125,7 +125,7 @@ class AccessModeConnectionTest
     void shouldDelegateWriteAndFlush1()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         Message message1 = mock( Message.class );
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -141,7 +141,7 @@ class AccessModeConnectionTest
     void shouldDelegateReset()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         connection.reset();
 
@@ -152,7 +152,7 @@ class AccessModeConnectionTest
     void shouldDelegateRelease()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         connection.release();
 
@@ -163,7 +163,7 @@ class AccessModeConnectionTest
     void shouldDelegateTerminateAndRelease()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         connection.terminateAndRelease( "a reason" );
 
@@ -176,7 +176,7 @@ class AccessModeConnectionTest
         BoltServerAddress address = BoltServerAddress.from( ServerAddress.of( "localhost", 9999 ) );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.serverAddress() ).thenReturn( address );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         assertSame( address, connection.serverAddress() );
         verify( mockConnection ).serverAddress();
@@ -188,7 +188,7 @@ class AccessModeConnectionTest
         ServerVersion version = ServerVersion.version( "Neo4j/3.5.3" );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.serverVersion() ).thenReturn( version );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         assertSame( version, connection.serverVersion() );
         verify( mockConnection ).serverVersion();
@@ -200,7 +200,7 @@ class AccessModeConnectionTest
         BoltProtocol protocol = mock( BoltProtocol.class );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.protocol() ).thenReturn( protocol );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         assertSame( protocol, connection.protocol() );
         verify( mockConnection ).protocol();
@@ -210,7 +210,7 @@ class AccessModeConnectionTest
     @EnumSource( AccessMode.class )
     void shouldReturnModeFromConstructor( AccessMode mode )
     {
-        AccessModeConnection connection = new AccessModeConnection( mock( Connection.class ), mode );
+        DecoratedConnection connection = new DecoratedConnection( mock( Connection.class ), ABSENT_DB_NAME, mode );
 
         assertEquals( mode, connection.mode() );
     }
@@ -219,8 +219,13 @@ class AccessModeConnectionTest
     void shouldReturnConnection()
     {
         Connection mockConnection = mock( Connection.class );
-        AccessModeConnection connection = new AccessModeConnection( mockConnection, READ );
+        DecoratedConnection connection = newConnection( mockConnection );
 
         assertSame( mockConnection, connection.connection() );
+    }
+    
+    private static DecoratedConnection newConnection( Connection connection )
+    {
+        return new DecoratedConnection( connection, ABSENT_DB_NAME, READ );
     }
 }

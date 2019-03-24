@@ -298,7 +298,7 @@ class TransactionAsyncIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        AsyncSession session = neo4j.driver().asyncSession( "InvalidBookmark" );
+        AsyncSession session = neo4j.driver().asyncSession( t -> t.withBookmarks( "InvalidBookmark" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );

@@ -22,27 +22,44 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.Bookmarks;
 
-public class RunWithMetadataMessage extends TransactionStartingMessage
+import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
+
+public class RunWithMetadataMessage extends MessageWithMetadata
 {
     public final static byte SIGNATURE = 0x10;
 
     private final String statement;
     private final Map<String,Value> parameters;
 
-    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmarks bookmarks, TransactionConfig config, AccessMode mode )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, String databaseName, AccessMode mode,
+            Bookmarks bookmarks )
     {
-        this( statement, parameters, bookmarks, config.timeout(), config.metadata(), mode );
+        return autoCommitTxRunMessage( statement, config.timeout(), config.metadata(), databaseName, mode, bookmarks );
     }
 
-    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata,
-            AccessMode mode )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, String databaseName,
+            AccessMode mode, Bookmarks bookmarks )
     {
-        super( bookmarks, txTimeout, txMetadata, mode );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks );
+        return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), metadata );
+    }
+
+    public static RunWithMetadataMessage explicitTxRunMessage( Statement statement )
+    {
+        return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), emptyMap() );
+    }
+
+    private RunWithMetadataMessage( String statement, Map<String,Value> parameters, Map<String,Value> metadata )
+    {
+        super( metadata );
         this.statement = statement;
         this.parameters = parameters;
     }
@@ -75,20 +92,18 @@ public class RunWithMetadataMessage extends TransactionStartingMessage
             return false;
         }
         RunWithMetadataMessage that = (RunWithMetadataMessage) o;
-        return Objects.equals( statement, that.statement ) &&
-               Objects.equals( parameters, that.parameters ) &&
-               Objects.equals( metadata, that.metadata );
+        return Objects.equals( statement, that.statement ) && Objects.equals( parameters, that.parameters ) && Objects.equals( metadata(), that.metadata() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( statement, parameters, metadata );
+        return Objects.hash( statement, parameters, metadata() );
     }
 
     @Override
     public String toString()
     {
-        return "RUN \"" + statement + "\" " + parameters + " " + metadata;
+        return "RUN \"" + statement + "\" " + parameters + " " + metadata();
     }
 }

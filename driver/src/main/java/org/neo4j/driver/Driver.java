@@ -19,16 +19,18 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.SessionParameters;
 import org.neo4j.driver.reactive.RxSession;
 
 /**
  * Accessor for a specific Neo4j graph database.
  * <p>
  * Driver implementations are typically thread-safe, act as a template
- * for {@link Session} creation and host a connection pool. All configuration
+ * for session creation and host a connection pool. All configuration
  * and authentication settings are held immutably by the Driver. Should
  * different settings be required, a new Driver instance should be created.
  * <p>
@@ -58,7 +60,7 @@ import org.neo4j.driver.reactive.RxSession;
  *     </tbody>
  * </table>
  *
- * @since 1.0 (<em>neo4j</em> URIs since 1.1)
+ * @since 1.0 (Modified and Added {@link AsyncSession} and {@link RxSession} since 2.0)
  */
 public interface Driver extends AutoCloseable
 {
@@ -70,79 +72,21 @@ public interface Driver extends AutoCloseable
     boolean isEncrypted();
 
     /**
-     * Create a new general purpose {@link Session}.
+     * Create a new general purpose {@link Session} with default {@link SessionParameters session parameters}.
      * <p>
-     * Alias to {@code session(AccessMode.WRITE, null)}.
+     * Alias to {@link #session(Consumer)}}.
      *
      * @return a new {@link Session} object.
      */
     Session session();
 
     /**
-     * Create a new {@link Session} for a specific type of work.
-     * <p>
-     * Alias to {@code session(mode, null)}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
+     * Create a new {@link Session} with a specified {@link SessionParametersTemplate}.
+     * @param templateConsumer specifies how the session parameter shall be built for this session.
      * @return a new {@link Session} object.
+     * @see SessionParameters
      */
-    Session session( AccessMode mode );
-
-    /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with the specified initial bookmark.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * transaction referenced by the supplied <em>bookmark</em>.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmark)}.
-     *
-     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
-     * indicates that the bookmark does not exist or is unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( String bookmark );
-
-    /**
-     * Create a new {@link Session} for a specific type of work with the specified initial bookmark.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * transaction referenced by the supplied <em>bookmark</em>.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @param bookmark the initial reference to some previous transaction. A {@code null} value is permitted, and
-     * indicates that the bookmark does not exist or is unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( AccessMode mode, String bookmark );
-
-    /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * latest transaction referenced by the supplied iterable of bookmarks.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
-     *
-     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
-     * are permitted, and indicate that the bookmarks do not exist or are unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( Iterable<String> bookmarks );
-
-    /**
-     * Create a new {@link AccessMode#WRITE write} {@link Session} with specified initial bookmarks.
-     * First transaction in the created session will ensure that server hosting is at least as up-to-date as the
-     * latest transaction referenced by the supplied iterable of bookmarks.
-     * <p>
-     * Alias to {@code session(AccessMode.WRITE, bookmarks)}.
-     *
-     * @param mode the type of access required by units of work in this session,
-     * e.g. {@link AccessMode#READ read access} or {@link AccessMode#WRITE write access}.
-     * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
-     * are permitted, and indicate that the bookmarks do not exist or are unknown.
-     * @return a new {@link Session} object.
-     */
-    Session session( AccessMode mode, Iterable<String> bookmarks );
-
+    Session session( Consumer<SessionParametersTemplate> templateConsumer );
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
      * <p>
@@ -169,13 +113,40 @@ public interface Driver extends AutoCloseable
      */
     Metrics metrics();
 
-    // TODO more method overloads with parameters. Leaving this to multi-database db name PR.
+    /**
+     * Create a new general purpose {@link RxSession} with default {@link SessionParameters session parameters}.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(Consumer)}}.
+     *
+     * @return @return a new {@link RxSession} object.
+     */
     RxSession rxSession();
-    RxSession rxSession( String bookmark );
 
-    // TODO add more method overloads, leaving this to multi-database db name PR
+    /**
+     * Create a new {@link RxSession} with a specified {@link SessionParametersTemplate}.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * @param templateConsumer used to customize the session parameters.
+     * @return @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer );
+
+    /**
+     * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters session parameters}.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * <p>
+     * Alias to {@link #asyncSession(Consumer)}}.
+     *
+     * @return @return a new {@link AsyncSession} object.
+     */
     AsyncSession asyncSession();
-    AsyncSession asyncSession( AccessMode mode );
-    AsyncSession asyncSession( String bookmark );
-    AsyncSession asyncSession( AccessMode mode, String bookmark );
+
+    /**
+     * Create a new {@link AsyncSession} with a specified {@link SessionParametersTemplate}.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     *
+     * @param templateConsumer used to customize the session parameters.
+     * @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer );
 }

@@ -36,6 +36,7 @@ import org.neo4j.driver.Value;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.AccessMode.*;
 import static org.neo4j.driver.Values.value;
@@ -57,7 +58,7 @@ class BeginMessageEncoderTest
 
         Duration txTimeout = Duration.ofSeconds( 1 );
 
-        encoder.encode( new BeginMessage( bookmarks, txTimeout, txMetadata, mode ), packer );
+        encoder.encode( new BeginMessage( bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );

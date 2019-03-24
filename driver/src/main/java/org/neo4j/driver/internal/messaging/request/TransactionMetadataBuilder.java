@@ -21,48 +21,43 @@ package org.neo4j.driver.internal.messaging.request;
 import java.time.Duration;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.util.Iterables;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
-abstract class TransactionStartingMessage implements Message
+public class TransactionMetadataBuilder
 {
     private static final String BOOKMARKS_METADATA_KEY = "bookmarks";
+    private static final String DATABASE_NAME_KEY = "db_name";
     private static final String TX_TIMEOUT_METADATA_KEY = "tx_timeout";
     private static final String TX_METADATA_METADATA_KEY = "tx_metadata";
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
 
-    final Map<String,Value> metadata;
-
-    TransactionStartingMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmarks bookmarks )
     {
-        this.metadata = buildMetadata( bookmarks, txTimeout, txMetadata, mode );
+        return buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
     }
 
-    public final Map<String,Value> metadata()
-    {
-        return metadata;
-    }
-
-    private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, String databaseName, AccessMode mode, Bookmarks bookmarks )
     {
         boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
         boolean accessModePresent = mode == AccessMode.READ;
+        boolean databaseNamePresent = databaseName != null && !databaseName.equals( ABSENT_DB_NAME );
 
-        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent && !accessModePresent )
+        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent && !accessModePresent && !databaseNamePresent )
         {
             return emptyMap();
         }
 
-        Map<String,Value> result = Iterables.newHashMapWithSize( 3 );
+        Map<String,Value> result = Iterables.newHashMapWithSize( 5 );
 
         if ( bookmarksPresent )
         {
@@ -76,12 +71,13 @@ abstract class TransactionStartingMessage implements Message
         {
             result.put( TX_METADATA_METADATA_KEY, value( txMetadata ) );
         }
-
-        switch ( mode )
+        if( accessModePresent )
         {
-        case READ:
             result.put( MODE_KEY, value( MODE_READ_VALUE ) );
-            break;
+        }
+        if ( databaseNamePresent ) // only sent if the database name is different from absent
+        {
+            result.put( DATABASE_NAME_KEY, value( databaseName ) );
         }
 
         return result;

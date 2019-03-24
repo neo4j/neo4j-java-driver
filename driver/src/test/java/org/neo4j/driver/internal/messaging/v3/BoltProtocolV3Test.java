@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
@@ -68,11 +69,13 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,6 +83,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
@@ -186,7 +190,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), TransactionConfig.empty() );
 
-        verify( connection ).write( new BeginMessage( Bookmarks.empty(), TransactionConfig.empty(), WRITE ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( Bookmarks.empty(), TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -198,7 +202,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, TransactionConfig.empty() );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, TransactionConfig.empty(), WRITE ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -209,7 +213,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, Bookmarks.empty(), txConfig );
 
-        verify( connection ).write( new BeginMessage( Bookmarks.empty(), txConfig, WRITE ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( Bookmarks.empty(), txConfig, ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -221,7 +225,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmarks, txConfig );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, txConfig, WRITE ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmarks, txConfig, ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -317,6 +321,36 @@ public class BoltProtocolV3Test
     void shouldRunInExplicitTransactionAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
     {
         testRunInExplicitTransactionAndWaitForRunResponse( false, mode );
+    }
+
+    @Test
+    void databaseNameInBeginTransaction()
+    {
+        testDatabaseNameSupport( false );
+    }
+
+    @Test
+    void databaseNameForAutoCommitTransactions()
+    {
+        testDatabaseNameSupport( true );
+    }
+
+    protected void testDatabaseNameSupport( boolean autoCommitTx )
+    {
+        ClientException e;
+        if ( autoCommitTx )
+        {
+            e = assertThrows( ClientException.class,
+                    () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ), new Statement( "RETURN 1" ), BookmarksHolder.NO_OP,
+                            TransactionConfig.empty(), true ) );
+        }
+        else
+        {
+            CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), Bookmarks.empty(), TransactionConfig.empty() );
+            e = assertThrows( ClientException.class, () -> await( txStage ) );
+        }
+
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
     protected void testRunInExplicitTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
@@ -425,7 +459,15 @@ public class BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        RunWithMetadataMessage expectedMessage = new RunWithMetadataMessage( QUERY, PARAMS, bookmarks, config, mode );
+        RunWithMetadataMessage expectedMessage;
+        if ( session )
+        {
+            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, ABSENT_DB_NAME, mode, bookmarks );
+        }
+        else
+        {
+            expectedMessage = RunWithMetadataMessage.explicitTxRunMessage( STATEMENT );
+        }
 
         verify( connection ).writeAndFlush( eq( expectedMessage ), runHandlerCaptor.capture(),
                 eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );

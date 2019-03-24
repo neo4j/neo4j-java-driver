@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
@@ -42,19 +46,16 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.reactive.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.internal.reactive.cursor.AsyncResultCursorOnlyFactory;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.assertEmptyDatabaseName;
 
 public class BoltProtocolV1 implements BoltProtocol
 {
@@ -96,9 +97,13 @@ public class BoltProtocolV1 implements BoltProtocol
     @Override
     public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
     {
-        if ( config != null && !config.isEmpty() )
+        try
         {
-            return Futures.failedFuture( txConfigNotSupported() );
+            verifyBeforeTransaction( config, connection.databaseName() );
+        }
+        catch ( Exception error )
+        {
+            return Futures.failedFuture( error );
         }
 
         if ( bookmarks.isEmpty() )
@@ -151,11 +156,7 @@ public class BoltProtocolV1 implements BoltProtocol
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
-
-        if ( config != null && !config.isEmpty() )
-        {
-            throw txConfigNotSupported();
-        }
+        verifyBeforeTransaction( config, connection.databaseName() );
         return buildResultCursorFactory( connection, statement, null, waitForRunResponse );
     }
 
@@ -164,6 +165,12 @@ public class BoltProtocolV1 implements BoltProtocol
             boolean waitForRunResponse )
     {
         return buildResultCursorFactory( connection, statement, tx, waitForRunResponse );
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
     }
 
     private static StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement,
@@ -179,10 +186,18 @@ public class BoltProtocolV1 implements BoltProtocol
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
     }
 
+    private void verifyBeforeTransaction( TransactionConfig config, String databaseName )
+    {
+        if ( config != null && !config.isEmpty() )
+        {
+            throw txConfigNotSupported();
+        }
+        assertEmptyDatabaseName( databaseName, version() );
+    }
+
     private static ClientException txConfigNotSupported()
     {
         return new ClientException( "Driver is connected to the database that does not support transaction configuration. " +
                 "Please upgrade to neo4j 3.5.0 or later in order to use this functionality" );
     }
-
 }
