@@ -26,19 +26,19 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 
-import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_ID;
+import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_QUERY_ID;
 
-public abstract class AbstractHandleNMessage implements Message
+public abstract class AbstractStreamingMessage implements Message
 {
     private final Map<String,Value> metadata = new HashMap<>();
-    public static long PULL_OR_DISCARD_ALL_N_VALUE = Long.MAX_VALUE;
+    public static final long STREAM_LIMIT_UNLIMITED = -1;
 
-    AbstractHandleNMessage( long n, long id )
+    AbstractStreamingMessage( long n, long id )
     {
         this.metadata.put( "n", Values.value( n ) );
-        if ( id != ABSENT_STATEMENT_ID )
+        if ( id != ABSENT_QUERY_ID )
         {
-            this.metadata.put( "stmt_id", Values.value( id ) );
+            this.metadata.put( "qid", Values.value( id ) );
         }
     }
 
@@ -58,7 +58,7 @@ public abstract class AbstractHandleNMessage implements Message
         {
             return false;
         }
-        AbstractHandleNMessage that = (AbstractHandleNMessage) o;
+        AbstractStreamingMessage that = (AbstractStreamingMessage) o;
         return Objects.equals( metadata, that.metadata );
     }
 

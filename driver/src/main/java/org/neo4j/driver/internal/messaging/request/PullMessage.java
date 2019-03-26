@@ -18,19 +18,19 @@
  */
 package org.neo4j.driver.internal.messaging.request;
 
-import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_STATEMENT_ID;
+import static org.neo4j.driver.internal.util.MetadataExtractor.ABSENT_QUERY_ID;
 
 /**
- * PULL_N request message
+ * PULL request message
  * <p>
  * Sent by clients to pull the entirety of the remaining stream down.
  */
-public class PullNMessage extends AbstractHandleNMessage
+public class PullMessage extends AbstractStreamingMessage
 {
     public static final byte SIGNATURE = 0x3F;
-    public static final PullNMessage PULL_ALL = new PullNMessage( PULL_OR_DISCARD_ALL_N_VALUE, ABSENT_STATEMENT_ID );
+    public static final PullMessage PULL_ALL = new PullMessage( STREAM_LIMIT_UNLIMITED, ABSENT_QUERY_ID );
 
-    public PullNMessage( long n, long id )
+    public PullMessage( long n, long id )
     {
         super( n, id );
     }
@@ -38,7 +38,7 @@ public class PullNMessage extends AbstractHandleNMessage
     @Override
     protected String name()
     {
-        return "PULL_N";
+        return "PULL";
     }
 
     @Override

@@ -23,17 +23,17 @@ import java.io.IOException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.DiscardNMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
-public class DiscardNMessageEncoder implements MessageEncoder
+public class DiscardMessageEncoder implements MessageEncoder
 {
     @Override
     public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        checkArgument( message, DiscardNMessage.class );
-        packer.packStructHeader( 1, DiscardNMessage.SIGNATURE );
-        packer.pack( ((DiscardNMessage) message).metadata() );
+        checkArgument( message, DiscardMessage.class );
+        packer.packStructHeader( 1, DiscardMessage.SIGNATURE );
+        packer.pack( ((DiscardMessage) message).metadata() );
     }
 }

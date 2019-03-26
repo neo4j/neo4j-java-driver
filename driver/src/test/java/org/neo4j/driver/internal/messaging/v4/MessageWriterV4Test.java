@@ -26,10 +26,10 @@ import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.DiscardNMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
@@ -67,8 +67,8 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
         return Stream.of(
 
                 // New Bolt V4 messages
-                new PullNMessage( 100, 200 ),
-                new DiscardNMessage( 300, 400 ),
+                new PullMessage( 100, 200 ),
+                new DiscardMessage( 300, 400 ),
 
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),

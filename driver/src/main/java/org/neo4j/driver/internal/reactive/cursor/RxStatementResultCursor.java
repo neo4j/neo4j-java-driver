@@ -136,7 +136,7 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     {
         if ( !runHandler.runFuture().isDone() )
         {
-            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL_N." );
+            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL." );
         }
     }
 }

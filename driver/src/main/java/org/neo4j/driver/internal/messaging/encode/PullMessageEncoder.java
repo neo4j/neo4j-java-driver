@@ -23,17 +23,17 @@ import java.io.IOException;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
-public class PullNMessageEncoder implements MessageEncoder
+public class PullMessageEncoder implements MessageEncoder
 {
     @Override
     public void encode( Message message, ValuePacker packer ) throws IOException
     {
-        checkArgument( message, PullNMessage.class );
-        packer.packStructHeader( 1, PullNMessage.SIGNATURE );
-        packer.pack( ((PullNMessage) message).metadata() );
+        checkArgument( message, PullMessage.class );
+        packer.packStructHeader( 1, PullMessage.SIGNATURE );
+        packer.pack( ((PullMessage) message).metadata() );
     }
 }

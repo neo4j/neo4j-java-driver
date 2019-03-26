@@ -25,50 +25,64 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.ValuePacker;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.PullNMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
+import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.Value;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDiscardAllMessage;
 
-class PullNMessageEncoderTest
+class DiscardMessageEncoderTest
 {
-    private final PullNMessageEncoder encoder = new PullNMessageEncoder();
+    private final DiscardMessageEncoder encoder = new DiscardMessageEncoder();
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @Test
-    void shouldEncodePullNMessage() throws Exception
+    void shouldDiscardAllCorrectly() throws Throwable
     {
-        encoder.encode( new PullNMessage( 100, 200 ), packer );
+        encoder.encode( newDiscardAllMessage( -1 ), packer );
 
         Map<String,Value> meta = new HashMap<>();
-        meta.put( "n", value( 100 ) );
-        meta.put( "stmt_id", value( 200 ) );
+        meta.put( "n", value( -1 ) );
 
         InOrder order = inOrder( packer );
-        order.verify( packer ).packStructHeader( 1, PullNMessage.SIGNATURE );
+        order.verify( packer ).packStructHeader( 1, DiscardMessage.SIGNATURE );
         order.verify( packer ).pack( meta );
     }
 
     @Test
-    void shouldAvoidStatementId() throws Exception
+    void shouldEncodeDiscardMessage() throws Exception
     {
-        encoder.encode( new PullNMessage( 100, -1 ), packer );
+        encoder.encode( new DiscardMessage( 100, 200 ), packer );
+
+        Map<String,Value> meta = new HashMap<>();
+        meta.put( "n", value( 100 ) );
+        meta.put( "qid", value( 200 ) );
+
+        InOrder order = inOrder( packer );
+        order.verify( packer ).packStructHeader( 1, DiscardMessage.SIGNATURE );
+        order.verify( packer ).pack( meta );
+    }
+
+    @Test
+    void shouldAvoidStatementId() throws Throwable
+    {
+        encoder.encode( new DiscardMessage( 100, -1 ), packer );
 
         Map<String,Value> meta = new HashMap<>();
         meta.put( "n", value( 100 ) );
 
         InOrder order = inOrder( packer );
-        order.verify( packer ).packStructHeader( 1, PullNMessage.SIGNATURE );
+        order.verify( packer ).packStructHeader( 1, DiscardMessage.SIGNATURE );
         order.verify( packer ).pack( meta );
     }
 
     @Test
     void shouldFailToEncodeWrongMessage()
     {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( PullAllMessage.PULL_ALL, packer ) );
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( DiscardAllMessage.DISCARD_ALL, packer ) );
     }
 }
