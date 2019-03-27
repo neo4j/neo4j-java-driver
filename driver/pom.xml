@@ -120,6 +120,7 @@
           <sourceFileIncludes>
             <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
           </sourceFileIncludes>
+	  <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
         </configuration>
       </plugin>
       <plugin>
