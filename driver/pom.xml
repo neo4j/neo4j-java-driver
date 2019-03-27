@@ -118,7 +118,7 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <sourceFileIncludes>
-            <sourceFileInclude>org/neo4j/driver/v1/**/*.java</sourceFileInclude>
+            <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
           </sourceFileIncludes>
         </configuration>
       </plugin>
