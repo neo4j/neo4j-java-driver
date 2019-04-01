@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.neo4j.driver.internal.async.EventLoopGroupFactory;
+import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;

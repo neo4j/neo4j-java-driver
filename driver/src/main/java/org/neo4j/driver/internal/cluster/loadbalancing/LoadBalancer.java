@@ -25,8 +25,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.async.DecoratedConnection;
-import org.neo4j.driver.internal.async.RoutingConnection;
+import org.neo4j.driver.internal.async.connection.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;

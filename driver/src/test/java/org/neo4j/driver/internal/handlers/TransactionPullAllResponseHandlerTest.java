@@ -23,15 +23,15 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

@@ -32,7 +32,9 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.InternalNetworkSession;
+import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
+import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
@@ -106,7 +108,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( empty() ), instanceOf( NetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( empty() ), instanceOf( InternalNetworkSession.class ) );
     }
 
     @ParameterizedTest

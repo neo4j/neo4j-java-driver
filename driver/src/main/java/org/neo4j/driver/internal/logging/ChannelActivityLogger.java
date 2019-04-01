@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.logging;
 import io.netty.channel.Channel;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.ChannelAttributes;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 

@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -215,7 +215,7 @@ class InternalRxResultTest
     {
         return new InternalRxResult( () -> {
             // now we successfully run
-            return failedFuture( new CompletionException(error) );
+            return failedFuture( new CompletionException( error ) );
         } );
     }
 }

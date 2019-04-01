@@ -28,9 +28,8 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
@@ -67,7 +66,26 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
             session.beginTransactionAsync( config ).whenComplete( ( tx, completionError ) -> {
                 if ( tx != null )
                 {
-                    txFuture.complete( new InternalRxTransaction( (ExplicitTransaction) tx ) );
+                    txFuture.complete( new InternalRxTransaction( tx ) );
+                }
+                else
+                {
+                    releaseConnectionBeforeReturning( txFuture, completionError );
+                }
+            } );
+            return txFuture;
+        } );
+    }
+
+    private Publisher<RxTransaction> beginTransaction( AccessMode mode, TransactionConfig config )
+    {
+        return createMono( () ->
+        {
+            CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
+            session.beginTransactionAsync( mode, config ).whenComplete( ( tx, completionError ) -> {
+                if ( tx != null )
+                {
+                    txFuture.complete( new InternalRxTransaction( tx ) );
                 }
                 else
                 {
@@ -104,8 +122,7 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
 
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<Publisher<T>> work, TransactionConfig config )
     {
-        // TODO read and write
-        Publisher<RxTransaction> publisher = beginTransaction( /*mode,*/ config );
+        Publisher<RxTransaction> publisher = beginTransaction( mode, config );
         Flux<T> txResult = Mono.from( publisher )
                 .flatMapMany( tx -> Flux.from( work.execute( tx ) )
                         .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) // if failed then we rollback and rethrow the error
@@ -160,7 +177,7 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
         // The reason we need to release connection in session is that we do not have a `rxSession.close()`;
         // Otherwise, session.close shall handle everything for us.
         Throwable error = Futures.completionExceptionCause( completionError );
-        session.releaseConnection().whenComplete( ( ignored, closeError ) ->
+        session.releaseConnectionAsync().whenComplete( ( ignored, closeError ) ->
                 returnFuture.completeExceptionally( Futures.combineErrors( error, closeError ) ) );
     }
 

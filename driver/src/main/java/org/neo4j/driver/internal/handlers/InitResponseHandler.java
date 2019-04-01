@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Value;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.setServerVersion;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 
 public class InitResponseHandler implements ResponseHandler

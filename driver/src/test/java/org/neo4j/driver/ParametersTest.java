@@ -24,12 +24,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.NetworkSession;
+import org.neo4j.driver.internal.InternalSession;
+import org.neo4j.driver.internal.async.InternalNetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -39,12 +40,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
-import static org.neo4j.driver.Values.parameters;
 
 class ParametersTest
 {
@@ -107,6 +108,8 @@ class ParametersTest
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
-        return new NetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarksHolder(), DEV_NULL_LOGGING );
+        InternalNetworkSession session =
+                new InternalNetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarksHolder(), DEV_NULL_LOGGING );
+        return new InternalSession( session );
     }
 }

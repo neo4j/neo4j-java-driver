@@ -22,7 +22,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.ChannelAttributes;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.Logging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

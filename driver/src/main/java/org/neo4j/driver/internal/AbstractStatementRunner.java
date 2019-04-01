@@ -19,33 +19,24 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.async.AsyncStatementRunner;
-import org.neo4j.driver.internal.types.InternalTypeSystem;
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
+import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.types.TypeSystem;
 
-public abstract class AbstractStatementRunner implements StatementRunner, AsyncStatementRunner
+public abstract class AbstractStatementRunner implements StatementRunner
 {
     @Override
     public final StatementResult run( String statementTemplate, Value parameters )
     {
         return run( new Statement( statementTemplate, parameters ) );
-    }
-
-    @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Value parameters )
-    {
-        return runAsync( new Statement( statementTemplate, parameters ) );
     }
 
     @Override
@@ -55,33 +46,15 @@ public abstract class AbstractStatementRunner implements StatementRunner, AsyncS
     }
 
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
-    {
-        return runAsync( statementTemplate, parameters( statementParameters ) );
-    }
-
-    @Override
     public final StatementResult run( String statementTemplate, Record statementParameters )
     {
         return run( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
-    {
-        return runAsync( statementTemplate, parameters( statementParameters ) );
-    }
-
-    @Override
     public final StatementResult run( String statementText )
     {
         return run( statementText, Values.EmptyMap );
-    }
-
-    @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementText )
-    {
-        return runAsync( statementText, Values.EmptyMap );
     }
 
     @Override

@@ -21,6 +21,9 @@ package org.neo4j.driver.util;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 import org.mockito.ArgumentMatcher;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.mockito.verification.VerificationMode;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,22 +43,36 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.EventLoopGroupFactory;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.CommitMessage;
-import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.async.InternalNetworkSession;
+import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
+import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
+import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.request.BeginMessage;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -66,11 +83,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.internal.Bookmarks.empty;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public final class TestUtil
 {
@@ -212,6 +235,202 @@ public final class TestUtil
         }
     }
 
+    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, Bookmarks x )
+    {
+        return newSession( connectionProvider, WRITE, x );
+    }
+
+    private static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmarks x )
+    {
+        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), x );
+    }
+
+    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
+    {
+        return newSession( connectionProvider, mode, empty() );
+    }
+
+    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic logic )
+    {
+        return newSession( connectionProvider, WRITE, logic, empty() );
+    }
+
+    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider )
+    {
+        return newSession( connectionProvider, WRITE, empty() );
+    }
+
+    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
+            RetryLogic retryLogic, Bookmarks bookmarks )
+    {
+        return new InternalNetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarksHolder( bookmarks ), DEV_NULL_LOGGING );
+    }
+
+    public static void verifyRun( Connection connection, String query )
+    {
+        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+    }
+
+    public static void verifyRunAndPull( Connection connection, String query )
+    {
+        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+    }
+
+    public static void verifyCommitTx( Connection connection, VerificationMode mode )
+    {
+        verify( connection, mode ).writeAndFlush( any( CommitMessage.class ), any() );
+    }
+
+    public static void verifyCommitTx( Connection connection )
+    {
+        verifyCommitTx( connection, times( 1 ) );
+    }
+
+    public static void verifyRollbackTx( Connection connection, VerificationMode mode )
+    {
+        verify( connection, mode ).writeAndFlush( any( RollbackMessage.class ), any() );
+    }
+
+    public static void verifyRollbackTx( Connection connection )
+    {
+        verifyRollbackTx( connection, times( 1 ) );
+    }
+
+    public static void verifyBeginTx( Connection connectionMock )
+    {
+        verifyBeginTx( connectionMock, Bookmarks.empty() );
+    }
+
+    public static void verifyBeginTx( Connection connectionMock, Bookmarks bookmarks )
+    {
+        if ( bookmarks.isEmpty() )
+        {
+            verify( connectionMock ).write( any( BeginMessage.class ), eq( NoOpResponseHandler.INSTANCE ) );
+        }
+        else
+        {
+            verify( connectionMock ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
+        }
+    }
+
+    public static void setupFailingRun( Connection connection, Throwable error )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler runHandler = invocation.getArgument( 1 );
+            runHandler.onFailure( error );
+            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            pullHandler.onFailure( error );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+    }
+
+    public static void setupFailingBegin( Connection connection, Throwable error )
+    {
+        // with bookmarks
+        doAnswer( invocation ->
+        {
+            ResponseHandler handler = invocation.getArgument( 1 );
+            handler.onFailure( error );
+            return null;
+        } ).when( connection ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
+    }
+
+    public static void setupFailingCommit( Connection connection )
+    {
+        setupFailingCommit( connection, 1 );
+    }
+
+    public static void setupFailingCommit( Connection connection, int times )
+    {
+        doAnswer( new Answer<Void>()
+        {
+            int invoked;
+
+            @Override
+            public Void answer( InvocationOnMock invocation )
+            {
+                ResponseHandler handler = invocation.getArgument( 1 );
+                if ( invoked++ < times )
+                {
+                    handler.onFailure( new ServiceUnavailableException( "" ) );
+                }
+                else
+                {
+                    handler.onSuccess( emptyMap() );
+                }
+                return null;
+            }
+        } ).when( connection ).writeAndFlush( any( CommitMessage.class ), any() );
+    }
+
+    public static void setupFailingRollback( Connection connection )
+    {
+        setupFailingRollback( connection, 1 );
+    }
+
+    public static void setupFailingRollback( Connection connection, int times )
+    {
+        doAnswer( new Answer<Void>()
+        {
+            int invoked;
+
+            @Override
+            public Void answer( InvocationOnMock invocation )
+            {
+                ResponseHandler handler = invocation.getArgument( 1 );
+                if ( invoked++ < times )
+                {
+                    handler.onFailure( new ServiceUnavailableException( "" ) );
+                }
+                else
+                {
+                    handler.onSuccess( emptyMap() );
+                }
+                return null;
+            }
+        } ).when( connection ).writeAndFlush( any( RollbackMessage.class ), any() );
+    }
+
+    public static void setupSuccessfulRunAndPull( Connection connection )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler runHandler = invocation.getArgument( 1 );
+            runHandler.onSuccess( emptyMap() );
+            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            pullHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+    }
+
+    public static void setupSuccessfulRun( Connection connection )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler runHandler = invocation.getArgument( 1 );
+            runHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+    }
+
+    public static void setupSuccessfulRunAndPull( Connection connection, String query )
+    {
+        doAnswer( invocation ->
+        {
+            ResponseHandler runHandler = invocation.getArgument( 1 );
+            runHandler.onSuccess( emptyMap() );
+            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            pullHandler.onSuccess( emptyMap() );
+            return null;
+        } ).when( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+    }
+
+    public static Connection connectionMock()
+    {
+        return connectionMock( BoltProtocolV2.INSTANCE );
+    }
+
     public static Connection connectionMock( BoltProtocol protocol )
     {
         return connectionMock( WRITE, protocol );
@@ -235,12 +454,25 @@ public final class TestUtil
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( databaseName );
-        setupSuccessfulPullAll( connection, "COMMIT" );
-        setupSuccessfulPullAll( connection, "ROLLBACK" );
-        setupSuccessfulPullAll( connection, "BEGIN" );
-        setupSuccessResponse( connection, CommitMessage.class );
-        setupSuccessResponse( connection, RollbackMessage.class );
-        setupSuccessResponse( connection, BeginMessage.class );
+        int version = protocol.version();
+        if ( version == BoltProtocolV1.VERSION || version == BoltProtocolV2.VERSION )
+        {
+            setupSuccessfulPullAll( connection, "COMMIT" );
+            setupSuccessfulPullAll( connection, "ROLLBACK" );
+            setupSuccessfulPullAll( connection, "BEGIN" );
+        }
+        else if ( version == BoltProtocolV3.VERSION || version == BoltProtocolV4.VERSION )
+        {
+            setupSuccessResponse( connection, CommitMessage.class );
+            setupSuccessResponse( connection, RollbackMessage.class );
+            setupSuccessResponse( connection, BeginMessage.class );
+            when( connection.release() ).thenReturn( completedWithNull() );
+            when( connection.reset() ).thenReturn( completedWithNull() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unsupported bolt protocol version: " + version );
+        }
         return connection;
     }
 
@@ -331,6 +563,12 @@ public final class TestUtil
     {
         return message -> message instanceof RunMessage && Objects.equals( statement, ((RunMessage) message).statement() );
     }
+
+    public static ArgumentMatcher<Message> runWithMetaMessageWithStatementMatcher( String statement )
+    {
+        return message -> message instanceof RunWithMetadataMessage && Objects.equals( statement, ((RunWithMetadataMessage) message).statement() );
+    }
+
 
     private static void setupSuccessfulPullAll( Connection connection, String statement )
     {

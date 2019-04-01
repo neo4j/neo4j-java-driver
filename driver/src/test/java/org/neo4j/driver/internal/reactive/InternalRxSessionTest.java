@@ -33,13 +33,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -130,7 +131,7 @@ class InternalRxSessionTest
 
         // Run failed with error
         when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
-        when( session.releaseConnection() ).thenReturn( Futures.completedWithNull() );
+        when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -143,7 +144,7 @@ class InternalRxSessionTest
         verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
-        verify( session ).releaseConnection();
+        verify( session ).releaseConnectionAsync();
     }
 
     @ParameterizedTest
@@ -175,7 +176,7 @@ class InternalRxSessionTest
 
         // Run failed with error
         when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
-        when( session.releaseConnection() ).thenReturn( Futures.completedWithNull() );
+        when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -187,7 +188,7 @@ class InternalRxSessionTest
         verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( txFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
-        verify( session ).releaseConnection();
+        verify( session ).releaseConnectionAsync();
     }
 
     @ParameterizedTest
@@ -200,7 +201,7 @@ class InternalRxSessionTest
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
-        when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( 1 ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -209,7 +210,7 @@ class InternalRxSessionTest
         StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
 
         // Then
-        verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
+        verify( session ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
         verify( tx ).commitAsync();
     }
 
@@ -223,7 +224,7 @@ class InternalRxSessionTest
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
-        when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -236,7 +237,7 @@ class InternalRxSessionTest
                 .verify();
 
         // Then
-        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( TransactionConfig.class ) );
+        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
         verify( tx, times( retryCount + 1 ) ).rollbackAsync();
     }
 
@@ -250,7 +251,7 @@ class InternalRxSessionTest
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
-        when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -270,7 +271,7 @@ class InternalRxSessionTest
         StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
 
         // Then
-        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( TransactionConfig.class ) );
+        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
         verify( tx, times( retryCount ) ).rollbackAsync();
         verify( tx ).commitAsync();
     }

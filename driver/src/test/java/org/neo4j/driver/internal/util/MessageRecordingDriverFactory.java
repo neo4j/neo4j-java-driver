@@ -30,10 +30,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.async.ChannelConnectorImpl;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
+import org.neo4j.driver.internal.async.connection.ChannelConnector;
+import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilder;
+import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;

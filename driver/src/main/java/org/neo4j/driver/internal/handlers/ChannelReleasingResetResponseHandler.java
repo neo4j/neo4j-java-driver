@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.util.Clock;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.setLastUsedTimestamp;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
 
 public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
 {

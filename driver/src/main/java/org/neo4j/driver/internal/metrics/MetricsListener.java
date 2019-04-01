@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.metrics;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.DirectConnection;
+import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.Config;
 

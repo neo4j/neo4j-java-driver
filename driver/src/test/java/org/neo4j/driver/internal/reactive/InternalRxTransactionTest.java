@@ -26,20 +26,18 @@ import reactor.test.StepVerifier;
 
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.reactive.InternalRxResult;
-import org.neo4j.driver.internal.reactive.InternalRxTransaction;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
-import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;

@@ -19,7 +19,6 @@
 package org.neo4j.driver;
 
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.Resource;
@@ -84,20 +83,6 @@ public interface Session extends Resource, StatementRunner
      * @return a new {@link Transaction}
      */
     Transaction beginTransaction( TransactionConfig config );
-
-    /**
-     * Begin a new <em>explicit {@linkplain Transaction transaction}</em>,
-     * requiring that the server hosting is at least as up-to-date as the
-     * transaction referenced by the supplied <em>bookmark</em>.
-     *
-     * @param bookmark a reference to a previous transaction
-     * @return a new {@link Transaction}
-     * @deprecated This method is deprecated in favour of {@link Driver#session(Consumer)} that accepts an initial
-     * bookmark. Session will ensure that all nested transactions are chained with bookmarks to guarantee
-     * causal consistency. <b>This method will be removed in the next major release.</b>
-     */
-    @Deprecated
-    Transaction beginTransaction( String bookmark );
 
     /**
      * Execute given unit of work in a  {@link AccessMode#READ read} transaction.

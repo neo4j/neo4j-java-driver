@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.async.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DecoratedConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;

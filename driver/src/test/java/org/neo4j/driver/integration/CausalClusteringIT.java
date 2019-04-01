@@ -56,7 +56,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -77,7 +76,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -314,30 +312,6 @@ public class CausalClusteringIT implements NestedQueries
         {
             ClientException e = assertThrows( ClientException.class, session::beginTransaction );
             assertThat( e.getMessage(), containsString( invalidBookmark ) );
-        }
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    void beginTransactionThrowsForUnreachableBookmark()
-    {
-        ClusterMember leader = clusterRule.getCluster().leader();
-
-        try ( Driver driver = createDriver( leader.getBoltUri() );
-              Session session = driver.session() )
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                tx.run( "CREATE ()" );
-                tx.success();
-            }
-
-            String bookmark = session.lastBookmark();
-            assertNotNull( bookmark );
-            String newBookmark = bookmark + "0";
-
-            TransientException e = assertThrows( TransientException.class, () -> session.beginTransaction( newBookmark ) );
-            assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
         }
     }
 

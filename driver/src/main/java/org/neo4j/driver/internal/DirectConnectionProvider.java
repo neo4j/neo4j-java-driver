@@ -21,7 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.internal.async.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DecoratedConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;

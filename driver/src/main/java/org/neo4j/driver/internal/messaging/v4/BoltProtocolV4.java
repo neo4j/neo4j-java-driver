@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal.messaging.v4;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.cursor.InternalStatementResultCursorFactory;
+import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
@@ -30,8 +30,6 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.reactive.cursor.InternalStatementResultCursorFactory;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV3PullAllHandler;
@@ -52,9 +50,7 @@ public class BoltProtocolV4 extends BoltProtocolV3
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
             ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
     {
-        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
-
-        RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
+        RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
         AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
         BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarksHolder, tx );
