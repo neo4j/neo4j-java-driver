@@ -10,7 +10,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
-    <junit.version>5.4.0</junit.version>
+    <junit.version>5.4.1</junit.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
@@ -131,6 +131,12 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-test</artifactId>
         <version>3.2.6.RELEASE</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams-tck</artifactId>
+        <version>1.0.2</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
