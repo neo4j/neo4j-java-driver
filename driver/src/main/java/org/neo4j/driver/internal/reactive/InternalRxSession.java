@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.reactive;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -122,14 +121,8 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
 
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<Publisher<T>> work, TransactionConfig config )
     {
-        Publisher<RxTransaction> publisher = beginTransaction( mode, config );
-        Flux<T> txResult = Mono.from( publisher )
-                .flatMapMany( tx -> Flux.from( work.execute( tx ) )
-                        .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) // if failed then we rollback and rethrow the error
-                        .concatWith( tx.commit() ) // if succeeded then we commit.
-                );
-
-        return session.retryLogic().retryRx( txResult );
+        Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute, RxTransaction::commit, RxTransaction::rollback );
+        return session.retryLogic().retryRx( repeatableWork );
     }
 
     @Override
