@@ -9,7 +9,8 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
-    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+    <failsafe.version>2.22.1</failsafe.version>
+    <surefire.version>2.22.1</surefire.version>
     <junit.version>5.4.1</junit.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
@@ -249,6 +250,28 @@
           <artifactId>maven-shade-plugin</artifactId>
           <version>3.2.0</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.surefire</groupId>
+              <artifactId>surefire-junit-platform</artifactId>
+              <version>${surefire.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.apache.maven.surefire</groupId>
+              <artifactId>surefire-testng</artifactId>
+              <version>${surefire.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${failsafe.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -338,7 +361,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire.and.failsafe.version}</version>
         <configuration>
           <argLine>${surefire.and.failsafe.argLine}</argLine>
           <trimStackTrace>false</trimStackTrace>
@@ -347,7 +369,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${surefire.and.failsafe.version}</version>
         <executions>
           <!-- execution 1: execute all ITs that support parallel execution (regular single-instance tests)  -->
           <execution>
