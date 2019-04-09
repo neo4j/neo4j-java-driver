@@ -22,15 +22,13 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class InternalRxResult implements RxResult
@@ -46,36 +44,7 @@ public class InternalRxResult implements RxResult
     @Override
     public Publisher<String> keys()
     {
-        return Flux.create( sink -> {
-            getCursorFuture().whenComplete( ( cursor, completionError ) -> {
-                if ( cursor != null )
-                {
-                    List<String> keys = cursor.keys();
-
-                    Iterator<String> iterator = keys.iterator();
-                    sink.onRequest( n -> {
-                        while ( n-- > 0 )
-                        {
-                            if ( iterator.hasNext() )
-                            {
-                                sink.next( iterator.next() );
-                            }
-                            else
-                            {
-                                sink.complete();
-                                break;
-                            }
-                        }
-                    } );
-                    sink.onCancel( sink::complete );
-                }
-                else
-                {
-                    Throwable error = Futures.completionExceptionCause( completionError );
-                    sink.error( error );
-                }
-            } );
-        } );
+        return Flux.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).flatMapIterable( RxStatementResultCursor::keys ).onErrorMap( Futures::completionExceptionCause ) );
     }
 
     @Override
