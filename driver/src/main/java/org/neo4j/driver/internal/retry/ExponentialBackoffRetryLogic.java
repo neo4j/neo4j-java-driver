@@ -23,6 +23,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
 import reactor.util.function.Tuples;
 
@@ -33,16 +34,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -179,12 +180,15 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                 nextDelayMs = (long) (nextDelayMs * multiplier);
                 errors = recordError( lastError, errors );
 
+                // retry on netty event loop thread
+                EventExecutor eventExecutor = eventExecutorGroup.next();
                 return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) )
-                        .delayElement( Duration.ofMillis( delayWithJitterMs ) );
+                        .delayElement( Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
             }
             else
             {
                 addSuppressed( lastError, errors );
+
                 return Mono.error( lastError );
             }
         } );

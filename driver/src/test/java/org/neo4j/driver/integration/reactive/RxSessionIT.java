@@ -27,6 +27,7 @@ import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.Session;
@@ -46,6 +47,8 @@ import org.neo4j.driver.util.ParallelizableIT;
 
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -119,6 +122,7 @@ class RxSessionIT
 
         assertEquals( 4, work.invocationCount() );
         assertEquals( 1, countNodesByLabel( "Node" ) );
+        assertNoParallelScheduler();
     }
 
     @Test
@@ -134,6 +138,7 @@ class RxSessionIT
 
         assertEquals( 3, work.invocationCount() );
         assertEquals( 1, countNodesByLabel( "Test" ) );
+        assertNoParallelScheduler();
     }
 
     @Test
@@ -150,6 +155,7 @@ class RxSessionIT
 
         assertEquals( 1, work.invocationCount() );
         assertEquals( 0, countNodesByLabel( "Hi" ) );
+        assertNoParallelScheduler();
     }
 
     @Test
@@ -173,6 +179,17 @@ class RxSessionIT
 
         assertEquals( 2, work.invocationCount() );
         assertEquals( 0, countNodesByLabel( "Person" ) );
+        assertNoParallelScheduler();
+    }
+
+    private void assertNoParallelScheduler()
+    {
+        Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+        for ( Thread t : threadSet )
+        {
+            String name = t.getName();
+            assertThat( name, not( startsWith( "parallel" ) ) );
+        }
     }
 
     private long countNodesByLabel( String label )
