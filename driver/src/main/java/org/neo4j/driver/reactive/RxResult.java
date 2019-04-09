@@ -46,8 +46,8 @@ public interface RxResult
      * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query statement is sent to the server and get executed.
      * This method does not start the record streaming nor publish query execution error.
      * To retrieve the execution result, either {@link #records()} or {@link #summary()} can be used.
-     * {@link #records()} starts record streaming and report query execution error.
-     * {@link #summary()} skips record streaming and directly report query execution error.
+     * {@link #records()} starts record streaming and reports query execution error.
+     * {@link #summary()} skips record streaming and directly reports query execution error.
      * <p>
      * Consuming of execution result ensures the resources (such as network connections) used by this result is freed correctly.
      * Consuming the keys without consuming the execution result will result in resource leak.
@@ -66,7 +66,7 @@ public interface RxResult
      * <p>
      * When the record publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed},
      * the query statement is executed and the query result is streamed back as a record stream followed by a result summary.
-     * This record publisher publishes all records in the result and signal the completion.
+     * This record publisher publishes all records in the result and signals the completion.
      * However before completion or error reporting if any, a cleanup of result resources such as network connection will be carried out automatically.
      * <p>
      * Therefore the {@link Subscriber} of this record publisher shall wait for the termination signal (complete or error)
@@ -77,13 +77,13 @@ public interface RxResult
      * But it will not cancel the query execution.
      * As a result, a termination signal (complete or error) will still be sent to the {@link Subscriber} after the query execution is finished.
      * <p>
-     * The record publishing event by default runs in Netty IO thread, as a result no blocking operation is allowed in this thread.
+     * The record publishing event by default runs in an Network IO thread, as a result no blocking operation is allowed in this thread.
      * Otherwise network IO might be blocked by application logic.
      * <p>
      * This publisher can only be subscribed by one {@link Subscriber} once.
      * <p>
-     * If this publisher is subscribed after {@link #keys()}, then the publish of records is carried out once each record arrives.
-     * If this publisher is subscribed after {@link #summary()}, then the publish of records has been cancelled
+     * If this publisher is subscribed after {@link #keys()}, then the publish of records is carried out after the arrival of keys.
+     * If this publisher is subscribed after {@link #summary()}, then the publish of records is already cancelled
      * and an empty publisher of zero record will be return.
      * @return a cold unicast publisher of records.
      */
@@ -94,7 +94,7 @@ public interface RxResult
      * <p>
      * {@linkplain Publisher#subscribe(Subscriber) Subscribing} the summary publisher results in the execution of the query followed by the result summary returned.
      * The summary publisher cancels record publishing if not yet subscribed and directly streams back the summary on query execution completion.
-     * As a result, the invocation of {@link #records()} after this method, would receive a empty publisher.
+     * As a result, the invocation of {@link #records()} after this method, would receive an empty publisher.
      * <p>
      * If subscribed after {@link #keys()}, then the result summary will be published after the query execution without streaming any record to client.
      * If subscribed after {@link #records()}, then the result summary will be published after the query execution and the streaming of records.

@@ -18,7 +18,21 @@
  */
 package org.neo4j.driver.reactive;
 
+/**
+ * Callback that executes operations against a given {@link RxTransaction}.
+ * To be used with {@link RxSession#readTransaction(RxTransactionWork)} and
+ * {@link RxSession#writeTransaction(RxTransactionWork)} methods.
+ *
+ * @param <T> the return type of this work.
+ * @since 2.0
+ */
 public interface RxTransactionWork<T>
 {
+    /**
+     * Executes all given operations against the same transaction.
+     *
+     * @param tx the transaction to use.
+     * @return some result object or {@code null} if none.
+     */
     T execute( RxTransaction tx );
 }

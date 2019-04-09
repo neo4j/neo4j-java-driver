@@ -21,7 +21,9 @@ package org.neo4j.driver.reactive;
 import org.reactivestreams.Publisher;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
@@ -43,7 +45,7 @@ public interface RxSession extends RxStatementRunner
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
      * <p>
-     * It by default is executed in Netty IO thread, as a result no blocking operation is allowed in this thread.
+     * It by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
      *
      * @return a new {@link RxTransaction}
      */
@@ -52,22 +54,99 @@ public interface RxSession extends RxStatementRunner
     /**
      * Begin a new <em>explicit {@linkplain RxTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
      * At most one transaction may exist in a session at any point in time. To
-     * maintain multiple concurrent transactions, use multiple concurrent
-     * sessions.
+     * maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>
-     * It by default is executed in Netty IO thread, as a result no blocking operation is allowed in this thread.
+     * It by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
      *
      * @param config configuration for the new transaction.
      * @return a new {@link RxTransaction}
      */
     Publisher<RxTransaction> beginTransaction( TransactionConfig config );
 
+    /**
+     * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction.
+     <p>
+     * Transaction will automatically be committed unless given unit of work fails or
+     * {@link RxTransaction#commit() transaction commit} fails.
+     * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
+     * <p>
+     * Returned publisher and given {@link RxTransactionWork} is completed/executed by an IO thread which should never block.
+     * Otherwise IO operations on this and potentially other network connections might deadlock.
+     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned publisher and do not use them inside the
+     * {@link RxTransactionWork}.
+     *
+     * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
+     * Operation executed by the given work must NOT include any blocking operation.
+     * @param <T> the return type of the given unit of work.
+     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * publisher can be completed exceptionally if given work or commit fails.
+     *
+     */
     <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work );
 
+    /**
+     * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction with
+     * the specified {@link TransactionConfig configuration}.
+     <p>
+     * Transaction will automatically be committed unless given unit of work fails or
+     * {@link RxTransaction#commit() transaction commit} fails.
+     * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
+     * <p>
+     * Returned publisher and given {@link RxTransactionWork} is completed/executed by an IO thread which should never block.
+     * Otherwise IO operations on this and potentially other network connections might deadlock.
+     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned publisher and do not use them inside the
+     * {@link RxTransactionWork}.
+     *
+     * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
+     * Operation executed by the given work must NOT include any blocking operation.
+     * @param <T> the return type of the given unit of work.
+     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * publisher can be completed exceptionally if given work or commit fails.
+     *
+     */
     <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config );
 
+    /**
+     * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction.
+     <p>
+     * Transaction will automatically be committed unless given unit of work fails or
+     * {@link RxTransaction#commit() transaction commit} fails.
+     * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
+     * <p>
+     * Returned publisher and given {@link RxTransactionWork} is completed/executed by an IO thread which should never block.
+     * Otherwise IO operations on this and potentially other network connections might deadlock.
+     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned publisher and do not use them inside the
+     * {@link RxTransactionWork}.
+     *
+     * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
+     * Operation executed by the given work must NOT include any blocking operation.
+     * @param <T> the return type of the given unit of work.
+     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * publisher can be completed exceptionally if given work or commit fails.
+     *
+     */
     <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work );
 
+    /**
+     * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction with
+     * the specified {@link TransactionConfig configuration}.
+     <p>
+     * Transaction will automatically be committed unless given unit of work fails or
+     * {@link RxTransaction#commit() transaction commit} fails.
+     * It will also not be committed if explicitly rolled back via {@link RxTransaction#rollback()}.
+     * <p>
+     * Returned publisher and given {@link RxTransactionWork} is completed/executed by an IO thread which should never block.
+     * Otherwise IO operations on this and potentially other network connections might deadlock.
+     * Please do not chain blocking operations like {@link CompletableFuture#get()} on the returned publisher and do not use them inside the
+     * {@link RxTransactionWork}.
+     *
+     * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
+     * Operation executed by the given work must NOT include any blocking operation.
+     * @param <T> the return type of the given unit of work.
+     * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
+     * publisher can be completed exceptionally if given work or commit fails.
+     *
+     */
     <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config );
 
     /**
