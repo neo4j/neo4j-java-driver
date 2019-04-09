@@ -22,11 +22,14 @@ import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,6 +69,8 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.Neo4jFeature;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DaemonThreadFactory;
 
@@ -91,6 +96,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static final int BIG_DATA_TEST_NODE_COUNT = Integer.getInteger( "bigDataTestNodeCount", 30_000 );
     private static final int BIG_DATA_TEST_BATCH_SIZE = Integer.getInteger( "bigDataTestBatchSize", 10_000 );
+    private static final Duration DEFAULT_BLOCKING_TIME_OUT = Duration.ofMinutes( 5 );
 
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
@@ -157,6 +163,14 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         String bookmark = createNodesAsync( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesAsync( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
+    void rxApiBigDataTest() throws Throwable
+    {
+        String bookmark = createNodesRx( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        readNodesRx( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
     }
 
     private void runStressTest( Function<C,List<Future<?>>> threadLauncher ) throws Throwable
@@ -596,6 +610,57 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         {
             throw error;
         }
+
+        assertEquals( expectedNodeCount, nodesSeen.get() );
+
+        long end = System.nanoTime();
+        System.out.println( "Reading nodes with async API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+    }
+
+    private String createNodesRx( int batchCount, int batchSize, InternalDriver driver )
+    {
+        long start = System.nanoTime();
+
+        RxSession session = driver.rxSession();
+
+        Flux.concat( Flux.range( 0, batchCount ).map( batchIndex ->
+            session.writeTransaction( tx -> createNodesInTxRx( tx, batchIndex, batchSize ) )
+        ) ).blockLast( DEFAULT_BLOCKING_TIME_OUT ); // throw any error if happened
+
+        long end = System.nanoTime();
+        System.out.println( "Node creation with reactive API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
+
+        return session.lastBookmark();
+    }
+
+    private Publisher<Void> createNodesInTxRx( RxTransaction tx, int batchIndex, int batchSize )
+    {
+        return Flux.concat( Flux.range( 0, batchSize ).map( index -> batchIndex * batchSize + index ).map( nodeIndex -> {
+            Statement statement = createNodeInTxStatement( nodeIndex );
+            return Flux.from( tx.run( statement ).summary() ).then(); // As long as there is no error
+        } ) );
+    }
+
+    private void readNodesRx( InternalDriver driver, String bookmark, int expectedNodeCount )
+    {
+        long start = System.nanoTime();
+
+        RxSession session = driver.rxSession( t -> t.withBookmarks( bookmark ) );
+        AtomicInteger nodesSeen = new AtomicInteger();
+
+        Publisher<Void> readQuery = session.readTransaction( tx -> Flux.from( tx.run( "MATCH (n:Node) RETURN n" ).records() ).doOnNext( record -> {
+            Node node = record.get( 0 ).asNode();
+            nodesSeen.incrementAndGet();
+
+            List<String> labels = Iterables.asList( node.labels() );
+            assertEquals( 2, labels.size() );
+            assertTrue( labels.contains( "Test" ) );
+            assertTrue( labels.contains( "Node" ) );
+
+            verifyNodeProperties( node );
+        } ).then() );
+
+        Flux.from( readQuery ).blockLast( DEFAULT_BLOCKING_TIME_OUT );
 
         assertEquals( expectedNodeCount, nodesSeen.get() );
 

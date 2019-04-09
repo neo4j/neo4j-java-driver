@@ -43,7 +43,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ), this::processAndGetSummary, RxSession::close )
+        Flux.using( () -> newSession( AccessMode.READ, context ), this::processAndGetSummary, RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
                     context.readCompleted( summary );

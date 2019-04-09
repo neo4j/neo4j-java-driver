@@ -19,7 +19,6 @@
 package org.neo4j.driver.stress;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -46,7 +45,7 @@ public class RxFailingQueryWithRetries<C extends AbstractContext> extends Abstra
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ),
+        Flux.using( () -> newSession( AccessMode.READ, context ),
                 session -> session.readTransaction( tx -> tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" ).records() ),
                 RxSession::close )
                 .subscribe( record -> {

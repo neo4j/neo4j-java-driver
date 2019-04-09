@@ -19,7 +19,6 @@
 package org.neo4j.driver.stress;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -45,7 +44,7 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C>
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ),
+        Flux.using( () -> newSession( AccessMode.READ, context ),
                 session -> session.run( "CREATE ()" ).summary(), RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
