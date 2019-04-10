@@ -19,14 +19,25 @@
 package org.neo4j.driver.internal.retry;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -141,6 +152,24 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void nextDelayCalculatedAccordingToMultiplierRx()
+    {
+        String result = "The Result";
+        int retries = 14;
+        int initialDelay = 1;
+        int multiplier = 2;
+        int noJitter = 0;
+
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( MAX_VALUE, initialDelay, multiplier, noJitter,
+                Clock.SYSTEM );
+
+        Mono<Object> single = Flux.from( retryRx( retryLogic, retries, result ) ).single();
+
+        assertEquals( result, await( single ) );
+        assertEquals( delaysWithoutJitter( initialDelay, multiplier, retries ), eventExecutor.scheduleDelays() );
+    }
+
+    @Test
     void nextDelayCalculatedAccordingToJitter() throws Exception
     {
         int retries = 32;
@@ -173,6 +202,27 @@ class ExponentialBackoffRetryLogicTest
 
         CompletionStage<Object> future = retryAsync( retryLogic, retries, result );
         assertEquals( result, await( future ) );
+
+        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        List<Long> delaysWithoutJitter = delaysWithoutJitter( initialDelay, multiplier, retries );
+
+        assertDelaysApproximatelyEqual( delaysWithoutJitter, scheduleDelays, jitterFactor );
+    }
+
+    @Test
+    void nextDelayCalculatedAccordingToJitterRx()
+    {
+        String result = "The Result";
+        int retries = 24;
+        double jitterFactor = 0.2;
+        int initialDelay = 1;
+        int multiplier = 2;
+
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( MAX_VALUE, initialDelay, multiplier, jitterFactor,
+                mock( Clock.class ) );
+
+        Mono<Object> single = Flux.from( retryRx( retryLogic, retries, result ) ).single();
+        assertEquals( result, await( single ) );
 
         List<Long> scheduleDelays = eventExecutor.scheduleDelays();
         List<Long> delaysWithoutJitter = delaysWithoutJitter( initialDelay, multiplier, retries );
@@ -238,6 +288,35 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void doesNotRetryWhenMaxRetryTimeExceededRx()
+    {
+        long retryStart = Clock.SYSTEM.millis();
+        int initialDelay = 100;
+        int multiplier = 2;
+        long maxRetryTimeMs = 45;
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( retryStart )
+                .thenReturn( retryStart + maxRetryTimeMs - 5 )
+                .thenReturn( retryStart + maxRetryTimeMs + 7 );
+
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( maxRetryTimeMs, initialDelay, multiplier, 0, clock );
+
+        SessionExpiredException error = sessionExpired();
+        AtomicInteger executionCount = new AtomicInteger();
+        Publisher<Object> publisher = retryLogic.retryRx( Mono.error( error ).doOnTerminate( executionCount::getAndIncrement ) );
+
+        Exception e = assertThrows( Exception.class, () -> await( publisher ) );
+        assertEquals( error, e );
+
+        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        assertEquals( 2, scheduleDelays.size() );
+        assertEquals( initialDelay, scheduleDelays.get( 0 ).intValue() );
+        assertEquals( initialDelay * multiplier, scheduleDelays.get( 1 ).intValue() );
+
+        assertThat( executionCount.get(), equalTo( 3 ) );
+    }
+
+    @Test
     void sleepsOnServiceUnavailableException() throws Exception
     {
         Clock clock = mock( Clock.class );
@@ -262,7 +341,7 @@ class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 42, 1, 0, clock );
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        SessionExpiredException error = sessionExpired();
+        ServiceUnavailableException error = serviceUnavailable();
         when( workMock.get() ).thenReturn( failedFuture( error ) ).thenReturn( completedFuture( result ) );
 
         assertEquals( result, await( retryLogic.retryAsync( workMock ) ) );
@@ -450,6 +529,40 @@ class ExponentialBackoffRetryLogicTest
         assertEquals( 0, eventExecutor.scheduleDelays().size() );
     }
 
+    @ParameterizedTest
+    @MethodSource( "canBeRetriedErrors" )
+    void schedulesRetryOnErrorRx( Exception error )
+    {
+        String result = "The Result";
+        Clock clock = mock( Clock.class );
+
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 4242, 1, 0, clock );
+
+        Publisher<String> publisher = createMono( result, error );
+        Mono<String> single = Flux.from( retryLogic.retryRx( publisher ) ).single();
+
+        assertEquals( result, await( single ) );
+
+        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        assertEquals( 1, scheduleDelays.size() );
+        assertEquals( 4242, scheduleDelays.get( 0 ).intValue() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "cannotBeRetriedErrors" )
+    void scheduleNoRetryOnErrorRx( Exception error )
+    {
+        Clock clock = mock( Clock.class );
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 10, 1, 1, clock );
+
+        Mono<Object> single = Flux.from( retryLogic.retryRx( Mono.error( error ) ) ).single();
+
+        Exception e = assertThrows( Exception.class, () -> await( single ) );
+        assertEquals( error, e );
+
+        assertEquals( 0, eventExecutor.scheduleDelays().size() );
+    }
+
     @Test
     void throwsWhenSleepInterrupted() throws Exception
     {
@@ -547,6 +660,37 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void collectsSuppressedErrorsRx() throws Exception
+    {
+        long maxRetryTime = 20;
+        int initialDelay = 15;
+        int multiplier = 2;
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L ).thenReturn( 10L ).thenReturn( 15L ).thenReturn( 25L );
+        ExponentialBackoffRetryLogic logic = newRetryLogic( maxRetryTime, initialDelay, multiplier, 0, clock );
+
+        SessionExpiredException error1 = sessionExpired();
+        SessionExpiredException error2 = sessionExpired();
+        ServiceUnavailableException error3 = serviceUnavailable();
+        TransientException error4 = transientException();
+        Mono<String> mono = createMono( "A result", error1, error2, error3, error4 );
+
+        StepVerifier.create( logic.retryRx( mono ) ).expectErrorSatisfies( e -> {
+            assertEquals( error4, e );
+            Throwable[] suppressed = e.getSuppressed();
+            assertEquals( 3, suppressed.length );
+            assertEquals( error1, suppressed[0] );
+            assertEquals( error2, suppressed[1] );
+            assertEquals( error3, suppressed[2] );
+        } ).verify();
+
+        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        assertEquals( 3, scheduleDelays.size() );
+        assertEquals( initialDelay, scheduleDelays.get( 0 ).intValue() );
+        assertEquals( initialDelay * multiplier, scheduleDelays.get( 1 ).intValue() );
+        assertEquals( initialDelay * multiplier * multiplier, scheduleDelays.get( 2 ).intValue() );    }
+
+    @Test
     void doesNotCollectSuppressedErrorsWhenSameErrorIsThrown() throws Exception
     {
         long maxRetryTime = 20;
@@ -599,6 +743,26 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void doesNotCollectSuppressedErrorsWhenSameErrorIsThrownRx()
+    {
+        long maxRetryTime = 20;
+        int initialDelay = 15;
+        int multiplier = 2;
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L ).thenReturn( 10L ).thenReturn( 25L );
+
+        ExponentialBackoffRetryLogic retryLogic = newRetryLogic( maxRetryTime, initialDelay, multiplier, 0, clock );
+
+        SessionExpiredException error = sessionExpired();
+        StepVerifier.create( retryLogic.retryRx( Mono.error( error ) ) ).expectErrorSatisfies( e -> assertEquals( error, e ) ).verify();
+
+        List<Long> scheduleDelays = eventExecutor.scheduleDelays();
+        assertEquals( 2, scheduleDelays.size() );
+        assertEquals( initialDelay, scheduleDelays.get( 0 ).intValue() );
+        assertEquals( initialDelay * multiplier, scheduleDelays.get( 1 ).intValue() );
+    }
+
+    @Test
     void eachRetryIsLogged()
     {
         int retries = 9;
@@ -639,6 +803,27 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void eachRetryIsLoggedRx()
+    {
+        String result = "The Result";
+        int retries = 9;
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor,
+                clock, logging );
+
+        assertEquals( result, await( Flux.from( retryRx( logic, retries, result ) ).single() ) );
+
+        verify( logger, times( retries ) ).warn(
+                startsWith( "Reactive transaction failed and is scheduled to retry" ),
+                any( ServiceUnavailableException.class )
+        );
+    }
+
+    @Test
     void nothingIsLoggedOnFatalFailure()
     {
         Logging logging = mock( Logging.class );
@@ -669,6 +854,22 @@ class ExponentialBackoffRetryLogicTest
                 await( logic.retryAsync( () -> failedFuture( new RuntimeException( "Fatal async" ) ) ) ) );
 
         assertEquals( "Fatal async", error.getMessage() );
+        verifyZeroInteractions( logger );
+    }
+
+    @Test
+    void nothingIsLoggedOnFatalFailureRx()
+    {
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor,
+                mock( Clock.class ), logging );
+
+        Publisher<Object> retryRx = logic.retryRx( Mono.error( new RuntimeException( "Fatal rx" ) ) );
+        RuntimeException error = assertThrows( RuntimeException.class, () -> await( retryRx ) );
+
+        assertEquals( "Fatal rx", error.getMessage() );
         verifyZeroInteractions( logger );
     }
 
@@ -749,11 +950,44 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
-    void shouldRetryWithBackOff()
+    void correctNumberOfRetiesAreLoggedOnFailureRx()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        RetrySettings settings = RetrySettings.DEFAULT;
+        RetryLogic logic = new ExponentialBackoffRetryLogic( settings, eventExecutor, clock, logging );
+
+        AtomicBoolean invoked = new AtomicBoolean( false );
+        SessionExpiredException error = assertThrows( SessionExpiredException.class, () ->
+                await( logic.retryRx( Mono.create( e -> {
+                    if ( invoked.get() )
+                    {
+                        // move clock forward to stop retries
+                        when( clock.millis() ).thenReturn( settings.maxRetryTimeMs() + 42 );
+                    }
+                    else
+                    {
+                        invoked.set( true );
+                    }
+                    e.error( new SessionExpiredException( "Session no longer valid" ) );
+                } ) ) ) );
+        assertEquals( "Session no longer valid", error.getMessage() );
+        verify( logger ).warn(
+                startsWith( "Reactive transaction failed and is scheduled to retry" ),
+                any( SessionExpiredException.class )
+        );
+    }
+
+    @Test
+    void shouldRetryWithBackOffRx()
     {
         Exception exception = new TransientException( "Unknown", "Retry this error." );
-        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 1000, 100, 2, 0,
-                eventExecutor, Clock.SYSTEM, DEV_NULL_LOGGING );
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L, 100L, 200L, 400L, 800L );
+        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 500, 100, 2, 0,
+                eventExecutor, clock, DEV_NULL_LOGGING );
 
         Flux<Integer> source = Flux.concat( Flux.range( 0, 2 ), Flux.error( exception ) );
         Flux<Integer> retriedSource = Flux.from( retryLogic.retryRx( source ) );
@@ -768,11 +1002,13 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
-    void shouldRetryWithRandomBackOff()
+    void shouldRetryWithRandomBackOffRx()
     {
         Exception exception = new TransientException( "Unknown", "Retry this error." );
-        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 1000, 100, 2, 0.1,
-                eventExecutor, Clock.SYSTEM, DEV_NULL_LOGGING );
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L, 100L, 200L, 400L, 800L );
+        ExponentialBackoffRetryLogic retryLogic = new ExponentialBackoffRetryLogic( 500, 100, 2, 0.1,
+                eventExecutor, clock, DEV_NULL_LOGGING );
 
         Flux<Integer> source = Flux.concat( Flux.range( 0, 2 ), Flux.error( exception ) );
         Flux<Integer> retriedSource = Flux.from( retryLogic.retryRx( source ) );
@@ -825,6 +1061,22 @@ class ExponentialBackoffRetryLogicTest
                 return completedFuture( result );
             }
         } );
+    }
+
+    private Publisher<Object> retryRx( ExponentialBackoffRetryLogic retryLogic, int times, Object result )
+    {
+        AtomicInteger invoked = new AtomicInteger();
+        return retryLogic.retryRx( Mono.create( e -> {
+            if ( invoked.get() < times )
+            {
+                invoked.getAndIncrement();
+                e.error( serviceUnavailable() );
+            }
+            else
+            {
+                e.success( result );
+            }
+        } ) );
     }
 
     private static List<Long> delaysWithoutJitter( long initialDelay, double multiplier, int count )
@@ -887,5 +1139,39 @@ class ExponentialBackoffRetryLogicTest
 
             assertThat( actualValue, closeTo( expectedValue, expectedValue * delta ) );
         }
+    }
+
+    private <T> Mono<T> createMono( T result, Exception... errors )
+    {
+        AtomicInteger executionCount = new AtomicInteger();
+        Iterator<Exception> iterator = Arrays.asList( errors ).iterator();
+        return Mono.create( (Consumer<MonoSink<T>>) e -> {
+            if ( iterator.hasNext() )
+            {
+                e.error( iterator.next() );
+            }
+            else
+            {
+                e.success( result );
+            }
+        } ).doOnTerminate( executionCount::getAndIncrement );
+    }
+
+    private static Stream<Exception> canBeRetriedErrors()
+    {
+        return Stream.of(
+                transientException(),
+                sessionExpired(),
+                serviceUnavailable()
+        );
+    }
+
+    private static Stream<Exception> cannotBeRetriedErrors()
+    {
+        return Stream.of(
+                new IllegalStateException(),
+                new TransientException( "Neo.TransientError.Transaction.Terminated", "" ),
+                new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" )
+        );
     }
 }

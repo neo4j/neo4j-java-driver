@@ -172,10 +172,11 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                 startTime = currentTime;
             }
 
-            long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
-            if ( delayWithJitterMs < maxRetryTimeMs )
+            long elapsedTime = currentTime - startTime;
+            if ( elapsedTime < maxRetryTimeMs )
             {
-                log.warn( "Transaction failed and will be retried in " + delayWithJitterMs + "ms", lastError );
+                long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", lastError );
 
                 nextDelayMs = (long) (nextDelayMs * multiplier);
                 errors = recordError( lastError, errors );
