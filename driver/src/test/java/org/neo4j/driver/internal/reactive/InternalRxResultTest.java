@@ -26,6 +26,7 @@ import reactor.test.StepVerifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -84,7 +85,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldObtainKeys() throws Throwable
+    void shouldObtainKeys()
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
@@ -102,7 +103,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldErrorWhenFailedObtainKeys() throws Throwable
+    void shouldErrorWhenFailedObtainKeys()
     {
         // Given
         RuntimeException error = new RuntimeException( "Failed to obtain cursor" );
@@ -115,7 +116,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldCancelKeys() throws Throwable
+    void shouldCancelKeys()
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
@@ -131,7 +132,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldObtainRecordsAndSummary() throws Throwable
+    void shouldObtainRecordsAndSummary()
     {
         // Given
         Record record1 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
@@ -151,7 +152,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldCancelStreamingButObtainSummary() throws Throwable
+    void shouldCancelStreamingButObtainSummary()
     {
         // Given
         Record record1 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 1, 1, 1 ) );
@@ -169,7 +170,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldErrorIfFailedToCreateCursor() throws Throwable
+    void shouldErrorIfFailedToCreateCursor()
     {
         // Given
         Throwable error = new RuntimeException( "Hi" );
@@ -181,7 +182,7 @@ class InternalRxResultTest
     }
 
     @Test
-    void shouldErrorIfFailedToStream() throws Throwable
+    void shouldErrorIfFailedToStream()
     {
         // Given
         Throwable error = new RuntimeException( "Hi" );
@@ -214,7 +215,7 @@ class InternalRxResultTest
     {
         return new InternalRxResult( () -> {
             // now we successfully run
-            return failedFuture( error );
+            return failedFuture( new CompletionException(error) );
         } );
     }
 }
