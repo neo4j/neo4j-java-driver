@@ -16,23 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.request;
+package org.neo4j.driver.internal.cluster;
 
-import java.util.Objects;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.util.Clock;
 
-import org.neo4j.driver.exceptions.ClientException;
-
-public final class MultiDatabaseUtil
+public class RoutingTableFactoryImpl implements RoutingTableFactory
 {
-    public static final String ABSENT_DB_NAME = "";
-    public static final String SYSTEM_DB_NAME = "system";
+    private final BoltServerAddress initialRouter;
+    private final Clock clock;
 
-    public static void assertEmptyDatabaseName( String databaseName, int boltVersion )
+    public RoutingTableFactoryImpl( BoltServerAddress initialRouter, Clock clock )
     {
-        if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
-        {
-            throw new ClientException( String.format( "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. " +
-                    "Database name: `%s`", boltVersion, databaseName ) );
-        }
+        this.initialRouter = initialRouter;
+        this.clock = clock;
+    }
+
+    @Override
+    public RoutingTable newInstance( String databaseName )
+    {
+        return new ClusterRoutingTable( databaseName, clock, initialRouter );
     }
 }

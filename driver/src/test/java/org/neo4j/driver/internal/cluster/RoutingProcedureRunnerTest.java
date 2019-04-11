@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.cluster;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
 import java.util.List;
@@ -42,9 +44,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.DATABASE_NAME;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
-import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE_PARAM;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.MULTI_DB_GET_ROUTING_TABLE;
+import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.ROUTING_CONTEXT;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
@@ -53,17 +59,51 @@ import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingProcedureRunnerTest
 {
+    @ParameterizedTest
+    @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, " this is a db name "} )
+    void shouldCallGetRoutingTableWithEmptyMapWithDatabaseName( String db )
+    {
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
+                completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ), SYSTEM_DB_NAME );
+
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/4.0.0" ), db ) );
+
+        assertTrue( response.isSuccess() );
+        assertEquals( 2, response.records().size() );
+        assertEquals( new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
+                        parameters( ROUTING_CONTEXT, EMPTY_MAP, DATABASE_NAME, db ) ),
+                response.procedure() );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, " this is a db name "} )
+    void shouldCallGetRoutingTableWithParamAndDatabaseName( String db )
+    {
+        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
+        RoutingContext context = new RoutingContext( uri );
+
+        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
+                completedFuture( singletonList( mock( Record.class ) ) ), SYSTEM_DB_NAME );
+
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/4.0.0" ), db ) );
+
+        assertTrue( response.isSuccess() );
+        assertEquals( 1, response.records().size() );
+        Value expectedParams = parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, db );
+        assertEquals( new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE, expectedParams ), response.procedure() );
+    }
+
     @Test
     void shouldCallGetRoutingTableWithEmptyMap()
     {
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ), ABSENT_DB_NAME ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 2, response.records().size() );
-        assertEquals( new Statement( "CALL " + GET_ROUTING_TABLE, parameters( GET_ROUTING_TABLE_PARAM, EMPTY_MAP ) ),
+        assertEquals( new Statement( "CALL " + GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, EMPTY_MAP ) ),
                 response.procedure() );
     }
 
@@ -76,11 +116,11 @@ class RoutingProcedureRunnerTest
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
                 completedFuture( singletonList( mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.1" ), ABSENT_DB_NAME ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
-        Value expectedParams = parameters( GET_ROUTING_TABLE_PARAM, context.asMap() );
+        Value expectedParams = parameters( ROUTING_CONTEXT, context.asMap() );
         assertEquals( new Statement( "CALL " + GET_ROUTING_TABLE, expectedParams ), response.procedure() );
     }
 
@@ -93,7 +133,7 @@ class RoutingProcedureRunnerTest
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
 
-        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.1.8" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.1.8" ), ABSENT_DB_NAME ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 2, response.records().size() );
@@ -106,7 +146,7 @@ class RoutingProcedureRunnerTest
         ClientException error = new ClientException( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.2.2" ), ABSENT_DB_NAME ) );
 
         assertFalse( response.isSuccess() );
         assertEquals( error, response.error() );
@@ -118,7 +158,7 @@ class RoutingProcedureRunnerTest
         Exception error = new Exception( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( runner.run( connectionStage( "Neo4j/3.2.2" ) ) ) );
+        Exception e = assertThrows( Exception.class, () -> await( runner.run( connectionStage( "Neo4j/3.2.2" ), ABSENT_DB_NAME ) ) );
         assertEquals( error, e );
     }
 
@@ -128,7 +168,7 @@ class RoutingProcedureRunnerTest
         RuntimeException error = new RuntimeException( "Hi" );
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( failedFuture( error ) ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( failedFuture( error ), ABSENT_DB_NAME ) ) );
         assertEquals( error, e );
     }
 
@@ -140,7 +180,7 @@ class RoutingProcedureRunnerTest
 
         CompletionStage<Connection> connectionStage = connectionStage( "Neo4j/3.2.2" );
         Connection connection = await( connectionStage );
-        RoutingProcedureResponse response = await( runner.run( connectionStage ) );
+        RoutingProcedureResponse response = await( runner.run( connectionStage, ABSENT_DB_NAME ) );
 
         assertTrue( response.isSuccess() );
         verify( connection ).release();
@@ -156,7 +196,7 @@ class RoutingProcedureRunnerTest
         CompletionStage<Connection> connectionStage = connectionStage( "Neo4j/3.3.3", failedFuture( releaseError ) );
         Connection connection = await( connectionStage );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connectionStage ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connectionStage, ABSENT_DB_NAME ) ) );
         assertEquals( releaseError, e );
         verify( connection ).release();
     }
@@ -179,21 +219,29 @@ class RoutingProcedureRunnerTest
     private static class TestRoutingProcedureRunner extends RoutingProcedureRunner
     {
         final CompletionStage<List<Record>> runProcedureResult;
+        final String database;
 
         TestRoutingProcedureRunner( RoutingContext context )
         {
-            this( context, null );
+            this( context, null, ABSENT_DB_NAME );
         }
 
         TestRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult )
         {
+            this( context, runProcedureResult, ABSENT_DB_NAME );
+        }
+
+        TestRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult, String database )
+        {
             super( context );
             this.runProcedureResult = runProcedureResult;
+            this.database = database;
         }
 
         @Override
         CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
         {
+            assertEquals( database, connection.databaseName() );
             return runProcedureResult;
         }
     }

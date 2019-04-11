@@ -23,9 +23,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.AccessMode;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -39,15 +39,17 @@ public class ClusterRoutingTable implements RoutingTable
     private final AddressSet readers;
     private final AddressSet writers;
     private final AddressSet routers;
+    private final String databaseName; // specifies this routing table is the routing table of database named this.
 
-    public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
+    public ClusterRoutingTable( String ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
-        this( clock );
+        this( ofDatabase, clock );
         routers.update( new LinkedHashSet<>( asList( routingAddresses ) ) );
     }
 
-    private ClusterRoutingTable( Clock clock )
+    private ClusterRoutingTable( String ofDatabase, Clock clock )
     {
+        this.databaseName = ofDatabase;
         this.clock = clock;
         this.expirationTimeout = clock.millis() - 1;
 
@@ -110,6 +112,11 @@ public class ClusterRoutingTable implements RoutingTable
         return servers;
     }
 
+    public String database()
+    {
+        return databaseName;
+    }
+
     @Override
     public void removeWriter( BoltServerAddress toRemove )
     {
@@ -120,7 +127,7 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public synchronized String toString()
     {
-        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s",
-                expirationTimeout, clock.millis(), routers, writers, readers );
+        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'.",
+                expirationTimeout, clock.millis(), routers, writers, readers, databaseName );
     }
 }

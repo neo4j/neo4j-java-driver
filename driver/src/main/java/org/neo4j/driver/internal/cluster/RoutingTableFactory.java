@@ -18,28 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Set;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.AccessMode;
-
-public interface RoutingTable
+public interface RoutingTableFactory
 {
-    boolean isStaleFor( AccessMode mode );
-
-    void update( ClusterComposition cluster );
-
-    void forget( BoltServerAddress address );
-
-    AddressSet readers();
-
-    AddressSet writers();
-
-    AddressSet routers();
-
-    Set<BoltServerAddress> servers();
-
-    String database();
-
-    void removeWriter( BoltServerAddress toRemove );
+    RoutingTable newInstance( String databaseName );
 }

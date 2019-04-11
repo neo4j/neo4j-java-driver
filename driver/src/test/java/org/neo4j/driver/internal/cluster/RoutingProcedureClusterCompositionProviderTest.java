@@ -45,8 +45,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -63,10 +65,10 @@ class RoutingProcedureClusterCompositionProviderTest
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( noRecordsResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( noRecordsResponse ) );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -85,10 +87,10 @@ class RoutingProcedureClusterCompositionProviderTest
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -107,10 +109,10 @@ class RoutingProcedureClusterCompositionProviderTest
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -134,11 +136,11 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -162,11 +164,11 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Failure.class ) );
@@ -184,11 +186,11 @@ class RoutingProcedureClusterCompositionProviderTest
                 new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( failedFuture(
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( failedFuture(
                 new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
         // When & Then
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( provider.getClusterComposition( connectionStage ) ) );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
         assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
     }
 
@@ -209,11 +211,11 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( connectionStage ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         // Then
         assertThat( response, instanceOf( ClusterCompositionResponse.Success.class ) );
@@ -230,14 +232,14 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         RoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
         RuntimeException error = new RuntimeException( "hi" );
-        when( procedureRunner.run( any( CompletionStage.class ) ) )
+        when( procedureRunner.run( any( CompletionStage.class ), any( String.class ) ) )
                 .thenReturn( completedFuture( newRoutingResponse( error ) ) );
 
         RoutingProcedureClusterCompositionProvider provider =
                 new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), procedureRunner );
 
         CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
-        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage ) );
+        ClusterCompositionResponse response = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
 
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, response::clusterComposition );
         assertEquals( error, e.getCause() );

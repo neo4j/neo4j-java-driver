@@ -54,6 +54,7 @@ import static org.mockito.Mockito.startsWith;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -421,7 +422,7 @@ class RediscoveryTest
             Map<BoltServerAddress,Object> responsesByAddress )
     {
         ClusterCompositionProvider provider = mock( ClusterCompositionProvider.class );
-        when( provider.getClusterComposition( any( CompletionStage.class ) ) ).then( invocation ->
+        when( provider.getClusterComposition( any( CompletionStage.class ), any( String.class ) ) ).then( invocation ->
         {
             CompletionStage<Connection> connectionStage = invocation.getArgument( 0 );
             BoltServerAddress address = await( connectionStage ).serverAddress();
@@ -470,6 +471,7 @@ class RediscoveryTest
         AddressSet addressSet = new AddressSet();
         addressSet.update( asOrderedSet( routers ) );
         when( routingTable.routers() ).thenReturn( addressSet );
+        when( routingTable.database() ).thenReturn( ABSENT_DB_NAME );
         return routingTable;
     }
 }

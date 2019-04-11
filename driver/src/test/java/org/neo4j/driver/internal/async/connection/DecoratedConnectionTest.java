@@ -49,7 +49,7 @@ class DecoratedConnectionTest
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.isOpen() ).thenReturn( Boolean.valueOf( open ) );
 
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         assertEquals( Boolean.valueOf( open ).booleanValue(), connection.isOpen() );
         verify( mockConnection ).isOpen();
@@ -59,7 +59,7 @@ class DecoratedConnectionTest
     void shouldDelegateEnableAutoRead()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         connection.enableAutoRead();
 
@@ -70,7 +70,7 @@ class DecoratedConnectionTest
     void shouldDelegateDisableAutoRead()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         connection.disableAutoRead();
 
@@ -81,7 +81,7 @@ class DecoratedConnectionTest
     void shouldDelegateWrite()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         Message message = mock( Message.class );
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -95,7 +95,7 @@ class DecoratedConnectionTest
     void shouldDelegateWriteTwoMessages()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         Message message1 = mock( Message.class );
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -111,7 +111,7 @@ class DecoratedConnectionTest
     void shouldDelegateWriteAndFlush()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         Message message = mock( Message.class );
         ResponseHandler handler = mock( ResponseHandler.class );
@@ -125,7 +125,7 @@ class DecoratedConnectionTest
     void shouldDelegateWriteAndFlush1()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         Message message1 = mock( Message.class );
         ResponseHandler handler1 = mock( ResponseHandler.class );
@@ -141,7 +141,7 @@ class DecoratedConnectionTest
     void shouldDelegateReset()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         connection.reset();
 
@@ -152,7 +152,7 @@ class DecoratedConnectionTest
     void shouldDelegateRelease()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         connection.release();
 
@@ -163,7 +163,7 @@ class DecoratedConnectionTest
     void shouldDelegateTerminateAndRelease()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         connection.terminateAndRelease( "a reason" );
 
@@ -176,7 +176,7 @@ class DecoratedConnectionTest
         BoltServerAddress address = BoltServerAddress.from( ServerAddress.of( "localhost", 9999 ) );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.serverAddress() ).thenReturn( address );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         assertSame( address, connection.serverAddress() );
         verify( mockConnection ).serverAddress();
@@ -188,7 +188,7 @@ class DecoratedConnectionTest
         ServerVersion version = ServerVersion.version( "Neo4j/3.5.3" );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.serverVersion() ).thenReturn( version );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         assertSame( version, connection.serverVersion() );
         verify( mockConnection ).serverVersion();
@@ -200,7 +200,7 @@ class DecoratedConnectionTest
         BoltProtocol protocol = mock( BoltProtocol.class );
         Connection mockConnection = mock( Connection.class );
         when( mockConnection.protocol() ).thenReturn( protocol );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         assertSame( protocol, connection.protocol() );
         verify( mockConnection ).protocol();
@@ -210,7 +210,7 @@ class DecoratedConnectionTest
     @EnumSource( AccessMode.class )
     void shouldReturnModeFromConstructor( AccessMode mode )
     {
-        DecoratedConnection connection = new DecoratedConnection( mock( Connection.class ), ABSENT_DB_NAME, mode );
+        DirectConnection connection = new DirectConnection( mock( Connection.class ), ABSENT_DB_NAME, mode );
 
         assertEquals( mode, connection.mode() );
     }
@@ -219,13 +219,13 @@ class DecoratedConnectionTest
     void shouldReturnConnection()
     {
         Connection mockConnection = mock( Connection.class );
-        DecoratedConnection connection = newConnection( mockConnection );
+        DirectConnection connection = newConnection( mockConnection );
 
         assertSame( mockConnection, connection.connection() );
     }
     
-    private static DecoratedConnection newConnection( Connection connection )
+    private static DirectConnection newConnection( Connection connection )
     {
-        return new DecoratedConnection( connection, ABSENT_DB_NAME, READ );
+        return new DirectConnection( connection, ABSENT_DB_NAME, READ );
     }
 }

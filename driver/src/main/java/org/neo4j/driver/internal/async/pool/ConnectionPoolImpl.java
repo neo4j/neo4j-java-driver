@@ -40,7 +40,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.DirectConnection;
+import org.neo4j.driver.internal.async.NetworkConnection;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
@@ -103,7 +103,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 processAcquisitionError( pool, address, error );
                 assertNotClosed( address, channel, pool );
-                Connection connection = new DirectConnection( channel, pool, clock, metricsListener );
+                Connection connection = new NetworkConnection( channel, pool, clock, metricsListener );
 
                 metricsListener.afterAcquiredOrCreated( address, acquireEvent );
                 return connection;
