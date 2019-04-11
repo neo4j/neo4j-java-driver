@@ -50,10 +50,9 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterCompositionResponse> getClusterComposition(
-            CompletionStage<Connection> connectionStage )
+    public CompletionStage<ClusterCompositionResponse> getClusterComposition( CompletionStage<Connection> connectionStage, String databaseName )
     {
-        return routingProcedureRunner.run( connectionStage )
+        return routingProcedureRunner.run( connectionStage, databaseName )
                 .thenApply( this::processRoutingResponse );
     }
 

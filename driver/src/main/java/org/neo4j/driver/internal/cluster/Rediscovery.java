@@ -79,15 +79,14 @@ public class Rediscovery
     }
 
     /**
-     * Given the current routing table and connection pool, use the connection composition provider to fetch a new
-     * cluster composition, which would be used to update the routing table and connection pool.
+     * Given a database and its current routing table, and the global connection pool, use the connection composition provider to fetch a new
+     * cluster composition, which would be used to update the routing table of the given database and global connection pool.
      *
-     * @param routingTable current routing table.
+     * @param routingTable current routing table of the given database.
      * @param connectionPool connection pool.
      * @return new cluster composition.
      */
-    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable,
-            ConnectionPool connectionPool )
+    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
         lookupClusterComposition( routingTable, connectionPool, 0, 0, result );
@@ -237,7 +236,7 @@ public class Rediscovery
     {
         CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 
-        return provider.getClusterComposition( connectionStage ).handle( ( response, error ) ->
+        return provider.getClusterComposition( connectionStage, routingTable.database() ).handle( ( response, error ) ->
         {
             Throwable cause = Futures.completionExceptionCause( error );
             if ( cause != null )

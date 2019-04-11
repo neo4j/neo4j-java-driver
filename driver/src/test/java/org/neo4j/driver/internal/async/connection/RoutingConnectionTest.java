@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
 class RoutingConnectionTest
@@ -65,7 +66,7 @@ class RoutingConnectionTest
     {
         Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, ABSENT_DB_NAME, READ, errorHandler );
 
         if ( flush )
         {
@@ -94,7 +95,7 @@ class RoutingConnectionTest
     {
         Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, ABSENT_DB_NAME, READ, errorHandler );
 
         if ( flush )
         {

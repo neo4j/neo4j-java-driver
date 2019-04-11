@@ -30,15 +30,20 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AccessMode;
 
+/**
+ * A connection used by the routing driver.
+ */
 public class RoutingConnection implements Connection
 {
     private final Connection delegate;
     private final AccessMode accessMode;
     private final RoutingErrorHandler errorHandler;
+    private final String databaseName;
 
-    public RoutingConnection( Connection delegate, AccessMode accessMode, RoutingErrorHandler errorHandler )
+    public RoutingConnection( Connection delegate, String databaseName, AccessMode accessMode, RoutingErrorHandler errorHandler )
     {
         this.delegate = delegate;
+        this.databaseName = databaseName;
         this.accessMode = accessMode;
         this.errorHandler = errorHandler;
     }
@@ -126,6 +131,19 @@ public class RoutingConnection implements Connection
     {
         delegate.flush();
     }
+
+    @Override
+    public AccessMode mode()
+    {
+        return this.accessMode;
+    }
+
+    @Override
+    public String databaseName()
+    {
+        return this.databaseName;
+    }
+
 
     private RoutingResponseHandler newRoutingResponseHandler( ResponseHandler handler )
     {

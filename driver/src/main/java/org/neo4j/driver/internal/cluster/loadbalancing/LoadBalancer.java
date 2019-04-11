@@ -23,70 +23,62 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.async.connection.DecoratedConnection;
-import org.neo4j.driver.internal.async.connection.RoutingConnection;
-import org.neo4j.driver.internal.cluster.AddressSet;
-import org.neo4j.driver.internal.cluster.ClusterComposition;
-import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
-import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
-import org.neo4j.driver.internal.cluster.Rediscovery;
-import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.cluster.RoutingTable;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.connection.RoutingConnection;
+import org.neo4j.driver.internal.cluster.AddressSet;
+import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.RoutingTable;
+import org.neo4j.driver.internal.cluster.RoutingTableFactory;
+import org.neo4j.driver.internal.cluster.RoutingTableFactoryImpl;
+import org.neo4j.driver.internal.cluster.RoutingTables;
+import org.neo4j.driver.internal.cluster.RoutingTablesImpl;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 
-public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
+public class LoadBalancer implements ConnectionProvider
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
-
     private final ConnectionPool connectionPool;
-    private final RoutingTable routingTable;
-    private final Rediscovery rediscovery;
+    private final RoutingTables routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
-
-    private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
             LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
     {
-        this( connectionPool, new ClusterRoutingTable( clock, initialRouter ),
+        this( connectionPool, createEmptyRoutingTableFactory( initialRouter, clock ),
                 createRediscovery( initialRouter, settings, eventExecutorGroup, resolver, clock, logging ),
                 loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
     }
 
-    // Used only in testing
-    LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
-            EventExecutorGroup eventExecutorGroup, Logging logging )
-    {
-        this( connectionPool, routingTable, rediscovery, loadBalancerLogger( logging ),
-                new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
-                eventExecutorGroup );
-    }
-
-    private LoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable, Rediscovery rediscovery,
+    private LoadBalancer( ConnectionPool connectionPool, RoutingTableFactory routingTableFactory, Rediscovery rediscovery,
             Logger log, LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
     {
+        this( connectionPool, new RoutingTablesImpl( connectionPool, routingTableFactory, rediscovery, log ), log, loadBalancingStrategy, eventExecutorGroup );
+    }
+
+    LoadBalancer( ConnectionPool connectionPool, RoutingTables routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
+            EventExecutorGroup eventExecutorGroup )
+    {
         this.connectionPool = connectionPool;
-        this.routingTable = routingTable;
-        this.rediscovery = rediscovery;
+        this.routingTables = routingTables;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
         this.log = log;
@@ -95,28 +87,15 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
     @Override
     public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
     {
-        return freshRoutingTable( mode )
+        return routingTables.freshRoutingTable( databaseName, mode )
                 .thenCompose( routingTable -> acquire( mode, routingTable ) )
-                .thenApply( connection -> new RoutingConnection( connection, mode, this ) )
-                .thenApply( connection -> new DecoratedConnection( connection, databaseName, mode ) );
+                .thenApply( connection -> new RoutingConnection( connection, databaseName, mode, routingTables.routingErrorHandler( databaseName ) ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return freshRoutingTable( AccessMode.READ ).thenApply( routingTable -> null );
-    }
-
-    @Override
-    public void onConnectionFailure( BoltServerAddress address )
-    {
-        forget( address );
-    }
-
-    @Override
-    public void onWriteFailure( BoltServerAddress address )
-    {
-        routingTable.removeWriter( address );
+        return routingTables.freshRoutingTable( SYSTEM_DB_NAME, AccessMode.READ ).thenApply( routingTable -> null );
     }
 
     @Override
@@ -125,86 +104,15 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         return connectionPool.close();
     }
 
-    private synchronized void forget( BoltServerAddress address )
-    {
-        // remove from the routing table, to prevent concurrent threads from making connections to this address
-        routingTable.forget( address );
-    }
-
-    private synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
-    {
-        if ( refreshRoutingTableFuture != null )
-        {
-            // refresh is already happening concurrently, just use it's result
-            return refreshRoutingTableFuture;
-        }
-        else if ( routingTable.isStaleFor( mode ) )
-        {
-            // existing routing table is not fresh and should be updated
-            log.info( "Routing table is stale. %s", routingTable );
-
-            CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
-            refreshRoutingTableFuture = resultFuture;
-
-            rediscovery.lookupClusterComposition( routingTable, connectionPool )
-                    .whenComplete( ( composition, completionError ) ->
-                    {
-                        Throwable error = Futures.completionExceptionCause( completionError );
-                        if ( error != null )
-                        {
-                            clusterCompositionLookupFailed( error );
-                        }
-                        else
-                        {
-                            freshClusterCompositionFetched( composition );
-                        }
-                    } );
-
-            return resultFuture;
-        }
-        else
-        {
-            // existing routing table is fresh, use it
-            return completedFuture( routingTable );
-        }
-    }
-
-    private synchronized void freshClusterCompositionFetched( ClusterComposition composition )
-    {
-        try
-        {
-            routingTable.update( composition );
-            connectionPool.retainAll( routingTable.servers() );
-
-            log.info( "Updated routing table. %s", routingTable );
-
-            CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
-            refreshRoutingTableFuture = null;
-            routingTableFuture.complete( routingTable );
-        }
-        catch ( Throwable error )
-        {
-            clusterCompositionLookupFailed( error );
-        }
-    }
-
-    private synchronized void clusterCompositionLookupFailed( Throwable error )
-    {
-        log.error( "Failed to update routing table. Current routing table: " + routingTable, error );
-        CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
-        refreshRoutingTableFuture = null;
-        routingTableFuture.completeExceptionally( error );
-    }
-
     private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )
     {
         AddressSet addresses = addressSet( mode, routingTable );
         CompletableFuture<Connection> result = new CompletableFuture<>();
-        acquire( mode, addresses, result );
+        acquire( mode, routingTable, addresses, result );
         return result;
     }
 
-    private void acquire( AccessMode mode, AddressSet addresses, CompletableFuture<Connection> result )
+    private void acquire( AccessMode mode, RoutingTable routingTable, AddressSet addresses, CompletableFuture<Connection> result )
     {
         BoltServerAddress address = selectAddress( mode, addresses );
 
@@ -225,8 +133,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
                 {
                     SessionExpiredException errorToLog = new SessionExpiredException( format( "Server at %s is no longer available", address ), error );
                     log.warn( "Failed to obtain a connection towards address " + address, errorToLog );
-                    forget( address );
-                    eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
+                    routingTable.forget( address );
+                    eventExecutorGroup.next().execute( () -> acquire( mode, routingTable, addresses, result ) );
                 }
                 else
                 {
@@ -266,6 +174,11 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         default:
             throw unknownMode( mode );
         }
+    }
+
+    private static RoutingTableFactory createEmptyRoutingTableFactory( BoltServerAddress initialRouter, Clock clock )
+    {
+        return new RoutingTableFactoryImpl( initialRouter, clock );
     }
 
     private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,

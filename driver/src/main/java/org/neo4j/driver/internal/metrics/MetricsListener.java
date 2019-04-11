@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.metrics;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.connection.DirectConnection;
+import org.neo4j.driver.internal.async.NetworkConnection;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.Config;
 
@@ -82,14 +82,14 @@ public interface MetricsListener
     /**
      * After acquiring or creating a new netty channel from pool successfully.
      * @param serverAddress the server the netty channel binds to.
-     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when created.
+     * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when created.
      */
     void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 
     /**
      * After releasing a netty channel back to pool successfully.
      * @param serverAddress the server the netty channel binds to.
-     * @param inUseEvent a connection listener registered with a {@link DirectConnection} when destroyed.
+     * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when destroyed.
      */
     void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
 

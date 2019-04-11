@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.internal.async.connection.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
@@ -57,12 +57,12 @@ class DirectConnectionProviderTest
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
         Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
-        assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
-        assertSame( connection1, ((DecoratedConnection) acquired1).connection() );
+        assertThat( acquired1, instanceOf( DirectConnection.class ) );
+        assertSame( connection1, ((DirectConnection) acquired1).connection() );
 
         Connection acquired2 = await( provider.acquireConnection( ABSENT_DB_NAME, WRITE ) );
-        assertThat( acquired2, instanceOf( DecoratedConnection.class ) );
-        assertSame( connection2, ((DecoratedConnection) acquired2).connection() );
+        assertThat( acquired2, instanceOf( DirectConnection.class ) );
+        assertSame( connection2, ((DirectConnection) acquired2).connection() );
     }
 
     @ParameterizedTest
@@ -110,8 +110,8 @@ class DirectConnectionProviderTest
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
         Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
-        assertThat( acquired1, instanceOf( DecoratedConnection.class ) );
-        assertSame( connection, ((DecoratedConnection) acquired1).connection() );
+        assertThat( acquired1, instanceOf( DirectConnection.class ) );
+        assertSame( connection, ((DirectConnection) acquired1).connection() );
 
         verify( pool ).acquire( address );
     }
