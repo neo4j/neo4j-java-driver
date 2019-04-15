@@ -38,15 +38,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.types.Node;
@@ -67,11 +67,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
@@ -118,14 +118,10 @@ class RxTransactionIT
     @Test
     void shouldBePossibleToRunSingleStatementAndCommit()
     {
-
-        Flux<Integer> ids = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( "CREATE (n:Node {id: 42}) RETURN n" );
-            return Flux.from( result.records() )
-                    .map( record -> record.get( 0 ).asNode().get( "id" ).asInt() )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-        } );
+        Flux<Integer> ids = Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( "CREATE (n:Node {id: 42}) RETURN n" ).records() )
+                        .map( record -> record.get( 0 ).asNode().get( "id" ).asInt() ),
+                RxTransaction::commit, RxTransaction::rollback );
 
         StepVerifier.create( ids ).expectNext( 42 ).verifyComplete();
         assertEquals( 1, countNodes( 42 ) );
@@ -309,13 +305,9 @@ class RxTransactionIT
     @Test
     void shouldAllowRollbackAfterFailedCommit()
     {
-        Flux<Record> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( "WRONG" );
-            return Flux.from( result.records() )
-                    .concatWith( tx.commit() ) // if we completed without error then we commit
-                    .onErrorResume( error -> Mono.from( tx.rollback() ) // otherwise we rollback and then return the original error
-                            .then( Mono.error( error ) ) );
-        } );
+        Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( "WRONG" ).records() ),
+                RxTransaction::commit, RxTransaction::rollback );
 
         StepVerifier.create( records ).verifyErrorSatisfies( error ->
                 assertThat( error.getMessage(), containsString( "Invalid input" ) ) );
@@ -465,17 +457,12 @@ class RxTransactionIT
     {
         RuntimeException e = new RuntimeException();
 
-        Flux<Record> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( "RETURN 'Hi!'" );
-            return Flux.from( result.records() )
-                    .doOnNext( record -> { throw e; } )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-        } );
+        Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).doOnNext( record -> { throw e; } ),
+                RxTransaction::commit,
+                RxTransaction::rollback );
 
-        StepVerifier.create( records ).expectErrorSatisfies( error -> {
-            assertEquals( e, error );
-        } ).verify();
+        StepVerifier.create( records ).expectErrorSatisfies( error -> assertEquals( e, error ) ).verify();
     }
 
     @Test
@@ -516,14 +503,9 @@ class RxTransactionIT
     {
         RuntimeException e = new RuntimeException();
 
-        Flux<Object> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( "RETURN 'Hi!'" );
-            return Flux.from( result.records() )
-                    .map( record -> { throw e; } )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-
-        } );
+        Flux<Object> records = Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).map( record -> { throw e; } ),
+                RxTransaction::commit, RxTransaction::rollback );
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> {
             assertEquals( e, error );
@@ -715,12 +697,10 @@ class RxTransactionIT
     {
         String bookmarkBefore = session.lastBookmark();
 
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxResult result = tx.run( "CREATE (:MyNode)" );
-        await( Flux.from( result.records() )
-                .concatWith( tx.commit() )
-                .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) ) );
-
+        await( Flux.usingWhen( session.beginTransaction(),
+                tx -> tx.run( "CREATE (:MyNode)" ).records(),
+                RxTransaction::commit,
+                RxTransaction::rollback ) );
 
         String bookmarkAfter = session.lastBookmark();
 
@@ -822,19 +802,17 @@ class RxTransactionIT
     {
         int size = 12555;
 
-        Flux<Integer> nodeIds = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) );
-            return Flux.from( result.records() )
-                    .limitRate( 20 ) // batch size
-                    .flatMap( record -> {
+        Flux<Integer> nodeIds = Flux.usingWhen( session.beginTransaction(),
+                tx -> {
+                    RxResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) );
+                    return Flux.from( result.records() ).limitRate( 20 ).flatMap( record -> {
                         int x = record.get( "x" ).asInt();
                         RxResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
                         return innerResult.records();
-                    } )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) )
-                    .map( record -> record.get( 0 ).asInt() );
-        } );
+                    } ).map( record -> record.get( 0 ).asInt() );
+                },
+                RxTransaction::commit, RxTransaction::rollback
+        );
 
         StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
     }
@@ -847,7 +825,8 @@ class RxTransactionIT
 
     private void testForEach( String query, int expectedSeenRecords )
     {
-        Flux<ResultSummary> summary = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
+
+        Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx -> {
             RxResult result = tx.run( query );
             AtomicInteger recordsSeen = new AtomicInteger();
             return Flux.from( result.records() )
@@ -858,10 +837,8 @@ class RxTransactionIT
                         assertEquals( query, s.statement().text() );
                         assertEquals( emptyMap(), s.statement().parameters().asMap() );
                         assertEquals( expectedSeenRecords, recordsSeen.get() );
-                    } )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-        } );
+                    } );
+            }, RxTransaction::commit, RxTransaction::rollback );
 
         StepVerifier.create( summary ).expectNextCount( 1 ).verifyComplete(); // we indeed get a summary.
     }
@@ -870,13 +847,10 @@ class RxTransactionIT
     {
         List<Object> actualList = new ArrayList<>();
 
-        Flux<List<Record>> records = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( query );
-            return Flux.from( result.records() )
-                    .collectList()
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-        } );
+        Flux<List<Record>> records = Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( query ).records() ).collectList(),
+                RxTransaction::commit,
+                RxTransaction::rollback );
 
         StepVerifier.create( records.single() ).consumeNextWith( allRecords -> {
             for ( Record record : allRecords )
@@ -890,13 +864,11 @@ class RxTransactionIT
 
     private void testConsume( String query )
     {
-        Flux<ResultSummary> summary = Mono.from( session.beginTransaction() ).flatMapMany( tx -> {
-            RxResult result = tx.run( query );
-            return Mono.from( result.summary() )
-                    .concatWith( tx.commit() )
-                    .onErrorResume( error -> Mono.from( tx.rollback() ).then( Mono.error( error ) ) );
-
-        } );
+        Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx ->
+            tx.run( query ).summary(),
+            RxTransaction::commit,
+            RxTransaction::rollback
+        );
 
         StepVerifier.create( summary.single() ).consumeNextWith( Assertions::assertNotNull ).verifyComplete();
     }
@@ -935,7 +907,6 @@ class RxTransactionIT
     private void assertCanRollback( RxTransaction tx )
     {
         assertThat( await( tx.rollback() ), equalTo( emptyList() ) );
-        System.out.println("rolled back");
     }
 
     private static Stream<Boolean> commit()

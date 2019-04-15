@@ -26,9 +26,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 
 public class InternalRxResult implements RxResult
@@ -44,7 +44,8 @@ public class InternalRxResult implements RxResult
     @Override
     public Publisher<String> keys()
     {
-        return Flux.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).flatMapIterable( RxStatementResultCursor::keys ).onErrorMap( Futures::completionExceptionCause ) );
+        return Flux.defer( () -> Mono.fromCompletionStage( getCursorFuture() )
+                .flatMapIterable( RxStatementResultCursor::keys ).onErrorMap( Futures::completionExceptionCause ) );
     }
 
     @Override

@@ -23,7 +23,7 @@ import io.netty.bootstrap.Bootstrap;
 import java.net.URI;
 
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.async.BootstrapFactory;
+import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.AuthToken;

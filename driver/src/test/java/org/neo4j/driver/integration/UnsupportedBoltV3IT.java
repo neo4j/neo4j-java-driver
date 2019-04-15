@@ -24,11 +24,11 @@ import org.junit.jupiter.api.function.Executable;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.util.DriverExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonMap;
@@ -43,7 +43,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 class UnsupportedBoltV3IT
 {
     @RegisterExtension
-    static final SessionExtension session = new SessionExtension();
+    static final DriverExtension driver = new DriverExtension();
 
     private final TransactionConfig txConfig = TransactionConfig.builder()
             .withTimeout( ofSeconds( 4 ) )
@@ -53,37 +53,37 @@ class UnsupportedBoltV3IT
     @Test
     void shouldNotSupportAutoCommitQueriesWithTransactionConfig()
     {
-        assertTxConfigNotSupported( () -> session.run( "RETURN 42", txConfig ) );
+        assertTxConfigNotSupported( () -> driver.session().run( "RETURN 42", txConfig ) );
     }
 
     @Test
     void shouldNotSupportAsyncAutoCommitQueriesWithTransactionConfig()
     {
-        assertTxConfigNotSupported( session.runAsync( "RETURN 42", txConfig ) );
+        assertTxConfigNotSupported( driver.asyncSession().runAsync( "RETURN 42", txConfig ) );
     }
 
     @Test
     void shouldNotSupportTransactionFunctionsWithTransactionConfig()
     {
-        assertTxConfigNotSupported( () -> session.readTransaction( tx -> tx.run( "RETURN 42" ), txConfig ) );
+        assertTxConfigNotSupported( () -> driver.session().readTransaction( tx -> tx.run( "RETURN 42" ), txConfig ) );
     }
 
     @Test
     void shouldNotSupportAsyncTransactionFunctionsWithTransactionConfig()
     {
-        assertTxConfigNotSupported( session.readTransactionAsync( tx -> tx.runAsync( "RETURN 42" ), txConfig ) );
+        assertTxConfigNotSupported( driver.asyncSession().readTransactionAsync( tx -> tx.runAsync( "RETURN 42" ), txConfig ) );
     }
 
     @Test
     void shouldNotSupportExplicitTransactionsWithTransactionConfig()
     {
-        assertTxConfigNotSupported( () -> session.beginTransaction( txConfig ) );
+        assertTxConfigNotSupported( () -> driver.session().beginTransaction( txConfig ) );
     }
 
     @Test
     void shouldNotSupportAsyncExplicitTransactionsWithTransactionConfig()
     {
-        assertTxConfigNotSupported( session.beginTransactionAsync( txConfig ) );
+        assertTxConfigNotSupported( driver.asyncSession().beginTransactionAsync( txConfig ) );
     }
 
     /**

@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
-import org.neo4j.driver.internal.async.BootstrapFactory;
-import org.neo4j.driver.internal.async.ChannelConnector;
-import org.neo4j.driver.internal.async.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.async.connection.ChannelConnector;
+import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.DnsResolver;

@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setProtocolVersion;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setServerAddress;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 

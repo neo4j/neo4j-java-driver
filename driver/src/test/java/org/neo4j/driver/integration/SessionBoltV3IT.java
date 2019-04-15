@@ -19,6 +19,7 @@
 package org.neo4j.driver.integration;
 
 import io.netty.channel.Channel;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,6 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
@@ -36,16 +45,9 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.async.StatementResultCursor;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.util.DriverExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
 
 import static java.time.Duration.ofMillis;
 import static java.util.Arrays.asList;
@@ -57,8 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.Config.defaultConfig;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @EnabledOnNeo4jWith( BOLT_V3 )
@@ -66,7 +68,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 class SessionBoltV3IT
 {
     @RegisterExtension
-    static final SessionExtension session = new SessionExtension();
+    static final DriverExtension driver = new DriverExtension();
 
     @Test
     void shouldSetTransactionMetadata()
@@ -81,7 +83,7 @@ class SessionBoltV3IT
                 .build();
 
         // call listTransactions procedure that should list itself with the specified metadata
-        StatementResult result = session.run( "CALL dbms.listTransactions()", config );
+        StatementResult result = driver.session().run( "CALL dbms.listTransactions()", config );
         Map<String,Object> receivedMetadata = result.single().get( "metaData" ).asMap();
 
         assertEquals( metadata, receivedMetadata );
@@ -99,7 +101,8 @@ class SessionBoltV3IT
                 .build();
 
         // call listTransactions procedure that should list itself with the specified metadata
-        CompletionStage<Map<String,Object>> metadataFuture = session.runAsync( "CALL dbms.listTransactions()", config )
+        CompletionStage<Map<String,Object>> metadataFuture = driver.asyncSession()
+                .runAsync( "CALL dbms.listTransactions()", config )
                 .thenCompose( StatementResultCursor::singleAsync )
                 .thenApply( record -> record.get( "metaData" ).asMap() );
 
@@ -110,9 +113,10 @@ class SessionBoltV3IT
     void shouldSetTransactionTimeout()
     {
         // create a dummy node
+        Session session = driver.session();
         session.run( "CREATE (:Node)" ).consume();
 
-        try ( Session otherSession = session.driver().session() )
+        try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
@@ -136,9 +140,10 @@ class SessionBoltV3IT
     void shouldSetTransactionTimeoutAsync()
     {
         // create a dummy node
-        session.run( "CREATE (:Node)" ).consume();
+        AsyncSession asyncSession = driver.asyncSession();
+        await( await( asyncSession.runAsync( "CREATE (:Node)" ) ).consumeAsync() );
 
-        try ( Session otherSession = session.driver().session() )
+        try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
@@ -150,26 +155,14 @@ class SessionBoltV3IT
                         .build();
 
                 // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                CompletionStage<ResultSummary> resultFuture = session.runAsync( "MATCH (n:Node) SET n.prop = 2", config )
+                CompletionStage<ResultSummary> resultFuture = asyncSession.runAsync( "MATCH (n:Node) SET n.prop = 2", config )
                         .thenCompose( StatementResultCursor::consumeAsync );
 
                 TransientException error = assertThrows( TransientException.class, () -> await( resultFuture ) );
 
-                assertThat( error.getMessage(), containsString( "terminated" ) );
+                MatcherAssert.assertThat( error.getMessage(), containsString( "terminated" ) );
             }
         }
-    }
-
-    @Test
-    void shouldSetTransactionMetadataWithReadTransactionFunction()
-    {
-        testTransactionMetadataWithTransactionFunctions( true );
-    }
-
-    @Test
-    void shouldSetTransactionMetadataWithWriteTransactionFunction()
-    {
-        testTransactionMetadataWithTransactionFunctions( false );
     }
 
     @Test
@@ -185,8 +178,21 @@ class SessionBoltV3IT
     }
 
     @Test
+    void shouldSetTransactionMetadataWithReadTransactionFunction()
+    {
+        testTransactionMetadataWithTransactionFunctions( true );
+    }
+
+    @Test
+    void shouldSetTransactionMetadataWithWriteTransactionFunction()
+    {
+        testTransactionMetadataWithTransactionFunctions( false );
+    }
+
+    @Test
     void shouldUseBookmarksForAutoCommitTransactions()
     {
+        Session session = driver.session();
         String initialBookmark = session.lastBookmark();
 
         session.run( "CREATE ()" ).consume();
@@ -211,6 +217,7 @@ class SessionBoltV3IT
     @Test
     void shouldUseBookmarksForAutoCommitAndExplicitTransactions()
     {
+        Session session = driver.session();
         String initialBookmark = session.lastBookmark();
 
         try ( Transaction tx = session.beginTransaction() )
@@ -243,6 +250,7 @@ class SessionBoltV3IT
     @Test
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions()
     {
+        Session session = driver.session();
         String initialBookmark = session.lastBookmark();
 
         session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
@@ -270,13 +278,13 @@ class SessionBoltV3IT
         int txCount = 13;
         MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
 
-        try ( Driver driver = driverFactory.newInstance( session.uri(), session.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, defaultConfig() ) )
+        try ( Driver otherDriver = driverFactory.newInstance( driver.uri(), driver.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, defaultConfig() ) )
         {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();
             for ( int i = 0; i < txCount; i++ )
             {
-                Session session = driver.session();
+                Session session = otherDriver.session();
                 sessions.add( session );
                 Transaction tx = session.beginTransaction();
                 txs.add( tx );
@@ -305,8 +313,32 @@ class SessionBoltV3IT
         }
     }
 
+    private static void testTransactionMetadataWithAsyncTransactionFunctions( boolean read )
+    {
+        AsyncSession asyncSession = driver.asyncSession();
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "foo", "bar" );
+        metadata.put( "baz", true );
+        metadata.put( "qux", 12345L );
+
+        TransactionConfig config = TransactionConfig.builder()
+                .withMetadata( metadata )
+                .build();
+
+        // call listTransactions procedure that should list itself with the specified metadata
+        CompletionStage<StatementResultCursor> cursorFuture =
+                read ? asyncSession.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config )
+                     : asyncSession.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config );
+
+        CompletionStage<Map<String,Object>> metadataFuture = cursorFuture.thenCompose( StatementResultCursor::singleAsync )
+                .thenApply( record -> record.get( "metaData" ).asMap() );
+
+        assertEquals( metadata, await( metadataFuture ) );
+    }
+
     private static void testTransactionMetadataWithTransactionFunctions( boolean read )
     {
+        Session session = driver.session();
         Map<String,Object> metadata = new HashMap<>();
         metadata.put( "foo", "bar" );
         metadata.put( "baz", true );
@@ -323,28 +355,6 @@ class SessionBoltV3IT
         Map<String,Object> receivedMetadata = result.single().get( "metaData" ).asMap();
 
         assertEquals( metadata, receivedMetadata );
-    }
-
-    private static void testTransactionMetadataWithAsyncTransactionFunctions( boolean read )
-    {
-        Map<String,Object> metadata = new HashMap<>();
-        metadata.put( "foo", "bar" );
-        metadata.put( "baz", true );
-        metadata.put( "qux", 12345L );
-
-        TransactionConfig config = TransactionConfig.builder()
-                .withMetadata( metadata )
-                .build();
-
-        // call listTransactions procedure that should list itself with the specified metadata
-        CompletionStage<StatementResultCursor> cursorFuture =
-                read ? session.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config )
-                     : session.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config );
-
-        CompletionStage<Map<String,Object>> metadataFuture = cursorFuture.thenCompose( StatementResultCursor::singleAsync )
-                .thenApply( record -> record.get( "metaData" ).asMap() );
-
-        assertEquals( metadata, await( metadataFuture ) );
     }
 
 }

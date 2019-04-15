@@ -31,8 +31,8 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
-import static org.neo4j.driver.internal.async.ChannelAttributes.terminationReason;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
 
 public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
 {

@@ -180,7 +180,9 @@ public class ImmediateSchedulingEventExecutor implements EventExecutor
     @Override
     public <V> ScheduledFuture<V> schedule( Callable<V> callable, long delay, TimeUnit unit )
     {
-        throw new UnsupportedOperationException();
+        scheduleDelays.add( unit.toMillis( delay ) );
+        delegate.submit( callable );
+        return mock( ScheduledFuture.class );
     }
 
     @Override

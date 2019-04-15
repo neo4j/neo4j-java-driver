@@ -18,10 +18,8 @@
  */
 package org.neo4j.driver.async;
 
-import org.neo4j.driver.Transaction;
-
 /**
- * Callback that executes operations against a given {@link Transaction}.
+ * Callback that executes operations against a given {@link AsyncTransaction}.
  * To be used with {@link AsyncSession#readTransactionAsync(AsyncTransactionWork)} and
  * {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork)} (AsyncTransactionWork)} methods.
  *

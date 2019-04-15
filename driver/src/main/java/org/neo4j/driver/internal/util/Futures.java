@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import org.neo4j.driver.internal.async.EventLoopGroupFactory;
+import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 

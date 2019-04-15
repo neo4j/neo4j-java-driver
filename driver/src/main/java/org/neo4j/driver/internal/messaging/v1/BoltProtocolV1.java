@@ -31,7 +31,9 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -46,15 +48,13 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.reactive.cursor.AsyncResultCursorOnlyFactory;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
 import static org.neo4j.driver.Values.ofValue;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.assertEmptyDatabaseName;
 
 public class BoltProtocolV1 implements BoltProtocol

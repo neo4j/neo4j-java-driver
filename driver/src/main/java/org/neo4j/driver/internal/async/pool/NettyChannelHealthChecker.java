@@ -29,9 +29,9 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.creationTimestamp;
-import static org.neo4j.driver.internal.async.ChannelAttributes.lastUsedTimestamp;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 
 public class NettyChannelHealthChecker implements ChannelHealthChecker
 {

@@ -38,7 +38,7 @@ public class ResultCursorsHolder
         cursorStages.add( cursorStage );
     }
 
-    public CompletionStage<Throwable> retrieveNotConsumedError()
+    CompletionStage<Throwable> retrieveNotConsumedError()
     {
         CompletableFuture<Throwable>[] failures = retrieveAllFailures();
 

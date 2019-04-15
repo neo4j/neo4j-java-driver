@@ -24,23 +24,23 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.ExplicitTransaction;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.reactive.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.spi.Connection;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.protocolVersion;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 
 public interface BoltProtocol
 {

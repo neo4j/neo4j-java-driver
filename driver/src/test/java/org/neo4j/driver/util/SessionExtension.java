@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
@@ -33,26 +32,21 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
-import org.neo4j.driver.internal.NetworkSession;
 import org.neo4j.driver.types.TypeSystem;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.
  * If you want more direct control, have a look at {@link DatabaseExtension} instead.
  */
-public class SessionExtension extends DatabaseExtension implements Session, AsyncSession, BeforeEachCallback, AfterEachCallback
+public class SessionExtension extends DatabaseExtension implements Session, BeforeEachCallback, AfterEachCallback
 {
-    private NetworkSession realSession;
+    private Session realSession;
 
     @Override
     public void beforeEach( ExtensionContext context ) throws Exception
     {
         super.beforeEach( context );
-        realSession = (NetworkSession) driver().session(); // TODO This shall only return a blocking driver
+        realSession = driver().session();
     }
 
     @Override
@@ -77,18 +71,6 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     }
 
     @Override
-    public CompletionStage<Void> closeAsync()
-    {
-        throw new UnsupportedOperationException( "Disallowed on this test session" );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> params )
-    {
-        return realSession.runAsync( statement, params );
-    }
-
-    @Override
     public Transaction beginTransaction()
     {
         return realSession.beginTransaction();
@@ -98,25 +80,6 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     public Transaction beginTransaction( TransactionConfig config )
     {
         return realSession.beginTransaction( config );
-    }
-
-    @Deprecated
-    @Override
-    public Transaction beginTransaction( String bookmark )
-    {
-        return realSession.beginTransaction( bookmark );
-    }
-
-    @Override
-    public CompletionStage<AsyncTransaction> beginTransactionAsync()
-    {
-        return realSession.beginTransactionAsync();
-    }
-
-    @Override
-    public CompletionStage<AsyncTransaction> beginTransactionAsync( TransactionConfig config )
-    {
-        return realSession.beginTransactionAsync( config );
     }
 
     @Override
@@ -132,18 +95,6 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     }
 
     @Override
-    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
-    {
-        return realSession.readTransactionAsync( work );
-    }
-
-    @Override
-    public <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
-    {
-        return realSession.readTransactionAsync( work, config );
-    }
-
-    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return realSession.writeTransaction( work );
@@ -153,18 +104,6 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     public <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config )
     {
         return realSession.writeTransaction( work, config );
-    }
-
-    @Override
-    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
-    {
-        return realSession.writeTransactionAsync( work );
-    }
-
-    @Override
-    public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
-    {
-        return realSession.writeTransactionAsync( work, config );
     }
 
     @Override
@@ -193,21 +132,9 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementText, Value parameters )
-    {
-        return realSession.runAsync( statementText, parameters );
-    }
-
-    @Override
     public StatementResult run( String statementText, Record parameters )
     {
         return realSession.run( statementText, parameters );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
-    {
-        return realSession.runAsync( statementTemplate, statementParameters );
     }
 
     @Override
@@ -217,21 +144,9 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statementTemplate )
-    {
-        return realSession.runAsync( statementTemplate );
-    }
-
-    @Override
     public StatementResult run( Statement statement )
     {
         return realSession.run( statement.text(), statement.parameters() );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement )
-    {
-        return realSession.runAsync( statement );
     }
 
     @Override
@@ -250,24 +165,6 @@ public class SessionExtension extends DatabaseExtension implements Session, Asyn
     public StatementResult run( Statement statement, TransactionConfig config )
     {
         return realSession.run( statement, config );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config )
-    {
-        return realSession.runAsync( statement, config );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config )
-    {
-        return realSession.runAsync( statement, parameters, config );
-    }
-
-    @Override
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config )
-    {
-        return realSession.runAsync( statement, config );
     }
 
     @Override

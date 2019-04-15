@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.async.ChannelAttributes.setProtocolVersion;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 
 class BoltProtocolTest
 {

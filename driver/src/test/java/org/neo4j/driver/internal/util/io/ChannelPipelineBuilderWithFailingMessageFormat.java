@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.util.io;
 
 import io.netty.channel.ChannelPipeline;
 
-import org.neo4j.driver.internal.async.ChannelPipelineBuilder;
-import org.neo4j.driver.internal.async.ChannelPipelineBuilderImpl;
+import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilder;
+import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.Logging;

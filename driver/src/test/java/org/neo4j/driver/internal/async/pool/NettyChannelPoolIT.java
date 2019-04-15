@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.ConnectionSettings;
-import org.neo4j.driver.internal.async.BootstrapFactory;
-import org.neo4j.driver.internal.async.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;

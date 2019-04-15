@@ -30,7 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DecoratedConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;

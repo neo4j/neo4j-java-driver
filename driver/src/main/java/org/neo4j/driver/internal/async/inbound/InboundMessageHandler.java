@@ -30,7 +30,7 @@ import org.neo4j.driver.Logging;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatcher;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 
 public class InboundMessageHandler extends SimpleChannelInboundHandler<ByteBuf>
 {

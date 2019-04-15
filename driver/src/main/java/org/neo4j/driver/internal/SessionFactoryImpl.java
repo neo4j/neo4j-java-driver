@@ -23,6 +23,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 

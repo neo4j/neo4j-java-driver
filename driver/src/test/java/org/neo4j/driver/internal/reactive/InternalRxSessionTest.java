@@ -22,29 +22,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.NetworkSession;
-import org.neo4j.driver.internal.reactive.InternalRxResult;
-import org.neo4j.driver.internal.reactive.InternalRxSession;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
-import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -54,12 +56,13 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.TransactionConfig.empty;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 class InternalRxSessionTest
 {
@@ -83,6 +86,16 @@ class InternalRxSessionTest
         return Stream.of(
                 rxSession -> rxSession.beginTransaction(),
                 rxSession -> rxSession.beginTransaction( TransactionConfig.empty() )
+        );
+    }
+
+    private static Stream<Function<RxSession,Publisher<String>>> allRunTxMethods()
+    {
+        return Stream.of(
+                rxSession -> rxSession.readTransaction( tx -> Flux.just( "a" ) ),
+                rxSession -> rxSession.writeTransaction( tx -> Flux.just( "a" ) ),
+                rxSession -> rxSession.readTransaction( tx -> Flux.just( "a" ), empty() ),
+                rxSession -> rxSession.writeTransaction( tx -> Flux.just( "a" ), empty() )
         );
     }
 
@@ -118,7 +131,7 @@ class InternalRxSessionTest
 
         // Run failed with error
         when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
-        when( session.releaseConnection() ).thenReturn( Futures.completedWithNull() );
+        when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -131,7 +144,7 @@ class InternalRxSessionTest
         verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
-        verify( session ).releaseConnection();
+        verify( session ).releaseConnectionAsync();
     }
 
     @ParameterizedTest
@@ -163,7 +176,7 @@ class InternalRxSessionTest
 
         // Run failed with error
         when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
-        when( session.releaseConnection() ).thenReturn( Futures.completedWithNull() );
+        when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxSession rxSession = new InternalRxSession( session );
 
@@ -175,7 +188,92 @@ class InternalRxSessionTest
         verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( txFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
-        verify( session ).releaseConnection();
+        verify( session ).releaseConnectionAsync();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "allRunTxMethods" )
+    void shouldDelegateRunTx( Function<RxSession,Publisher<String>> runTx ) throws Throwable
+    {
+        // Given
+        NetworkSession session = mock( NetworkSession.class );
+        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        when( tx.commitAsync() ).thenReturn( completedWithNull() );
+        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.retryLogic() ).thenReturn( new FixedRetryLogic( 1 ) );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        Publisher<String> strings = runTx.apply( rxSession );
+        StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
+
+        // Then
+        verify( session ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
+        verify( tx ).commitAsync();
+    }
+
+    @Test
+    void shouldRetryOnError() throws Throwable
+    {
+        // Given
+        int retryCount = 2;
+        NetworkSession session = mock( NetworkSession.class );
+        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        when( tx.commitAsync() ).thenReturn( completedWithNull() );
+        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        Publisher<String> strings = rxSession.readTransaction( t ->
+                Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) ) );
+        StepVerifier.create( Flux.from( strings ) )
+                // we lost the "a"s too as the user only see the last failure
+                .expectError( RuntimeException.class )
+                .verify();
+
+        // Then
+        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
+        verify( tx, times( retryCount + 1 ) ).rollbackAsync();
+    }
+
+    @Test
+    void shouldObtainResultIfRetrySucceed() throws Throwable
+    {
+        // Given
+        int retryCount = 2;
+        NetworkSession session = mock( NetworkSession.class );
+        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        when( tx.commitAsync() ).thenReturn( completedWithNull() );
+        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+
+        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
+        when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        AtomicInteger count = new AtomicInteger();
+        Publisher<String> strings = rxSession.readTransaction( t -> {
+            // we fail for the first few retries, and then success on the last run.
+            if ( count.getAndIncrement() == retryCount )
+            {
+                return Flux.just( "a" );
+            }
+            else
+            {
+                return Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) );
+            }
+        } );
+        StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
+
+        // Then
+        verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
+        verify( tx, times( retryCount ) ).rollbackAsync();
+        verify( tx ).commitAsync();
     }
 
     @Test

@@ -29,6 +29,8 @@ import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionParametersTemplate;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.internal.async.InternalAsyncSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -57,7 +59,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return newSession( SessionParameters.empty() );
+        return new InternalSession( newSession( SessionParameters.empty() )  );
     }
 
     @Override
@@ -65,7 +67,7 @@ public class InternalDriver implements Driver
     {
         SessionParameters.Template template = SessionParameters.template();
         templateConsumer.accept( template );
-        return newSession( template.build() );
+        return new InternalSession( newSession( template.build() ) );
     }
 
     @Override
@@ -85,7 +87,7 @@ public class InternalDriver implements Driver
     @Override
     public AsyncSession asyncSession()
     {
-        return newSession( SessionParameters.empty() );
+        return new InternalAsyncSession( newSession( SessionParameters.empty() ) );
     }
 
     @Override
@@ -93,7 +95,7 @@ public class InternalDriver implements Driver
     {
         SessionParameters.Template template = SessionParameters.template();
         templateConsumer.accept( template );
-        return newSession( template.build() );
+        return new InternalAsyncSession( newSession( template.build() ) );
     }
 
     @Override
@@ -148,7 +150,7 @@ public class InternalDriver implements Driver
         return new IllegalStateException( "This driver instance has already been closed" );
     }
 
-    private NetworkSession newSession( SessionParameters parameters )
+    public NetworkSession newSession( SessionParameters parameters )
     {
         assertOpen();
         NetworkSession session = sessionFactory.newInstance( parameters );

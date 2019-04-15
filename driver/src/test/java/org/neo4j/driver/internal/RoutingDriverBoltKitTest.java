@@ -554,30 +554,6 @@ class RoutingDriverBoltKitTest
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
-    void shouldSendAndReceiveBookmark() throws Exception
-    {
-        StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
-        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
-
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", config );
-              Session session = driver.session() )
-        {
-            // intentionally test deprecated API
-            try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
-            {
-                tx.run( "CREATE (n {name:'Bob'})" );
-                tx.success();
-            }
-
-            assertEquals( "NewBookmark", session.lastBookmark() );
-        }
-
-        assertThat( router.exitStatus(), equalTo( 0 ) );
-        assertThat( writer.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
     void shouldSendInitialBookmark() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );

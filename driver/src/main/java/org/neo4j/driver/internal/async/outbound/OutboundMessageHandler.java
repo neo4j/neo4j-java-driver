@@ -25,7 +25,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.async.BoltProtocolUtil;
+import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;

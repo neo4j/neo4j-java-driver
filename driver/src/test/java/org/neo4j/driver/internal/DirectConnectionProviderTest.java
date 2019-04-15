@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.internal.async.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DecoratedConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 

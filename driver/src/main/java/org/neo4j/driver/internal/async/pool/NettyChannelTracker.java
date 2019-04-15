@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
-import static org.neo4j.driver.internal.async.ChannelAttributes.serverAddress;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 
 public class NettyChannelTracker implements ChannelPoolHandler
 {

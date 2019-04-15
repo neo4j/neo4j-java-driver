@@ -22,22 +22,22 @@ import org.reactivestreams.Publisher;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.ExplicitTransaction;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.internal.reactive.cursor.RxStatementResultCursor;
-import org.neo4j.driver.Statement;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 
 public class InternalRxTransaction extends AbstractRxStatementRunner implements RxTransaction
 {
-    private final ExplicitTransaction asyncTx;
+    private final ExplicitTransaction tx;
 
-    public InternalRxTransaction( ExplicitTransaction asyncTx )
+    public InternalRxTransaction( ExplicitTransaction tx )
     {
-        this.asyncTx = asyncTx;
+        this.tx = tx;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
     {
         return new InternalRxResult( () -> {
             CompletableFuture<RxStatementResultCursor> cursorFuture = new CompletableFuture<>();
-            asyncTx.runRx( statement ).whenComplete( ( cursor, completionError ) -> {
+            tx.runRx( statement ).whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )
                 {
                     cursorFuture.complete( cursor );
@@ -54,9 +54,9 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
                 {
                     // We failed to create a result cursor so we cannot rely on result cursor to handle failure.
                     // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
-                    // This is optional as asyncTx still holds a reference to all cursor futures and they will be clean up properly in commit
+                    // This is optional as tx still holds a reference to all cursor futures and they will be clean up properly in commit
                     Throwable error = Futures.completionExceptionCause( completionError );
-                    asyncTx.markTerminated();
+                    tx.markTerminated();
                     cursorFuture.completeExceptionally( error );
                 }
             } );
@@ -81,11 +81,11 @@ public class InternalRxTransaction extends AbstractRxStatementRunner implements 
         return createEmptyPublisher( () -> {
             if ( commit )
             {
-                return asyncTx.commitAsync();
+                return tx.commitAsync();
             }
             else
             {
-                return asyncTx.rollbackAsync();
+                return tx.rollbackAsync();
             }
         } );
     }

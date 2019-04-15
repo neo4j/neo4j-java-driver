@@ -28,8 +28,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
@@ -80,16 +78,6 @@ class BookmarkIT
         {
             assertThrows( ClientException.class, session::beginTransaction );
         }
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    void shouldThrowForUnreachableBookmark()
-    {
-        createNodeInTx( session );
-
-        TransientException e = assertThrows( TransientException.class, () -> session.beginTransaction( session.lastBookmark() + 42 ) );
-        assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
     }
 
     @Test

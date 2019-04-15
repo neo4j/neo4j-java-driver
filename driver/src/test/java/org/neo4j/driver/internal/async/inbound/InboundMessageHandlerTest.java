@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.ChannelAttributes;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;

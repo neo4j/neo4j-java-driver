@@ -31,12 +31,13 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.util.DriverExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
 
 import static java.time.Duration.ofMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,7 +52,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 class TransactionBoltV3IT
 {
     @RegisterExtension
-    static final SessionExtension session = new SessionExtension();
+    static final DriverExtension driver = new DriverExtension();
 
     @Test
     void shouldSetTransactionMetadata()
@@ -65,7 +66,7 @@ class TransactionBoltV3IT
                 .withMetadata( metadata )
                 .build();
 
-        try ( Transaction tx = session.beginTransaction( config ) )
+        try ( Transaction tx = driver.session().beginTransaction( config ) )
         {
             tx.run( "RETURN 1" ).consume();
 
@@ -84,7 +85,7 @@ class TransactionBoltV3IT
                 .withMetadata( metadata )
                 .build();
 
-        CompletionStage<AsyncTransaction> txFuture = session.beginTransactionAsync( config )
+        CompletionStage<AsyncTransaction> txFuture = driver.asyncSession().beginTransactionAsync( config )
                 .thenCompose( tx -> tx.runAsync( "RETURN 1" )
                         .thenCompose( StatementResultCursor::consumeAsync )
                         .thenApply( ignore -> tx ) );
@@ -104,9 +105,10 @@ class TransactionBoltV3IT
     void shouldSetTransactionTimeout()
     {
         // create a dummy node
+        Session session = driver.session();
         session.run( "CREATE (:Node)" ).consume();
 
-        try ( Session otherSession = session.driver().session() )
+        try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
@@ -136,9 +138,12 @@ class TransactionBoltV3IT
     void shouldSetTransactionTimeoutAsync()
     {
         // create a dummy node
+        Session session = driver.session();
+        AsyncSession asyncSession = driver.asyncSession();
+
         session.run( "CREATE (:Node)" ).consume();
 
-        try ( Session otherSession = session.driver().session() )
+        try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
@@ -150,7 +155,7 @@ class TransactionBoltV3IT
                         .build();
 
                 // start a new transaction with timeout and try to update the locked dummy node
-                CompletionStage<Void> txCommitFuture = session.beginTransactionAsync( config )
+                CompletionStage<Void> txCommitFuture = asyncSession.beginTransactionAsync( config )
                         .thenCompose( tx -> tx.runAsync( "MATCH (n:Node) SET n.prop = 2" )
                                 .thenCompose( ignore -> tx.commitAsync() ) );
 
@@ -162,7 +167,7 @@ class TransactionBoltV3IT
 
     private static void verifyTransactionMetadata( Map<String,Object> metadata )
     {
-        try ( Session session = TransactionBoltV3IT.session.driver().session() )
+        try ( Session session = driver.driver().session() )
         {
             StatementResult result = session.run( "CALL dbms.listTransactions()" );
 

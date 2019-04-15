@@ -25,7 +25,7 @@ import io.netty.channel.ChannelFuture;
 import java.util.List;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.ChannelConnector;
+import org.neo4j.driver.internal.async.connection.ChannelConnector;
 
 public class ChannelTrackingConnector implements ChannelConnector
 {
