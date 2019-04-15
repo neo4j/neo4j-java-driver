@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -37,7 +36,7 @@ public class RxTransactionFunctionExample extends BaseApplication
         super( uri, user, password );
     }
 
-    public Publisher<ResultSummary> printAllProductsReactor()
+    public Flux<ResultSummary> printAllProductsReactor()
     {
         // tag::reactor-transaction-function[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
@@ -53,7 +52,7 @@ public class RxTransactionFunctionExample extends BaseApplication
         // end::reactor-transaction-function[]
     }
 
-    public Publisher<ResultSummary> printAllProductsRxJava()
+    public Flowable<ResultSummary> printAllProductsRxJava()
     {
         // tag::RxJava-transaction-function[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";

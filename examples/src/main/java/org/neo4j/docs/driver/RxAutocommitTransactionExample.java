@@ -19,7 +19,6 @@
 package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 import java.util.Collections;
@@ -34,7 +33,7 @@ public class RxAutocommitTransactionExample extends BaseApplication
         super( uri, user, password );
     }
 
-    public Publisher<String> readProductTitlesReactor()
+    public Flux<String> readProductTitlesReactor()
     {
         // tag::reactor-autocommit-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
@@ -46,7 +45,7 @@ public class RxAutocommitTransactionExample extends BaseApplication
         // end::reactor-autocommit-transaction[]
     }
 
-    public Publisher<String> readProductTitlesRxJava()
+    public Flowable<String> readProductTitlesRxJava()
     {
         // tag::RxJava-autocommit-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";

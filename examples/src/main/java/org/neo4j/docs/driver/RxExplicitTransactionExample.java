@@ -19,9 +19,7 @@
 package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Map;
@@ -36,21 +34,23 @@ public class RxExplicitTransactionExample extends BaseApplication
         super( uri, user, password );
     }
 
-    public Publisher<String> readSingleProductReactor()
+    public Flux<String> readSingleProductReactor()
     {
         // tag::reactor-explicit-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
         RxSession session = driver.rxSession();
-        return Mono.usingWhen( session.beginTransaction(),
-                tx -> Flux.from( tx.run( query, parameters ).records() ).single().map( record -> record.get( 0 ).asString() ),
+        // It is recommended to use Flux.usingWhen for explicit transactions and Flux.using for autocommit transactions (session).
+        // This is because an explicit transaction needs to be supplied via a another resource publisher session.beginTransaction.
+        return Flux.usingWhen( session.beginTransaction(),
+                tx -> Flux.from( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
                 RxTransaction::commit,
                 RxTransaction::rollback );
         // end::reactor-explicit-transaction[]
     }
 
-    public Publisher<String> readSingleProductRxJava()
+    public Flowable<String> readSingleProductRxJava()
     {
         // tag::RxJava-explicit-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
@@ -59,7 +59,8 @@ public class RxExplicitTransactionExample extends BaseApplication
         RxSession session = driver.rxSession();
         return Flowable.fromPublisher( session.beginTransaction() )
                 .flatMap( tx -> Flowable.fromPublisher( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() )
-                        .doOnComplete( tx::commit ).doOnError( error -> tx.rollback() ) );
+                        .doOnComplete( tx::commit )
+                        .doOnError( error -> tx.rollback() ) );
         // end::RxJava-explicit-transaction[]
     }
 }
