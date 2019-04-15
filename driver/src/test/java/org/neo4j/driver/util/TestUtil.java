@@ -51,7 +51,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
-import org.neo4j.driver.internal.async.InternalNetworkSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -235,35 +235,35 @@ public final class TestUtil
         }
     }
 
-    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, Bookmarks x )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, Bookmarks x )
     {
         return newSession( connectionProvider, WRITE, x );
     }
 
-    private static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmarks x )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmarks x )
     {
         return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), x );
     }
 
-    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
     {
         return newSession( connectionProvider, mode, empty() );
     }
 
-    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic logic )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic logic )
     {
         return newSession( connectionProvider, WRITE, logic, empty() );
     }
 
-    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider )
     {
         return newSession( connectionProvider, WRITE, empty() );
     }
 
-    public static InternalNetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, Bookmarks bookmarks )
     {
-        return new InternalNetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarksHolder( bookmarks ), DEV_NULL_LOGGING );
+        return new NetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarksHolder( bookmarks ), DEV_NULL_LOGGING );
     }
 
     public static void verifyRun( Connection connection, String query )

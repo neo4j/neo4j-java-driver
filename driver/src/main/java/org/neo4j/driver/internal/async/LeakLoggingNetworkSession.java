@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.util.Futures;
 
 import static java.lang.System.lineSeparator;
 
-public class LeakLoggingNetworkSession extends InternalNetworkSession
+public class LeakLoggingNetworkSession extends NetworkSession
 {
     private final String stackTrace;
 

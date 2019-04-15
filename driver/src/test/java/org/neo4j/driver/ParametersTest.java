@@ -28,7 +28,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
-import org.neo4j.driver.internal.async.InternalNetworkSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
@@ -108,8 +108,8 @@ class ParametersTest
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
-        InternalNetworkSession session =
-                new InternalNetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarksHolder(), DEV_NULL_LOGGING );
+        NetworkSession session =
+                new NetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarksHolder(), DEV_NULL_LOGGING );
         return new InternalSession( session );
     }
 }

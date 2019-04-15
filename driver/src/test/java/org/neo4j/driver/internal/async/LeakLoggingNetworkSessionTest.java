@@ -48,7 +48,7 @@ import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 
-class LeakLoggingInternalNetworkSessionTest
+class LeakLoggingNetworkSessionTest
 {
     @Test
     void logsNothingDuringFinalizationIfClosed() throws Exception

@@ -56,7 +56,7 @@ import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyRun;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
-class InternalExplicitTransactionTest
+class ExplicitTransactionTest
 {
     @ParameterizedTest
     @ValueSource( strings = {"true", "false"} )
@@ -243,7 +243,7 @@ class InternalExplicitTransactionTest
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
 
         Bookmarks bookmarks = Bookmarks.from( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -258,7 +258,7 @@ class InternalExplicitTransactionTest
     void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
 
         Bookmarks bookmarks = Bookmarks.from( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -272,7 +272,7 @@ class InternalExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndCommitted()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
 
         tx.markTerminated();
 
@@ -286,7 +286,7 @@ class InternalExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndRolledBack()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
 
         tx.markTerminated();
         await( tx.rollbackAsync() );
@@ -298,7 +298,7 @@ class InternalExplicitTransactionTest
     void shouldReleaseConnectionWhenClose() throws Throwable
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
 
         await( tx.closeAsync() );
 
@@ -312,7 +312,7 @@ class InternalExplicitTransactionTest
 
     private static ExplicitTransaction beginTx( Connection connection, Bookmarks initialBookmarks )
     {
-        ExplicitTransaction tx = new InternalExplicitTransaction( connection, new DefaultBookmarksHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarksHolder() );
         return await( tx.beginAsync( initialBookmarks, TransactionConfig.empty() ) );
     }
 

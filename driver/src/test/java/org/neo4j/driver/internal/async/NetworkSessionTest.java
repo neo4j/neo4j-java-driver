@@ -72,11 +72,11 @@ import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRun;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
-class InternalNetworkSessionTest
+class NetworkSessionTest
 {
     private Connection connection;
     private ConnectionProvider connectionProvider;
-    private InternalNetworkSession session;
+    private NetworkSession session;
 
     @BeforeEach
     void setUp()
