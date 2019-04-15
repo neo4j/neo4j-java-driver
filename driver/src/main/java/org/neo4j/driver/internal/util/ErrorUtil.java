@@ -27,6 +27,7 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.RoutingException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 
@@ -88,6 +89,23 @@ public final class ErrorUtil
             }
         }
         return true;
+    }
+
+    public static boolean isRoutingError( Throwable error )
+    {
+        if ( error instanceof RoutingException  )
+        {
+            return true;
+        }
+        else if ( error instanceof Neo4jException )
+        {
+            String errorCode = ((Neo4jException) error).code();
+            return errorCode != null && (errorCode.startsWith( "Neo.ClientError.Database.DatabaseNotFound" ));
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public static void rethrowAsyncException( ExecutionException e )

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -34,16 +35,22 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.cluster.RoutingTablesImpl.RoutingTableHandlerFactory;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Clock;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
@@ -61,17 +68,23 @@ class RoutingTablesImplTest
     @Test
     void factoryShouldCreateARoutingTableWithSameDatabaseName() throws Throwable
     {
-        RoutingTableFactory routingTableFactory = db -> {
-            assertThat( db, equalTo( "Molly" ) );
-            RoutingTable table = mock( RoutingTable.class );
-            when( table.database() ).thenReturn( db );
-            return table;
-        };
-
+        Clock clock = Clock.SYSTEM;
+        BoltServerAddress initialRouter = new BoltServerAddress( "localhost:7687" );
         RoutingTableHandlerFactory factory =
-                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), routingTableFactory, mock( Rediscovery.class ), DEV_NULL_LOGGER );
+                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( Rediscovery.class ), initialRouter, clock, DEV_NULL_LOGGER );
 
-        factory.newInstance( "Molly", null );
+        RoutingTableHandler handler = factory.newInstance( "Molly", null );
+        RoutingTable table = handler.routingTable();
+
+        assertThat( table.database(), equalTo( "Molly" ) );
+        assertThat( table.servers(), contains( CoreMatchers.equalTo( initialRouter ) ) );
+        assertThat( Arrays.asList( table.routers().toArray() ), contains( CoreMatchers.equalTo( initialRouter ) ) );
+
+        assertThat( table.readers().size(), CoreMatchers.equalTo( 0 ) );
+        assertThat( table.writers().size(), CoreMatchers.equalTo( 0 ) );
+
+        assertTrue( table.isStaleFor( AccessMode.READ ) );
+        assertTrue( table.isStaleFor( AccessMode.WRITE ) );
     }
 
     @ParameterizedTest
@@ -93,7 +106,7 @@ class RoutingTablesImplTest
 
     @ParameterizedTest
     @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, "", "database", " molly "} )
-    void shouldCreateRoutingTableHandlerIfAbsentWhenGetRoutingErrorHandler( String databaseName ) throws Throwable
+    void shouldErrorWhenGetRoutingForAbsentDatabase( String databaseName ) throws Throwable
     {
         // Given
         ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
@@ -101,11 +114,12 @@ class RoutingTablesImplTest
         RoutingTablesImpl routingTables = newRoutingTables( map, factory );
 
         // When
-        routingTables.routingErrorHandler( databaseName );
+        IllegalStateException error = assertThrows( IllegalStateException.class, () -> routingTables.routingErrorHandler( databaseName ) );
 
         // Then
-        assertTrue( map.containsKey( databaseName ) );
-        verify( factory ).newInstance( eq( databaseName ), eq( routingTables ) );
+        assertThat( error.getMessage(), containsString( "No entry for database '" + databaseName + "' found in routing tables" ) );
+        assertFalse( map.containsKey( databaseName ) );
+        verify( factory, never() ).newInstance( eq( databaseName ), eq( routingTables ) );
     }
 
     @ParameterizedTest
@@ -179,6 +193,25 @@ class RoutingTablesImplTest
 
         // Then
         assertThat( servers, containsInAnyOrder( A, B, C, D, E, F ) );
+    }
+
+    @Test
+    void shouldRemoveRoutingTableHandler() throws Throwable
+    {
+        // Given
+        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        map.put( "Apple", mockedRoutingTable( A ) );
+        map.put( "Banana", mockedRoutingTable( B ) );
+        map.put( "Orange", mockedRoutingTable( C ) );
+
+        RoutingTableHandlerFactory factory = mockedHandlerFactory();
+        RoutingTablesImpl routingTables = newRoutingTables( map, factory );
+
+        // When
+        routingTables.remove( "Apple" );
+        routingTables.remove( "Banana" );
+        // Then
+        assertThat( routingTables.allServers(), contains( C ) );
     }
 
     private RoutingTableHandler mockedRoutingTable( BoltServerAddress... servers )

@@ -127,7 +127,6 @@ public class ConnectionPoolImpl implements ConnectionPool
                 {
                     // address is not present in updated routing table and has no active connections
                     // it's now safe to terminate corresponding connection pool and forget about it
-
                     ChannelPool pool = pools.remove( address );
                     if ( pool != null )
                     {

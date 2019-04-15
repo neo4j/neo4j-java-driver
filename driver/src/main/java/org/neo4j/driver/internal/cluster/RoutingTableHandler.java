@@ -34,6 +34,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 public class RoutingTableHandler implements RoutingErrorHandler
 {
     private final RoutingTable routingTable;
+    private final String databaseName;
     private final RoutingTables routingTables;
     private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
     private final ConnectionPool connectionPool;
@@ -43,6 +44,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTables routingTables, Logger log )
     {
         this.routingTable = routingTable;
+        this.databaseName = routingTable.database();
         this.rediscovery = rediscovery;
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
@@ -72,7 +74,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         else if ( routingTable.isStaleFor( mode ) )
         {
             // existing routing table is not fresh and should be updated
-            log.info( "Routing table is stale. %s", routingTable );
+            log.info( "Routing table for database '%s' is stale. %s", databaseName, routingTable );
 
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
@@ -107,7 +109,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
             routingTable.update( composition );
             connectionPool.retainAll( routingTables.allServers() );
 
-            log.info( "Updated routing table. %s", routingTable );
+            log.info( "Updated routing table for database '%s'. %s", databaseName, routingTable );
 
             CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
             refreshRoutingTableFuture = null;
@@ -121,13 +123,22 @@ public class RoutingTableHandler implements RoutingErrorHandler
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )
     {
+        log.error( String.format( "Failed to update routing table for database '%s'. Current routing table: %s.", databaseName, routingTable ), error );
+        routingTables.remove( databaseName );
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally( error );
     }
 
+    // This method cannot be synchronized as it will visited by all routing table's threads concurrently
     public Set<BoltServerAddress> servers()
     {
         return routingTable.servers();
+    }
+
+    // for testing only
+    RoutingTable routingTable()
+    {
+        return routingTable;
     }
 }
