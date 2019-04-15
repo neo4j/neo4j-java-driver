@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
 import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
@@ -53,8 +53,9 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        // we verify the connection by establishing the connection to the default database
-        return acquireConnection( SYSTEM_DB_NAME, READ ).thenCompose( Connection::release );
+        // We verify the connection by establishing a connection with the remote server specified by the address.
+        // Database name will be ignored as no query is run in this connection and the connection is released immediately.
+        return acquireConnection( ABSENT_DB_NAME, READ ).thenCompose( Connection::release );
     }
 
     @Override

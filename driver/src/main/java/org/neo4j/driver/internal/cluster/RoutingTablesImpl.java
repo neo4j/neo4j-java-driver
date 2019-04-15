@@ -29,15 +29,16 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.Clock;
 
 public class RoutingTablesImpl implements RoutingTables
 {
     private final ConcurrentMap<String,RoutingTableHandler> routingTables; //TODO ever growing map?
     private final RoutingTableHandlerFactory factory;
 
-    public RoutingTablesImpl( ConnectionPool connectionPool, RoutingTableFactory routingTableFactory, Rediscovery rediscovery, Logger log )
+    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger log )
     {
-        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, routingTableFactory, rediscovery, log ) );
+        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, initialRouter, clock, log ) );
     }
 
     RoutingTablesImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory )
@@ -49,13 +50,15 @@ public class RoutingTablesImpl implements RoutingTables
     @Override
     public CompletionStage<RoutingTable> freshRoutingTable( String databaseName, AccessMode mode )
     {
-        RoutingTableHandler handler = routingTableHandler( databaseName );
+        RoutingTableHandler handler = getOrCreate( databaseName );
         return handler.freshRoutingTable( mode );
     }
 
     @Override
     public Set<BoltServerAddress> allServers()
     {
+        // obviously we just had a snapshot of all servers in all routing tables
+        // after we read it, the set could already be changed.
         Set<BoltServerAddress> servers = new HashSet<>();
         for ( RoutingTableHandler tableHandler : routingTables.values() )
         {
@@ -67,10 +70,21 @@ public class RoutingTablesImpl implements RoutingTables
     @Override
     public RoutingErrorHandler routingErrorHandler( String databaseName )
     {
-        return routingTableHandler( databaseName );
+        RoutingTableHandler handler = routingTables.get( databaseName );
+        if ( handler == null )
+        {
+            throw new IllegalStateException( String.format( "No entry for database '%s' found in routing tables.", databaseName ) );
+        }
+        return handler;
     }
 
-    private RoutingTableHandler routingTableHandler( String databaseName )
+    @Override
+    public void remove( String databaseName )
+    {
+        routingTables.remove( databaseName );
+    }
+
+    private RoutingTableHandler getOrCreate( String databaseName )
     {
         return routingTables.computeIfAbsent( databaseName, name -> factory.newInstance( name, this ) );
     }
@@ -78,21 +92,24 @@ public class RoutingTablesImpl implements RoutingTables
     static class RoutingTableHandlerFactory
     {
         private final ConnectionPool connectionPool;
-        private final RoutingTableFactory routingTableFactory;
         private final Rediscovery rediscovery;
         private final Logger log;
+        private final BoltServerAddress initialRouter;
+        private final Clock clock;
 
-        RoutingTableHandlerFactory( ConnectionPool connectionPool, RoutingTableFactory routingTableFactory, Rediscovery rediscovery, Logger log )
+        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger log )
         {
             this.connectionPool = connectionPool;
-            this.routingTableFactory = routingTableFactory;
             this.rediscovery = rediscovery;
+            this.initialRouter = initialRouter;
+            this.clock = clock;
             this.log = log;
         }
 
         RoutingTableHandler newInstance( String databaseName, RoutingTables allTables )
         {
-            return new RoutingTableHandler( routingTableFactory.newInstance( databaseName ), rediscovery, connectionPool, allTables, log );
+            ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock, initialRouter );
+            return new RoutingTableHandler( routingTable, rediscovery, connectionPool, allTables, log );
         }
     }
 }

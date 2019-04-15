@@ -36,8 +36,6 @@ import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
-import org.neo4j.driver.internal.cluster.RoutingTableFactory;
-import org.neo4j.driver.internal.cluster.RoutingTableFactoryImpl;
 import org.neo4j.driver.internal.cluster.RoutingTables;
 import org.neo4j.driver.internal.cluster.RoutingTablesImpl;
 import org.neo4j.driver.internal.spi.Connection;
@@ -48,7 +46,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 public class LoadBalancer implements ConnectionProvider
 {
@@ -63,15 +61,8 @@ public class LoadBalancer implements ConnectionProvider
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
             LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
     {
-        this( connectionPool, createEmptyRoutingTableFactory( initialRouter, clock ),
-                createRediscovery( initialRouter, settings, eventExecutorGroup, resolver, clock, logging ),
+        this( connectionPool, createRoutingTables( connectionPool, eventExecutorGroup, initialRouter, resolver, settings, clock, logging ),
                 loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
-    }
-
-    private LoadBalancer( ConnectionPool connectionPool, RoutingTableFactory routingTableFactory, Rediscovery rediscovery,
-            Logger log, LoadBalancingStrategy loadBalancingStrategy, EventExecutorGroup eventExecutorGroup )
-    {
-        this( connectionPool, new RoutingTablesImpl( connectionPool, routingTableFactory, rediscovery, log ), log, loadBalancingStrategy, eventExecutorGroup );
     }
 
     LoadBalancer( ConnectionPool connectionPool, RoutingTables routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
@@ -95,7 +86,7 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.freshRoutingTable( SYSTEM_DB_NAME, AccessMode.READ ).thenApply( routingTable -> null );
+        return routingTables.freshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).thenApply( routingTable -> null );
     }
 
     @Override
@@ -176,15 +167,17 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private static RoutingTableFactory createEmptyRoutingTableFactory( BoltServerAddress initialRouter, Clock clock )
-    {
-        return new RoutingTableFactoryImpl( initialRouter, clock );
-    }
-
-    private static Rediscovery createRediscovery( BoltServerAddress initialRouter, RoutingSettings settings,
-            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Clock clock, Logging logging )
+    private static RoutingTables createRoutingTables( ConnectionPool connectionPool, EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter,
+            ServerAddressResolver resolver, RoutingSettings settings, Clock clock, Logging logging )
     {
         Logger log = loadBalancerLogger( logging );
+        Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
+        return new RoutingTablesImpl( connectionPool, rediscovery, initialRouter, clock, log );
+    }
+
+    private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
+            RoutingSettings settings, Clock clock, Logger log )
+    {
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings );
         return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }

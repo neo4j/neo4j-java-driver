@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
@@ -28,6 +29,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.RoutingException;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -37,13 +39,10 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
 public class RoutingProcedureRunner
 {
-    static final String GET_SERVERS = "dbms.cluster.routing.getServers";
-
     static final String ROUTING_CONTEXT = "context";
     static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + ROUTING_CONTEXT + "})";
     static final String DATABASE_NAME = "database";
@@ -61,7 +60,8 @@ public class RoutingProcedureRunner
         return connectionStage.thenCompose( connection ->
         {
             ServerVersion serverVersion = connection.serverVersion();
-            DirectConnection delegate = new DirectConnection( connection, selectDatabase( serverVersion ), AccessMode.WRITE );
+            // As the connection can connect to any router (a.k.a. any core members), this connection strictly speaking is a read connection.
+            DirectConnection delegate = new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
             Statement procedure = procedureStatement( serverVersion, databaseName );
             return runProcedure( delegate, procedure )
                     .thenCompose( records -> releaseConnection( delegate, records ) )
@@ -71,7 +71,7 @@ public class RoutingProcedureRunner
 
     CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
     {
-        return connection.protocol() // this line fails if database name is provided in BOLT versions that do not support database name.
+        return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
                 .asyncResult().thenCompose( StatementResultCursor::listAsync );
     }
@@ -87,28 +87,15 @@ public class RoutingProcedureRunner
             return new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
                     parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, databaseName ) );
         }
-        else if ( serverVersion.greaterThanOrEqual( v3_2_0 ) )
+        else
         {
+            if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
+            {
+                throw new RoutingException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
+                        "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
+            }
             return new Statement( "CALL " + GET_ROUTING_TABLE,
                     parameters( ROUTING_CONTEXT, context.asMap() ) );
-        }
-        else
-        {
-            return new Statement( "CALL " + GET_SERVERS );
-        }
-    }
-
-    private String selectDatabase( ServerVersion serverVersion )
-    {
-        if ( serverVersion.greaterThanOrEqual( v4_0_0 ) )
-        {
-            // Routing procedure will be called on the system database
-            return SYSTEM_DB_NAME;
-        }
-        else
-        {
-            // For lower bolt versions, there is no system database, so we should just run on the "default" database
-            return ABSENT_DB_NAME;
         }
     }
 

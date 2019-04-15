@@ -42,6 +42,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -174,6 +175,12 @@ class RoutingTableHandlerTest
             {
                 throw new UnsupportedOperationException();
             }
+
+            @Override
+            public void remove( String databaseName )
+            {
+                throw new UnsupportedOperationException();
+            }
         };
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool,
@@ -183,6 +190,26 @@ class RoutingTableHandlerTest
         assertEquals( routingTable, actual );
 
         verify( connectionPool ).retainAll( new HashSet<>( asList( A, B, C ) ) );
+    }
+
+    @Test
+    void shouldRemoveRoutingTableHandlerIfFailedToLookup() throws Throwable
+    {
+        // Given
+        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+
+        Rediscovery rediscovery = newRediscoveryMock();
+        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new RuntimeException( "Bang!" ) ) );
+
+        ConnectionPool connectionPool = newConnectionPoolMock();
+        RoutingTables routingTables = newRoutingTablesMock();
+        // When
+
+        RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool, routingTables, DEV_NULL_LOGGER );
+        assertThrows( RuntimeException.class, () -> await( handler.freshRoutingTable( READ ) ) );
+
+        // Then
+        verify( routingTables ).remove( ABSENT_DB_NAME );
     }
 
     private void testRediscoveryWhenStale( AccessMode mode )

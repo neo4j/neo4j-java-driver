@@ -33,6 +33,7 @@ public interface RoutingTables
 {
     /**
      * Fresh the routing table for the database and given access mode.
+     * For server version lower than 4.0, the database name will be ignored while refresh routing table.
      * @return The future of a new routing table.
      */
     CompletionStage<RoutingTable> freshRoutingTable( String databaseName, AccessMode mode );
@@ -47,4 +48,6 @@ public interface RoutingTables
      * @return the routing error handler of the given database
      */
     RoutingErrorHandler routingErrorHandler( String databaseName );
+
+    void remove( String databaseName );
 }

@@ -16,25 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.exceptions;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.Clock;
-
-public class RoutingTableFactoryImpl implements RoutingTableFactory
+/**
+ * A routing error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
+ * This exception should not be retried.
+ * @since 2.0
+ */
+public class RoutingException extends Neo4jException
 {
-    private final BoltServerAddress initialRouter;
-    private final Clock clock;
-
-    public RoutingTableFactoryImpl( BoltServerAddress initialRouter, Clock clock )
+    public RoutingException( String message )
     {
-        this.initialRouter = initialRouter;
-        this.clock = clock;
+        super( message );
     }
 
-    @Override
-    public RoutingTable newInstance( String databaseName )
+    public RoutingException( String message, Throwable throwable )
     {
-        return new ClusterRoutingTable( databaseName, clock, initialRouter );
+        super( message, throwable);
     }
 }

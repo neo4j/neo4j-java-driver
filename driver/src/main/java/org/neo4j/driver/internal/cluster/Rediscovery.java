@@ -30,19 +30,20 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.exceptions.SecurityException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
+import static org.neo4j.driver.internal.util.ErrorUtil.isRoutingError;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
@@ -253,12 +254,11 @@ public class Rediscovery
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
             BoltServerAddress routerAddress )
     {
-        if ( error instanceof SecurityException )
+        if ( error instanceof SecurityException || isRoutingError( error ) )
         {
-            // auth error happened, terminate the discovery procedure immediately
+            // auth error or routing error happened, terminate the discovery procedure immediately
             throw new CompletionException( error );
         }
-        else
         {
             // connection turned out to be broken
             logger.info( format( "Failed to connect to routing server '%s'.", routerAddress ), error );

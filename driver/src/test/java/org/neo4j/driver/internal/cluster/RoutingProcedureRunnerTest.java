@@ -48,7 +48,6 @@ import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.DATABASE_
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.MULTI_DB_GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.ROUTING_CONTEXT;
-import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_SERVERS;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -61,7 +60,7 @@ class RoutingProcedureRunnerTest
 {
     @ParameterizedTest
     @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, " this is a db name "} )
-    void shouldCallGetRoutingTableWithEmptyMapWithDatabaseName( String db )
+    void shouldCallGetRoutingTableWithEmptyMapOnSystemDatabaseForDatabase( String db )
     {
         RoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY,
                 completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ), SYSTEM_DB_NAME );
@@ -77,7 +76,7 @@ class RoutingProcedureRunnerTest
 
     @ParameterizedTest
     @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, " this is a db name "} )
-    void shouldCallGetRoutingTableWithParamAndDatabaseName( String db )
+    void shouldCallGetRoutingTableWithParamOnSystemDatabaseForDatabase( String db )
     {
         URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
         RoutingContext context = new RoutingContext( uri );
@@ -122,22 +121,6 @@ class RoutingProcedureRunnerTest
         assertEquals( 1, response.records().size() );
         Value expectedParams = parameters( ROUTING_CONTEXT, context.asMap() );
         assertEquals( new Statement( "CALL " + GET_ROUTING_TABLE, expectedParams ), response.procedure() );
-    }
-
-    @Test
-    void shouldCallGetServers()
-    {
-        URI uri = URI.create( "neo4j://localhost/?key1=value1&key2=value2" );
-        RoutingContext context = new RoutingContext( uri );
-
-        RoutingProcedureRunner runner = new TestRoutingProcedureRunner( context,
-                completedFuture( asList( mock( Record.class ), mock( Record.class ) ) ) );
-
-        RoutingProcedureResponse response = await( runner.run( connectionStage( "Neo4j/3.1.8" ), ABSENT_DB_NAME ) );
-
-        assertTrue( response.isSuccess() );
-        assertEquals( 2, response.records().size() );
-        assertEquals( new Statement( "CALL " + GET_SERVERS ), response.procedure() );
     }
 
     @Test
@@ -219,7 +202,7 @@ class RoutingProcedureRunnerTest
     private static class TestRoutingProcedureRunner extends RoutingProcedureRunner
     {
         final CompletionStage<List<Record>> runProcedureResult;
-        final String database;
+        final String executionDatabase;
 
         TestRoutingProcedureRunner( RoutingContext context )
         {
@@ -231,17 +214,17 @@ class RoutingProcedureRunnerTest
             this( context, runProcedureResult, ABSENT_DB_NAME );
         }
 
-        TestRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult, String database )
+        TestRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult, String executionDatabase )
         {
             super( context );
             this.runProcedureResult = runProcedureResult;
-            this.database = database;
+            this.executionDatabase = executionDatabase;
         }
 
         @Override
         CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
         {
-            assertEquals( database, connection.databaseName() );
+            assertEquals( executionDatabase, connection.databaseName() );
             return runProcedureResult;
         }
     }
