@@ -727,6 +727,35 @@ class RoutingDriverBoltKitTest
     }
 
     @Test
+    void shouldRetryWriteTransactionUntilSuccessWithWhenLeaderIsRemoved() throws Exception
+    {
+        // This test simulates a router in a cluster that a leader is removed.
+        // The router first returns a RT with a writer inside.
+        // However this writer is killed while the driver is running a tx with it.
+        // As a result, the writer server is removed from RT in the router's second reply.
+        // Finally, the router will return a RT with a reachable writer.
+        StubServer router = StubServer.start( "acquire_endpoints_v3_leader_killed.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9004 );
+        StubServer writer = StubServer.start( "write_server.script", 9008 );
+
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
+                Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertEquals( 0, records.size() );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+    }
+
+    @Test
     void shouldRetryReadTransactionUntilFailure() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
