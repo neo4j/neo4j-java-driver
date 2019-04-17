@@ -44,7 +44,7 @@ import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 
@@ -66,7 +66,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 class InternalRxSessionTest
 {
-    private static Stream<Function<RxSession,RxResult>> allSessionRunMethods()
+    private static Stream<Function<RxSession,RxStatementResult>> allSessionRunMethods()
     {
         return Stream.of(
                 rxSession -> rxSession.run( "RETURN 1" ),
@@ -101,7 +101,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldDelegateRun( Function<RxSession,RxResult> runReturnOne ) throws Throwable
+    void shouldDelegateRun( Function<RxSession,RxStatementResult> runReturnOne ) throws Throwable
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -112,9 +112,9 @@ class InternalRxSessionTest
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When
-        RxResult result = runReturnOne.apply( rxSession );
+        RxStatementResult result = runReturnOne.apply( rxSession );
         // Execute the run
-        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxStatementResult) result).cursorFutureSupplier().get();
 
         // Then
         verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
@@ -123,7 +123,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldReleaseConnectionIfFailedToRun( Function<RxSession,RxResult> runReturnOne ) throws Throwable
+    void shouldReleaseConnectionIfFailedToRun( Function<RxSession,RxStatementResult> runReturnOne ) throws Throwable
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -136,9 +136,9 @@ class InternalRxSessionTest
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When
-        RxResult result = runReturnOne.apply( rxSession );
+        RxStatementResult result = runReturnOne.apply( rxSession );
         // Execute the run
-        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxStatementResult) result).cursorFutureSupplier().get();
 
         // Then
         verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );

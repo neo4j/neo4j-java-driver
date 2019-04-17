@@ -47,7 +47,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.AuthToken;
@@ -313,7 +313,7 @@ class ConnectionHandlingIT
     void sessionCloseShouldReleaseConnectionUsedBySessionRun() throws Throwable
     {
         RxSession session = driver.rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // When we only run but not pull
         StepVerifier.create( Flux.from( res.keys() ) ).expectNext( "a" ).verifyComplete();
@@ -332,7 +332,7 @@ class ConnectionHandlingIT
     void resultRecordsShouldReleaseConnectionUsedBySessionRun() throws Throwable
     {
         RxSession session = driver.rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         assertNull( connection1 );
 
@@ -350,7 +350,7 @@ class ConnectionHandlingIT
     void resultSummaryShouldReleaseConnectionUsedBySessionRun() throws Throwable
     {
         RxSession session = driver.rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         assertNull( connection1 );
 
@@ -371,7 +371,7 @@ class ConnectionHandlingIT
             Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
             verify( connection1, never() ).release();
 
-            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+            RxStatementResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
             StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
                     .expectNext( 1, 2, 3, 4 ).verifyComplete();
 
@@ -393,7 +393,7 @@ class ConnectionHandlingIT
             Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
             verify( connection1, never() ).release();
 
-            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+            RxStatementResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
             StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
                     .expectNext( 1, 2, 3, 4 ).verifyComplete();
 

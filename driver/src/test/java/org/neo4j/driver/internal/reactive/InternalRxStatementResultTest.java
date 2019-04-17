@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.Record;
@@ -51,14 +51,14 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.Values.values;
 
-class InternalRxResultTest
+class InternalRxStatementResultTest
 {
     @Test
     void shouldInitCursorFuture()
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
-        InternalRxResult rxResult = newRxResult( cursor );
+        InternalRxStatementResult rxResult = newRxResult( cursor );
 
         // When
         CompletableFuture<RxStatementResultCursor> cursorFuture = rxResult.initCursorFuture().toCompletableFuture();
@@ -73,7 +73,7 @@ class InternalRxResultTest
     {
         // Given
         RuntimeException error = new RuntimeException( "Failed to obtain cursor probably due to connection problem" );
-        InternalRxResult rxResult = newRxResult( error );
+        InternalRxStatementResult rxResult = newRxResult( error );
 
         // When
         CompletableFuture<RxStatementResultCursor> cursorFuture = rxResult.initCursorFuture().toCompletableFuture();
@@ -89,7 +89,7 @@ class InternalRxResultTest
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
-        RxResult rxResult = newRxResult( cursor );
+        RxStatementResult rxResult = newRxResult( cursor );
 
         List<String> keys = Arrays.asList( "one", "two", "three" );
         when( cursor.keys() ).thenReturn( keys );
@@ -107,7 +107,7 @@ class InternalRxResultTest
     {
         // Given
         RuntimeException error = new RuntimeException( "Failed to obtain cursor" );
-        InternalRxResult rxResult = newRxResult( error );
+        InternalRxStatementResult rxResult = newRxResult( error );
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ) )
@@ -120,7 +120,7 @@ class InternalRxResultTest
     {
         // Given
         RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
-        RxResult rxResult = newRxResult( cursor );
+        RxStatementResult rxResult = newRxResult( cursor );
 
         List<String> keys = Arrays.asList( "one", "two", "three" );
         when( cursor.keys() ).thenReturn( keys );
@@ -140,7 +140,7 @@ class InternalRxResultTest
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
 
         BasicPullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
-        RxResult rxResult = newRxResult( pullHandler );
+        RxStatementResult rxResult = newRxResult( pullHandler );
 
         // When
         StepVerifier.create( Flux.from( rxResult.records() ) )
@@ -160,7 +160,7 @@ class InternalRxResultTest
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
 
         BasicPullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
-        RxResult rxResult = newRxResult( pullHandler );
+        RxStatementResult rxResult = newRxResult( pullHandler );
 
         // When
         StepVerifier.create( Flux.from( rxResult.records() ).limitRate( 1 ).take( 1 ) )
@@ -174,7 +174,7 @@ class InternalRxResultTest
     {
         // Given
         Throwable error = new RuntimeException( "Hi" );
-        RxResult rxResult = newRxResult( error );
+        RxStatementResult rxResult = newRxResult( error );
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
@@ -186,7 +186,7 @@ class InternalRxResultTest
     {
         // Given
         Throwable error = new RuntimeException( "Hi" );
-        RxResult rxResult = newRxResult( new ListBasedPullHandler( error ) );
+        RxStatementResult rxResult = newRxResult( new ListBasedPullHandler( error ) );
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
@@ -195,7 +195,7 @@ class InternalRxResultTest
         } ).verifyComplete();
     }
 
-    private InternalRxResult newRxResult( BasicPullResponseHandler pullHandler )
+    private InternalRxStatementResult newRxResult( BasicPullResponseHandler pullHandler )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         when( runHandler.runFuture() ).thenReturn( Futures.completedWithNull() );
@@ -203,17 +203,17 @@ class InternalRxResultTest
         return newRxResult( cursor );
     }
 
-    private InternalRxResult newRxResult( RxStatementResultCursor cursor )
+    private InternalRxStatementResult newRxResult( RxStatementResultCursor cursor )
     {
-        return new InternalRxResult( () -> {
+        return new InternalRxStatementResult( () -> {
             // now we successfully run
             return completedFuture( cursor );
         } );
     }
 
-    private InternalRxResult newRxResult( Throwable error )
+    private InternalRxStatementResult newRxResult( Throwable error )
     {
-        return new InternalRxResult( () -> {
+        return new InternalRxStatementResult( () -> {
             // now we successfully run
             return failedFuture( new CompletionException( error ) );
         } );

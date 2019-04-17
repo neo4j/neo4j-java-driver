@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -44,7 +44,7 @@ public class RxTransactionFunctionExample extends BaseApplication
 
 
         return Flux.using( driver::rxSession, session -> session.readTransaction( tx -> {
-                    RxResult result = tx.run( query, parameters );
+                    RxStatementResult result = tx.run( query, parameters );
                     return Flux.from( result.records() )
                             .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.summary() ) );
                 }
@@ -60,7 +60,7 @@ public class RxTransactionFunctionExample extends BaseApplication
 
 
         return Flowable.using( driver::rxSession, session -> session.readTransaction( tx -> {
-                    RxResult result = tx.run( query, parameters );
+                    RxStatementResult result = tx.run( query, parameters );
                     return Flowable.fromPublisher( result.records() )
                             .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.summary() );
                 }

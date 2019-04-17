@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.reactive;
 
 import java.util.Map;
 
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxStatementRunner;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
@@ -31,25 +31,25 @@ import static org.neo4j.driver.internal.AbstractStatementRunner.parameters;
 public abstract class AbstractRxStatementRunner implements RxStatementRunner
 {
     @Override
-    public final RxResult run( String statementTemplate, Value parameters )
+    public final RxStatementResult run( String statementTemplate, Value parameters )
     {
         return run( new Statement( statementTemplate, parameters ) );
     }
 
     @Override
-    public final RxResult run( String statementTemplate, Map<String,Object> statementParameters )
+    public final RxStatementResult run( String statementTemplate, Map<String,Object> statementParameters )
     {
         return run( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final RxResult run( String statementTemplate, Record statementParameters )
+    public final RxStatementResult run( String statementTemplate, Record statementParameters )
     {
         return run( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final RxResult run( String statementTemplate )
+    public final RxStatementResult run( String statementTemplate )
     {
         return run( new Statement( statementTemplate ) );
     }
