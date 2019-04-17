@@ -32,6 +32,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
@@ -388,6 +390,33 @@ class MetadataExtractorTest
         ServerVersion version = extractNeo4jServerVersion( metadata );
 
         assertEquals( ServerVersion.v3_5_0, version );
+    }
+
+
+    @Test
+    void shouldExtractDatabase()
+    {
+        // Given
+        Map<String,Value> metadata = singletonMap( "db", value( "MyAwesomeDatabase" ) );
+
+        // When
+        DatabaseInfo db = extractDatabaseInfo( metadata );
+
+        // Then
+        assertEquals( "MyAwesomeDatabase", db.name() );
+    }
+
+    @Test
+    void shouldDefaultToEmptyDatabaseName()
+    {
+        // Given
+        Map<String,Value> metadata = singletonMap( "no_db", value( "no_db" ) );
+
+        // When
+        DatabaseInfo db = extractDatabaseInfo( metadata );
+
+        // Then
+        assertEquals( "", db.name() );
     }
 
     @Test

@@ -110,7 +110,13 @@ public interface ResultSummary
 
     /**
      * The basic information of the server where the result is obtained from
-     * @return basic information of the server where the result is obtain from
+     * @return basic information of the server where the result is obtained from
      */
     ServerInfo server();
+
+    /**
+     * The basic information of the database where the result is obtained from
+     * @return the basic information of the database where the result is obtained from
+     */
+    DatabaseInfo database();
 }
