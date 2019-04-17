@@ -25,12 +25,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -38,8 +39,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 import static org.neo4j.driver.internal.util.Matchers.directDriverWithAddress;
-import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 @ParallelizableIT
 class DirectDriverIT
@@ -55,6 +56,22 @@ class DirectDriverIT
         if ( driver != null )
         {
             driver.close();
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
+    void shouldBeAbleToConnectSingleInstanceWithNeo4jScheme() throws Throwable
+    {
+        URI uri = URI.create( String.format( "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort() ) );
+        BoltServerAddress address = new BoltServerAddress( neo4j.uri() );
+
+        try ( Driver driver = GraphDatabase.driver( uri, neo4j.authToken() ); Session session = driver.session() )
+        {
+            assertThat( driver, is( clusterDriver() ) );
+
+            StatementResult result = session.run( "RETURN 1" );
+            assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
         }
     }
 
@@ -101,7 +118,7 @@ class DirectDriverIT
     void shouldConnectIPv6Uri()
     {
         // Given
-        try ( Driver driver = GraphDatabase.driver( "bolt://[::1]:" + neo4j.boltPort(), DEFAULT_AUTH_TOKEN );
+        try ( Driver driver = GraphDatabase.driver( "bolt://[::1]:" + neo4j.boltPort(), neo4j.authToken() );
               Session session = driver.session() )
         {
             // When
