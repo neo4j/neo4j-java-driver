@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import reactor.core.publisher.Flux;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,9 +33,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -54,6 +56,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -486,6 +489,108 @@ class ExamplesIT
         try ( HostnameVerificationExample example = new HostnameVerificationExample( uri, USER, PASSWORD, neo4j.tlsCertFile() ) )
         {
             assertTrue( example.canConnect() );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testShouldRunRxAutocommitTransactionExample() throws Exception
+    {
+        try ( RxAutocommitTransactionExample example = new RxAutocommitTransactionExample( uri, USER, PASSWORD ) )
+        {
+            // create some 'Product' nodes
+            try ( Session session = neo4j.driver().session() )
+            {
+                session.run(
+                        "UNWIND ['Tesseract', 'Orb', 'Eye of Agamotto'] AS item " +
+                                "CREATE (:Product {id: 0, title: item})" );
+            }
+
+            // read all 'Product' nodes
+            List<String> titles = await( example.readProductTitlesReactor() );
+            assertEquals( new HashSet<>( asList( "Tesseract", "Orb", "Eye of Agamotto" ) ), new HashSet<>( titles ) );
+
+            titles = await( example.readProductTitlesRxJava() );
+            assertEquals( new HashSet<>( asList( "Tesseract", "Orb", "Eye of Agamotto" ) ), new HashSet<>( titles ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testRxExplicitTransactionExample() throws Exception
+    {
+        try ( RxExplicitTransactionExample example = new RxExplicitTransactionExample( uri, USER, PASSWORD ) )
+        {
+            // create a 'Product' node
+            try ( Session session = neo4j.driver().session() )
+            {
+                session.run( "CREATE (:Product {id: 0, title: 'Mind Gem'})" );
+            }
+
+            List<String> products = await( example.readSingleProductReactor() );
+            assertEquals( 1, products.size() );
+            assertEquals( "Mind Gem", products.get( 0 ) );
+
+            products = await( example.readSingleProductRxJava() );
+            assertEquals( 1, products.size() );
+            assertEquals( "Mind Gem", products.get( 0 ) );
+
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testShouldRunRxTransactionFunctionExampleReactor() throws Exception
+    {
+        try ( RxTransactionFunctionExample example = new RxTransactionFunctionExample( uri, USER, PASSWORD ) )
+        {
+            // create some 'Product' nodes
+            try ( Session session = neo4j.driver().session() )
+            {
+                session.run(
+                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " +
+                                "CREATE (:Product {id: 0, title: item})" );
+            }
+
+            StdIOCapture stdIOCapture = new StdIOCapture();
+
+            // print all 'Product' nodes to fake stdout
+            try ( AutoCloseable ignore = stdIOCapture.capture() )
+            {
+                ResultSummary summary = await( Flux.from( example.printAllProductsReactor() ).single() );
+                assertEquals( StatementType.READ_ONLY, summary.statementType() );
+            }
+
+            Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
+            assertEquals( new HashSet<>( asList( "Infinity Gauntlet", "Mjölnir" ) ), capturedOutput );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testShouldRunRxTransactionFunctionExampleRxJava() throws Exception
+    {
+        try ( RxTransactionFunctionExample example = new RxTransactionFunctionExample( uri, USER, PASSWORD ) )
+        {
+            // create some 'Product' nodes
+            try ( Session session = neo4j.driver().session() )
+            {
+                session.run(
+                        "UNWIND ['Infinity Gauntlet', 'Mjölnir'] AS item " +
+                                "CREATE (:Product {id: 0, title: item})" );
+            }
+
+            StdIOCapture stdIOCapture = new StdIOCapture();
+
+            // print all 'Product' nodes to fake stdout
+            try ( AutoCloseable ignore = stdIOCapture.capture() )
+            {
+                ResultSummary summary = await( Flux.from( example.printAllProductsRxJava() ).single() );
+                assertEquals( StatementType.READ_ONLY, summary.statementType() );
+            }
+
+            Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
+            assertEquals( new HashSet<>( asList( "Infinity Gauntlet", "Mjölnir" ) ), capturedOutput );
         }
     }
 }
