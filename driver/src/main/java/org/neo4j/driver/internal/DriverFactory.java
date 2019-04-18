@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.DnsResolver;
+import org.neo4j.driver.internal.cluster.IdentityResolver;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
@@ -62,6 +62,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.metrics.spi.Metrics.isMetricsEnabled;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
@@ -109,7 +110,7 @@ public class DriverFactory
 
     protected static InternalAbstractMetrics createDriverMetrics( Config config )
     {
-        if( isMetricsEnabled() )
+        if ( isMetricsEnabled() )
         {
             return new InternalMetrics( config );
         }
@@ -160,7 +161,7 @@ public class DriverFactory
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metrics, config);
+        InternalDriver driver = createDriver( securityPlan, sessionFactory, metrics, config );
         Logger log = config.logging().getLog( Driver.class.getSimpleName() );
         log.info( "Direct driver instance %s created for server address %s", driver.hashCode(), address );
         return driver;
@@ -181,7 +182,7 @@ public class DriverFactory
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver(securityPlan, sessionFactory, metrics, config);
+        InternalDriver driver = createDriver( securityPlan, sessionFactory, metrics, config );
         Logger log = config.logging().getLog( Driver.class.getSimpleName() );
         log.info( "Routing driver instance %s created for server address %s", driver.hashCode(), address );
         return driver;
@@ -228,7 +229,7 @@ public class DriverFactory
     private static ServerAddressResolver createResolver( Config config )
     {
         ServerAddressResolver configuredResolver = config.resolver();
-        return configuredResolver != null ? configuredResolver : new DnsResolver( config.logging() );
+        return configuredResolver != null ? configuredResolver : IDENTITY_RESOLVER;
     }
 
     /**
@@ -303,12 +304,12 @@ public class DriverFactory
             case TRUST_ON_FIRST_USE:
                 logger.warn(
                         "Option `TRUST_ON_FIRST_USE` has been deprecated and will be removed in a future " +
-                        "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
+                                "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
                 return SecurityPlan.forTrustOnFirstUse( trustStrategy.certFile(), hostnameVerificationEnabled, address, logger );
             case TRUST_SIGNED_CERTIFICATES:
                 logger.warn(
                         "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
-                        "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                                "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
                 // intentional fallthrough
 
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
