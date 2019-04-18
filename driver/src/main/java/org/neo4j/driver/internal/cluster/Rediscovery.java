@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.cluster;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
@@ -35,10 +38,12 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.v1.net.ServerAddress;
 import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -270,7 +275,20 @@ public class Rediscovery
     {
         return resolver.resolve( address )
                 .stream()
-                .map( BoltServerAddress::from )
+                .flatMap( resolved -> resolveAll( BoltServerAddress.from( resolved ) ) )
                 .collect( toList() ); // collect to list to preserve the order
+    }
+
+    private Stream<BoltServerAddress> resolveAll( BoltServerAddress address )
+    {
+        try
+        {
+            return address.resolveAll().stream();
+        }
+        catch ( UnknownHostException e )
+        {
+            logger.error( "Failed to resolve address `" + address + "` to IPs due to error: " + e.getMessage(), e );
+            return Stream.of( address );
+        }
     }
 }
