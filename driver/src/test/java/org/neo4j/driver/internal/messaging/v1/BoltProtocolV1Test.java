@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.async.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
+import org.neo4j.driver.internal.handlers.CommitTxNoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
@@ -192,7 +193,7 @@ public class BoltProtocolV1Test
         CompletionStage<Bookmarks> stage = protocol.commitTransaction( connection );
 
         verify( connection ).writeAndFlush(
-                eq( new RunMessage( "COMMIT" ) ), eq( NoOpResponseHandler.INSTANCE ),
+                eq( new RunMessage( "COMMIT" ) ), eq( CommitTxNoOpResponseHandler.INSTANCE ),
                 eq( PullAllMessage.PULL_ALL ), any( CommitTxResponseHandler.class ) );
 
         assertEquals( Bookmarks.from( bookmarkString ), await( stage ) );

@@ -18,48 +18,26 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.v1.Value;
 
-import static java.util.Objects.requireNonNull;
-
-public class CommitTxResponseHandler implements AbstractCommitTxResponseHandler
+public class CommitTxNoOpResponseHandler implements AbstractCommitTxResponseHandler
 {
-    private final CompletableFuture<Bookmarks> commitFuture;
-
-    public CommitTxResponseHandler( CompletableFuture<Bookmarks> commitFuture )
-    {
-        this.commitFuture = requireNonNull( commitFuture );
-    }
+    public static final CommitTxNoOpResponseHandler INSTANCE = new CommitTxNoOpResponseHandler();
 
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        Value bookmarkValue = metadata.get( "bookmark" );
-        if ( bookmarkValue == null )
-        {
-            commitFuture.complete( null );
-        }
-        else
-        {
-            commitFuture.complete( Bookmarks.from( bookmarkValue.asString() ) );
-        }
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        commitFuture.completeExceptionally( error );
     }
 
     @Override
     public void onRecord( Value[] fields )
     {
-        throw new UnsupportedOperationException(
-                "Transaction commit is not expected to receive records: " + Arrays.toString( fields ) );
     }
 }

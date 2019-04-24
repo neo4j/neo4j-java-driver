@@ -46,6 +46,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.driver.v1.exceptions.ConnectionBrokenAtCommitException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.net.ServerAddress;
@@ -65,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -762,6 +764,56 @@ class RoutingDriverBoltKitTest
         }
         verify( logger, times( 3 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
         verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+    }
+
+    @Test
+    void shouldNotRetryWriteTransactionWhenFailedToCommitV3() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "dead_write_server_at_commit_v3.script", 9007 );
+
+        Logger logger = mock( Logger.class );
+        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+                Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            assertThrows( ConnectionBrokenAtCommitException.class,
+                    () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
+
+            assertEquals( 1, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+        }
+        verify( logger, never() ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
+    }
+
+    @Test
+    void shouldNotRetryWriteTransactionWhenFailedToCommit() throws Exception
+    {
+        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "dead_write_server_at_commit.script", 9007 );
+
+        Logger logger = mock( Logger.class );
+        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+                Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            assertThrows( ConnectionBrokenAtCommitException.class,
+                    () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
+
+            assertEquals( 1, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+        }
+        verify( logger, never() ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
     }
 
     @Test

@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ConnectionBrokenAtCommitException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -63,6 +64,18 @@ class RoutingResponseHandlerTest
 
         assertThat( handledError, instanceOf( SessionExpiredException.class ) );
         verify( errorHandler ).onConnectionFailure( LOCAL_DEFAULT );
+    }
+
+    @Test
+    void shouldHandleServiceUnavailableExceptionSpeciallyForWriteOnCommitFailure()
+    {
+        ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
+        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+
+        Throwable handledError = handle( mock( AbstractCommitTxResponseHandler.class ), error, errorHandler, AccessMode.WRITE );
+
+        verify( errorHandler ).onConnectionFailure( LOCAL_DEFAULT );
+        assertThat( handledError, instanceOf( ConnectionBrokenAtCommitException.class ) );
     }
 
     @Test
@@ -181,13 +194,19 @@ class RoutingResponseHandlerTest
     private static Throwable handle( Throwable error, RoutingErrorHandler errorHandler, AccessMode accessMode )
     {
         ResponseHandler responseHandler = mock( ResponseHandler.class );
+        return handle( responseHandler, error, errorHandler, accessMode );
+    }
+
+    private static Throwable handle( ResponseHandler responseHandler, Throwable error, RoutingErrorHandler errorHandler, AccessMode mode )
+    {
         RoutingResponseHandler routingResponseHandler =
-                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, accessMode, errorHandler );
+                new RoutingResponseHandler( responseHandler, LOCAL_DEFAULT, mode, errorHandler );
 
         routingResponseHandler.onFailure( error );
 
         ArgumentCaptor<Throwable> handledErrorCaptor = ArgumentCaptor.forClass( Throwable.class );
         verify( responseHandler ).onFailure( handledErrorCaptor.capture() );
         return handledErrorCaptor.getValue();
+
     }
 }

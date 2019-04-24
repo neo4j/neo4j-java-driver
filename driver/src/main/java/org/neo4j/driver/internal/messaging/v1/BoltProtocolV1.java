@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.ExplicitTransaction;
 import org.neo4j.driver.internal.InternalStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
+import org.neo4j.driver.internal.handlers.CommitTxNoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -128,7 +129,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
         ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture );
         connection.writeAndFlush(
-                COMMIT_MESSAGE, NoOpResponseHandler.INSTANCE,
+                COMMIT_MESSAGE, CommitTxNoOpResponseHandler.INSTANCE,
                 PullAllMessage.PULL_ALL, pullAllHandler );
 
         return commitFuture;
