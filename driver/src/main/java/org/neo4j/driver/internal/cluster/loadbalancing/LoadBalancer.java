@@ -47,6 +47,7 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.net.ServerAddressResolver;
 
+import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
@@ -221,7 +222,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             {
                 if ( error instanceof ServiceUnavailableException )
                 {
-                    log.error( "Failed to obtain a connection towards address " + address, error );
+                    SessionExpiredException errorToLog = new SessionExpiredException( format( "Server at %s is no longer available", address ), error );
+                    log.warn( "Failed to obtain a connection towards address " + address, errorToLog );
                     forget( address );
                     eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
                 }
