@@ -149,11 +149,7 @@ class DirectDriverBoltKitTest
     {
         StubServer server = StubServer.start( "hello_run_exit_read.script", 9001 );
 
-        Config config = Config.builder()
-                .withoutEncryption()
-                .build();
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( AccessMode.READ ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
@@ -170,11 +166,7 @@ class DirectDriverBoltKitTest
     {
         StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
 
-        Config config = Config.builder()
-                .withoutEncryption()
-                .build();
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( AccessMode.WRITE ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
@@ -238,6 +230,50 @@ class DirectDriverBoltKitTest
     void shouldThrowRollbackErrorWhenTransactionClosed() throws Exception
     {
         testTxCloseErrorPropagation( "rollback_error.script", false, "Unable to rollback" );
+    }
+
+    @Test
+    void shouldThrowCorrectErrorOnRunFailure() throws Throwable
+    {
+        StubServer server = StubServer.start( "database_shutdown.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+                Session session = driver.session( "neo4j:bookmark:v1:tx0" );
+                // has to enforce to flush BEGIN to have tx started.
+                Transaction transaction = session.beginTransaction() )
+        {
+            TransientException error = assertThrows( TransientException.class, () -> {
+                StatementResult result = transaction.run( "RETURN 1" );
+                result.consume();
+            } );
+            assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldThrowCorrectErrorOnCommitFailure() throws Throwable
+    {
+        StubServer server = StubServer.start( "database_shutdown_at_commit.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+                Session session = driver.session() )
+        {
+            Transaction transaction = session.beginTransaction();
+            StatementResult result = transaction.run( "CREATE (n {name:'Bob'})" );
+            result.consume();
+            transaction.success();
+
+            TransientException error = assertThrows( TransientException.class, transaction::close );
+            assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
     }
 
     private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,

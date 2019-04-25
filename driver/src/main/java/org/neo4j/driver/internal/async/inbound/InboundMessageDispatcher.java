@@ -141,9 +141,17 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         handler.onFailure( error );
     }
 
-    public void handleFatalError( Throwable error )
+    public void handleChannelError( Throwable error )
     {
-        currentError = error;
+        if ( currentError != null )
+        {
+            // we already have an error, this new error probably is caused by the existing one, thus we chain the new error on this current error
+            currentError.addSuppressed( error );
+        }
+        else
+        {
+            currentError = error;
+        }
         fatalErrorOccurred = true;
 
         while ( !handlers.isEmpty() )
