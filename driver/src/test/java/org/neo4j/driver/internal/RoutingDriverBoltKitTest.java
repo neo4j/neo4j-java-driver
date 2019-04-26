@@ -46,7 +46,7 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
-import org.neo4j.driver.v1.exceptions.ConnectionBrokenAtCommitException;
+import org.neo4j.driver.v1.exceptions.IncompleteCommitException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.net.ServerAddress;
@@ -778,7 +778,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
-            assertThrows( ConnectionBrokenAtCommitException.class,
+            assertThrows( IncompleteCommitException.class,
                     () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
 
             assertEquals( 1, invocations.get() );
@@ -803,7 +803,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
-            assertThrows( ConnectionBrokenAtCommitException.class,
+            assertThrows( IncompleteCommitException.class,
                     () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
 
             assertEquals( 1, invocations.get() );

@@ -27,7 +27,7 @@ import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionBrokenAtCommitException;
+import org.neo4j.driver.v1.exceptions.IncompleteCommitException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -75,7 +75,7 @@ class RoutingResponseHandlerTest
         Throwable handledError = handle( mock( AbstractCommitTxResponseHandler.class ), error, errorHandler, AccessMode.WRITE );
 
         verify( errorHandler ).onConnectionFailure( LOCAL_DEFAULT );
-        assertThat( handledError, instanceOf( ConnectionBrokenAtCommitException.class ) );
+        assertThat( handledError, instanceOf( IncompleteCommitException.class ) );
     }
 
     @Test

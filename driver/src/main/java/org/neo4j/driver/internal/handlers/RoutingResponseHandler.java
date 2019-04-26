@@ -28,7 +28,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.exceptions.ClientException;
-import org.neo4j.driver.v1.exceptions.ConnectionBrokenAtCommitException;
+import org.neo4j.driver.v1.exceptions.IncompleteCommitException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.exceptions.TransientException;
@@ -110,7 +110,7 @@ public class RoutingResponseHandler implements ResponseHandler
         if ( accessMode == AccessMode.WRITE && delegate instanceof AbstractCommitTxResponseHandler )
         {
             // cannot be retried
-            return new ConnectionBrokenAtCommitException( format( "Connection with server at %s is broken at commit. The commit status is unknown. " +
+            return new IncompleteCommitException( format( "Connection with server at %s is broken at commit. The commit status is unknown. " +
                             "Before retrying your transaction, you might want to double check if the previous transaction has been successfully committed by database or not.",
                     address ), e );
         }

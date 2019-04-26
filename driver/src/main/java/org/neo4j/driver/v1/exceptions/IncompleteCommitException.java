@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.v1.exceptions;
 
-public class ConnectionBrokenAtCommitException extends Neo4jException
+public class IncompleteCommitException extends Neo4jException
 {
-    public ConnectionBrokenAtCommitException( String message, Throwable e )
+    public IncompleteCommitException( String message, Throwable e )
     {
         super( message, e );
     }
