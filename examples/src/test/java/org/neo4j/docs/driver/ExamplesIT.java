@@ -47,6 +47,7 @@ import org.neo4j.driver.util.TestUtil;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -462,20 +463,29 @@ class ExamplesIT
     {
         // log file is defined in logback-test.xml configuration file
         Path logFile = Paths.get( "target", "test.log" );
-        Files.deleteIfExists( logFile );
+        if ( Files.exists( logFile ) )
+        {
+            // delete file made this test flaky
+            // erase content instead
+            Files.write( logFile, new byte[0] );
+        }
 
+        // verify erased
+        String logFileContent = new String( Files.readAllBytes( logFile ), UTF_8 );
+        assertThat( logFileContent, is( emptyString() ) );
+
+        String randomString = UUID.randomUUID().toString();
         try ( Slf4jLoggingExample example = new Slf4jLoggingExample( uri, USER, PASSWORD ) )
         {
-            String randomString = UUID.randomUUID().toString();
             Object result = example.runReturnQuery( randomString );
             assertEquals( randomString, result );
-
-            assertTrue( Files.exists( logFile ) );
-
-            String logFileContent = new String( Files.readAllBytes( logFile ), UTF_8 );
-            assertThat( logFileContent, containsString( "RETURN $x" ) );
-            assertThat( logFileContent, containsString( randomString ) );
         }
+        assertTrue( Files.exists( logFile ) );
+
+        logFileContent = new String( Files.readAllBytes( logFile ), UTF_8 );
+        assertThat( logFileContent, containsString( "RETURN $x" ) );
+        assertThat( logFileContent, containsString( randomString ) );
+
     }
 
     @Test
