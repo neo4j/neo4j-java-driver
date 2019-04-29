@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -157,7 +158,7 @@ class InboundMessageDispatcherTest
     }
 
     @Test
-    void shouldFailAllHandlersOnFatalError()
+    void shouldFailAllHandlersOnChannelError()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
@@ -170,7 +171,7 @@ class InboundMessageDispatcherTest
         dispatcher.enqueue( handler3 );
 
         RuntimeException fatalError = new RuntimeException( "Fatal!" );
-        dispatcher.handleFatalError( fatalError );
+        dispatcher.handleChannelError( fatalError );
 
         InOrder inOrder = inOrder( handler1, handler2, handler3 );
         inOrder.verify( handler1 ).onFailure( fatalError );
@@ -179,17 +180,34 @@ class InboundMessageDispatcherTest
     }
 
     @Test
-    void shouldFailNewHandlerAfterFatalError()
+    void shouldFailNewHandlerAfterChannelError()
     {
         InboundMessageDispatcher dispatcher = newDispatcher();
 
         RuntimeException fatalError = new RuntimeException( "Fatal!" );
-        dispatcher.handleFatalError( fatalError );
+        dispatcher.handleChannelError( fatalError );
 
         ResponseHandler handler = mock( ResponseHandler.class );
         dispatcher.enqueue( handler );
 
         verify( handler ).onFailure( fatalError );
+    }
+
+    @Test
+    void shouldAttachChannelErrorOnExistingError()
+    {
+        InboundMessageDispatcher dispatcher = newDispatcher();
+
+        ResponseHandler handler = mock( ResponseHandler.class );
+        dispatcher.enqueue( handler );
+
+        dispatcher.handleFailureMessage( "Neo.ClientError", "First error!" );
+        RuntimeException fatalError = new RuntimeException( "Second Error!" );
+        dispatcher.handleChannelError( fatalError );
+
+        verify( handler ).onFailure( argThat(
+                error -> error instanceof ClientException && error.getMessage().equals( "First error!" ) &&
+                        error.getSuppressed().length == 1 && error.getSuppressed()[0].getMessage().equals( "Second Error!" ) ) );
     }
 
     @Test

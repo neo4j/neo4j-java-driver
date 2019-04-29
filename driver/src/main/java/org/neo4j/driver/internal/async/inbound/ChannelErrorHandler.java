@@ -88,7 +88,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
         else
         {
             failed = true;
-            log.error( "Fatal error occurred in the pipeline", error );
+            log.warn( "Fatal error occurred in the pipeline", error );
             fail( ctx, error );
         }
     }
@@ -96,7 +96,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     private void fail( ChannelHandlerContext ctx, Throwable error )
     {
         Throwable cause = transformError( error );
-        messageDispatcher.handleFatalError( cause );
+        messageDispatcher.handleChannelError( cause );
         log.debug( "Closing channel because of a failure '%s'", error );
         ctx.close();
     }

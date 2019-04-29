@@ -43,6 +43,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
@@ -403,7 +404,7 @@ public class NetworkSession extends AbstractStatementRunner implements Session, 
             {
                 if ( rollbackError != null )
                 {
-                    error.addSuppressed( rollbackError );
+                    addSuppressed( error, rollbackError );
                 }
                 resultFuture.completeExceptionally( error );
             } );
