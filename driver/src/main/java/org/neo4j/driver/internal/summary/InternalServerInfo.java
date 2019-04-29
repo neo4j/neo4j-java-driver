@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.summary;
 
+import java.util.Objects;
+
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ServerInfo;
@@ -43,5 +45,32 @@ public class InternalServerInfo implements ServerInfo
     public String version()
     {
         return version;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        InternalServerInfo that = (InternalServerInfo) o;
+        return Objects.equals( address, that.address ) && Objects.equals( version, that.version );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( address, version );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "InternalServerInfo{" + "address='" + address + '\'' + ", version='" + version + '\'' + '}';
     }
 }

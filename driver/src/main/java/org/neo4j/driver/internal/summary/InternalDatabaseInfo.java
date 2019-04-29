@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.internal.summary;
 
-import org.neo4j.driver.summary.DatabaseInfo;
+import java.util.Objects;
 
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import org.neo4j.driver.summary.DatabaseInfo;
 
 public class InternalDatabaseInfo implements DatabaseInfo
 {
-    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo( ABSENT_DB_NAME );
+    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo( null );
 
     private final String name;
 
@@ -37,5 +37,32 @@ public class InternalDatabaseInfo implements DatabaseInfo
     public String name()
     {
         return this.name;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        InternalDatabaseInfo that = (InternalDatabaseInfo) o;
+        return Objects.equals( name, that.name );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( name );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "InternalDatabaseInfo{" + "name='" + name + '\'' + '}';
     }
 }

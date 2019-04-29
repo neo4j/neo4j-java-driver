@@ -407,7 +407,7 @@ class MetadataExtractorTest
     }
 
     @Test
-    void shouldDefaultToEmptyDatabaseName()
+    void shouldDefaultToNullDatabaseName()
     {
         // Given
         Map<String,Value> metadata = singletonMap( "no_db", value( "no_db" ) );
@@ -416,7 +416,7 @@ class MetadataExtractorTest
         DatabaseInfo db = extractDatabaseInfo( metadata );
 
         // Then
-        assertEquals( "", db.name() );
+        assertNull( db.name() );
     }
 
     @Test

@@ -171,6 +171,7 @@ public class InternalResultSummary implements ResultSummary
         return "InternalResultSummary{" +
                "statement=" + statement +
                ", serverInfo=" + serverInfo +
+               ", databaseInfo=" + databaseInfo +
                ", statementType=" + statementType +
                ", counters=" + counters +
                ", plan=" + plan +
