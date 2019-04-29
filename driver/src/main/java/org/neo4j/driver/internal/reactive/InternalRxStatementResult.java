@@ -27,16 +27,16 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class InternalRxResult implements RxResult
+public class InternalRxStatementResult implements RxStatementResult
 {
     private Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier;
     private volatile CompletionStage<RxStatementResultCursor> cursorFuture;
 
-    public InternalRxResult( Supplier<CompletionStage<RxStatementResultCursor>> cursorFuture )
+    public InternalRxStatementResult( Supplier<CompletionStage<RxStatementResultCursor>> cursorFuture )
     {
         this.cursorFutureSupplier = cursorFuture;
     }

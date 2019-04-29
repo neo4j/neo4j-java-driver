@@ -27,7 +27,7 @@ import reactor.test.StepVerifier;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
@@ -47,7 +47,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
-class RxResultIT
+class RxStatementResultIT
 {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
@@ -56,7 +56,7 @@ class RxResultIT
     void shouldAllowIteratingOverResultStream()
     {
         // When
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         // Then I should be able to iterate over the result
         verifyCanAccessFullRecords( res );
@@ -68,7 +68,7 @@ class RxResultIT
         // When
         int size = 100000;
         RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run( "UNWIND range(1, $size) AS x RETURN x", parameters( "size", size ) );
+        RxStatementResult res = session.run( "UNWIND range(1, $size) AS x RETURN x", parameters( "size", size ) );
 
         // Then I should be able to iterate over the result
         StepVerifier.FirstStep<Integer> step = StepVerifier.create( Flux.from( res.records() ).limitRate( 100 ).map( r -> r.get( "x" ).asInt() ) );
@@ -84,7 +84,7 @@ class RxResultIT
     void shouldReturnKeysRecordsAndSummaryInOrder()
     {
         // When
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         // Then I should be able to iterate over the result
         verifyCanAccessKeys( res );
@@ -96,7 +96,7 @@ class RxResultIT
     void shouldSecondVisitOfRecordReceiveEmptyRecordStream() throws Throwable
     {
         // When
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         // Then I should be able to iterate over the result
         verifyCanAccessFullRecords( res );
@@ -108,7 +108,7 @@ class RxResultIT
     void shouldReturnKeysSummaryAndDiscardRecords()
     {
         // When
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         verifyCanAccessKeys( res );
         verifyCanAccessSummary( res );
@@ -119,7 +119,7 @@ class RxResultIT
     void shouldAllowOnlySummary()
     {
         // When
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         verifyCanAccessSummary( res );
     }
@@ -128,7 +128,7 @@ class RxResultIT
     void shouldAllowAccessKeysAndSummaryAfterRecord() throws Throwable
     {
         // Given
-        RxResult res = sessionRunUnwind();
+        RxStatementResult res = sessionRunUnwind();
 
         // Then I should be able to iterate over the result
         verifyCanAccessFullRecords( res );
@@ -147,7 +147,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult rs =
+        RxStatementResult rs =
                 session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
@@ -162,7 +162,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult rs =
+        RxStatementResult rs =
                 session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
@@ -177,7 +177,7 @@ class RxResultIT
     {
         // When
         RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        RxStatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
         StepVerifier.create( res.keys() ).expectNext( "n" ).expectComplete().verify();
@@ -194,7 +194,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+        RxStatementResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
 
         // Then
         StepVerifier.create( rs.keys() ).expectComplete().verify();
@@ -206,7 +206,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult result = session.run( "INVALID" );
+        RxStatementResult result = session.run( "INVALID" );
 
         // When
         Flux<String> keys = Flux.from( result.keys() );
@@ -235,7 +235,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult result = session.run( "INVALID" );
+        RxStatementResult result = session.run( "INVALID" );
 
         // When
         Flux<String> keys = Flux.from( result.keys() );
@@ -261,7 +261,7 @@ class RxResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult result = session.run("UNWIND [1,2] AS a RETURN a");
+        RxStatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         StepVerifier.create( Flux.from( result.records() )
@@ -285,7 +285,7 @@ class RxResultIT
     {
         RxSession session = neo4j.driver().rxSession();
 
-        RxResult result = session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" );
+        RxStatementResult result = session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" );
         StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( 0 ).asInt() ) )
                 .expectNext( 1 )
                 .expectNext( 1 )
@@ -298,7 +298,7 @@ class RxResultIT
                 .verify();
     }
 
-    private void verifyCanAccessSummary( RxResult res )
+    private void verifyCanAccessSummary( RxStatementResult res )
     {
         StepVerifier.create( res.summary() ).assertNext( summary -> {
             assertThat( summary.statement().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
@@ -307,25 +307,25 @@ class RxResultIT
         } ).verifyComplete();
     }
 
-    private void verifyRecordsAlreadyDiscarded( RxResult res )
+    private void verifyRecordsAlreadyDiscarded( RxStatementResult res )
     {
         StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
                 .expectComplete()
                 .verify();
     }
 
-    private void verifyCanAccessFullRecords( RxResult res )
+    private void verifyCanAccessFullRecords( RxStatementResult res )
     {
         StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) ).expectNext( 1 ).expectNext( 2 ).expectNext( 3 ).expectNext(
                 4 ).expectComplete().verify();
     }
 
-    private void verifyCanAccessKeys( RxResult res )
+    private void verifyCanAccessKeys( RxStatementResult res )
     {
         StepVerifier.create( res.keys() ).expectNext( "a" ).verifyComplete();
     }
 
-    private RxResult sessionRunUnwind()
+    private RxStatementResult sessionRunUnwind()
     {
         RxSession session = neo4j.driver().rxSession();
         return session.run( "UNWIND [1,2,3,4] AS a RETURN a" );

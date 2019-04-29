@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
 import static java.util.Collections.singletonList;
@@ -79,7 +79,7 @@ class InternalRxTransactionTest
         verify( tx ).rollbackAsync();
     }
 
-    private static Stream<Function<RxTransaction,RxResult>> allTxRunMethods()
+    private static Stream<Function<RxTransaction,RxStatementResult>> allTxRunMethods()
     {
         return Stream.of(
                 rxSession -> rxSession.run( "RETURN 1" ),
@@ -93,7 +93,7 @@ class InternalRxTransactionTest
 
     @ParameterizedTest
     @MethodSource( "allTxRunMethods" )
-    void shouldDelegateRun( Function<RxTransaction,RxResult> runReturnOne ) throws Throwable
+    void shouldDelegateRun( Function<RxTransaction,RxStatementResult> runReturnOne ) throws Throwable
     {
         // Given
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
@@ -104,9 +104,9 @@ class InternalRxTransactionTest
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
 
         // When
-        RxResult result = runReturnOne.apply( rxTx );
+        RxStatementResult result = runReturnOne.apply( rxTx );
         // Execute the run
-        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxStatementResult) result).cursorFutureSupplier().get();
 
         // Then
         verify( tx ).runRx( any( Statement.class ) );
@@ -115,7 +115,7 @@ class InternalRxTransactionTest
 
     @ParameterizedTest
     @MethodSource( "allTxRunMethods" )
-    void shouldMarkTxIfFailedToRun( Function<RxTransaction,RxResult> runReturnOne ) throws Throwable
+    void shouldMarkTxIfFailedToRun( Function<RxTransaction,RxStatementResult> runReturnOne ) throws Throwable
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -126,9 +126,9 @@ class InternalRxTransactionTest
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
 
         // When
-        RxResult result = runReturnOne.apply( rxTx );
+        RxStatementResult result = runReturnOne.apply( rxTx );
         // Execute the run
-        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        CompletionStage<RxStatementResultCursor> cursorFuture = ((InternalRxStatementResult) result).cursorFutureSupplier().get();
 
         // Then
         verify( tx ).runRx( any( Statement.class ) );

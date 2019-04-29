@@ -30,7 +30,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
@@ -126,27 +126,27 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     }
 
     @Override
-    public RxResult run( String statement, TransactionConfig config )
+    public RxStatementResult run( String statement, TransactionConfig config )
     {
         return run( new Statement( statement ), config );
     }
 
     @Override
-    public RxResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    public RxStatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
     {
         return run( new Statement( statement, parameters ), config );
     }
 
     @Override
-    public RxResult run( Statement statement )
+    public RxStatementResult run( Statement statement )
     {
         return run( statement, TransactionConfig.empty() );
     }
 
     @Override
-    public RxResult run( Statement statement, TransactionConfig config )
+    public RxStatementResult run( Statement statement, TransactionConfig config )
     {
-        return new InternalRxResult( () -> {
+        return new InternalRxStatementResult( () -> {
             CompletableFuture<RxStatementResultCursor> resultCursorFuture = new CompletableFuture<>();
             session.runRx( statement, config ).whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )

@@ -59,7 +59,7 @@ import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
@@ -1209,7 +1209,7 @@ class SessionIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult result = session.run( "RETURN 1" );
+        RxStatementResult result = session.run( "RETURN 1" );
 
         // When trying to run the query on a server that is using a protocol that is lower than V4
         StepVerifier.create( result.records() ).expectErrorSatisfies( error -> {

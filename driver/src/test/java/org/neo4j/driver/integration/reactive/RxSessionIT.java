@@ -38,7 +38,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
@@ -65,7 +65,7 @@ class RxSessionIT
     {
         // When
         RxSession session = neo4j.driver().rxSession();
-        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
@@ -82,12 +82,12 @@ class RxSessionIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxResult res1 = session.run( "INVALID" );
+        RxStatementResult res1 = session.run( "INVALID" );
 
         StepVerifier.create( res1.records() ).expectError( ClientException.class ).verify();
 
         // When
-        RxResult res2 = session.run( "RETURN 1" );
+        RxStatementResult res2 = session.run( "RETURN 1" );
 
         // Then
         StepVerifier.create( res2.records() ).assertNext( record -> {

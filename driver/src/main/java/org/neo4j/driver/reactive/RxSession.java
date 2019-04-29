@@ -32,7 +32,7 @@ import org.neo4j.driver.Values;
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
  * @see Session
- * @see RxResult
+ * @see RxStatementResult
  * @see RxTransaction
  * @see Publisher
  * @since 2.0
@@ -158,7 +158,7 @@ public interface RxSession extends RxStatementRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run( String statement, TransactionConfig config );
+    RxStatementResult run( String statement, TransactionConfig config );
 
     /**
      * Run a statement with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream.
@@ -196,7 +196,7 @@ public interface RxSession extends RxStatementRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run( String statement, Map<String,Object> parameters, TransactionConfig config );
+    RxStatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config );
 
     /**
      * Run a statement in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a reactive result stream.
@@ -222,7 +222,7 @@ public interface RxSession extends RxStatementRunner
      * @param config configuration for the new transaction.
      * @return a reactive result.
      */
-    RxResult run( Statement statement, TransactionConfig config );
+    RxStatementResult run( Statement statement, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed statement within this session.

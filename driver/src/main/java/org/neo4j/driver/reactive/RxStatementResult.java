@@ -38,7 +38,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see Subscription
  * @since 2.0
  */
-public interface RxResult
+public interface RxStatementResult
 {
     /**
      * Returns a cold publisher of keys.

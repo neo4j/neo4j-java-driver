@@ -54,7 +54,7 @@ public interface RxStatementRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a reactive result.
      */
-    RxResult run( String statementTemplate, Value parameters );
+    RxStatementResult run( String statementTemplate, Value parameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
@@ -74,7 +74,7 @@ public interface RxStatementRunner
      * @param statementParameters input data for the statement
      * @return a reactive result.
      */
-    RxResult run( String statementTemplate, Map<String,Object> statementParameters );
+    RxStatementResult run( String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
@@ -93,7 +93,7 @@ public interface RxStatementRunner
      * @param statementParameters input data for the statement
      * @return a reactive result.
      */
-    RxResult run( String statementTemplate, Record statementParameters );
+    RxStatementResult run( String statementTemplate, Record statementParameters );
 
     /**
      * Register running of a statement and return a reactive result stream.
@@ -103,7 +103,7 @@ public interface RxStatementRunner
      * @param statementTemplate text of a Neo4j statement
      * @return a reactive result.
      */
-    RxResult run( String statementTemplate );
+    RxStatementResult run( String statementTemplate );
 
     /**
      * Register running of a statement and return a reactive result stream.
@@ -113,5 +113,5 @@ public interface RxStatementRunner
      * @param statement a Neo4j statement
      * @return a reactive result.
      */
-    RxResult run( Statement statement );
+    RxStatementResult run( Statement statement );
 }
