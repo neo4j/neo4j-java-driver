@@ -31,7 +31,6 @@ import org.neo4j.driver.internal.async.ChannelConnector;
 import org.neo4j.driver.internal.async.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.IdentityResolver;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
@@ -66,6 +65,7 @@ import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLV
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.metrics.spi.Metrics.isMetricsEnabled;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
 {
@@ -371,10 +371,7 @@ public class DriverFactory
         }
         catch ( Throwable closeError )
         {
-            if ( mainError != closeError )
-            {
-                mainError.addSuppressed( closeError );
-            }
+            addSuppressed( mainError, closeError );
         }
     }
 

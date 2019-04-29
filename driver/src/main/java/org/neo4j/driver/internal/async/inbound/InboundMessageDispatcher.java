@@ -37,6 +37,7 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class InboundMessageDispatcher implements ResponseMessageHandler
 {
@@ -146,7 +147,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         if ( currentError != null )
         {
             // we already have an error, this new error probably is caused by the existing one, thus we chain the new error on this current error
-            currentError.addSuppressed( error );
+            addSuppressed( currentError, error );
         }
         else
         {

@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import org.neo4j.driver.internal.async.EventLoopGroupFactory;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public final class Futures
 {
@@ -184,10 +185,7 @@ public final class Futures
         {
             Throwable cause1 = completionExceptionCause( error1 );
             Throwable cause2 = completionExceptionCause( error2 );
-            if ( cause1 != cause2 )
-            {
-                cause1.addSuppressed( cause2 );
-            }
+            addSuppressed( cause1, cause2 );
             return asCompletionException( cause1 );
         }
         else if ( error1 != null )
