@@ -69,6 +69,7 @@ import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
@@ -1249,6 +1250,40 @@ class SessionIT
     void shouldAllowDatabaseName() throws Throwable
     {
         // Given
+        try( Session session = neo4j.driver().session( t -> t.withDatabase( "neo4j" ) ) )
+        {
+            StatementResult result = session.run( "RETURN 1" );
+            assertThat( result.single().get( 0 ).asInt(), equalTo( 1 ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldAllowDatabaseNameUsingTx() throws Throwable
+    {
+        try ( Session session = neo4j.driver().session( t -> t.withDatabase( "neo4j" ) );
+              Transaction transaction = session.beginTransaction() )
+        {
+            StatementResult result = transaction.run( "RETURN 1" );
+            assertThat( result.single().get( 0 ).asInt(), equalTo( 1 ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldAllowDatabaseNameUsingTxWithRetries() throws Throwable
+    {
+        try ( Session session = neo4j.driver().session( t -> t.withDatabase( "neo4j" ) ) )
+        {
+            int num = session.readTransaction( tx -> tx.run( "RETURN 1" ).single().get( 0 ).asInt() );
+            assertThat( num, equalTo( 1 ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldErrorDatabaseWhenDatabaseIsAbsent() throws Throwable
+    {
         Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
 
         ClientException error = assertThrows( ClientException.class, () -> {
@@ -1262,7 +1297,7 @@ class SessionIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void shouldAllowDatabaseNameUsingTx() throws Throwable
+    void shouldErrorDatabaseNameUsingTxWhenDatabaseIsAbsent() throws Throwable
     {
         // Given
         Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
@@ -1272,6 +1307,21 @@ class SessionIT
             Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run( "RETURN 1" );
             result.consume();
+        });
+        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        session.close();
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void shouldErrorDatabaseNameUsingTxWithRetriesWhenDatabaseIsAbsent() throws Throwable
+    {
+        // Given
+        Session session = neo4j.driver().session( t -> t.withDatabase( "foo" ) );
+
+        // When trying to run the query on a database that does not exist
+        ClientException error = assertThrows( ClientException.class, () -> {
+            session.readTransaction( tx -> tx.run( "RETURN 1" ).consume() );
         });
         assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
         session.close();
