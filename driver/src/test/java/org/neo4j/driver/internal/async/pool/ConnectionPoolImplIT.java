@@ -207,7 +207,7 @@ class ConnectionPoolImplIT
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock, true );
     }
 
     private static PoolSettings newSettings()
@@ -222,7 +222,7 @@ class ConnectionPoolImplIT
         TestConnectionPool( NettyChannelTracker nettyChannelTracker )
         {
             super( mock( ChannelConnector.class ), mock( Bootstrap.class ), nettyChannelTracker, newSettings(),
-                    DEV_NULL_METRICS, DEV_NULL_LOGGING, new FakeClock() );
+                    DEV_NULL_METRICS, DEV_NULL_LOGGING, new FakeClock(), true );
         }
 
         ChannelPool getPool( BoltServerAddress address )

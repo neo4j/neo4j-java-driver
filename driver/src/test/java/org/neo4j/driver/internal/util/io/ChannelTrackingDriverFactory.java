@@ -74,9 +74,9 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 
     @Override
     protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
     {
-        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config );
+        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
         return pool;
     }
 

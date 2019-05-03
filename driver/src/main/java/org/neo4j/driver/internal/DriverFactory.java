@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
@@ -71,6 +72,25 @@ public class DriverFactory
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
+        return newInstance( uri, authToken, routingSettings, retrySettings, config, null );
+    }
+
+    public final Driver newInstance ( URI uri, AuthToken authToken, RoutingSettings routingSettings,
+            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup )
+    {
+        Bootstrap bootstrap;
+        boolean ownsEventLoopGroup;
+        if ( eventLoopGroup == null )
+        {
+            bootstrap = createBootstrap();
+            ownsEventLoopGroup = true;
+        }
+        else
+        {
+            bootstrap = createBootstrap( eventLoopGroup );
+            ownsEventLoopGroup = false;
+        }
+
         authToken = authToken == null ? AuthTokens.none() : authToken;
 
         BoltServerAddress address = new BoltServerAddress( uri );
@@ -78,12 +98,11 @@ public class DriverFactory
         SecurityPlan securityPlan = createSecurityPlan( address, config );
 
         InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
-        Bootstrap bootstrap = createBootstrap();
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         MetricsProvider metricsProvider = createDriverMetrics( config, createClock() );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
 
         InternalDriver driver = createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
 
@@ -93,7 +112,7 @@ public class DriverFactory
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
@@ -102,7 +121,7 @@ public class DriverFactory
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest()
         );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsProvider.metricsListener(), config.logging(), clock );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsProvider.metricsListener(), config.logging(), clock, ownsEventLoopGroup );
     }
 
     protected static MetricsProvider createDriverMetrics( Config config, Clock clock )
@@ -269,6 +288,16 @@ public class DriverFactory
     protected Bootstrap createBootstrap()
     {
         return BootstrapFactory.newBootstrap();
+    }
+
+    /**
+     * Creates new {@link Bootstrap}.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     */
+    protected Bootstrap createBootstrap( EventLoopGroup eventLoopGroup )
+    {
+        return BootstrapFactory.newBootstrap( eventLoopGroup );
     }
 
     private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )

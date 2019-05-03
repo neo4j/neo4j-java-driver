@@ -57,17 +57,18 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final Clock clock;
     private final Logger log;
     private final MetricsListener metricsListener;
+    private final boolean ownsEventLoopGroup;
 
     private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock, ownsEventLoopGroup );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
-            PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
+            PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
@@ -77,6 +78,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         this.metricsListener = metricsListener;
         this.clock = clock;
         this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
+        this.ownsEventLoopGroup = ownsEventLoopGroup;
     }
 
     @Override
@@ -166,12 +168,20 @@ public class ConnectionPoolImpl implements ConnectionPool
             }
             finally
             {
-                // This is an attempt to speed up the shut down procedure of the driver
-                // Feel free return this back to shutdownGracefully() method with default values
-                // if this proves troublesome!!!
-                eventLoopGroup().shutdownGracefully(200, 15_000, TimeUnit.MILLISECONDS);
+
+                if (ownsEventLoopGroup) {
+                    // This is an attempt to speed up the shut down procedure of the driver
+                    // Feel free return this back to shutdownGracefully() method with default values
+                    // if this proves troublesome!!!
+                    eventLoopGroup().shutdownGracefully(200, 15_000, TimeUnit.MILLISECONDS);
+                }
             }
         }
+        if (!ownsEventLoopGroup)
+        {
+            return Futures.completedWithNull();
+        }
+
         return Futures.asCompletionStage( eventLoopGroup().terminationFuture() )
                 .thenApply( ignore -> null );
     }

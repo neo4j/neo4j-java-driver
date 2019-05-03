@@ -223,7 +223,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
         {
             return connectionPool;
         }
@@ -259,7 +259,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
         {
             return connectionPoolMock();
         }
@@ -282,7 +282,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
         {
             return connectionPoolMock();
         }

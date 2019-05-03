@@ -442,7 +442,7 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider ignored, Config config )
+                MetricsProvider ignored, Config config, boolean ownsEventLoopGroup )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
@@ -450,7 +450,7 @@ class ConnectionHandlingIT
                     config.idleTimeBeforeConnectionTest() );
             Clock clock = createClock();
             ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock );
-            connectionPool = new MemorizingConnectionPool( connector, bootstrap, poolSettings, config.logging(), clock );
+            connectionPool = new MemorizingConnectionPool( connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup );
             return connectionPool;
         }
     }
@@ -461,9 +461,9 @@ class ConnectionHandlingIT
         boolean memorize;
 
         MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
-                Logging logging, Clock clock )
+                Logging logging, Clock clock, boolean ownsEventLoopGroup )
         {
-            super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock );
+            super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock, ownsEventLoopGroup );
         }
 
         void startMemorizing()
