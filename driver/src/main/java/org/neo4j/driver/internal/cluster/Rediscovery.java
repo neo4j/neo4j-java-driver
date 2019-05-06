@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cluster;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,12 +37,10 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.exceptions.SecurityException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.v1.net.ServerAddress;
 import org.neo4j.driver.v1.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -265,7 +262,7 @@ public class Rediscovery
         else
         {
             // connection turned out to be broken
-            logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
+            logger.info( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
             routingTable.forget( routerAddress );
             return null;
         }
