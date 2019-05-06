@@ -58,8 +58,9 @@ public interface SessionParametersTemplate
 
     /**
      * Set the database that the newly created session is going to connect to.
-     * The given database name cannot be <code>null</code>.
-     * If the database name is not set, then the default database configured on the server configuration will be connected when the session established.
+     * If the database name is not set or the database name is set to <code>null</code>,
+     * then the default database configured in the server configuration will be connected when the session is established.
+     * For servers that do not support multi-databases, this database value should not be set or could only be set to <code>null</code>.
      *
      * @param database the database the session going to connect to.
      * @return this builder.
