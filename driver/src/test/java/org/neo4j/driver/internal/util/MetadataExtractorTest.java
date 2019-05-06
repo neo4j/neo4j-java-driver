@@ -24,14 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
@@ -42,6 +43,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -49,12 +52,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.summary.StatementType.READ_ONLY;
 import static org.neo4j.driver.summary.StatementType.READ_WRITE;
 import static org.neo4j.driver.summary.StatementType.SCHEMA_WRITE;
@@ -417,6 +420,19 @@ class MetadataExtractorTest
 
         // Then
         assertNull( db.name() );
+    }
+
+    @Test
+    void shouldErrorWhenTypeIsWrong()
+    {
+        // Given
+        Map<String,Value> metadata = singletonMap( "db", value( 10L ) );
+
+        // When
+        Uncoercible error = assertThrows( Uncoercible.class, () -> extractDatabaseInfo( metadata ) );
+
+        // Then
+        assertThat( error.getMessage(), startsWith( "Cannot coerce INTEGER to Java String" ) );
     }
 
     @Test

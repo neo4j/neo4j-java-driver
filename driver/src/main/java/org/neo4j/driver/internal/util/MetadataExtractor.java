@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
@@ -32,9 +35,6 @@ import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
@@ -111,7 +111,7 @@ public class MetadataExtractor
     public static DatabaseInfo extractDatabaseInfo( Map<String,Value> metadata )
     {
         Value dbValue = metadata.get( "db" );
-        if ( dbValue == null || dbValue.isNull() || !dbValue.hasType( TYPE_SYSTEM.STRING() ) )
+        if ( dbValue == null || dbValue.isNull() )
         {
             return DEFAULT_DATABASE_INFO;
         }
