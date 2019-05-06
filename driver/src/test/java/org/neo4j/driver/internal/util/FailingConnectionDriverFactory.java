@@ -42,9 +42,9 @@ public class FailingConnectionDriverFactory extends DriverFactory
 
     @Override
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
     {
-        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config );
+        ConnectionPool pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
         return new ConnectionPoolWithFailingConnections( pool, nextRunFailure );
     }
 

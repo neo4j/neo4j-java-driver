@@ -38,7 +38,7 @@ public final class BootstrapFactory
         return newBootstrap( EventLoopGroupFactory.newEventLoopGroup( threadCount ) );
     }
 
-    private static Bootstrap newBootstrap( EventLoopGroup eventLoopGroup )
+    public static Bootstrap newBootstrap( EventLoopGroup eventLoopGroup )
     {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group( eventLoopGroup );
