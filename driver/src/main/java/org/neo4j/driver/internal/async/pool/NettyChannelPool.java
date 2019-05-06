@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
 
-public class NettyChannelPool extends FixedChannelPool
+public class NettyChannelPool extends FixedChannelPool implements ExtendedChannelPool
 {
     /**
      * Unlimited amount of parties are allowed to request channels from the pool.
@@ -44,6 +44,7 @@ public class NettyChannelPool extends FixedChannelPool
     private final BoltServerAddress address;
     private final ChannelConnector connector;
     private final NettyChannelTracker handler;
+    private volatile boolean closed = false;
 
     public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker handler,
             ChannelHealthChecker healthCheck, long acquireTimeoutMillis, int maxConnections )
@@ -75,5 +76,17 @@ public class NettyChannelPool extends FixedChannelPool
             }
         } );
         return channelFuture;
+    }
+
+    @Override
+    public void close()
+    {
+        closed = true;
+        super.close();
+    }
+
+    public boolean isClosed()
+    {
+        return closed;
     }
 }
