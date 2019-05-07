@@ -34,7 +34,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.SessionParameters.empty;
 import static org.neo4j.driver.internal.SessionParameters.template;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
@@ -47,7 +49,7 @@ class SessionParametersTest
         SessionParameters parameters = empty();
 
         Assert.assertEquals( AccessMode.WRITE, parameters.defaultAccessMode() );
-        assertEquals( ABSENT_DB_NAME, parameters.database() );
+        assertFalse( parameters.database().isPresent() );
         assertNull( parameters.bookmarks() );
     }
 
@@ -60,18 +62,28 @@ class SessionParametersTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"", "foo", "data", ABSENT_DB_NAME} )
+    @ValueSource( strings = {"foo", "data", "my awesome database", " "} )
     void shouldChangeDatabaseName( String databaseName )
     {
         SessionParameters parameters = template().withDatabase( databaseName ).build();
-        assertEquals( databaseName, parameters.database() );
+        assertTrue( parameters.database().isPresent() );
+        assertEquals( databaseName, parameters.database().get() );
     }
 
     @Test
-    void shouldForbiddenNullDatabaseName() throws Throwable
+    void shouldAllowNullDatabaseName() throws Throwable
     {
-        NullPointerException error = assertThrows( NullPointerException.class, () -> template().withDatabase( null ).build());
-        assertThat( error.getMessage(), equalTo( "Database cannot be null." ) );
+        SessionParameters parameters = template().withDatabase( null ).build();
+        assertFalse( parameters.database().isPresent() );
+        assertEquals( "", parameters.database().orElse( ABSENT_DB_NAME ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"", ABSENT_DB_NAME} )
+    void shouldForbiddenEmptyStringDatabaseName( String databaseName ) throws Throwable
+    {
+        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> template().withDatabase( databaseName ).build());
+        assertThat( error.getMessage(), equalTo( "Illegal database name ''." ) );
     }
 
     @Test

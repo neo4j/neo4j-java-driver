@@ -23,17 +23,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
 import org.neo4j.driver.internal.summary.InternalNotification;
 import org.neo4j.driver.internal.summary.InternalPlan;
 import org.neo4j.driver.internal.summary.InternalProfiledPlan;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -42,6 +44,7 @@ import org.neo4j.driver.summary.ServerInfo;
 import org.neo4j.driver.summary.StatementType;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 public class MetadataExtractor
@@ -99,12 +102,26 @@ public class MetadataExtractor
     public ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(), connection.serverVersion() );
-        return new InternalResultSummary( statement, serverInfo, extractStatementType( metadata ),
-                extractCounters( metadata ), extractPlan( metadata ), extractProfiledPlan( metadata ),
-                extractNotifications( metadata ), resultAvailableAfter, extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
+        DatabaseInfo dbInfo = extractDatabaseInfo( metadata );
+        return new InternalResultSummary( statement, serverInfo, dbInfo, extractStatementType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
+                extractProfiledPlan( metadata ), extractNotifications( metadata ), resultAvailableAfter,
+                extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
     }
 
-    public Bookmarks extractBookmarks( Map<String,Value> metadata )
+    public static DatabaseInfo extractDatabaseInfo( Map<String,Value> metadata )
+    {
+        Value dbValue = metadata.get( "db" );
+        if ( dbValue == null || dbValue.isNull() )
+        {
+            return DEFAULT_DATABASE_INFO;
+        }
+        else
+        {
+            return new InternalDatabaseInfo( dbValue.asString() );
+        }
+    }
+
+    public static Bookmarks extractBookmarks( Map<String,Value> metadata )
     {
         Value bookmarkValue = metadata.get( "bookmark" );
         if ( bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType( TYPE_SYSTEM.STRING() ) )

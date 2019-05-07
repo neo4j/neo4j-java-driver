@@ -28,6 +28,8 @@ import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+
 public class SessionFactoryImpl implements SessionFactory
 {
     private final ConnectionProvider connectionProvider;
@@ -47,7 +49,7 @@ public class SessionFactoryImpl implements SessionFactory
     public NetworkSession newInstance( SessionParameters parameters )
     {
         BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( Bookmarks.from( parameters.bookmarks() ) );
-        return createSession( connectionProvider, retryLogic, parameters.database(), parameters.defaultAccessMode(), bookmarksHolder, logging );
+        return createSession( connectionProvider, retryLogic, parameters.database().orElse( ABSENT_DB_NAME ), parameters.defaultAccessMode(), bookmarksHolder, logging );
     }
 
     @Override

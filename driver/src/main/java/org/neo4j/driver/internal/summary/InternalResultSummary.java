@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Statement;
+import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
@@ -43,13 +44,14 @@ public class InternalResultSummary implements ResultSummary
     private final List<Notification> notifications;
     private final long resultAvailableAfter;
     private final long resultConsumedAfter;
+    private final DatabaseInfo databaseInfo;
 
-    public InternalResultSummary( Statement statement, ServerInfo serverInfo, StatementType statementType,
-            SummaryCounters counters, Plan plan, ProfiledPlan profile, List<Notification> notifications,
-            long resultAvailableAfter, long resultConsumedAfter )
+    public InternalResultSummary( Statement statement, ServerInfo serverInfo, DatabaseInfo databaseInfo, StatementType statementType,
+            SummaryCounters counters, Plan plan, ProfiledPlan profile, List<Notification> notifications, long resultAvailableAfter, long resultConsumedAfter )
     {
         this.statement = statement;
         this.serverInfo = serverInfo;
+        this.databaseInfo = databaseInfo;
         this.statementType = statementType;
         this.counters = counters;
         this.plan = resolvePlan( plan, profile );
@@ -128,6 +130,12 @@ public class InternalResultSummary implements ResultSummary
     }
 
     @Override
+    public DatabaseInfo database()
+    {
+        return databaseInfo;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -163,6 +171,7 @@ public class InternalResultSummary implements ResultSummary
         return "InternalResultSummary{" +
                "statement=" + statement +
                ", serverInfo=" + serverInfo +
+               ", databaseInfo=" + databaseInfo +
                ", statementType=" + statementType +
                ", counters=" + counters +
                ", plan=" + plan +

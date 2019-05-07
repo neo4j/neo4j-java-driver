@@ -20,31 +20,23 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.Objects;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.summary.ServerInfo;
+import org.neo4j.driver.summary.DatabaseInfo;
 
-public class InternalServerInfo implements ServerInfo
+public class InternalDatabaseInfo implements DatabaseInfo
 {
-    private final String address;
-    private final String version;
+    public static DatabaseInfo DEFAULT_DATABASE_INFO = new InternalDatabaseInfo( null );
 
-    public InternalServerInfo( BoltServerAddress address, ServerVersion version )
+    private final String name;
+
+    public InternalDatabaseInfo( String name )
     {
-        this.address = address.toString();
-        this.version = version.toString();
+        this.name = name;
     }
 
     @Override
-    public String address()
+    public String name()
     {
-        return address;
-    }
-
-    @Override
-    public String version()
-    {
-        return version;
+        return this.name;
     }
 
     @Override
@@ -58,19 +50,19 @@ public class InternalServerInfo implements ServerInfo
         {
             return false;
         }
-        InternalServerInfo that = (InternalServerInfo) o;
-        return Objects.equals( address, that.address ) && Objects.equals( version, that.version );
+        InternalDatabaseInfo that = (InternalDatabaseInfo) o;
+        return Objects.equals( name, that.name );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( address, version );
+        return Objects.hash( name );
     }
 
     @Override
     public String toString()
     {
-        return "InternalServerInfo{" + "address='" + address + '\'' + ", version='" + version + '\'' + '}';
+        return "InternalDatabaseInfo{" + "name='" + name + '\'' + '}';
     }
 }

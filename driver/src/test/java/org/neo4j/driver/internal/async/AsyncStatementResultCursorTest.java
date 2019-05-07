@@ -59,6 +59,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -85,9 +86,8 @@ class AsyncStatementResultCursorTest
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ResultSummary summary = new InternalResultSummary( new Statement( "RETURN 42" ),
-                new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, ServerVersion.v3_1_0 ),
-                StatementType.SCHEMA_WRITE, new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ),
-                null, null, emptyList(), 42, 42 );
+                new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, ServerVersion.v3_1_0 ), DEFAULT_DATABASE_INFO, StatementType.SCHEMA_WRITE,
+                new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ), null, null, emptyList(), 42, 42 );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );

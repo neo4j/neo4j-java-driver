@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.SessionParametersTemplate;
@@ -87,11 +88,11 @@ public class SessionParameters
 
     /**
      * The database where the session is going to connect to.
-     * @return the database name where the session is going to connect to.
+     * @return the nullable database name where the session is going to connect to.
      */
-    public String database()
+    public Optional<String> database()
     {
-        return database;
+        return Optional.ofNullable( database );
     }
 
     @Override
@@ -125,7 +126,7 @@ public class SessionParameters
     {
         private List<String> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
-        private String database = ABSENT_DB_NAME;
+        private String database = null;
 
         private Template()
         {
@@ -162,7 +163,11 @@ public class SessionParameters
         @Override
         public Template withDatabase( String database )
         {
-            Objects.requireNonNull( database, "Database cannot be null." );
+            if ( ABSENT_DB_NAME.equals( database ) )
+            {
+                // Disallow users to use bolt internal value directly. To users, this is totally an illegal database name.
+                throw new IllegalArgumentException( String.format( "Illegal database name '%s'.", database ) );
+            }
             this.database = database;
             return this;
         }
