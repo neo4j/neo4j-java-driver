@@ -92,7 +92,10 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
                 long idleTime = clock.millis() - lastUsedTimestamp;
                 boolean idleTooLong = idleTime > poolSettings.idleTimeBeforeConnectionTest();
 
-                log.trace( "Channel %s has been idle for %s and needs a ping", channel, idleTime );
+                if ( idleTooLong )
+                {
+                    log.trace( "Channel %s has been idle for %s and needs a ping", channel, idleTime );
+                }
 
                 return idleTooLong;
             }
