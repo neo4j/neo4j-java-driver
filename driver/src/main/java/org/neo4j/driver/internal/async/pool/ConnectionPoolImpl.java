@@ -45,6 +45,9 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.v1.Logger;
 import org.neo4j.driver.v1.Logging;
 import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+
+import static java.lang.String.format;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -57,12 +60,13 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final Logger log;
     private final MetricsListener metricsListener;
 
-    private final ConcurrentMap<BoltServerAddress,ChannelPool> pools = new ConcurrentHashMap<>();
+    private final ConcurrentMap<BoltServerAddress,ExtendedChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging,
+                clock );
     }
 
     ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
@@ -84,7 +88,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         log.trace( "Acquiring a connection from pool towards %s", address );
 
         assertNotClosed();
-        ChannelPool pool = getOrCreatePool( address );
+        ExtendedChannelPool pool = getOrCreatePool( address );
 
         ListenerEvent acquireEvent = metricsListener.createListenerEvent();
         metricsListener.beforeAcquiringOrCreating( address, acquireEvent );
@@ -94,7 +98,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         {
             try
             {
-                processAcquisitionError( address, error );
+                processAcquisitionError( pool, address, error );
                 assertNotClosed( address, channel, pool );
                 Connection connection = new DirectConnection( channel, pool, clock, metricsListener );
 
@@ -153,7 +157,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             try
             {
                 nettyChannelTracker.prepareToCloseChannels();
-                for ( Map.Entry<BoltServerAddress,ChannelPool> entry : pools.entrySet() )
+                for ( Map.Entry<BoltServerAddress,ExtendedChannelPool> entry : pools.entrySet() )
                 {
                     BoltServerAddress address = entry.getKey();
                     ChannelPool pool = entry.getValue();
@@ -178,9 +182,9 @@ public class ConnectionPoolImpl implements ConnectionPool
         return pools.containsKey( address );
     }
 
-    private ChannelPool getOrCreatePool( BoltServerAddress address )
+    private ExtendedChannelPool getOrCreatePool( BoltServerAddress address )
     {
-        ChannelPool pool = pools.get( address );
+        ExtendedChannelPool pool = pools.get( address );
         if ( pool != null )
         {
             return pool;
@@ -201,7 +205,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return pool;
     }
 
-    ChannelPool newPool( BoltServerAddress address )
+    ExtendedChannelPool newPool( BoltServerAddress address )
     {
         return new NettyChannelPool( address, connector, bootstrap, nettyChannelTracker, channelHealthChecker,
                 settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
@@ -212,7 +216,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         return bootstrap.config().group();
     }
 
-    private void processAcquisitionError( BoltServerAddress serverAddress, Throwable error )
+    private void processAcquisitionError( ExtendedChannelPool pool, BoltServerAddress serverAddress, Throwable error )
     {
         Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
@@ -225,6 +229,13 @@ public class ConnectionPoolImpl implements ConnectionPool
                 throw new ClientException(
                         "Unable to acquire connection from the pool within configured maximum time of " +
                         settings.connectionAcquisitionTimeout() + "ms" );
+            }
+            else if ( pool.isClosed() )
+            {
+                // There is a race condition where a thread tries to acquire a connection while the pool is closed by another concurrent thread.
+                // Treat as failed to obtain connection for a direct driver. For a routing driver, this error should be retried.
+                throw new ServiceUnavailableException( format( "Connection pool for server %s is closed while acquiring a connection.", serverAddress ),
+                        cause );
             }
             else
             {
@@ -257,5 +268,11 @@ public class ConnectionPoolImpl implements ConnectionPool
     public String toString()
     {
         return "ConnectionPoolImpl{" + "pools=" + pools + '}';
+    }
+
+    // for testing only
+    ExtendedChannelPool getPool( BoltServerAddress address )
+    {
+        return pools.get( address );
     }
 }

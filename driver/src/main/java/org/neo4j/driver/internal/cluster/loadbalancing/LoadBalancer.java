@@ -190,6 +190,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )
     {
+        log.error( "Failed to update routing table. Current routing table: " + routingTable, error );
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally( error );
