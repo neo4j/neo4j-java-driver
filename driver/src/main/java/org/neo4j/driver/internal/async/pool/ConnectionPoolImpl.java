@@ -234,7 +234,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 // There is a race condition where a thread tries to acquire a connection while the pool is closed by another concurrent thread.
                 // Treat as failed to obtain connection for a direct driver. For a routing driver, this error should be retried.
-                throw new ServiceUnavailableException( format( "Connection pool for server %s is closed while acquiring a connection. ", serverAddress ),
+                throw new ServiceUnavailableException( format( "Connection pool for server %s is closed while acquiring a connection.", serverAddress ),
                         cause );
             }
             else
