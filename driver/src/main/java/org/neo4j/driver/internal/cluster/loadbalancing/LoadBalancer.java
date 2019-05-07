@@ -47,6 +47,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.net.ServerAddressResolver;
 
+import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
@@ -189,6 +190,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )
     {
+        log.error( "Failed to update routing table. Current routing table: " + routingTable, error );
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally( error );
@@ -221,7 +223,8 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             {
                 if ( error instanceof ServiceUnavailableException )
                 {
-                    log.error( "Failed to obtain a connection towards address " + address, error );
+                    SessionExpiredException errorToLog = new SessionExpiredException( format( "Server at %s is no longer available", address ), error );
+                    log.warn( "Failed to obtain a connection towards address " + address, errorToLog );
                     forget( address );
                     eventExecutorGroup.next().execute( () -> acquire( mode, addresses, result ) );
                 }

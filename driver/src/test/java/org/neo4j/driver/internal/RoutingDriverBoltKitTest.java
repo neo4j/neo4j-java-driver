@@ -28,17 +28,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.DriverFactoryWithClock;
-import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
-import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
@@ -46,6 +43,12 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.DriverFactoryWithClock;
+import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.StubServer;
@@ -61,7 +64,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
@@ -703,6 +708,75 @@ class RoutingDriverBoltKitTest
     }
 
     @Test
+    void shouldRetryWriteTransactionUntilSuccessWithWhenLeaderIsRemoved() throws Exception
+    {
+        // This test simulates a router in a cluster when a leader is removed.
+        // The router first returns a RT with a writer inside.
+        // However this writer is killed while the driver is running a tx with it.
+        // Then at the second time the router returns the same RT with the killed writer inside.
+        // At the third round, the router removes the the writer server from RT reply.
+        // Finally, the router returns a RT with a reachable writer.
+        StubServer router = StubServer.start( "acquire_endpoints_v3_leader_killed.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9004 );
+        StubServer writer = StubServer.start( "write_server.script", 9008 );
+
+        Logger logger = mock( Logger.class );
+        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+                Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertEquals( 0, records.size() );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+        verify( logger, times( 3 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
+        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+    }
+
+    @Test
+    void shouldRetryWriteTransactionUntilSuccessWithWhenLeaderIsRemovedV3() throws Exception
+    {
+        // This test simulates a router in a cluster when a leader is removed.
+        // The router first returns a RT with a writer inside.
+        // However this writer is killed while the driver is running a tx with it.
+        // Then at the second time the router returns the same RT with the killed writer inside.
+        // At the third round, the router removes the the writer server from RT reply.
+        // Finally, the router returns a RT with a reachable writer.
+        StubServer router = StubServer.start( "acquire_endpoints_v3_leader_killed.script", 9001 );
+        StubServer brokenWriter = StubServer.start( "database_shutdown_at_commit.script", 9004 );
+        StubServer writer = StubServer.start( "write_server.script", 9008 );
+
+        Logger logger = mock( Logger.class );
+        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+                Session session = driver.session() )
+        {
+            AtomicInteger invocations = new AtomicInteger();
+            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
+
+            assertEquals( 0, records.size() );
+            assertEquals( 2, invocations.get() );
+        }
+        finally
+        {
+            assertEquals( 0, router.exitStatus() );
+            assertEquals( 0, brokenWriter.exitStatus() );
+            assertEquals( 0, writer.exitStatus() );
+        }
+        verify( logger, times( 1 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( TransientException.class ) );
+        verify( logger, times( 2 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
+        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+    }
+
+    @Test
     void shouldRetryReadTransactionUntilFailure() throws Exception
     {
         StubServer router = StubServer.start( "acquire_endpoints.script", 9001 );
@@ -1135,19 +1209,24 @@ class RoutingDriverBoltKitTest
         }
     }
 
-    private static Driver newDriverWithSleeplessClock( String uriString )
+    private static Driver newDriverWithSleeplessClock( String uriString, Config config )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
-        return newDriver( uriString, driverFactory );
+        return newDriver( uriString, driverFactory, config );
+    }
+
+    private static Driver newDriverWithSleeplessClock( String uriString )
+    {
+        return newDriverWithSleeplessClock( uriString, config );
     }
 
     private static Driver newDriverWithFixedRetries( String uriString, int retries )
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( retries );
-        return newDriver( uriString, driverFactory );
+        return newDriver( uriString, driverFactory, config );
     }
 
-    private static Driver newDriver( String uriString, DriverFactory driverFactory )
+    private static Driver newDriver( String uriString, DriverFactory driverFactory, Config config )
     {
         URI uri = URI.create( uriString );
         RoutingSettings routingConf = new RoutingSettings( 1, 1, null );
@@ -1176,5 +1255,12 @@ class RoutingDriverBoltKitTest
             }
             return names;
         } );
+    }
+
+    private static Logging mockedLogging( Logger logger )
+    {
+        Logging logging = mock( Logging.class );
+        when( logging.getLog( any() ) ).thenReturn( logger );
+        return logging;
     }
 }

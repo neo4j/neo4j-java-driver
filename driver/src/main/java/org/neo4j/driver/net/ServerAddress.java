@@ -49,6 +49,6 @@ public interface ServerAddress
      */
     static ServerAddress of( String host, int port )
     {
-        return new BoltServerAddress( host, host, port );
+        return new BoltServerAddress( host, port );
     }
 }

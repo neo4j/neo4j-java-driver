@@ -127,6 +127,14 @@ public final class ErrorUtil
         return parts[1];
     }
 
+    public static void addSuppressed( Throwable mainError, Throwable error )
+    {
+        if ( mainError != error )
+        {
+            mainError.addSuppressed( error );
+        }
+    }
+
     /**
      * Exception which is merely a holder of an async stacktrace, which is not the primary stacktrace users are interested in.
      * Used for blocking API calls that block on async API calls.

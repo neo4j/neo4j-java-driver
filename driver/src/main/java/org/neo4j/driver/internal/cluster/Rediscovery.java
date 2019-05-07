@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.cluster;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
@@ -260,7 +262,7 @@ public class Rediscovery
         else
         {
             // connection turned out to be broken
-            logger.error( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
+            logger.info( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
             routingTable.forget( routerAddress );
             return null;
         }
@@ -270,7 +272,20 @@ public class Rediscovery
     {
         return resolver.resolve( address )
                 .stream()
-                .map( BoltServerAddress::from )
+                .flatMap( resolved -> resolveAll( BoltServerAddress.from( resolved ) ) )
                 .collect( toList() ); // collect to list to preserve the order
+    }
+
+    private Stream<BoltServerAddress> resolveAll( BoltServerAddress address )
+    {
+        try
+        {
+            return address.resolveAll().stream();
+        }
+        catch ( UnknownHostException e )
+        {
+            logger.error( "Failed to resolve address `" + address + "` to IPs due to error: " + e.getMessage(), e );
+            return Stream.of( address );
+        }
     }
 }

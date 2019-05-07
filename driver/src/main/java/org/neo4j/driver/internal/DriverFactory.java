@@ -32,7 +32,6 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.DnsResolver;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalancingStrategy;
@@ -62,7 +61,9 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
+import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
+import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
 {
@@ -245,7 +246,7 @@ public class DriverFactory
     private static ServerAddressResolver createResolver( Config config )
     {
         ServerAddressResolver configuredResolver = config.resolver();
-        return configuredResolver != null ? configuredResolver : new DnsResolver( config.logging() );
+        return configuredResolver != null ? configuredResolver : IDENTITY_RESOLVER;
     }
 
     /**
@@ -330,12 +331,12 @@ public class DriverFactory
             case TRUST_ON_FIRST_USE:
                 logger.warn(
                         "Option `TRUST_ON_FIRST_USE` has been deprecated and will be removed in a future " +
-                        "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
+                                "version of the driver. Please switch to use `TRUST_ALL_CERTIFICATES` instead." );
                 return SecurityPlan.forTrustOnFirstUse( trustStrategy.certFile(), hostnameVerificationEnabled, address, logger );
             case TRUST_SIGNED_CERTIFICATES:
                 logger.warn(
                         "Option `TRUST_SIGNED_CERTIFICATE` has been deprecated and will be removed in a future " +
-                        "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
+                                "version of the driver. Please switch to use `TRUST_CUSTOM_CA_SIGNED_CERTIFICATES` instead." );
                 // intentional fallthrough
 
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
@@ -397,10 +398,7 @@ public class DriverFactory
         }
         catch ( Throwable closeError )
         {
-            if ( mainError != closeError )
-            {
-                mainError.addSuppressed( closeError );
-            }
+            addSuppressed( mainError, closeError );
         }
     }
 

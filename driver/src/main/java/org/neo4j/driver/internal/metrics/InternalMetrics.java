@@ -137,7 +137,7 @@ public class InternalMetrics extends InternalAbstractMetrics
 
     static String serverAddressToUniqueName( BoltServerAddress serverAddress )
     {
-        return serverAddress.toString();
+        return String.format( "%s:%d", serverAddress.host(), serverAddress.port() );
     }
 
     private ConnectionPoolMetricsListener poolMetrics( BoltServerAddress serverAddress )

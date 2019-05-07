@@ -62,7 +62,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelReleased( Channel channel )
     {
-        log.debug( "Channel [%s] released back to the pool", channel.id() );
+        log.debug( "Channel [0x%s] released back to the pool", channel.id() );
         decrementInUse( channel );
         incrementIdle( channel );
         channel.closeFuture().addListener( closeListener );
