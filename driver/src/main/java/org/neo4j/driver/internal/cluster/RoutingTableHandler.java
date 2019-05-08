@@ -54,7 +54,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     @Override
     public void onConnectionFailure( BoltServerAddress address )
     {
-        // remove from the routing table, to prevent concurrent threads from making connections to this address
+        // remove server from the routing table, to prevent concurrent threads from making connections to this address
         routingTable.forget( address );
     }
 
@@ -130,7 +130,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         routingTableFuture.completeExceptionally( error );
     }
 
-    // This method cannot be synchronized as it will visited by all routing table's threads concurrently
+    // This method cannot be synchronized as it will be visited by all routing table's threads concurrently
     public Set<BoltServerAddress> servers()
     {
         return routingTable.servers();
