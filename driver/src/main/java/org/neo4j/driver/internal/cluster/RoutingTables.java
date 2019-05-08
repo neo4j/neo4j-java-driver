@@ -44,10 +44,13 @@ public interface RoutingTables
     Set<BoltServerAddress> allServers();
 
     /**
-     * The routing error handler removes stale servers from routing table.
+     * The routing error handler used to remove stale servers from routing table.
      * @return the routing error handler of the given database
      */
     RoutingErrorHandler routingErrorHandler( String databaseName );
 
+    /**
+     * Removes a routing table of the given database from all tables.
+     */
     void remove( String databaseName );
 }

@@ -61,7 +61,7 @@ public class RoutingProcedureRunner
         {
             ServerVersion serverVersion = connection.serverVersion();
             // As the connection can connect to any router (a.k.a. any core members), this connection strictly speaking is a read connection.
-            DirectConnection delegate = new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
+            DirectConnection delegate = connection( serverVersion, connection );
             Statement procedure = procedureStatement( serverVersion, databaseName );
             return runProcedure( delegate, procedure )
                     .thenCompose( records -> releaseConnection( delegate, records ) )
@@ -74,6 +74,18 @@ public class RoutingProcedureRunner
         return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
                 .asyncResult().thenCompose( StatementResultCursor::listAsync );
+    }
+
+    private DirectConnection connection( ServerVersion serverVersion, Connection connection )
+    {
+        if ( serverVersion.greaterThanOrEqual( v4_0_0 ))
+        {
+            return new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
+        }
+        else
+        {
+            return new DirectConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
+        }
     }
 
     private Statement procedureStatement( ServerVersion serverVersion, String databaseName )
