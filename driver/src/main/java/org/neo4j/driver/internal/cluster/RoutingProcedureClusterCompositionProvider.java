@@ -62,7 +62,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         {
             return new ClusterCompositionResponse.Failure( new ServiceUnavailableException( format(
                     "Failed to run '%s' on server. " +
-                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
+                    "Please make sure that there is a Neo4j server or cluster up running.",
                     invokedProcedureString( response ) ), response.error()
             ) );
         }

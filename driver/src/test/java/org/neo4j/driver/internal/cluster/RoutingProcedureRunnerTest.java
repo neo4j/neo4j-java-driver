@@ -24,14 +24,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.Connection;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_MAP;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.DATABASE_NAME;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.MULTI_DB_GET_ROUTING_TABLE;
@@ -53,7 +56,6 @@ import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYST
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.ServerVersion.version;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingProcedureRunnerTest
@@ -69,9 +71,9 @@ class RoutingProcedureRunnerTest
 
         assertTrue( response.isSuccess() );
         assertEquals( 2, response.records().size() );
-        assertEquals( new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
-                        parameters( ROUTING_CONTEXT, EMPTY_MAP, DATABASE_NAME, db ) ),
-                response.procedure() );
+
+        Value parameters = generateMultiDatabaseRoutingParameters( EMPTY_MAP, db );
+        assertEquals( new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE, parameters ), response.procedure() );
     }
 
     @ParameterizedTest
@@ -88,7 +90,7 @@ class RoutingProcedureRunnerTest
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
-        Value expectedParams = parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, db );
+        Value expectedParams = generateMultiDatabaseRoutingParameters( context.asMap(), db );
         assertEquals( new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE, expectedParams ), response.procedure() );
     }
 
@@ -182,6 +184,15 @@ class RoutingProcedureRunnerTest
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connectionStage, ABSENT_DB_NAME ) ) );
         assertEquals( releaseError, e );
         verify( connection ).release();
+    }
+
+    private static Value generateMultiDatabaseRoutingParameters( Map context, String db )
+    {
+        if ( Objects.equals( ABSENT_DB_NAME, db ) )
+        {
+            db = null;
+        }
+        return parameters( ROUTING_CONTEXT, context, DATABASE_NAME, db );
     }
 
     private static CompletionStage<Connection> connectionStage( String serverVersion )

@@ -46,7 +46,7 @@ public class RoutingProcedureRunner
     static final String ROUTING_CONTEXT = "context";
     static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + ROUTING_CONTEXT + "})";
     static final String DATABASE_NAME = "database";
-    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.cluster.routing.getRoutingTable({%s}, %s)", ROUTING_CONTEXT, DATABASE_NAME );
+    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.cluster.routing.getRoutingTable({%s}, {%s})", ROUTING_CONTEXT, DATABASE_NAME );
 
     private final RoutingContext context;
 
@@ -94,6 +94,11 @@ public class RoutingProcedureRunner
          * For v4.0+ databases, call procedure to get routing table for the database specified.
          * For database version lower than 4.0, the database name will be ignored.
          */
+        if ( Objects.equals( ABSENT_DB_NAME, databaseName ) )
+        {
+            databaseName = null;
+        }
+
         if ( serverVersion.greaterThanOrEqual( v4_0_0 ) )
         {
             return new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
@@ -101,7 +106,7 @@ public class RoutingProcedureRunner
         }
         else
         {
-            if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
+            if ( databaseName != null )
             {
                 throw new RoutingException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
                         "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
