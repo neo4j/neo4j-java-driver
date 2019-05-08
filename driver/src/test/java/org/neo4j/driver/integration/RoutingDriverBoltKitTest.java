@@ -659,8 +659,9 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9008 );
 
         Logger logger = mock( Logger.class );
-        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
+        Config config = Config.builder().withoutEncryption().withLogging( ignored -> logger ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -692,8 +693,9 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9008 );
 
         Logger logger = mock( Logger.class );
-        Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
+        Config config = Config.builder().withoutEncryption().withLogging( ignored -> logger ).build();
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
