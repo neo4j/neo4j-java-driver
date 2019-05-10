@@ -722,7 +722,7 @@ class RoutingDriverBoltKitTest
 
         Logger logger = mock( Logger.class );
         Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
                 Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
@@ -756,7 +756,7 @@ class RoutingDriverBoltKitTest
 
         Logger logger = mock( Logger.class );
         Config config = Config.builder().withoutEncryption().withLogging( mockedLogging( logger ) ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001", config );
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
                 Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
