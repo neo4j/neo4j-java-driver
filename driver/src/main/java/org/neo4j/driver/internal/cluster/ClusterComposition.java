@@ -21,24 +21,16 @@ package org.neo4j.driver.internal.cluster;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import java.util.function.Function;
+import org.neo4j.driver.internal.BoltServerAddress;
 
 public final class ClusterComposition
 {
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
-    private static final Function<Value,BoltServerAddress> OF_BoltServerAddress =
-            new Function<Value,BoltServerAddress>()
-            {
-                @Override
-                public BoltServerAddress apply( Value value )
-                {
-                    return new BoltServerAddress( value.asString() );
-                }
-            };
+    private static final Function<Value,BoltServerAddress> OF_BoltServerAddress = value -> new BoltServerAddress( value.asString() );
 
     private final Set<BoltServerAddress> readers;
     private final Set<BoltServerAddress> writers;

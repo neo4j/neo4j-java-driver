@@ -360,7 +360,7 @@ class RediscoveryTest
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
-        Rediscovery rediscovery = new Rediscovery( A, settings, compositionProvider, resolver, eventExecutor,
+        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, resolver, eventExecutor,
                 DEV_NULL_LOGGER, false );
         RoutingTable table = routingTableMock( A, B );
 
@@ -385,7 +385,7 @@ class RediscoveryTest
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
         Logger logger = mock( Logger.class );
-        Rediscovery rediscovery = new Rediscovery( A, settings, compositionProvider, resolver, eventExecutor,
+        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, resolver, eventExecutor,
                 logger, false );
         RoutingTable table = routingTableMock( A );
 
@@ -413,8 +413,8 @@ class RediscoveryTest
             ServerAddressResolver resolver, Logger logger, boolean useInitialRouter )
     {
         RoutingSettings settings = new RoutingSettings( 1, 0 );
-        return new Rediscovery( initialRouter, settings, compositionProvider, resolver,
-                GlobalEventExecutor.INSTANCE, logger, useInitialRouter );
+        return new RediscoveryImpl( initialRouter, settings, compositionProvider, resolver,
+                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER, useInitialRouter );
     }
 
     @SuppressWarnings( "unchecked" )

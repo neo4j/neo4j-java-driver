@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -36,10 +37,14 @@ public class RoutingTableHandler implements RoutingErrorHandler
     private final RoutingTable routingTable;
     private final String databaseName;
     private final RoutingTables routingTables;
-    private CompletableFuture<RoutingTable> refreshRoutingTableFuture;
+    private volatile CompletableFuture<RoutingTable> refreshRoutingTableFuture;
     private final ConnectionPool connectionPool;
     private final Rediscovery rediscovery;
     private final Logger log;
+
+    // This defines how long we shall wait before trimming a routing table from routing tables after it is stale.
+    public static final Duration STALE_ROUTING_TABLE_PURGE_TIMEOUT = Duration.ofSeconds( 30 );
+
 
     public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTables routingTables, Logger log )
     {
@@ -64,7 +69,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         routingTable.removeWriter( address );
     }
 
-    public synchronized CompletionStage<RoutingTable> freshRoutingTable( AccessMode mode )
+    synchronized CompletionStage<RoutingTable> refreshRoutingTable( AccessMode mode )
     {
         if ( refreshRoutingTableFuture != null )
         {
@@ -107,6 +112,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         try
         {
             routingTable.update( composition );
+            routingTables.removeStale();
             connectionPool.retainAll( routingTables.allServers() );
 
             log.info( "Updated routing table for database '%s'. %s", databaseName, routingTable );
@@ -130,14 +136,20 @@ public class RoutingTableHandler implements RoutingErrorHandler
         routingTableFuture.completeExceptionally( error );
     }
 
-    // This method cannot be synchronized as it will be visited by all routing table's threads concurrently
+    // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
     public Set<BoltServerAddress> servers()
     {
         return routingTable.servers();
     }
 
+    // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
+    public boolean isRoutingTableStale()
+    {
+        return refreshRoutingTableFuture == null && routingTable.isStale( STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() );
+    }
+
     // for testing only
-    RoutingTable routingTable()
+    public RoutingTable routingTable()
     {
         return routingTable;
     }

@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.RoutingErrorHandler;
 
 /**
  * A generic interface to access all routing tables as a whole.
@@ -34,9 +33,9 @@ public interface RoutingTables
     /**
      * Fresh the routing table for the database and given access mode.
      * For server version lower than 4.0, the database name will be ignored while refresh routing table.
-     * @return The future of a new routing table.
+     * @return The future of a new routing table handler.
      */
-    CompletionStage<RoutingTable> freshRoutingTable( String databaseName, AccessMode mode );
+    CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode );
 
     /**
      * @return all servers in all routing tables
@@ -44,13 +43,12 @@ public interface RoutingTables
     Set<BoltServerAddress> allServers();
 
     /**
-     * The routing error handler used to remove stale servers from routing table.
-     * @return the routing error handler of the given database
-     */
-    RoutingErrorHandler routingErrorHandler( String databaseName );
-
-    /**
      * Removes a routing table of the given database from all tables.
      */
     void remove( String databaseName );
+
+    /**
+     * Removes all stale routing tables.
+     */
+    void removeStale();
 }

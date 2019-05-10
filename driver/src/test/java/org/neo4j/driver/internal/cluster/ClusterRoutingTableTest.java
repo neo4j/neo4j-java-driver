@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -214,6 +215,20 @@ class ClusterRoutingTableTest
 
         assertFalse( routingTable.isStaleFor( READ ) );
         assertFalse( routingTable.isStaleFor( WRITE ) );
+    }
+
+    @Test
+    void shouldBeStaleForExpiredTime() throws Throwable
+    {
+        ClusterRoutingTable routingTable = newRoutingTable( Clock.SYSTEM );
+        assertTrue( routingTable.isStale( 0 ) );
+    }
+
+    @Test
+    void shouldNotBeStaleForExpiredTime() throws Throwable
+    {
+        ClusterRoutingTable routingTable = newRoutingTable( Clock.SYSTEM );
+        assertFalse( routingTable.isStale( Duration.ofSeconds( 30 ).toMillis() ) );
     }
 
     private ClusterRoutingTable newRoutingTable( Clock clock )
