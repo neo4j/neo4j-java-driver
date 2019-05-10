@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTable;
+import org.neo4j.driver.internal.cluster.RoutingTableHandler;
 import org.neo4j.driver.internal.cluster.RoutingTables;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -229,7 +230,9 @@ class LoadBalancerTest
     {
         // Used only in testing
         RoutingTables routingTables = mock( RoutingTables.class );
-        when( routingTables.freshRoutingTable( any( String.class ), any( AccessMode.class ) ) ).thenReturn( CompletableFuture.completedFuture( routingTable ) );
+        RoutingTableHandler handler = mock( RoutingTableHandler.class );
+        when( handler.routingTable() ).thenReturn( routingTable );
+        when( routingTables.refreshRoutingTable( any( String.class ), any( AccessMode.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
         return new LoadBalancer( connectionPool, routingTables, DEV_NULL_LOGGER, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
                 GlobalEventExecutor.INSTANCE );
     }

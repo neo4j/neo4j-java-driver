@@ -29,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -104,14 +103,14 @@ class RoutingTableHandlerTest
         Set<BoltServerAddress> writers = new LinkedHashSet<>( singletonList( writer1 ) );
         Set<BoltServerAddress> routers = new LinkedHashSet<>( singletonList( router1 ) );
         ClusterComposition clusterComposition = new ClusterComposition( 42, readers, writers, routers );
-        Rediscovery rediscovery = mock( Rediscovery.class );
+        Rediscovery rediscovery = mock( RediscoveryImpl.class );
         when( rediscovery.lookupClusterComposition( routingTable, connectionPool ) )
                 .thenReturn( completedFuture( clusterComposition ) );
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool,
                 newRoutingTablesMock(), DEV_NULL_LOGGER );
 
-        assertNotNull( await( handler.freshRoutingTable( READ ) ) );
+        assertNotNull( await( handler.refreshRoutingTable( READ ) ) );
 
         verify( rediscovery ).lookupClusterComposition( routingTable, connectionPool );
         assertArrayEquals( new BoltServerAddress[]{reader1, reader2}, routingTable.readers().toArray() );
@@ -159,7 +158,7 @@ class RoutingTableHandlerTest
         RoutingTables routingTables = new RoutingTables()
         {
             @Override
-            public CompletionStage<RoutingTable> freshRoutingTable( String databaseName, AccessMode mode )
+            public CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode )
             {
                 throw new UnsupportedOperationException();
             }
@@ -171,22 +170,21 @@ class RoutingTableHandlerTest
             }
 
             @Override
-            public RoutingErrorHandler routingErrorHandler( String databaseName )
+            public void remove( String databaseName )
             {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void remove( String databaseName )
+            public void removeStale()
             {
-                throw new UnsupportedOperationException();
             }
         };
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool,
                 routingTables, DEV_NULL_LOGGER );
 
-        RoutingTable actual = await( handler.freshRoutingTable( READ ) );
+        RoutingTable actual = await( handler.refreshRoutingTable( READ ) );
         assertEquals( routingTable, actual );
 
         verify( connectionPool ).retainAll( new HashSet<>( asList( A, B, C ) ) );
@@ -206,7 +204,7 @@ class RoutingTableHandlerTest
         // When
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool, routingTables, DEV_NULL_LOGGER );
-        assertThrows( RuntimeException.class, () -> await( handler.freshRoutingTable( READ ) ) );
+        assertThrows( RuntimeException.class, () -> await( handler.refreshRoutingTable( READ ) ) );
 
         // Then
         verify( routingTables ).remove( ABSENT_DB_NAME );
@@ -223,7 +221,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool,
                 newRoutingTablesMock(), DEV_NULL_LOGGER );
-        RoutingTable actual = await( handler.freshRoutingTable( mode ) );
+        RoutingTable actual = await( handler.refreshRoutingTable( mode ) );
         assertEquals( routingTable, actual );
 
         verify( routingTable ).isStaleFor( mode );
@@ -242,7 +240,7 @@ class RoutingTableHandlerTest
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool,
                 newRoutingTablesMock(), DEV_NULL_LOGGER );
 
-        assertNotNull( await( handler.freshRoutingTable( notStaleMode ) ) );
+        assertNotNull( await( handler.refreshRoutingTable( notStaleMode ) ) );
         verify( routingTable ).isStaleFor( notStaleMode );
         verify( rediscovery, never() ).lookupClusterComposition( routingTable, connectionPool );
     }
@@ -267,7 +265,7 @@ class RoutingTableHandlerTest
 
     private static Rediscovery newRediscoveryMock()
     {
-        Rediscovery rediscovery = mock( Rediscovery.class );
+        Rediscovery rediscovery = mock( RediscoveryImpl.class );
         Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition( 1, noServers, noServers, noServers );
         when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ) ) )

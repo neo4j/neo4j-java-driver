@@ -131,7 +131,7 @@ class ConnectionPoolImplTest
         TestConnectionPool( NettyChannelTracker nettyChannelTracker )
         {
             super( mock( ChannelConnector.class ), mock( Bootstrap.class ), nettyChannelTracker, newSettings(), DEV_NULL_METRICS, DEV_NULL_LOGGING,
-                    new FakeClock(), true );
+                    new FakeClock(), true, mock( ConnectionFactory.class ) );
         }
 
         ExtendedChannelPool getPool( BoltServerAddress address )

@@ -27,6 +27,8 @@ public interface RoutingTable
 {
     boolean isStaleFor( AccessMode mode );
 
+    boolean isStale( long staleRoutingTableTimeout );
+
     void update( ClusterComposition cluster );
 
     void forget( BoltServerAddress address );

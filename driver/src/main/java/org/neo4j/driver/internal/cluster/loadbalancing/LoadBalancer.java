@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.Rediscovery;
+import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
@@ -78,15 +79,15 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
     {
-        return routingTables.freshRoutingTable( databaseName, mode )
-                .thenCompose( routingTable -> acquire( mode, routingTable ) )
-                .thenApply( connection -> new RoutingConnection( connection, databaseName, mode, routingTables.routingErrorHandler( databaseName ) ) );
+        return routingTables.refreshRoutingTable( databaseName, mode )
+                .thenCompose( handler -> acquire( mode, handler.routingTable() )
+                        .thenApply( connection -> new RoutingConnection( connection, databaseName, mode, handler ) ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.freshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).thenApply( routingTable -> null );
+        return routingTables.refreshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).thenApply( ignored -> null );
     }
 
     @Override
@@ -179,7 +180,7 @@ public class LoadBalancer implements ConnectionProvider
             RoutingSettings settings, Clock clock, Logger log )
     {
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings );
-        return new Rediscovery( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
+        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }
 
     private static Logger loadBalancerLogger( Logging logging )

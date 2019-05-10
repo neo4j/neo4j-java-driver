@@ -68,6 +68,12 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
+    public boolean isStale( long staleRoutingTableTimeout )
+    {
+        return expirationTimeout + staleRoutingTableTimeout < clock.millis();
+    }
+
+    @Override
     public synchronized void update( ClusterComposition cluster )
     {
         expirationTimeout = cluster.expirationTimestamp();

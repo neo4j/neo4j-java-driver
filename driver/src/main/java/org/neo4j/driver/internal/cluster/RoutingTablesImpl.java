@@ -27,31 +27,32 @@ import java.util.concurrent.ConcurrentMap;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
 public class RoutingTablesImpl implements RoutingTables
 {
-    private final ConcurrentMap<String,RoutingTableHandler> routingTables; //TODO ever growing map?
+    private final ConcurrentMap<String,RoutingTableHandler> routingTables;
     private final RoutingTableHandlerFactory factory;
+    private final Logger logger;
 
-    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger log )
+    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger logger )
     {
-        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, initialRouter, clock, log ) );
+        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, initialRouter, clock, logger ), logger );
     }
 
-    RoutingTablesImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory )
+    RoutingTablesImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory, Logger logger )
     {
         this.factory = factory;
         this.routingTables = routingTables;
+        this.logger = logger;
     }
 
     @Override
-    public CompletionStage<RoutingTable> freshRoutingTable( String databaseName, AccessMode mode )
+    public CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode )
     {
         RoutingTableHandler handler = getOrCreate( databaseName );
-        return handler.freshRoutingTable( mode );
+        return handler.refreshRoutingTable( mode ).thenApply( ignored -> handler );
     }
 
     @Override
@@ -68,25 +69,38 @@ public class RoutingTablesImpl implements RoutingTables
     }
 
     @Override
-    public RoutingErrorHandler routingErrorHandler( String databaseName )
-    {
-        RoutingTableHandler handler = routingTables.get( databaseName );
-        if ( handler == null )
-        {
-            throw new IllegalStateException( String.format( "No entry for database '%s' found in routing tables.", databaseName ) );
-        }
-        return handler;
-    }
-
-    @Override
     public void remove( String databaseName )
     {
         routingTables.remove( databaseName );
+        logger.debug( "Routing table handler for database '%s' is removed.", databaseName );
+    }
+
+    @Override
+    public void removeStale()
+    {
+        routingTables.forEach( ( databaseName, handler ) -> {
+            if ( handler.isRoutingTableStale() )
+            {
+                logger.info( "Routing table handler for database '%s' is removed because it is not used for too long. Routing table: %s",
+                        databaseName, handler.routingTable() );
+                routingTables.remove( databaseName );
+            }
+        } );
+    }
+
+    // For tests
+    public boolean contains( String database )
+    {
+        return routingTables.containsKey( database );
     }
 
     private RoutingTableHandler getOrCreate( String databaseName )
     {
-        return routingTables.computeIfAbsent( databaseName, name -> factory.newInstance( name, this ) );
+        return routingTables.computeIfAbsent( databaseName, name -> {
+            RoutingTableHandler handler = factory.newInstance( name, this );
+            logger.debug( "Routing table handler for database '%s' is added.", databaseName );
+            return handler;
+        } );
     }
 
     static class RoutingTableHandlerFactory

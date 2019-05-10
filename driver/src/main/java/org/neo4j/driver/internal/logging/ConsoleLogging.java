@@ -52,11 +52,11 @@ public class ConsoleLogging implements Logging
         return new ConsoleLogger( name, level );
     }
 
-    static class ConsoleLogger extends JULogger
+    public static class ConsoleLogger extends JULogger
     {
         private final ConsoleHandler handler;
 
-        ConsoleLogger( String name, Level level )
+        public ConsoleLogger( String name, Level level )
         {
             super( name, level );
             java.util.logging.Logger logger = java.util.logging.Logger.getLogger( name );
