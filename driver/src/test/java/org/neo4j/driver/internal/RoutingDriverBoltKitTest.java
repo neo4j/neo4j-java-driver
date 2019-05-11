@@ -23,10 +23,16 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.rmi.CORBA.Stub;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -88,7 +94,7 @@ class RoutingDriverBoltKitTest
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ ) )
+                Session session = driver.session( AccessMode.READ ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" )
                     .list( record -> record.get( "n.name" ).asString() );
@@ -138,7 +144,6 @@ class RoutingDriverBoltKitTest
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
-
     @Test
     void shouldHandleAcquireReadSessionPlusTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
@@ -150,13 +155,12 @@ class RoutingDriverBoltKitTest
         StubServer readServer = StubServer.start( "read_server.script", 9005 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.READ );
-              Transaction tx = session.beginTransaction() )
+                Session session = driver.session( AccessMode.READ );
+                Transaction tx = session.beginTransaction() )
         {
             List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
-
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -208,7 +212,7 @@ class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session( AccessMode.READ );
-                      Transaction tx = session.beginTransaction() )
+                        Transaction tx = session.beginTransaction() )
                 {
                     assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
                             equalTo( asList( "Bob", "Alice", "Tina" ) ) );
@@ -236,7 +240,7 @@ class RoutingDriverBoltKitTest
         assertThrows( SessionExpiredException.class, () ->
         {
             try ( Driver driver = GraphDatabase.driver( uri, config );
-                  Session session = driver.session( AccessMode.READ ) )
+                    Session session = driver.session( AccessMode.READ ) )
             {
                 session.run( "MATCH (n) RETURN n.name" );
             }
@@ -259,8 +263,8 @@ class RoutingDriverBoltKitTest
         SessionExpiredException e = assertThrows( SessionExpiredException.class, () ->
         {
             try ( Driver driver = GraphDatabase.driver( uri, config );
-                  Session session = driver.session( AccessMode.READ );
-                  Transaction tx = session.beginTransaction() )
+                    Session session = driver.session( AccessMode.READ );
+                    Transaction tx = session.beginTransaction() )
             {
                 tx.run( "MATCH (n) RETURN n.name" );
                 tx.success();
@@ -283,7 +287,7 @@ class RoutingDriverBoltKitTest
 
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE ) )
+                Session session = driver.session( AccessMode.WRITE ) )
         {
             assertThrows( SessionExpiredException.class, () -> session.run( "MATCH (n) RETURN n.name" ).consume() );
         }
@@ -306,8 +310,8 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE );
-              Transaction tx = session.beginTransaction() )
+                Session session = driver.session( AccessMode.WRITE );
+                Transaction tx = session.beginTransaction() )
         {
             assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
             tx.success();
@@ -328,7 +332,7 @@ class RoutingDriverBoltKitTest
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE ) )
+                Session session = driver.session( AccessMode.WRITE ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
         }
@@ -386,8 +390,8 @@ class RoutingDriverBoltKitTest
         StubServer writeServer = StubServer.start( "write_server.script", 9007 );
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session( AccessMode.WRITE );
-              Transaction tx = session.beginTransaction() )
+                Session session = driver.session( AccessMode.WRITE );
+                Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n {name:'Bob'})" );
             tx.success();
@@ -438,7 +442,7 @@ class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction() )
+                        Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (n {name:'Bob'})" );
                     tx.success();
@@ -542,7 +546,7 @@ class RoutingDriverBoltKitTest
         Driver driver = GraphDatabase.driver( uri, config );
         boolean failed = false;
         try ( Session session = driver.session( AccessMode.WRITE );
-              Transaction tx = session.beginTransaction() )
+                Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE ()" ).consume();
         }
@@ -566,7 +570,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             // intentionally test deprecated API
             try ( Transaction tx = session.beginTransaction( "OldBookmark" ) )
@@ -589,7 +593,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session( "OldBookmark" ) )
+                Session session = driver.session( "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -611,7 +615,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
+                Session session = driver.session( AccessMode.WRITE, "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -633,7 +637,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
+                Session session = driver.session( AccessMode.READ, "OldBookmark" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -658,7 +662,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session( "BookmarkA" ) )
+                Session session = driver.session( "BookmarkA" ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -691,7 +695,7 @@ class RoutingDriverBoltKitTest
         StubServer reader = StubServer.start( "read_server.script", 9006 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
@@ -715,7 +719,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_server.script", 9008 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9001" );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -808,7 +812,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenReader2 = StubServer.start( "dead_read_server.script", 9006 );
 
         try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             assertThrows( SessionExpiredException.class,
@@ -831,7 +835,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
 
         try ( Driver driver = newDriverWithFixedRetries( "bolt+routing://127.0.0.1:9001", 1 );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             assertThrows( SessionExpiredException.class,
@@ -856,7 +860,7 @@ class RoutingDriverBoltKitTest
         StubServer reader = StubServer.start( "read_server.script", 9004 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) );
@@ -884,7 +888,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_server.script", 9007 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://127.0.0.1:9010" );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -931,7 +935,7 @@ class RoutingDriverBoltKitTest
         StubServer server = StubServer.start( "get_routing_table.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9001", config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
             assertEquals( 3, records.size() );
@@ -953,7 +957,7 @@ class RoutingDriverBoltKitTest
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy&region=china" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
             assertEquals( 2, records.size() );
@@ -974,7 +978,7 @@ class RoutingDriverBoltKitTest
 
         URI uri = URI.create( "bolt+routing://127.0.0.1:9001/?policy=my_policy" );
         try ( Driver driver = GraphDatabase.driver( uri, config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
             assertEquals( 2, records.size() );
@@ -995,7 +999,7 @@ class RoutingDriverBoltKitTest
         StubServer reader = StubServer.start( "read_server.script", 9003 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
@@ -1021,7 +1025,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_server.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             // start another router which knows about writes, use same address as the initial router
             router2 = StubServer.start( "acquire_endpoints.script", 9010 );
@@ -1049,7 +1053,7 @@ class RoutingDriverBoltKitTest
         StubServer reader2 = StubServer.start( "read_server.script", 9004 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://127.0.0.1:9010", config );
-              Session session = driver.session( AccessMode.READ ) )
+                Session session = driver.session( AccessMode.READ ) )
         {
             // returned routing table contains only one router, this should be fine and we should be able to
             // read multiple times without additional rediscovery
@@ -1081,7 +1085,7 @@ class RoutingDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "bolt+routing://localhost:9001", config );
-              Session session = driver.session( bookmarks ) )
+                Session session = driver.session( bookmarks ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -1112,7 +1116,7 @@ class RoutingDriverBoltKitTest
         StubServer writer2 = StubServer.start( "write_server.script", 9007 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "bolt+routing://localhost:9010" );
-              Session session = driver.session() )
+                Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -1233,6 +1237,44 @@ class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    void shouldRevertToInitialRouterIfKnownRouterThrowsProtocolErrors() throws Exception
+    {
+        ServerAddressResolver resolver = a ->
+        {
+            SortedSet<ServerAddress> addresses = new TreeSet<>( new PortBasedServerAddressComparator() );
+            addresses.add( ServerAddress.of( "127.0.0.1", 9001 ) );
+            addresses.add( ServerAddress.of( "127.0.0.1", 9003 ) );
+            return addresses;
+        };
+
+        Config config = Config.builder()
+                .withoutEncryption()
+                .withResolver( resolver )
+                .build();
+
+        StubServer router1 = StubServer.start( "acquire_endpoints_v3_point_to_empty_router_and_exit.script", 9001 );
+        StubServer router2 = StubServer.start( "acquire_endpoints_v3_empty.script", 9004 );
+        StubServer router3 = StubServer.start( "acquire_endpoints_v3_three_servers_and_exit.script", 9003 );
+        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9002 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt+routing://my.virtual.host:8080", config ) )
+        {
+            try ( Session session = driver.session( AccessMode.READ ) )
+            {
+                List<Record> records = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) ).list();
+                assertEquals( 3, records.size() );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, router3.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString, Config config )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
@@ -1286,5 +1328,15 @@ class RoutingDriverBoltKitTest
         Logging logging = mock( Logging.class );
         when( logging.getLog( any() ) ).thenReturn( logger );
         return logging;
+    }
+
+    private static class PortBasedServerAddressComparator implements Comparator<ServerAddress>
+    {
+
+        @Override
+        public int compare( ServerAddress a1, ServerAddress a2 )
+        {
+            return Integer.compare( a1.port(), a2.port() );
+        }
     }
 }
