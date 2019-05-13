@@ -29,7 +29,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ValueRange;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -59,7 +58,8 @@ public final class TemporalUtil
             // removed
             "Canada/East-Saskatchewan",
             // is broken for years in distant future in Java 11 (example of a misbehaving date: +71235332-08-09T22:41:50.738292551-06:00[Chile/EasterIsland])
-            "Chile/EasterIsland"
+            "Chile/EasterIsland",
+            "Africa/Casablanca"
             );
 
     private TemporalUtil()
