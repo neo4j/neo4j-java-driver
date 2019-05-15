@@ -32,6 +32,7 @@ import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.util.TestUtil;
 
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
+import static org.neo4j.driver.internal.DriverFactory.NEO4J_URI_SCHEME;
 import static org.neo4j.driver.v1.Config.defaultConfig;
 
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
@@ -118,9 +119,9 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
                     "Both cluster uri and 'neo4j' user password system properties should be set. " +
                     "Uri: '" + uri + "', Password: '" + password + "'" );
         }
-        if ( uri != null && !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+        if ( uri != null && !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) && !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
         {
-            throw new IllegalStateException( "Cluster uri should have bolt+routing scheme: '" + uri + "'" );
+            throw new IllegalStateException( "Cluster uri should have bolt+routing or neo4j scheme: '" + uri + "'" );
         }
     }
 

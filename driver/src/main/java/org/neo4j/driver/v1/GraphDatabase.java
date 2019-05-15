@@ -19,6 +19,8 @@
 package org.neo4j.driver.v1;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -26,15 +28,18 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
+import static org.neo4j.driver.internal.DriverFactory.NEO4J_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
+ *
  * @see Driver
  * @since 1.0
  */
 public class GraphDatabase
 {
     private static final String LOGGER_NAME = GraphDatabase.class.getSimpleName();
+    private static final List<String> VALID_ROUTING_URIS = Arrays.asList( BOLT_ROUTING_URI_SCHEME, NEO4J_URI_SCHEME );
 
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
@@ -137,12 +142,12 @@ public class GraphDatabase
     }
 
     /**
-     * Try to create a bolt+routing driver from the <b>first</b> available address.
+     * Try to create a routing driver from the <b>first</b> available address.
      * This is wrapper for the {@link #driver} method that finds the <b>first</b>
      * server to respond positively.
      *
      * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
-     * have 'bolt+routing' scheme.
+     * have 'bolt+routing' or 'neo4j' scheme.
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver instance
@@ -171,10 +176,11 @@ public class GraphDatabase
     {
         for ( URI uri : uris )
         {
-            if ( !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+            if ( !VALID_ROUTING_URIS.contains( uri.getScheme() ) )
             {
                 throw new IllegalArgumentException(
-                        "Illegal URI scheme, expected '" + BOLT_ROUTING_URI_SCHEME + "' in '" + uri + "'" );
+                        String.format(
+                                "Illegal URI scheme, expected URI scheme '%s' to be among '%s'", uri.getScheme(), VALID_ROUTING_URIS.toString() ) );
             }
         }
     }

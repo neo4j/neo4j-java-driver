@@ -71,6 +71,7 @@ public class DriverFactory
 {
     public static final String BOLT_URI_SCHEME = "bolt";
     public static final String BOLT_ROUTING_URI_SCHEME = "bolt+routing";
+    public static final String NEO4J_URI_SCHEME = "neo4j";
 
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
@@ -138,6 +139,7 @@ public class DriverFactory
                 assertNoRoutingContext( uri, routingSettings );
                 return createDirectDriver( securityPlan, address, connectionPool, retryLogic, metrics, config );
             case BOLT_ROUTING_URI_SCHEME:
+            case NEO4J_URI_SCHEME:
                 return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metrics, config );
             default:
                 throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
@@ -168,7 +170,7 @@ public class DriverFactory
     }
 
     /**
-     * Creates new a new driver for "bolt+routing" scheme.
+     * Creates new a new driver for "bolt+routing" or "neo4j" scheme.
      * <p>
      * <b>This method is protected only for testing</b>
      */
