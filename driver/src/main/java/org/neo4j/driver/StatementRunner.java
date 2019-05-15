@@ -164,10 +164,4 @@ public interface StatementRunner
      * @return a stream of result values and associated metadata
      */
     StatementResult run( Statement statement );
-
-    /**
-     * @return type system used by this statement runner for classifying values
-     */
-    @Experimental
-    TypeSystem typeSystem();
 }

@@ -34,8 +34,10 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.types.TypeSystem;
 
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
@@ -126,6 +128,12 @@ public class InternalDriver implements Driver
             return sessionFactory.close();
         }
         return completedWithNull();
+    }
+
+    @Override
+    public final TypeSystem defaultTypeSystem()
+    {
+        return InternalTypeSystem.TYPE_SYSTEM;
     }
 
     public CompletionStage<Void> verifyConnectivity()
