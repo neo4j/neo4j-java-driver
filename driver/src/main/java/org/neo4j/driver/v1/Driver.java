@@ -47,7 +47,7 @@ import java.util.concurrent.CompletionStage;
  *             <td>Direct driver: connects directly to the host and port specified in the URI.</td>
  *         </tr>
  *         <tr>
- *             <td><code>bolt+routing</code></td>
+ *             <td><code>bolt+routing</code> or <code>neo4j</code></td>
  *             <td>Routing driver: can automatically discover members of a Causal Cluster and route {@link Session sessions} based on {@link AccessMode}.</td>
  *         </tr>
  *     </tbody>

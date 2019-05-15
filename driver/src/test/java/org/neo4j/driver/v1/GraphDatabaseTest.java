@@ -19,6 +19,8 @@
 package org.neo4j.driver.v1;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,15 +71,16 @@ class GraphDatabaseTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-    @Test
-    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"bolt+routing://127.0.0.1:9001", "neo4j://127.0.0.1:9001"} )
+    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver( String uri ) throws Exception
     {
         // Given
         StubServer server = StubServer.start( "discover_servers.script", 9001 );
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
+        URI driverUri = URI.create( uri );
 
         // When
-        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+        Driver driver = GraphDatabase.driver( driverUri, INSECURE_CONFIG );
 
         // Then
         assertThat( driver, is( clusterDriver() ) );
@@ -107,8 +110,9 @@ class GraphDatabaseTest
         assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" ) );
     }
 
-    @Test
-    void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"bolt+routing", "neo4j"} )
+    void shouldLogWhenUnableToCreateRoutingDriver( String scheme ) throws Exception
     {
         StubServer server1 = StubServer.start( "non_discovery_server.script", 9001 );
         StubServer server2 = StubServer.start( "non_discovery_server.script", 9002 );
@@ -123,8 +127,8 @@ class GraphDatabaseTest
                 .build();
 
         List<URI> routingUris = asList(
-                URI.create( "bolt+routing://localhost:9001" ),
-                URI.create( "bolt+routing://localhost:9002" ) );
+                URI.create( scheme + "://localhost:9001" ),
+                URI.create( scheme + "://localhost:9002" ) );
 
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
 
@@ -136,6 +140,16 @@ class GraphDatabaseTest
 
         assertEquals( 0, server1.exitStatus() );
         assertEquals( 0, server2.exitStatus() );
+    }
+
+    @Test
+    void shouldFailWhenUnsupportedSchemeIsProvidedToRoutingDriver()
+    {
+        IllegalArgumentException exc =
+                assertThrows( IllegalArgumentException.class, () ->
+                        GraphDatabase.routingDriver( asList( URI.create( "xscheme://localhost:7687" ) ), AuthTokens.none(), Config.defaultConfig() ) );
+
+        assertThat( exc.getMessage(), equalTo( "Illegal URI scheme, expected URI scheme 'xscheme' to be among '[bolt+routing, neo4j]'" ) );
     }
 
     @Test

@@ -488,7 +488,7 @@ public class Config
          * Configure maximum amount of connections in the connection pool towards a single database. This setting
          * limits total amount of connections in the pool when used in direct driver, created for URI with 'bolt'
          * scheme. It will limit amount of connections per cluster member when used with routing driver, created for
-         * URI with 'bolt+routing' scheme.
+         * URI with 'bolt+routing' or 'neo4j' scheme.
          * <p>
          * Acquisition will be attempted for at most configured timeout
          * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} when limit is reached.
