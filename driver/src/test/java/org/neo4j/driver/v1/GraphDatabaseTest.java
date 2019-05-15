@@ -132,10 +132,10 @@ class GraphDatabaseTest
 
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: bolt+routing://localhost:9001" ),
+        verify( logger ).warn( eq( String.format( "Unable to create routing driver for URI: %s://localhost:9001", scheme ) ),
                 any( Throwable.class ) );
 
-        verify( logger ).warn( eq( "Unable to create routing driver for URI: bolt+routing://localhost:9002" ),
+        verify( logger ).warn( eq( String.format( "Unable to create routing driver for URI: %s://localhost:9002", scheme ) ),
                 any( Throwable.class ) );
 
         assertEquals( 0, server1.exitStatus() );
