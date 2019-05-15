@@ -246,7 +246,7 @@ public class Rediscovery
             }
             else
             {
-                return response.clusterComposition();
+                return handleClusterComposition( routerAddress, response );
             }
         } );
     }
@@ -266,6 +266,22 @@ public class Rediscovery
             routingTable.forget( routerAddress );
             return null;
         }
+    }
+
+    private ClusterComposition handleClusterComposition( BoltServerAddress routerAddress, ClusterCompositionResponse response )
+    {
+        ClusterComposition result = null;
+
+        try
+        {
+            result = response.clusterComposition();
+        }
+        catch ( Exception exc )
+        {
+            logger.warn( format( "Unable to process routing table received from '%s'.", routerAddress ), exc );
+        }
+
+        return result;
     }
 
     private List<BoltServerAddress> resolve( BoltServerAddress address )

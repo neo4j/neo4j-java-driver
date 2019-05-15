@@ -42,7 +42,7 @@ public class RoutingProcedureRunner
 {
     static final String GET_SERVERS = "dbms.cluster.routing.getServers";
     static final String GET_ROUTING_TABLE_PARAM = "context";
-    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + GET_ROUTING_TABLE_PARAM + "})";
+    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable($" + GET_ROUTING_TABLE_PARAM + ")";
 
     private final RoutingContext context;
 

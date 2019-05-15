@@ -45,6 +45,7 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -163,12 +164,17 @@ class RediscoveryTest
         responsesByAddress.put( B, new Failure( protocolError ) ); // first -> fatal failure
         responsesByAddress.put( C, new Success( validComposition ) ); // second -> valid cluster composition
 
+        Logger logger = mock( Logger.class );
+
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
-        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
+        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ), logger );
         RoutingTable table = routingTableMock( B, C );
 
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
-        assertEquals( protocolError, error );
+        // When
+        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        assertEquals( validComposition, composition );
+
+        verify( logger ).warn( String.format( "Unable to process routing table received from '%s'.", B ), protocolError );
     }
 
     @Test
@@ -302,7 +308,7 @@ class RediscoveryTest
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
-        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, true );
+        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, mock( Logger.class ), true );
         RoutingTable table = routingTableMock( B, C, D );
 
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
@@ -323,7 +329,7 @@ class RediscoveryTest
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
-        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, true );
+        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, mock( Logger.class ), true );
         RoutingTable table = routingTableMock( D, E );
 
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
@@ -393,15 +399,21 @@ class RediscoveryTest
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
             ServerAddressResolver resolver )
     {
-        return newRediscovery( initialRouter, compositionProvider, resolver, false );
+        return newRediscovery( initialRouter, compositionProvider, resolver, DEV_NULL_LOGGER );
     }
 
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
-            ServerAddressResolver resolver, boolean useInitialRouter )
+            ServerAddressResolver resolver, Logger logger )
+    {
+        return newRediscovery( initialRouter, compositionProvider, resolver, logger, false );
+    }
+
+    private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
+            ServerAddressResolver resolver, Logger logger, boolean useInitialRouter )
     {
         RoutingSettings settings = new RoutingSettings( 1, 0 );
         return new Rediscovery( initialRouter, settings, compositionProvider, resolver,
-                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER, useInitialRouter );
+                GlobalEventExecutor.INSTANCE, logger, useInitialRouter );
     }
 
     @SuppressWarnings( "unchecked" )

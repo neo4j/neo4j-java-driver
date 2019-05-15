@@ -23,8 +23,11 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -138,7 +141,6 @@ class RoutingDriverBoltKitTest
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
 
-
     @Test
     void shouldHandleAcquireReadSessionPlusTransaction()
             throws IOException, InterruptedException, StubServer.ForceKilled
@@ -156,7 +158,6 @@ class RoutingDriverBoltKitTest
             List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
-
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -438,7 +439,7 @@ class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction() )
+                        Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (n {name:'Bob'})" );
                     tx.success();
@@ -1209,6 +1210,44 @@ class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    void shouldRevertToInitialRouterIfKnownRouterThrowsProtocolErrors() throws Exception
+    {
+        ServerAddressResolver resolver = a ->
+        {
+            SortedSet<ServerAddress> addresses = new TreeSet<>( new PortBasedServerAddressComparator() );
+            addresses.add( ServerAddress.of( "127.0.0.1", 9001 ) );
+            addresses.add( ServerAddress.of( "127.0.0.1", 9003 ) );
+            return addresses;
+        };
+
+        Config config = Config.builder()
+                .withoutEncryption()
+                .withResolver( resolver )
+                .build();
+
+        StubServer router1 = StubServer.start( "acquire_endpoints_v3_point_to_empty_router_and_exit.script", 9001 );
+        StubServer router2 = StubServer.start( "acquire_endpoints_v3_empty.script", 9004 );
+        StubServer router3 = StubServer.start( "acquire_endpoints_v3_three_servers_and_exit.script", 9003 );
+        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9002 );
+
+        try ( Driver driver = GraphDatabase.driver( "neo4j://my.virtual.host:8080", config ) )
+        {
+            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
+            {
+                List<Record> records = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) ).list();
+                assertEquals( 3, records.size() );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, router1.exitStatus() );
+            assertEquals( 0, router2.exitStatus() );
+            assertEquals( 0, router3.exitStatus() );
+            assertEquals( 0, reader.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString, Config config )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
@@ -1262,5 +1301,15 @@ class RoutingDriverBoltKitTest
         Logging logging = mock( Logging.class );
         when( logging.getLog( any() ) ).thenReturn( logger );
         return logging;
+    }
+
+    private static class PortBasedServerAddressComparator implements Comparator<ServerAddress>
+    {
+
+        @Override
+        public int compare( ServerAddress a1, ServerAddress a2 )
+        {
+            return Integer.compare( a1.port(), a2.port() );
+        }
     }
 }

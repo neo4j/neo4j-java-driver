@@ -166,7 +166,7 @@ public class CausalClusteringIT implements NestedQueries
 
         ClusterMember readReplica = cluster.anyReadReplica();
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( readReplica.getRoutingUri() ) );
-        assertThat( e.getMessage(), containsString( "Failed to run 'CALL dbms.cluster.routing" ) );
+        assertThat( e.getMessage(), containsString( "Could not perform discovery. No routing servers available." ) );
     }
 
     // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.
@@ -1034,8 +1034,8 @@ public class CausalClusteringIT implements NestedQueries
             return false;
         }
         return overview.leaderCount == 0 &&
-               overview.followerCount == 1 &&
-               overview.readReplicaCount == ClusterExtension.READ_REPLICA_COUNT;
+                overview.followerCount == 1 &&
+                overview.readReplicaCount == ClusterExtension.READ_REPLICA_COUNT;
     }
 
     private static void makeAllChannelsFailToRunQueries( ChannelTrackingDriverFactory driverFactory, ServerVersion dbVersion )
@@ -1083,10 +1083,10 @@ public class CausalClusteringIT implements NestedQueries
         public String toString()
         {
             return "ClusterOverview{" +
-                   "leaderCount=" + leaderCount +
-                   ", followerCount=" + followerCount +
-                   ", readReplicaCount=" + readReplicaCount +
-                   '}';
+                    "leaderCount=" + leaderCount +
+                    ", followerCount=" + followerCount +
+                    ", readReplicaCount=" + readReplicaCount +
+                    '}';
         }
     }
 }
