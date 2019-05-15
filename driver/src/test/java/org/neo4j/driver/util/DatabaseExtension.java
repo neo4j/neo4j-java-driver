@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.types.TypeSystem;
 
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
@@ -67,6 +68,11 @@ public class DatabaseExtension implements BeforeEachCallback
     public Driver driver()
     {
         return runner.driver();
+    }
+
+    public TypeSystem typeSystem()
+    {
+        return driver().defaultTypeSystem();
     }
 
     public void restartDb()

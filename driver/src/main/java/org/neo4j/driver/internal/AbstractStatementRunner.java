@@ -57,12 +57,6 @@ public abstract class AbstractStatementRunner implements StatementRunner
         return run( statementText, Values.EmptyMap );
     }
 
-    @Override
-    public final TypeSystem typeSystem()
-    {
-        return InternalTypeSystem.TYPE_SYSTEM;
-    }
-
     public static Value parameters( Record record )
     {
         return record == null ? Values.EmptyMap : parameters( record.asMap() );

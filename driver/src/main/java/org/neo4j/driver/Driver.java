@@ -25,6 +25,8 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.SessionParameters;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.types.TypeSystem;
+import org.neo4j.driver.util.Experimental;
 
 /**
  * Accessor for a specific Neo4j graph database.
@@ -149,4 +151,13 @@ public interface Driver extends AutoCloseable
      * @return a new {@link AsyncSession} object.
      */
     AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer );
+
+    /**
+     * This will return the type system supported by the driver.
+     * The types supported on a particular server a session is connected against might not contain all of the types defined here.
+     *
+     * @return type system used by this statement runner for classifying values
+     */
+    @Experimental
+    TypeSystem defaultTypeSystem();
 }

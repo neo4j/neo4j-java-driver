@@ -166,10 +166,4 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     {
         return realSession.run( statement, config );
     }
-
-    @Override
-    public TypeSystem typeSystem()
-    {
-        return realSession.typeSystem();
-    }
 }
