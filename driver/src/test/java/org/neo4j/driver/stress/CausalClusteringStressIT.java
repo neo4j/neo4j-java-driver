@@ -32,12 +32,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.cc.ClusterMemberRole;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
@@ -47,8 +47,10 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.cc.ClusterMember.SIMPLE_SCHEME;
 
+@DisabledOnNeo4jWith( BOLT_V4 )
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
     @RegisterExtension
