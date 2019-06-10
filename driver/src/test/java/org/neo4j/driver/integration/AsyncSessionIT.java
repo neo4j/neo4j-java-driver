@@ -188,7 +188,7 @@ class AsyncSessionIT
 
                 if ( i == 0 )
                 {
-                    neo4j.killDb();
+                    neo4j.stopDb();
                 }
 
                 List<Record> records = await( cursor.listAsync() );
@@ -579,7 +579,7 @@ class AsyncSessionIT
     @Test
     void shouldRunAfterRunFailureToAcquireConnection()
     {
-        neo4j.killDb();
+        neo4j.stopDb();
 
         assertThrows( ServiceUnavailableException.class, () ->
         {
@@ -628,7 +628,7 @@ class AsyncSessionIT
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection()
     {
-        neo4j.killDb();
+        neo4j.stopDb();
 
         assertThrows( ServiceUnavailableException.class, () ->
         {

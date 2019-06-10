@@ -29,9 +29,10 @@ import java.nio.file.Paths;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.util.Neo4jRunner;
+import org.neo4j.driver.util.DockerBasedNeo4jRunner;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.driver.util.Neo4jRunner.NEO4J_VERSION;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.TARGET_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
@@ -64,7 +65,7 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
 
         if ( !SharedCluster.exists() )
         {
-            SharedCluster.install( parseNeo4jVersion(),
+            SharedCluster.install( NEO4J_VERSION,
                     CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
 
             try
@@ -120,17 +121,11 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
         }
     }
 
-    private static String parseNeo4jVersion()
-    {
-        String[] split = Neo4jRunner.NEOCTRL_ARGS.split( "\\s+" );
-        return split[split.length - 1];
-    }
-
     private static void stopSingleInstanceDatabase() throws IOException
     {
-        if ( Neo4jRunner.globalRunnerExists() )
+        if ( DockerBasedNeo4jRunner.globalRunnerExists() )
         {
-            Neo4jRunner.getOrCreateGlobalRunner().stopNeo4j();
+            DockerBasedNeo4jRunner.getOrCreateGlobalRunner().stopNeo4j();
         }
     }
 

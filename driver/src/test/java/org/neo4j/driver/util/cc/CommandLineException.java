@@ -18,14 +18,14 @@
  */
 package org.neo4j.driver.util.cc;
 
-class CommandLineException extends RuntimeException
+public class CommandLineException extends RuntimeException
 {
-    CommandLineException( String message )
+    public CommandLineException( String message )
     {
         super( message );
     }
 
-    CommandLineException( String message, Throwable cause )
+    public CommandLineException( String message, Throwable cause )
     {
         super( message, cause );
     }

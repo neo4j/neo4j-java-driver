@@ -74,7 +74,7 @@ class ServerKilledIT
             acquireAndReleaseConnections( 4, driver );
 
             // When
-            neo4j.forceRestartDb();
+            neo4j.restartDb();
 
             // Then we should be able to start using sessions again, at most O(numSessions) session calls later
             int toleratedFailures = 4;
@@ -111,7 +111,7 @@ class ServerKilledIT
             acquireAndReleaseConnections( 5, driver );
 
             // restart database to invalidate all idle connections in the pool
-            neo4j.forceRestartDb();
+            neo4j.restartDb();
             // move clock forward more than configured liveness check timeout
             clock.progress( TimeUnit.MINUTES.toMillis( livenessCheckTimeoutMinutes + 1 ) );
 

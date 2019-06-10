@@ -41,6 +41,8 @@ import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 
 public class StubServer
 {
+    private static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
+
     private static final int SOCKET_CONNECT_ATTEMPTS = 20;
 
     public static final Config INSECURE_CONFIG = Config.builder().withoutEncryption().build();
@@ -59,7 +61,7 @@ public class StubServer
         List<String> command = new ArrayList<>();
         command.addAll( singletonList( BOLT_STUB_COMMAND ) );
         command.addAll( asList( Integer.toString( port ), script ) );
-        ProcessBuilder server = new ProcessBuilder().command( command );
+        ProcessBuilder server = new ProcessBuilder().command( command ).inheritIO();
         process = server.start();
         startReadingOutput( process );
         waitForSocket( port );
@@ -94,7 +96,7 @@ public class StubServer
 
     private static String resource( String fileName )
     {
-        File resource = new File( DatabaseExtension.TEST_RESOURCE_FOLDER_PATH, fileName );
+        File resource = new File( TEST_RESOURCE_FOLDER_PATH, fileName );
         if ( !resource.exists() )
         {
             fail( fileName + " does not exists" );

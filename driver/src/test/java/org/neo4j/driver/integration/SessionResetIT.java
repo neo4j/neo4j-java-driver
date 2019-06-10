@@ -27,11 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.channels.ClosedChannelException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -49,7 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
@@ -81,9 +76,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
-import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
-import static org.neo4j.driver.util.Neo4jSettings.IMPORT_DIR;
-import static org.neo4j.driver.util.Neo4jSettings.TEST_SETTINGS;
 import static org.neo4j.driver.util.TestUtil.activeQueryCount;
 import static org.neo4j.driver.util.TestUtil.activeQueryNames;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
@@ -814,18 +806,12 @@ class SessionResetIT
 
     private static String longPeriodicCommitQuery()
     {
-        URI fileUri = createTmpCsvFile();
-        return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri );
-    }
-
-    private static URI createTmpCsvFile()
-    {
         try
         {
-            Path importDir = Paths.get( HOME_DIR, TEST_SETTINGS.propertiesMap().get( IMPORT_DIR ) );
-            Path csvFile = Files.createTempFile( importDir, "test", ".csv" );
             Iterable<String> lines = range( 0, CSV_FILE_SIZE ).mapToObj( i -> "Foo-" + i + ", Bar-" + i )::iterator;
-            return URI.create( "file:///" + Files.write( csvFile, lines ).getFileName() );
+            final String fileUri = neo4j.putTmpCsvFile( "test", "csv", lines ).toExternalForm();
+            return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri );
+
         }
         catch ( IOException e )
         {

@@ -520,7 +520,7 @@ class RxTransactionIT
 
         assertThrows( ServiceUnavailableException.class, () -> {
             await( Flux.from( result.records() ).doOnSubscribe( subscription -> {
-                neo4j.killDb();
+                neo4j.stopDb();
             } ) );
             await( tx.commit() );
         } );

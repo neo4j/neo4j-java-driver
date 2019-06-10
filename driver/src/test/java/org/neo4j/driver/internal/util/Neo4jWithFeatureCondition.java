@@ -31,6 +31,7 @@ import org.neo4j.driver.util.Neo4jSettings;
 
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
+import static org.neo4j.driver.util.DockerBasedNeo4jRunner.getOrCreateGlobalRunner;
 
 public class Neo4jWithFeatureCondition implements ExecutionCondition
 {
@@ -91,7 +92,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
     {
         try
         {
-            Neo4jRunner runner = Neo4jRunner.getOrCreateGlobalRunner();
+            Neo4jRunner runner = getOrCreateGlobalRunner();
             // ensure database is running with default credentials
             runner.ensureRunning( Neo4jSettings.TEST_SETTINGS );
             return runner.driver();

@@ -23,27 +23,26 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collections;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.types.TypeSystem;
 
+import static org.neo4j.driver.util.DockerBasedNeo4jRunner.getOrCreateGlobalRunner;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
-import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
-import static org.neo4j.driver.util.Neo4jRunner.getOrCreateGlobalRunner;
-import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
-import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
+import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_CERT_FILE;
+import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_KEY_FILE;
 
 public class DatabaseExtension implements BeforeEachCallback
 {
-    static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
-
     private final Neo4jSettings settings;
     private Neo4jRunner runner;
 
@@ -80,25 +79,22 @@ public class DatabaseExtension implements BeforeEachCallback
         runner.restartNeo4j();
     }
 
-    public void forceRestartDb()
-    {
-        runner.forceToRestart();
-    }
-
     public void restartDb( Neo4jSettings neo4jSettings )
     {
         runner.restartNeo4j( neo4jSettings );
     }
 
-    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
+    public URL putTmpCsvFile( String prefix, String suffix, String contents ) throws IOException
     {
-        File tmpFile = File.createTempFile( prefix, suffix, null );
-        tmpFile.deleteOnExit();
-        try ( PrintWriter out = new PrintWriter( tmpFile ) )
-        {
-            out.println( contents );
-        }
-        return tmpFile.toURI().toURL();
+        return putTmpCsvFile( prefix, suffix, Collections.singletonList( contents ) );
+    }
+
+    public URL putTmpCsvFile( String prefix, String suffix, Iterable<String> lines ) throws IOException
+    {
+        File tempFile = File.createTempFile( prefix, suffix, runner.importsDirectory() );
+        tempFile.deleteOnExit();
+        Files.write( Paths.get( tempFile.getAbsolutePath() ), lines );
+        return tempFile.toURI().toURL();
     }
 
     public URI uri()
@@ -131,28 +127,17 @@ public class DatabaseExtension implements BeforeEachCallback
         FileTools.copyFile( key, tlsKeyFile() );
         FileTools.copyFile( cert, tlsCertFile() );
         debug( "Updated neo4j key and certificate file." );
-        runner.forceToRestart(); // needs to force to restart as no configuration changed
+        runner.restartNeo4j(); // needs to force to restart as no configuration changed
     }
 
     public File tlsCertFile()
     {
-        return new File( HOME_DIR, DEFAULT_TLS_CERT_PATH );
+        return new File( runner.certificatesDirectory(), DEFAULT_TLS_CERT_FILE );
     }
 
     public File tlsKeyFile()
     {
-        return new File( HOME_DIR, DEFAULT_TLS_KEY_PATH );
-    }
-
-    public void ensureProcedures( String jarName ) throws IOException
-    {
-        File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
-        if ( !procedureJar.exists() )
-        {
-            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
-            debug( "Added a new procedure `%s`", jarName );
-            runner.forceToRestart(); // needs to force to restart as no configuration changed
-        }
+        return new File( runner.certificatesDirectory(), DEFAULT_TLS_KEY_FILE );
     }
 
     public void startDb()
@@ -165,13 +150,12 @@ public class DatabaseExtension implements BeforeEachCallback
         runner.stopNeo4j();
     }
 
-    public void killDb()
-    {
-        runner.killNeo4j();
-    }
-
     public ServerVersion version()
     {
         return ServerVersion.version( driver() );
+    }
+
+    public void ensureProcedures( String procedureJarName )
+    {
     }
 }

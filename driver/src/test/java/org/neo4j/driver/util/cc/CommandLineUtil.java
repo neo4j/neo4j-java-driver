@@ -44,7 +44,20 @@ public class CommandLineUtil
     {
         try
         {
-            executeCommand( "neoctrl-cluster", "--help" );
+            executeCommand( "bolt", "server", "--help" );
+            return true;
+        }
+        catch ( CommandLineException e )
+        {
+            return false;
+        }
+    }
+
+    public static boolean dockerRunning()
+    {
+        try
+        {
+            executeCommand( "docker", "info" );
             return true;
         }
         catch ( CommandLineException e )
