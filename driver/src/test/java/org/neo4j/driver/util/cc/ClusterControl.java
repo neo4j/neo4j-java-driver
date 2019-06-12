@@ -18,7 +18,11 @@
  */
 package org.neo4j.driver.util.cc;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+
+import org.neo4j.driver.util.DockerProcess;
 
 import static org.neo4j.driver.util.cc.CommandLineUtil.executeCommand;
 
@@ -28,7 +32,7 @@ final class ClusterControl
     {
     }
 
-    static void installCluster( String neo4jVersion, int cores, int readReplicas, String password, int port,
+    static void installCluster( String neo4jVersion, int cores, int readReplicas, String user, String password, int port,
             Path path )
     {
         executeCommand( "neoctrl-cluster", "install",
@@ -67,4 +71,20 @@ final class ClusterControl
         executeCommand( "neoctrl-stop", "--kill", path.toString() );
     }
 
+    public static class ClusterDockerProcess extends DockerProcess
+    {
+        public ClusterDockerProcess( String neo4jVersion, int cores, int readReplicas, String user, String password, int boltPort,
+                int httpPort, File logDir )
+        {
+            super( String.format( "bolt server -v -i %s -a %s:%s -B %s -H %s -c %s -r %s", neo4jVersion, user, password, boltPort, httpPort, cores,
+                    readReplicas ), logDir );
+        }
+
+        public void stop( String name ) throws IOException
+        {
+            process.getOutputStream().write( String.format( "stop %s", name ).getBytes() );
+            process.getOutputStream().flush();
+            waitForCommandReturn();
+        }
+    }
 }

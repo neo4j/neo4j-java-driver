@@ -47,10 +47,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.util.cc.ClusterMember.SIMPLE_SCHEME;
+import static org.neo4j.driver.util.cc.ClusterMember.BOLT_SCHEMA;
 
-@DisabledOnNeo4jWith( BOLT_V4 )
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
     @RegisterExtension
@@ -142,7 +140,7 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
             for ( Record record : records )
             {
                 List<Object> addresses = record.get( "addresses" ).asList();
-                String boltAddress = ((String) addresses.get( 0 )).replace( SIMPLE_SCHEME, "" );
+                String boltAddress = ((String) addresses.get( 0 )).replace( BOLT_SCHEMA, "" );
 
                 ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
                 if ( role == ClusterMemberRole.FOLLOWER )

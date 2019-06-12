@@ -23,68 +23,72 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.util.DockerBasedNeo4jRunner;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.driver.util.Neo4jRunner.CLUSTER_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.NEO4J_VERSION;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
-import static org.neo4j.driver.util.Neo4jRunner.TARGET_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
+import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_LOG_DIR;
 import static org.neo4j.driver.util.cc.CommandLineUtil.boltKitAvailable;
+import static org.neo4j.driver.util.cc.CommandLineUtil.dockerRunning;
 
 public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
-    private static final Path CLUSTER_DIR = Paths.get( TARGET_DIR, "test-cluster" ).toAbsolutePath();
     private static final int INITIAL_PORT = 20_000;
+    private static final int INITIAL_HTTP_PORT = 21_000;
 
     public static final int CORE_COUNT = 3;
     public static final int READ_REPLICA_COUNT = 2;
 
-    public Cluster getCluster()
-    {
-        return SharedCluster.get();
-    }
+    private static SharedCluster cluster;
 
     public AuthToken getDefaultAuthToken()
     {
         return AuthTokens.basic( USER, PASSWORD );
     }
 
+    private File logsDirectory()
+    {
+        return new File( CLUSTER_DIR, DEFAULT_LOG_DIR );
+    }
+
     @Override
     public void beforeAll( ExtensionContext context ) throws Exception
     {
         assumeTrue( boltKitAvailable(), "BoltKit cluster support unavailable" );
+        assumeTrue( dockerRunning(), "Docker support unavailable" );
 
         stopSingleInstanceDatabase();
 
-        if ( !SharedCluster.exists() )
+        if ( cluster == null )
         {
-            SharedCluster.install( NEO4J_VERSION,
-                    CORE_COUNT, READ_REPLICA_COUNT, PASSWORD, INITIAL_PORT, CLUSTER_DIR );
+            cluster = new SharedCluster();
+            cluster.install( NEO4J_VERSION, CORE_COUNT, READ_REPLICA_COUNT, USER, PASSWORD, INITIAL_PORT, INITIAL_HTTP_PORT, logsDirectory() );
 
             try
             {
-                SharedCluster.start();
+                cluster.start();
             }
             catch ( Throwable startError )
             {
                 try
                 {
-                    SharedCluster.kill();
+                    cluster.stop();
                 }
-                catch ( Throwable killError )
+                catch ( Throwable stopError )
                 {
-                    startError.addSuppressed( killError );
+                    startError.addSuppressed( stopError );
                 }
                 finally
                 {
-                    SharedCluster.remove();
+                    cluster.remove();
                 }
                 throw startError;
             }
@@ -101,22 +105,22 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     public void afterEach( ExtensionContext context )
     {
         Cluster cluster = getCluster();
-        cluster.startOfflineMembers();
         cluster.deleteData();
     }
 
     @Override
     public void afterAll( ExtensionContext context )
     {
-        if ( SharedCluster.exists() )
+        if ( cluster != null )
         {
             try
             {
-                SharedCluster.stop();
+                cluster.stop();
             }
             finally
             {
-                SharedCluster.remove();
+                cluster.remove();
+                cluster = null;
             }
         }
     }
@@ -135,9 +139,9 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
         {
             try
             {
-                if ( SharedCluster.exists() )
+                if ( cluster != null )
                 {
-                    SharedCluster.kill();
+                    cluster.stop();
                 }
             }
             catch ( Throwable t )
@@ -146,5 +150,15 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
                 t.printStackTrace();
             }
         } ) );
+    }
+
+    public Cluster getCluster()
+    {
+        return cluster.get();
+    }
+
+    public void stop( ClusterMember follower )
+    {
+        cluster.stop( follower );
     }
 }

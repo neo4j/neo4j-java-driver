@@ -45,6 +45,7 @@ public class DatabaseExtension implements BeforeEachCallback
 {
     private final Neo4jSettings settings;
     private Neo4jRunner runner;
+    private static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
 
     public DatabaseExtension()
     {
@@ -91,7 +92,7 @@ public class DatabaseExtension implements BeforeEachCallback
 
     public URL putTmpCsvFile( String prefix, String suffix, Iterable<String> lines ) throws IOException
     {
-        File tempFile = File.createTempFile( prefix, suffix, runner.importsDirectory() );
+        File tempFile = File.createTempFile( prefix, suffix, runner.importDirectory() );
         tempFile.deleteOnExit();
         Files.write( Paths.get( tempFile.getAbsolutePath() ), lines );
         return tempFile.toURI().toURL();
@@ -155,7 +156,14 @@ public class DatabaseExtension implements BeforeEachCallback
         return ServerVersion.version( driver() );
     }
 
-    public void ensureProcedures( String procedureJarName )
+    public void ensureProcedures( String jarName ) throws IOException
     {
+        File procedureJar = new File( runner.pluginsDirectory(), jarName );
+        if ( !procedureJar.exists() )
+        {
+            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
+            debug( "Added a new procedure `%s`", jarName );
+            runner.restartNeo4j(); // needs to force to restart as no configuration changed
+        }
     }
 }

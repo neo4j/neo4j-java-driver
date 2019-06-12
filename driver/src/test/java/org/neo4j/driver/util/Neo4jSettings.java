@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.util;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +29,9 @@ public class Neo4jSettings
     public static final String AUTH_ENABLED = "dbms.security.auth_enabled";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
-    public static final String DATA_DIR = "dbms.directories.data";
-    private static final String DEFAULT_DATA_DIR = "data";
-
-    static final String DEFAULT_LOG_DIR = "log";
+    public static final String DEFAULT_LOG_DIR = "logs";
     static final String DEFAULT_IMPORT_DIR = "import";
+    static final String DEFAULT_PLUGIN_DIR = "plugins";
     static final String DEFAULT_CERT_DIR = "certificates";
 
     static final String DEFAULT_TLS_CERT_FILE = "neo4j.cert";
@@ -52,9 +51,11 @@ public class Neo4jSettings
     private final Map<String, String> settings;
 
     public static final Neo4jSettings TEST_SETTINGS = new Neo4jSettings( map(
-//            DATA_DIR, DEFAULT_DATA_DIR,
             AUTH_ENABLED, "true",
             BOLT_TLS_LEVEL, DEFAULT_BOLT_TLS_LEVEL ) );
+
+    public static final Neo4jSettings EMPTY_SETTINGS = new Neo4jSettings( Collections.emptyMap() );
+
 
     public enum BoltTlsLevel
     {

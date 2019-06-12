@@ -20,59 +20,42 @@ package org.neo4j.driver.util.cc;
 
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
 import static org.neo4j.driver.internal.util.Iterables.single;
-import static org.neo4j.driver.util.TestUtil.sleep;
 
 public class Cluster implements AutoCloseable
 {
-    private static final String ADMIN_USER = "neo4j";
-    private static final int STARTUP_TIMEOUT_SECONDS = 120;
-    private static final int ONLINE_MEMBERS_CHECK_SLEEP_MS = 500;
-
-    private final Path path;
     private final Set<ClusterMember> members;
-    private final Set<ClusterMember> offlineMembers;
     private final ClusterDrivers clusterDrivers;
 
-    public Cluster( Path path, String password )
+    public Cluster( String user, String password )
     {
-        this( path, emptySet(), new ClusterDrivers( ADMIN_USER, password ) );
+        this( emptySet(), new ClusterDrivers( user, password ) );
     }
 
-    private Cluster( Path path, Set<ClusterMember> members, ClusterDrivers clusterDrivers )
+    private Cluster( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
     {
-        this.path = path;
         this.members = members;
-        this.offlineMembers = new HashSet<>();
         this.clusterDrivers = clusterDrivers;
     }
 
-    Cluster withMembers( Set<ClusterMember> newMembers ) throws ClusterUnavailableException
+    Cluster withMembers( Set<ClusterMember> newMembers )
     {
-        waitForMembersToBeOnline( newMembers, clusterDrivers );
-        return new Cluster( path, newMembers, clusterDrivers );
-    }
-
-    public Path getPath()
-    {
-        return path;
+        return new Cluster( newMembers, clusterDrivers );
     }
 
     public void deleteData()
@@ -140,37 +123,6 @@ public class Cluster implements AutoCloseable
         return membersWithRole( ClusterMemberRole.READ_REPLICA );
     }
 
-    public void start( ClusterMember member )
-    {
-        startNoWait( member );
-        waitForMembersToBeOnline();
-    }
-
-    public void startOfflineMembers()
-    {
-        // copy offline members to avoid ConcurrentModificationException
-        Set<ClusterMember> currentlyOfflineMembers = new HashSet<>( offlineMembers );
-        for ( ClusterMember member : currentlyOfflineMembers )
-        {
-            startNoWait( member );
-        }
-        waitForMembersToBeOnline();
-    }
-
-    public void stop( ClusterMember member )
-    {
-        removeOfflineMember( member );
-        SharedCluster.stop( member );
-        waitForMembersToBeOnline();
-    }
-
-    public void kill( ClusterMember member )
-    {
-        removeOfflineMember( member );
-        SharedCluster.kill( member );
-        waitForMembersToBeOnline();
-    }
-
     public Driver getDirectDriver( ClusterMember member )
     {
         return clusterDrivers.getDriver( member );
@@ -186,33 +138,8 @@ public class Cluster implements AutoCloseable
     public String toString()
     {
         return "Cluster{" +
-               "path=" + path +
-               ", members=" + members +
+               "members=" + members +
                "}";
-    }
-
-    private void addOfflineMember( ClusterMember member )
-    {
-        if ( !offlineMembers.remove( member ) )
-        {
-            throw new IllegalArgumentException( "Cluster member is not offline: " + member );
-        }
-        members.add( member );
-    }
-
-    private void removeOfflineMember( ClusterMember member )
-    {
-        if ( !members.remove( member ) )
-        {
-            throw new IllegalArgumentException( "Unknown cluster member " + member );
-        }
-        offlineMembers.add( member );
-    }
-
-    private void startNoWait( ClusterMember member )
-    {
-        addOfflineMember( member );
-        SharedCluster.start( member );
     }
 
     private Set<ClusterMember> membersWithRole( ClusterMemberRole role )
@@ -244,59 +171,6 @@ public class Cluster implements AutoCloseable
         }
 
         return membersWithRole;
-    }
-
-    private void waitForMembersToBeOnline()
-    {
-        try
-        {
-            waitForMembersToBeOnline( members, clusterDrivers );
-        }
-        catch ( ClusterUnavailableException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private static void waitForMembersToBeOnline( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
-            throws ClusterUnavailableException
-    {
-        if ( members.isEmpty() )
-        {
-            throw new IllegalArgumentException( "No members to wait for" );
-        }
-
-        Set<BoltServerAddress> expectedOnlineAddresses = extractBoltAddresses( members );
-        Set<BoltServerAddress> actualOnlineAddresses = emptySet();
-
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( STARTUP_TIMEOUT_SECONDS );
-        Throwable error = null;
-
-        while ( !expectedOnlineAddresses.equals( actualOnlineAddresses ) )
-        {
-            sleep( ONLINE_MEMBERS_CHECK_SLEEP_MS );
-            assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
-
-            Driver driver = driverToAnyCore( members, clusterDrivers );
-            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
-            {
-                List<Record> records = findClusterOverview( session );
-                actualOnlineAddresses = extractBoltAddresses( records );
-            }
-            catch ( Throwable t )
-            {
-                t.printStackTrace();
-
-                if ( error == null )
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed( t );
-                }
-            }
-        }
     }
 
     private static Driver driverToAnyCore( Set<ClusterMember> members, ClusterDrivers clusterDrivers )
@@ -332,49 +206,6 @@ public class Cluster implements AutoCloseable
         Record record = single( session.run( "call dbms.cluster.role()" ).list() );
         ClusterMemberRole role = extractRole( record );
         return role != ClusterMemberRole.READ_REPLICA;
-    }
-
-    private static void assertDeadlineNotReached( long deadline, Set<?> expectedAddresses, Set<?> actualAddresses,
-            Throwable error ) throws ClusterUnavailableException
-    {
-        if ( System.currentTimeMillis() > deadline )
-        {
-            String baseMessage = "Cluster did not become available in " + STARTUP_TIMEOUT_SECONDS + " seconds.\n";
-            String errorMessage = error == null ? "" : "There were errors checking cluster members.\n";
-            String expectedAddressesMessage = "Expected online addresses: " + expectedAddresses + "\n";
-            String actualAddressesMessage = "Actual last seen online addresses: " + actualAddresses + "\n";
-            String message = baseMessage + errorMessage + expectedAddressesMessage + actualAddressesMessage;
-
-            ClusterUnavailableException clusterUnavailable = new ClusterUnavailableException( message );
-
-            if ( error != null )
-            {
-                clusterUnavailable.addSuppressed( error );
-            }
-
-            throw clusterUnavailable;
-        }
-    }
-
-    private static Set<BoltServerAddress> extractBoltAddresses( Set<ClusterMember> members )
-    {
-        Set<BoltServerAddress> addresses = new HashSet<>();
-        for ( ClusterMember member : members )
-        {
-            addresses.add( member.getBoltAddress() );
-        }
-        return addresses;
-    }
-
-    private static Set<BoltServerAddress> extractBoltAddresses( List<Record> records )
-    {
-        Set<BoltServerAddress> addresses = new HashSet<>();
-        for ( Record record : records )
-        {
-            BoltServerAddress boltAddress = extractBoltAddress( record );
-            addresses.add( boltAddress );
-        }
-        return addresses;
     }
 
     private static BoltServerAddress extractBoltAddress( Record record )

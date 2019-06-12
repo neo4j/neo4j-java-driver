@@ -31,6 +31,7 @@ import static org.neo4j.driver.util.Neo4jRunner.debug;
 import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_CERT_DIR;
 import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_IMPORT_DIR;
 import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_LOG_DIR;
+import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_PLUGIN_DIR;
 import static org.neo4j.driver.util.cc.CommandLineUtil.boltKitAvailable;
 import static org.neo4j.driver.util.cc.CommandLineUtil.dockerRunning;
 
@@ -118,7 +119,8 @@ public class DockerBasedNeo4jRunner implements Neo4jRunner
     public void startNeo4j()
     {
         debug( "Starting server..." );
-        neo4jProcess = new Neo4jDockerProcess( NEO4J_VERSION, USER, PASSWORD, boltPort(), certificatesDirectory(), logsDirectory(), importsDirectory() );
+        neo4jProcess = new Neo4jDockerProcess( NEO4J_VERSION, USER, PASSWORD, boltPort(), httpPort(),
+                logsDirectory(), certificatesDirectory(), importDirectory(), pluginsDirectory() );
         neo4jProcess.start( currentSettings );
         debug( "Server started." );
     }
@@ -231,9 +233,15 @@ public class DockerBasedNeo4jRunner implements Neo4jRunner
     }
 
     @Override
-    public File importsDirectory()
+    public File importDirectory()
     {
         return new File( NEO4J_DIR, DEFAULT_IMPORT_DIR );
+    }
+
+    @Override
+    public File pluginsDirectory()
+    {
+        return new File( NEO4J_DIR, DEFAULT_PLUGIN_DIR );
     }
 
     private File logsDirectory()

@@ -18,147 +18,138 @@
  */
 package org.neo4j.driver.util.cc;
 
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import static java.lang.System.lineSeparator;
+import org.neo4j.driver.util.Neo4jSettings;
+import org.neo4j.driver.util.cc.ClusterControl.ClusterDockerProcess;
+
+import static org.neo4j.driver.util.Neo4jRunner.CLUSTER_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
 
 final class SharedCluster
 {
-    private static Cluster clusterInstance;
+    private Cluster clusterInstance;
+    private ClusterDockerProcess process;
 
-    private SharedCluster()
+    public SharedCluster()
     {
     }
 
-    static Cluster get()
+    Cluster get()
     {
         assertClusterExists();
         return clusterInstance;
     }
 
-    static void remove()
+    void remove()
     {
         assertClusterExists();
         clusterInstance.close();
         clusterInstance = null;
     }
 
-    static boolean exists()
+    boolean exists()
     {
         return clusterInstance != null;
     }
 
-    static void install( String neo4jVersion, int cores, int readReplicas, String password, int port, Path path )
+    void install( String neo4jVersion, int cores, int readReplicas, String user, String password, int boltPort, int httpPort, File logDir )
     {
         assertClusterDoesNotExist();
-        if ( Files.isDirectory( path ) )
-        {
-            debug( "Found and using cluster installed at `%s`.", path );
-        }
-        else
-        {
-            ClusterControl.installCluster( neo4jVersion, cores, readReplicas, password, port, path );
-            debug( "Downloaded cluster at `%s`.", path );
-        }
-        clusterInstance = new Cluster( path, password );
+        process = new ClusterDockerProcess( neo4jVersion, cores, readReplicas, user, password, boltPort, httpPort, logDir );
+        clusterInstance = new Cluster( user, password );
     }
 
-    static void start() throws ClusterUnavailableException
+    void start() throws ClusterUnavailableException
     {
         assertClusterExists();
-        String output = ClusterControl.startCluster( clusterInstance.getPath() );
-        Set<ClusterMember> members = parseStartCommandOutput( output );
-
         try
         {
+            final List<String> lines = process.start( Neo4jSettings.EMPTY_SETTINGS );
+            Set<ClusterMember> members = parseStartCommandOutput( lines );
             clusterInstance = clusterInstance.withMembers( members );
             debug( "Cluster started: %s.", members );
         }
         catch ( ClusterUnavailableException e )
         {
-            kill();
+            stop();
             throw e;
         }
     }
 
-    static void start( ClusterMember member )
+    void stop()
     {
-        assertClusterExists();
-        ClusterControl.startClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` started.", member );
+        try
+        {
+            if ( clusterInstance != null )
+            {
+                clusterInstance.close();
+            }
+        }
+        finally
+        {
+            if ( process != null )
+            {
+                process.stop();
+            }
+        }
+        debug( "Cluster at `%s` stopped.", CLUSTER_DIR );
     }
 
-    static void stop()
+
+    private void kill()
     {
-        assertClusterExists();
-        ClusterControl.stopCluster( clusterInstance.getPath() );
-        debug( "Cluster at `%s` stopped.", clusterInstance.getPath() );
+        try
+        {
+            if ( clusterInstance != null )
+            {
+                clusterInstance.close();
+            }
+        }
+        finally
+        {
+            if ( process != null )
+            {
+                process.kill();
+            }
+        }
+        debug( "Cluster at `%s` killed.", CLUSTER_DIR );
     }
 
-    static void stop( ClusterMember member )
-    {
-        assertClusterExists();
-        ClusterControl.stopClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` stopped.", member.getPath() );
-    }
-
-    static void kill()
-    {
-        assertClusterExists();
-        ClusterControl.killCluster( clusterInstance.getPath() );
-        debug( "Cluster at `%s` killed.", clusterInstance.getPath() );
-    }
-
-    static void kill( ClusterMember member )
-    {
-        assertClusterExists();
-        ClusterControl.killClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` killed.", member.getPath() );
-    }
-
-    private static Set<ClusterMember> parseStartCommandOutput( String output )
+    private static Set<ClusterMember> parseStartCommandOutput( List<String> lines ) throws ClusterUnavailableException
     {
         Set<ClusterMember> result = new HashSet<>();
 
-        String[] lines = output.split( lineSeparator() );
-        for ( int i = 0; i < lines.length; i++ )
+        for ( String line : lines )
         {
-            String line = lines[i].trim();
-            if( line.isEmpty() )
+            if( line.startsWith( "BOLT_SERVER_ADDR" ) )
             {
-                // skip any empty lines
-                continue;
+                String members = line.substring( "BOLT_SERVER_ADDR='".length(), line.length() - 1 );
+                for( String member : members.split( "\\s+" ) )
+                {
+                    final String[] split = member.split( "=" );
+                    if ( split.length != 2 )
+                    {
+                        throw new IllegalArgumentException( String.format( "Wrong command output found %s", line ) );
+                    }
+                    result.add( new ClusterMember( split[0], split[1] ) );
+                }
+                break;
             }
-            String[] clusterMemberSplit = line.split( " " );
-            if ( clusterMemberSplit.length != 3 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "Wrong start command output found at line [%s]. " +
-                        "Expected to have 'http_uri bolt_uri path' on each nonempty line. " +
-                        "Command output:%n`%s`", i + 1, output ) );
-            }
-
-            URI boltUri = URI.create( clusterMemberSplit[1] );
-            Path path = Paths.get( clusterMemberSplit[2] );
-
-            result.add( new ClusterMember( boltUri, path ) );
         }
 
         if ( result.isEmpty() )
         {
-            throw new IllegalStateException( "No cluster members" );
+            throw new ClusterUnavailableException( "No cluster members" );
         }
 
         return result;
     }
 
-    private static void assertClusterExists()
+    private void assertClusterExists()
     {
         if ( clusterInstance == null )
         {
@@ -166,11 +157,16 @@ final class SharedCluster
         }
     }
 
-    private static void assertClusterDoesNotExist()
+    private void assertClusterDoesNotExist()
     {
         if ( clusterInstance != null )
         {
             throw new IllegalStateException( "Shared cluster already exists" );
         }
+    }
+
+    public void stop( ClusterMember member )
+    {
+        process.stop( member.getName() );
     }
 }

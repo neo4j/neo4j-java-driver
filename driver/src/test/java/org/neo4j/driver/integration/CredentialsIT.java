@@ -21,11 +21,8 @@ package org.neo4j.driver.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 
-import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
@@ -35,8 +32,8 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.util.DatabaseExtension;
-import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
 
 import static java.util.Collections.singletonMap;
@@ -44,12 +41,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.AuthTokens.custom;
 import static org.neo4j.driver.Values.ofValue;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
+import static org.neo4j.driver.util.Neo4jRunner.USER;
 
 @ParallelizableIT
 class CredentialsIT
@@ -61,16 +59,11 @@ class CredentialsIT
     void shouldBePossibleToChangePassword() throws Exception
     {
         String newPassword = "secret";
-        String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString().replace( "\\", "/" );
-
-        neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
-                .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
-                .updateWith( Neo4jSettings.DATA_DIR, tmpDataDir ) );
 
         AuthToken authToken = new InternalAuthToken( parameters(
                 "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j",
+                "principal", USER,
+                "credentials", PASSWORD,
                 "new_credentials", newPassword ).asMap( ofValue() ) );
 
         // change the password
@@ -80,15 +73,33 @@ class CredentialsIT
             session.run( "RETURN 1" ).consume();
         }
 
-        // verify old password does not work
-        assertThrows( AuthenticationException.class,
-                () -> GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", PASSWORD ) ) );
+        try {
+            // verify old password does not work
+            assertThrows( AuthenticationException.class,
+                    () -> GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( USER, PASSWORD ) ) );
 
-        // verify new password works
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
-              Session session = driver.session() )
+            // verify new password works
+            try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
+                    Session session = driver.session() )
+            {
+                session.run( "RETURN 2" ).consume();
+            }
+        }
+        finally
         {
-            session.run( "RETURN 2" ).consume();
+            // change the password back
+            authToken = new InternalAuthToken( parameters(
+                    "scheme", "basic",
+                    "principal", USER,
+                    "credentials", newPassword,
+                    "new_credentials", PASSWORD ).asMap( ofValue() ) );
+
+            try ( Driver driver = GraphDatabase.driver( neo4j.uri(), authToken );
+                    Session session = driver.session() )
+            {
+                session.run( "RETURN 1" ).consume();
+            }
+
         }
     }
 

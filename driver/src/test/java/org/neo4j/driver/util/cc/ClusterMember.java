@@ -20,7 +20,6 @@ package org.neo4j.driver.util.cc;
 
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -29,38 +28,33 @@ import static java.util.Objects.requireNonNull;
 
 public class ClusterMember
 {
-    public static final String SIMPLE_SCHEME = "bolt://";
-    public static final String ROUTING_SCHEME = "neo4j://";
+    public static final String BOLT_SCHEMA = "bolt";
+    private static final String NEO4J_SCHEMA = "neo4j";
 
-    private final URI boltUri;
+    private final String hostPort;
     private final BoltServerAddress boltAddress;
-    private final Path path;
+    private final String name;
 
-    public ClusterMember( URI boltUri, Path path )
+    public ClusterMember( String name, String hostPort )
     {
-        this.boltUri = requireNonNull( boltUri );
-        this.boltAddress = newBoltServerAddress( boltUri );
-        this.path = requireNonNull( path );
+        this.name = name;
+        this.hostPort = requireNonNull( hostPort );
+        this.boltAddress = newBoltServerAddress( hostPort );
     }
 
     public URI getBoltUri()
     {
-        return boltUri;
+        return URI.create( String.format( "%s://%s", BOLT_SCHEMA, hostPort ) );
     }
 
     public URI getRoutingUri()
     {
-        return URI.create( boltUri.toString().replace( SIMPLE_SCHEME, ROUTING_SCHEME ) );
+        return URI.create( String.format( "%s://%s", NEO4J_SCHEMA, hostPort ) );
     }
 
     public BoltServerAddress getBoltAddress()
     {
         return boltAddress;
-    }
-
-    public Path getPath()
-    {
-        return path;
     }
 
     @Override
@@ -88,21 +82,26 @@ public class ClusterMember
     public String toString()
     {
         return "ClusterMember{" +
-               "boltUri=" + boltUri +
+               "name=" + name +
+               ", hostPort=" + hostPort +
                ", boltAddress=" + boltAddress +
-               ", path=" + path +
                '}';
     }
 
-    private static BoltServerAddress newBoltServerAddress( URI uri )
+    private static BoltServerAddress newBoltServerAddress( String hostPort )
     {
         try
         {
-            return new BoltServerAddress( uri ).resolve();
+            return new BoltServerAddress( hostPort ).resolve();
         }
         catch ( UnknownHostException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public String getName()
+    {
+        return this.name;
     }
 }

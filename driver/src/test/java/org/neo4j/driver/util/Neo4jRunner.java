@@ -35,7 +35,7 @@ import static org.neo4j.driver.util.Neo4jSettings.TEST_JVM_ID;
 
 public interface Neo4jRunner
 {
-    String NEO4J_VERSION = "3.5.5";
+    String NEO4J_VERSION = "3.5-enterprise";
     Config DEFAULT_DRIVER_CONFIG = Config.builder().withLogging( console( INFO ) ).build();
 
     String USER = "neo4j";
@@ -44,6 +44,7 @@ public interface Neo4jRunner
 
     String TARGET_DIR = new File( "../target" ).getAbsolutePath();
     String NEO4J_DIR = new File( TARGET_DIR, "test-server-" + TEST_JVM_ID ).getAbsolutePath();
+    String CLUSTER_DIR = new File( TARGET_DIR, "test-cluster" ).getAbsolutePath();
 
     void ensureRunning( Neo4jSettings neo4jSettings );
 
@@ -56,16 +57,20 @@ public interface Neo4jRunner
     void killNeo4j();
 
     /**
-     * Restart immediately without any configuration changes.
+     * Restart immediately regardless if any configuration has been changed.
      */
     void restartNeo4j();
 
     /**
-     * Will only restart the server if any configuration changes.
+     * Will only restart the server if configuration differs from the current one.
      */
     void restartNeo4j( Neo4jSettings neo4jSettings );
 
     File certificatesDirectory();
+
+    File importDirectory();
+
+    File pluginsDirectory();
 
     default int httpPort()
     {
@@ -91,6 +96,4 @@ public interface Neo4jRunner
     {
         System.out.println( String.format( text, args ) );
     }
-
-    File importsDirectory();
 }
