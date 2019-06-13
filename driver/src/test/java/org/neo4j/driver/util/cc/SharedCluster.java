@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.driver.util.Neo4jSettings;
-import org.neo4j.driver.util.cc.ClusterControl.ClusterDockerProcess;
 
 import static org.neo4j.driver.util.Neo4jRunner.CLUSTER_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
@@ -99,26 +98,6 @@ final class SharedCluster
         debug( "Cluster at `%s` stopped.", CLUSTER_DIR );
     }
 
-
-    private void kill()
-    {
-        try
-        {
-            if ( clusterInstance != null )
-            {
-                clusterInstance.close();
-            }
-        }
-        finally
-        {
-            if ( process != null )
-            {
-                process.kill();
-            }
-        }
-        debug( "Cluster at `%s` killed.", CLUSTER_DIR );
-    }
-
     private static Set<ClusterMember> parseStartCommandOutput( List<String> lines ) throws ClusterUnavailableException
     {
         Set<ClusterMember> result = new HashSet<>();
@@ -168,5 +147,10 @@ final class SharedCluster
     public void stop( ClusterMember member )
     {
         process.stop( member.getName() );
+    }
+
+    public void startAll()
+    {
+        process.startAll();
     }
 }

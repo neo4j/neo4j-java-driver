@@ -21,11 +21,13 @@ package org.neo4j.driver.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.util.cc.CommandLineException;
 
@@ -40,6 +42,8 @@ public abstract class DockerProcess
     protected Process process;
     private final ArrayList<String> commands;
     private static final String DEFAULT_NEO4J_HOME_PATH = "/var/lib/neo4j";
+    private Scanner scanner;
+    private static final Duration MAX_BLOCKING_TIME = Duration.ofMinutes( 5 );
 
     public DockerProcess( String baseCommandStr, File logFolder )
     {
@@ -87,9 +91,10 @@ public abstract class DockerProcess
         {
             ProcessBuilder processBuilder = new ProcessBuilder().command( fullCommands );
             ProcessEnvConfigurator.configure( processBuilder );
-            processBuilder.redirectError( Redirect.INHERIT ).redirectInput( Redirect.INHERIT );
+            processBuilder.redirectError( Redirect.INHERIT );
             debug( "Running command: " + String.join( " ", fullCommands ) );
             process = processBuilder.start();
+            scanner = new Scanner( process.getInputStream() );
             return waitForCommandReturn();
         }
         catch ( IOException e )
@@ -100,10 +105,10 @@ public abstract class DockerProcess
 
     protected List<String> waitForCommandReturn()
     {
-        Scanner scanner = new Scanner( process.getInputStream() );
+        long endTime = System.currentTimeMillis() + MAX_BLOCKING_TIME.toMillis();
         List<String> lines = new ArrayList<>();
         boolean started = false;
-        while ( !started && scanner.hasNextLine() )
+        while ( System.currentTimeMillis() < endTime && !started && scanner.hasNextLine() )
         {
             String line = scanner.nextLine();
             lines.add( line );
@@ -115,7 +120,7 @@ public abstract class DockerProcess
         }
         if ( !started )
         {
-            throw new RuntimeException( "Failed to start Neo4j." );
+            throw new RuntimeException( "Failed to run command." );
         }
         return lines;
     }
@@ -156,15 +161,20 @@ public abstract class DockerProcess
         return process != null && process.isAlive();
     }
 
-    public int waitForProcessToExit()
+    private int waitForProcessToExit()
     {
+        Duration duration = MAX_BLOCKING_TIME;
         try
         {
-            return process.waitFor();
+            if ( process.waitFor( duration.toMillis(), TimeUnit.MILLISECONDS ) )
+            {
+                return process.waitFor();
+            }
+            throw new CommandLineException( "Service failed to shut down within " + duration.toMinutes() + "m." );
         }
         catch ( InterruptedException e )
         {
-            throw new CommandLineException( "Interrupted while waiting for process to terminate.", e );
+            throw new CommandLineException( "Interrupted while waiting for service to terminate.", e );
         }
     }
 
@@ -175,7 +185,17 @@ public abstract class DockerProcess
     {
         if ( isStarted() )
         {
-            process.destroy();
+            try
+            {
+                process.getOutputStream().write( "exit\n".getBytes() );
+                process.getOutputStream().flush();
+                waitForProcessToExit();
+            }
+            catch ( IOException e )
+            {
+                process.destroy();
+            }
+
         }
     }
 

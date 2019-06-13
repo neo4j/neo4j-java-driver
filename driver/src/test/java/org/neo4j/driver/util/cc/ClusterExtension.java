@@ -65,8 +65,6 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
         assumeTrue( boltKitAvailable(), "BoltKit cluster support unavailable" );
         assumeTrue( dockerRunning(), "Docker support unavailable" );
 
-        stopSingleInstanceDatabase();
-
         if ( cluster == null )
         {
             cluster = new SharedCluster();
@@ -104,6 +102,7 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     @Override
     public void afterEach( ExtensionContext context )
     {
+        cluster.startAll();
         Cluster cluster = getCluster();
         cluster.deleteData();
     }
@@ -122,14 +121,6 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
                 cluster.remove();
                 cluster = null;
             }
-        }
-    }
-
-    private static void stopSingleInstanceDatabase() throws IOException
-    {
-        if ( DockerBasedNeo4jRunner.globalRunnerExists() )
-        {
-            DockerBasedNeo4jRunner.getOrCreateGlobalRunner().stopNeo4j();
         }
     }
 

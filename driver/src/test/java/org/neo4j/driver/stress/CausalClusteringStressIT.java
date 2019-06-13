@@ -37,7 +37,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.cc.ClusterMemberRole;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
@@ -47,7 +46,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.util.cc.ClusterMember.BOLT_SCHEMA;
 
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
@@ -140,7 +138,8 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
             for ( Record record : records )
             {
                 List<Object> addresses = record.get( "addresses" ).asList();
-                String boltAddress = ((String) addresses.get( 0 )).replace( BOLT_SCHEMA, "" );
+                final URI uri = URI.create( ((String) addresses.get( 0 )) );
+                String boltAddress = String.format( "%s:%s", uri.getHost(), uri.getPort() );
 
                 ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
                 if ( role == ClusterMemberRole.FOLLOWER )

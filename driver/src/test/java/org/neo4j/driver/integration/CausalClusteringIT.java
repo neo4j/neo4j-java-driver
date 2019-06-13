@@ -305,7 +305,7 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-/*    @Test
+   @Test
     void shouldHandleGracefulLeaderSwitch() throws Exception
     {
         ClusterMember leader = cluster.leader();
@@ -316,7 +316,7 @@ public class CausalClusteringIT implements NestedQueries
             Transaction tx1 = session1.beginTransaction();
 
             // gracefully stop current leader to force re-election
-            cluster.stop( leader );
+            clusterRule.stop( leader );
 
             tx1.run( "CREATE (person:Person {name: {name}, title: {title}})",
                     parameters( "name", "Webber", "title", "Mr" ) );
@@ -356,7 +356,7 @@ public class CausalClusteringIT implements NestedQueries
             Set<ClusterMember> cores = cluster.cores();
             for ( ClusterMember follower : cluster.followers() )
             {
-                cluster.kill( follower );
+                clusterRule.stop( follower );
             }
             awaitLeaderToStepDown( cores );
 
@@ -373,7 +373,7 @@ public class CausalClusteringIT implements NestedQueries
             }
         }
     }
-*/
+
     @Test
     void shouldServeReadsWhenMajorityOfCoresAreDead()
     {

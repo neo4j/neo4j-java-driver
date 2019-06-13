@@ -136,23 +136,7 @@ public class DockerBasedNeo4jRunner implements Neo4jRunner
 
         debug( "Stopping server..." );
         neo4jProcess.stop();
-        neo4jProcess.waitForProcessToExit();
         debug( "Server stopped." );
-    }
-
-    @Override
-    public void killNeo4j()
-    {
-        if ( serverStatus() == ServerStatus.OFFLINE )
-        {
-            return;
-        }
-        restartDriver = true;
-
-        debug( "Killing server..." );
-        neo4jProcess.kill();
-        neo4jProcess.waitForProcessToExit();
-        debug( "Server killed." );
     }
 
     @Override

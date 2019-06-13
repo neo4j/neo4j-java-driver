@@ -18,22 +18,18 @@
  */
 package org.neo4j.driver.util;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.neo4j.driver.Config;
 
 import static java.lang.Thread.sleep;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -52,18 +48,16 @@ public class StubServer
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
 
-    private static final String BOLT_STUB_COMMAND = "boltstub";
+    private static final String BOLT_STUB_COMMAND_FORMAT = "bolt stub -l localhost:%s -t 5 %s";
 
-    private Process process;
+    private final Process process;
 
     private StubServer( String script, int port ) throws IOException, InterruptedException
     {
-        List<String> command = new ArrayList<>();
-        command.addAll( singletonList( BOLT_STUB_COMMAND ) );
-        command.addAll( asList( Integer.toString( port ), script ) );
+        String str = String.format( BOLT_STUB_COMMAND_FORMAT, port, script );
+        List<String> command = Arrays.asList( str.split( "\\s+" ) );
         ProcessBuilder server = new ProcessBuilder().command( command ).inheritIO();
         process = server.start();
-        startReadingOutput( process );
         waitForSocket( port );
     }
 
@@ -108,8 +102,8 @@ public class StubServer
     {
         try
         {
-            // run 'help' command to see if boltstub is available
-            Process process = new ProcessBuilder( BOLT_STUB_COMMAND, "-h" ).start();
+            // run 'help' command to see if bolt stub is available
+            Process process = new ProcessBuilder( "bolt stub --help".split( "\\s+" ) ).start();
             int exitCode = process.waitFor();
             return exitCode == 0;
         }
@@ -136,35 +130,5 @@ public class StubServer
             }
         }
         throw new AssertionError( "Can't connect to " + address );
-    }
-
-    /**
-     * Read output of the given process using a separate thread.
-     * Since maven-surefire-plugin 2.20.0 it is not good to simply inherit IO using {@link ProcessBuilder#inheritIO()}.
-     * It will result in "Corrupted stdin stream in forked JVM 1" warning being printed and output being redirected to a
-     * separate temporary file.
-     * <p>
-     * Fore more details see:
-     * <ul>
-     * <li>http://maven.apache.org/surefire/maven-surefire-plugin/faq.html#corruptedstream</li>
-     * <li>https://issues.apache.org/jira/browse/SUREFIRE-1359</li>
-     * </ul>
-     *
-     * @param process the process to read output.
-     */
-    private static void startReadingOutput( Process process )
-    {
-        executor.submit( () ->
-        {
-            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) ) )
-            {
-                String line;
-                while ( (line = reader.readLine()) != null )
-                {
-                    System.out.println( line );
-                }
-            }
-            return null;
-        } );
     }
 }
