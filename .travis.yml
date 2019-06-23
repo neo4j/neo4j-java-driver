@@ -1,12 +1,6 @@
 language: java
 sudo: false
-#dist: xenial
-#
-#addons:
-#  apt:
-#    packages:
-#      - "python3"
-#      - "python3-pip"
+dist: xenial
 
 jdk:
   - openjdk8
@@ -14,7 +8,9 @@ jdk:
 services:
   - docker
 
-install: pip install --user --upgrade git+https://github.com/neo4j-drivers/boltkit/tree/4.0-updates-for-java#egg=boltkit
+before_install: pyenv global 3.7
+install:
+  - pip install --user --upgrade git+https://github.com/neo4j-drivers/boltkit.git@4.0-updates-for-java#egg=boltkit
 
 script:
-  - mvn clean verify
+  - mvn clean verify -DUID=$UID

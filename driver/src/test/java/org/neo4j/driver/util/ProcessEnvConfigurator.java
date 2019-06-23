@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.util;
 
+import java.util.Map;
+
 public final class ProcessEnvConfigurator
 {
     /**
@@ -40,12 +42,13 @@ public final class ProcessEnvConfigurator
 
     public static void configure( ProcessBuilder processBuilder )
     {
-        processBuilder.environment().put( JAVA_HOME, determineJavaHome() );
+        final Map<String,String> environment = processBuilder.environment();
+        environment.put( JAVA_HOME, determineJavaHome() );
 
         String localPackage = determineLocalPackage();
         if ( localPackage != null )
         {
-            processBuilder.environment().put( BOLTKIT_LOCAL_PACKAGE, localPackage );
+            environment.put( BOLTKIT_LOCAL_PACKAGE, localPackage );
         }
     }
 

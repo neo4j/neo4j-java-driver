@@ -1,9 +1,8 @@
 !: BOLT 3
 !: AUTO RESET
+!: AUTO HELLO
 !: AUTO GOODBYE
 
-C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
-S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
 C: BEGIN {}
    RUN "CREATE (n {name:'Bob'})" {} {}
    PULL_ALL

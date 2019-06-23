@@ -58,6 +58,18 @@ public abstract class DockerProcess
         mountSharedFolder( certFolder, new File( DEFAULT_NEO4J_HOME_PATH, DEFAULT_CERT_DIR ) );
         mountSharedFolder( importFolder, new File( DEFAULT_NEO4J_HOME_PATH, DEFAULT_IMPORT_DIR ) );
         mountSharedFolder( pluginFolder, new File( "/" + DEFAULT_PLUGIN_DIR ) );
+
+        setUserIfConfigured();
+    }
+
+    private void setUserIfConfigured()
+    {
+        final String uid = System.getProperty( "UID" );
+        if ( uid != null )
+        {
+            commands.add( "--user" );
+            commands.add( uid );
+        }
     }
 
     private void mountSharedFolder( File hostFolder, File dockerFolder )

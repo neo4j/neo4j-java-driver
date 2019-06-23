@@ -26,12 +26,6 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.util.List;
 
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.util.StubServer;
 import org.neo4j.driver.util.TestUtil;
@@ -49,10 +43,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 import static org.neo4j.driver.internal.util.Matchers.directDriver;
-import static org.neo4j.driver.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 
 class GraphDatabaseTest
@@ -116,8 +110,8 @@ class GraphDatabaseTest
     @Test
     void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
     {
-        StubServer server1 = StubServer.start( "non_discovery_server.script", 9001 );
-        StubServer server2 = StubServer.start( "non_discovery_server.script", 9002 );
+        StubServer server1 = StubServer.start( "discover_not_supported.script", 9001 );
+        StubServer server2 = StubServer.start( "discover_not_supported.script", 9002 );
 
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );

@@ -1,9 +1,8 @@
 !: BOLT 3
 !: AUTO RESET
+!: AUTO HELLO
 !: AUTO GOODBYE
 
-C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
-S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
 C: BEGIN {"bookmarks": ["neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68"]}
 S: SUCCESS {}
 C: RUN "CREATE (n {name:'Bob'})" {} {}
