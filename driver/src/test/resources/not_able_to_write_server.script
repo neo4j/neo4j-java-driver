@@ -1,11 +1,12 @@
-!: AUTO INIT
+!: BOLT 3
 !: AUTO RESET
-!: AUTO PULL_ALL
-!: AUTO RUN "ROLLBACK" {}
-!: AUTO RUN "BEGIN" {}
-!: AUTO PULL_ALL
+!: AUTO GOODBYE
+!: AUTO BEGIN
+!: AUTO ROLLBACK
 
-C: RUN "CREATE ()" {}
+C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
+S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
+C: RUN "CREATE ()" {} {}
 C: PULL_ALL
 S: FAILURE {"code": "Neo.ClientError.Cluster.NotALeader", "message": "blabla"}
 S: IGNORED

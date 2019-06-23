@@ -1,11 +1,11 @@
-!: AUTO INIT
+!: BOLT 3
 !: AUTO RESET
-!: AUTO PULL_ALL
-!: AUTO RUN "ROLLBACK" {}
-!: AUTO RUN "BEGIN" {}
-!: AUTO RUN "COMMIT" {}
+!: AUTO GOODBYE
+!: AUTO BEGIN
 
-C: RUN "CREATE (n {name:'Bob'})" {}
+C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
+S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
+C: RUN "CREATE (n {name:'Bob'})" {} {}
 C: PULL_ALL
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Database is busy doing store copy"}
 S: IGNORED

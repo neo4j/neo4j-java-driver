@@ -1,0 +1,20 @@
+language: java
+sudo: false
+#dist: xenial
+#
+#addons:
+#  apt:
+#    packages:
+#      - "python3"
+#      - "python3-pip"
+
+jdk:
+  - openjdk8
+
+services:
+  - docker
+
+install: pip install --user --upgrade git+https://github.com/neo4j-drivers/boltkit/tree/4.0-updates-for-java#egg=boltkit
+
+script:
+  - mvn clean verify

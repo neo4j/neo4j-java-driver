@@ -1,4 +1,6 @@
+!: BOLT 3
 !: AUTO RESET
+!: AUTO GOODBYE
 
-C: INIT "neo4j-java/dev" {"scheme": "none"}
-S: SUCCESS {"server": "AgentSmith/0.0.1"}
+C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
+S: SUCCESS {"server": "AgentSmith/0.0.1", "connection_id": "bolt-123456789"}

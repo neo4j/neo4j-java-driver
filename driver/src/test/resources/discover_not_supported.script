@@ -1,10 +1,11 @@
 !: BOLT 3
 !: AUTO RESET
 !: AUTO GOODBYE
-!: AUTO BEGIN
 
 C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
 S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
-C: RUN "MATCH (n) RETURN n.name" {} {}
+C: RUN "CALL dbms.cluster.routing.getRoutingTable($context)" {"context": {}} {}
 C: PULL_ALL
+S: FAILURE {"code": "Neo.ClientError.Procedure.ProcedureNotFound", "message": "blabla"}
+S: IGNORED
 S: <EXIT>

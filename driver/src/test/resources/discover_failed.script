@@ -4,12 +4,10 @@
 
 C: HELLO {"scheme": "none", "user_agent": "neo4j-java/dev"}
 S: SUCCESS {"server": "Neo4j/3.5.0", "connection_id": "bolt-123456789"}
-C: BEGIN {}
-   RUN "CREATE (n {name:'Bob'})" {} {}
+C: RUN "CALL dbms.cluster.routing.getRoutingTable($context)" {"context": {}} {}
    PULL_ALL
+S: FAILURE {"code": "Neo.ClientError.General.Unknown", "message": "wut!"}
+S: IGNORED
+C: RESET
 S: SUCCESS {}
-   SUCCESS {}
-   SUCCESS {}
-C: COMMIT
-S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Database shut down."}
 S: <EXIT>
