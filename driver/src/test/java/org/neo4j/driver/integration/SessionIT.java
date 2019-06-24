@@ -1291,7 +1291,7 @@ class SessionIT
             result.consume();
         } );
 
-        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1308,7 +1308,7 @@ class SessionIT
             StatementResult result = transaction.run( "RETURN 1" );
             result.consume();
         });
-        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1323,7 +1323,7 @@ class SessionIT
         ClientException error = assertThrows( ClientException.class, () -> {
             session.readTransaction( tx -> tx.run( "RETURN 1" ).consume() );
         });
-        assertThat( error.getMessage(), containsString( "The database requested does not exist. Requested database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
         session.close();
     }
 
