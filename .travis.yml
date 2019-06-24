@@ -13,4 +13,4 @@ install:
   - pip install --user --upgrade git+https://github.com/neo4j-drivers/boltkit.git@4.0-updates-for-java#egg=boltkit
 
 script:
-  - mvn clean verify -DUID=$UID
+  - mvn clean verify -DbuildParameters="--user $UID"

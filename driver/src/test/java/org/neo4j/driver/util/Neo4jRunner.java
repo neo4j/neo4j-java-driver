@@ -35,7 +35,7 @@ import static org.neo4j.driver.util.Neo4jSettings.TEST_JVM_ID;
 
 public interface Neo4jRunner
 {
-    String NEO4J_VERSION = System.getProperty( "DRIVER_TEST_NEO4j_VERSION", "3.5-enterprise" );
+    String NEO4J_VERSION = System.getProperty( "neo4jVersion", "3.5-enterprise" );
     Config DEFAULT_DRIVER_CONFIG = Config.builder().withLogging( console( INFO ) ).build();
 
     String USER = "neo4j";

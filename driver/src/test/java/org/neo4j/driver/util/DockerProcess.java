@@ -48,7 +48,8 @@ public abstract class DockerProcess
     public DockerProcess( String baseCommandStr, File logFolder )
     {
         commands = new ArrayList<>( Arrays.asList( baseCommandStr.split( "\\s+" ) ) );
-        mountSharedFolder( logFolder, new File( DEFAULT_NEO4J_HOME_PATH, DEFAULT_LOG_DIR ) );
+        mountSharedFolder( logFolder, new File( "/" + DEFAULT_LOG_DIR ) );
+        parseExtraSystemProperties();
     }
 
     public DockerProcess( String baseCommandStr, File logFolder, File certFolder, File importFolder, File pluginFolder )
@@ -56,19 +57,20 @@ public abstract class DockerProcess
         this( baseCommandStr, logFolder );
 
         mountSharedFolder( certFolder, new File( DEFAULT_NEO4J_HOME_PATH, DEFAULT_CERT_DIR ) );
-        mountSharedFolder( importFolder, new File( DEFAULT_NEO4J_HOME_PATH, DEFAULT_IMPORT_DIR ) );
+        mountSharedFolder( importFolder, new File( "/" + DEFAULT_IMPORT_DIR ) );
         mountSharedFolder( pluginFolder, new File( "/" + DEFAULT_PLUGIN_DIR ) );
-
-        setUserIfConfigured();
     }
 
-    private void setUserIfConfigured()
+    /**
+     * CI builds might need to pass some extra parameters to grand certain access right for the docker container user.
+     */
+    private void parseExtraSystemProperties()
     {
-        final String uid = System.getProperty( "UID" );
-        if ( uid != null )
+        final String buildParameters = System.getProperty( "buildParameters" );
+        if ( buildParameters != null )
         {
-            commands.add( "--user" );
-            commands.add( uid );
+            final String[] split = buildParameters.split( "\\s+" );
+            commands.addAll( Arrays.asList( split ) );
         }
     }
 
