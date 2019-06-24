@@ -51,14 +51,13 @@ class LoadCSVIT
 
             // When
             StatementResult result = session.run(
+                    String.format(
                     "USING PERIODIC COMMIT 40\n" +
-                    "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                    "LOAD CSV WITH HEADERS FROM '%s' AS l\n" +
                     "MATCH (c:Class {name: l.class_name})\n" +
                     "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
-
                     "CREATE (c)<-[:HAS_CLASS]-(s) " +
-                    "RETURN count(*) AS c",
-                    parameters( "csvFileUrl", csvFileUrl ) );
+                    "RETURN count(*) AS c",  csvFileUrl ) );
 
             // Then
             assertThat( result.next().get( "c" ).asInt(), equalTo( 150 ) );
@@ -73,7 +72,7 @@ class LoadCSVIT
             session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) );
         }
 
-        return neo4j.putTmpCsvFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
+        return neo4j.putTmpCsvFile( "iris", ".csv", IRIS_DATA );
     }
 
     private static String[] IRIS_CLASS_NAMES =

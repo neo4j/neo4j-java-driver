@@ -90,7 +90,7 @@ class ConnectionPoolIT
         neo4j.restartDb();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin( 60 );
+        sessionGrabber.assertSessionsAvailableWithin( 120 );
     }
 
     @Test
@@ -229,7 +229,7 @@ class ConnectionPoolIT
 
         public void start()
         {
-            new Thread(this).start();
+            new Thread( this ).start();
         }
 
         @Override

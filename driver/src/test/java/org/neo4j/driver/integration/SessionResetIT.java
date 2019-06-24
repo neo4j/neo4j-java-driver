@@ -809,7 +809,7 @@ class SessionResetIT
         try
         {
             Iterable<String> lines = range( 0, CSV_FILE_SIZE ).mapToObj( i -> "Foo-" + i + ", Bar-" + i )::iterator;
-            final String fileUri = neo4j.putTmpCsvFile( "test", "csv", lines ).toExternalForm();
+            final String fileUri = neo4j.putTmpCsvFile( "test", ".csv", lines );
             return String.format( LONG_PERIODIC_COMMIT_QUERY_TEMPLATE, fileUri );
 
         }

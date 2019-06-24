@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -85,17 +84,17 @@ public class DatabaseExtension implements BeforeEachCallback
         runner.restartNeo4j( neo4jSettings );
     }
 
-    public URL putTmpCsvFile( String prefix, String suffix, String contents ) throws IOException
+    public String putTmpCsvFile( String prefix, String suffix, String contents ) throws IOException
     {
         return putTmpCsvFile( prefix, suffix, Collections.singletonList( contents ) );
     }
 
-    public URL putTmpCsvFile( String prefix, String suffix, Iterable<String> lines ) throws IOException
+    public String putTmpCsvFile( String prefix, String suffix, Iterable<String> lines ) throws IOException
     {
         File tempFile = File.createTempFile( prefix, suffix, runner.importDirectory() );
         tempFile.deleteOnExit();
         Files.write( Paths.get( tempFile.getAbsolutePath() ), lines );
-        return tempFile.toURI().toURL();
+        return "file:/" + tempFile.getName();
     }
 
     public URI uri()

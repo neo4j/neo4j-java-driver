@@ -58,39 +58,24 @@ class EncryptionIT
     }
 
     @Test
-    void shouldOperateWithNoEncryptionWhenItIsOptionalInTheDatabase()
+    void shouldConnectWhenItIsOptionalInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.OPTIONAL, false );
-    }
-
-    @Test
-    void shouldOperateWithEncryptionWhenItIsOptionalInTheDatabase()
-    {
         testMatchingEncryption( BoltTlsLevel.OPTIONAL, true );
     }
 
-    @Test
-    void shouldFailWithoutEncryptionWhenItIsRequiredInTheDatabase()
+//    @Test TODO requires boltkit to response when encryption is forced on
+    void shouldOperateWhenEncryptionIsRequiredInTheDatabase()
     {
+        testMatchingEncryption( BoltTlsLevel.REQUIRED, true );
         testMismatchingEncryption( BoltTlsLevel.REQUIRED, false );
     }
 
     @Test
-    void shouldOperateWithEncryptionWhenItIsAlsoRequiredInTheDatabase()
-    {
-        testMatchingEncryption( BoltTlsLevel.REQUIRED, true );
-    }
-
-    @Test
-    void shouldFailWithEncryptionWhenItIsDisabledInTheDatabase()
-    {
-        testMismatchingEncryption( BoltTlsLevel.DISABLED, true );
-    }
-
-    @Test
-    void shouldOperateWithoutEncryptionWhenItIsAlsoDisabledInTheDatabase()
+    void shouldOperateWhenEncryptionIsDisabledInTheDatabase()
     {
         testMatchingEncryption( BoltTlsLevel.DISABLED, false );
+        testMismatchingEncryption( BoltTlsLevel.DISABLED, true );
     }
 
     private void testMatchingEncryption( BoltTlsLevel tlsLevel, boolean driverEncrypted )

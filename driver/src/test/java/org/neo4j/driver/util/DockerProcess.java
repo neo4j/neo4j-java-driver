@@ -161,7 +161,6 @@ public abstract class DockerProcess
         if ( isStarted() )
         {
             stop();
-            waitForProcessToExit();
             start( settings );
         }
         else
