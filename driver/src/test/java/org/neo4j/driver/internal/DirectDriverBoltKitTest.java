@@ -277,6 +277,39 @@ class DirectDriverBoltKitTest
         }
     }
 
+    @Test
+    void shouldAllowDatabaseNameInSessionRun() throws Throwable
+    {
+        StubServer server = StubServer.start( "read_server_v4_read.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+                Session session = driver.session( t -> t.withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ) ) )
+        {
+            final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+            result.consume();
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldAllowDatabaseNameInBeginTransaction() throws Throwable
+    {
+        StubServer server = StubServer.start( "read_server_v4_read_tx.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+                Session session = driver.session( t -> t.withDatabase( "myDatabase" ) ) )
+        {
+            session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
     private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,
             String expectedErrorMessage ) throws Exception
     {

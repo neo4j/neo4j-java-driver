@@ -92,7 +92,6 @@ import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
 
-@DisabledOnNeo4jWith( BOLT_V4 )
 public class CausalClusteringIT implements NestedQueries
 {
     private static final long DEFAULT_TIMEOUT_MS = 120_000;

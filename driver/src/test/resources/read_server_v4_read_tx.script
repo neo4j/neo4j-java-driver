@@ -1,12 +1,12 @@
-!: BOLT 3
+!: BOLT 4
 !: AUTO RESET
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: BEGIN { "mode": "r" }
+C: BEGIN { "mode": "r", "db": "myDatabase" }
 S: SUCCESS {}
 C: RUN "MATCH (n) RETURN n.name" {} {}
-   PULL_ALL
+   PULL { "n": -1 }
 S: SUCCESS {"fields": ["n.name"]}
    RECORD ["Bob"]
    RECORD ["Alice"]

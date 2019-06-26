@@ -1,8 +1,9 @@
-!: AUTO INIT
+!: BOLT 3
 !: AUTO RESET
-!: AUTO PULL_ALL
-!: AUTO RUN "BEGIN" {}
+!: AUTO HELLO
+!: AUTO GOODBYE
+!: AUTO BEGIN
 
-C: RUN "CREATE (n {name:'Bob'})" {}
+C: RUN "CREATE (n {name:'Bob'})" {} {}
 C: PULL_ALL
 S: <EXIT>
