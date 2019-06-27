@@ -43,6 +43,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     private final Logger log;
 
     // This defines how long we shall wait before trimming a routing table from routing tables after it is stale.
+    // TODO make this a configuration option
     public static final Duration STALE_ROUTING_TABLE_PURGE_TIMEOUT = Duration.ofSeconds( 30 );
 
 
