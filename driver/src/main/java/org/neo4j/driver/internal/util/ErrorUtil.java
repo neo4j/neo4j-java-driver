@@ -63,6 +63,10 @@ public final class ErrorUtil
             {
                 return new AuthenticationException( code, message );
             }
+            else if ( code.equalsIgnoreCase( "Neo.ClientError.Database.DatabaseNotFound" ) )
+            {
+                return new RoutingException( code, message );
+            }
             else
             {
                 return new ClientException( code, message );
@@ -89,23 +93,6 @@ public final class ErrorUtil
             }
         }
         return true;
-    }
-
-    public static boolean isRoutingError( Throwable error )
-    {
-        if ( error instanceof RoutingException  )
-        {
-            return true;
-        }
-        else if ( error instanceof Neo4jException )
-        {
-            String errorCode = ((Neo4jException) error).code();
-            return errorCode != null && (errorCode.startsWith( "Neo.ClientError.Database.DatabaseNotFound" ));
-        }
-        else
-        {
-            return false;
-        }
     }
 
     public static void rethrowAsyncException( ExecutionException e )

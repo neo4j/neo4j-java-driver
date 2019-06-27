@@ -24,8 +24,8 @@ import org.neo4j.driver.exceptions.ClientException;
 
 public final class MultiDatabaseUtil
 {
-    public static final String ABSENT_DB_NAME = "";
-    public static final String SYSTEM_DB_NAME = "system";
+    public static final String ABSENT_DB_NAME = ""; // TODO _default
+    public static final String SYSTEM_DB_NAME = "system"; // TODO _dbms
 
     public static void assertEmptyDatabaseName( String databaseName, int boltVersion )
     {

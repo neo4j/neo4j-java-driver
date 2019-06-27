@@ -167,7 +167,7 @@ public class CausalClusteringIT implements NestedQueries
 
         ClusterMember readReplica = cluster.anyReadReplica();
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( readReplica.getRoutingUri() ) );
-        assertThat( e.getMessage(), containsString( "Could not perform discovery. No routing servers available." ) );
+        assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
     }
 
     // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.

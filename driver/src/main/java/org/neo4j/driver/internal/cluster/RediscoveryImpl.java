@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.exceptions.RoutingException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -43,13 +44,16 @@ import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
-import static org.neo4j.driver.internal.util.ErrorUtil.isRoutingError;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+/**
+ * This class is used by all router tables to perform discovery.
+ * In other words, the methods in this class could be called by multiple threads concurrently.
+ */
 public class RediscoveryImpl implements Rediscovery
 {
-    private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery. No routing servers available.";
+    private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing servers available.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
@@ -58,7 +62,7 @@ public class RediscoveryImpl implements Rediscovery
     private final ServerAddressResolver resolver;
     private final EventExecutorGroup eventExecutorGroup;
 
-    private volatile boolean useInitialRouter;
+    private volatile boolean useInitialRouter; // TODO thread safe?
 
     public RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
             EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logger logger )
@@ -114,7 +118,7 @@ public class RediscoveryImpl implements Rediscovery
                 int newFailures = failures + 1;
                 if ( newFailures >= settings.maxRoutingFailures() )
                 {
-                    result.completeExceptionally( new ServiceUnavailableException( NO_ROUTERS_AVAILABLE ) );
+                    result.completeExceptionally( new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database() ) ) );
                 }
                 else
                 {
@@ -247,7 +251,7 @@ public class RediscoveryImpl implements Rediscovery
             }
             else
             {
-                return response.clusterComposition();
+                return response;
             }
         } );
     }
@@ -255,17 +259,16 @@ public class RediscoveryImpl implements Rediscovery
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
             BoltServerAddress routerAddress )
     {
-        if ( error instanceof SecurityException || isRoutingError( error ) )
+        if ( error instanceof SecurityException || error instanceof RoutingException )
         {
             // auth error or routing error happened, terminate the discovery procedure immediately
             throw new CompletionException( error );
         }
-        {
-            // connection turned out to be broken
-            logger.info( format( "Failed to connect to routing server '%s'.", routerAddress ), error );
-            routingTable.forget( routerAddress );
-            return null;
-        }
+
+        // Retriable error happened during discovery.
+        logger.warn( format( "Failed to update routing table with server '%s'.", routerAddress ), error );
+        routingTable.forget( routerAddress );
+        return null;
     }
 
     private List<BoltServerAddress> resolve( BoltServerAddress address )

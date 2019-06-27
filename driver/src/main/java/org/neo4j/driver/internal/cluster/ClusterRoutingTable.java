@@ -70,7 +70,12 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public boolean isStale( long staleRoutingTableTimeout )
     {
-        return expirationTimeout + staleRoutingTableTimeout < clock.millis();
+        long expireTime = expirationTimeout + staleRoutingTableTimeout;
+        if ( expireTime < 0 )
+        {
+            expireTime = Long.MAX_VALUE;
+        }
+        return  expireTime < clock.millis();
     }
 
     @Override
@@ -133,7 +138,7 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public synchronized String toString()
     {
-        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'.",
+        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
                 expirationTimeout, clock.millis(), routers, writers, readers, databaseName );
     }
 }

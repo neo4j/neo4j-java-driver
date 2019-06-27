@@ -37,13 +37,14 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 
 public class StubServer
 {
     private static final int SOCKET_CONNECT_ATTEMPTS = 20;
 
-    public static final Config INSECURE_CONFIG = Config.builder().withoutEncryption().build();
+    public static final Config INSECURE_CONFIG = builder().build();
 
     private static final ExecutorService executor = newCachedThreadPool( daemon( "stub-server-output-reader-" ) );
 
@@ -84,6 +85,11 @@ public class StubServer
             exit();
             throw new ForceKilled();
         }
+    }
+
+    public static Config.ConfigBuilder builder()
+    {
+        return Config.builder().withoutEncryption().withLogging( none() );
     }
 
     private void exit() throws InterruptedException

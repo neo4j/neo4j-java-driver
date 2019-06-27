@@ -23,15 +23,15 @@ package org.neo4j.driver.exceptions;
  * This exception should not be retried.
  * @since 2.0
  */
-public class RoutingException extends Neo4jException
+public class RoutingException extends ClientException
 {
     public RoutingException( String message )
     {
         super( message );
     }
 
-    public RoutingException( String message, Throwable throwable )
+    public RoutingException( String code, String message )
     {
-        super( message, throwable);
+        super( code, message );
     }
 }
