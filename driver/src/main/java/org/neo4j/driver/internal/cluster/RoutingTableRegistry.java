@@ -28,22 +28,22 @@ import org.neo4j.driver.internal.BoltServerAddress;
  * A generic interface to access all routing tables as a whole.
  * It also provides methods to obtain a routing table or manage a routing table for a specified database.
  */
-public interface RoutingTables
+public interface RoutingTableRegistry
 {
     /**
-     * Fresh the routing table for the database and given access mode.
-     * For server version lower than 4.0, the database name will be ignored while refresh routing table.
+     * Fresh the routing table for the database with given access mode.
+     * For server version lower than 4.0, the database name will be ignored while refreshing routing table.
      * @return The future of a new routing table handler.
      */
     CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode );
 
     /**
-     * @return all servers in all routing tables
+     * @return all servers in the registry
      */
     Set<BoltServerAddress> allServers();
 
     /**
-     * Removes a routing table of the given database from all tables.
+     * Removes a routing table of the given database from registry.
      */
     void remove( String databaseName );
 

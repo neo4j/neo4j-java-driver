@@ -36,7 +36,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
 {
     private final RoutingTable routingTable;
     private final String databaseName;
-    private final RoutingTables routingTables;
+    private final RoutingTableRegistry routingTableRegistry;
     private volatile CompletableFuture<RoutingTable> refreshRoutingTableFuture;
     private final ConnectionPool connectionPool;
     private final Rediscovery rediscovery;
@@ -46,14 +46,13 @@ public class RoutingTableHandler implements RoutingErrorHandler
     // TODO make this a configuration option
     public static final Duration STALE_ROUTING_TABLE_PURGE_TIMEOUT = Duration.ofSeconds( 30 );
 
-
-    public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTables routingTables, Logger log )
+    public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTableRegistry routingTableRegistry, Logger log )
     {
         this.routingTable = routingTable;
         this.databaseName = routingTable.database();
         this.rediscovery = rediscovery;
         this.connectionPool = connectionPool;
-        this.routingTables = routingTables;
+        this.routingTableRegistry = routingTableRegistry;
         this.log = log;
     }
 
@@ -113,8 +112,8 @@ public class RoutingTableHandler implements RoutingErrorHandler
         try
         {
             routingTable.update( composition );
-            routingTables.purgeAged();
-            connectionPool.retainAll( routingTables.allServers() );
+            routingTableRegistry.purgeAged();
+            connectionPool.retainAll( routingTableRegistry.allServers() );
 
             log.info( "Updated routing table for database '%s'. %s", databaseName, routingTable );
 
@@ -131,7 +130,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     private synchronized void clusterCompositionLookupFailed( Throwable error )
     {
         log.error( String.format( "Failed to update routing table for database '%s'. Current routing table: %s.", databaseName, routingTable ), error );
-        routingTables.remove( databaseName );
+        routingTableRegistry.remove( databaseName );
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
         routingTableFuture.completeExceptionally( error );

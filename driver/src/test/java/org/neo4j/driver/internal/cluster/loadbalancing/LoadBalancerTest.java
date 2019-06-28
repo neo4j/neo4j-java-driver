@@ -40,7 +40,7 @@ import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableHandler;
-import org.neo4j.driver.internal.cluster.RoutingTables;
+import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -229,7 +229,7 @@ class LoadBalancerTest
     private static LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable )
     {
         // Used only in testing
-        RoutingTables routingTables = mock( RoutingTables.class );
+        RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
         RoutingTableHandler handler = mock( RoutingTableHandler.class );
         when( handler.routingTable() ).thenReturn( routingTable );
         when( routingTables.refreshRoutingTable( any( String.class ), any( AccessMode.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
