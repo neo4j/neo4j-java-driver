@@ -36,9 +36,9 @@ public class RoutingTablesImpl implements RoutingTables
     private final RoutingTableHandlerFactory factory;
     private final Logger logger;
 
-    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger logger )
+    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger logger )
     {
-        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, initialRouter, clock, logger ), logger );
+        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logger ), logger );
     }
 
     RoutingTablesImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory, Logger logger )
@@ -76,12 +76,12 @@ public class RoutingTablesImpl implements RoutingTables
     }
 
     @Override
-    public void removeStale()
+    public void purgeAged()
     {
         routingTables.forEach( ( databaseName, handler ) -> {
-            if ( handler.isRoutingTableStale() )
+            if ( handler.isRoutingTableAged() )
             {
-                logger.info( "Routing table handler for database '%s' is removed because it is not used for too long. Routing table: %s",
+                logger.info( "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
                         databaseName, handler.routingTable() );
                 routingTables.remove( databaseName );
             }
@@ -108,21 +108,19 @@ public class RoutingTablesImpl implements RoutingTables
         private final ConnectionPool connectionPool;
         private final Rediscovery rediscovery;
         private final Logger log;
-        private final BoltServerAddress initialRouter;
         private final Clock clock;
 
-        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, BoltServerAddress initialRouter, Clock clock, Logger log )
+        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger log )
         {
             this.connectionPool = connectionPool;
             this.rediscovery = rediscovery;
-            this.initialRouter = initialRouter;
             this.clock = clock;
             this.log = log;
         }
 
         RoutingTableHandler newInstance( String databaseName, RoutingTables allTables )
         {
-            ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock, initialRouter );
+            ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
             return new RoutingTableHandler( routingTable, rediscovery, connectionPool, allTables, log );
         }
     }

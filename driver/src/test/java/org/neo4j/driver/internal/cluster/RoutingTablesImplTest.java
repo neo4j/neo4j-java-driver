@@ -68,7 +68,7 @@ class RoutingTablesImplTest
         Clock clock = Clock.SYSTEM;
         BoltServerAddress initialRouter = new BoltServerAddress( "localhost:7687" );
         RoutingTableHandlerFactory factory =
-                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), initialRouter, clock, DEV_NULL_LOGGER );
+                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER );
 
         RoutingTableHandler handler = factory.newInstance( "Molly", null );
         RoutingTable table = handler.routingTable();
@@ -188,7 +188,7 @@ class RoutingTablesImplTest
         RoutingTablesImpl routingTables = newRoutingTables( map, factory );
 
         // When
-        routingTables.removeStale();
+        routingTables.purgeAged();
         // Then
         assertThat( routingTables.allServers(), empty() );
     }
@@ -197,7 +197,7 @@ class RoutingTablesImplTest
     {
         RoutingTableHandler handler = mock( RoutingTableHandler.class );
         when( handler.servers() ).thenReturn( new HashSet<>( Arrays.asList( servers ) ) );
-        when( handler.isRoutingTableStale() ).thenReturn( true );
+        when( handler.isRoutingTableAged() ).thenReturn( true );
         return handler;
     }
 

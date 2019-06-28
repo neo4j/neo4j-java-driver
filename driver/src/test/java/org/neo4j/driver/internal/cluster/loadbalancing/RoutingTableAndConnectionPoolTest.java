@@ -344,7 +344,7 @@ class RoutingTableAndConnectionPoolTest
 
     private RoutingTablesImpl newRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery )
     {
-        return new RoutingTablesImpl( connectionPool, rediscovery, A, clock, logging.getLog( "RT" ) );
+        return new RoutingTablesImpl( connectionPool, rediscovery, clock, logging.getLog( "RT" ) );
     }
 
     private LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTables routingTables )

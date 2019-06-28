@@ -34,6 +34,7 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
 import org.neo4j.driver.net.ServerAddressResolver;
 
@@ -281,16 +282,13 @@ class RediscoveryTest
                 asOrderedSet( B, A ), asOrderedSet( B, A ), asOrderedSet( B, A ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( B, noWritersComposition ); // first -> valid cluster composition
         responsesByAddress.put( initialRouter, validComposition ); // initial -> valid composition
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
-        RoutingTable table = routingTableMock( B );
-
-        ClusterComposition composition1 = await( rediscovery.lookupClusterComposition( table, pool ) );
-        assertEquals( noWritersComposition, composition1 );
+        RoutingTable table = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        table.update( noWritersComposition );
 
         ClusterComposition composition2 = await( rediscovery.lookupClusterComposition( table, pool ) );
         assertEquals( validComposition, composition2 );
@@ -308,8 +306,8 @@ class RediscoveryTest
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
-        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, mock( Logger.class ), true );
-        RoutingTable table = routingTableMock( B, C, D );
+        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
+        RoutingTable table = routingTableMock( true, B, C, D );
 
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
         assertEquals( validComposition, composition );
@@ -329,8 +327,8 @@ class RediscoveryTest
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
-        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver, mock( Logger.class ), true );
-        RoutingTable table = routingTableMock( D, E );
+        Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
+        RoutingTable table = routingTableMock( true, D, E );
 
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
         assertEquals( validComposition, composition );
@@ -359,9 +357,8 @@ class RediscoveryTest
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
-        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, resolver, eventExecutor,
-                DEV_NULL_LOGGER, false );
-        RoutingTable table = routingTableMock( A, B );
+        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGER );
+        RoutingTable table = routingTableMock(A, B );
 
         ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
 
@@ -384,8 +381,7 @@ class RediscoveryTest
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
         Logger logger = mock( Logger.class );
-        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, resolver, eventExecutor,
-                logger, false );
+        Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logger );
         RoutingTable table = routingTableMock( A );
 
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
@@ -405,15 +401,8 @@ class RediscoveryTest
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
             ServerAddressResolver resolver, Logger logger )
     {
-        return newRediscovery( initialRouter, compositionProvider, resolver, logger, false );
-    }
-
-    private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
-            ServerAddressResolver resolver, Logger logger, boolean useInitialRouter )
-    {
         RoutingSettings settings = new RoutingSettings( 1, 0 );
-        return new RediscoveryImpl( initialRouter, settings, compositionProvider, resolver,
-                GlobalEventExecutor.INSTANCE, logger, useInitialRouter );
+        return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logger );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -466,11 +455,17 @@ class RediscoveryTest
 
     private static RoutingTable routingTableMock( BoltServerAddress... routers )
     {
+        return routingTableMock( false, routers );
+    }
+
+    private static RoutingTable routingTableMock( boolean preferInitialRouter, BoltServerAddress... routers )
+    {
         RoutingTable routingTable = mock( RoutingTable.class );
         AddressSet addressSet = new AddressSet();
         addressSet.update( asOrderedSet( routers ) );
         when( routingTable.routers() ).thenReturn( addressSet );
         when( routingTable.database() ).thenReturn( ABSENT_DB_NAME );
+        when( routingTable.preferInitialRouter() ).thenReturn( preferInitialRouter );
         return routingTable;
     }
 }

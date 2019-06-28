@@ -62,17 +62,8 @@ public class RediscoveryImpl implements Rediscovery
     private final ServerAddressResolver resolver;
     private final EventExecutorGroup eventExecutorGroup;
 
-    private volatile boolean useInitialRouter; // TODO thread safe?
-
     public RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
             EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logger logger )
-    {
-        this( initialRouter, settings, provider, resolver, eventExecutorGroup, logger, true );
-    }
-
-    // Test-only constructor
-    RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-            ServerAddressResolver resolver, EventExecutorGroup eventExecutorGroup, Logger logger, boolean useInitialRouter )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
@@ -80,11 +71,10 @@ public class RediscoveryImpl implements Rediscovery
         this.provider = provider;
         this.resolver = resolver;
         this.eventExecutorGroup = eventExecutorGroup;
-        this.useInitialRouter = useInitialRouter;
     }
 
     /**
-     * Given a database and its current routing table, and the global connection pool, use the connection composition provider to fetch a new
+     * Given a database and its current routing table, and the global connection pool, use the global cluster composition provider to fetch a new
      * cluster composition, which would be used to update the routing table of the given database and global connection pool.
      *
      * @param routingTable current routing table of the given database.
@@ -137,23 +127,16 @@ public class RediscoveryImpl implements Rediscovery
     {
         CompletionStage<ClusterComposition> compositionStage;
 
-        if ( useInitialRouter )
+        if ( routingTable.preferInitialRouter() )
         {
             compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool );
-            useInitialRouter = false;
         }
         else
         {
             compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool );
         }
 
-        return compositionStage.whenComplete( ( composition, error ) ->
-        {
-            if ( composition != null && !composition.hasWriters() )
-            {
-                useInitialRouter = true;
-            }
-        } );
+        return compositionStage;
     }
 
     private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,

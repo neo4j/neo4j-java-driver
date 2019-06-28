@@ -48,7 +48,7 @@ public interface RoutingTables
     void remove( String databaseName );
 
     /**
-     * Removes all stale routing tables.
+     * Removes all routing tables that has been not used for a long time.
      */
-    void removeStale();
+    void purgeAged();
 }
