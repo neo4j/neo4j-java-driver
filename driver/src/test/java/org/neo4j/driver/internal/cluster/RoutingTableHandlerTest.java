@@ -155,7 +155,7 @@ class RoutingTableHandlerTest
         when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( completedFuture(
                 new ClusterComposition( 42, asOrderedSet( A, B ), asOrderedSet( B, C ), asOrderedSet( A, C ) ) ) );
 
-        RoutingTables routingTables = new RoutingTables()
+        RoutingTableRegistry routingTables = new RoutingTableRegistry()
         {
             @Override
             public CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode )
@@ -200,7 +200,7 @@ class RoutingTableHandlerTest
         when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new RuntimeException( "Bang!" ) ) );
 
         ConnectionPool connectionPool = newConnectionPoolMock();
-        RoutingTables routingTables = newRoutingTablesMock();
+        RoutingTableRegistry routingTables = newRoutingTablesMock();
         // When
 
         RoutingTableHandler handler = new RoutingTableHandler( routingTable, rediscovery, connectionPool, routingTables, DEV_NULL_LOGGER );
@@ -258,9 +258,9 @@ class RoutingTableHandlerTest
         return routingTable;
     }
 
-    private static RoutingTables newRoutingTablesMock()
+    private static RoutingTableRegistry newRoutingTablesMock()
     {
-        return mock( RoutingTables.class );
+        return mock( RoutingTableRegistry.class );
     }
 
     private static Rediscovery newRediscoveryMock()

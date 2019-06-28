@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -32,7 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.cluster.RoutingTablesImpl.RoutingTableHandlerFactory;
+import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.RoutingTableHandlerFactory;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
@@ -60,13 +59,12 @@ import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class RoutingTablesImplTest
+class RoutingTableRegistryImplTest
 {
     @Test
     void factoryShouldCreateARoutingTableWithSameDatabaseName() throws Throwable
     {
         Clock clock = Clock.SYSTEM;
-        BoltServerAddress initialRouter = new BoltServerAddress( "localhost:7687" );
         RoutingTableHandlerFactory factory =
                 new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER );
 
@@ -74,11 +72,10 @@ class RoutingTablesImplTest
         RoutingTable table = handler.routingTable();
 
         assertThat( table.database(), equalTo( "Molly" ) );
-        assertThat( table.servers(), contains( CoreMatchers.equalTo( initialRouter ) ) );
-        assertThat( Arrays.asList( table.routers().toArray() ), contains( CoreMatchers.equalTo( initialRouter ) ) );
 
-        assertThat( table.readers().size(), CoreMatchers.equalTo( 0 ) );
-        assertThat( table.writers().size(), CoreMatchers.equalTo( 0 ) );
+        assertThat( table.routers().size(), equalTo( 0 ) );
+        assertThat( table.readers().size(), equalTo( 0 ) );
+        assertThat( table.writers().size(), equalTo( 0 ) );
 
         assertTrue( table.isStaleFor( AccessMode.READ ) );
         assertTrue( table.isStaleFor( AccessMode.WRITE ) );
@@ -91,7 +88,7 @@ class RoutingTablesImplTest
         // Given
         ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTablesImpl routingTables = newRoutingTables( map, factory );
+        RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
         routingTables.refreshRoutingTable( databaseName, AccessMode.READ );
@@ -111,7 +108,7 @@ class RoutingTablesImplTest
         map.put( databaseName, handler );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTablesImpl routingTables = newRoutingTables( map, factory );
+        RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
         RoutingTableHandler actual = await( routingTables.refreshRoutingTable( databaseName, AccessMode.READ ) );
@@ -130,7 +127,7 @@ class RoutingTablesImplTest
         ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
-        RoutingTablesImpl routingTables = new RoutingTablesImpl( map, factory, DEV_NULL_LOGGER );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
 
         // When
         routingTables.refreshRoutingTable( ABSENT_DB_NAME, mode );
@@ -148,7 +145,7 @@ class RoutingTablesImplTest
         map.put( "Banana", mockedRoutingTableHandler( B, C, D ) );
         map.put( "Orange", mockedRoutingTableHandler( E, F, C ) );
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTablesImpl routingTables = new RoutingTablesImpl( map, factory, DEV_NULL_LOGGER );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
 
         // When
         Set<BoltServerAddress> servers = routingTables.allServers();
@@ -167,7 +164,7 @@ class RoutingTablesImplTest
         map.put( "Orange", mockedRoutingTableHandler( C ) );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTablesImpl routingTables = newRoutingTables( map, factory );
+        RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
         routingTables.remove( "Apple" );
@@ -185,7 +182,7 @@ class RoutingTablesImplTest
         map.put( "Orange", mockedRoutingTableHandler( C ) );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTablesImpl routingTables = newRoutingTables( map, factory );
+        RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
         routingTables.purgeAged();
@@ -201,9 +198,9 @@ class RoutingTablesImplTest
         return handler;
     }
 
-    private RoutingTablesImpl newRoutingTables( ConcurrentMap<String,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
+    private RoutingTableRegistryImpl newRoutingTables( ConcurrentMap<String,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
     {
-        return new RoutingTablesImpl( handlers, factory, DEV_NULL_LOGGER );
+        return new RoutingTableRegistryImpl( handlers, factory, DEV_NULL_LOGGER );
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory( RoutingTableHandler handler )

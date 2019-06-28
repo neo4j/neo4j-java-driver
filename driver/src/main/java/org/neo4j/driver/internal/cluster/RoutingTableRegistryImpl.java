@@ -30,18 +30,18 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
-public class RoutingTablesImpl implements RoutingTables
+public class RoutingTableRegistryImpl implements RoutingTableRegistry
 {
     private final ConcurrentMap<String,RoutingTableHandler> routingTables;
     private final RoutingTableHandlerFactory factory;
     private final Logger logger;
 
-    public RoutingTablesImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger logger )
+    public RoutingTableRegistryImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger logger )
     {
         this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logger ), logger );
     }
 
-    RoutingTablesImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory, Logger logger )
+    RoutingTableRegistryImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory, Logger logger )
     {
         this.factory = factory;
         this.routingTables = routingTables;
@@ -118,7 +118,7 @@ public class RoutingTablesImpl implements RoutingTables
             this.log = log;
         }
 
-        RoutingTableHandler newInstance( String databaseName, RoutingTables allTables )
+        RoutingTableHandler newInstance( String databaseName, RoutingTableRegistry allTables )
         {
             ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
             return new RoutingTableHandler( routingTable, rediscovery, connectionPool, allTables, log );

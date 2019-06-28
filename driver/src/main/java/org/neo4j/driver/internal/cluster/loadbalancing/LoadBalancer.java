@@ -37,8 +37,8 @@ import org.neo4j.driver.internal.cluster.RediscoveryImpl;
 import org.neo4j.driver.internal.cluster.RoutingProcedureClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.RoutingTable;
-import org.neo4j.driver.internal.cluster.RoutingTables;
-import org.neo4j.driver.internal.cluster.RoutingTablesImpl;
+import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
+import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -53,7 +53,7 @@ public class LoadBalancer implements ConnectionProvider
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
     private final ConnectionPool connectionPool;
-    private final RoutingTables routingTables;
+    private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
@@ -66,7 +66,7 @@ public class LoadBalancer implements ConnectionProvider
                 loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
     }
 
-    LoadBalancer( ConnectionPool connectionPool, RoutingTables routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
+    LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
             EventExecutorGroup eventExecutorGroup )
     {
         this.connectionPool = connectionPool;
@@ -168,12 +168,12 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private static RoutingTables createRoutingTables( ConnectionPool connectionPool, EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter,
+    private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter,
             ServerAddressResolver resolver, RoutingSettings settings, Clock clock, Logging logging )
     {
         Logger log = loadBalancerLogger( logging );
         Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
-        return new RoutingTablesImpl( connectionPool, rediscovery, clock, log );
+        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
