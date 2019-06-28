@@ -113,7 +113,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         try
         {
             routingTable.update( composition );
-            routingTables.removeStale();
+            routingTables.purgeAged();
             connectionPool.retainAll( routingTables.allServers() );
 
             log.info( "Updated routing table for database '%s'. %s", databaseName, routingTable );
@@ -144,9 +144,9 @@ public class RoutingTableHandler implements RoutingErrorHandler
     }
 
     // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
-    public boolean isRoutingTableStale()
+    public boolean isRoutingTableAged()
     {
-        return refreshRoutingTableFuture == null && routingTable.isStale( STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() );
+        return refreshRoutingTableFuture == null && routingTable.hasBeenStaleFor( STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() );
     }
 
     // for testing only

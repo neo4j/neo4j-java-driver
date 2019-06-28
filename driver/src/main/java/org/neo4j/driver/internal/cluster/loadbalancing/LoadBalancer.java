@@ -173,7 +173,7 @@ public class LoadBalancer implements ConnectionProvider
     {
         Logger log = loadBalancerLogger( logging );
         Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
-        return new RoutingTablesImpl( connectionPool, rediscovery, initialRouter, clock, log );
+        return new RoutingTablesImpl( connectionPool, rediscovery, clock, log );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,

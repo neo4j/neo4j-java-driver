@@ -176,7 +176,7 @@ class RoutingTableHandlerTest
             }
 
             @Override
-            public void removeStale()
+            public void purgeAged()
             {
             }
         };

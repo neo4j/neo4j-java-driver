@@ -70,8 +70,7 @@ class ClusterRoutingTableTest
     void shouldReturnStaleIfNoRouter()
     {
         // Given
-        FakeClock clock = new FakeClock();
-        RoutingTable routingTable = newRoutingTable( clock );
+        RoutingTable routingTable = newRoutingTable();
 
         // When
         routingTable.update( createClusterComposition( EMPTY, asList( C ), asList( D, E ) ) );
@@ -85,8 +84,7 @@ class ClusterRoutingTableTest
     void shouldBeStaleForReadsButNotWritesWhenNoReaders()
     {
         // Given
-        FakeClock clock = new FakeClock();
-        RoutingTable routingTable = newRoutingTable( clock );
+        RoutingTable routingTable = newRoutingTable();
 
         // When
         routingTable.update( createClusterComposition( asList( A, B ), asList( C ), EMPTY ) );
@@ -100,8 +98,7 @@ class ClusterRoutingTableTest
     void shouldBeStaleForWritesButNotReadsWhenNoWriters()
     {
         // Given
-        FakeClock clock = new FakeClock();
-        RoutingTable routingTable = newRoutingTable( clock );
+        RoutingTable routingTable = newRoutingTable();
 
         // When
         routingTable.update( createClusterComposition( asList( A, B ), EMPTY, asList( D, E ) ) );
@@ -115,8 +112,7 @@ class ClusterRoutingTableTest
     void shouldBeNotStaleWithReadersWritersAndRouters()
     {
         // Given
-        FakeClock clock = new FakeClock();
-        RoutingTable routingTable = newRoutingTable( clock );
+        RoutingTable routingTable = newRoutingTable();
 
         // When
         routingTable.update( createClusterComposition( asList( A, B ), asList( C ), asList( D, E ) ) );
@@ -172,7 +168,7 @@ class ClusterRoutingTableTest
     @Test
     void shouldPreserveOrderingOfRouters()
     {
-        ClusterRoutingTable routingTable = newRoutingTable( new FakeClock() );
+        ClusterRoutingTable routingTable = newRoutingTable();
         List<BoltServerAddress> routers = asList( A, C, D, F, B, E );
 
         routingTable.update( createClusterComposition( routers, EMPTY, EMPTY ) );
@@ -183,7 +179,7 @@ class ClusterRoutingTableTest
     @Test
     void shouldPreserveOrderingOfWriters()
     {
-        ClusterRoutingTable routingTable = newRoutingTable( new FakeClock() );
+        ClusterRoutingTable routingTable = newRoutingTable();
         List<BoltServerAddress> writers = asList( D, F, A, C, E );
 
         routingTable.update( createClusterComposition( EMPTY, writers, EMPTY ) );
@@ -194,7 +190,7 @@ class ClusterRoutingTableTest
     @Test
     void shouldPreserveOrderingOfReaders()
     {
-        ClusterRoutingTable routingTable = newRoutingTable( new FakeClock() );
+        ClusterRoutingTable routingTable = newRoutingTable();
         List<BoltServerAddress> readers = asList( B, A, F, C, D );
 
         routingTable.update( createClusterComposition( EMPTY, EMPTY, readers ) );
@@ -205,7 +201,7 @@ class ClusterRoutingTableTest
     @Test
     void shouldTreatOneRouterAsValid()
     {
-        ClusterRoutingTable routingTable = newRoutingTable( new FakeClock() );
+        ClusterRoutingTable routingTable = newRoutingTable();
 
         List<BoltServerAddress> routers = singletonList( A );
         List<BoltServerAddress> writers = asList( B, C );
@@ -218,17 +214,69 @@ class ClusterRoutingTableTest
     }
 
     @Test
-    void shouldBeStaleForExpiredTime() throws Throwable
+    void shouldHaveBeStaleForExpiredTime() throws Throwable
     {
         ClusterRoutingTable routingTable = newRoutingTable( Clock.SYSTEM );
-        assertTrue( routingTable.isStale( 0 ) );
+        assertTrue( routingTable.hasBeenStaleFor( 0 ) );
     }
 
     @Test
-    void shouldNotBeStaleForExpiredTime() throws Throwable
+    void shouldNotHaveBeStaleForUnexpiredTime() throws Throwable
     {
         ClusterRoutingTable routingTable = newRoutingTable( Clock.SYSTEM );
-        assertFalse( routingTable.isStale( Duration.ofSeconds( 30 ).toMillis() ) );
+        assertFalse( routingTable.hasBeenStaleFor( Duration.ofSeconds( 30 ).toMillis() ) );
+    }
+
+    @Test
+    void shouldDefaultToPreferInitialRouter() throws Throwable
+    {
+        ClusterRoutingTable routingTable = newRoutingTable();
+        assertTrue( routingTable.preferInitialRouter() );
+    }
+
+    @Test
+    void shouldPreferInitialRouterIfNoWriter() throws Throwable
+    {
+        ClusterRoutingTable routingTable = newRoutingTable();
+        routingTable.update( createClusterComposition( EMPTY, EMPTY, EMPTY ) );
+        assertTrue( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( singletonList( A ), EMPTY, singletonList( A ) ) );
+        assertTrue( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( asList( A, B ), EMPTY, asList( A, B ) ) );
+        assertTrue( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( EMPTY, EMPTY, singletonList( A ) ) );
+        assertTrue( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( singletonList( A ), EMPTY, EMPTY ) );
+        assertTrue( routingTable.preferInitialRouter() );
+    }
+
+    @Test
+    void shouldNotPreferInitialRouterIfHasWriter() throws Throwable
+    {
+        ClusterRoutingTable routingTable = newRoutingTable();
+        routingTable.update( createClusterComposition( EMPTY, singletonList( A ), EMPTY ) );
+        assertFalse( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( singletonList( A ), singletonList( A ), singletonList( A ) ) );
+        assertFalse( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( asList( A, B ), singletonList( A ), asList( A, B ) ) );
+        assertFalse( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( EMPTY, singletonList( A ), singletonList( A ) ) );
+        assertFalse( routingTable.preferInitialRouter() );
+
+        routingTable.update( createClusterComposition( singletonList( A ), singletonList( A ), EMPTY ) );
+        assertFalse( routingTable.preferInitialRouter() );
+    }
+
+    private ClusterRoutingTable newRoutingTable()
+    {
+        return new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
     }
 
     private ClusterRoutingTable newRoutingTable( Clock clock )

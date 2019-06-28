@@ -35,11 +35,13 @@ public class ClusterRoutingTable implements RoutingTable
     private static final int MIN_ROUTERS = 1;
 
     private final Clock clock;
-    private volatile long expirationTimeout;
+    private volatile long expirationTimestamp;
     private final AddressSet readers;
     private final AddressSet writers;
     private final AddressSet routers;
+
     private final String databaseName; // specifies this routing table is the routing table of database named this.
+    private boolean preferInitialRouter;
 
     public ClusterRoutingTable( String ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
@@ -51,7 +53,8 @@ public class ClusterRoutingTable implements RoutingTable
     {
         this.databaseName = ofDatabase;
         this.clock = clock;
-        this.expirationTimeout = clock.millis() - 1;
+        this.expirationTimestamp = clock.millis() - 1;
+        this.preferInitialRouter = true;
 
         this.readers = new AddressSet();
         this.writers = new AddressSet();
@@ -61,30 +64,31 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public boolean isStaleFor( AccessMode mode )
     {
-        return expirationTimeout < clock.millis() ||
+        return expirationTimestamp < clock.millis() ||
                routers.size() < MIN_ROUTERS ||
                mode == AccessMode.READ && readers.size() == 0 ||
                mode == AccessMode.WRITE && writers.size() == 0;
     }
 
     @Override
-    public boolean isStale( long staleRoutingTableTimeout )
+    public boolean hasBeenStaleFor( long extraTime )
     {
-        long expireTime = expirationTimeout + staleRoutingTableTimeout;
-        if ( expireTime < 0 )
+        long totalTime = expirationTimestamp + extraTime;
+        if ( totalTime < 0 )
         {
-            expireTime = Long.MAX_VALUE;
+            totalTime = Long.MAX_VALUE;
         }
-        return  expireTime < clock.millis();
+        return  totalTime < clock.millis();
     }
 
     @Override
     public synchronized void update( ClusterComposition cluster )
     {
-        expirationTimeout = cluster.expirationTimestamp();
+        expirationTimestamp = cluster.expirationTimestamp();
         readers.update( cluster.readers() );
         writers.update( cluster.writers() );
         routers.update( cluster.routers() );
+        preferInitialRouter = !cluster.hasWriters();
     }
 
     @Override
@@ -134,11 +138,15 @@ public class ClusterRoutingTable implements RoutingTable
         writers.remove( toRemove );
     }
 
+    @Override
+    public boolean preferInitialRouter()
+    {
+        return preferInitialRouter;
+    }
 
     @Override
     public synchronized String toString()
     {
-        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
-                expirationTimeout, clock.millis(), routers, writers, readers, databaseName );
+        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'", expirationTimestamp, clock.millis(), routers, writers, readers, databaseName );
     }
 }
