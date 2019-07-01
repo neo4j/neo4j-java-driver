@@ -225,8 +225,8 @@
                   <shadedPattern>org.neo4j.driver.internal.shaded.io.netty</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>io.projectreactor</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.shaded.io.projectreactor</shadedPattern>
+                  <pattern>reactor</pattern>
+                  <shadedPattern>org.neo4j.driver.internal.shaded.reactor</shadedPattern>
                 </relocation>
               </relocations>
               <shadeTestJar>true</shadeTestJar>
