@@ -76,7 +76,7 @@ class InternalDriverTest
 
         InternalDriver driver = newDriver( sessionFactory );
 
-        assertEquals( connectivityStage, driver.verifyConnectivity() );
+        assertEquals( connectivityStage, driver.verifyConnectivityAsync() );
     }
 
     @Test

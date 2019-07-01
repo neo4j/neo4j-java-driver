@@ -30,6 +30,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -42,6 +43,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
@@ -147,5 +149,34 @@ class RoutingDriverMultidatabaseBoltKitTest
         // Finally
         assertThat( router.exitStatus(), equalTo( 0 ) );
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
+    }
+
+
+    @Test
+    void shouldNotVerifyConnectivityOnDriverCreation() throws Throwable
+    {
+        StubServer router = StubServer.start( "acquire_endpoints_v4_with_db.script", 9001 );
+        StubServer readServer = StubServer.start( "read_server_v4_read.script", 9005 );
+
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, builder().withConnectivityVerificationEnabledOnDriverCreation( false ).build() ) )
+        {
+            try ( Session session = driver.session( t -> t.withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ) ) )
+            {
+                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
+                assertEquals( 3, records.size() );
+            }
+
+            Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) );
+
+            driver.close();
+
+            assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
+        }
+        finally
+        {
+            assertEquals( 0, readServer.exitStatus() );
+            assertEquals( 0, router.exitStatus() );
+        }
     }
 }
