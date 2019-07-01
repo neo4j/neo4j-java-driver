@@ -237,7 +237,7 @@ class DriverFactoryTest
         protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
-            when( driver.verifyConnectivity() ).thenReturn( completedWithNull() );
+            when( driver.verifyConnectivityAsync() ).thenReturn( completedWithNull() );
             return driver;
         }
 

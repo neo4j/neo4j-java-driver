@@ -128,9 +128,16 @@ public class InternalDriver implements Driver
         return InternalTypeSystem.TYPE_SYSTEM;
     }
 
-    public CompletionStage<Void> verifyConnectivity()
+    @Override
+    public CompletionStage<Void> verifyConnectivityAsync()
     {
         return sessionFactory.verifyConnectivity();
+    }
+
+    @Override
+    public void verifyConnectivity()
+    {
+        Futures.blockingGet( verifyConnectivityAsync() );
     }
 
     /**

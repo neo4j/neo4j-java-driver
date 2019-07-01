@@ -107,7 +107,10 @@ public class DriverFactory
 
         InternalDriver driver = createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
 
-        verifyConnectivity( driver, connectionPool, config );
+        if( config.isConnectivityVerificationEnabledOnDriverCreation() )
+        {
+            verifyConnectivity( driver, connectionPool, config );
+        }
 
         return driver;
     }
@@ -371,7 +374,7 @@ public class DriverFactory
         try
         {
             // block to verify connectivity, close connection pool if thread gets interrupted
-            Futures.blockingGet( driver.verifyConnectivity(),
+            Futures.blockingGet( driver.verifyConnectivityAsync(),
                     () -> closeConnectionPoolOnThreadInterrupt( connectionPool, config.logging() ) );
         }
         catch ( Throwable connectionError )
