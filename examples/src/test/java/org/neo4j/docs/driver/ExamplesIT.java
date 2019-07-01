@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,8 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
@@ -566,18 +563,14 @@ class ExamplesIT
             }
 
             StdIOCapture stdIOCapture = new StdIOCapture();
-            CountDownLatch latch = new CountDownLatch( 1 );
 
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                example.printAllProductsReactor()
-                        .single()
-                        .doAfterTerminate( () -> latch.countDown() )
-                        .subscribe( summary -> assertEquals( StatementType.READ_ONLY, summary.statementType() ) );
+                ResultSummary summary = await( Flux.from( example.printAllProductsReactor() ).single() );
+                assertEquals( StatementType.READ_ONLY, summary.statementType() );
             }
 
-            latch.await( 1, TimeUnit.MINUTES );
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
             assertEquals( new HashSet<>( asList( "Infinity Gauntlet", "Mjölnir" ) ), capturedOutput );
         }
@@ -598,18 +591,14 @@ class ExamplesIT
             }
 
             StdIOCapture stdIOCapture = new StdIOCapture();
-            CountDownLatch latch = new CountDownLatch( 1 );
 
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                Flux.from( example.printAllProductsRxJava() )
-                        .single()
-                        .doAfterTerminate( () -> latch.countDown() )
-                        .subscribe( summary -> assertEquals( StatementType.READ_ONLY, summary.statementType() ) );
+                ResultSummary summary = await( Flux.from( example.printAllProductsRxJava() ).single() );
+                assertEquals( StatementType.READ_ONLY, summary.statementType() );
             }
 
-            latch.await( 1, TimeUnit.MINUTES );
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
             assertEquals( new HashSet<>( asList( "Infinity Gauntlet", "Mjölnir" ) ), capturedOutput );
         }
