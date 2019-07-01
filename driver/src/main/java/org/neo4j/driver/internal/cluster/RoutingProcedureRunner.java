@@ -46,7 +46,7 @@ public class RoutingProcedureRunner
     static final String ROUTING_CONTEXT = "context";
     static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + ROUTING_CONTEXT + "})";
     static final String DATABASE_NAME = "database";
-    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.cluster.routing.getRoutingTable({%s}, {%s})", ROUTING_CONTEXT, DATABASE_NAME );
+    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.routing.getRoutingTable({%s}, {%s})", ROUTING_CONTEXT, DATABASE_NAME );
 
     private final RoutingContext context;
 
