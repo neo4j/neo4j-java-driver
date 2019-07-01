@@ -102,7 +102,7 @@ public interface ConnectionPoolMetrics
     /**
      * The total acquisition time in milliseconds of all connection acquisition requests since the pool is created.
      * See {@link ConnectionPoolMetrics#acquired()} for the total amount of connection acquired since the driver is created.
-     * The average acquisition time can be calculated using the code bellow:
+     * The average acquisition time can be calculated using the code below:
      * <h2>Example</h2>
      * <pre>
      * {@code
@@ -126,7 +126,7 @@ public interface ConnectionPoolMetrics
     /**
      * The total time in milliseconds spent to establishing new socket connections since the pool is created.
      * See {@link ConnectionPoolMetrics#created()} for the total amount of connections established since the pool is created.
-     * The average connection time can be calculated using the code bellow:
+     * The average connection time can be calculated using the code below:
      * <h2>Example</h2>
      * <pre>
      * {@code
@@ -150,7 +150,7 @@ public interface ConnectionPoolMetrics
     /**
      * The total time in milliseconds connections are borrowed out of the pool, such as the time spent in user's application code to run cypher queries.
      * See {@link ConnectionPoolMetrics#totalInUseCount()} for the total amount of connections that are borrowed out of the pool.
-     * The average in-use time can be calculated using the code bellow:
+     * The average in-use time can be calculated using the code below:
      * <h2>Example</h2>
      * <pre>
      * {@code
