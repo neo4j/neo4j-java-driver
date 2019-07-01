@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.file.Files;
@@ -570,7 +571,8 @@ class ExamplesIT
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                Mono.from( example.printAllProductsReactor() )
+                example.printAllProductsReactor()
+                        .single()
                         .doAfterTerminate( () -> latch.countDown() )
                         .subscribe( summary -> assertEquals( StatementType.READ_ONLY, summary.statementType() ) );
             }
@@ -601,7 +603,8 @@ class ExamplesIT
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                Mono.from( example.printAllProductsRxJava() )
+                Flux.from( example.printAllProductsRxJava() )
+                        .single()
                         .doAfterTerminate( () -> latch.countDown() )
                         .subscribe( summary -> assertEquals( StatementType.READ_ONLY, summary.statementType() ) );
             }
