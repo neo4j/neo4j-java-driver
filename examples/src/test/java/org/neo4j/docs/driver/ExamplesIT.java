@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import reactor.core.publisher.Flux;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -567,7 +566,9 @@ class ExamplesIT
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                ResultSummary summary = await( Flux.from( example.printAllProductsReactor() ).single() );
+                final List<ResultSummary> summaryList = await( example.printAllProductsReactor() );
+                assertThat( summaryList.size(), equalTo( 1 ) );
+                ResultSummary summary = summaryList.get( 0 );
                 assertEquals( StatementType.READ_ONLY, summary.statementType() );
             }
 
@@ -595,7 +596,9 @@ class ExamplesIT
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                ResultSummary summary = await( Flux.from( example.printAllProductsRxJava() ).single() );
+                final List<ResultSummary> summaryList = await( example.printAllProductsRxJava() );
+                assertThat( summaryList.size(), equalTo( 1 ) );
+                ResultSummary summary = summaryList.get( 0 );
                 assertEquals( StatementType.READ_ONLY, summary.statementType() );
             }
 
