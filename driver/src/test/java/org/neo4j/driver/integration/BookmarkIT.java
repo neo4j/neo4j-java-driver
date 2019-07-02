@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 
 @ParallelizableIT
 class BookmarkIT
@@ -74,7 +75,7 @@ class BookmarkIT
     {
         String invalidBookmark = "hi, this is an invalid bookmark";
 
-        try ( Session session = driver.session( t -> t.withBookmarks( invalidBookmark ) ) )
+        try ( Session session = driver.session( builder().withBookmarks( invalidBookmark ).build() ) )
         {
             assertThrows( ClientException.class, session::beginTransaction );
         }
@@ -170,7 +171,7 @@ class BookmarkIT
     void createSessionWithInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }
@@ -180,7 +181,7 @@ class BookmarkIT
     void createSessionWithAccessModeAndInitialBookmark()
     {
         String bookmark = "TheBookmark";
-        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
         }

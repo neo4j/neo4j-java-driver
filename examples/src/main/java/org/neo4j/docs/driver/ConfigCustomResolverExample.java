@@ -31,6 +31,7 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.net.ServerAddress;
 
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 
 public class ConfigCustomResolverExample implements AutoCloseable
 {
@@ -64,7 +65,7 @@ public class ConfigCustomResolverExample implements AutoCloseable
         try ( Driver driver = createDriver( "neo4j://x.acme.com", username, password, ServerAddress.of( "a.acme.com", 7676 ),
                 ServerAddress.of( "b.acme.com", 8787 ), ServerAddress.of( "c.acme.com", 9898 ) ) )
         {
-            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
+            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
                 session.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
             }
@@ -80,7 +81,7 @@ public class ConfigCustomResolverExample implements AutoCloseable
 
     public boolean canConnect()
     {
-        StatementResult result = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ).run( "RETURN 1" );
+        StatementResult result = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ).run( "RETURN 1" );
         return result.single().get( 0 ).asInt() == 1;
     }
 }

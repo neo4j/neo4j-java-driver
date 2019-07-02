@@ -73,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
@@ -598,7 +599,7 @@ class AsyncSessionIT
     @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( t -> t.withBookmarks( "Illegal Bookmark" ) );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
 
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
 
@@ -610,7 +611,7 @@ class AsyncSessionIT
     @Test
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( t -> t.withBookmarks( "Illegal Bookmark" ) );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
     }
@@ -619,7 +620,7 @@ class AsyncSessionIT
     @EnabledOnNeo4jWith( BOLT_V3 )
     void shouldNotRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( t -> t.withBookmarks( "Illegal Bookmark" ) );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );

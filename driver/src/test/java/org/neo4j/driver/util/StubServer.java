@@ -44,7 +44,7 @@ public class StubServer
 {
     private static final int SOCKET_CONNECT_ATTEMPTS = 20;
 
-    public static final Config INSECURE_CONFIG = builder().build();
+    public static final Config INSECURE_CONFIG = insecureBuilder().build();
 
     private static final ExecutorService executor = newCachedThreadPool( daemon( "stub-server-output-reader-" ) );
 
@@ -87,7 +87,7 @@ public class StubServer
         }
     }
 
-    public static Config.ConfigBuilder builder()
+    public static Config.ConfigBuilder insecureBuilder()
     {
         return Config.builder().withoutEncryption().withLogging( none() );
     }

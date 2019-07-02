@@ -37,16 +37,16 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.SessionParameters.empty;
-import static org.neo4j.driver.internal.SessionParameters.template;
+import static org.neo4j.driver.internal.SessionConfig.empty;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
-class SessionParametersTest
+class SessionConfigTest
 {
     @Test
     void shouldReturnDefaultValues() throws Throwable
     {
-        SessionParameters parameters = empty();
+        SessionConfig parameters = empty();
 
         Assert.assertEquals( AccessMode.WRITE, parameters.defaultAccessMode() );
         assertFalse( parameters.database().isPresent() );
@@ -57,7 +57,7 @@ class SessionParametersTest
     @EnumSource( AccessMode.class )
     void shouldChangeAccessMode( AccessMode mode ) throws Throwable
     {
-        SessionParameters parameters = template().withDefaultAccessMode( mode ).build();
+        SessionConfig parameters = builder().withDefaultAccessMode( mode ).build();
         assertEquals( mode, parameters.defaultAccessMode() );
     }
 
@@ -65,54 +65,52 @@ class SessionParametersTest
     @ValueSource( strings = {"foo", "data", "my awesome database", " "} )
     void shouldChangeDatabaseName( String databaseName )
     {
-        SessionParameters parameters = template().withDatabase( databaseName ).build();
+        SessionConfig parameters = builder().withDatabase( databaseName ).build();
         assertTrue( parameters.database().isPresent() );
         assertEquals( databaseName, parameters.database().get() );
     }
 
     @Test
-    void shouldAllowNullDatabaseName() throws Throwable
+    void shouldNotAllowNullDatabaseName() throws Throwable
     {
-        SessionParameters parameters = template().withDatabase( null ).build();
-        assertFalse( parameters.database().isPresent() );
-        assertEquals( "", parameters.database().orElse( ABSENT_DB_NAME ) );
+        assertThrows( NullPointerException.class, () -> builder().withDatabase( null ) );
     }
 
     @ParameterizedTest
     @ValueSource( strings = {"", ABSENT_DB_NAME} )
     void shouldForbiddenEmptyStringDatabaseName( String databaseName ) throws Throwable
     {
-        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> template().withDatabase( databaseName ).build());
+        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> builder().withDatabase( databaseName ) );
         assertThat( error.getMessage(), equalTo( "Illegal database name ''." ) );
     }
 
     @Test
     void shouldAcceptNullBookmarks() throws Throwable
     {
-        SessionParameters parameters = template().withBookmarks( (String[]) null ).build();
+        SessionConfig parameters = builder().withBookmarks( (String[]) null ).build();
         assertNull( parameters.bookmarks() );
 
-        SessionParameters parameters2 = template().withBookmarks( (List<String>) null ).build();
+        SessionConfig parameters2 = builder().withBookmarks( (List<String>) null ).build();
         assertNull( parameters2.bookmarks() );
     }
 
     @Test
     void shouldAcceptEmptyBookmarks() throws Throwable
     {
-        SessionParameters parameters = template().withBookmarks().build();
+        SessionConfig parameters = builder().withBookmarks().build();
         assertEquals( emptyList(), parameters.bookmarks() );
 
-        SessionParameters parameters2 = template().withBookmarks( emptyList() ).build();
+        SessionConfig parameters2 = builder().withBookmarks( emptyList() ).build();
         assertEquals( emptyList(), parameters2.bookmarks() );
     }
 
     @Test
     void shouldAcceptBookmarks() throws Throwable
     {
-        SessionParameters parameters = template().withBookmarks( "one", "two" ).build();
+        SessionConfig parameters = builder().withBookmarks( "one", "two" ).build();
         assertThat( parameters.bookmarks(), equalTo( Arrays.asList( "one", "two" ) ) );
 
-        SessionParameters parameters2 = template().withBookmarks( Arrays.asList( "one", "two" ) ).build();
+        SessionConfig parameters2 = builder().withBookmarks( Arrays.asList( "one", "two" ) ).build();
         assertThat( parameters2.bookmarks(), equalTo( Arrays.asList( "one", "two" ) ) );
     }
 }

@@ -22,6 +22,8 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.reactive.RxSession;
 
+import static org.neo4j.driver.internal.SessionConfig.builder;
+
 public abstract class AbstractRxQuery<C extends AbstractContext> implements RxCommand<C>
 {
     protected final Driver driver;
@@ -37,8 +39,8 @@ public abstract class AbstractRxQuery<C extends AbstractContext> implements RxCo
     {
         if ( useBookmark )
         {
-            return driver.rxSession( t -> t.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
+            return driver.rxSession( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
         }
-        return driver.rxSession( t -> t.withDefaultAccessMode( mode ) );
+        return driver.rxSession( builder().withDefaultAccessMode( mode ).build() );
     }
 }

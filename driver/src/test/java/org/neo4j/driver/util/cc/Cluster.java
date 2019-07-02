@@ -37,6 +37,7 @@ import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.TestUtil.sleep;
 
@@ -220,7 +221,7 @@ public class Cluster implements AutoCloseable
         Set<ClusterMember> membersWithRole = new HashSet<>();
 
         Driver driver = driverToAnyCore( members, clusterDrivers );
-        try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
+        try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             List<Record> records = findClusterOverview( session );
             for ( Record record : records )
@@ -278,7 +279,7 @@ public class Cluster implements AutoCloseable
             assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
 
             Driver driver = driverToAnyCore( members, clusterDrivers );
-            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
+            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 List<Record> records = findClusterOverview( session );
                 actualOnlineAddresses = extractBoltAddresses( records );
@@ -309,7 +310,7 @@ public class Cluster implements AutoCloseable
         for ( ClusterMember member : members )
         {
             Driver driver = clusterDrivers.getDriver( member );
-            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
+            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 if ( isCoreMember( session ) )
                 {
