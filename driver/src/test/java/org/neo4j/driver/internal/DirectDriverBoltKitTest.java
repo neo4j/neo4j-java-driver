@@ -56,6 +56,8 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.internal.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
@@ -92,7 +94,7 @@ class DirectDriverBoltKitTest
                 "neo4j:bookmark:v1:tx68" );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session( t -> t.withBookmarks( bookmarks ) ) )
+              Session session = driver.session( builder().withBookmarks( bookmarks ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -151,7 +153,7 @@ class DirectDriverBoltKitTest
 
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -168,7 +170,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -239,7 +241,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "database_shutdown.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withBookmarks( "neo4j:bookmark:v1:tx0" ) );
+                Session session = driver.session( builder().withBookmarks( "neo4j:bookmark:v1:tx0" ).build() );
                 // has to enforce to flush BEGIN to have tx started.
                 Transaction transaction = session.beginTransaction() )
         {
@@ -283,7 +285,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "read_server_v4_read.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ) ) )
+                Session session = driver.session( builder().withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
             result.consume();
@@ -300,7 +302,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "read_server_v4_read_tx.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDatabase( "myDatabase" ) ) )
+                Session session = driver.session( forDatabase( "myDatabase" ) ) )
         {
             session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
         }

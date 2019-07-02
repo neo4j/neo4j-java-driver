@@ -24,6 +24,8 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.TransientException;
 
+import static org.neo4j.driver.internal.SessionConfig.builder;
+
 public abstract class AbstractBlockingQuery<C extends AbstractContext> implements BlockingCommand<C>
 {
     protected final Driver driver;
@@ -39,9 +41,9 @@ public abstract class AbstractBlockingQuery<C extends AbstractContext> implement
     {
         if ( useBookmark )
         {
-            return driver.session( t -> t.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
+            return driver.session( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
         }
-        return driver.session( t -> t.withDefaultAccessMode( mode ) );
+        return driver.session( builder().withDefaultAccessMode( mode ).build() );
     }
 
     public Transaction beginTransaction( Session session, C context )

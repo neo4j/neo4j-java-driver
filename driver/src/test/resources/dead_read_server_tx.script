@@ -1,0 +1,9 @@
+!: BOLT 3
+!: AUTO RESET
+!: AUTO HELLO
+!: AUTO GOODBYE
+!: AUTO BEGIN
+
+C: RUN "MATCH (n) RETURN n.name" {} {}
+C: PULL_ALL
+S: <EXIT>

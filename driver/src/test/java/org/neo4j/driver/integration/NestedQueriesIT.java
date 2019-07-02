@@ -25,6 +25,8 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
+import static org.neo4j.driver.internal.SessionConfig.builder;
+
 @ParallelizableIT
 public class NestedQueriesIT implements NestedQueries
 {
@@ -34,6 +36,6 @@ public class NestedQueriesIT implements NestedQueries
     @Override
     public Session newSession( AccessMode mode )
     {
-        return server.driver().session( t -> t.withDefaultAccessMode( mode ) );
+        return server.driver().session( builder().withDefaultAccessMode( mode ).build() );
     }
 }

@@ -19,11 +19,10 @@
 package org.neo4j.driver;
 
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.SessionParameters;
+import org.neo4j.driver.internal.SessionConfig;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
@@ -74,21 +73,62 @@ public interface Driver extends AutoCloseable
     boolean isEncrypted();
 
     /**
-     * Create a new general purpose {@link Session} with default {@link SessionParameters session parameters}.
+     * Create a new general purpose {@link Session} with default {@link SessionConfig session configuration}.
      * <p>
-     * Alias to {@link #session(Consumer)}}.
+     * Alias to {@link #session(SessionConfig)}}.
      *
      * @return a new {@link Session} object.
      */
     Session session();
 
     /**
-     * Create a new {@link Session} with a specified {@link SessionParametersTemplate}.
-     * @param templateConsumer specifies how the session parameter shall be built for this session.
+     * Create a new {@link Session} with a specified {@link SessionConfig session configuration}.
+     * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
+     * @param sessionConfig specifies session configurations for this session.
      * @return a new {@link Session} object.
-     * @see SessionParameters
+     * @see SessionConfig
      */
-    Session session( Consumer<SessionParametersTemplate> templateConsumer );
+    Session session( SessionConfig sessionConfig );
+
+    /**
+     * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(SessionConfig)}}.
+     *
+     * @return @return a new {@link RxSession} object.
+     */
+    RxSession rxSession();
+
+    /**
+     * Create a new {@link RxSession} with a specified {@link SessionConfig session configuration}.
+     * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
+     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * @param sessionConfig used to customize the session.
+     * @return @return a new {@link RxSession} object.
+     */
+    RxSession rxSession( SessionConfig sessionConfig );
+
+    /**
+     * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * <p>
+     * Alias to {@link #asyncSession(SessionConfig)}}.
+     *
+     * @return @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession();
+
+    /**
+     * Create a new {@link AsyncSession} with a specified {@link SessionConfig session configuration}.
+     * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
+     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     *
+     * @param sessionConfig used to customize the session.
+     * @return a new {@link AsyncSession} object.
+     */
+    AsyncSession asyncSession( SessionConfig sessionConfig );
+
     /**
      * Close all the resources assigned to this driver, including open connections and IO threads.
      * <p>
@@ -113,44 +153,8 @@ public interface Driver extends AutoCloseable
      * @return the driver metrics if enabled.
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
+    @Experimental
     Metrics metrics();
-
-    /**
-     * Create a new general purpose {@link RxSession} with default {@link SessionParameters session parameters}.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
-     * <p>
-     * Alias to {@link #rxSession(Consumer)}}.
-     *
-     * @return @return a new {@link RxSession} object.
-     */
-    RxSession rxSession();
-
-    /**
-     * Create a new {@link RxSession} with a specified {@link SessionParametersTemplate}.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
-     * @param templateConsumer used to customize the session parameters.
-     * @return @return a new {@link RxSession} object.
-     */
-    RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer );
-
-    /**
-     * Create a new general purpose {@link AsyncSession} with default {@link SessionParameters session parameters}.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     * <p>
-     * Alias to {@link #asyncSession(Consumer)}}.
-     *
-     * @return @return a new {@link AsyncSession} object.
-     */
-    AsyncSession asyncSession();
-
-    /**
-     * Create a new {@link AsyncSession} with a specified {@link SessionParametersTemplate}.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
-     *
-     * @param templateConsumer used to customize the session parameters.
-     * @return a new {@link AsyncSession} object.
-     */
-    AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer );
 
     /**
      * This will return the type system supported by the driver.

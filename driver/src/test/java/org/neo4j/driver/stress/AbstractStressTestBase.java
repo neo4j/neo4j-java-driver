@@ -86,6 +86,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 
 abstract class AbstractStressTestBase<C extends AbstractContext>
 {
@@ -524,7 +525,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static void readNodesBlocking( Driver driver, String bookmark, int expectedNodeCount )
     {
         long start = System.nanoTime();
-        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             int nodesProcessed = session.readTransaction( tx ->
             {
@@ -584,7 +585,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        AsyncSession session = driver.asyncSession( t -> t.withBookmarks( bookmark ) );
+        AsyncSession session = driver.asyncSession( builder().withBookmarks( bookmark ).build() );
         AtomicInteger nodesSeen = new AtomicInteger();
 
         CompletionStage<Throwable> readQuery = session.readTransactionAsync( tx ->
@@ -645,7 +646,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         long start = System.nanoTime();
 
-        RxSession session = driver.rxSession( t -> t.withBookmarks( bookmark ) );
+        RxSession session = driver.rxSession( builder().withBookmarks( bookmark ).build() );
         AtomicInteger nodesSeen = new AtomicInteger();
 
         Publisher<Void> readQuery = session.readTransaction( tx -> Flux.from( tx.run( "MATCH (n:Node) RETURN n" ).records() ).doOnNext( record -> {

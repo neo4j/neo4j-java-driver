@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.SessionParameters.template;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 class SessionFactoryImplTest
@@ -41,10 +41,10 @@ class SessionFactoryImplTest
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         SessionFactory factory = newSessionFactory( config );
 
-        NetworkSession readSession = factory.newInstance( template().withDefaultAccessMode( AccessMode.READ ).build() );
+        NetworkSession readSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.READ ).build() );
         assertThat( readSession, instanceOf( NetworkSession.class ) );
 
-        NetworkSession writeSession = factory.newInstance( template().withDefaultAccessMode( AccessMode.WRITE ).build() );
+        NetworkSession writeSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
         assertThat( writeSession, instanceOf( NetworkSession.class ) );
     }
 
@@ -54,10 +54,10 @@ class SessionFactoryImplTest
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withLeakedSessionsLogging().build();
         SessionFactory factory = newSessionFactory( config );
 
-        NetworkSession readSession = factory.newInstance( template().withDefaultAccessMode( AccessMode.READ ).build() );
+        NetworkSession readSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.READ ).build() );
         assertThat( readSession, instanceOf( LeakLoggingNetworkSession.class ) );
 
-        NetworkSession writeSession = factory.newInstance( template().withDefaultAccessMode( AccessMode.WRITE ).build() );
+        NetworkSession writeSession = factory.newInstance( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
         assertThat( writeSession, instanceOf( LeakLoggingNetworkSession.class ) );
     }
 

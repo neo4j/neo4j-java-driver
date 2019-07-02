@@ -35,6 +35,7 @@ import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.neo4j.driver.internal.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 
 @ParallelizableIT
@@ -64,7 +65,7 @@ class RoutingDriverIT
     {
         URI uri = URI.create( String.format( "neo4j://%s:%s", neo4j.uri().getHost(), neo4j.uri().getPort() ) );
         try ( Driver driver = GraphDatabase.driver( uri, neo4j.authToken() );
-              Session session = driver.session( t -> t.withDatabase( "neo4j" ) ) )
+              Session session = driver.session( forDatabase( "neo4j" ) ) )
         {
             assertThat( driver, is( clusterDriver() ) );
 

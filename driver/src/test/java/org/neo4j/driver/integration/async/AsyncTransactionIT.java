@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
@@ -297,7 +298,7 @@ class AsyncTransactionIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        AsyncSession session = neo4j.driver().asyncSession( t -> t.withBookmarks( "InvalidBookmark" ) );
+        AsyncSession session = neo4j.driver().asyncSession( builder().withBookmarks( "InvalidBookmark" ).build() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );

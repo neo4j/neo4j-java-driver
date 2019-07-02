@@ -29,6 +29,7 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 // end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication
@@ -89,7 +90,7 @@ public class PassBookmarkExample extends BaseApplication
         List<String> savedBookmarks = new ArrayList<>();
 
         // Create the first person and employment relationship.
-        try ( Session session1 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
+        try ( Session session1 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
             session1.writeTransaction( tx -> addCompany( tx, "Wayne Enterprises" ) );
             session1.writeTransaction( tx -> addPerson( tx, "Alice" ) );
@@ -99,7 +100,7 @@ public class PassBookmarkExample extends BaseApplication
         }
 
         // Create the second person and employment relationship.
-        try ( Session session2 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) )
+        try ( Session session2 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
             session2.writeTransaction( tx -> addCompany( tx, "LexCorp" ) );
             session2.writeTransaction( tx -> addPerson( tx, "Bob" ) );
@@ -109,7 +110,7 @@ public class PassBookmarkExample extends BaseApplication
         }
 
         // Create a friendship between the two people created above.
-        try ( Session session3 = driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( savedBookmarks ) ) )
+        try ( Session session3 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( savedBookmarks ).build() ) )
         {
             session3.writeTransaction( tx -> makeFriends( tx, "Alice", "Bob" ) );
 
