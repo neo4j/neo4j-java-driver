@@ -19,18 +19,18 @@
 package org.neo4j.driver.exceptions;
 
 /**
- * A routing error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
+ * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
  * This exception should not be retried.
  * @since 2.0
  */
-public class RoutingException extends ClientException
+public class FatalDiscoveryException extends ClientException
 {
-    public RoutingException( String message )
+    public FatalDiscoveryException( String message )
     {
         super( message );
     }
 
-    public RoutingException( String code, String message )
+    public FatalDiscoveryException( String code, String message )
     {
         super( code, message );
     }

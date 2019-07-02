@@ -66,7 +66,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     @Override
     public void onWriteFailure( BoltServerAddress address )
     {
-        routingTable.removeWriter( address );
+        routingTable.forgetWriter( address );
     }
 
     synchronized CompletionStage<RoutingTable> refreshRoutingTable( AccessMode mode )

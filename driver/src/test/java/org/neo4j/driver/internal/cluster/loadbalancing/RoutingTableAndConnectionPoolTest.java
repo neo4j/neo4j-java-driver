@@ -45,8 +45,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
-import org.neo4j.driver.exceptions.RoutingException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
@@ -129,12 +129,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new RoutingException( "No database found" ) ) );
+        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new FatalDiscoveryException( "No database found" ) ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        assertThrows( RoutingException.class, () -> await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) ) );
+        assertThrows( FatalDiscoveryException.class, () -> await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) ) );
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
@@ -360,7 +360,7 @@ class RoutingTableAndConnectionPoolTest
 
     private CompletableFuture<ClusterComposition> expiredClusterComposition( BoltServerAddress... addresses )
     {
-        return clusterComposition( -STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis(), addresses );
+        return clusterComposition( -STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() - 1, addresses );
     }
 
     private CompletableFuture<ClusterComposition> clusterComposition( long expireAfterMs, BoltServerAddress... addresses )
