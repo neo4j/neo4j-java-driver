@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.util.Clock;
 
 public class RoutingTableRegistryImpl implements RoutingTableRegistry
 {
-    private final ConcurrentMap<String,RoutingTableHandler> routingTables;
+    private final ConcurrentMap<String,RoutingTableHandler> routingTableHandlers;
     private final RoutingTableHandlerFactory factory;
     private final Logger logger;
 
@@ -41,10 +41,10 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
         this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logger ), logger );
     }
 
-    RoutingTableRegistryImpl( ConcurrentMap<String,RoutingTableHandler> routingTables, RoutingTableHandlerFactory factory, Logger logger )
+    RoutingTableRegistryImpl( ConcurrentMap<String,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Logger logger )
     {
         this.factory = factory;
-        this.routingTables = routingTables;
+        this.routingTableHandlers = routingTableHandlers;
         this.logger = logger;
     }
 
@@ -61,7 +61,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
         // obviously we just had a snapshot of all servers in all routing tables
         // after we read it, the set could already be changed.
         Set<BoltServerAddress> servers = new HashSet<>();
-        for ( RoutingTableHandler tableHandler : routingTables.values() )
+        for ( RoutingTableHandler tableHandler : routingTableHandlers.values() )
         {
             servers.addAll( tableHandler.servers() );
         }
@@ -71,32 +71,32 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     @Override
     public void remove( String databaseName )
     {
-        routingTables.remove( databaseName );
+        routingTableHandlers.remove( databaseName );
         logger.debug( "Routing table handler for database '%s' is removed.", databaseName );
     }
 
     @Override
     public void purgeAged()
     {
-        routingTables.forEach( ( databaseName, handler ) -> {
+        routingTableHandlers.forEach( ( databaseName, handler ) -> {
             if ( handler.isRoutingTableAged() )
             {
                 logger.info( "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
                         databaseName, handler.routingTable() );
-                routingTables.remove( databaseName );
+                routingTableHandlers.remove( databaseName );
             }
         } );
     }
 
     // For tests
-    public boolean contains( String database )
+    public boolean contains( String databaseName )
     {
-        return routingTables.containsKey( database );
+        return routingTableHandlers.containsKey( databaseName );
     }
 
     private RoutingTableHandler getOrCreate( String databaseName )
     {
-        return routingTables.computeIfAbsent( databaseName, name -> {
+        return routingTableHandlers.computeIfAbsent( databaseName, name -> {
             RoutingTableHandler handler = factory.newInstance( name, this );
             logger.debug( "Routing table handler for database '%s' is added.", databaseName );
             return handler;

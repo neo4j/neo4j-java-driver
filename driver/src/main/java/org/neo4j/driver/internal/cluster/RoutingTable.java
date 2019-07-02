@@ -43,7 +43,7 @@ public interface RoutingTable
 
     String database();
 
-    void removeWriter( BoltServerAddress toRemove );
+    void forgetWriter( BoltServerAddress toRemove );
 
     boolean preferInitialRouter();
 }

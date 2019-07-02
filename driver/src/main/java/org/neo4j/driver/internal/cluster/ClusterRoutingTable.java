@@ -40,7 +40,7 @@ public class ClusterRoutingTable implements RoutingTable
     private final AddressSet writers;
     private final AddressSet routers;
 
-    private final String databaseName; // specifies this routing table is the routing table of database named this.
+    private final String databaseName; // specifies the database this routing table is acquired for
     private boolean preferInitialRouter;
 
     public ClusterRoutingTable( String ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
@@ -133,7 +133,7 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public void removeWriter( BoltServerAddress toRemove )
+    public void forgetWriter( BoltServerAddress toRemove )
     {
         writers.remove( toRemove );
     }

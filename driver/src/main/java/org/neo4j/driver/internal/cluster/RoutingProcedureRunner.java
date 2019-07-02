@@ -29,7 +29,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.RoutingException;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -44,9 +44,9 @@ import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 public class RoutingProcedureRunner
 {
     static final String ROUTING_CONTEXT = "context";
-    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable({" + ROUTING_CONTEXT + "})";
+    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
     static final String DATABASE_NAME = "database";
-    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.routing.getRoutingTable({%s}, {%s})", ROUTING_CONTEXT, DATABASE_NAME );
+    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME );
 
     private final RoutingContext context;
 
@@ -108,7 +108,7 @@ public class RoutingProcedureRunner
         {
             if ( databaseName != null )
             {
-                throw new RoutingException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
+                throw new FatalDiscoveryException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
                         "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
             }
             return new Statement( "CALL " + GET_ROUTING_TABLE,

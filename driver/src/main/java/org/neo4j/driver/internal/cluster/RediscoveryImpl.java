@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Logger;
-import org.neo4j.driver.exceptions.RoutingException;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -242,7 +242,7 @@ public class RediscoveryImpl implements Rediscovery
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
             BoltServerAddress routerAddress )
     {
-        if ( error instanceof SecurityException || error instanceof RoutingException )
+        if ( error instanceof SecurityException || error instanceof FatalDiscoveryException )
         {
             // auth error or routing error happened, terminate the discovery procedure immediately
             throw new CompletionException( error );

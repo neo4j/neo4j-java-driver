@@ -31,7 +31,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.exceptions.RoutingException;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.integration.RoutingDriverBoltKitTest.PortBasedServerAddressComparator;
 import org.neo4j.driver.net.ServerAddress;
@@ -106,7 +106,7 @@ class RoutingDriverMultidatabaseBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ) ) )
         {
-            final RoutingException error = assertThrows( RoutingException.class, () -> {
+            final FatalDiscoveryException error = assertThrows( FatalDiscoveryException.class, () -> {
                 session.run( "MATCH (n) RETURN n.name" );
             } );
 
