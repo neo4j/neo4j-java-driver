@@ -27,6 +27,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
@@ -57,6 +58,7 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.integration.NestedQueries;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -70,6 +72,8 @@ import org.neo4j.driver.util.cc.Cluster;
 import org.neo4j.driver.util.cc.ClusterExtension;
 import org.neo4j.driver.util.cc.ClusterMember;
 import org.neo4j.driver.util.cc.ClusterMemberRole;
+import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory;
+import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -844,18 +848,20 @@ public class CausalClusteringIT implements NestedQueries
         return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), configWithoutLogging() );
     }
 
-    private ClusterOverview fetchClusterOverview( ClusterMember member )
+    private static ClusterOverview fetchClusterOverview( ClusterMember member )
     {
         int leaderCount = 0;
         int followerCount = 0;
         int readReplicaCount = 0;
 
         Driver driver = clusterRule.getCluster().getDirectDriver( member );
-        try ( Session session = driver.session() )
+        try
         {
-            for ( Record record : session.run( "CALL dbms.cluster.overview()" ).list() )
+            final ClusterMemberRoleDiscovery discovery = ClusterMemberRoleDiscoveryFactory.newInstance( ServerVersion.version( driver ) );
+            final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
+            for ( BoltServerAddress address : clusterOverview.keySet() )
             {
-                ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
+                ClusterMemberRole role = clusterOverview.get( address );
                 if ( role == ClusterMemberRole.LEADER )
                 {
                     leaderCount++;

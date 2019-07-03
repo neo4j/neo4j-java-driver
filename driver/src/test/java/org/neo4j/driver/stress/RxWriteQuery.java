@@ -44,7 +44,7 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C>
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.using( () -> newSession( AccessMode.READ, context ),
+        Flux.using( () -> newSession( AccessMode.WRITE, context ),
                 session -> session.run( "CREATE ()" ).summary(), RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );

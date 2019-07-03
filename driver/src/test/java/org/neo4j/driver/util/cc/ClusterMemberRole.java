@@ -22,5 +22,6 @@ public enum ClusterMemberRole
 {
     LEADER,
     FOLLOWER,
-    READ_REPLICA
+    READ_REPLICA,
+    UNKNOWN
 }
