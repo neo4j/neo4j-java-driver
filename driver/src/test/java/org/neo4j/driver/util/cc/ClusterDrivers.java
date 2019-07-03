@@ -22,18 +22,21 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
+import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class ClusterDrivers implements AutoCloseable
 {
     private final String user;
     private final String password;
     private final Map<ClusterMember,Driver> membersWithDrivers;
+    private ClusterMemberRoleDiscovery discovery;
 
     public ClusterDrivers( String user, String password )
     {
@@ -44,7 +47,17 @@ public class ClusterDrivers implements AutoCloseable
 
     public Driver getDriver( ClusterMember member )
     {
-        return membersWithDrivers.computeIfAbsent( member, this::createDriver );
+        final Driver driver = membersWithDrivers.computeIfAbsent( member, this::createDriver );
+        if ( discovery == null )
+        {
+            discovery = ClusterMemberRoleDiscoveryFactory.newInstance( version( driver ) );
+        }
+        return driver;
+    }
+
+    public ClusterMemberRoleDiscovery getDiscovery()
+    {
+        return discovery;
     }
 
     @Override

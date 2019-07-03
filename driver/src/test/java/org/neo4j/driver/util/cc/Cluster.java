@@ -23,22 +23,19 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.TestUtil;
+import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.unmodifiableSet;
-import static org.neo4j.driver.internal.SessionConfig.builder;
-import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.TestUtil.sleep;
 
 public class Cluster implements AutoCloseable
@@ -221,21 +218,18 @@ public class Cluster implements AutoCloseable
         Set<ClusterMember> membersWithRole = new HashSet<>();
 
         Driver driver = driverToAnyCore( members, clusterDrivers );
-        try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+        final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
+        final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
+        for ( BoltServerAddress boltAddress : clusterOverview.keySet() )
         {
-            List<Record> records = findClusterOverview( session );
-            for ( Record record : records )
+            if ( role == clusterOverview.get( boltAddress ) )
             {
-                if ( role == extractRole( record ) )
+                ClusterMember member = findByBoltAddress( boltAddress, members );
+                if ( member == null )
                 {
-                    BoltServerAddress boltAddress = extractBoltAddress( record );
-                    ClusterMember member = findByBoltAddress( boltAddress, members );
-                    if ( member == null )
-                    {
-                        throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
-                    }
-                    membersWithRole.add( member );
+                    throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
                 }
+                membersWithRole.add( member );
             }
         }
 
@@ -279,10 +273,15 @@ public class Cluster implements AutoCloseable
             assertDeadlineNotReached( deadline, expectedOnlineAddresses, actualOnlineAddresses, error );
 
             Driver driver = driverToAnyCore( members, clusterDrivers );
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+            final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
+            try
             {
-                List<Record> records = findClusterOverview( session );
-                actualOnlineAddresses = extractBoltAddresses( records );
+                final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
+                // we will wait until the leader is online
+                if ( clusterOverview.containsValue( ClusterMemberRole.LEADER ) )
+                {
+                    actualOnlineAddresses = clusterOverview.keySet();
+                }
             }
             catch ( Throwable t )
             {
@@ -310,29 +309,14 @@ public class Cluster implements AutoCloseable
         for ( ClusterMember member : members )
         {
             Driver driver = clusterDrivers.getDriver( member );
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+            final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
+            if ( discovery.isCoreMember( driver ) )
             {
-                if ( isCoreMember( session ) )
-                {
-                    return driver;
-                }
+                return driver;
             }
         }
 
         throw new IllegalStateException( "No core members found among: " + members );
-    }
-
-    private static List<Record> findClusterOverview( Session session )
-    {
-        StatementResult result = session.run( "CALL dbms.cluster.overview()" );
-        return result.list();
-    }
-
-    private static boolean isCoreMember( Session session )
-    {
-        Record record = single( session.run( "call dbms.cluster.role()" ).list() );
-        ClusterMemberRole role = extractRole( record );
-        return role != ClusterMemberRole.READ_REPLICA;
     }
 
     private static void assertDeadlineNotReached( long deadline, Set<?> expectedAddresses, Set<?> actualAddresses,
@@ -363,17 +347,6 @@ public class Cluster implements AutoCloseable
         for ( ClusterMember member : members )
         {
             addresses.add( member.getBoltAddress() );
-        }
-        return addresses;
-    }
-
-    private static Set<BoltServerAddress> extractBoltAddresses( List<Record> records )
-    {
-        Set<BoltServerAddress> addresses = new HashSet<>();
-        for ( Record record : records )
-        {
-            BoltServerAddress boltAddress = extractBoltAddress( record );
-            addresses.add( boltAddress );
         }
         return addresses;
     }
