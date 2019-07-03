@@ -154,17 +154,38 @@ public class GraphDatabase
 
         for ( URI uri : routingUris )
         {
+            final Driver driver = driver( uri, authToken, config );
             try
             {
-                return driver( uri, authToken, config );
+                driver.verifyConnectivity();
+                return driver;
             }
             catch ( ServiceUnavailableException e )
             {
                 log.warn( "Unable to create routing driver for URI: " + uri, e );
+                closeDriver( driver, uri, log );
+            }
+            catch ( Throwable e )
+            {
+                // for any other errors, we first close the driver and then rethrow the original error out.
+                closeDriver( driver, uri, log );
+                throw e;
             }
         }
 
         throw new ServiceUnavailableException( "Failed to discover an available server" );
+    }
+
+    private static void closeDriver( Driver driver, URI uri, Logger log )
+    {
+        try
+        {
+            driver.close();
+        }
+        catch ( Throwable closeError )
+        {
+            log.warn( "Unable to close driver towards URI: " + uri, closeError );
+        }
     }
 
     private static void assertRoutingUris( Iterable<URI> uris )

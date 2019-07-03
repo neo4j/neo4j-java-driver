@@ -82,7 +82,7 @@ class RoutingDriverMultidatabaseBoltKitTest
         };
 
         StubServer emptyRouter = StubServer.start( "acquire_endpoints_v4_empty.script", 9001 );
-        StubServer realRouter = StubServer.start( "acquire_endpoints_v4_with_db.script", 9002 );
+        StubServer realRouter = StubServer.start( "acquire_endpoints_v4.script", 9002 );
         StubServer reader = StubServer.start( "read_server_v4_read.script", 9005 );
 
         Config config = insecureBuilder().withResolver( resolver ).build();
@@ -153,21 +153,22 @@ class RoutingDriverMultidatabaseBoltKitTest
 
 
     @Test
-    void shouldNotVerifyConnectivityOnDriverCreation() throws Throwable
+    void shouldVerifyConnectivityOnDriverCreation() throws Throwable
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v4_with_db.script", 9001 );
+        StubServer router = StubServer.start( "acquire_endpoints_v4_verify_connectivity.script", 9001 );
         StubServer readServer = StubServer.start( "read_server_v4_read.script", 9005 );
 
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
-        try ( Driver driver = GraphDatabase.driver( uri, builder().withConnectivityVerificationEnabledOnDriverCreation( false ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
-            try ( Session session = driver.session( t -> t.withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ) ) )
+            driver.verifyConnectivity();
+            try ( Session session = driver.session( builder().withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
                 assertEquals( 3, records.size() );
             }
 
-            Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ) );
+            Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
 
             driver.close();
 

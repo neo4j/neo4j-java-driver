@@ -81,11 +81,11 @@ class CredentialsIT
         }
 
         // verify old password does not work
-        assertThrows( AuthenticationException.class,
-                () -> GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", PASSWORD ) ) );
+        final Driver badDriver = GraphDatabase.driver( CredentialsIT.neo4j.uri(), basic( "neo4j", PASSWORD ) );
+        assertThrows( AuthenticationException.class, badDriver::verifyConnectivity );
 
         // verify new password works
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
+        try ( Driver driver = GraphDatabase.driver( CredentialsIT.neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
               Session session = driver.session() )
         {
             session.run( "RETURN 2" ).consume();
@@ -177,6 +177,7 @@ class CredentialsIT
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         AuthToken authToken = AuthTokens.basic( "neo4j", "wrongSecret" );
 
-        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( uri, authToken, config ) );
+        final Driver driver = GraphDatabase.driver( uri, authToken, config );
+        assertThrows( AuthenticationException.class, driver::verifyConnectivity );
     }
 }

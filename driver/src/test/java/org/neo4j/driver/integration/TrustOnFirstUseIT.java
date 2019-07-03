@@ -114,7 +114,8 @@ class TrustOnFirstUseIT
 
     private void shouldFailToRunCypherWithAMeaningfulError( Supplier<Driver> driverSupplier )
     {
-        SecurityException exception = assertThrows( SecurityException.class, driverSupplier::get );
+        final Driver driver = driverSupplier.get();
+        SecurityException exception = assertThrows( SecurityException.class, driver::verifyConnectivity );
         Throwable rootCause = getRootCause( exception );
         assertThat( rootCause.toString(), containsString(
                 "Unable to connect to neo4j at `localhost:" + neo4j.boltPort() + "`, " +

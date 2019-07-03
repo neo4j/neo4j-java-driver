@@ -167,7 +167,8 @@ public class CausalClusteringIT implements NestedQueries
         Cluster cluster = clusterRule.getCluster();
 
         ClusterMember readReplica = cluster.anyReadReplica();
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( readReplica.getRoutingUri() ) );
+        final Driver driver = createDriver( readReplica.getRoutingUri() );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
     }
 

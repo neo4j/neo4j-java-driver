@@ -60,6 +60,7 @@ class GraphDatabaseTest
 
         // When
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+        driver.verifyConnectivity();
 
         // Then
         assertThat( driver, is( directDriver() ) );
@@ -78,6 +79,7 @@ class GraphDatabaseTest
 
         // When
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+        driver.verifyConnectivity();
 
         // Then
         assertThat( driver, is( clusterDriver() ) );
@@ -146,9 +148,10 @@ class GraphDatabaseTest
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
 
+            final Driver driver = GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
             try
             {
-                assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() ) );
+                assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
             }
             finally
             {
@@ -176,9 +179,9 @@ class GraphDatabaseTest
         {
             int connectionTimeoutMillis = 1_000;
             Config config = createConfig( encrypted, connectionTimeoutMillis );
+            final Driver driver = GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config );
 
-            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
-                    () -> GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config ) );
+            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
             assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
         }
     }
