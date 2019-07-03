@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver.integration;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -42,6 +42,9 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.async.connection.ChannelConnector;
+import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;

@@ -71,7 +71,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
     @Override
     public void channelAcquired( Channel channel )
     {
-        log.debug( "Channel [%s] acquired from the pool. Local address: %s, remote address: %s",
+        log.debug( "Channel [0x%s] acquired from the pool. Local address: %s, remote address: %s",
                 channel.id(), channel.localAddress(), channel.remoteAddress() );
 
         incrementInUse( channel );
@@ -87,7 +87,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
 
     public void channelCreated( Channel channel, ListenerEvent creatingEvent )
     {
-        log.debug( "Channel [%s] created. Local address: %s, remote address: %s",
+        log.debug( "Channel [0x%s] created. Local address: %s, remote address: %s",
                 channel.id(), channel.localAddress(), channel.remoteAddress() );
 
         incrementInUse( channel );

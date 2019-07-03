@@ -27,6 +27,7 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 
@@ -61,6 +62,10 @@ public final class ErrorUtil
             if ( code.equalsIgnoreCase( "Neo.ClientError.Security.Unauthorized" ) )
             {
                 return new AuthenticationException( code, message );
+            }
+            else if ( code.equalsIgnoreCase( "Neo.ClientError.Database.DatabaseNotFound" ) )
+            {
+                return new FatalDiscoveryException( code, message );
             }
             else
             {

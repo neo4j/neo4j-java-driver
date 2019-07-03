@@ -23,9 +23,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.AccessMode;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -35,21 +35,26 @@ public class ClusterRoutingTable implements RoutingTable
     private static final int MIN_ROUTERS = 1;
 
     private final Clock clock;
-    private volatile long expirationTimeout;
+    private volatile long expirationTimestamp;
     private final AddressSet readers;
     private final AddressSet writers;
     private final AddressSet routers;
 
-    public ClusterRoutingTable( Clock clock, BoltServerAddress... routingAddresses )
+    private final String databaseName; // specifies the database this routing table is acquired for
+    private boolean preferInitialRouter;
+
+    public ClusterRoutingTable( String ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
-        this( clock );
+        this( ofDatabase, clock );
         routers.update( new LinkedHashSet<>( asList( routingAddresses ) ) );
     }
 
-    private ClusterRoutingTable( Clock clock )
+    private ClusterRoutingTable( String ofDatabase, Clock clock )
     {
+        this.databaseName = ofDatabase;
         this.clock = clock;
-        this.expirationTimeout = clock.millis() - 1;
+        this.expirationTimestamp = clock.millis() - 1;
+        this.preferInitialRouter = true;
 
         this.readers = new AddressSet();
         this.writers = new AddressSet();
@@ -59,19 +64,31 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public boolean isStaleFor( AccessMode mode )
     {
-        return expirationTimeout < clock.millis() ||
+        return expirationTimestamp < clock.millis() ||
                routers.size() < MIN_ROUTERS ||
                mode == AccessMode.READ && readers.size() == 0 ||
                mode == AccessMode.WRITE && writers.size() == 0;
     }
 
     @Override
+    public boolean hasBeenStaleFor( long extraTime )
+    {
+        long totalTime = expirationTimestamp + extraTime;
+        if ( totalTime < 0 )
+        {
+            totalTime = Long.MAX_VALUE;
+        }
+        return  totalTime < clock.millis();
+    }
+
+    @Override
     public synchronized void update( ClusterComposition cluster )
     {
-        expirationTimeout = cluster.expirationTimestamp();
+        expirationTimestamp = cluster.expirationTimestamp();
         readers.update( cluster.readers() );
         writers.update( cluster.writers() );
         routers.update( cluster.routers() );
+        preferInitialRouter = !cluster.hasWriters();
     }
 
     @Override
@@ -110,17 +127,26 @@ public class ClusterRoutingTable implements RoutingTable
         return servers;
     }
 
+    public String database()
+    {
+        return databaseName;
+    }
+
     @Override
-    public void removeWriter( BoltServerAddress toRemove )
+    public void forgetWriter( BoltServerAddress toRemove )
     {
         writers.remove( toRemove );
     }
 
+    @Override
+    public boolean preferInitialRouter()
+    {
+        return preferInitialRouter;
+    }
 
     @Override
     public synchronized String toString()
     {
-        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s",
-                expirationTimeout, clock.millis(), routers, writers, readers );
+        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'", expirationTimestamp, clock.millis(), routers, writers, readers, databaseName );
     }
 }

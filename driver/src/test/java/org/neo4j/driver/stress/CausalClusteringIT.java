@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.integration;
+package org.neo4j.driver.stress;
 
 import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +56,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
+import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -166,7 +167,7 @@ public class CausalClusteringIT implements NestedQueries
 
         ClusterMember readReplica = cluster.anyReadReplica();
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( readReplica.getRoutingUri() ) );
-        assertThat( e.getMessage(), containsString( "Could not perform discovery. No routing servers available." ) );
+        assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
     }
 
     // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.

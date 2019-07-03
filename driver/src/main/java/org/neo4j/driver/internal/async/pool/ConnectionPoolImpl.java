@@ -40,7 +40,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
@@ -57,22 +56,23 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final NettyChannelTracker nettyChannelTracker;
     private final NettyChannelHealthChecker channelHealthChecker;
     private final PoolSettings settings;
-    private final Clock clock;
     private final Logger log;
     private final MetricsListener metricsListener;
     private final boolean ownsEventLoopGroup;
 
     private final ConcurrentMap<BoltServerAddress,ExtendedChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final ConnectionFactory connectionFactory;
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging,
+            Clock clock, boolean ownsEventLoopGroup )
     {
-
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging, clock, ownsEventLoopGroup );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging,
+                clock, ownsEventLoopGroup, new NetworkConnectionFactory( clock, metricsListener ) );
     }
 
-    ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
-            PoolSettings settings, MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
+    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker, PoolSettings settings,
+            MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup, ConnectionFactory connectionFactory )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
@@ -80,9 +80,9 @@ public class ConnectionPoolImpl implements ConnectionPool
         this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
         this.settings = settings;
         this.metricsListener = metricsListener;
-        this.clock = clock;
         this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
         this.ownsEventLoopGroup = ownsEventLoopGroup;
+        this.connectionFactory = connectionFactory;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 processAcquisitionError( pool, address, error );
                 assertNotClosed( address, channel, pool );
-                Connection connection = new DirectConnection( channel, pool, clock, metricsListener );
+                Connection connection = connectionFactory.createConnection( channel, pool );
 
                 metricsListener.afterAcquiredOrCreated( address, acquireEvent );
                 return connection;
@@ -127,7 +127,6 @@ public class ConnectionPoolImpl implements ConnectionPool
                 {
                     // address is not present in updated routing table and has no active connections
                     // it's now safe to terminate corresponding connection pool and forget about it
-
                     ChannelPool pool = pools.remove( address );
                     if ( pool != null )
                     {

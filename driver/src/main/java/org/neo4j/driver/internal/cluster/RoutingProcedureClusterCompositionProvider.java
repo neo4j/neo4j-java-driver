@@ -19,15 +19,15 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.exceptions.ProtocolException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.value.ValueException;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Clock;
 
 import static java.lang.String.format;
 
@@ -50,22 +50,19 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterCompositionResponse> getClusterComposition(
-            CompletionStage<Connection> connectionStage )
+    public CompletionStage<ClusterComposition> getClusterComposition( CompletionStage<Connection> connectionStage, String databaseName )
     {
-        return routingProcedureRunner.run( connectionStage )
+        return routingProcedureRunner.run( connectionStage, databaseName )
                 .thenApply( this::processRoutingResponse );
     }
 
-    private ClusterCompositionResponse processRoutingResponse( RoutingProcedureResponse response )
+    private ClusterComposition processRoutingResponse( RoutingProcedureResponse response )
     {
         if ( !response.isSuccess() )
         {
-            return new ClusterCompositionResponse.Failure( new ServiceUnavailableException( format(
-                    "Failed to run '%s' on server. " +
-                    "Please make sure that there is a Neo4j 3.1+ causal cluster up running.",
-                    invokedProcedureString( response ) ), response.error()
-            ) );
+            throw new CompletionException( format(
+                    "Failed to run '%s' on server. Please make sure that there is a Neo4j server or cluster up running.",
+                    invokedProcedureString( response ) ), response.error() );
         }
 
         List<Record> records = response.records();
@@ -75,9 +72,9 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         // the record size is wrong
         if ( records.size() != 1 )
         {
-            return new ClusterCompositionResponse.Failure( new ProtocolException( format(
+            throw new ProtocolException( format(
                     PROTOCOL_ERROR_MESSAGE + "records received '%s' is too few or too many.",
-                    invokedProcedureString( response ), records.size() ) ) );
+                    invokedProcedureString( response ), records.size() ) );
         }
 
         // failed to parse the record
@@ -88,21 +85,21 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
         }
         catch ( ValueException e )
         {
-            return new ClusterCompositionResponse.Failure( new ProtocolException( format(
+            throw new ProtocolException( format(
                     PROTOCOL_ERROR_MESSAGE + "unparsable record received.",
-                    invokedProcedureString( response ) ), e ) );
+                    invokedProcedureString( response ) ), e );
         }
 
         // the cluster result is not a legal reply
         if ( !cluster.hasRoutersAndReaders() )
         {
-            return new ClusterCompositionResponse.Failure( new ProtocolException( format(
+            throw new ProtocolException( format(
                     PROTOCOL_ERROR_MESSAGE + "no router or reader found in response.",
-                    invokedProcedureString( response ) ) ) );
+                    invokedProcedureString( response ) ) );
         }
 
         // all good
-        return new ClusterCompositionResponse.Success( cluster );
+        return cluster;
     }
 
     private static String invokedProcedureString( RoutingProcedureResponse response )

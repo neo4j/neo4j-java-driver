@@ -24,7 +24,7 @@ package org.neo4j.driver.exceptions;
  * Restart of server/driver/cluster might be required to recover from this error.
  * @since 1.1
  */
-public class SecurityException extends Neo4jException
+public class SecurityException extends ClientException
 {
     public SecurityException( String code, String message )
     {

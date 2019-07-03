@@ -19,30 +19,34 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarksHolder;
-import org.neo4j.driver.internal.async.connection.DecoratedConnection;
+import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.async.StatementResultCursor;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
+import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
 public class RoutingProcedureRunner
 {
-    static final String GET_SERVERS = "dbms.cluster.routing.getServers";
-    static final String GET_ROUTING_TABLE_PARAM = "context";
-    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable($" + GET_ROUTING_TABLE_PARAM + ")";
+    static final String ROUTING_CONTEXT = "context";
+    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
+    static final String DATABASE_NAME = "database";
+    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME );
 
     private final RoutingContext context;
 
@@ -51,13 +55,14 @@ public class RoutingProcedureRunner
         this.context = context;
     }
 
-    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<Connection> connectionStage )
+    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<Connection> connectionStage, String databaseName )
     {
         return connectionStage.thenCompose( connection ->
         {
-            // Routing procedure will be called on the default database
-            DecoratedConnection delegate = new DecoratedConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
-            Statement procedure = procedureStatement( delegate.serverVersion() );
+            ServerVersion serverVersion = connection.serverVersion();
+            // As the connection can connect to any router (a.k.a. any core members), this connection strictly speaking is a read connection.
+            DirectConnection delegate = connection( serverVersion, connection );
+            Statement procedure = procedureStatement( serverVersion, databaseName );
             return runProcedure( delegate, procedure )
                     .thenCompose( records -> releaseConnection( delegate, records ) )
                     .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
@@ -71,16 +76,43 @@ public class RoutingProcedureRunner
                 .asyncResult().thenCompose( StatementResultCursor::listAsync );
     }
 
-    private Statement procedureStatement( ServerVersion serverVersion )
+    private DirectConnection connection( ServerVersion serverVersion, Connection connection )
     {
-        if ( serverVersion.greaterThanOrEqual( v3_2_0 ) )
+        if ( serverVersion.greaterThanOrEqual( v4_0_0 ))
         {
-            return new Statement( "CALL " + GET_ROUTING_TABLE,
-                    parameters( GET_ROUTING_TABLE_PARAM, context.asMap() ) );
+            return new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
         }
         else
         {
-            return new Statement( "CALL " + GET_SERVERS );
+            return new DirectConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
+        }
+    }
+
+    private Statement procedureStatement( ServerVersion serverVersion, String databaseName )
+    {
+        /*
+         * For v4.0+ databases, call procedure to get routing table for the database specified.
+         * For database version lower than 4.0, the database name will be ignored.
+         */
+        if ( Objects.equals( ABSENT_DB_NAME, databaseName ) )
+        {
+            databaseName = null;
+        }
+
+        if ( serverVersion.greaterThanOrEqual( v4_0_0 ) )
+        {
+            return new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
+                    parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, databaseName ) );
+        }
+        else
+        {
+            if ( databaseName != null )
+            {
+                throw new FatalDiscoveryException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
+                        "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
+            }
+            return new Statement( "CALL " + GET_ROUTING_TABLE,
+                    parameters( ROUTING_CONTEXT, context.asMap() ) );
         }
     }
 

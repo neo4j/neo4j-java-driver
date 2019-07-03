@@ -16,13 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.exceptions;
 
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
-public interface Rediscovery
+/**
+ * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
+ * This exception should not be retried.
+ * @since 2.0
+ */
+public class FatalDiscoveryException extends ClientException
 {
-    CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool );
+    public FatalDiscoveryException( String message )
+    {
+        super( message );
+    }
+
+    public FatalDiscoveryException( String code, String message )
+    {
+        super( code, message );
+    }
 }

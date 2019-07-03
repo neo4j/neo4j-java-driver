@@ -27,6 +27,8 @@ public interface RoutingTable
 {
     boolean isStaleFor( AccessMode mode );
 
+    boolean hasBeenStaleFor( long staleRoutingTableTimeout );
+
     void update( ClusterComposition cluster );
 
     void forget( BoltServerAddress address );
@@ -39,5 +41,9 @@ public interface RoutingTable
 
     Set<BoltServerAddress> servers();
 
-    void removeWriter( BoltServerAddress toRemove );
+    String database();
+
+    void forgetWriter( BoltServerAddress toRemove );
+
+    boolean preferInitialRouter();
 }

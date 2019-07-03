@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async.connection;
+package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
 import io.netty.channel.DefaultEventLoop;
@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
@@ -66,7 +67,7 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
 
-class DirectConnectionTest
+class NetworkConnectionTest
 {
     private static final NoOpResponseHandler NO_OP_HANDLER = NoOpResponseHandler.INSTANCE;
 
@@ -82,14 +83,14 @@ class DirectConnectionTest
     @Test
     void shouldBeOpenAfterCreated()
     {
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
         assertTrue( connection.isOpen() );
     }
 
     @Test
     void shouldNotBeOpenAfterRelease()
     {
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
         connection.release();
         assertFalse( connection.isOpen() );
     }
@@ -98,7 +99,7 @@ class DirectConnectionTest
     void shouldSendResetOnRelease()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -130,7 +131,7 @@ class DirectConnectionTest
     @Test
     void shouldWriteForceReleaseInEventLoopThread() throws Exception
     {
-        testWriteInEventLoop( "ReleaseTestEventLoop", DirectConnection::release );
+        testWriteInEventLoop( "ReleaseTestEventLoop", NetworkConnection::release );
     }
 
     @Test
@@ -140,7 +141,7 @@ class DirectConnectionTest
         initializeEventLoop( channel, "Flush" );
         ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
         connection.flush();
 
         shutdownEventLoop();
@@ -153,7 +154,7 @@ class DirectConnectionTest
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -167,7 +168,7 @@ class DirectConnectionTest
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.release();
         connection.disableAutoRead(); // does nothing on released connection
@@ -178,7 +179,7 @@ class DirectConnectionTest
     void shouldWriteSingleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.write( PULL_ALL, NO_OP_HANDLER );
 
@@ -192,7 +193,7 @@ class DirectConnectionTest
     void shouldWriteMultipleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.write( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
 
@@ -207,7 +208,7 @@ class DirectConnectionTest
     void shouldWriteAndFlushSingleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER );
         channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its execution
@@ -220,7 +221,7 @@ class DirectConnectionTest
     void shouldWriteAndFlushMultipleMessage()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.writeAndFlush( PULL_ALL, NO_OP_HANDLER, RESET, NO_OP_HANDLER );
         channel.runPendingTasks(); // writeAndFlush is scheduled to execute in the event loop thread, trigger its execution
@@ -234,7 +235,7 @@ class DirectConnectionTest
     void shouldNotWriteSingleMessageWhenReleased()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.write( new RunMessage( "RETURN 1" ), handler );
@@ -249,7 +250,7 @@ class DirectConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -263,7 +264,7 @@ class DirectConnectionTest
     void shouldNotWriteAndFlushSingleMessageWhenReleased()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
@@ -278,7 +279,7 @@ class DirectConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -292,7 +293,7 @@ class DirectConnectionTest
     void shouldNotWriteSingleMessageWhenTerminated()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.write( new RunMessage( "RETURN 1" ), handler );
@@ -307,7 +308,7 @@ class DirectConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -321,7 +322,7 @@ class DirectConnectionTest
     void shouldNotWriteAndFlushSingleMessageWhenTerminated()
     {
         ResponseHandler handler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
@@ -336,7 +337,7 @@ class DirectConnectionTest
     {
         ResponseHandler runHandler = mock( ResponseHandler.class );
         ResponseHandler pullAllHandler = mock( ResponseHandler.class );
-        DirectConnection connection = newConnection( newChannel() );
+        NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
         connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
@@ -353,7 +354,7 @@ class DirectConnectionTest
         BoltServerAddress address = new BoltServerAddress( "host", 4242 );
         ChannelAttributes.setServerAddress( channel, address );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
         connection.release();
 
         assertEquals( address, connection.serverAddress() );
@@ -366,7 +367,7 @@ class DirectConnectionTest
         ServerVersion version = ServerVersion.v3_2_0;
         ChannelAttributes.setServerVersion( channel, version );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
         connection.release();
 
         assertEquals( version, connection.serverVersion() );
@@ -376,7 +377,7 @@ class DirectConnectionTest
     void shouldReturnSameCompletionStageFromRelease()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         CompletionStage<Void> releaseStage1 = connection.release();
         CompletionStage<Void> releaseStage2 = connection.release();
@@ -398,7 +399,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.enableAutoRead();
 
@@ -410,7 +411,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( true );
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.disableAutoRead();
 
@@ -421,7 +422,7 @@ class DirectConnectionTest
     void shouldSetTerminationReasonOnChannelWhenTerminated()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         String reason = "Something really bad has happened";
         connection.terminateAndRelease( reason );
@@ -433,7 +434,7 @@ class DirectConnectionTest
     void shouldCloseChannelWhenTerminated()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
         assertTrue( channel.isActive() );
 
         connection.terminateAndRelease( "test" );
@@ -446,7 +447,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        DirectConnection connection = newConnection( channel, pool );
+        NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "test" );
@@ -459,7 +460,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        DirectConnection connection = newConnection( channel, pool );
+        NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "reason 1" );
@@ -477,7 +478,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         ChannelPool pool = mock( ChannelPool.class );
-        DirectConnection connection = newConnection( channel, pool );
+        NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
         connection.terminateAndRelease( "test" );
@@ -493,7 +494,7 @@ class DirectConnectionTest
     void shouldSendResetMessageWhenReset()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.reset();
         channel.runPendingTasks();
@@ -506,7 +507,7 @@ class DirectConnectionTest
     void shouldCompleteResetFutureWhenSuccessResponseArrives()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
         channel.runPendingTasks();
@@ -521,7 +522,7 @@ class DirectConnectionTest
     void shouldCompleteResetFutureWhenFailureResponseArrives()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         CompletableFuture<Void> resetFuture = connection.reset().toCompletableFuture();
         channel.runPendingTasks();
@@ -536,7 +537,7 @@ class DirectConnectionTest
     void shouldDoNothingInResetWhenClosed()
     {
         EmbeddedChannel channel = newChannel();
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.release();
         channel.runPendingTasks();
@@ -555,7 +556,7 @@ class DirectConnectionTest
     {
         EmbeddedChannel channel = newChannel();
         channel.config().setAutoRead( false );
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
 
         connection.reset();
         channel.runPendingTasks();
@@ -563,7 +564,7 @@ class DirectConnectionTest
         assertTrue( channel.config().isAutoRead() );
     }
 
-    private void testWriteInEventLoop( String threadName, Consumer<DirectConnection> action ) throws Exception
+    private void testWriteInEventLoop( String threadName, Consumer<NetworkConnection> action ) throws Exception
     {
         EmbeddedChannel channel = spy( new EmbeddedChannel() );
         initializeEventLoop( channel, threadName );
@@ -571,7 +572,7 @@ class DirectConnectionTest
         ChannelAttributes.setProtocolVersion( channel, DEFAULT_TEST_PROTOCOL_VERSION );
         ChannelAttributes.setMessageDispatcher( channel, dispatcher );
 
-        DirectConnection connection = newConnection( channel );
+        NetworkConnection connection = newConnection( channel );
         action.accept( connection );
 
         shutdownEventLoop();
@@ -607,14 +608,14 @@ class DirectConnectionTest
         return channel;
     }
 
-    private static DirectConnection newConnection( Channel channel )
+    private static NetworkConnection newConnection( Channel channel )
     {
         return newConnection( channel, mock( ChannelPool.class ) );
     }
 
-    private static DirectConnection newConnection( Channel channel, ChannelPool pool )
+    private static NetworkConnection newConnection( Channel channel, ChannelPool pool )
     {
-        return new DirectConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
+        return new NetworkConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
     }
 
     private static void assertConnectionReleasedError( IllegalStateException e )
