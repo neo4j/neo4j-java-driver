@@ -43,8 +43,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
-import static org.neo4j.driver.util.StubServer.builder;
+import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
 class RoutingDriverMultidatabaseBoltKitTest
 {
@@ -57,7 +58,7 @@ class RoutingDriverMultidatabaseBoltKitTest
         StubServer reader = StubServer.start( "read_server_v4_read.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ) ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ).build() ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -82,9 +83,9 @@ class RoutingDriverMultidatabaseBoltKitTest
         StubServer realRouter = StubServer.start( "acquire_endpoints_v4_with_db.script", 9002 );
         StubServer reader = StubServer.start( "read_server_v4_read.script", 9005 );
 
-        Config config = builder().withResolver( resolver ).build();
+        Config config = insecureBuilder().withResolver( resolver ).build();
         try ( Driver driver = GraphDatabase.driver( "neo4j://my.virtual.host:8080", config );
-                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ) ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ).build() ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -104,7 +105,7 @@ class RoutingDriverMultidatabaseBoltKitTest
 
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ) ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ).build() ) )
         {
             final FatalDiscoveryException error = assertThrows( FatalDiscoveryException.class, () -> {
                 session.run( "MATCH (n) RETURN n.name" );
@@ -127,7 +128,7 @@ class RoutingDriverMultidatabaseBoltKitTest
 
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
-            try( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "Unreachable" ) ) )
+            try( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "Unreachable" ).build() ) )
             {
                 final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, () -> {
                     session.run( "MATCH (n) RETURN n.name" );
@@ -136,7 +137,7 @@ class RoutingDriverMultidatabaseBoltKitTest
                 assertThat( error.getMessage(), containsString( "Could not perform discovery for database 'Unreachable'" ) );
             }
 
-            try ( Session session = driver.session( t -> t.withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ) ) )
+            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ).build() ) )
             {
                 List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 

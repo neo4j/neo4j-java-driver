@@ -20,14 +20,12 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionParametersTemplate;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -61,43 +59,37 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return new InternalSession( newSession( SessionParameters.empty() )  );
+        return new InternalSession( newSession( SessionConfig.empty() )  );
     }
 
     @Override
-    public Session session( Consumer<SessionParametersTemplate> templateConsumer )
+    public Session session( SessionConfig sessionConfig )
     {
-        SessionParameters.Template template = SessionParameters.template();
-        templateConsumer.accept( template );
-        return new InternalSession( newSession( template.build() ) );
+        return new InternalSession( newSession( sessionConfig ) );
     }
 
     @Override
     public RxSession rxSession()
     {
-        return new InternalRxSession( newSession( SessionParameters.empty() ) );
+        return new InternalRxSession( newSession( SessionConfig.empty() ) );
     }
 
     @Override
-    public RxSession rxSession( Consumer<SessionParametersTemplate> templateConsumer )
+    public RxSession rxSession( SessionConfig sessionConfig )
     {
-        SessionParameters.Template template = SessionParameters.template();
-        templateConsumer.accept( template );
-        return new InternalRxSession( newSession( template.build() ) );
+        return new InternalRxSession( newSession( sessionConfig ) );
     }
 
     @Override
     public AsyncSession asyncSession()
     {
-        return new InternalAsyncSession( newSession( SessionParameters.empty() ) );
+        return new InternalAsyncSession( newSession( SessionConfig.empty() ) );
     }
 
     @Override
-    public AsyncSession asyncSession( Consumer<SessionParametersTemplate> templateConsumer )
+    public AsyncSession asyncSession( SessionConfig sessionConfig )
     {
-        SessionParameters.Template template = SessionParameters.template();
-        templateConsumer.accept( template );
-        return new InternalAsyncSession( newSession( template.build() ) );
+        return new InternalAsyncSession( newSession( sessionConfig ) );
     }
 
     @Override
@@ -158,7 +150,7 @@ public class InternalDriver implements Driver
         return new IllegalStateException( "This driver instance has already been closed" );
     }
 
-    public NetworkSession newSession( SessionParameters parameters )
+    public NetworkSession newSession( SessionConfig parameters )
     {
         assertOpen();
         NetworkSession session = sessionFactory.newInstance( parameters );

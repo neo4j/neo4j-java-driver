@@ -22,6 +22,8 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 
+import static org.neo4j.driver.internal.SessionConfig.builder;
+
 public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C>
 {
     protected final Driver driver;
@@ -37,8 +39,8 @@ public abstract class AbstractAsyncQuery<C extends AbstractContext> implements A
     {
         if ( useBookmark )
         {
-            return driver.asyncSession( t -> t.withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ) );
+            return driver.asyncSession( builder().withDefaultAccessMode( mode ).withBookmarks( context.getBookmark() ).build() );
         }
-        return driver.asyncSession( t -> t.withDefaultAccessMode( mode ) );
+        return driver.asyncSession( builder().withDefaultAccessMode( mode ).build() );
     }
 }

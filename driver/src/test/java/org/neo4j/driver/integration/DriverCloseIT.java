@@ -29,6 +29,7 @@ import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 
 @ParallelizableIT
 class DriverCloseIT
@@ -63,7 +64,7 @@ class DriverCloseIT
 
         driver.close();
 
-        assertThrows( IllegalStateException.class, () -> driver.session( t -> t.withDefaultAccessMode( AccessMode.WRITE ) ) );
+        assertThrows( IllegalStateException.class, () -> driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) );
     }
 
     @Test

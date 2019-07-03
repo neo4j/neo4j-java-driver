@@ -24,7 +24,7 @@ import org.neo4j.driver.internal.async.NetworkSession;
 
 public interface SessionFactory
 {
-    NetworkSession newInstance( SessionParameters parameters );
+    NetworkSession newInstance( SessionConfig parameters );
 
     CompletionStage<Void> verifyConnectivity();
 

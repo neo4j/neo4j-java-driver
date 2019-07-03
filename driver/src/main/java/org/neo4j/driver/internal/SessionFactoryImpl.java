@@ -46,7 +46,7 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public NetworkSession newInstance( SessionParameters parameters )
+    public NetworkSession newInstance( SessionConfig parameters )
     {
         BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( Bookmarks.from( parameters.bookmarks() ) );
         return createSession( connectionProvider, retryLogic, parameters.database().orElse( ABSENT_DB_NAME ), parameters.defaultAccessMode(), bookmarksHolder, logging );

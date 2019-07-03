@@ -91,6 +91,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.internal.Bookmarks.empty;
+import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -220,7 +221,7 @@ public final class TestUtil
 
     public static long countNodes( Driver driver, String bookmark )
     {
-        try ( Session session = driver.session( t -> t.withBookmarks( bookmark ) ) )
+        try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             return session.readTransaction( tx -> tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asLong() );
         }
