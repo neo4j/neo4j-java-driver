@@ -22,13 +22,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.metrics.InternalMetrics;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Metrics;
-import org.neo4j.driver.exceptions.ClientException;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class InternalDriverTest
@@ -77,6 +79,18 @@ class InternalDriverTest
         InternalDriver driver = newDriver( sessionFactory );
 
         assertEquals( connectivityStage, driver.verifyConnectivityAsync() );
+    }
+
+    @Test
+    void shouldThrowWhenUnableToVerifyConnectivity()
+    {
+        SessionFactory sessionFactory = mock( SessionFactory.class );
+        ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
+        when( sessionFactory.verifyConnectivity() ).thenReturn( failedFuture( error ) );
+        InternalDriver driver = newDriver( sessionFactory );
+
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( driver.verifyConnectivityAsync() ) );
+        assertEquals( e.getMessage(), "Hello" );
     }
 
     @Test

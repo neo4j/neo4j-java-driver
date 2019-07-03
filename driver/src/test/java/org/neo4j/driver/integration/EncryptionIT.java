@@ -119,7 +119,7 @@ class EncryptionIT
         Config config = newConfig( driverEncrypted );
 
         RuntimeException e = assertThrows( RuntimeException.class,
-                () -> GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).close() );
+                () -> GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).verifyConnectivity() );
 
         // pre 3.1 neo4j throws different exception when encryption required but not used
         if ( neo4jVersion.lessThan( v3_1_0 ) && tlsLevel == BoltTlsLevel.REQUIRED )

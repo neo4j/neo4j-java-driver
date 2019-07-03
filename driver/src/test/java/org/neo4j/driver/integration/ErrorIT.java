@@ -33,13 +33,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.messaging.response.FailureMessage;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactoryWithFailingMessageFormat;
-import org.neo4j.driver.internal.util.FailingMessageFormat;
-import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -49,6 +42,13 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.FailingMessageFormat;
+import org.neo4j.driver.internal.util.FakeClock;
+import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
+import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactoryWithFailingMessageFormat;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
@@ -143,7 +143,8 @@ class ErrorIT
     @Test
     void shouldExplainConnectionError()
     {
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( "bolt://localhost:7777" ) );
+        final Driver driver = GraphDatabase.driver( "bolt://localhost:7777" );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
 
         assertEquals( "Unable to connect to localhost:7777, ensure the database is running " +
                       "and that there is a working network connection to it.", e.getMessage() );
@@ -179,7 +180,8 @@ class ErrorIT
 
         Config config = Config.builder().withoutEncryption().build();
 
-        ClientException e = assertThrows( ClientException.class, () -> GraphDatabase.driver( "bolt://localhost:" + session.httpPort(), config ) );
+        final Driver driver = GraphDatabase.driver( "bolt://localhost:" + session.httpPort(), config );
+        ClientException e = assertThrows( ClientException.class, driver::verifyConnectivity );
         assertEquals( "Server responded HTTP. Make sure you are not trying to connect to the http endpoint " +
                       "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)", e.getMessage() );
     }
@@ -264,24 +266,28 @@ class ErrorIT
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         Throwable queryError = null;
 
-        try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config );
-              Session session = driver.session() )
+        try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config ) )
         {
-            messageFormatSetup.accept( driverFactory.getFailingMessageFormat() );
-
-            try
+            driver.verifyConnectivity();
+            try(Session session = driver.session() )
             {
-                session.run( "RETURN 1" ).consume();
-                fail( "Exception expected" );
-            }
-            catch ( Throwable error )
-            {
-                queryError = error;
-            }
+                messageFormatSetup.accept( driverFactory.getFailingMessageFormat() );
 
-            assertSingleChannelIsClosed( driverFactory );
-            assertNewQueryCanBeExecuted( session, driverFactory );
+                try
+                {
+                    session.run( "RETURN 1" ).consume();
+                    fail( "Exception expected" );
+                }
+                catch ( Throwable error )
+                {
+                    queryError = error;
+                }
+
+                assertSingleChannelIsClosed( driverFactory );
+                assertNewQueryCanBeExecuted( session, driverFactory );
+            }
         }
+
 
         return queryError;
     }

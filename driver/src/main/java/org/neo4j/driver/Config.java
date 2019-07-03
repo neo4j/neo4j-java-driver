@@ -94,7 +94,6 @@ public class Config
     private final ServerAddressResolver resolver;
 
     private final boolean isMetricsEnabled;
-    private final boolean isConnectivityVerificationEnabledOnDriverCreation;
 
     private Config( ConfigBuilder builder )
     {
@@ -116,7 +115,6 @@ public class Config
         this.resolver = builder.resolver;
 
         this.isMetricsEnabled = builder.isMetricsEnabled;
-        this.isConnectivityVerificationEnabledOnDriverCreation = builder.isConnectivityVerificationEnabledOnDriverCreation;
     }
 
     /**
@@ -296,14 +294,6 @@ public class Config
     }
 
     /**
-     * @return if the connectivity verification is enabled on driver creation.
-     */
-    public boolean isConnectivityVerificationEnabledOnDriverCreation()
-    {
-        return isConnectivityVerificationEnabledOnDriverCreation;
-    }
-
-    /**
      * Used to build new config instances
      */
     public static class ConfigBuilder
@@ -323,7 +313,6 @@ public class Config
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
         private boolean isMetricsEnabled = false;
-        private boolean isConnectivityVerificationEnabledOnDriverCreation = true;
 
         private ConfigBuilder() {}
 
@@ -800,23 +789,6 @@ public class Config
         public ConfigBuilder withoutDriverMetrics()
         {
             this.isMetricsEnabled = false;
-            return this;
-        }
-
-        /**
-         *
-         * Enables or disables connectivity verification on the driver creation.
-         * When it is enabled, on driver creation, such as {@link GraphDatabase#driver(String)}
-         * the driver will try to connect to a remote server or a cluster to verify the driver can connect to the configured server or cluster.
-         * This verification requires a network connection being established and therefore takes extra time to create the driver.
-         *
-         * When it is disabled, the driver will immediately without any network connection creation.
-         * @param isEnabled enable or disable connection verification on driver creation.
-         * @return this builder.
-         */
-        public ConfigBuilder withConnectivityVerificationEnabledOnDriverCreation( boolean isEnabled )
-        {
-            this.isConnectivityVerificationEnabledOnDriverCreation = isEnabled;
             return this;
         }
 

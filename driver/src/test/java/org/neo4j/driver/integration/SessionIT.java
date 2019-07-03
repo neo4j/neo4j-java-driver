@@ -154,7 +154,7 @@ class SessionIT
 
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( neo4j.uri(), token ) );
+        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( neo4j.uri(), token ).verifyConnectivity() );
     }
 
     @Test
@@ -1293,7 +1293,7 @@ class SessionIT
             result.consume();
         } );
 
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1310,7 +1310,7 @@ class SessionIT
             StatementResult result = transaction.run( "RETURN 1" );
             result.consume();
         });
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1325,7 +1325,7 @@ class SessionIT
         ClientException error = assertThrows( ClientException.class, () -> {
             session.readTransaction( tx -> tx.run( "RETURN 1" ).consume() );
         });
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
