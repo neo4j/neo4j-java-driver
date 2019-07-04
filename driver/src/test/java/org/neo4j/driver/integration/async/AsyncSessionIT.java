@@ -80,7 +80,6 @@ import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_STREAMING;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAll;
 
@@ -156,10 +155,9 @@ class AsyncSessionIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_STREAMING )
     void shouldFailWhenQueryFailsAtRuntime()
     {
-        StatementResultCursor cursor = await( session.runAsync( "UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );
+        StatementResultCursor cursor = await( session.runAsync( "CYPHER runtime=interpreted UNWIND [1, 2, 0] AS x RETURN 10 / x" ) );
 
         Record record1 = await( cursor.nextAsync() );
         assertNotNull( record1 );

@@ -27,14 +27,12 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
@@ -282,13 +280,12 @@ class ResultStreamIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( Neo4jFeature.NO_STREAMING )
     void shouldConvertEventuallyFailingStatementResultToStream()
     {
         List<Integer> seen = new ArrayList<>();
 
         ClientException e = assertThrows( ClientException.class,
-                () -> session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" )
+                () -> session.run( "CYPHER runtime=interpreted UNWIND range(5, 0, -1) AS x RETURN x / x" )
                         .stream()
                         .forEach( record -> seen.add( record.get( 0 ).asInt() ) ) );
 
