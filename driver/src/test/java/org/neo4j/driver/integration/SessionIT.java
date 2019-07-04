@@ -94,6 +94,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
+import static org.neo4j.driver.internal.util.Neo4jFeature.NO_STREAMING;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
@@ -864,6 +865,7 @@ class SessionIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( NO_STREAMING )
     void shouldAllowConsumingRecordsAfterFailureInSessionClose()
     {
         Session session = neo4j.driver().session();
@@ -1293,7 +1295,7 @@ class SessionIT
             result.consume();
         } );
 
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1310,7 +1312,7 @@ class SessionIT
             StatementResult result = transaction.run( "RETURN 1" );
             result.consume();
         });
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
@@ -1325,7 +1327,7 @@ class SessionIT
         ClientException error = assertThrows( ClientException.class, () -> {
             session.readTransaction( tx -> tx.run( "RETURN 1" ).consume() );
         });
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'foo'" ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
     }
 
