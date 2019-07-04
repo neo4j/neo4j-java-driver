@@ -28,8 +28,7 @@ public enum Neo4jFeature
     SPATIAL_TYPES( v3_4_0 ),
     TEMPORAL_TYPES( v3_4_0 ),
     BOLT_V3( v3_5_0 ),
-    BOLT_V4( v4_0_0 ),
-    NO_STREAMING( v4_0_0 ); // the cypher cannot streaming records before error
+    BOLT_V4( v4_0_0 );
 
     private final ServerVersion availableFromVersion;
 

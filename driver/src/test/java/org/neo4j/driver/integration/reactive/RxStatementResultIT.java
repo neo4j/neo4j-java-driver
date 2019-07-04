@@ -26,10 +26,9 @@ import reactor.test.StepVerifier;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -45,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
-import static org.neo4j.driver.internal.util.Neo4jFeature.NO_STREAMING;
 
 @EnabledOnNeo4jWith( BOLT_V4 )
 @ParallelizableIT
@@ -283,12 +281,11 @@ class RxStatementResultIT
     }
 
     @Test
-    @DisabledOnNeo4jWith( NO_STREAMING )
     void shouldStreamCorrectRecordsBackBeforeError()
     {
         RxSession session = neo4j.driver().rxSession();
 
-        RxStatementResult result = session.run( "UNWIND range(5, 0, -1) AS x RETURN x / x" );
+        RxStatementResult result = session.run( "CYPHER runtime=interpreted UNWIND range(5, 0, -1) AS x RETURN x / x" );
         StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( 0 ).asInt() ) )
                 .expectNext( 1 )
                 .expectNext( 1 )
