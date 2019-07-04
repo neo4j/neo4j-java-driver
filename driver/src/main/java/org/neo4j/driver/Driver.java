@@ -170,6 +170,7 @@ public interface Driver extends AutoCloseable
      * by establishing a network connection with the remote and possibly exchanging a few data before closing the connection.
      *
      * It throws exception if fails to connect. Use the exception to further understand the cause of the connectivity problem.
+     * Note: Even if this method throws an exception, the driver still need to be closed via {@link #close()} to free up all resources.
      */
     void verifyConnectivity();
 
@@ -181,6 +182,7 @@ public interface Driver extends AutoCloseable
      * {@code null} when the driver connects to the remote server or cluster successfully.
      * It is completed exceptionally if the driver failed to connect the remote server or cluster.
      * This exception can be used to further understand the cause of the connectivity problem.
+     * Note: Even if this method complete exceptionally, the driver still need to be closed via {@link #closeAsync()} to free up all resources.
      *
      * @return a {@link CompletionStage completion stage} that represents the asynchronous verification.
      */

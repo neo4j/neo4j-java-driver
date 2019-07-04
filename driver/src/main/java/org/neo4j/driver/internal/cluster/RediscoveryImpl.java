@@ -53,7 +53,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
  */
 public class RediscoveryImpl implements Rediscovery
 {
-    private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing servers available.";
+    private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
