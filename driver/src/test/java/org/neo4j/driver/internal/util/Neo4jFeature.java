@@ -19,8 +19,6 @@
 package org.neo4j.driver.internal.util;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_1_0;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_2_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_4_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
 import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
@@ -30,7 +28,8 @@ public enum Neo4jFeature
     SPATIAL_TYPES( v3_4_0 ),
     TEMPORAL_TYPES( v3_4_0 ),
     BOLT_V3( v3_5_0 ),
-    BOLT_V4( v4_0_0 );
+    BOLT_V4( v4_0_0 ),
+    NO_STREAMING( v4_0_0 ); // the cypher cannot streaming records before error
 
     private final ServerVersion availableFromVersion;
 
