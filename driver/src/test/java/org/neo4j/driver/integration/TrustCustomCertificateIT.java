@@ -75,7 +75,8 @@ class TrustCustomCertificateIT
         CertificateKeyPair<File,File> certificateAndKey = createNewCertificateAndKey();
 
         // When & Then
-        SecurityException error = assertThrows( SecurityException.class, () -> createDriverWithCustomCertificate( certificateAndKey.cert() ) );
+        final Driver driver = createDriverWithCustomCertificate( certificateAndKey.cert() );
+        SecurityException error = assertThrows( SecurityException.class, driver::verifyConnectivity );
     }
 
     private void shouldBeAbleToRunCypher( Supplier<Driver> driverSupplier )

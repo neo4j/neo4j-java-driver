@@ -21,6 +21,7 @@ package org.neo4j.driver.stress;
 import java.net.URI;
 
 import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.SecurityException;
@@ -46,8 +47,9 @@ public class FailedAuth<C extends AbstractContext> implements BlockingCommand<C>
     {
         Config config = Config.builder().withLogging( logging ).build();
 
-        SecurityException e = assertThrows( SecurityException.class,
-                () -> GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config ) );
+        final Driver driver = GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config );
+        SecurityException e = assertThrows( SecurityException.class, driver::verifyConnectivity );
         assertThat( e.getMessage(), containsString( "authentication failure" ) );
+        driver.close();
     }
 }

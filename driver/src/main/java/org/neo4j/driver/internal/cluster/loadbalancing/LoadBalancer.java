@@ -87,7 +87,19 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.refreshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).thenApply( ignored -> null );
+        return routingTables.refreshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).handle( ( ignored, error ) -> {
+            if ( error != null )
+            {
+                Throwable cause = Futures.completionExceptionCause( error );
+                if ( cause instanceof ServiceUnavailableException )
+                {
+                    throw Futures.asCompletionException( new ServiceUnavailableException(
+                            "Unable to connect to database, ensure the database is running and that there is a working network connection to it.", cause ) );
+                }
+                throw Futures.asCompletionException( cause );
+            }
+            return null;
+        } );
     }
 
     @Override

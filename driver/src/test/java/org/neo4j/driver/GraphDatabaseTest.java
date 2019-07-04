@@ -32,6 +32,7 @@ import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -60,6 +61,7 @@ class GraphDatabaseTest
 
         // When
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+        driver.verifyConnectivity();
 
         // Then
         assertThat( driver, is( directDriver() ) );
@@ -78,6 +80,7 @@ class GraphDatabaseTest
 
         // When
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+        driver.verifyConnectivity();
 
         // Then
         assertThat( driver, is( clusterDriver() ) );
@@ -146,9 +149,10 @@ class GraphDatabaseTest
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
 
+            final Driver driver = GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() );
             try
             {
-                assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( "bolt://localhost:" + serverSocket.getLocalPort() ) );
+                assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
             }
             finally
             {
@@ -156,6 +160,33 @@ class GraphDatabaseTest
                 Thread.interrupted();
             }
         }
+    }
+
+    @Test
+    void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        int localPort = -1;
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            localPort = serverSocket.getLocalPort();
+        }
+        final Driver driver = GraphDatabase.driver( "bolt://localhost:" + localPort, INSECURE_CONFIG );
+        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
+    }
+
+    @Test
+    void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        int localPort = -1;
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            localPort = serverSocket.getLocalPort();
+        }
+        final Driver driver = GraphDatabase.driver( "neo4j://localhost:" + localPort, INSECURE_CONFIG );
+        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
+        error.printStackTrace();
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
     }
 
     @Test
@@ -176,9 +207,9 @@ class GraphDatabaseTest
         {
             int connectionTimeoutMillis = 1_000;
             Config config = createConfig( encrypted, connectionTimeoutMillis );
+            final Driver driver = GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config );
 
-            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
-                    () -> GraphDatabase.driver( URI.create( "bolt://localhost:" + server.getLocalPort() ), config ) );
+            ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
             assertEquals( e.getMessage(), "Unable to establish connection in " + connectionTimeoutMillis + "ms" );
         }
     }

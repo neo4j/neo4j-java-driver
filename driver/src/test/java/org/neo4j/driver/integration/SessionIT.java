@@ -155,7 +155,7 @@ class SessionIT
 
         // null auth token should be interpreted as AuthTokens.none() and fail driver creation
         // because server expects basic auth
-        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( neo4j.uri(), token ) );
+        assertThrows( AuthenticationException.class, () -> GraphDatabase.driver( neo4j.uri(), token ).verifyConnectivity() );
     }
 
     @Test

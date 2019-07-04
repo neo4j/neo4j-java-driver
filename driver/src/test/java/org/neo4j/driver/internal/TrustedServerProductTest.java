@@ -22,6 +22,7 @@ package org.neo4j.driver.internal;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.util.StubServer;
@@ -42,7 +43,8 @@ class TrustedServerProductTest
     void shouldRejectConnectionsToNonNeo4jServers() throws Exception
     {
         StubServer server = StubServer.start( "untrusted_server.script", 9001 );
-        assertThrows( UntrustedServerException.class, () -> GraphDatabase.driver( "bolt://127.0.0.1:9001", config ));
+        final Driver driver = GraphDatabase.driver( "bolt://127.0.0.1:9001", config );
+        assertThrows( UntrustedServerException.class, driver::verifyConnectivity );
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 

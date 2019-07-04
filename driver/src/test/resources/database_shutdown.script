@@ -3,8 +3,6 @@
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: RESET
-S: SUCCESS {}
 C: BEGIN {"bookmarks": ["neo4j:bookmark:v1:tx0"]}
 S: SUCCESS {}
 C: RUN "RETURN 1" {} {}

@@ -31,9 +31,8 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
@@ -52,11 +51,11 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Config.defaultConfig;
@@ -126,7 +125,7 @@ class DriverFactoryTest
 
     @ParameterizedTest
     @MethodSource( "testUris" )
-    void shouldVerifyConnectivity( String uri )
+    void shouldNotVerifyConnectivity( String uri )
     {
         SessionFactory sessionFactory = mock( SessionFactory.class );
         when( sessionFactory.verifyConnectivity() ).thenReturn( completedWithNull() );
@@ -136,22 +135,8 @@ class DriverFactoryTest
         try ( Driver driver = createDriver( uri, driverFactory ) )
         {
             assertNotNull( driver );
-            verify( sessionFactory ).verifyConnectivity();
+            verify( sessionFactory, never() ).verifyConnectivity();
         }
-    }
-
-    @ParameterizedTest
-    @MethodSource( "testUris" )
-    void shouldThrowWhenUnableToVerifyConnectivity( String uri )
-    {
-        SessionFactory sessionFactory = mock( SessionFactory.class );
-        ServiceUnavailableException error = new ServiceUnavailableException( "Hello" );
-        when( sessionFactory.verifyConnectivity() ).thenReturn( failedFuture( error ) );
-        when( sessionFactory.close() ).thenReturn( completedWithNull() );
-        DriverFactoryWithSessions driverFactory = new DriverFactoryWithSessions( sessionFactory );
-
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> createDriver( uri, driverFactory ) );
-        assertEquals( e.getMessage(), "Hello" );
     }
 
     @Test
@@ -237,7 +222,7 @@ class DriverFactoryTest
         protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
-            when( driver.verifyConnectivity() ).thenReturn( completedWithNull() );
+            when( driver.verifyConnectivityAsync() ).thenReturn( completedWithNull() );
             return driver;
         }
 

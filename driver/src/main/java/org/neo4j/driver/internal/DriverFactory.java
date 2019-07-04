@@ -27,6 +27,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -49,19 +56,11 @@ import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
+import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
@@ -105,11 +104,7 @@ public class DriverFactory
         MetricsProvider metricsProvider = createDriverMetrics( config, createClock() );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
 
-        InternalDriver driver = createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
-
-        verifyConnectivity( driver, connectionPool, config );
-
-        return driver;
+        return createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
@@ -366,30 +361,6 @@ public class DriverFactory
         }
     }
 
-    private static void verifyConnectivity( InternalDriver driver, ConnectionPool connectionPool, Config config )
-    {
-        try
-        {
-            // block to verify connectivity, close connection pool if thread gets interrupted
-            Futures.blockingGet( driver.verifyConnectivity(),
-                    () -> closeConnectionPoolOnThreadInterrupt( connectionPool, config.logging() ) );
-        }
-        catch ( Throwable connectionError )
-        {
-            if ( Thread.currentThread().isInterrupted() )
-            {
-                // current thread has been interrupted while verifying connectivity
-                // connection pool should've been closed
-                throw new ServiceUnavailableException( "Unable to create driver. Thread has been interrupted.",
-                        connectionError );
-            }
-
-            // we need to close the connection pool if driver creation threw exception
-            closeConnectionPoolAndSuppressError( connectionPool, connectionError );
-            throw connectionError;
-        }
-    }
-
     private static void closeConnectionPoolAndSuppressError( ConnectionPool connectionPool, Throwable mainError )
     {
         try
@@ -400,12 +371,5 @@ public class DriverFactory
         {
             addSuppressed( mainError, closeError );
         }
-    }
-
-    private static void closeConnectionPoolOnThreadInterrupt( ConnectionPool pool, Logging logging )
-    {
-        Logger log = logging.getLog( Driver.class.getSimpleName() );
-        log.warn( "Driver creation interrupted while verifying connectivity. Connection pool will be closed" );
-        pool.close();
     }
 }

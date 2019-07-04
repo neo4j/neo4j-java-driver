@@ -285,6 +285,9 @@ public class Config
         return retrySettings;
     }
 
+    /**
+     * @return if the metrics is enabled or not on this driver.
+     */
     public boolean isMetricsEnabled()
     {
         return isMetricsEnabled;
