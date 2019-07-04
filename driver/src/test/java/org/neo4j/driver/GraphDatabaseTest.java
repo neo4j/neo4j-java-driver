@@ -32,6 +32,7 @@ import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -159,6 +160,33 @@ class GraphDatabaseTest
                 Thread.interrupted();
             }
         }
+    }
+
+    @Test
+    void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        int localPort = -1;
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            localPort = serverSocket.getLocalPort();
+        }
+        final Driver driver = GraphDatabase.driver( "bolt://localhost:" + localPort, INSECURE_CONFIG );
+        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
+    }
+
+    @Test
+    void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        int localPort = -1;
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            localPort = serverSocket.getLocalPort();
+        }
+        final Driver driver = GraphDatabase.driver( "neo4j://localhost:" + localPort, INSECURE_CONFIG );
+        final ServiceUnavailableException error = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
+        error.printStackTrace();
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
     }
 
     @Test
