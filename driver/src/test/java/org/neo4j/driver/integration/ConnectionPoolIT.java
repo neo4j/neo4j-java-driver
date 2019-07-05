@@ -101,8 +101,7 @@ class ConnectionPoolIT
 
         int maxConnLifetimeHours = 3;
         Config config = Config.builder().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).build();
-        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
-        driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, DEFAULT, config );
+        driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, DEFAULT, config );
 
         // force driver create channel and return it to the pool
         startAndCloseTransactions( driver, 1 );

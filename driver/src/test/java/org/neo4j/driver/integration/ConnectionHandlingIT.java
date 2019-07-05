@@ -95,7 +95,7 @@ class ConnectionHandlingIT
     {
         DriverFactoryWithConnectionPool driverFactory = new DriverFactoryWithConnectionPool();
         AuthToken auth = neo4j.authToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
+        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig() );
         connectionPool = driverFactory.connectionPool;

@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -41,12 +40,10 @@ public class RoutingTableHandler implements RoutingErrorHandler
     private final ConnectionPool connectionPool;
     private final Rediscovery rediscovery;
     private final Logger log;
+    private final long routingTablePurgeDelayMs;
 
-    // This defines how long we shall wait before trimming a routing table from routing tables after it is stale.
-    // TODO make this a configuration option
-    public static final Duration STALE_ROUTING_TABLE_PURGE_TIMEOUT = Duration.ofSeconds( 30 );
-
-    public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTableRegistry routingTableRegistry, Logger log )
+    public RoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTableRegistry routingTableRegistry,
+            Logger log, long routingTablePurgeDelayMs )
     {
         this.routingTable = routingTable;
         this.databaseName = routingTable.database();
@@ -54,6 +51,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         this.connectionPool = connectionPool;
         this.routingTableRegistry = routingTableRegistry;
         this.log = log;
+        this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 
     @Override
@@ -145,7 +143,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
     // This method cannot be synchronized as it will be visited by all routing table handler's threads concurrently
     public boolean isRoutingTableAged()
     {
-        return refreshRoutingTableFuture == null && routingTable.hasBeenStaleFor( STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() );
+        return refreshRoutingTableFuture == null && routingTable.hasBeenStaleFor( routingTablePurgeDelayMs );
     }
 
     // for testing only

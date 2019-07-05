@@ -273,9 +273,8 @@ public class CausalClusteringIT implements NestedQueries
 
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
-        RetrySettings retrySettings = RetrySettings.DEFAULT;
 
-        try ( Driver driver = driverFactory.newInstance( routingUri, auth, defaultRoutingSettings(), retrySettings, config ) )
+        try ( Driver driver = driverFactory.newInstance( routingUri, auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
         {
             // create nodes in different threads using different sessions and connections
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
@@ -563,7 +562,7 @@ public class CausalClusteringIT implements NestedQueries
         FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
 
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                defaultRoutingSettings(), RetrySettings.DEFAULT, configWithoutLogging() ) )
+                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging() ) )
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
@@ -605,7 +604,7 @@ public class CausalClusteringIT implements NestedQueries
 
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                defaultRoutingSettings(), RetrySettings.DEFAULT, configWithoutLogging() ) )
+                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging() ) )
         {
             try ( Session session = driver.session() )
             {
@@ -671,7 +670,7 @@ public class CausalClusteringIT implements NestedQueries
                 .build();
 
         try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                defaultRoutingSettings(), RetrySettings.DEFAULT, config ) )
+                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
         {
             List<Future<?>> results = new ArrayList<>();
 
@@ -1019,11 +1018,6 @@ public class CausalClusteringIT implements NestedQueries
     {
         StatementResult result = statementRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
         return result.single().get( 0 ).asInt();
-    }
-
-    private static RoutingSettings defaultRoutingSettings()
-    {
-        return new RoutingSettings( 1, SECONDS.toMillis( 1 ), null );
     }
 
     private static Config configWithoutLogging()

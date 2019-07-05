@@ -81,7 +81,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
-import static org.neo4j.driver.internal.cluster.RoutingTableHandler.STALE_ROUTING_TABLE_PURGE_TIMEOUT;
+import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
@@ -344,7 +344,7 @@ class RoutingTableAndConnectionPoolTest
 
     private RoutingTableRegistryImpl newRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery )
     {
-        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging.getLog( "RT" ) );
+        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging.getLog( "RT" ), STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 
     private LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables )
@@ -360,7 +360,7 @@ class RoutingTableAndConnectionPoolTest
 
     private CompletableFuture<ClusterComposition> expiredClusterComposition( BoltServerAddress... addresses )
     {
-        return clusterComposition( -STALE_ROUTING_TABLE_PURGE_TIMEOUT.toMillis() - 1, addresses );
+        return clusterComposition( -STALE_ROUTING_TABLE_PURGE_DELAY_MS - 1, addresses );
     }
 
     private CompletableFuture<ClusterComposition> clusterComposition( long expireAfterMs, BoltServerAddress... addresses )

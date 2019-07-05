@@ -410,10 +410,9 @@ class TransactionIT
     private static void testFailWhenConnectionKilledDuringTransaction( boolean markForSuccess )
     {
         ChannelTrackingDriverFactory factory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
-        RoutingSettings instance = new RoutingSettings( 1, 0 );
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
 
-        try ( Driver driver = factory.newInstance( session.uri(), session.authToken(), instance, DEFAULT, config ) )
+        try ( Driver driver = factory.newInstance( session.uri(), session.authToken(), RoutingSettings.DEFAULT, DEFAULT, config ) )
         {
             ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () ->
             {

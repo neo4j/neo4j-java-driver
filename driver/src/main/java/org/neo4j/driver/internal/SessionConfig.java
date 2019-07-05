@@ -64,7 +64,7 @@ public class SessionConfig
      *
      * @return a session config for a general purpose session.
      */
-    public static SessionConfig empty()
+    public static SessionConfig defaultConfig()
     {
         return EMPTY;
     }

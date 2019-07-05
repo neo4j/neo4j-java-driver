@@ -1172,7 +1172,7 @@ class RoutingDriverBoltKitTest
     private static Driver newDriver( String uriString, DriverFactory driverFactory, Config config )
     {
         URI uri = URI.create( uriString );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1, null );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1, 0, null );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }

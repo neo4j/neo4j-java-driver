@@ -162,18 +162,6 @@ class ExamplesIT
     }
 
     @Test
-    void testShouldRunConfigLoadBalancingStrategyExample() throws Exception
-    {
-        // Given
-        try ( ConfigLoadBalancingStrategyExample example =
-                      new ConfigLoadBalancingStrategyExample( uri, USER, PASSWORD ) )
-        {
-            // Then
-            assertTrue( example.canConnect() );
-        }
-    }
-
-    @Test
     void testShouldRunBasicAuthExample() throws Exception
     {
         // Given

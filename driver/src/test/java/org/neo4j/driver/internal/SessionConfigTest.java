@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.SessionConfig.empty;
+import static org.neo4j.driver.internal.SessionConfig.defaultConfig;
 import static org.neo4j.driver.internal.SessionConfig.builder;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
@@ -46,7 +46,7 @@ class SessionConfigTest
     @Test
     void shouldReturnDefaultValues() throws Throwable
     {
-        SessionConfig parameters = empty();
+        SessionConfig parameters = defaultConfig();
 
         Assert.assertEquals( AccessMode.WRITE, parameters.defaultAccessMode() );
         assertFalse( parameters.database().isPresent() );

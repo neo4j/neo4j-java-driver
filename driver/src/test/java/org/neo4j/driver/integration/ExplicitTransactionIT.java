@@ -70,7 +70,7 @@ class ExplicitTransactionIT
     @BeforeEach
     void setUp()
     {
-        session = ((InternalDriver) neo4j.driver()).newSession( SessionConfig.empty() );
+        session = ((InternalDriver) neo4j.driver()).newSession( SessionConfig.defaultConfig() );
     }
 
     @AfterEach
@@ -249,7 +249,7 @@ class ExplicitTransactionIT
 
         try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
         {
-            NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.empty() );
+            NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.defaultConfig() );
             {
                 ExplicitTransaction tx = beginTransaction( session );
 

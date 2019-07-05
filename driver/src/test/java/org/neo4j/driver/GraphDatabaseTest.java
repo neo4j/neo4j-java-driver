@@ -20,7 +20,6 @@ package org.neo4j.driver;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -44,7 +43,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 import static org.neo4j.driver.internal.util.Matchers.directDriver;
@@ -88,20 +86,6 @@ class GraphDatabaseTest
         // Finally
         driver.close();
         assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    @SuppressWarnings( "deprecation" )
-    void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
-    {
-        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
-
-        Config config = Config.builder()
-                .withEncryption()
-                .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
-                .build();
-
-        assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, config ) );
     }
 
     @Test
