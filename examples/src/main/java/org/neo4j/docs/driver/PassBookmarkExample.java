@@ -29,7 +29,7 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 // end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication

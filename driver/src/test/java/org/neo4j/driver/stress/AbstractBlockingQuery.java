@@ -24,7 +24,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.TransientException;
 
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 public abstract class AbstractBlockingQuery<C extends AbstractContext> implements BlockingCommand<C>
 {

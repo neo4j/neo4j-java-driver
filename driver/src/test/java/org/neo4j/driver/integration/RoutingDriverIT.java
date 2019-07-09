@@ -35,7 +35,7 @@ import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.internal.SessionConfig.forDatabase;
+import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 
 @ParallelizableIT
