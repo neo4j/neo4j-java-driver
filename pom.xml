@@ -64,7 +64,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.22.Final</version>
+        <version>4.1.36.Final</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
@@ -139,6 +139,13 @@
         <artifactId>reactor-test</artifactId>
         <version>3.2.6.RELEASE</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.oracle.substratevm</groupId>
+        <artifactId>svm</artifactId>
+        <version>19.0.2</version>
+        <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
+        <scope>provided</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

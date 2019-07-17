@@ -78,6 +78,10 @@
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-test</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.oracle.substratevm</groupId>
+      <artifactId>svm</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -229,6 +233,9 @@
                   <shadedPattern>org.neo4j.driver.internal.shaded.reactor</shadedPattern>
                 </relocation>
               </relocations>
+              <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
               <shadeTestJar>true</shadeTestJar>
               <createSourcesJar>true</createSourcesJar>
             </configuration>
