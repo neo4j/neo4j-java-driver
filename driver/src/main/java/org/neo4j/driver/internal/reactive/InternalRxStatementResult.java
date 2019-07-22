@@ -26,10 +26,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Record;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxStatementResult;
-import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
+
+import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 public class InternalRxStatementResult implements RxStatementResult
 {
@@ -83,7 +85,7 @@ public class InternalRxStatementResult implements RxStatementResult
                 Throwable error = Futures.completionExceptionCause( completionError );
                 sink.error( error );
             }
-        } ) );
+        } ), IGNORE );
     }
 
     private CompletionStage<RxStatementResultCursor> getCursorFuture()
