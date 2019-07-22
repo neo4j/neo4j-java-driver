@@ -356,7 +356,7 @@ class RediscoveryTest
                 .thenReturn( asOrderedSet( E ) );
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
-        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
+        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
         Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGER );
         RoutingTable table = routingTableMock(A, B );
 
@@ -379,7 +379,7 @@ class RediscoveryTest
         ServerAddressResolver resolver = resolverMock( A, A );
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
-        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay );
+        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
         Logger logger = mock( Logger.class );
         Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logger );
         RoutingTable table = routingTableMock( A );
@@ -401,7 +401,7 @@ class RediscoveryTest
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
             ServerAddressResolver resolver, Logger logger )
     {
-        RoutingSettings settings = new RoutingSettings( 1, 0 );
+        RoutingSettings settings = new RoutingSettings( 1, 0, 0 );
         return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logger );
     }
 

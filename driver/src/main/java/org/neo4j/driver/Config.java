@@ -24,14 +24,13 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import org.neo4j.driver.internal.async.pool.PoolSettings;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
-import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Resource;
 
@@ -69,6 +68,8 @@ import static org.neo4j.driver.Logging.javaUtilLogging;
 @Immutable
 public class Config
 {
+    private static final Config EMPTY = builder().build();
+
     /** User defined logging */
     private final Logging logging;
     private final boolean logLeakedSessions;
@@ -87,10 +88,10 @@ public class Config
 
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
+    private long routingTablePurgeDelayMillis;
+
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
-
-    private final LoadBalancingStrategy loadBalancingStrategy;
     private final ServerAddressResolver resolver;
 
     private final boolean isMetricsEnabled;
@@ -110,8 +111,8 @@ public class Config
         this.routingFailureLimit = builder.routingFailureLimit;
         this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
+        this.routingTablePurgeDelayMillis = builder.routingTablePurgeDelayMillis;
         this.retrySettings = builder.retrySettings;
-        this.loadBalancingStrategy = builder.loadBalancingStrategy;
         this.resolver = builder.resolver;
 
         this.isMetricsEnabled = builder.isMetricsEnabled;
@@ -134,30 +135,6 @@ public class Config
     public boolean logLeakedSessions()
     {
         return logLeakedSessions;
-    }
-
-    /**
-     * Max number of connections per URL for this driver.
-     *
-     * @return the max number of connections
-     * @deprecated please use {@link #maxConnectionPoolSize()} instead.
-     */
-    @Deprecated
-    public int connectionPoolSize()
-    {
-        return maxConnectionPoolSize;
-    }
-
-    /**
-     * Max number of idle connections per URL for this driver.
-     *
-     * @return the max number of connections
-     * @deprecated please use {@link #maxConnectionPoolSize()} instead.
-     */
-    @Deprecated
-    public int maxIdleConnectionPoolSize()
-    {
-        return maxConnectionPoolSize;
     }
 
     /**
@@ -200,15 +177,6 @@ public class Config
     }
 
     /**
-     * @return the level of encryption required for all connections.
-     */
-    @Deprecated
-    public EncryptionLevel encryptionLevel()
-    {
-        return encrypted ? EncryptionLevel.REQUIRED : EncryptionLevel.NONE;
-    }
-
-    /**
      * @return indicator for encrypted communication.
      */
     public boolean encrypted()
@@ -225,17 +193,6 @@ public class Config
     }
 
     /**
-     * Load balancing strategy.
-     *
-     * @return the strategy to use.
-     */
-    @Experimental
-    public LoadBalancingStrategy loadBalancingStrategy()
-    {
-        return loadBalancingStrategy;
-    }
-
-    /**
      * Server address resolver.
      *
      * @return the resolver to use.
@@ -243,18 +200,6 @@ public class Config
     public ServerAddressResolver resolver()
     {
         return resolver;
-    }
-
-    /**
-     * Start building a {@link Config} object using a newly created builder.
-     * <p>
-     * <b>Please use {@link #builder()} method instead.</b>
-     *
-     * @return a new {@link ConfigBuilder} instance.
-     */
-    public static ConfigBuilder build()
-    {
-        return builder();
     }
 
     /**
@@ -272,12 +217,12 @@ public class Config
      */
     public static Config defaultConfig()
     {
-        return Config.builder().build();
+        return EMPTY;
     }
 
     RoutingSettings routingSettings()
     {
-        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis );
+        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis, routingTablePurgeDelayMillis );
     }
 
     RetrySettings retrySettings()
@@ -306,13 +251,14 @@ public class Config
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
         private boolean encrypted = true;
         private TrustStrategy trustStrategy = trustAllCertificates();
-        private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
+        private long routingTablePurgeDelayMillis = RoutingSettings.DEFAULT.routingTablePurgeDelayMs();
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
         private boolean isMetricsEnabled = false;
+
 
         private ConfigBuilder() {}
 
@@ -330,22 +276,6 @@ public class Config
         public ConfigBuilder withLogging( Logging logging )
         {
             this.logging = logging;
-            return this;
-        }
-
-        /**
-         * Provide an alternative load balancing strategy for the routing driver to use. By default we use
-         * {@link LoadBalancingStrategy#LEAST_CONNECTED}.
-         * <p>
-         * <b>Note:</b> We are experimenting with different strategies. This could be removed in the next minor version.
-         *
-         * @param loadBalancingStrategy the strategy to use
-         * @return this builder
-         */
-        @Experimental
-        public ConfigBuilder withLoadBalancingStrategy( LoadBalancingStrategy loadBalancingStrategy )
-        {
-            this.loadBalancingStrategy = loadBalancingStrategy;
             return this;
         }
 
@@ -368,78 +298,6 @@ public class Config
         {
             this.logLeakedSessions = true;
             return this;
-        }
-
-        /**
-         * The max number of sessions to keep open at once. Configure this
-         * higher if you want more concurrent sessions, or lower if you want
-         * to lower the pressure on the database instance.
-         * <p>
-         * If the driver is asked to provide more sessions than this, it will
-         * block waiting for another session to be closed, with a timeout.
-         * <p>
-         * Method is deprecated and will forward the given argument to {@link #withMaxConnectionPoolSize(int)}.
-         *
-         * @param size the max number of sessions to keep open
-         * @return this builder
-         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
-         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
-         */
-        @Deprecated
-        public ConfigBuilder withMaxSessions( int size )
-        {
-            return withMaxConnectionPoolSize( size );
-        }
-
-        /**
-         * The max number of idle sessions to keep open at once. Configure this
-         * higher if you want more concurrent sessions, or lower if you want
-         * to lower the pressure on the database instance.
-         * <p>
-         * Method is deprecated and will not change the driver configuration.
-         *
-         * @param size the max number of idle sessions to keep open
-         * @return this builder
-         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
-         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
-         */
-        @Deprecated
-        public ConfigBuilder withMaxIdleSessions( int size )
-        {
-            return this;
-        }
-
-        /**
-         * The max number of idle connections to keep open at once. Configure this
-         * higher for greater concurrency, or lower to reduce the pressure on the
-         * database instance.
-         * <p>
-         * Method is deprecated and will not change the driver configuration.
-         *
-         * @param size the max number of idle connections to keep open
-         * @return this builder
-         * @deprecated please use a combination of {@link #withMaxConnectionPoolSize(int)} and
-         * {@link #withConnectionAcquisitionTimeout(long, TimeUnit)} instead.
-         */
-        @Deprecated
-        public ConfigBuilder withMaxIdleConnections( int size )
-        {
-            return this;
-        }
-
-        /**
-         * Please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)}.
-         *
-         * @param timeout minimum idle time in milliseconds
-         * @return this builder
-         * @see #withConnectionLivenessCheckTimeout(long, TimeUnit)
-         * @deprecated please use {@link #withConnectionLivenessCheckTimeout(long, TimeUnit)} method. This method
-         * will be removed in future release.
-         */
-        @Deprecated
-        public ConfigBuilder withSessionLivenessCheckTimeout( long timeout )
-        {
-            return withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS );
         }
 
         /**
@@ -556,18 +414,6 @@ public class Config
             {
                 this.connectionAcquisitionTimeoutMillis = -1;
             }
-            return this;
-        }
-
-        /**
-         * Configure the {@link EncryptionLevel} to use, use this to control wether the driver uses TLS encryption or not.
-         * @param level the TLS level to use
-         * @return this builder
-         */
-        @Deprecated
-        public ConfigBuilder withEncryptionLevel( EncryptionLevel level )
-        {
-            this.encrypted = level == EncryptionLevel.REQUIRED;
             return this;
         }
 
@@ -692,6 +538,35 @@ public class Config
         }
 
         /**
+         * Specify how long to wait before purging stale routing tables.
+         * <p>
+         * When a routing table is timed out, the routing table will be marked ready to remove after the delay specified here.
+         * Driver keeps a routing table for each database seen by the driver.
+         * The routing table of a database get refreshed if the database is used frequently.
+         * If the database is not used for a long time,
+         * the driver use the timeout specified here to purge the stale routing table.
+         *
+         * After a routing table is removed, next time when using the database of the purged routing table,
+         * the driver will fall back to use seed URI for a new routing table.
+         * @param delay
+         *         the amount of time to wait before purging routing tables
+         * @param unit
+         *         the unit in which the duration is given
+         * @return this builder
+         */
+        public ConfigBuilder withRoutingTablePurgeDelay( long delay, TimeUnit unit )
+        {
+            long routingTablePurgeDelayMillis = unit.toMillis( delay );
+            if ( routingTablePurgeDelayMillis < 0 )
+            {
+                throw new IllegalArgumentException( String.format(
+                        "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit ) );
+            }
+            this.routingTablePurgeDelayMillis = routingTablePurgeDelayMillis;
+            return this;
+        }
+
+        /**
          * Specify socket connection timeout.
          * <p>
          * A timeout of zero is treated as an infinite timeout and will be bound by the timeout configured on the
@@ -794,18 +669,6 @@ public class Config
 
         /**
          * Create a config instance from this builder.
-         * <p>
-         * <b>Please use {@link #build()} method instead.</b>
-         *
-         * @return a new {@link Config} instance.
-         */
-        public Config toConfig()
-        {
-            return build();
-        }
-
-        /**
-         * Create a config instance from this builder.
          *
          * @return a new {@link Config} instance.
          */
@@ -813,25 +676,6 @@ public class Config
         {
             return new Config( this );
         }
-    }
-
-    /**
-     * Control the level of encryption to require
-     */
-    public enum EncryptionLevel
-    {
-        /** With this level, the driver will only connect to the server if it can do it without encryption. */
-        NONE,
-
-        /** With this level, the driver will only connect to the server it if can do it with encryption. */
-        REQUIRED
-    }
-
-    @Experimental
-    public enum LoadBalancingStrategy
-    {
-        ROUND_ROBIN,
-        LEAST_CONNECTED
     }
 
     /**
@@ -844,12 +688,6 @@ public class Config
          */
         public enum Strategy
         {
-            @Deprecated
-            TRUST_ON_FIRST_USE,
-
-            @Deprecated
-            TRUST_SIGNED_CERTIFICATES,
-
             TRUST_ALL_CERTIFICATES,
 
             TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
@@ -925,18 +763,6 @@ public class Config
         }
 
         /**
-         * Use {@link #trustCustomCertificateSignedBy(File)} instead.
-         *
-         * @param certFile the trusted certificate file
-         * @return an authentication config
-         */
-        @Deprecated
-        public static TrustStrategy trustSignedBy( File certFile )
-        {
-            return new TrustStrategy( Strategy.TRUST_SIGNED_CERTIFICATES, certFile );
-        }
-
-        /**
          * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
          * The file specified should contain one or more trusted X.509 certificates.
          * <p>
@@ -970,28 +796,6 @@ public class Config
         public static TrustStrategy trustAllCertificates()
         {
             return new TrustStrategy( Strategy.TRUST_ALL_CERTIFICATES );
-        }
-
-        /**
-         * Automatically trust a Neo4j instance the first time we see it - but fail to connect if its encryption certificate ever changes.
-         * This is similar to the mechanism used in SSH, and protects against man-in-the-middle attacks that occur after the initial setup of your application.
-         * <p>
-         * Known Neo4j hosts are recorded in a file, {@code certFile}.
-         * Each time we reconnect to a known host, we verify that its certificate remains the same, guarding against attackers intercepting our communication.
-         * <p>
-         * Note that this approach is vulnerable to man-in-the-middle attacks the very first time you connect to a new Neo4j instance.
-         * If you do not trust the network you are connecting over, consider using {@link #trustCustomCertificateSignedBy(File)}  signed certificates} instead, or manually adding the
-         * trusted host line into the specified file.
-         *
-         * @param knownHostsFile a file where known certificates are stored.
-         * @return an authentication config
-         *
-         * @deprecated in 1.1 in favour of {@link #trustAllCertificates()}
-         */
-        @Deprecated
-        public static TrustStrategy trustOnFirstUse( File knownHostsFile )
-        {
-            return new TrustStrategy( Strategy.TRUST_ON_FIRST_USE, knownHostsFile );
         }
     }
 }

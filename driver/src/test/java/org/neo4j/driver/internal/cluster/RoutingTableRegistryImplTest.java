@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
@@ -66,7 +67,8 @@ class RoutingTableRegistryImplTest
     {
         Clock clock = Clock.SYSTEM;
         RoutingTableHandlerFactory factory =
-                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER );
+                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER,
+                        STALE_ROUTING_TABLE_PURGE_DELAY_MS );
 
         RoutingTableHandler handler = factory.newInstance( "Molly", null );
         RoutingTable table = handler.routingTable();

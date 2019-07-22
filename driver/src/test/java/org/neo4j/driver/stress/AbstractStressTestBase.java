@@ -86,7 +86,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 abstract class AbstractStressTestBase<C extends AbstractContext>
 {

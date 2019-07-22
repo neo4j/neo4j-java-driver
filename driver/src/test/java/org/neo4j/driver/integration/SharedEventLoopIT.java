@@ -93,9 +93,8 @@ class SharedEventLoopIT
 
     private Driver createDriver( EventLoopGroup eventLoopGroup )
     {
-        RoutingSettings routingSettings = new RoutingSettings( 1000, 1000 );
-        RetrySettings retrySettings = new RetrySettings( 1000 );
-        return driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), routingSettings, retrySettings, Config.build().build(), eventLoopGroup );
+        return driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, Config.defaultConfig(),
+                eventLoopGroup );
     }
 
     private void testConnection( Driver driver )

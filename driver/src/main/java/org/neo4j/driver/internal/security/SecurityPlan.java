@@ -21,16 +21,12 @@ package org.neo4j.driver.internal.security;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.Logger;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -71,16 +67,6 @@ public class SecurityPlan
     public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification ) throws NoSuchAlgorithmException
     {
         return new SecurityPlan( true, SSLContext.getDefault(), true, requiresHostnameVerification );
-    }
-
-    @Deprecated
-    public static SecurityPlan forTrustOnFirstUse( File knownHosts, boolean requiresHostnameVerification, BoltServerAddress address, Logger logger )
-            throws IOException, KeyManagementException, NoSuchAlgorithmException
-    {
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustOnFirstUseTrustManager( address, knownHosts, logger )}, null );
-
-        return new SecurityPlan( true, sslContext, false, requiresHostnameVerification );
     }
 
     public static SecurityPlan insecure()

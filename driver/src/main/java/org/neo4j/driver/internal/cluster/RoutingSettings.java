@@ -22,27 +22,30 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RoutingSettings
 {
-    public static final RoutingSettings DEFAULT = new RoutingSettings( 1, SECONDS.toMillis( 5 ) );
+    public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis( 30 );
+    public static final RoutingSettings DEFAULT = new RoutingSettings( 1, SECONDS.toMillis( 5 ), STALE_ROUTING_TABLE_PURGE_DELAY_MS );
 
     private final int maxRoutingFailures;
     private final long retryTimeoutDelay;
     private final RoutingContext routingContext;
+    private final long routingTablePurgeDelayMs;
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay )
+    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, long routingTablePurgeDelayMs )
     {
-        this( maxRoutingFailures, retryTimeoutDelay, RoutingContext.EMPTY );
+        this( maxRoutingFailures, retryTimeoutDelay, routingTablePurgeDelayMs, RoutingContext.EMPTY );
     }
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, RoutingContext routingContext )
+    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, long routingTablePurgeDelayMs, RoutingContext routingContext )
     {
         this.maxRoutingFailures = maxRoutingFailures;
         this.retryTimeoutDelay = retryTimeoutDelay;
         this.routingContext = routingContext;
+        this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 
     public RoutingSettings withRoutingContext( RoutingContext newRoutingContext )
     {
-        return new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, newRoutingContext );
+        return new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, routingTablePurgeDelayMs, newRoutingContext );
     }
 
     public int maxRoutingFailures()
@@ -58,5 +61,10 @@ public class RoutingSettings
     public RoutingContext routingContext()
     {
         return routingContext;
+    }
+
+    public long routingTablePurgeDelayMs()
+    {
+        return routingTablePurgeDelayMs;
     }
 }

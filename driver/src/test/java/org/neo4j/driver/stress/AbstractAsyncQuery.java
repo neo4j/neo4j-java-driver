@@ -22,7 +22,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 public abstract class AbstractAsyncQuery<C extends AbstractContext> implements AsyncCommand<C>
 {

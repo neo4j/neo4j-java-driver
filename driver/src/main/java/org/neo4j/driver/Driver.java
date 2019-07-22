@@ -22,7 +22,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.SessionConfig;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;

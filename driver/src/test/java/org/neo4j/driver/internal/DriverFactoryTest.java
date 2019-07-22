@@ -31,6 +31,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -59,7 +60,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Config.defaultConfig;
-import static org.neo4j.driver.internal.SessionConfig.empty;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -101,13 +101,13 @@ class DriverFactoryTest
     @MethodSource( "testUris" )
     void usesStandardSessionFactoryWhenNothingConfigured( String uri )
     {
-        Config config = Config.defaultConfig();
+        Config config = defaultConfig();
         SessionFactoryCapturingDriverFactory factory = new SessionFactoryCapturingDriverFactory();
 
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( empty() ), instanceOf( NetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( SessionConfig.defaultConfig() ), instanceOf( NetworkSession.class ) );
     }
 
     @ParameterizedTest
@@ -120,7 +120,7 @@ class DriverFactoryTest
         createDriver( uri, factory, config );
 
         SessionFactory capturedFactory = factory.capturedSessionFactory;
-        assertThat( capturedFactory.newInstance( empty() ), instanceOf( LeakLoggingNetworkSession.class ) );
+        assertThat( capturedFactory.newInstance( SessionConfig.defaultConfig() ), instanceOf( LeakLoggingNetworkSession.class ) );
     }
 
     @ParameterizedTest
@@ -171,8 +171,7 @@ class DriverFactoryTest
     private Driver createDriver( String uri, DriverFactory driverFactory, Config config )
     {
         AuthToken auth = AuthTokens.none();
-        RoutingSettings routingSettings = new RoutingSettings( 42, 42, null );
-        return driverFactory.newInstance( URI.create( uri ), auth, routingSettings, RetrySettings.DEFAULT, config );
+        return driverFactory.newInstance( URI.create( uri ), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config );
     }
 
     private static ConnectionPool connectionPoolMock()

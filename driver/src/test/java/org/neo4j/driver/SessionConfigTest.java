@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -27,8 +27,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.driver.AccessMode;
-
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -37,8 +35,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.SessionConfig.empty;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.defaultConfig;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 class SessionConfigTest
@@ -46,7 +44,7 @@ class SessionConfigTest
     @Test
     void shouldReturnDefaultValues() throws Throwable
     {
-        SessionConfig parameters = empty();
+        SessionConfig parameters = defaultConfig();
 
         Assert.assertEquals( AccessMode.WRITE, parameters.defaultAccessMode() );
         assertFalse( parameters.database().isPresent() );

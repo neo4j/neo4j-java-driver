@@ -38,9 +38,9 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     private final Clock clock;
     private final RoutingProcedureRunner routingProcedureRunner;
 
-    public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingSettings settings )
+    public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingContext routingContext )
     {
-        this( clock, new RoutingProcedureRunner( settings.routingContext() ) );
+        this( clock, new RoutingProcedureRunner( routingContext ) );
     }
 
     RoutingProcedureClusterCompositionProvider( Clock clock, RoutingProcedureRunner routingProcedureRunner )

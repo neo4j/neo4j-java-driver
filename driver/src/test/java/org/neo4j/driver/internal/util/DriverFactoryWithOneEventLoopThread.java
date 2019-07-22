@@ -34,7 +34,7 @@ public class DriverFactoryWithOneEventLoopThread extends DriverFactory
 {
     public Driver newInstance( URI uri, AuthToken authToken, Config config )
     {
-        return newInstance( uri, authToken, new RoutingSettings( 1, 0 ), RetrySettings.DEFAULT, config );
+        return newInstance( uri, authToken, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config );
     }
 
     @Override

@@ -52,7 +52,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -88,8 +87,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.SessionConfig.builder;
-import static org.neo4j.driver.internal.SessionConfig.forDatabase;
+import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
@@ -1418,9 +1417,8 @@ class SessionIT
     private Driver newDriverWithFixedRetries( int maxRetriesCount )
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1, RoutingContext.EMPTY );
         AuthToken auth = DEFAULT_AUTH_TOKEN;
-        return driverFactory.newInstance( neo4j.uri(), auth, routingConf, RetrySettings.DEFAULT, noLoggingConfig() );
+        return driverFactory.newInstance( neo4j.uri(), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, noLoggingConfig() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )

@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.util.FixedRetryLogic;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 class SessionFactoryImplTest

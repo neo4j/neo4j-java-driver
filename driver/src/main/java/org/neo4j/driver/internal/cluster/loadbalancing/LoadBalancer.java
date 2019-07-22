@@ -185,13 +185,13 @@ public class LoadBalancer implements ConnectionProvider
     {
         Logger log = loadBalancerLogger( logging );
         Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
-        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log );
+        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log, settings.routingTablePurgeDelayMs() );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
             RoutingSettings settings, Clock clock, Logger log )
     {
-        ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings );
+        ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
         return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }
 

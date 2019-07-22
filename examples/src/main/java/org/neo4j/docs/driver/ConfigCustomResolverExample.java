@@ -31,7 +31,7 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.net.ServerAddress;
 
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 public class ConfigCustomResolverExample implements AutoCloseable
 {

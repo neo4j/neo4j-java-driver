@@ -72,7 +72,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
@@ -1172,7 +1172,7 @@ class RoutingDriverBoltKitTest
     private static Driver newDriver( String uriString, DriverFactory driverFactory, Config config )
     {
         URI uri = URI.create( uriString );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1, null );
+        RoutingSettings routingConf = new RoutingSettings( 1, 1, 0, null );
         AuthToken auth = AuthTokens.none();
         return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config );
     }

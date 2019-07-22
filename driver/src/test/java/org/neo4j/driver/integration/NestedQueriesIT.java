@@ -25,7 +25,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 @ParallelizableIT
 public class NestedQueriesIT implements NestedQueries

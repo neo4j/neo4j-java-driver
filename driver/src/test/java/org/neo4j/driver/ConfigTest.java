@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Config;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,22 +45,6 @@ class ConfigTest
 
         // Then
         assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ALL_CERTIFICATES );
-    }
-
-    @SuppressWarnings( "deprecation" )
-    @Test
-    void shouldChangeToNewKnownCerts()
-    {
-        // Given
-        File knownCerts = new File( "new_known_hosts" );
-        Config config = Config.builder().withTrustStrategy( Config.TrustStrategy.trustOnFirstUse( knownCerts ) ).build();
-
-        // When
-        Config.TrustStrategy authConfig = config.trustStrategy();
-
-        // Then
-        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ON_FIRST_USE );
-        assertEquals( knownCerts.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
     }
 
     @Test

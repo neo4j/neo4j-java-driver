@@ -261,7 +261,7 @@ class ErrorIT
 
         URI uri = session.uri();
         AuthToken authToken = session.authToken();
-        RoutingSettings routingSettings = new RoutingSettings( 1, 1 );
+        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         Throwable queryError = null;

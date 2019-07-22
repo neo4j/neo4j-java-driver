@@ -137,7 +137,7 @@ class InternalDriverTest
         Config config = Config.defaultConfig();
         if ( isMetricsEnabled )
         {
-            config = Config.build().withDriverMetrics().build();
+            config = Config.builder().withDriverMetrics().build();
         }
 
         MetricsProvider metricsProvider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );

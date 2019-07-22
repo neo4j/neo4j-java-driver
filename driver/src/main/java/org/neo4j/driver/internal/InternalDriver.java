@@ -26,6 +26,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -59,7 +60,7 @@ public class InternalDriver implements Driver
     @Override
     public Session session()
     {
-        return new InternalSession( newSession( SessionConfig.empty() )  );
+        return new InternalSession( newSession( SessionConfig.defaultConfig() )  );
     }
 
     @Override
@@ -71,7 +72,7 @@ public class InternalDriver implements Driver
     @Override
     public RxSession rxSession()
     {
-        return new InternalRxSession( newSession( SessionConfig.empty() ) );
+        return new InternalRxSession( newSession( SessionConfig.defaultConfig() ) );
     }
 
     @Override
@@ -83,7 +84,7 @@ public class InternalDriver implements Driver
     @Override
     public AsyncSession asyncSession()
     {
-        return new InternalAsyncSession( newSession( SessionConfig.empty() ) );
+        return new InternalAsyncSession( newSession( SessionConfig.defaultConfig() ) );
     }
 
     @Override

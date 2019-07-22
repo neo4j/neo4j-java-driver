@@ -140,7 +140,7 @@ class ServerKilledIT
     private Driver createDriver( Clock clock, Config config )
     {
         DriverFactory factory = new DriverFactoryWithClock( clock );
-        RoutingSettings routingSettings = new RoutingSettings( 1, 1, null );
+        RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         return factory.newInstance( neo4j.uri(), DEFAULT_AUTH_TOKEN, routingSettings, retrySettings, config );
     }

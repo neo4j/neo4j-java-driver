@@ -37,7 +37,7 @@ import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.internal.SessionConfig;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -70,7 +70,7 @@ class ExplicitTransactionIT
     @BeforeEach
     void setUp()
     {
-        session = ((InternalDriver) neo4j.driver()).newSession( SessionConfig.empty() );
+        session = ((InternalDriver) neo4j.driver()).newSession( SessionConfig.defaultConfig() );
     }
 
     @AfterEach
@@ -249,7 +249,7 @@ class ExplicitTransactionIT
 
         try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
         {
-            NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.empty() );
+            NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.defaultConfig() );
             {
                 ExplicitTransaction tx = beginTransaction( session );
 

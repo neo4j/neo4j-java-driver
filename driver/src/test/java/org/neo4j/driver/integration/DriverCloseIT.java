@@ -29,7 +29,7 @@ import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.builder;
 
 @ParallelizableIT
 class DriverCloseIT
