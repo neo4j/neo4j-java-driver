@@ -229,7 +229,11 @@ public class SessionConfig
                 // Disallow users to use bolt internal value directly. To users, this is totally an illegal database name.
                 throw new IllegalArgumentException( String.format( "Illegal database name '%s'.", database ) );
             }
-            this.database = database;
+            // The database name is normalized to lowercase on the server side.
+            // The client in theory shall not perform any normalization at all.
+            // However as this name is also used in routing table registry as the map's key to find the routing table for the given database,
+            // to avoid multiple routing tables for the same database, we perform a client side normalization.
+            this.database = database.toLowerCase();
             return this;
         }
 
