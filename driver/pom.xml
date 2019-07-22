@@ -229,6 +229,9 @@
                   <shadedPattern>org.neo4j.driver.internal.shaded.reactor</shadedPattern>
                 </relocation>
               </relocations>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
               <shadeTestJar>true</shadeTestJar>
               <createSourcesJar>true</createSourcesJar>
             </configuration>
