@@ -43,11 +43,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionFactory;
@@ -81,6 +81,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
@@ -109,12 +110,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( clusterComposition( A ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( clusterComposition( A ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) );
+        await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) );
 
         // Then
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
@@ -129,12 +130,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new FatalDiscoveryException( "No database found" ) ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( Futures.failedFuture( new FatalDiscoveryException( "No database found" ) ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        assertThrows( FatalDiscoveryException.class, () -> await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) ) );
+        assertThrows( FatalDiscoveryException.class, () -> await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) ) );
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
@@ -148,12 +149,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new ProtocolException( "No database found" ) ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( Futures.failedFuture( new ProtocolException( "No database found" ) ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        assertThrows( ProtocolException.class, () -> await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) ) );
+        assertThrows( ProtocolException.class, () -> await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) ) );
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
@@ -167,12 +168,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( Futures.failedFuture( new SecurityException( "No database found" ) ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( Futures.failedFuture( new SecurityException( "No database found" ) ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        assertThrows( SecurityException.class, () -> await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) ) );
+        assertThrows( SecurityException.class, () -> await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) ) );
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
@@ -186,12 +187,12 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( expiredClusterComposition( A ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( expiredClusterComposition( A ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        Connection connection = await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) );
+        Connection connection = await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) );
         await( connection.release() );
 
         // Then
@@ -209,14 +210,14 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( expiredClusterComposition( A ) ).thenReturn( clusterComposition( B ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( expiredClusterComposition( A ) ).thenReturn( clusterComposition( B ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        Connection connection = await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) );
+        Connection connection = await( loadBalancer.acquireConnection( contextWithDatabase( "neo4j" ) ) );
         await( connection.release() );
-        await( loadBalancer.acquireConnection( "foo", AccessMode.WRITE ) );
+        await( loadBalancer.acquireConnection( contextWithDatabase( "foo"  ) ) );
 
         // Then
         assertFalse( routingTables.contains( "neo4j" ) );
@@ -234,13 +235,13 @@ class RoutingTableAndConnectionPoolTest
         // Given
         ConnectionPool connectionPool = newConnectionPool();
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.lookupClusterComposition( any(), any() ) ).thenReturn( expiredClusterComposition( A ) ).thenReturn( clusterComposition( B ) );
+        when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( expiredClusterComposition( A ) ).thenReturn( clusterComposition( B ) );
         RoutingTableRegistryImpl routingTables = newRoutingTables( connectionPool, rediscovery );
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables );
 
         // When
-        await( loadBalancer.acquireConnection( "neo4j", AccessMode.WRITE ) );
-        await( loadBalancer.acquireConnection( "foo", AccessMode.WRITE ) );
+        await( loadBalancer.acquireConnection( contextWithDatabase("neo4j" ) ) );
+        await( loadBalancer.acquireConnection( contextWithDatabase( "foo" ) ) );
 
         // Then
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
@@ -293,7 +294,7 @@ class RoutingTableAndConnectionPoolTest
         {
             Future<?> future = executorService.submit( () -> {
                 int index = random.nextInt( DATABASES.length );
-                CompletionStage<Void> task = loadBalancer.acquireConnection( DATABASES[index], AccessMode.WRITE ).thenCompose( Connection::release );
+                CompletionStage<Void> task = loadBalancer.acquireConnection( contextWithDatabase( DATABASES[index] ) ).thenCompose( Connection::release );
                 await( task );
             } );
             futures[i] = future;
@@ -373,7 +374,7 @@ class RoutingTableAndConnectionPoolTest
     private class RandomizedRediscovery implements Rediscovery
     {
         @Override
-        public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool )
+        public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
         {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();

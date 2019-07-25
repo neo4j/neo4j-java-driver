@@ -21,38 +21,24 @@ package org.neo4j.driver.internal;
 /**
  * @since 2.0
  */
-public class DefaultBookmarksHolder implements BookmarksHolder
+public class ReadOnlyBookmarkHolder implements BookmarkHolder
 {
-    private volatile Bookmarks bookmarks;
+    private final InternalBookmark bookmark;
 
-    public DefaultBookmarksHolder()
+    public ReadOnlyBookmarkHolder( InternalBookmark bookmark )
     {
-        this( Bookmarks.empty() );
-    }
-
-    public DefaultBookmarksHolder( Bookmarks bookmarks )
-    {
-        this.bookmarks = bookmarks;
+        this.bookmark = bookmark;
     }
 
     @Override
-    public Bookmarks getBookmarks()
+    public InternalBookmark getBookmark()
     {
-        return bookmarks;
+        return bookmark;
     }
 
     @Override
-    public void setBookmarks( Bookmarks bookmarks )
+    public void setBookmark( InternalBookmark bookmark )
     {
-        if ( bookmarks != null && !bookmarks.isEmpty() )
-        {
-            this.bookmarks = bookmarks;
-        }
-    }
-
-    @Override
-    public String lastBookmark()
-    {
-        return bookmarks == null ? null : bookmarks.maxBookmarkAsString();
+        // NO_OP
     }
 }

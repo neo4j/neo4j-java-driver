@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.handlers;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.SessionPullResponseHandler;
@@ -37,27 +37,27 @@ public class PullHandlers
         {
             return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, BoltProtocolV1.METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarksHolder.NO_OP, BoltProtocolV1.METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarkHolder.NO_OP, BoltProtocolV1.METADATA_EXTRACTOR );
     }
 
     public static AbstractPullAllResponseHandler newBoltV3PullAllHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
-            BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
+            BookmarkHolder bookmarkHolder, ExplicitTransaction tx )
     {
         if ( tx != null )
         {
             return new TransactionPullAllResponseHandler( statement, runHandler, connection, tx, BoltProtocolV3.METADATA_EXTRACTOR );
         }
-        return new SessionPullAllResponseHandler( statement, runHandler, connection, bookmarksHolder, BoltProtocolV3.METADATA_EXTRACTOR );
+        return new SessionPullAllResponseHandler( statement, runHandler, connection, bookmarkHolder, BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
     public static BasicPullResponseHandler newBoltV4PullHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
-            BookmarksHolder bookmarksHolder, ExplicitTransaction tx )
+            BookmarkHolder bookmarkHolder, ExplicitTransaction tx )
     {
         if ( tx != null )
         {
             return new TransactionPullResponseHandler( statement, runHandler, connection, tx, BoltProtocolV3.METADATA_EXTRACTOR );
         }
-        return new SessionPullResponseHandler( statement, runHandler, connection, bookmarksHolder, BoltProtocolV3.METADATA_EXTRACTOR );
+        return new SessionPullResponseHandler( statement, runHandler, connection, bookmarkHolder, BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
 }

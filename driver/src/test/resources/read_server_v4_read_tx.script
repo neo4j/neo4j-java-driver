@@ -3,7 +3,7 @@
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: BEGIN { "mode": "r", "db": "myDatabase" }
+C: BEGIN { "mode": "r", "db": "mydatabase" }
 S: SUCCESS {}
 C: RUN "MATCH (n) RETURN n.name" {} {}
    PULL { "n": -1 }

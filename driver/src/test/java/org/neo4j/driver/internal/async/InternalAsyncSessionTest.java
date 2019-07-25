@@ -39,7 +39,7 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.retry.RetryLogic;
@@ -59,7 +59,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -92,7 +91,7 @@ class InternalAsyncSessionTest
     {
         connection = connectionMock( BoltProtocolV4.INSTANCE );
         connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection ) );
         session = newSession( connectionProvider );
         asyncSession = new InternalAsyncSession( session );
@@ -236,7 +235,7 @@ class InternalAsyncSessionTest
     @Test
     void shouldReturnBookmark() throws Throwable
     {
-        session = newSession( connectionProvider, Bookmarks.from( "Bookmark1" ) );
+        session = newSession( connectionProvider, InternalBookmark.parse( "Bookmark1" ) );
         asyncSession = new InternalAsyncSession( session );
 
         assertThat( asyncSession.lastBookmark(), equalTo( session.lastBookmark() ));
@@ -253,7 +252,7 @@ class InternalAsyncSessionTest
         Exception e = assertThrows( Exception.class, () -> executeTransaction( asyncSession, transactionMode, work ) );
         assertEquals( error, e );
 
-        verify( connectionProvider ).acquireConnection( any( String.class ), eq( transactionMode ) );
+        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
         verifyBeginTx( connection );
         verifyRollbackTx( connection );
     }

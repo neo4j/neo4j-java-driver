@@ -21,12 +21,13 @@ package org.neo4j.driver.stress;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.summary.ResultSummary;
 
 public abstract class AbstractContext
 {
     private volatile boolean stopped;
-    private volatile String bookmark;
+    private volatile Bookmark bookmark;
     private final AtomicLong readNodesCount = new AtomicLong();
     private final AtomicLong createdNodesCount = new AtomicLong();
     private final AtomicInteger bookmarkFailures = new AtomicInteger();
@@ -41,12 +42,12 @@ public abstract class AbstractContext
         this.stopped = true;
     }
 
-    public final String getBookmark()
+    public final Bookmark getBookmark()
     {
         return bookmark;
     }
 
-    public final void setBookmark( String bookmark )
+    public final void setBookmark( Bookmark bookmark )
     {
         this.bookmark = bookmark;
     }

@@ -29,6 +29,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
@@ -47,7 +48,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 
 public class LoadBalancer implements ConnectionProvider
 {
@@ -77,17 +78,17 @@ public class LoadBalancer implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
+    public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
-        return routingTables.refreshRoutingTable( databaseName, mode )
-                .thenCompose( handler -> acquire( mode, handler.routingTable() )
-                        .thenApply( connection -> new RoutingConnection( connection, databaseName, mode, handler ) ) );
+        return routingTables.refreshRoutingTable( context )
+                .thenCompose( handler -> acquire( context.mode(), handler.routingTable() )
+                        .thenApply( connection -> new RoutingConnection( connection, context.databaseName(), context.mode(), handler ) ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.refreshRoutingTable( ABSENT_DB_NAME, AccessMode.READ ).handle( ( ignored, error ) -> {
+        return routingTables.refreshRoutingTable( simple() ).handle( ( ignored, error ) -> {
             if ( error != null )
             {
                 Throwable cause = Futures.completionExceptionCause( error );

@@ -21,6 +21,7 @@ package org.neo4j.driver;
 import java.util.Map;
 
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.util.Resource;
 
 /**
@@ -212,7 +213,7 @@ public interface Session extends Resource, StatementRunner
      *
      * @return a reference to a previous transaction
      */
-    String lastBookmark();
+    Bookmark lastBookmark();
 
     /**
      * Reset the current session. This sends an immediate RESET signal to the server which both interrupts

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
@@ -32,9 +31,11 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.StringValue;
 
 import static java.util.Arrays.asList;
@@ -46,9 +47,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -59,15 +63,17 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( noRecordsResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any( InternalBookmark.class ) ) )
+                .thenReturn( completedFuture( noRecordsResponse ) );
 
         // When & Then
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ProtocolException error = assertThrows( ProtocolException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( error.getMessage(), containsString( "records received '0' is too few or too many." ) );
     }
 
@@ -76,16 +82,17 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ProtocolException error = assertThrows( ProtocolException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( error.getMessage(), containsString( "records received '2' is too few or too many." ) );
     }
 
@@ -94,16 +101,17 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{ new StringValue( "a value" ) } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
 
         // When
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ProtocolException error = assertThrows( ProtocolException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( error.getMessage(), containsString( "unparsable record received." ) );
     }
 
@@ -111,23 +119,24 @@ class RoutingProcedureClusterCompositionProviderTest
     void shouldProtocolErrorWhenNoRouters()
     {
         // Given
-        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         Clock mockedClock = mock( Clock.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection, mockedClock );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ProtocolException error = assertThrows( ProtocolException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -135,23 +144,24 @@ class RoutingProcedureClusterCompositionProviderTest
     void shouldProtocolErrorWhenNoReaders()
     {
         // Given
-        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         Clock mockedClock = mock( Clock.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection, mockedClock );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "WRITE", "one:1337" ),
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ProtocolException error = assertThrows( ProtocolException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ProtocolException error = assertThrows( ProtocolException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -160,15 +170,16 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( failedFuture(
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( failedFuture(
                 new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
         // When & Then
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
     }
 
@@ -177,11 +188,11 @@ class RoutingProcedureClusterCompositionProviderTest
     {
         // Given
         Clock mockedClock = mock( Clock.class );
-        RoutingProcedureRunner mockedRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
+        MultiDatabasesRoutingProcedureRunner mockedRunner = newMultiDBProcedureRunnerMock();
         ClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mockedClock, mockedRunner );
+                newClusterCompositionProvider( mockedRunner, connection, mockedClock );
 
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
                 serverInfo( "READ", "one:1337", "two:1337" ),
@@ -189,11 +200,12 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connectionStage ), any( String.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) )
+                .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterComposition cluster = await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) );
+        ClusterComposition cluster = await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) );
 
         // Then
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
@@ -206,18 +218,48 @@ class RoutingProcedureClusterCompositionProviderTest
     void shouldReturnFailureWhenProcedureRunnerFails()
     {
         RoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
-        CompletionStage<Connection> connectionStage = completedFuture( mock( Connection.class ) );
+        Connection connection = mock( Connection.class );
 
         RuntimeException error = new RuntimeException( "hi" );
-        when( procedureRunner.run( eq( connectionStage ), any( String.class ) ) )
+        when( procedureRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) )
                 .thenReturn( completedFuture( newRoutingResponse( error ) ) );
 
         RoutingProcedureClusterCompositionProvider provider =
-                new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), procedureRunner );
+                newClusterCompositionProvider( procedureRunner, connection );
 
         RuntimeException e = assertThrows( RuntimeException.class,
-                () -> await( provider.getClusterComposition( connectionStage, ABSENT_DB_NAME ) ) );
+                () -> await( provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() ) ) );
         assertEquals( error, e );
+    }
+
+    @Test
+    void shouldUseMultiDBProcedureRunnerWhenConnectingWith40Server() throws Throwable
+    {
+        MultiDatabasesRoutingProcedureRunner procedureRunner = newMultiDBProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
+
+        RoutingProcedureClusterCompositionProvider provider =
+                newClusterCompositionProvider( procedureRunner, connection );
+
+        when( procedureRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedWithNull() );
+        provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() );
+
+        verify( procedureRunner ).run( eq( connection ), any( String.class ), any( InternalBookmark.class ) );
+    }
+
+    @Test
+    void shouldUseProcedureRunnerWhenConnectingWith35AndPreviousServers() throws Throwable
+    {
+        RoutingProcedureRunner procedureRunner = newProcedureRunnerMock();
+        Connection connection = mock( Connection.class );
+
+        RoutingProcedureClusterCompositionProvider provider =
+                newClusterCompositionProvider( procedureRunner, connection );
+
+        when( procedureRunner.run( eq( connection ), any( String.class ), any(InternalBookmark.class ) ) ).thenReturn( completedWithNull() );
+        provider.getClusterComposition( connection, ABSENT_DB_NAME, empty() );
+
+        verify( procedureRunner ).run( eq( connection ), any( String.class ), any( InternalBookmark.class ) );
     }
 
     private static Map<String,Object> serverInfo( String role, String... addresses )
@@ -243,6 +285,11 @@ class RoutingProcedureClusterCompositionProviderTest
         return mock( RoutingProcedureRunner.class );
     }
 
+    private static MultiDatabasesRoutingProcedureRunner newMultiDBProcedureRunnerMock()
+    {
+        return mock( MultiDatabasesRoutingProcedureRunner.class );
+    }
+
     private static RoutingProcedureResponse newRoutingResponse( Record... records )
     {
         return new RoutingProcedureResponse( new Statement( "procedure" ), asList( records ) );
@@ -251,5 +298,23 @@ class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureResponse newRoutingResponse( Throwable error )
     {
         return new RoutingProcedureResponse( new Statement( "procedure" ), error );
+    }
+    
+    private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( RoutingProcedureRunner runner, Connection connection )
+    {
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_5_0 );
+        return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), runner, newMultiDBProcedureRunnerMock() );
+    }
+
+    private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner, Connection connection )
+    {
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
+        return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), newProcedureRunnerMock(), runner );
+    }
+
+    private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner, Connection connection, Clock clock )
+    {
+        when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
+        return new RoutingProcedureClusterCompositionProvider( clock, newProcedureRunnerMock(), runner );
     }
 }

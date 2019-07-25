@@ -28,8 +28,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -93,7 +93,7 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
+    public CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config )
     {
         try
         {
@@ -104,9 +104,9 @@ public class BoltProtocolV3 implements BoltProtocol
             return Futures.failedFuture( error );
         }
 
-        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.databaseName(), connection.mode() );
+        BeginMessage beginMessage = new BeginMessage( bookmark, config, connection.databaseName(), connection.mode() );
 
-        if ( bookmarks.isEmpty() )
+        if ( bookmark.isEmpty() )
         {
             connection.write( beginMessage, NoOpResponseHandler.INSTANCE );
             return Futures.completedWithNull();
@@ -120,9 +120,9 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Bookmarks> commitTransaction( Connection connection )
+    public CompletionStage<InternalBookmark> commitTransaction( Connection connection )
     {
-        CompletableFuture<Bookmarks> commitFuture = new CompletableFuture<>();
+        CompletableFuture<InternalBookmark> commitFuture = new CompletableFuture<>();
         connection.writeAndFlush( COMMIT, new CommitTxResponseHandler( commitFuture ) );
         return commitFuture;
     }
@@ -137,12 +137,12 @@ public class BoltProtocolV3 implements BoltProtocol
 
     @Override
     public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
+            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
-                autoCommitTxRunMessage( statement, config, connection.databaseName(), connection.mode(), bookmarksHolder.getBookmarks() );
-        return buildResultCursorFactory( connection, statement, bookmarksHolder, null, runMessage, waitForRunResponse );
+                autoCommitTxRunMessage( statement, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark() );
+        return buildResultCursorFactory( connection, statement, bookmarkHolder, null, runMessage, waitForRunResponse );
     }
 
     @Override
@@ -150,14 +150,14 @@ public class BoltProtocolV3 implements BoltProtocol
             boolean waitForRunResponse )
     {
         RunWithMetadataMessage runMessage = explicitTxRunMessage( statement );
-        return buildResultCursorFactory( connection, statement, BookmarksHolder.NO_OP, tx, runMessage, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse );
     }
 
-    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
             ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
-        AbstractPullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
+        AbstractPullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
     }

@@ -63,6 +63,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -155,14 +156,14 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     @Test
     void blockingApiBigDataTest()
     {
-        String bookmark = createNodesBlocking( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        Bookmark bookmark = createNodesBlocking( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesBlocking( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
     }
 
     @Test
     void asyncApiBigDataTest() throws Throwable
     {
-        String bookmark = createNodesAsync( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        Bookmark bookmark = createNodesAsync( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesAsync( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
     }
 
@@ -170,7 +171,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
     void rxApiBigDataTest() throws Throwable
     {
-        String bookmark = createNodesRx( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
+        Bookmark bookmark = createNodesRx( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesRx( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
     }
 
@@ -502,9 +503,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         return BIG_DATA_TEST_NODE_COUNT / BIG_DATA_TEST_BATCH_SIZE;
     }
 
-    private static String createNodesBlocking( int batchCount, int batchSize, Driver driver )
+    private static Bookmark createNodesBlocking( int batchCount, int batchSize, Driver driver )
     {
-        String bookmark;
+        Bookmark bookmark;
 
         long start = System.nanoTime();
         try ( Session session = driver.session() )
@@ -522,7 +523,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         return bookmark;
     }
 
-    private static void readNodesBlocking( Driver driver, String bookmark, int expectedNodeCount )
+    private static void readNodesBlocking( Driver driver, Bookmark bookmark, int expectedNodeCount )
     {
         long start = System.nanoTime();
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
@@ -553,7 +554,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.out.println( "Reading nodes with blocking API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
     }
 
-    private static String createNodesAsync( int batchCount, int batchSize, Driver driver ) throws Throwable
+    private static Bookmark createNodesAsync( int batchCount, int batchSize, Driver driver ) throws Throwable
     {
         long start = System.nanoTime();
 
@@ -581,7 +582,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         return session.lastBookmark();
     }
 
-    private static void readNodesAsync( Driver driver, String bookmark, int expectedNodeCount ) throws Throwable
+    private static void readNodesAsync( Driver driver, Bookmark bookmark, int expectedNodeCount ) throws Throwable
     {
         long start = System.nanoTime();
 
@@ -618,7 +619,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.out.println( "Reading nodes with async API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
     }
 
-    private String createNodesRx( int batchCount, int batchSize, InternalDriver driver )
+    private Bookmark createNodesRx( int batchCount, int batchSize, InternalDriver driver )
     {
         long start = System.nanoTime();
 
@@ -642,7 +643,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         } ) );
     }
 
-    private void readNodesRx( InternalDriver driver, String bookmark, int expectedNodeCount )
+    private void readNodesRx( InternalDriver driver, Bookmark bookmark, int expectedNodeCount )
     {
         long start = System.nanoTime();
 

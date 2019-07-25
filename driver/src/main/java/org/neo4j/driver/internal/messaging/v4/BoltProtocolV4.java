@@ -19,7 +19,7 @@
 package org.neo4j.driver.internal.messaging.v4;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.InternalStatementResultCursorFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -47,13 +47,13 @@ public class BoltProtocolV4 extends BoltProtocolV3
     }
 
     @Override
-    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
             ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
-        AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
-        BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarksHolder, tx );
+        AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );
+        BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
         return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }

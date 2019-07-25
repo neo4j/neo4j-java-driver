@@ -30,7 +30,8 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
@@ -38,82 +39,55 @@ import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
-import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 
 public class RoutingProcedureRunner
 {
     static final String ROUTING_CONTEXT = "context";
-    static final String GET_ROUTING_TABLE = "dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
-    static final String DATABASE_NAME = "database";
-    static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME );
+    static final String GET_ROUTING_TABLE = "CALL dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
 
-    private final RoutingContext context;
+    final RoutingContext context;
 
     public RoutingProcedureRunner( RoutingContext context )
     {
         this.context = context;
     }
 
-    public CompletionStage<RoutingProcedureResponse> run( CompletionStage<Connection> connectionStage, String databaseName )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, String databaseName, InternalBookmark bookmark )
     {
-        return connectionStage.thenCompose( connection ->
-        {
-            ServerVersion serverVersion = connection.serverVersion();
-            // As the connection can connect to any router (a.k.a. any core members), this connection strictly speaking is a read connection.
-            DirectConnection delegate = connection( serverVersion, connection );
-            Statement procedure = procedureStatement( serverVersion, databaseName );
-            return runProcedure( delegate, procedure )
-                    .thenCompose( records -> releaseConnection( delegate, records ) )
-                    .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
-        } );
+        DirectConnection delegate = connection( connection );
+        Statement procedure = procedureStatement( connection.serverVersion(), databaseName );
+        BookmarkHolder bookmarkHolder = bookmarkHolder( bookmark );
+        return runProcedure( delegate, procedure, bookmarkHolder )
+                .thenCompose( records -> releaseConnection( delegate, records ) )
+                .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
     }
 
-    CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure )
+    DirectConnection connection( Connection connection )
+    {
+        return new DirectConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
+    }
+
+    Statement procedureStatement( ServerVersion serverVersion, String databaseName )
+    {
+        if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
+        {
+            throw new FatalDiscoveryException( String.format(
+                    "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
+                            "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
+        }
+        return new Statement( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
+    }
+
+    BookmarkHolder bookmarkHolder( InternalBookmark ignored )
+    {
+        return BookmarkHolder.NO_OP;
+    }
+
+    CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure, BookmarkHolder bookmarkHolder )
     {
         return connection.protocol()
-                .runInAutoCommitTransaction( connection, procedure, BookmarksHolder.NO_OP, TransactionConfig.empty(), true )
+                .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true )
                 .asyncResult().thenCompose( StatementResultCursor::listAsync );
-    }
-
-    private DirectConnection connection( ServerVersion serverVersion, Connection connection )
-    {
-        if ( serverVersion.greaterThanOrEqual( v4_0_0 ))
-        {
-            return new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
-        }
-        else
-        {
-            return new DirectConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
-        }
-    }
-
-    private Statement procedureStatement( ServerVersion serverVersion, String databaseName )
-    {
-        /*
-         * For v4.0+ databases, call procedure to get routing table for the database specified.
-         * For database version lower than 4.0, the database name will be ignored.
-         */
-        if ( Objects.equals( ABSENT_DB_NAME, databaseName ) )
-        {
-            databaseName = null;
-        }
-
-        if ( serverVersion.greaterThanOrEqual( v4_0_0 ) )
-        {
-            return new Statement( "CALL " + MULTI_DB_GET_ROUTING_TABLE,
-                    parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, databaseName ) );
-        }
-        else
-        {
-            if ( databaseName != null )
-            {
-                throw new FatalDiscoveryException( String.format( "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
-                        "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
-            }
-            return new Statement( "CALL " + GET_ROUTING_TABLE,
-                    parameters( ROUTING_CONTEXT, context.asMap() ) );
-        }
     }
 
     private CompletionStage<List<Record>> releaseConnection( Connection connection, List<Record> records )
@@ -126,7 +100,7 @@ public class RoutingProcedureRunner
         return connection.release().thenApply( ignore -> records );
     }
 
-    private RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
+    private static RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
             Throwable error )
     {
         Throwable cause = Futures.completionExceptionCause( error );
@@ -140,7 +114,7 @@ public class RoutingProcedureRunner
         }
     }
 
-    private RoutingProcedureResponse handleError( Statement procedure, Throwable error )
+    private static RoutingProcedureResponse handleError( Statement procedure, Throwable error )
     {
         if ( error instanceof ClientException )
         {

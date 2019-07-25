@@ -29,8 +29,10 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -48,12 +50,12 @@ public class NetworkSession
     private static final String LOG_NAME = "Session";
 
     private final ConnectionProvider connectionProvider;
+    private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
-    private final String databaseName;
     private final RetryLogic retryLogic;
     protected final Logger logger;
 
-    private final BookmarksHolder bookmarksHolder;
+    private final BookmarkHolder bookmarkHolder;
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
     private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
@@ -61,14 +63,14 @@ public class NetworkSession
     private final AtomicBoolean open = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode,
-            BookmarksHolder bookmarksHolder, Logging logging )
+            BookmarkHolder bookmarkHolder, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
-        this.bookmarksHolder = bookmarksHolder;
-        this.databaseName = databaseName;
+        this.bookmarkHolder = bookmarkHolder;
+        this.connectionContext = new NetworkSessionConnectionContext( databaseName, bookmarkHolder.getBookmark() );
     }
 
     public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config, boolean waitForRunResponse )
@@ -100,11 +102,11 @@ public class NetworkSession
 
         // create a chain that acquires connection and starts a transaction
         CompletionStage<ExplicitTransaction> newTransactionStage = ensureNoOpenTxBeforeStartingTx()
-                .thenCompose( ignore -> acquireConnection( databaseName, mode ) )
+                .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
-                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarksHolder );
-                    return tx.beginAsync( bookmarksHolder.getBookmarks(), config );
+                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarkHolder );
+                    return tx.beginAsync( bookmarkHolder.getBookmark(), config );
                 } );
 
         // update the reference to the only known transaction
@@ -153,9 +155,9 @@ public class NetworkSession
         return retryLogic;
     }
 
-    public String lastBookmark()
+    public Bookmark lastBookmark()
     {
-        return bookmarksHolder.lastBookmark();
+        return bookmarkHolder.getBookmark();
     }
 
     public CompletionStage<Void> releaseConnectionAsync()
@@ -223,12 +225,12 @@ public class NetworkSession
         ensureSessionIsOpen();
 
         return ensureNoOpenTxBeforeRunningQuery()
-                .thenCompose( ignore -> acquireConnection( databaseName, mode ) )
+                .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection -> {
                     try
                     {
                         StatementResultCursorFactory factory = connection.protocol()
-                                .runInAutoCommitTransaction( connection, statement, bookmarksHolder, config, waitForRunResponse );
+                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse );
                         return completedFuture( factory );
                     }
                     catch ( Throwable e )
@@ -238,7 +240,7 @@ public class NetworkSession
                 } );
     }
 
-    private CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
+    private CompletionStage<Connection> acquireConnection( AccessMode mode )
     {
         CompletionStage<Connection> currentConnectionStage = connectionStage;
 
@@ -274,7 +276,7 @@ public class NetworkSession
                 // there somehow is an existing open connection, this should not happen, just a precondition
                 throw new IllegalStateException( "Existing open connection detected" );
             }
-            return connectionProvider.acquireConnection( databaseName, mode );
+            return connectionProvider.acquireConnection( connectionContext.contextWithMode( mode ) );
         } );
 
         connectionStage = newConnectionStage.exceptionally( error -> null );
@@ -338,4 +340,49 @@ public class NetworkSession
                     "No more interaction with this session are allowed as the current session is already closed. " );
         }
     }
+
+    /**
+     * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
+     */
+    private class NetworkSessionConnectionContext implements ConnectionContext
+    {
+        private final String databaseName;
+        private AccessMode mode;
+
+        // This bookmark is only used for rediscovery.
+        // It has to be the initial bookmark given at the creation of the session.
+        // As only that bookmark could carry extra system bookmarks
+        private final InternalBookmark rediscoveryBookmark;
+
+        private NetworkSessionConnectionContext( String databaseName, InternalBookmark bookmark )
+        {
+            this.databaseName = databaseName;
+            this.rediscoveryBookmark = bookmark;
+        }
+
+        private ConnectionContext contextWithMode( AccessMode mode )
+        {
+            this.mode = mode;
+            return this;
+        }
+
+        @Override
+        public String databaseName()
+        {
+            return databaseName;
+        }
+
+        @Override
+        public AccessMode mode()
+        {
+            return mode;
+        }
+
+        @Override
+        public InternalBookmark rediscoveryBookmark()
+        {
+            return rediscoveryBookmark;
+        }
+    }
+
 }

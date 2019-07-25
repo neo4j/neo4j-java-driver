@@ -35,6 +35,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.integration.RoutingDriverBoltKitTest.PortBasedServerAddressComparator;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.StubServer;
@@ -46,6 +47,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
@@ -136,7 +138,7 @@ class RoutingDriverMultidatabaseBoltKitTest
                     session.run( "MATCH (n) RETURN n.name" );
                 } );
 
-                assertThat( error.getMessage(), containsString( "Could not perform discovery for database 'Unreachable'" ) );
+                assertThat( error.getMessage(), containsString( "Could not perform discovery for database 'unreachable'" ) );
             }
 
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withDatabase( "myDatabase" ).build() ) )
@@ -173,6 +175,63 @@ class RoutingDriverMultidatabaseBoltKitTest
             driver.close();
 
             assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
+        }
+        finally
+        {
+            assertEquals( 0, readServer.exitStatus() );
+            assertEquals( 0, router.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldPassSystemBookmarkWhenGettingRoutingTableForMultiDB() throws Throwable
+    {
+        Bookmark sysBookmark = parse( "sys:1234" );
+        Bookmark fooBookmark = parse( "foo:5678" );
+        StubServer router = StubServer.start( "acquire_endpoints_v4_with_bookmark.script", 9001 );
+        StubServer readServer = StubServer.start( "read_server_v4_read_with_bookmark.script", 9005 );
+
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
+        {
+            try ( Session session = driver.session( builder()
+                    .withDatabase( "foo" )
+                    .withDefaultAccessMode( AccessMode.READ )
+                    .withBookmarks( sysBookmark, fooBookmark )
+                    .build() ) )
+            {
+                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
+                assertEquals( 3, records.size() );
+                assertThat( session.lastBookmark(), equalTo( parse( "foo:6678" ) ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, readServer.exitStatus() );
+            assertEquals( 0, router.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldIgnoreSystemBookmarkWhenGettingRoutingTable() throws Throwable
+    {
+        Bookmark sysBookmark = parse( "sys:1234" );
+        Bookmark fooBookmark = parse( "foo:5678" );
+        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer readServer = StubServer.start( "read_server_v3_read_with_bookmark.script", 9005 );
+
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
+        {
+            try ( Session session = driver.session( builder()
+                    .withDefaultAccessMode( AccessMode.READ )
+                    .withBookmarks( sysBookmark, fooBookmark ) // you can still send, the real server will reject in session run of course.
+                    .build() ) )
+            {
+                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
+                assertEquals( 3, records.size() );
+                assertThat( session.lastBookmark(), equalTo( parse( "foo:6678" ) ) );
+            }
         }
         finally
         {

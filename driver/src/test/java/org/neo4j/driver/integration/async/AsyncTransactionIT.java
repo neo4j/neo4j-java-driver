@@ -42,6 +42,7 @@ import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.types.Node;
@@ -63,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
@@ -91,12 +93,12 @@ class AsyncTransactionIT
     @Test
     void shouldBePossibleToCommitEmptyTx()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         assertThat( await( tx.commitAsync() ), is( nullValue() ) );
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
 
         assertNotNull( bookmarkAfter );
         assertNotEquals( bookmarkBefore, bookmarkAfter );
@@ -105,12 +107,12 @@ class AsyncTransactionIT
     @Test
     void shouldBePossibleToRollbackEmptyTx()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
         assertEquals( bookmarkBefore, bookmarkAfter );
     }
 
@@ -298,7 +300,7 @@ class AsyncTransactionIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        AsyncSession session = neo4j.driver().asyncSession( builder().withBookmarks( "InvalidBookmark" ).build() );
+        AsyncSession session = neo4j.driver().asyncSession( builder().withBookmarks( parse( "InvalidBookmark" ) ).build() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
@@ -654,13 +656,13 @@ class AsyncTransactionIT
     @Test
     void shouldUpdateSessionBookmarkAfterCommit()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         await( session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "CREATE (:MyNode)" )
                         .thenCompose( ignore -> tx.commitAsync() ) ) );
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
 
         assertNotNull( bookmarkAfter );
         assertNotEquals( bookmarkBefore, bookmarkAfter );

@@ -20,14 +20,13 @@ package org.neo4j.driver.internal;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
-import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
@@ -45,17 +44,17 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode )
+    public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
-        return connectionPool.acquire( address ).thenApply( connection -> new DirectConnection( connection, databaseName, mode ) );
+        return connectionPool.acquire( address ).thenApply( connection -> new DirectConnection( connection, context.databaseName(), context.mode() ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
         // We verify the connection by establishing a connection with the remote server specified by the address.
-        // Database name will be ignored as no query is run in this connection and the connection is released immediately.
-        return acquireConnection( ABSENT_DB_NAME, READ ).thenCompose( Connection::release );
+        // Connection context will be ignored as no query is run in this connection and the connection is released immediately.
+        return acquireConnection( simple() ).thenCompose( Connection::release );
     }
 
     @Override

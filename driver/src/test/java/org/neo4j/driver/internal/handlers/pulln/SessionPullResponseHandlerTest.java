@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.handlers.pulln;
 import java.util.Collections;
 import java.util.function.BiConsumer;
 
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -48,8 +48,8 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        BookmarksHolder bookmarksHolder = mock( BookmarksHolder.class );
-        SessionPullResponseHandler handler = newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarksHolder, status);
+        BookmarkHolder bookmarkHolder = mock( BookmarkHolder.class );
+        SessionPullResponseHandler handler = newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarkHolder, status);
 
         // When
         handler.onSuccess( Collections.emptyMap() );
@@ -57,7 +57,7 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
         // Then
         assertThat( handler.status(), equalTo( DONE ) );
         verify( conn ).release();
-        verify( bookmarksHolder ).setBookmarks( any() );
+        verify( bookmarkHolder ).setBookmark( any() );
         verify( recordConsumer ).accept( null, null );
         verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
     }
@@ -86,16 +86,16 @@ class SessionPullResponseHandlerTest extends AbstractBasicPullResponseHandlerTes
     protected AbstractBasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
             BiConsumer<ResultSummary,Throwable> summaryConsumer, Status status )
     {
-        BookmarksHolder bookmarksHolder = mock( BookmarksHolder.class );
-        return newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarksHolder, status );
+        BookmarkHolder bookmarkHolder = mock( BookmarkHolder.class );
+        return newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarkHolder, status );
     }
 
     private static SessionPullResponseHandler newSessionResponseHandler( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-            BiConsumer<ResultSummary,Throwable> summaryConsumer, BookmarksHolder bookmarksHolder, Status status )
+            BiConsumer<ResultSummary,Throwable> summaryConsumer, BookmarkHolder bookmarkHolder, Status status )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         SessionPullResponseHandler handler =
-                new SessionPullResponseHandler( mock( Statement.class ), runHandler, conn, bookmarksHolder, BoltProtocolV4.METADATA_EXTRACTOR );
+                new SessionPullResponseHandler( mock( Statement.class ), runHandler, conn, bookmarkHolder, BoltProtocolV4.METADATA_EXTRACTOR );
 
         handler.installRecordConsumer( recordConsumer );
         handler.installSummaryConsumer( summaryConsumer );

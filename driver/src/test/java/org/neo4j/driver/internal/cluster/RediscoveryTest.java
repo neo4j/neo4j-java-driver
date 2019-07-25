@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -32,6 +31,7 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -54,6 +54,7 @@ import static org.mockito.Mockito.startsWith;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
@@ -82,7 +83,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
         RoutingTable table = routingTableMock( B );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table, never() ).forget( B );
@@ -103,7 +104,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
         RoutingTable table = routingTableMock( A, B, C );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table ).forget( A );
@@ -125,7 +126,8 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
         RoutingTable table = routingTableMock( A, B, C );
 
-        AuthenticationException error = assertThrows( AuthenticationException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
+        AuthenticationException error = assertThrows( AuthenticationException.class,
+                () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertEquals( authError, error );
         verify( table ).forget( A );
     }
@@ -147,7 +149,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
         RoutingTable table = routingTableMock( B, C );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table ).forget( B );
@@ -172,7 +174,7 @@ class RediscoveryTest
         RoutingTable table = routingTableMock( B, C );
 
         // When
-        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
 
         verify( logger ).warn( String.format( "Failed to update routing table with server '%s'.", B ), protocolError );
@@ -197,7 +199,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
         RoutingTable table = routingTableMock( B, C );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table ).forget( B );
@@ -226,7 +228,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, resolver );
         RoutingTable table = routingTableMock( B, C );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table ).forget( B );
@@ -249,7 +251,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, resolver );
         RoutingTable table = routingTableMock();
 
-        RuntimeException error = assertThrows( RuntimeException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
+        RuntimeException error = assertThrows( RuntimeException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertEquals( "Resolver fails!", error.getMessage() );
 
         verify( resolver ).resolve( A );
@@ -268,7 +270,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
         RoutingTable table = routingTableMock( A, B, C );
 
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
     }
 
@@ -290,7 +292,7 @@ class RediscoveryTest
         RoutingTable table = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
         table.update( noWritersComposition );
 
-        ClusterComposition composition2 = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition composition2 = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition2 );
     }
 
@@ -309,7 +311,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
         RoutingTable table = routingTableMock( true, B, C, D );
 
-        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
     }
 
@@ -330,7 +332,7 @@ class RediscoveryTest
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
         RoutingTable table = routingTableMock( true, D, E );
 
-        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
         verify( table ).forget( initialRouter );
         verify( table ).forget( D );
@@ -360,7 +362,7 @@ class RediscoveryTest
         Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGER );
         RoutingTable table = routingTableMock(A, B );
 
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool ) );
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
         verify( table, times( maxRoutingFailures ) ).forget( A );
@@ -384,7 +386,7 @@ class RediscoveryTest
         Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logger );
         RoutingTable table = routingTableMock( A );
 
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool ) ) );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
 
         // rediscovery should not log about retries and should not schedule any retries
@@ -410,10 +412,10 @@ class RediscoveryTest
             Map<BoltServerAddress,Object> responsesByAddress )
     {
         ClusterCompositionProvider provider = mock( ClusterCompositionProvider.class );
-        when( provider.getClusterComposition( any( CompletionStage.class ), any( String.class ) ) ).then( invocation ->
+        when( provider.getClusterComposition( any( Connection.class ), any( String.class ), any( InternalBookmark.class ) ) ).then( invocation ->
         {
-            CompletionStage<Connection> connectionStage = invocation.getArgument( 0 );
-            BoltServerAddress address = await( connectionStage ).serverAddress();
+            Connection connection = invocation.getArgument( 0 );
+            BoltServerAddress address = connection.serverAddress();
             Object response = responsesByAddress.get( address );
             assertNotNull( response );
             if ( response instanceof Throwable )

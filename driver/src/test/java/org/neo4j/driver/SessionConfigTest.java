@@ -27,6 +27,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.internal.Bookmark;
+
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -37,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.defaultConfig;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 class SessionConfigTest
@@ -44,28 +47,28 @@ class SessionConfigTest
     @Test
     void shouldReturnDefaultValues() throws Throwable
     {
-        SessionConfig parameters = defaultConfig();
+        SessionConfig config = defaultConfig();
 
-        Assert.assertEquals( AccessMode.WRITE, parameters.defaultAccessMode() );
-        assertFalse( parameters.database().isPresent() );
-        assertNull( parameters.bookmarks() );
+        Assert.assertEquals( AccessMode.WRITE, config.defaultAccessMode() );
+        assertFalse( config.database().isPresent() );
+        assertNull( config.bookmarks() );
     }
 
     @ParameterizedTest
     @EnumSource( AccessMode.class )
     void shouldChangeAccessMode( AccessMode mode ) throws Throwable
     {
-        SessionConfig parameters = builder().withDefaultAccessMode( mode ).build();
-        assertEquals( mode, parameters.defaultAccessMode() );
+        SessionConfig config = builder().withDefaultAccessMode( mode ).build();
+        assertEquals( mode, config.defaultAccessMode() );
     }
 
     @ParameterizedTest
     @ValueSource( strings = {"foo", "data", "my awesome database", " "} )
     void shouldChangeDatabaseName( String databaseName )
     {
-        SessionConfig parameters = builder().withDatabase( databaseName ).build();
-        assertTrue( parameters.database().isPresent() );
-        assertEquals( databaseName, parameters.database().get() );
+        SessionConfig config = builder().withDatabase( databaseName ).build();
+        assertTrue( config.database().isPresent() );
+        assertEquals( databaseName, config.database().get() );
     }
 
     @Test
@@ -85,30 +88,44 @@ class SessionConfigTest
     @Test
     void shouldAcceptNullBookmarks() throws Throwable
     {
-        SessionConfig parameters = builder().withBookmarks( (String[]) null ).build();
-        assertNull( parameters.bookmarks() );
+        SessionConfig config = builder().withBookmarks( (Bookmark[]) null ).build();
+        assertNull( config.bookmarks() );
 
-        SessionConfig parameters2 = builder().withBookmarks( (List<String>) null ).build();
-        assertNull( parameters2.bookmarks() );
+        SessionConfig config2 = builder().withBookmarks( (List<Bookmark>) null ).build();
+        assertNull( config2.bookmarks() );
     }
 
     @Test
     void shouldAcceptEmptyBookmarks() throws Throwable
     {
-        SessionConfig parameters = builder().withBookmarks().build();
-        assertEquals( emptyList(), parameters.bookmarks() );
+        SessionConfig config = builder().withBookmarks().build();
+        assertEquals( emptyList(), config.bookmarks() );
 
-        SessionConfig parameters2 = builder().withBookmarks( emptyList() ).build();
-        assertEquals( emptyList(), parameters2.bookmarks() );
+        SessionConfig config2 = builder().withBookmarks( emptyList() ).build();
+        assertEquals( emptyList(), config2.bookmarks() );
     }
 
     @Test
     void shouldAcceptBookmarks() throws Throwable
     {
-        SessionConfig parameters = builder().withBookmarks( "one", "two" ).build();
-        assertThat( parameters.bookmarks(), equalTo( Arrays.asList( "one", "two" ) ) );
+        Bookmark one = parse( "one" );
+        Bookmark two = parse( "two" );
+        SessionConfig config = builder().withBookmarks( one, two ).build();
+        assertThat( config.bookmarks(), equalTo( Arrays.asList( one, two ) ) );
 
-        SessionConfig parameters2 = builder().withBookmarks( Arrays.asList( "one", "two" ) ).build();
-        assertThat( parameters2.bookmarks(), equalTo( Arrays.asList( "one", "two" ) ) );
+        SessionConfig config2 = builder().withBookmarks( Arrays.asList( one, two ) ).build();
+        assertThat( config2.bookmarks(), equalTo( Arrays.asList( one, two ) ) );
+    }
+
+    @Test
+    void shouldAcceptNullInBookmarks() throws Throwable
+    {
+        Bookmark one = parse( "one" );
+        Bookmark two = parse( "two" );
+        SessionConfig config = builder().withBookmarks( one, two, null ).build();
+        assertThat( config.bookmarks(), equalTo( Arrays.asList( one, two, null ) ) );
+
+        SessionConfig config2 = builder().withBookmarks( Arrays.asList( one, two, null ) ).build();
+        assertThat( config2.bookmarks(), equalTo( Arrays.asList( one, two, null ) ) );
     }
 }

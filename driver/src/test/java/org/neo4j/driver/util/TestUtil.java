@@ -49,8 +49,9 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.DefaultBookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -90,8 +91,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.internal.Bookmarks.empty;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -219,7 +220,7 @@ public final class TestUtil
         return new LinkedHashSet<>( Arrays.asList( elements ) );
     }
 
-    public static long countNodes( Driver driver, String bookmark )
+    public static long countNodes( Driver driver, Bookmark bookmark )
     {
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
@@ -227,7 +228,7 @@ public final class TestUtil
         }
     }
 
-    public static String cleanDb( Driver driver )
+    public static Bookmark cleanDb( Driver driver )
     {
         try ( Session session = driver.session() )
         {
@@ -236,12 +237,12 @@ public final class TestUtil
         }
     }
 
-    public static NetworkSession newSession( ConnectionProvider connectionProvider, Bookmarks x )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, InternalBookmark x )
     {
         return newSession( connectionProvider, WRITE, x );
     }
 
-    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmarks x )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, InternalBookmark x )
     {
         return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), x );
     }
@@ -262,9 +263,9 @@ public final class TestUtil
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, Bookmarks bookmarks )
+            RetryLogic retryLogic, InternalBookmark bookmark )
     {
-        return new NetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarksHolder( bookmarks ), DEV_NULL_LOGGING );
+        return new NetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarkHolder( bookmark ), DEV_NULL_LOGGING );
     }
 
     public static void verifyRun( Connection connection, String query )
@@ -299,12 +300,12 @@ public final class TestUtil
 
     public static void verifyBeginTx( Connection connectionMock )
     {
-        verifyBeginTx( connectionMock, Bookmarks.empty() );
+        verifyBeginTx( connectionMock, empty() );
     }
 
-    public static void verifyBeginTx( Connection connectionMock, Bookmarks bookmarks )
+    public static void verifyBeginTx( Connection connectionMock, InternalBookmark bookmark )
     {
-        if ( bookmarks.isEmpty() )
+        if ( bookmark.isEmpty() )
         {
             verify( connectionMock ).write( any( BeginMessage.class ), eq( NoOpResponseHandler.INSTANCE ) );
         }

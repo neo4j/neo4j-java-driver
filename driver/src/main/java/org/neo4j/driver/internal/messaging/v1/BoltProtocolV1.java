@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.v1;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -29,8 +30,8 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -53,9 +54,12 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.assertEmptyDatabaseName;
+import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 public class BoltProtocolV1 implements BoltProtocol
 {
@@ -95,7 +99,7 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config )
+    public CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config )
     {
         try
         {
@@ -106,7 +110,7 @@ public class BoltProtocolV1 implements BoltProtocol
             return Futures.failedFuture( error );
         }
 
-        if ( bookmarks.isEmpty() )
+        if ( bookmark.isEmpty() )
         {
             connection.write(
                     BEGIN_MESSAGE, NoOpResponseHandler.INSTANCE,
@@ -118,17 +122,19 @@ public class BoltProtocolV1 implements BoltProtocol
         {
             CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
             connection.writeAndFlush(
-                    new RunMessage( BEGIN_QUERY, bookmarks.asBeginTransactionParameters() ), NoOpResponseHandler.INSTANCE,
+                    new RunMessage( BEGIN_QUERY, SingleBookmarkHelper.asBeginTransactionParameters( bookmark ) ), NoOpResponseHandler.INSTANCE,
                     PullAllMessage.PULL_ALL, new BeginTxResponseHandler( beginTxFuture ) );
 
             return beginTxFuture;
         }
     }
 
+
+
     @Override
-    public CompletionStage<Bookmarks> commitTransaction( Connection connection )
+    public CompletionStage<InternalBookmark> commitTransaction( Connection connection )
     {
-        CompletableFuture<Bookmarks> commitFuture = new CompletableFuture<>();
+        CompletableFuture<InternalBookmark> commitFuture = new CompletableFuture<>();
 
         ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture );
         connection.writeAndFlush(
@@ -153,7 +159,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     @Override
     public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
+            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
         verifyBeforeTransaction( config, connection.databaseName() );
@@ -199,5 +205,76 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         return new ClientException( "Driver is connected to the database that does not support transaction configuration. " +
                 "Please upgrade to neo4j 3.5.0 or later in order to use this functionality" );
+    }
+
+    static class SingleBookmarkHelper
+    {
+        private static final String BOOKMARK_PREFIX = "neo4j:bookmark:v1:tx";
+        private static final long UNKNOWN_BOOKMARK_VALUE = -1;
+
+        static Map<String,Value> asBeginTransactionParameters( InternalBookmark bookmark )
+        {
+            if ( bookmark.isEmpty() )
+            {
+                return emptyMap();
+            }
+
+            // Driver sends {bookmark: "max", bookmarks: ["one", "two", "max"]} instead of simple
+            // {bookmarks: ["one", "two", "max"]} for backwards compatibility reasons. Old servers can only accept single
+            // bookmark that is why driver has to parse and compare given list of bookmarks. This functionality will
+            // eventually be removed.
+            Map<String,Value> parameters = newHashMapWithSize( 1 );
+            parameters.put( "bookmark", value( maxBookmark( bookmark.values() ) ) );
+            parameters.put( "bookmarks", value( bookmark.values() ) );
+            return parameters;
+        }
+
+        private static String maxBookmark( Iterable<String> bookmarks )
+        {
+            if ( bookmarks == null )
+            {
+                return null;
+            }
+
+            Iterator<String> iterator = bookmarks.iterator();
+
+            if ( !iterator.hasNext() )
+            {
+                return null;
+            }
+
+            String maxBookmark = iterator.next();
+            long maxValue = bookmarkValue( maxBookmark );
+
+            while ( iterator.hasNext() )
+            {
+                String bookmark = iterator.next();
+                long value = bookmarkValue( bookmark );
+
+                if ( value > maxValue )
+                {
+                    maxBookmark = bookmark;
+                    maxValue = value;
+                }
+            }
+
+            return maxBookmark;
+        }
+
+        private static long bookmarkValue( String value )
+        {
+            if ( value != null && value.startsWith( BOOKMARK_PREFIX ) )
+            {
+                try
+                {
+                    return Long.parseLong( value.substring( BOOKMARK_PREFIX.length() ) );
+                }
+                catch ( NumberFormatException e )
+                {
+                    return UNKNOWN_BOOKMARK_VALUE;
+                }
+            }
+            return UNKNOWN_BOOKMARK_VALUE;
+        }
     }
 }

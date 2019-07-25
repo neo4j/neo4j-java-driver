@@ -26,7 +26,7 @@ import java.util.Map;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.UntrustedServerException;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalDatabaseInfo;
 import org.neo4j.driver.internal.summary.InternalNotification;
@@ -121,14 +121,14 @@ public class MetadataExtractor
         }
     }
 
-    public static Bookmarks extractBookmarks( Map<String,Value> metadata )
+    public static InternalBookmark extractBookmarks( Map<String,Value> metadata )
     {
         Value bookmarkValue = metadata.get( "bookmark" );
         if ( bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType( TYPE_SYSTEM.STRING() ) )
         {
-            return Bookmarks.from( bookmarkValue.asString() );
+            return InternalBookmark.parse( bookmarkValue.asString() );
         }
-        return Bookmarks.empty();
+        return InternalBookmark.empty();
     }
 
     public static ServerVersion extractNeo4jServerVersion( Map<String,Value> metadata )

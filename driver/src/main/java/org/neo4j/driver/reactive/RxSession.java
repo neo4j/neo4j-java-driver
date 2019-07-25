@@ -28,6 +28,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.Bookmark;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
@@ -231,7 +232,7 @@ public interface RxSession extends RxStatementRunner
      *
      * @return a reference to a previous transaction.
      */
-    String lastBookmark();
+    Bookmark lastBookmark();
 
     /**
      * Signal that you are done using this session.

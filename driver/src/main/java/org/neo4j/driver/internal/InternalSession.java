@@ -124,7 +124,7 @@ public class InternalSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public String lastBookmark()
+    public Bookmark lastBookmark()
     {
         return session.lastBookmark();
     }

@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.Statement;
@@ -30,20 +30,20 @@ import static java.util.Objects.requireNonNull;
 
 public class SessionPullAllResponseHandler extends AbstractPullAllResponseHandler
 {
-    private final BookmarksHolder bookmarksHolder;
+    private final BookmarkHolder bookmarkHolder;
 
     public SessionPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, BookmarksHolder bookmarksHolder, MetadataExtractor metadataExtractor )
+            Connection connection, BookmarkHolder bookmarkHolder, MetadataExtractor metadataExtractor )
     {
         super( statement, runResponseHandler, connection, metadataExtractor );
-        this.bookmarksHolder = requireNonNull( bookmarksHolder );
+        this.bookmarkHolder = requireNonNull( bookmarkHolder );
     }
 
     @Override
     protected void afterSuccess( Map<String,Value> metadata )
     {
         releaseConnection();
-        bookmarksHolder.setBookmarks( metadataExtractor.extractBookmarks( metadata ) );
+        bookmarkHolder.setBookmark( metadataExtractor.extractBookmarks( metadata ) );
     }
 
     @Override

@@ -43,6 +43,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
@@ -69,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
@@ -93,12 +95,12 @@ class RxTransactionIT
     @Test
     void shouldBePossibleToCommitEmptyTx()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         Mono<Void> commit = Mono.from( session.beginTransaction() ).flatMap( tx -> Mono.from( tx.commit() ) );
         StepVerifier.create( commit ).verifyComplete();
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
 
         assertNotNull( bookmarkAfter );
         assertNotEquals( bookmarkBefore, bookmarkAfter );
@@ -107,12 +109,12 @@ class RxTransactionIT
     @Test
     void shouldBePossibleToRollbackEmptyTx()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         Mono<Void> rollback = Mono.from( session.beginTransaction() ).flatMap( tx -> Mono.from( tx.rollback() ) );
         StepVerifier.create( rollback ).verifyComplete();
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
         assertEquals( bookmarkBefore, bookmarkAfter );
     }
 
@@ -247,7 +249,7 @@ class RxTransactionIT
     @Test
     void shouldFailBoBeginTxWithInvalidBookmark()
     {
-        RxSession session = neo4j.driver().rxSession( builder().withBookmarks( "InvalidBookmark" ).build() );
+        RxSession session = neo4j.driver().rxSession( builder().withBookmarks( parse( "InvalidBookmark" ) ).build() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( session.beginTransaction() ) );
         assertThat( e.getMessage(), containsString( "InvalidBookmark" ) );
@@ -696,14 +698,14 @@ class RxTransactionIT
     @Test
     void shouldUpdateSessionBookmarkAfterCommit()
     {
-        String bookmarkBefore = session.lastBookmark();
+        Bookmark bookmarkBefore = session.lastBookmark();
 
         await( Flux.usingWhen( session.beginTransaction(),
                 tx -> tx.run( "CREATE (:MyNode)" ).records(),
                 RxTransaction::commit,
                 RxTransaction::rollback ) );
 
-        String bookmarkAfter = session.lastBookmark();
+        Bookmark bookmarkAfter = session.lastBookmark();
 
         assertNotNull( bookmarkAfter );
         assertNotEquals( bookmarkBefore, bookmarkAfter );

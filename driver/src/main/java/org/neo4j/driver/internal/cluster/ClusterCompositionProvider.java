@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 
 public interface ClusterCompositionProvider
 {
-    CompletionStage<ClusterComposition> getClusterComposition( CompletionStage<Connection> connectionStage, String databaseName );
+    CompletionStage<ClusterComposition> getClusterComposition( Connection connection, String databaseName, InternalBookmark bookmark );
 }

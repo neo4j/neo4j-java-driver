@@ -30,8 +30,8 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
@@ -70,11 +70,11 @@ public interface BoltProtocol
      * Begin an explicit transaction.
      *
      * @param connection the connection to use.
-     * @param bookmarks the bookmarks. Never null, should be {@link Bookmarks#empty()} when absent.
+     * @param bookmark the bookmarks. Never null, should be {@link InternalBookmark#empty()} when absent.
      * @param config the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction( Connection connection, Bookmarks bookmarks, TransactionConfig config );
+    CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config );
 
     /**
      * Commit the explicit transaction.
@@ -82,7 +82,7 @@ public interface BoltProtocol
      * @param connection the connection to use.
      * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
      */
-    CompletionStage<Bookmarks> commitTransaction( Connection connection );
+    CompletionStage<InternalBookmark> commitTransaction( Connection connection );
 
     /**
      * Rollback the explicit transaction.
@@ -97,7 +97,7 @@ public interface BoltProtocol
      *
      * @param connection the network connection to use.
      * @param statement the cypher to execute.
-     * @param bookmarksHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
+     * @param bookmarkHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
      * @param config the transaction config for the implicitly started auto-commit transaction.
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
      * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
@@ -105,7 +105,7 @@ public interface BoltProtocol
      * @return stage with cursor.
      */
     StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse );
+            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse );
 
     /**
      * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.

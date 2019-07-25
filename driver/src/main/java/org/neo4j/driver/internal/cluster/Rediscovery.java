@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 public interface Rediscovery
 {
-    CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool );
+    CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark );
 }
