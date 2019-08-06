@@ -22,7 +22,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.EncoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,27 +29,25 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.UntrustedServerException;
 
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class InitResponseHandlerTest
 {
@@ -77,11 +74,11 @@ class InitResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         InitResponseHandler handler = new InitResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_2_0.toString() ) );
+        Map<String,Value> metadata = singletonMap( "server", value( anyServerVersion().toString() ) );
         handler.onSuccess( metadata );
 
         assertTrue( channelPromise.isSuccess() );
-        assertEquals( ServerVersion.v3_2_0, serverVersion( channel ) );
+        assertEquals( anyServerVersion(), serverVersion( channel ) );
     }
 
     @Test
@@ -95,29 +92,16 @@ class InitResponseHandlerTest
     }
 
     @Test
-    void shouldAllowByteArraysForNewerVersions()
+    void shouldAllowByteArrays()
     {
         InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
-        Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_2_0.toString() ) );
+        Map<String,Value> metadata = singletonMap( "server", value( anyServerVersion().toString() ) );
         handler.onSuccess( metadata );
 
         Map<String,Value> params = singletonMap( "array", value( new byte[]{1, 2, 3} ) );
         assertTrue( channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
         assertTrue( channel.finish() );
-    }
-
-    @Test
-    void shouldNotAllowByteArraysForOldVersions()
-    {
-        InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
-
-        Map<String,Value> metadata = singletonMap( "server", value( ServerVersion.v3_0_0.toString() ) );
-        handler.onSuccess( metadata );
-
-        Map<String,Value> params = singletonMap( "array", value( new byte[]{1, 2, 3} ) );
-        EncoderException error = assertThrows( EncoderException.class, () -> channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
-        assertThat( error.getCause().getMessage(), startsWith( "Packing bytes is not supported" ) );
     }
 
     @Test

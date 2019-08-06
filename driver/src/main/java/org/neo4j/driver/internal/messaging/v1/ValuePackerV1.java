@@ -31,12 +31,9 @@ public class ValuePackerV1 implements ValuePacker
 {
     protected final PackStream.Packer packer;
 
-    private final boolean byteArraySupportEnabled;
-
-    public ValuePackerV1( PackOutput output, boolean byteArraySupportEnabled )
+    public ValuePackerV1( PackOutput output )
     {
         this.packer = new PackStream.Packer( output );
-        this.byteArraySupportEnabled = byteArraySupportEnabled;
     }
 
     @Override
@@ -89,11 +86,6 @@ public class ValuePackerV1 implements ValuePacker
             break;
 
         case BYTES:
-            if ( !byteArraySupportEnabled )
-            {
-                throw new PackStream.UnPackable(
-                        "Packing bytes is not supported as the current server this driver connected to does not support unpack bytes." );
-            }
             packer.pack( value.asByteArray() );
             break;
 

@@ -63,7 +63,7 @@ class NettyChannelInitializerTest
     @Test
     void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
-        SecurityPlan security = trustAllCertificates();
+        SecurityPlan security = secure();
         NettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
@@ -86,7 +86,7 @@ class NettyChannelInitializerTest
     void shouldAddSslHandlerWithHandshakeTimeout() throws Exception
     {
         int timeoutMillis = 424242;
-        SecurityPlan security = trustAllCertificates();
+        SecurityPlan security = secure();
         NettyChannelInitializer initializer = newInitializer( security, timeoutMillis );
 
         initializer.initChannel( channel );
@@ -115,7 +115,7 @@ class NettyChannelInitializerTest
     void shouldIncludeSniHostName() throws Exception
     {
         BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
-        NettyChannelInitializer initializer = new NettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
+        NettyChannelInitializer initializer = new NettyChannelInitializer( address, secure(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
@@ -142,7 +142,7 @@ class NettyChannelInitializerTest
 
     private void testHostnameVerificationSetting( boolean enabled, String expectedValue ) throws Exception
     {
-        NettyChannelInitializer initializer = newInitializer( SecurityPlan.forAllCertificates( enabled ) );
+        NettyChannelInitializer initializer = newInitializer( SecurityPlan.forSystemCASignedCertificates( enabled ) );
 
         initializer.initChannel( channel );
 
@@ -169,8 +169,9 @@ class NettyChannelInitializerTest
                 DEV_NULL_LOGGING );
     }
 
-    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
+    private static SecurityPlan secure() throws GeneralSecurityException
     {
-        return SecurityPlan.forAllCertificates( false );
+        // Any secure security plan
+        return SecurityPlan.forSystemCASignedCertificates( false );
     }
 }

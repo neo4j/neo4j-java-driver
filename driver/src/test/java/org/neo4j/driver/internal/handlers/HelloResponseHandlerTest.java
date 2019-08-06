@@ -30,25 +30,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.UntrustedServerException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class HelloResponseHandlerTest
 {
@@ -75,11 +75,11 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, "bolt-1" );
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-1" );
         handler.onSuccess( metadata );
 
         assertTrue( channelPromise.isSuccess() );
-        assertEquals( ServerVersion.v3_2_0, serverVersion( channel ) );
+        assertEquals( anyServerVersion(), serverVersion( channel ) );
     }
 
     @Test
@@ -127,7 +127,7 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, "bolt-42" );
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-42" );
         handler.onSuccess( metadata );
 
         assertTrue( channelPromise.isSuccess() );
@@ -140,7 +140,7 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = metadata( ServerVersion.v3_1_0, null );
+        Map<String,Value> metadata = metadata( anyServerVersion(), null );
         assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed
@@ -153,7 +153,7 @@ class HelloResponseHandlerTest
         ChannelPromise channelPromise = channel.newPromise();
         HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
 
-        Map<String,Value> metadata = metadata( ServerVersion.v3_2_0, Values.NULL );
+        Map<String,Value> metadata = metadata( anyServerVersion(), Values.NULL );
         assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
 
         assertFalse( channelPromise.isSuccess() ); // initialization failed

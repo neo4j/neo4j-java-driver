@@ -44,6 +44,7 @@ import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 
 /**
@@ -60,7 +61,7 @@ class ServerKilledIT
     {
         return Stream.of(
                 Arguments.of( "plaintext", Config.builder().withoutEncryption() ),
-                Arguments.of( "tls encrypted", Config.builder().withEncryption() )
+                Arguments.of( "tls encrypted", Config.builder().withEncryption().withTrustStrategy( trustCustomCertificateSignedBy( neo4j.tlsCertFile() ) ) )
         );
     }
 

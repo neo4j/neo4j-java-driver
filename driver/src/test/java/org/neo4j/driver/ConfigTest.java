@@ -44,7 +44,7 @@ class ConfigTest
         Config.TrustStrategy authConfig = config.trustStrategy();
 
         // Then
-        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_ALL_CERTIFICATES );
+        assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
     }
 
     @Test
@@ -249,8 +249,8 @@ class ConfigTest
     @Test
     void shouldEnableAndDisableHostnameVerificationOnTrustStrategy()
     {
-        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustAllCertificates();
-        assertFalse( trustStrategy.isHostnameVerificationEnabled() );
+        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
+        assertTrue( trustStrategy.isHostnameVerificationEnabled() );
 
         assertSame( trustStrategy, trustStrategy.withHostnameVerification() );
         assertTrue( trustStrategy.isHostnameVerificationEnabled() );

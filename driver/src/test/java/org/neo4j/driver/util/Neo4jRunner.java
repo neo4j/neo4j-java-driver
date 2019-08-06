@@ -27,13 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.internal.BoltServerAddress;
 
-import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -55,11 +54,9 @@ public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
 
-    private static final File DEFAULT_KNOWN_HOSTS = new File( getProperty( "user.home" ), ".neo4j" + File.separator + "known_hosts" );
-
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.5.3";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
-    public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( INFO ) ).build();
+    public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( INFO ) ).withoutEncryption().build();
 
     public static final String USER = "neo4j";
     public static final String PASSWORD = "password";
@@ -161,9 +158,6 @@ public class Neo4jRunner
 
     private void installNeo4j() throws IOException
     {
-        // this is required for windows as python scripts cannot delete the file when it is used by driver tests
-        deleteDefaultKnownCertFileIfExists(); // Remove this once TrustOnFirstUse is removed.
-
         File targetHomeFile = new File( HOME_DIR );
         if( targetHomeFile.exists() )
         {
@@ -338,14 +332,6 @@ public class Neo4jRunner
     public static void debug( String text, Object... args )
     {
         System.out.println( String.format( text, args ) );
-    }
-
-    private static void deleteDefaultKnownCertFileIfExists()
-    {
-        if ( DEFAULT_KNOWN_HOSTS.exists() )
-        {
-            FileTools.deleteFile( DEFAULT_KNOWN_HOSTS );
-        }
     }
 }
 

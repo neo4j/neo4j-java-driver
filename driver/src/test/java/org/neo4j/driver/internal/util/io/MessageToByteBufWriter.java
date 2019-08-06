@@ -41,7 +41,7 @@ public class MessageToByteBufWriter
         {
             ByteBuf buf = Unpooled.buffer();
             ByteBufOutput output = new ByteBufOutput( buf );
-            messageFormat.newWriter( output, true ).write( message );
+            messageFormat.newWriter( output ).write( message );
             return buf;
         }
         catch ( IOException e )

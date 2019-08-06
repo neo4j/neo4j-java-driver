@@ -35,7 +35,7 @@ public interface MessageFormat
         void read( ResponseMessageHandler handler ) throws IOException;
     }
 
-    Writer newWriter( PackOutput output, boolean byteArraySupportEnabled );
+    Writer newWriter( PackOutput output );
 
     Reader newReader( PackInput input );
 }

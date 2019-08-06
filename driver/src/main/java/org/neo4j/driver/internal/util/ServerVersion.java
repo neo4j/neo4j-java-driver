@@ -34,9 +34,6 @@ public class ServerVersion
     public static final ServerVersion v4_0_0 = new ServerVersion( NEO4J_PRODUCT, 4, 0, 0 );
     public static final ServerVersion v3_5_0 = new ServerVersion( NEO4J_PRODUCT, 3, 5, 0 );
     public static final ServerVersion v3_4_0 = new ServerVersion( NEO4J_PRODUCT, 3, 4, 0 );
-    public static final ServerVersion v3_2_0 = new ServerVersion( NEO4J_PRODUCT, 3, 2, 0 );
-    public static final ServerVersion v3_1_0 = new ServerVersion( NEO4J_PRODUCT, 3, 1, 0 );
-    public static final ServerVersion v3_0_0 = new ServerVersion( NEO4J_PRODUCT, 3, 0, 0 );
     public static final ServerVersion vInDev = new ServerVersion( NEO4J_PRODUCT, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE );
 
     private static final String NEO4J_IN_DEV_VERSION_STRING = NEO4J_PRODUCT + "/dev";

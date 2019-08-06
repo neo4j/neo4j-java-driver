@@ -34,7 +34,7 @@ public class ConfigTrustExample implements AutoCloseable
     public ConfigTrustExample( String uri, String user, String password )
     {
         Config config = Config.builder()
-                .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
                 .build();
 
         driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ), config );

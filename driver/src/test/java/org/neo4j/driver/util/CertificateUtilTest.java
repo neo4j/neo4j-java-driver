@@ -31,9 +31,9 @@ import org.neo4j.driver.internal.util.CertificateTool;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.CertificateTool.saveX509Cert;
-import static org.neo4j.driver.util.CertificateToolUtil.generateSelfSignedCertificate;
+import static org.neo4j.driver.util.CertificateUtil.generateSelfSignedCertificate;
 
-public class CertificateToolTest
+public class CertificateUtilTest
 {
     @Test
     void shouldLoadMultipleCertsIntoKeyStore() throws Throwable

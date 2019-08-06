@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
@@ -41,11 +43,8 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
-import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.util.io.ByteBufOutput;
 import org.neo4j.driver.internal.util.ThrowingConsumer;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.util.io.ByteBufOutput;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
 
@@ -56,31 +55,22 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.Values.point;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.packstream.PackStream.FLOAT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_16;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_32;
 import static org.neo4j.driver.internal.packstream.PackStream.INT_64;
 import static org.neo4j.driver.internal.packstream.PackStream.Packer;
 import static org.neo4j.driver.internal.packstream.PackStream.STRING_8;
-import static org.neo4j.driver.Values.point;
-import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class MessageFormatV2Test
 {
     private final MessageFormatV2 messageFormat = new MessageFormatV2();
-
-    @Test
-    void shouldFailToCreateWriterWithoutByteArraySupport()
-    {
-        PackOutput output = mock( PackOutput.class );
-
-        assertThrows( IllegalArgumentException.class, () -> messageFormat.newWriter( output, false ) );
-    }
 
     @Test
     void shouldWritePoint2D() throws Exception
@@ -422,7 +412,7 @@ class MessageFormatV2Test
 
     private MessageFormat.Writer newWriter( ByteBuf buf )
     {
-        return messageFormat.newWriter( new ByteBufOutput( buf ), true );
+        return messageFormat.newWriter( new ByteBufOutput( buf ) );
     }
 
     private static long localEpochSecondOf( ZonedDateTime dateTime )

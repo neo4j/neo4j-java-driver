@@ -34,7 +34,6 @@ import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Resource;
 
-import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.Logging.javaUtilLogging;
 
 /**
@@ -249,8 +248,8 @@ public class Config
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
-        private boolean encrypted = true;
-        private TrustStrategy trustStrategy = trustAllCertificates();
+        private boolean encrypted = false;
+        private TrustStrategy trustStrategy = TrustStrategy.trustSystemCertificates();
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
         private long routingTablePurgeDelayMillis = RoutingSettings.DEFAULT.routingTablePurgeDelayMs();
@@ -439,7 +438,7 @@ public class Config
 
         /**
          * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
-         * This defaults to {@link TrustStrategy#trustAllCertificates()}.
+         * This defaults to {@link TrustStrategy#trustSystemCertificates()}.
          * See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to verify
          * trust.
          * <p>
@@ -688,16 +687,13 @@ public class Config
          */
         public enum Strategy
         {
-            TRUST_ALL_CERTIFICATES,
-
             TRUST_CUSTOM_CA_SIGNED_CERTIFICATES,
-
             TRUST_SYSTEM_CA_SIGNED_CERTIFICATES
         }
 
         private final Strategy strategy;
         private final File certFile;
-        private boolean hostnameVerificationEnabled;
+        private boolean hostnameVerificationEnabled = true;
 
         private TrustStrategy( Strategy strategy )
         {
@@ -785,17 +781,6 @@ public class Config
         public static TrustStrategy trustSystemCertificates()
         {
             return new TrustStrategy( Strategy.TRUST_SYSTEM_CA_SIGNED_CERTIFICATES );
-        }
-
-        /**
-         * Trust strategy for certificates that can be verified through the local system store.
-         *
-         * @return an authentication config
-         * @since 1.1
-         */
-        public static TrustStrategy trustAllCertificates()
-        {
-            return new TrustStrategy( Strategy.TRUST_ALL_CERTIFICATES );
         }
     }
 }

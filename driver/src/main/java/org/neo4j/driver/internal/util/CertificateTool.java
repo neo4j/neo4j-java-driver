@@ -33,7 +33,7 @@ import java.security.cert.CertificateFactory;
 import java.util.Base64;
 
 /**
- * A tool related to save, load certs, etc.
+ * A tool used to save, load certs, etc.
  */
 public class CertificateTool
 {

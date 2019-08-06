@@ -37,8 +37,6 @@ import static io.netty.buffer.ByteBufUtil.hexDump;
 public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 {
     public static final String NAME = OutboundMessageHandler.class.getSimpleName();
-
-    private final MessageFormat messageFormat;
     private final ChunkAwareByteBufOutput output;
     private final MessageFormat.Writer writer;
     private final Logging logging;
@@ -47,14 +45,8 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
     public OutboundMessageHandler( MessageFormat messageFormat, Logging logging )
     {
-        this( messageFormat, true, logging );
-    }
-
-    private OutboundMessageHandler( MessageFormat messageFormat, boolean byteArraySupportEnabled, Logging logging )
-    {
-        this.messageFormat = messageFormat;
         this.output = new ChunkAwareByteBufOutput();
-        this.writer = messageFormat.newWriter( output, byteArraySupportEnabled );
+        this.writer = messageFormat.newWriter( output );
         this.logging = logging;
     }
 
@@ -97,10 +89,5 @@ public class OutboundMessageHandler extends MessageToMessageEncoder<Message>
 
         BoltProtocolUtil.writeMessageBoundary( messageBuf );
         out.add( messageBuf );
-    }
-
-    public OutboundMessageHandler withoutByteArraySupport()
-    {
-        return new OutboundMessageHandler( messageFormat, false, logging );
     }
 }

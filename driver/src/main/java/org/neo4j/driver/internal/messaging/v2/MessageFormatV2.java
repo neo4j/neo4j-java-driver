@@ -50,12 +50,8 @@ public class MessageFormatV2 extends MessageFormatV1
     public static final int POINT_3D_STRUCT_SIZE = 4;
 
     @Override
-    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public Writer newWriter( PackOutput output )
     {
-        if ( !byteArraySupportEnabled )
-        {
-            throw new IllegalArgumentException( "Bolt V2 should support byte arrays" );
-        }
         return new MessageWriterV2( output );
     }
 

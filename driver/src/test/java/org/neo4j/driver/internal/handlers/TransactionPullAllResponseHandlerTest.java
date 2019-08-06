@@ -31,12 +31,12 @@ import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class TransactionPullAllResponseHandlerTest
 {
@@ -60,7 +60,7 @@ class TransactionPullAllResponseHandlerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
+        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         PullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler,
