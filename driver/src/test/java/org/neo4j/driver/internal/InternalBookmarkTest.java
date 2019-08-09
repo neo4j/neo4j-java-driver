@@ -20,8 +20,11 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.driver.internal.util.Iterables;
@@ -104,7 +107,7 @@ class InternalBookmarkTest
     void bookmarkFromString()
     {
         InternalBookmark bookmark = InternalBookmark.parse( "Cat" );
-        assertEquals( Collections.singletonList( "Cat" ), bookmark.values() );
+        assertEquals( singletonList( "Cat" ), bookmark.values() );
         verifyValues( bookmark, "Cat" );
     }
 
@@ -133,7 +136,7 @@ class InternalBookmarkTest
     @Test
     void bookmarkFromEmptyIterable()
     {
-        InternalBookmark bookmark = InternalBookmark.parse( Collections.<String>emptyList() );
+        InternalBookmark bookmark = InternalBookmark.parse( emptyList() );
         assertTrue( bookmark.isEmpty() );
     }
 
@@ -167,6 +170,25 @@ class InternalBookmarkTest
 
         List<String> bookmarks = asList( "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx2", "neo4j:bookmark:v1:tx3" );
         assertIterableEquals( bookmarks, InternalBookmark.parse( bookmarks ).values() );
+    }
+
+    @Test
+    void objectShouldBeTheSameWhenSerializingAndDeserializing() throws Throwable
+    {
+        Bookmark bookmark = InternalBookmark.parse( Arrays.asList( "neo4j:1000", "neo4j:2000" ) );
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream( outputStream );
+        objectOutputStream.writeObject( bookmark );
+        objectOutputStream.flush();
+        objectOutputStream.close();
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream( outputStream.toByteArray() );
+        ObjectInputStream objectInputStream = new ObjectInputStream( inputStream );
+        Bookmark readBookmark = (InternalBookmark) objectInputStream.readObject();
+        objectInputStream.close();
+
+        assertEquals( bookmark, readBookmark );
     }
 
     private static void verifyValues( InternalBookmark bookmark, String... expectedValues )

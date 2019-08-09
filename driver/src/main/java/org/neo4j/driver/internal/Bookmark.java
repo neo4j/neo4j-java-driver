@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serializable;
+
 /**
  * Causal chaining is carried out by passing bookmarks between transactions.
  *
@@ -29,6 +31,6 @@ package org.neo4j.driver.internal;
  *
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
-public interface Bookmark
+public interface Bookmark extends Serializable
 {
 }

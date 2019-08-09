@@ -18,20 +18,30 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 public final class InternalBookmark implements Bookmark
 {
     private static final InternalBookmark EMPTY = new InternalBookmark( Collections.emptySet() );
 
-    private final Iterable<String> values;
+    private final Collection<String> values;
 
-    private InternalBookmark( Iterable<String> values )
+    private InternalBookmark( Collection<String> values )
     {
+        requireNonNull( values );
+        if ( !(values instanceof Serializable) )
+        {
+            // The Collection interface does not enforce Serializable, but all built-in Collection implementations actually are Serializable.
+            // This check ensures that we always provide values using these java built-in Collection objects.
+            throw new IllegalArgumentException( "The bookmark value should only be of Java built-in types such as ArrayList, HashSet which are serializable." );
+        }
         this.values = values;
     }
 
@@ -65,10 +75,10 @@ public final class InternalBookmark implements Bookmark
         {
             if ( value == null )
             {
-                continue; // skip any null bookmark objects
+                continue; // skip any null bookmark value
             }
             assertInternalBookmark( value );
-            ((InternalBookmark) value).values.forEach( newValues::add );
+            newValues.addAll( ((InternalBookmark) value).values );
         }
         return new InternalBookmark( newValues );
     }
@@ -103,7 +113,7 @@ public final class InternalBookmark implements Bookmark
     /**
      * Used for test only
      */
-    public static InternalBookmark parse( Iterable<String> values )
+    public static InternalBookmark parse( Collection<String> values )
     {
         if ( values == null )
         {
@@ -114,11 +124,7 @@ public final class InternalBookmark implements Bookmark
 
     public boolean isEmpty()
     {
-        if ( values instanceof Collection )
-        {
-            return ((Collection) values).isEmpty();
-        }
-        return !values.iterator().hasNext();
+        return values.isEmpty();
     }
 
     public Iterable<String> values()
