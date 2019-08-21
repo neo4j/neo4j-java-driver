@@ -89,9 +89,9 @@ class DirectDriverBoltKitTest
     {
         StubServer server = StubServer.start( "multiple_bookmarks.script", 9001 );
 
-        List<String> bookmarks = asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
+        Bookmark bookmarks = InternalBookmark.parse( asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
-                "neo4j:bookmark:v1:tx68" );
+                "neo4j:bookmark:v1:tx68" ) );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
               Session session = driver.session( builder().withBookmarks( bookmarks ).build() ) )
@@ -102,7 +102,7 @@ class DirectDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "neo4j:bookmark:v1:tx95", session.lastBookmark() );
+            assertEquals( InternalBookmark.parse( "neo4j:bookmark:v1:tx95" ), session.lastBookmark() );
         }
         finally
         {
@@ -240,8 +240,9 @@ class DirectDriverBoltKitTest
     {
         StubServer server = StubServer.start( "database_shutdown.script", 9001 );
 
+        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx0" );
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( "neo4j:bookmark:v1:tx0" ).build() );
+                Session session = driver.session( builder().withBookmarks( bookmark ).build() );
                 // has to enforce to flush BEGIN to have tx started.
                 Transaction transaction = session.beginTransaction() )
         {

@@ -22,23 +22,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.HashSet;
-
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
-import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkContainsSingleValue;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkIsEmpty;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarksContainsSingleUniqueValues;
 
 @ParallelizableIT
 class BookmarkIT
@@ -57,23 +60,38 @@ class BookmarkIT
     }
 
     @Test
+    @DisabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
     void shouldReceiveBookmarkOnSuccessfulCommit() throws Throwable
     {
         // Given
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         // When
         createNodeInTx( session );
 
         // Then
-        assertNotNull( session.lastBookmark() );
-        assertThat( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
+        assertBookmarkContainsSingleValue( session.lastBookmark(), startsWith( "neo4j:bookmark:v1:tx" ) );
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
+    void shouldReceiveNewBookmarkOnSuccessfulCommit() throws Throwable
+    {
+        // Given
+        assertBookmarkIsEmpty( session.lastBookmark() );
+
+        // When
+        createNodeInTx( session );
+
+        // Then
+        assertBookmarkContainsSingleValue( session.lastBookmark(), startsWith( "neo4j:" ) );
+        assertBookmarkContainsSingleValue( session.lastBookmark(), not( startsWith( "neo4j:bookmark:v1:tx" ) ) );
     }
 
     @Test
     void shouldThrowForInvalidBookmark()
     {
-        String invalidBookmark = "hi, this is an invalid bookmark";
+        Bookmark invalidBookmark = parse( "hi, this is an invalid bookmark" );
 
         try ( Session session = driver.session( builder().withBookmarks( invalidBookmark ).build() ) )
         {
@@ -84,12 +102,12 @@ class BookmarkIT
     @Test
     void bookmarkRemainsAfterRolledBackTx()
     {
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         createNodeInTx( session );
 
-        String bookmark = session.lastBookmark();
-        assertNotNull( bookmark );
+        Bookmark bookmark = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark );
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -103,12 +121,12 @@ class BookmarkIT
     @Test
     void bookmarkRemainsAfterTxFailure()
     {
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         createNodeInTx( session );
 
-        String bookmark = session.lastBookmark();
-        assertNotNull( bookmark );
+        Bookmark bookmark = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark );
 
         Transaction tx = session.beginTransaction();
         tx.run( "RETURN" );
@@ -121,12 +139,12 @@ class BookmarkIT
     @Test
     void bookmarkRemainsAfterSuccessfulSessionRun()
     {
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         createNodeInTx( session );
 
-        String bookmark = session.lastBookmark();
-        assertNotNull( bookmark );
+        Bookmark bookmark = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark );
 
         session.run( "RETURN 1" ).consume();
 
@@ -136,12 +154,12 @@ class BookmarkIT
     @Test
     void bookmarkRemainsAfterFailedSessionRun()
     {
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         createNodeInTx( session );
 
-        String bookmark = session.lastBookmark();
-        assertNotNull( bookmark );
+        Bookmark bookmark = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark );
 
         assertThrows( ClientException.class, () -> session.run( "RETURN" ).consume() );
         assertEquals( bookmark, session.lastBookmark() );
@@ -150,27 +168,27 @@ class BookmarkIT
     @Test
     void bookmarkIsUpdatedOnEveryCommittedTx()
     {
-        assertNull( session.lastBookmark() );
+        assertBookmarkIsEmpty( session.lastBookmark() );
 
         createNodeInTx( session );
-        String bookmark1 = session.lastBookmark();
-        assertNotNull( bookmark1 );
+        Bookmark bookmark1 = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark1 );
 
         createNodeInTx( session );
-        String bookmark2 = session.lastBookmark();
-        assertNotNull( bookmark2 );
+        Bookmark bookmark2 = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark2 );
 
         createNodeInTx( session );
-        String bookmark3 = session.lastBookmark();
-        assertNotNull( bookmark3 );
+        Bookmark bookmark3 = session.lastBookmark();
+        assertBookmarkContainsSingleValue( bookmark3 );
 
-        assertEquals( 3, new HashSet<>( asList( bookmark1, bookmark2, bookmark3 ) ).size() );
+        assertBookmarksContainsSingleUniqueValues( bookmark1, bookmark2, bookmark3 );
     }
 
     @Test
     void createSessionWithInitialBookmark()
     {
-        String bookmark = "TheBookmark";
+        Bookmark bookmark = parse( "TheBookmark" );
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );
@@ -180,7 +198,7 @@ class BookmarkIT
     @Test
     void createSessionWithAccessModeAndInitialBookmark()
     {
-        String bookmark = "TheBookmark";
+        Bookmark bookmark = parse( "TheBookmark" );
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             assertEquals( bookmark, session.lastBookmark() );

@@ -29,6 +29,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
@@ -111,7 +112,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
     }
 
     @Override
-    public String lastBookmark()
+    public Bookmark lastBookmark()
     {
         return session.lastBookmark();
     }

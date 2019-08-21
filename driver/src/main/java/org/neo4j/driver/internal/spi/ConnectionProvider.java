@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.spi;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.async.ConnectionContext;
 
 /**
  * Interface defines a layer used by the driver to obtain connections. It is meant to be the only component that
@@ -28,7 +28,7 @@ import org.neo4j.driver.AccessMode;
  */
 public interface ConnectionProvider
 {
-    CompletionStage<Connection> acquireConnection( String databaseName, AccessMode mode );
+    CompletionStage<Connection> acquireConnection( ConnectionContext context );
 
     /**
      * The validation of connectivity will happen with the default database.

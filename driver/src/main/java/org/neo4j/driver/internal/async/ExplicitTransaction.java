@@ -27,8 +27,8 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -66,22 +66,22 @@ public class ExplicitTransaction
 
     private final Connection connection;
     private final BoltProtocol protocol;
-    private final BookmarksHolder bookmarksHolder;
+    private final BookmarkHolder bookmarkHolder;
     private final ResultCursorsHolder resultCursors;
 
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection connection, BookmarksHolder bookmarksHolder )
+    public ExplicitTransaction( Connection connection, BookmarkHolder bookmarkHolder )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
-        this.bookmarksHolder = bookmarksHolder;
+        this.bookmarkHolder = bookmarkHolder;
         this.resultCursors = new ResultCursorsHolder();
     }
 
-    public CompletionStage<ExplicitTransaction> beginAsync( Bookmarks initialBookmarks, TransactionConfig config )
+    public CompletionStage<ExplicitTransaction> beginAsync( InternalBookmark initialBookmark, TransactionConfig config )
     {
-        return protocol.beginTransaction( connection, initialBookmarks, config )
+        return protocol.beginTransaction( connection, initialBookmark, config )
                 .handle( ( ignore, beginError ) ->
                 {
                     if ( beginError != null )
@@ -224,7 +224,7 @@ public class ExplicitTransaction
             return failedFuture( new ClientException( "Transaction can't be committed. " +
                                                       "It has been rolled back either because of an error or explicit termination" ) );
         }
-        return protocol.commitTransaction( connection ).thenAccept( bookmarksHolder::setBookmarks );
+        return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }
 
     private CompletionStage<Void> doRollbackAsync()

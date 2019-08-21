@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.util.Futures;
@@ -175,7 +176,7 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     }
 
     @Override
-    public String lastBookmark()
+    public Bookmark lastBookmark()
     {
         return session.lastBookmark();
     }

@@ -30,7 +30,8 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.summary.DatabaseInfo;
@@ -356,33 +357,33 @@ class MetadataExtractorTest
     {
         String bookmarkValue = "neo4j:bookmark:v1:tx123456";
 
-        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", value( bookmarkValue ) ) );
+        Bookmark bookmark = extractor.extractBookmarks( singletonMap( "bookmark", value( bookmarkValue ) ) );
 
-        assertEquals( Bookmarks.from( bookmarkValue ), bookmarks );
+        assertEquals( InternalBookmark.parse( bookmarkValue ), bookmark );
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNull()
     {
-        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", null ) );
+        Bookmark bookmark = extractor.extractBookmarks( singletonMap( "bookmark", null ) );
 
-        assertEquals( Bookmarks.empty(), bookmarks );
+        assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsNullValue()
     {
-        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", Values.NULL ) );
+        Bookmark bookmark = extractor.extractBookmarks( singletonMap( "bookmark", Values.NULL ) );
 
-        assertEquals( Bookmarks.empty(), bookmarks );
+        assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
     void shouldExtractNoBookmarkWhenMetadataContainsValueOfIncorrectType()
     {
-        Bookmarks bookmarks = extractor.extractBookmarks( singletonMap( "bookmark", value( 42 ) ) );
+        Bookmark bookmark = extractor.extractBookmarks( singletonMap( "bookmark", value( 42 ) ) );
 
-        assertEquals( Bookmarks.empty(), bookmarks );
+        assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test

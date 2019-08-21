@@ -26,8 +26,10 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.lang.String.format;
 
@@ -37,22 +39,35 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
 
     private final Clock clock;
     private final RoutingProcedureRunner routingProcedureRunner;
+    private final RoutingProcedureRunner multiDatabaseRoutingProcedureRunner;
 
     public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingContext routingContext )
     {
-        this( clock, new RoutingProcedureRunner( routingContext ) );
+        this( clock, new RoutingProcedureRunner( routingContext ), new MultiDatabasesRoutingProcedureRunner( routingContext ) );
     }
 
-    RoutingProcedureClusterCompositionProvider( Clock clock, RoutingProcedureRunner routingProcedureRunner )
+    RoutingProcedureClusterCompositionProvider( Clock clock, RoutingProcedureRunner routingProcedureRunner,
+            MultiDatabasesRoutingProcedureRunner multiDatabaseRoutingProcedureRunner )
     {
         this.clock = clock;
         this.routingProcedureRunner = routingProcedureRunner;
+        this.multiDatabaseRoutingProcedureRunner = multiDatabaseRoutingProcedureRunner;
     }
 
     @Override
-    public CompletionStage<ClusterComposition> getClusterComposition( CompletionStage<Connection> connectionStage, String databaseName )
+    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, String databaseName, InternalBookmark bookmark )
     {
-        return routingProcedureRunner.run( connectionStage, databaseName )
+        RoutingProcedureRunner runner;
+        if ( connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) )
+        {
+            runner = multiDatabaseRoutingProcedureRunner;
+        }
+        else
+        {
+            runner = routingProcedureRunner;
+        }
+
+        return runner.run( connection, databaseName, bookmark )
                 .thenApply( this::processRoutingResponse );
     }
 

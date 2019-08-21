@@ -35,6 +35,7 @@ import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
@@ -82,17 +83,17 @@ public class RediscoveryImpl implements Rediscovery
      * @return new cluster composition.
      */
     @Override
-    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool )
+    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
-        lookupClusterComposition( routingTable, connectionPool, 0, 0, result );
+        lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark );
         return result;
     }
 
     private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool,
-            int failures, long previousDelay, CompletableFuture<ClusterComposition> result )
+            int failures, long previousDelay, CompletableFuture<ClusterComposition> result, InternalBookmark bookmark )
     {
-        lookup( routingTable, pool ).whenComplete( ( composition, completionError ) ->
+        lookup( routingTable, pool, bookmark ).whenComplete( ( composition, completionError ) ->
         {
             Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
@@ -115,7 +116,7 @@ public class RediscoveryImpl implements Rediscovery
                     long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
                     logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
                     eventExecutorGroup.next().schedule(
-                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result ),
+                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark ),
                             nextDelay, TimeUnit.MILLISECONDS
                     );
                 }
@@ -123,52 +124,52 @@ public class RediscoveryImpl implements Rediscovery
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool )
+    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
     {
         CompletionStage<ClusterComposition> compositionStage;
 
         if ( routingTable.preferInitialRouter() )
         {
-            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool );
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmark );
         }
         else
         {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool );
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmark );
         }
 
         return compositionStage;
     }
 
     private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool )
+            ConnectionPool connectionPool, InternalBookmark bookmark )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRouters( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnInitialRouter( routingTable, connectionPool, seenServers );
+            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark );
         } );
     }
 
     private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool )
+            ConnectionPool connectionPool, InternalBookmark bookmark )
     {
         Set<BoltServerAddress> seenServers = emptySet();
-        return lookupOnInitialRouter( routingTable, connectionPool, seenServers ).thenCompose( composition ->
+        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>() );
+            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmark );
         } );
     }
 
     private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, InternalBookmark bookmark )
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
@@ -183,7 +184,7 @@ public class RediscoveryImpl implements Rediscovery
                 }
                 else
                 {
-                    return lookupOnRouter( address, routingTable, connectionPool )
+                    return lookupOnRouter( address, routingTable, connectionPool, bookmark )
                             .whenComplete( ( ignore, error ) -> seenServers.add( address ) );
                 }
             } );
@@ -192,7 +193,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers )
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, InternalBookmark bookmark )
     {
         List<BoltServerAddress> addresses;
         try
@@ -214,29 +215,30 @@ public class RediscoveryImpl implements Rediscovery
                 {
                     return completedFuture( composition );
                 }
-                return lookupOnRouter( address, routingTable, connectionPool );
+                return lookupOnRouter( address, routingTable, connectionPool, bookmark );
             } );
         }
         return result;
     }
 
     private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
-            RoutingTable routingTable, ConnectionPool connectionPool )
+            RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
     {
         CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 
-        return provider.getClusterComposition( connectionStage, routingTable.database() ).handle( ( response, error ) ->
-        {
-            Throwable cause = Futures.completionExceptionCause( error );
-            if ( cause != null )
-            {
-                return handleRoutingProcedureError( cause, routingTable, routerAddress );
-            }
-            else
-            {
-                return response;
-            }
-        } );
+        return connectionStage
+                .thenCompose( connection -> provider.getClusterComposition( connection, routingTable.database(), bookmark ) )
+                .handle( ( response, error ) -> {
+                    Throwable cause = Futures.completionExceptionCause( error );
+                    if ( cause != null )
+                    {
+                        return handleRoutingProcedureError( cause, routingTable, routerAddress );
+                    }
+                    else
+                    {
+                        return response;
+                    }
+                } );
     }
 
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,

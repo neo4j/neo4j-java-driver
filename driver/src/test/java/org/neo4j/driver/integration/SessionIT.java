@@ -86,10 +86,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkContainsSingleValue;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkIsEmpty;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -327,13 +329,13 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
 
             long answer = session.readTransaction( tx -> tx.run( "RETURN 42" ).single().get( 0 ).asLong() );
             assertEquals( 42, answer );
 
             // bookmark should be not-null after commit
-            assertNotNull( session.lastBookmark() );
+            assertBookmarkContainsSingleValue( session.lastBookmark() );
         }
     }
 
@@ -363,7 +365,7 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
 
             long answer = session.readTransaction( tx ->
             {
@@ -374,7 +376,7 @@ class SessionIT
             assertEquals( 42, answer );
 
             // bookmark should remain null after rollback
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
         }
     }
 
@@ -409,7 +411,7 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
 
             assertThrows( IllegalStateException.class, () ->
                     session.readTransaction( tx ->
@@ -423,7 +425,7 @@ class SessionIT
                     } ) );
 
             // bookmark should remain null after rollback
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
         }
     }
 
@@ -456,7 +458,7 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
 
             long answer = session.readTransaction( tx ->
             {
@@ -468,7 +470,7 @@ class SessionIT
             assertEquals( 42, answer );
 
             // bookmark should remain null after rollback
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
         }
     }
 
@@ -504,7 +506,7 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
 
             assertThrows( IllegalStateException.class, () ->
                     session.readTransaction( tx ->
@@ -515,7 +517,7 @@ class SessionIT
                     } ) );
 
             // bookmark should remain null after rollback
-            assertNull( session.lastBookmark() );
+            assertBookmarkIsEmpty( session.lastBookmark() );
         }
     }
 

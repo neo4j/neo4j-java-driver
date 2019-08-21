@@ -34,6 +34,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
@@ -64,6 +65,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithMode;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
@@ -90,7 +94,7 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        Connection acquired = await( loadBalancer.acquireConnection( ABSENT_DB_NAME, mode ) );
+        Connection acquired = await( loadBalancer.acquireConnection( contextWithMode( mode ) ) );
 
         assertThat( acquired, instanceOf( RoutingConnection.class ) );
         assertThat( acquired.mode(), equalTo( mode ) );
@@ -102,13 +106,13 @@ class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet readerAddresses = mock( AddressSet.class );
-        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
-        when( routingTable.readers() ).thenReturn( readerAddresses );
+        AddressSet writerAddresses = mock( AddressSet.class );
+        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
+        when( routingTable.writers() ).thenReturn( writerAddresses );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        Connection acquired = await( loadBalancer.acquireConnection( databaseName, READ ) );
+        Connection acquired = await( loadBalancer.acquireConnection( contextWithDatabase( databaseName ) ) );
 
         assertThat( acquired, instanceOf( RoutingConnection.class ) );
         assertThat( acquired.databaseName(), equalTo( databaseName ) );
@@ -125,10 +129,10 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        SessionExpiredException error1 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( ABSENT_DB_NAME, READ ) ) );
+        SessionExpiredException error1 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( READ ) ) ) );
         assertThat( error1.getMessage(), startsWith( "Failed to obtain connection towards READ server" ) );
 
-        SessionExpiredException error2 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( ABSENT_DB_NAME, WRITE ) ) );
+        SessionExpiredException error2 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( WRITE ) ) ) );
         assertThat( error2.getMessage(), startsWith( "Failed to obtain connection towards WRITE server" ) );
     }
 
@@ -152,7 +156,7 @@ class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = await( loadBalancer.acquireConnection( ABSENT_DB_NAME, READ ) );
+            Connection connection = await( loadBalancer.acquireConnection( simple() ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -176,7 +180,7 @@ class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = await( loadBalancer.acquireConnection( ABSENT_DB_NAME, READ ) );
+            Connection connection = await( loadBalancer.acquireConnection( simple() ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -195,7 +199,7 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        Connection connection = await( loadBalancer.acquireConnection( ABSENT_DB_NAME, READ ) );
+        Connection connection = await( loadBalancer.acquireConnection( simple() ) );
 
         assertNotNull( connection );
         assertEquals( B, connection.serverAddress() );
@@ -232,9 +236,8 @@ class LoadBalancerTest
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
         RoutingTableHandler handler = mock( RoutingTableHandler.class );
         when( handler.routingTable() ).thenReturn( routingTable );
-        when( routingTables.refreshRoutingTable( any( String.class ), any( AccessMode.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
+        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
         return new LoadBalancer( connectionPool, routingTables, DEV_NULL_LOGGER, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
                 GlobalEventExecutor.INSTANCE );
     }
-
 }

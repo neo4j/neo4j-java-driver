@@ -29,6 +29,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.Bookmark;
 
 /**
  * Provides a context of work for database interactions.
@@ -301,7 +302,7 @@ public interface AsyncSession extends AsyncStatementRunner
      *
      * @return a reference to a previous transaction
      */
-    String lastBookmark();
+    Bookmark lastBookmark();
 
     /**
      * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is

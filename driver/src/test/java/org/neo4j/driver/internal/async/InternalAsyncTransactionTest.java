@@ -27,7 +27,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -72,7 +71,7 @@ class InternalAsyncTransactionTest
     {
         connection = connectionMock( BoltProtocolV4.INSTANCE );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection ) );
         InternalAsyncSession session = new InternalAsyncSession( newSession( connectionProvider ) );
         tx = (InternalAsyncTransaction) await( session.beginTransactionAsync() );

@@ -55,11 +55,11 @@ public final class TemporalUtil
      * Other time zones are not working correctly in some Java versions
      */
     private static final List<String> BLACKLISTED_ZONE_IDS = Arrays.asList(
-            // removed
             "Canada/East-Saskatchewan",
-            // is broken for years in distant future in Java 11 (example of a misbehaving date: +71235332-08-09T22:41:50.738292551-06:00[Chile/EasterIsland])
             "Chile/EasterIsland",
-            "Africa/Casablanca"
+            "Africa/Casablanca",
+            "tzid",
+            "Asia/Qostanay"
             );
 
     private TemporalUtil()

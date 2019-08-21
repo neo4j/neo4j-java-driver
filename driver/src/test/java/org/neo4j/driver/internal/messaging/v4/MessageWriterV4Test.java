@@ -22,7 +22,7 @@ import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -73,23 +73,23 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
                 GOODBYE,
-                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
-                new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, "foo" ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, "foo" ),
                 COMMIT,
                 ROLLBACK,
 
                 RESET,
                 autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, READ,
-                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), "foo", WRITE,
-                        Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 explicitTxRunMessage( new Statement( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                        ABSENT_DB_NAME, READ, Bookmarks.empty() ),
+                        ABSENT_DB_NAME, READ, InternalBookmark.empty() ),
                 autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), "foo",
-                        WRITE, Bookmarks.empty() ),
+                        WRITE, InternalBookmark.empty() ),
                 explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }

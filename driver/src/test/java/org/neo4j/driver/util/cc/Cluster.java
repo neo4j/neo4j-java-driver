@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.util.TestUtil;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
@@ -77,7 +78,7 @@ public class Cluster implements AutoCloseable
     {
         // execute write query to remove all nodes and retrieve bookmark
         Driver driverToLeader = clusterDrivers.getDriver( leader() );
-        String bookmark = TestUtil.cleanDb( driverToLeader );
+        Bookmark bookmark = TestUtil.cleanDb( driverToLeader );
         if ( bookmark == null )
         {
             throw new IllegalStateException( "Cleanup of the database did not produce a bookmark" );

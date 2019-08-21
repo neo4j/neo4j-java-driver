@@ -27,7 +27,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.AccessMode;
@@ -50,7 +50,7 @@ class BeginMessageEncoderTest
     @EnumSource( AccessMode.class )
     void shouldEncodeBeginMessage( AccessMode mode ) throws Exception
     {
-        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
+        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "hello", value( "world" ) );
@@ -58,13 +58,13 @@ class BeginMessageEncoderTest
 
         Duration txTimeout = Duration.ofSeconds( 1 );
 
-        encoder.encode( new BeginMessage( bookmarks, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
+        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
         expectedMetadata.put( "tx_timeout", value( 1000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )

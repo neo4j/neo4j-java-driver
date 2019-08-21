@@ -41,6 +41,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithMode;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -56,11 +58,11 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection1, connection2 );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
+        Connection acquired1 = await( provider.acquireConnection( contextWithMode( READ ) ) );
         assertThat( acquired1, instanceOf( DirectConnection.class ) );
         assertSame( connection1, ((DirectConnection) acquired1).connection() );
 
-        Connection acquired2 = await( provider.acquireConnection( ABSENT_DB_NAME, WRITE ) );
+        Connection acquired2 = await( provider.acquireConnection( contextWithMode( WRITE ) ) );
         assertThat( acquired2, instanceOf( DirectConnection.class ) );
         assertSame( connection2, ((DirectConnection) acquired2).connection() );
     }
@@ -73,7 +75,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired = await( provider.acquireConnection( ABSENT_DB_NAME, mode ) );
+        Connection acquired = await( provider.acquireConnection( contextWithMode( mode ) ) );
 
         assertEquals( mode, acquired.mode() );
     }
@@ -109,7 +111,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, connection );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired1 = await( provider.acquireConnection( ABSENT_DB_NAME, READ ) );
+        Connection acquired1 = await( provider.acquireConnection( contextWithMode( READ ) ) );
         assertThat( acquired1, instanceOf( DirectConnection.class ) );
         assertSame( connection, ((DirectConnection) acquired1).connection() );
 
@@ -125,7 +127,7 @@ class DirectConnectionProviderTest
         ConnectionPool pool = poolMock( address, mock( Connection.class ) );
         DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
 
-        Connection acquired = await( provider.acquireConnection( databaseName, READ ) );
+        Connection acquired = await( provider.acquireConnection( contextWithDatabase( databaseName ) ) );
 
         assertEquals( databaseName, acquired.databaseName() );
     }

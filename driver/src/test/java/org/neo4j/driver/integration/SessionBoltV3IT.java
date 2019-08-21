@@ -38,6 +38,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
@@ -193,21 +194,21 @@ class SessionBoltV3IT
     void shouldUseBookmarksForAutoCommitTransactions()
     {
         Session session = driver.session();
-        String initialBookmark = session.lastBookmark();
+        Bookmark initialBookmark = session.lastBookmark();
 
         session.run( "CREATE ()" ).consume();
-        String bookmark1 = session.lastBookmark();
+        Bookmark bookmark1 = session.lastBookmark();
         assertNotNull( bookmark1 );
         assertNotEquals( initialBookmark, bookmark1 );
 
         session.run( "CREATE ()" ).consume();
-        String bookmark2 = session.lastBookmark();
+        Bookmark bookmark2 = session.lastBookmark();
         assertNotNull( bookmark2 );
         assertNotEquals( initialBookmark, bookmark2 );
         assertNotEquals( bookmark1, bookmark2 );
 
         session.run( "CREATE ()" ).consume();
-        String bookmark3 = session.lastBookmark();
+        Bookmark bookmark3 = session.lastBookmark();
         assertNotNull( bookmark3 );
         assertNotEquals( initialBookmark, bookmark3 );
         assertNotEquals( bookmark1, bookmark3 );
@@ -218,19 +219,19 @@ class SessionBoltV3IT
     void shouldUseBookmarksForAutoCommitAndExplicitTransactions()
     {
         Session session = driver.session();
-        String initialBookmark = session.lastBookmark();
+        Bookmark initialBookmark = session.lastBookmark();
 
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE ()" );
             tx.success();
         }
-        String bookmark1 = session.lastBookmark();
+        Bookmark bookmark1 = session.lastBookmark();
         assertNotNull( bookmark1 );
         assertNotEquals( initialBookmark, bookmark1 );
 
         session.run( "CREATE ()" ).consume();
-        String bookmark2 = session.lastBookmark();
+        Bookmark bookmark2 = session.lastBookmark();
         assertNotNull( bookmark2 );
         assertNotEquals( initialBookmark, bookmark2 );
         assertNotEquals( bookmark1, bookmark2 );
@@ -240,7 +241,7 @@ class SessionBoltV3IT
             tx.run( "CREATE ()" );
             tx.success();
         }
-        String bookmark3 = session.lastBookmark();
+        Bookmark bookmark3 = session.lastBookmark();
         assertNotNull( bookmark3 );
         assertNotEquals( initialBookmark, bookmark3 );
         assertNotEquals( bookmark1, bookmark3 );
@@ -251,21 +252,21 @@ class SessionBoltV3IT
     void shouldUseBookmarksForAutoCommitTransactionsAndTransactionFunctions()
     {
         Session session = driver.session();
-        String initialBookmark = session.lastBookmark();
+        Bookmark initialBookmark = session.lastBookmark();
 
         session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
-        String bookmark1 = session.lastBookmark();
+        Bookmark bookmark1 = session.lastBookmark();
         assertNotNull( bookmark1 );
         assertNotEquals( initialBookmark, bookmark1 );
 
         session.run( "CREATE ()" ).consume();
-        String bookmark2 = session.lastBookmark();
+        Bookmark bookmark2 = session.lastBookmark();
         assertNotNull( bookmark2 );
         assertNotEquals( initialBookmark, bookmark2 );
         assertNotEquals( bookmark1, bookmark2 );
 
         session.writeTransaction( tx -> tx.run( "CREATE ()" ) );
-        String bookmark3 = session.lastBookmark();
+        Bookmark bookmark3 = session.lastBookmark();
         assertNotNull( bookmark3 );
         assertNotEquals( initialBookmark, bookmark3 );
         assertNotEquals( bookmark1, bookmark3 );

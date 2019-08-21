@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalBookmark;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -35,7 +35,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 
 class CommitTxResponseHandlerTest
 {
-    private final CompletableFuture<Bookmarks> future = new CompletableFuture<>();
+    private final CompletableFuture<InternalBookmark> future = new CompletableFuture<>();
     private final CommitTxResponseHandler handler = new CommitTxResponseHandler( future );
 
     @Test
@@ -53,7 +53,7 @@ class CommitTxResponseHandlerTest
 
         handler.onSuccess( singletonMap( "bookmark", value( bookmarkString ) ) );
 
-        assertEquals( Bookmarks.from( bookmarkString ), await( future ) );
+        assertEquals( InternalBookmark.parse( bookmarkString ), await( future ) );
     }
 
     @Test

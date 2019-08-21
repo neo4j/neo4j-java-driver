@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import org.neo4j.driver.AccessMode;
@@ -29,7 +30,8 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
@@ -44,7 +46,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +60,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
@@ -83,7 +83,7 @@ class NetworkSessionTest
     {
         connection = connectionMock( BoltProtocolV4.INSTANCE );
         connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection ) );
         session = newSession( connectionProvider );
     }
@@ -181,7 +181,7 @@ class NetworkSessionTest
     {
         run( session, "RETURN 1" );
 
-        verify( connectionProvider ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
     }
 
     @Test
@@ -205,7 +205,7 @@ class NetworkSessionTest
     {
         await( session.resetAsync() );
 
-        verify( connectionProvider, never() ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider, never() ).acquireConnection( any( ConnectionContext.class ) );
     }
 
     @Test
@@ -215,7 +215,7 @@ class NetworkSessionTest
 
         close( session );
 
-        verify( connectionProvider, never() ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider, never() ).acquireConnection( any( ConnectionContext.class ) );
     }
 
     @Test
@@ -224,13 +224,13 @@ class NetworkSessionTest
         ExplicitTransaction tx = beginTransaction( session );
 
         assertNotNull( tx );
-        verify( connectionProvider ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
     }
 
     @Test
     void updatesBookmarkWhenTxIsClosed()
     {
-        Bookmarks bookmarkAfterCommit = Bookmarks.from( "TheBookmark" );
+        Bookmark bookmarkAfterCommit = InternalBookmark.parse( "TheBookmark" );
 
         BoltProtocol protocol = spy( BoltProtocolV4.INSTANCE );
         doReturn( completedFuture( bookmarkAfterCommit ) ).when( protocol ).commitTransaction( any( Connection.class ) );
@@ -238,11 +238,13 @@ class NetworkSessionTest
         when( connection.protocol() ).thenReturn( protocol );
 
         ExplicitTransaction tx = beginTransaction( session );
-        assertNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
+        InternalBookmark bookmark = (InternalBookmark) session.lastBookmark();
+        assertTrue( bookmark.isEmpty() );
 
         tx.success();
         await( tx.closeAsync() );
-        assertEquals( "TheBookmark", session.lastBookmark() );
+        assertEquals( bookmarkAfterCommit, session.lastBookmark() );
     }
 
     @Test
@@ -254,7 +256,7 @@ class NetworkSessionTest
         ExplicitTransaction tx = beginTransaction( session );
         await( tx.runAsync( new Statement( query ), false ) );
 
-        verify( connectionProvider ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
         verifyRunAndPull( connection, query );
 
         await( tx.closeAsync() );
@@ -264,58 +266,67 @@ class NetworkSessionTest
     @Test
     void bookmarkIsPropagatedFromSession()
     {
-        Bookmarks bookmarks = Bookmarks.from( "Bookmarks" );
-        NetworkSession session = newSession( connectionProvider, bookmarks );
+        InternalBookmark bookmark = InternalBookmark.parse( "Bookmarks" );
+        NetworkSession session = newSession( connectionProvider, bookmark );
 
         ExplicitTransaction tx = beginTransaction( session );
         assertNotNull( tx );
-        verifyBeginTx( connection, bookmarks );
+        verifyBeginTx( connection, bookmark );
     }
 
     @Test
     void bookmarkIsPropagatedBetweenTransactions()
     {
-        Bookmarks bookmarks1 = Bookmarks.from( "Bookmark1" );
-        Bookmarks bookmarks2 = Bookmarks.from( "Bookmark2" );
+        InternalBookmark bookmark1 = InternalBookmark.parse( "Bookmark1" );
+        Bookmark bookmark2 = InternalBookmark.parse( "Bookmark2" );
 
         NetworkSession session = newSession( connectionProvider );
 
         BoltProtocol protocol = spy( BoltProtocolV4.INSTANCE );
-        doReturn( completedFuture( bookmarks1 ), completedFuture( bookmarks2 ) ).when( protocol ).commitTransaction( any( Connection.class ) );
+        doReturn( completedFuture( bookmark1 ), completedFuture( bookmark2 ) ).when( protocol ).commitTransaction( any( Connection.class ) );
 
         when( connection.protocol() ).thenReturn( protocol );
 
         ExplicitTransaction tx1 = beginTransaction( session );
         tx1.success();
         await( tx1.closeAsync() );
-        assertEquals( bookmarks1, Bookmarks.from( session.lastBookmark() ) );
+        assertEquals( bookmark1, session.lastBookmark() );
 
         ExplicitTransaction tx2 = beginTransaction( session );
-        verifyBeginTx( connection, bookmarks1 );
+        verifyBeginTx( connection, bookmark1 );
         tx2.success();
         await( tx2.closeAsync() );
 
-        assertEquals( bookmarks2, Bookmarks.from( session.lastBookmark() ) );
+        assertEquals( bookmark2, session.lastBookmark() );
     }
 
     @Test
-    void accessModeUsedToAcquireConnections()
+    void accessModeUsedToAcquireReadConnections()
     {
-        NetworkSession session1 = newSession( connectionProvider, READ );
-        beginTransaction( session1 );
-        verify( connectionProvider ).acquireConnection( ABSENT_DB_NAME, READ );
+        accessModeUsedToAcquireConnections( READ );
+    }
 
-        NetworkSession session2 = newSession( connectionProvider, WRITE );
+    @Test
+    void accessModeUsedToAcquireWriteConnections()
+    {
+        accessModeUsedToAcquireConnections( WRITE );
+    }
+
+    private void accessModeUsedToAcquireConnections( AccessMode mode )
+    {
+        NetworkSession session2 = newSession( connectionProvider, mode );
         beginTransaction( session2 );
-        verify( connectionProvider ).acquireConnection( ABSENT_DB_NAME, WRITE );
+        ArgumentCaptor<ConnectionContext> argument = ArgumentCaptor.forClass( ConnectionContext.class );
+        verify( connectionProvider ).acquireConnection( argument.capture() );
+        assertEquals( mode, argument.getValue().mode() );
     }
 
     @Test
     void testPassingNoBookmarkShouldRetainBookmark()
     {
-        NetworkSession session = newSession( connectionProvider, Bookmarks.from( "X" ) );
+        NetworkSession session = newSession( connectionProvider, InternalBookmark.parse( "X" ) );
         beginTransaction( session );
-        assertThat( session.lastBookmark(), equalTo( "X" ) );
+        assertThat( session.lastBookmark(), equalTo( InternalBookmark.parse( "X" ) ) );
     }
 
     @Test
@@ -332,16 +343,18 @@ class NetworkSessionTest
     }
 
     @Test
-    void shouldHaveNullLastBookmarkInitially()
+    void shouldHaveEmptyLastBookmarkInitially()
     {
-        assertNull( session.lastBookmark() );
+        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
+        InternalBookmark bookmark = (InternalBookmark) session.lastBookmark();
+        assertTrue( bookmark.isEmpty() );
     }
 
     @Test
     void shouldDoNothingWhenClosingWithoutAcquiredConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) ).thenReturn( failedFuture( error ) );
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) ).thenReturn( failedFuture( error ) );
 
         Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
         assertEquals( error, e );
@@ -353,7 +366,7 @@ class NetworkSessionTest
     void shouldRunAfterRunFailureToAcquireConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
 
         Exception e = assertThrows( Exception.class, () -> run( session,"RETURN 1" ) );
@@ -361,7 +374,7 @@ class NetworkSessionTest
 
         run( session, "RETURN 2" );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
         verifyRunAndPull( connection, "RETURN 2" );
     }
 
@@ -373,19 +386,19 @@ class NetworkSessionTest
         setupFailingBegin( connection1, error );
         Connection connection2 = connectionMock( BoltProtocolV4.INSTANCE );
 
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmarks );
+        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        NetworkSession session = newSession( connectionProvider, bookmark );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
         assertEquals( error, e );
 
         run( session, "RETURN 2" );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( String.class ), any( AccessMode.class ) );
-        verifyBeginTx( connection1, bookmarks );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
+        verifyBeginTx( connection1, bookmark );
         verifyRunAndPull( connection2, "RETURN 2" );
     }
 
@@ -397,27 +410,27 @@ class NetworkSessionTest
         setupFailingBegin( connection1, error );
         Connection connection2 = connectionMock( BoltProtocolV4.INSTANCE );
 
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmarks );
+        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        NetworkSession session = newSession( connectionProvider, bookmark );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
         assertEquals( error, e );
 
         beginTransaction( session );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( String.class ), any( AccessMode.class ) );
-        verifyBeginTx( connection1, bookmarks );
-        verifyBeginTx( connection2, bookmarks );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
+        verifyBeginTx( connection1, bookmark );
+        verifyBeginTx( connection2, bookmark );
     }
 
     @Test
     void shouldBeginTxAfterRunFailureToAcquireConnection()
     {
         RuntimeException error = new RuntimeException( "Hi" );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
 
         Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
@@ -425,7 +438,7 @@ class NetworkSessionTest
 
         beginTransaction( session );
 
-        verify( connectionProvider, times( 2 ) ).acquireConnection( any( String.class ), any( AccessMode.class ) );
+        verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
         verifyBeginTx( connection );
     }
 

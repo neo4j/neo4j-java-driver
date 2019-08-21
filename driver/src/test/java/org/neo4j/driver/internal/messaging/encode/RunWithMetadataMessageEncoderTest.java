@@ -30,7 +30,7 @@ import java.util.Map;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 
@@ -55,7 +55,7 @@ class RunWithMetadataMessageEncoderTest
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
-        Bookmarks bookmarks = Bookmarks.from( "neo4j:bookmark:v1:tx999" );
+        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx999" );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "key1", value( "value1" ) );
@@ -65,7 +65,7 @@ class RunWithMetadataMessageEncoderTest
         Duration txTimeout = Duration.ofMillis( 42 );
 
         Statement statement = new Statement( "RETURN $answer", value( params ) );
-        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks ), packer );
+        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmark ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );
@@ -73,7 +73,7 @@ class RunWithMetadataMessageEncoderTest
         order.verify( packer ).pack( params );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
         expectedMetadata.put( "tx_timeout", value( 42 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )

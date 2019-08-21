@@ -24,9 +24,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
@@ -49,10 +49,10 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     }
 
     @Override
-    public CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode )
+    public CompletionStage<RoutingTableHandler> refreshRoutingTable( ConnectionContext context )
     {
-        RoutingTableHandler handler = getOrCreate( databaseName );
-        return handler.refreshRoutingTable( mode ).thenApply( ignored -> handler );
+        RoutingTableHandler handler = getOrCreate( context.databaseName() );
+        return handler.refreshRoutingTable( context ).thenApply( ignored -> handler );
     }
 
     @Override

@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Futures;
@@ -32,9 +32,9 @@ public class LeakLoggingNetworkSession extends NetworkSession
     private final String stackTrace;
 
     public LeakLoggingNetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode,
-            BookmarksHolder bookmarksHolder, Logging logging )
+            BookmarkHolder bookmarkHolder, Logging logging )
     {
-        super( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, logging );
+        super( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, logging );
         this.stackTrace = captureStackTrace();
     }
 

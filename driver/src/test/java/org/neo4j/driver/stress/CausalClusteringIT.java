@@ -59,6 +59,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -90,6 +91,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
@@ -185,7 +187,7 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getBoltUri() ) )
         {
-            String bookmark = inExpirableSession( driver, Driver::session, session ->
+            Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
@@ -222,7 +224,7 @@ public class CausalClusteringIT implements NestedQueries
                 return null;
             } );
 
-            final String bookmark;
+            final Bookmark bookmark;
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 try ( Transaction tx = session.beginTransaction() )
@@ -310,14 +312,15 @@ public class CausalClusteringIT implements NestedQueries
     @Test
     void beginTransactionThrowsForInvalidBookmark()
     {
-        String invalidBookmark = "hi, this is an invalid bookmark";
+        final String text = "hi, this is an invalid bookmark";
+        Bookmark invalidBookmark = parse( text );
         ClusterMember leader = clusterRule.getCluster().leader();
 
         try ( Driver driver = createDriver( leader.getBoltUri() );
               Session session = driver.session( builder().withBookmarks( invalidBookmark ).build() ) )
         {
             ClientException e = assertThrows( ClientException.class, session::beginTransaction );
-            assertThat( e.getMessage(), containsString( invalidBookmark ) );
+            assertThat( e.getMessage(), containsString( text ) );
         }
     }
 
@@ -342,7 +345,7 @@ public class CausalClusteringIT implements NestedQueries
             assertThrows( (Class<? extends Exception>) SessionExpiredException.class, ((AutoCloseable) tx1)::close );
             session1.close();
 
-            String bookmark = inExpirableSession( driver, Driver::session, session ->
+            Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
@@ -400,7 +403,7 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
-            String bookmark;
+            Bookmark bookmark;
             try ( Session session = driver.session() )
             {
                 int writeResult = session.writeTransaction( tx ->
@@ -459,14 +462,14 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri() ) )
         {
-            List<Future<String>> futures = new ArrayList<>();
+            List<Future<Bookmark>> futures = new ArrayList<>();
             for ( int i = 0; i < threadCount; i++ )
             {
                 futures.add( executor.submit( createNodeAndGetBookmark( driver, label, property, value ) ) );
             }
 
-            List<String> bookmarks = new ArrayList<>();
-            for ( Future<String> future : futures )
+            List<Bookmark> bookmarks = new ArrayList<>();
+            for ( Future<Bookmark> future : futures )
             {
                 bookmarks.add( future.get( 10, SECONDS ) );
             }
@@ -588,7 +591,7 @@ public class CausalClusteringIT implements NestedQueries
             }
 
             // rediscovery should happen for the new write query
-            String session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
+            Bookmark session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
             try ( Session session5 = driver.session( builder().withBookmarks( session4Bookmark ).build() ) )
             {
                 assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
@@ -749,7 +752,7 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private Function<Driver,Session> createWritableSession( final String bookmark )
+    private Function<Driver,Session> createWritableSession( final Bookmark bookmark )
     {
         return driver -> driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( bookmark ).build() );
     }
@@ -787,7 +790,7 @@ public class CausalClusteringIT implements NestedQueries
         throw new TimeoutException( "Transaction did not succeed in time" );
     }
 
-    private void ensureNodeVisible( Cluster cluster, String name, String bookmark )
+    private void ensureNodeVisible( Cluster cluster, String name, Bookmark bookmark )
     {
         for ( ClusterMember member : cluster.members() )
         {
@@ -796,7 +799,7 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private int countNodesUsingDirectDriver( ClusterMember member, final String name, String bookmark )
+    private int countNodesUsingDirectDriver( ClusterMember member, final String name, Bookmark bookmark )
     {
         Driver driver = clusterRule.getCluster().getDirectDriver( member );
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
@@ -990,13 +993,13 @@ public class CausalClusteringIT implements NestedQueries
         return session.readTransaction( tx -> runCountNodes( tx, label, property, value ) );
     }
 
-    private static Callable<String> createNodeAndGetBookmark( Driver driver, String label, String property,
+    private static Callable<Bookmark> createNodeAndGetBookmark( Driver driver, String label, String property,
             String value )
     {
         return () -> createNodeAndGetBookmark( driver.session(), label, property, value );
     }
 
-    private static String createNodeAndGetBookmark( Session session, String label, String property, String value )
+    private static Bookmark createNodeAndGetBookmark( Session session, String label, String property, String value )
     {
         try ( Session localSession = session )
         {

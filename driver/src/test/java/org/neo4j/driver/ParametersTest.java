@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.InternalSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -109,7 +109,7 @@ class ParametersTest
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
         NetworkSession session =
-                new NetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarksHolder(), DEV_NULL_LOGGING );
+                new NetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarkHolder(), DEV_NULL_LOGGING );
         return new InternalSession( session );
     }
 }

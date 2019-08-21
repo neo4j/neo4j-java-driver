@@ -18,31 +18,35 @@
  */
 package org.neo4j.driver.internal;
 
-public interface BookmarksHolder
+/**
+ * @since 2.0
+ */
+public class DefaultBookmarkHolder implements BookmarkHolder
 {
-    Bookmarks getBookmarks();
+    private volatile InternalBookmark bookmark;
 
-    void setBookmarks( Bookmarks bookmarks );
-
-    String lastBookmark();
-
-    BookmarksHolder NO_OP = new BookmarksHolder()
+    public DefaultBookmarkHolder()
     {
-        @Override
-        public Bookmarks getBookmarks()
-        {
-            return Bookmarks.empty();
-        }
+        this( InternalBookmark.empty() );
+    }
 
-        @Override
-        public void setBookmarks( Bookmarks bookmarks )
-        {
-        }
+    public DefaultBookmarkHolder( InternalBookmark bookmark )
+    {
+        this.bookmark = bookmark;
+    }
 
-        @Override
-        public String lastBookmark()
+    @Override
+    public InternalBookmark getBookmark()
+    {
+        return bookmark;
+    }
+
+    @Override
+    public void setBookmark( InternalBookmark bookmark )
+    {
+        if ( bookmark != null && !bookmark.isEmpty() )
         {
-            return null;
+            this.bookmark = bookmark;
         }
-    };
+    }
 }

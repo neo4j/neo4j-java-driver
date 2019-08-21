@@ -19,11 +19,11 @@
 package org.neo4j.driver;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.reactive.RxSession;
 
 import static java.util.Objects.requireNonNull;
@@ -36,7 +36,7 @@ public class SessionConfig
 {
     private static final SessionConfig EMPTY = builder().build();
 
-    private final List<String> bookmarks;
+    private final Iterable<Bookmark> bookmarks;
     private final AccessMode defaultAccessMode;
     private final String database;
 
@@ -85,7 +85,7 @@ public class SessionConfig
      *
      * @return the initial bookmarks.
      */
-    public List<String> bookmarks()
+    public Iterable<Bookmark> bookmarks()
     {
         return bookmarks;
     }
@@ -143,7 +143,7 @@ public class SessionConfig
      */
     public static class Builder
     {
-        private List<String> bookmarks = null;
+        private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
 
@@ -164,11 +164,10 @@ public class SessionConfig
          * are permitted, and indicate that the bookmarks do not exist or are unknown.
          * @return this builder.
          */
-        public Builder withBookmarks( String... bookmarks )
+        public Builder withBookmarks( Bookmark... bookmarks )
         {
             if ( bookmarks == null )
             {
-                // TODO bookmarks should not be null
                 this.bookmarks = null;
             }
             else
@@ -189,7 +188,7 @@ public class SessionConfig
          * are permitted, and indicate that the bookmarks do not exist or are unknown.
          * @return this builder
          */
-        public Builder withBookmarks( List<String> bookmarks )
+        public Builder withBookmarks( Iterable<Bookmark> bookmarks )
         {
             this.bookmarks = bookmarks;
             return this;
@@ -229,7 +228,11 @@ public class SessionConfig
                 // Disallow users to use bolt internal value directly. To users, this is totally an illegal database name.
                 throw new IllegalArgumentException( String.format( "Illegal database name '%s'.", database ) );
             }
-            this.database = database;
+            // The database name is normalized to lowercase on the server side.
+            // The client in theory shall not perform any normalization at all.
+            // However as this name is also used in routing table registry as the map's key to find the routing table for the given database,
+            // to avoid multiple routing tables for the same database, we perform a client side normalization.
+            this.database = database.toLowerCase();
             return this;
         }
 

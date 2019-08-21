@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.Iterables;
 
 import static java.util.Collections.emptyMap;
@@ -39,14 +39,14 @@ public class TransactionMetadataBuilder
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmarks bookmarks )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, InternalBookmark bookmark )
     {
-        return buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
+        return buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmark );
     }
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, String databaseName, AccessMode mode, Bookmarks bookmarks )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, String databaseName, AccessMode mode, InternalBookmark bookmark )
     {
-        boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
+        boolean bookmarksPresent = bookmark != null && !bookmark.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
         boolean accessModePresent = mode == AccessMode.READ;
@@ -61,7 +61,7 @@ public class TransactionMetadataBuilder
 
         if ( bookmarksPresent )
         {
-            result.put( BOOKMARKS_METADATA_KEY, value( bookmarks.values() ) );
+            result.put( BOOKMARKS_METADATA_KEY, value( bookmark.values() ) );
         }
         if ( txTimeoutPresent )
         {

@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.cluster;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.ConnectionContext;
 
 /**
  * A generic interface to access all routing tables as a whole.
@@ -35,7 +35,7 @@ public interface RoutingTableRegistry
      * For server version lower than 4.0, the database name will be ignored while refreshing routing table.
      * @return The future of a new routing table handler.
      */
-    CompletionStage<RoutingTableHandler> refreshRoutingTable( String databaseName, AccessMode mode );
+    CompletionStage<RoutingTableHandler> refreshRoutingTable( ConnectionContext context );
 
     /**
      * @return all servers in the registry

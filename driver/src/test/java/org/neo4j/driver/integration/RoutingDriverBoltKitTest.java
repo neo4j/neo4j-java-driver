@@ -46,6 +46,7 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -73,6 +74,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
@@ -520,7 +522,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( "OldBookmark" ).build() ) )
+                Session session = driver.session( builder().withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -528,7 +530,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "NewBookmark", session.lastBookmark() );
+            assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
         }
 
         assertThat( router.exitStatus(), equalTo( 0 ) );
@@ -542,7 +544,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( "OldBookmark" ).build() ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -550,7 +552,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "NewBookmark", session.lastBookmark() );
+            assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
         }
 
         assertThat( router.exitStatus(), equalTo( 0 ) );
@@ -564,7 +566,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( "OldBookmark" ).build() ) )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -575,7 +577,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "NewBookmark", session.lastBookmark() );
+            assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
         }
 
         assertThat( router.exitStatus(), equalTo( 0 ) );
@@ -589,7 +591,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( "BookmarkA" ).build() ) )
+                Session session = driver.session( builder().withBookmarks( parse( "BookmarkA" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -597,7 +599,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "BookmarkB", session.lastBookmark() );
+            assertEquals( parse( "BookmarkB" ), session.lastBookmark() );
 
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -607,7 +609,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "BookmarkC", session.lastBookmark() );
+            assertEquals( parse( "BookmarkC" ), session.lastBookmark() );
         }
 
         assertThat( router.exitStatus(), equalTo( 0 ) );
@@ -980,11 +982,11 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
         StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
 
-        List<String> bookmarks =
+        Bookmark bookmark = parse(
                 asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
-                        "neo4j:bookmark:v1:tx68" );
+                        "neo4j:bookmark:v1:tx68" ) );
 
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ); Session session = driver.session( builder().withBookmarks( bookmarks ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ); Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -992,7 +994,7 @@ class RoutingDriverBoltKitTest
                 tx.success();
             }
 
-            assertEquals( "neo4j:bookmark:v1:tx95", session.lastBookmark() );
+            assertEquals( parse( "neo4j:bookmark:v1:tx95" ), session.lastBookmark() );
         }
         finally
         {

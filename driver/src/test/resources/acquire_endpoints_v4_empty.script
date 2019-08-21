@@ -3,7 +3,7 @@
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: RUN "CALL dbms.routing.getRoutingTable($context, $database)" {"context": {}, "database": "myDatabase"} {"mode": "r", "db": "system"}
+C: RUN "CALL dbms.routing.getRoutingTable($context, $database)" {"context": {}, "database": "mydatabase"} {"mode": "r", "db": "system"}
    PULL {"n": -1}
 S: SUCCESS {"fields": ["ttl", "servers"]}
    RECORD [9223372036854775807, []]

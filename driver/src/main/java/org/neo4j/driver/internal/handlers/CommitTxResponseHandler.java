@@ -22,17 +22,17 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.Bookmarks;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static java.util.Objects.requireNonNull;
 
 public class CommitTxResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<Bookmarks> commitFuture;
+    private final CompletableFuture<InternalBookmark> commitFuture;
 
-    public CommitTxResponseHandler( CompletableFuture<Bookmarks> commitFuture )
+    public CommitTxResponseHandler( CompletableFuture<InternalBookmark> commitFuture )
     {
         this.commitFuture = requireNonNull( commitFuture );
     }
@@ -47,7 +47,7 @@ public class CommitTxResponseHandler implements ResponseHandler
         }
         else
         {
-            commitFuture.complete( Bookmarks.from( bookmarkValue.asString() ) );
+            commitFuture.complete( InternalBookmark.parse( bookmarkValue.asString() ) );
         }
     }
 

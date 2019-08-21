@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.Bookmarks;
+import org.neo4j.driver.internal.InternalBookmark;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +45,7 @@ public class TransactionMetadataBuilderTest
     @EnumSource( AccessMode.class )
     void shouldHaveCorrectMetadata( AccessMode mode )
     {
-        Bookmarks bookmarks = Bookmarks.from( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
+        InternalBookmark bookmark = InternalBookmark.parse( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );
@@ -54,10 +54,10 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmarks );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmark );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
         expectedMetadata.put( "tx_timeout", value( 7000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )
@@ -72,7 +72,7 @@ public class TransactionMetadataBuilderTest
     @ValueSource( strings = {"", "foo", "data", ABSENT_DB_NAME} )
     void shouldHaveCorrectMetadataForDatabaseName( String databaseName )
     {
-        Bookmarks bookmarks = Bookmarks.from( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
+        InternalBookmark bookmark = InternalBookmark.parse( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );
@@ -81,10 +81,10 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, WRITE, bookmarks );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, WRITE, bookmark );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
         expectedMetadata.put( "tx_timeout", value( 7000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( !ABSENT_DB_NAME.equals( databaseName ) )

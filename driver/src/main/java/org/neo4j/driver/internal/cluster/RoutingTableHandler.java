@@ -22,10 +22,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -67,14 +67,14 @@ public class RoutingTableHandler implements RoutingErrorHandler
         routingTable.forgetWriter( address );
     }
 
-    synchronized CompletionStage<RoutingTable> refreshRoutingTable( AccessMode mode )
+    synchronized CompletionStage<RoutingTable> refreshRoutingTable( ConnectionContext context )
     {
         if ( refreshRoutingTableFuture != null )
         {
             // refresh is already happening concurrently, just use it's result
             return refreshRoutingTableFuture;
         }
-        else if ( routingTable.isStaleFor( mode ) )
+        else if ( routingTable.isStaleFor( context.mode() ) )
         {
             // existing routing table is not fresh and should be updated
             log.info( "Routing table for database '%s' is stale. %s", databaseName, routingTable );
@@ -82,7 +82,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterComposition( routingTable, connectionPool )
+            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark() )
                     .whenComplete( ( composition, completionError ) ->
                     {
                         Throwable error = Futures.completionExceptionCause( completionError );

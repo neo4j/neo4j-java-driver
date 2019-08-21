@@ -64,7 +64,6 @@ class CredentialsIT
         String tmpDataDir = Files.createTempDirectory( Paths.get( "target" ), "tmp" ).toAbsolutePath().toString().replace( "\\", "/" );
 
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS
-                .updateWith( Neo4jSettings.AUTH_ENABLED, "true" )
                 .updateWith( Neo4jSettings.DATA_DIR, tmpDataDir ) );
 
         AuthToken authToken = new InternalAuthToken( parameters(

@@ -26,11 +26,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -67,7 +67,7 @@ class InternalTransactionTest
     {
         connection = connectionMock( BoltProtocolV4.INSTANCE );
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
-        when( connectionProvider.acquireConnection( any( String.class ), any( AccessMode.class ) ) )
+        when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection ) );
         InternalSession session = new InternalSession( newSession( connectionProvider ) );
         tx = session.beginTransaction();

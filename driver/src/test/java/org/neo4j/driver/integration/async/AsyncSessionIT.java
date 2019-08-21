@@ -48,6 +48,7 @@ import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
@@ -599,7 +600,8 @@ class AsyncSessionIT
     @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
+        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
 
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
 
@@ -611,7 +613,8 @@ class AsyncSessionIT
     @Test
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
+        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
     }
@@ -620,7 +623,8 @@ class AsyncSessionIT
     @EnabledOnNeo4jWith( BOLT_V3 )
     void shouldNotRunAfterBeginTxFailureOnBookmark()
     {
-        session = neo4j.driver().asyncSession( builder().withBookmarks( "Illegal Bookmark" ).build() );
+        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );

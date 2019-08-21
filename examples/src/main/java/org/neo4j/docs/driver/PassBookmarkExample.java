@@ -27,6 +27,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.internal.Bookmark;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
@@ -87,7 +88,7 @@ public class PassBookmarkExample extends BaseApplication
     public void addEmployAndMakeFriends()
     {
         // To collect the session bookmarks
-        List<String> savedBookmarks = new ArrayList<>();
+        List<Bookmark> savedBookmarks = new ArrayList<>();
 
         // Create the first person and employment relationship.
         try ( Session session1 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )

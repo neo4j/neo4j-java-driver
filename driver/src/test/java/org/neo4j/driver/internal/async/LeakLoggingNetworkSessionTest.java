@@ -24,11 +24,10 @@ import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Method;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.DefaultBookmarksHolder;
+import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
@@ -98,14 +97,14 @@ class LeakLoggingNetworkSessionTest
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
         return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), new FixedRetryLogic( 0 ), ABSENT_DB_NAME, READ,
-                new DefaultBookmarksHolder(), logging );
+                new DefaultBookmarkHolder(), logging );
     }
 
     private static ConnectionProvider connectionProviderMock( boolean openConnection )
     {
         ConnectionProvider provider = mock( ConnectionProvider.class );
         Connection connection = connectionMock( openConnection );
-        when( provider.acquireConnection( any( String.class ), any( AccessMode.class ) ) ).thenReturn( completedFuture( connection ) );
+        when( provider.acquireConnection( any( ConnectionContext.class ) ) ).thenReturn( completedFuture( connection ) );
         return provider;
     }
 
