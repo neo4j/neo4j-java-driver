@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -61,7 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.SecurityUtil.trustAllCertificates;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -231,5 +231,10 @@ class ChannelConnectorImplIT
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, connectTimeoutMillis );
         return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock() );
+    }
+
+    private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
+    {
+        return SecurityPlan.forAllCertificates( false );
     }
 }

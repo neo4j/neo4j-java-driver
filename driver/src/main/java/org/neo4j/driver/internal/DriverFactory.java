@@ -306,6 +306,8 @@ public class DriverFactory
                 return SecurityPlan.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlan.forSystemCASignedCertificates( hostnameVerificationEnabled );
+            case TRUST_ALL_CERTIFICATES:
+                return SecurityPlan.forAllCertificates( hostnameVerificationEnabled );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );

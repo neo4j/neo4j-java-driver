@@ -38,7 +38,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
+import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 
 @ParallelizableIT
 class EncryptionIT
@@ -121,7 +121,7 @@ class EncryptionIT
 
     private static Config configWithEncryption()
     {
-        return Config.builder().withEncryption().withTrustStrategy( trustCustomCertificateSignedBy( neo4j.tlsCertFile() ) ).build();
+        return Config.builder().withEncryption().withTrustStrategy( trustAllCertificates() ).build();
     }
 
     private static Config configWithoutEncryption()

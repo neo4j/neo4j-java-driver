@@ -23,9 +23,13 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -34,6 +38,14 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SecurityPlan
 {
+    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification ) throws GeneralSecurityException
+    {
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
+
+        return new SecurityPlan( true, sslContext, requiresHostnameVerification );
+    }
+
     public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification )
             throws GeneralSecurityException, IOException
     {
@@ -89,5 +101,23 @@ public class SecurityPlan
     public boolean requiresHostnameVerification()
     {
         return requiresHostnameVerification;
+    }
+
+    private static class TrustAllTrustManager implements X509TrustManager
+    {
+        public void checkClientTrusted( X509Certificate[] chain, String authType ) throws CertificateException
+        {
+            throw new CertificateException( "All client connections to this client are forbidden." );
+        }
+
+        public void checkServerTrusted( X509Certificate[] chain, String authType ) throws CertificateException
+        {
+            // all fine, pass through
+        }
+
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return new X509Certificate[0];
+        }
     }
 }
