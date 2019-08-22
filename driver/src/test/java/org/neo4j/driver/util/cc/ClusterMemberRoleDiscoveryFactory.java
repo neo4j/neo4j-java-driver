@@ -74,7 +74,7 @@ public class ClusterMemberRoleDiscoveryFactory
         @Override
         public Map<BoltServerAddress,ClusterMemberRole> findClusterOverview( Driver driver )
         {
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
                 StatementResult result = session.run( "CALL dbms.cluster.overview()" );
                 Map<BoltServerAddress,ClusterMemberRole> overview = new HashMap<>();
