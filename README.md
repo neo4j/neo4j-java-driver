@@ -19,7 +19,7 @@ The table below shows runtime compatibility for the currently-supported driver v
 |---------------|:------:|:-------:|
 | 1.6           |   X    |   X     |
 | 1.7           |   X    |   X     |
-| 2.0           |   X    |   X     |
+| 4.0           |   X    |   X     |
 
 The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
 
