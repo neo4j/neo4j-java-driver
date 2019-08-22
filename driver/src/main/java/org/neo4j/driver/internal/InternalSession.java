@@ -145,19 +145,14 @@ public class InternalSession extends AbstractStatementRunner implements Session
         return session.retryLogic().retry( () -> {
             try ( Transaction tx = beginTransaction( mode, config ) )
             {
-                try
+
+                T result = work.execute( tx );
+                if ( tx.isOpen() )
                 {
-                    T result = work.execute( tx );
-                    tx.success();
-                    return result;
+                    // commit tx if a user has not explicitly committed or rolled back the transaction
+                    tx.commit();
                 }
-                catch ( Throwable t )
-                {
-                    // mark transaction for failure if the given unit of work threw exception
-                    // this will override any success marks that were made by the unit of work
-                    tx.failure();
-                    throw t;
-                }
+                return result;
             }
         } );
     }

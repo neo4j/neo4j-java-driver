@@ -54,7 +54,7 @@ public class BlockingReadQueryInTx<C extends AbstractContext> extends AbstractBl
             }
 
             context.readCompleted( result.summary() );
-            tx.success();
+            tx.commit();
         }
     }
 }

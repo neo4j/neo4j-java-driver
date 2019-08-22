@@ -49,7 +49,7 @@ public class BlockingWriteQueryUsingReadSessionInTx<C extends AbstractContext> e
             {
                 StatementResult result = tx.run( "CREATE ()" );
                 resultRef.set( result );
-                tx.success();
+                tx.commit();
             }
         } );
         assertNotNull( resultRef.get() );

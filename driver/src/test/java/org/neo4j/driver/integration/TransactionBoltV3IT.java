@@ -125,7 +125,7 @@ class TransactionBoltV3IT
                     try ( Transaction tx = session.beginTransaction( config ) )
                     {
                         tx.run( "MATCH (n:Node) SET n.prop = 2" );
-                        tx.success();
+                        tx.commit();
                     }
                 } );
 

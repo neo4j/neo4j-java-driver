@@ -46,7 +46,7 @@ public interface NestedQueries
         try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
         {
             testNestedQueriesConsumedAsIterators( tx );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -56,7 +56,7 @@ public interface NestedQueries
         try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
         {
             testNestedQueriesConsumedAsLists( tx );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -66,7 +66,7 @@ public interface NestedQueries
         try ( Session session = newSession( AccessMode.READ ); Transaction tx = session.beginTransaction() )
         {
             testNestedQueriesConsumedAsIteratorAndList( tx );
-            tx.success();
+            tx.commit();
         }
     }
 

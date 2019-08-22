@@ -177,8 +177,7 @@ class ConnectionPoolIT
             }
             for ( Transaction tx : transactions )
             {
-                tx.success();
-                tx.close();
+                tx.commit();
             }
             for ( Session session : sessions )
             {

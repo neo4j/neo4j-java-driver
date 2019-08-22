@@ -224,7 +224,7 @@ class SessionBoltV3IT
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE ()" );
-            tx.success();
+            tx.commit();
         }
         Bookmark bookmark1 = session.lastBookmark();
         assertNotNull( bookmark1 );
@@ -239,7 +239,7 @@ class SessionBoltV3IT
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE ()" );
-            tx.success();
+            tx.commit();
         }
         Bookmark bookmark3 = session.lastBookmark();
         assertNotNull( bookmark3 );
@@ -297,8 +297,7 @@ class SessionBoltV3IT
                 Transaction tx = txs.get( i );
 
                 tx.run( "CREATE ()" );
-                tx.success();
-                tx.close();
+                tx.commit();
                 session.close();
             }
         }

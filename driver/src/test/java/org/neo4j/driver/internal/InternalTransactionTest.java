@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -100,7 +101,7 @@ class InternalTransactionTest
     @Test
     void shouldCommit() throws Throwable
     {
-        tx.success();
+        tx.commit();
         tx.close();
 
         verifyCommitTx( connection );
@@ -119,7 +120,7 @@ class InternalTransactionTest
     @Test
     void shouldRollback() throws Throwable
     {
-        tx.failure();
+        tx.rollback();
         tx.close();
 
         verifyRollbackTx( connection );
@@ -132,7 +133,6 @@ class InternalTransactionTest
         setupFailingRun( connection, new RuntimeException( "Bang!" ) );
         assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).consume() );
 
-        tx.success();
         tx.close();
 
         verify( connection ).release();
@@ -143,8 +143,7 @@ class InternalTransactionTest
     void shouldReleaseConnectionWhenFailedToCommit() throws Throwable
     {
         setupFailingCommit( connection );
-        tx.success();
-        assertThrows( Exception.class, () -> tx.close() );
+        assertThrows( Exception.class, () -> tx.commit() );
 
         verify( connection ).release();
         assertFalse( tx.isOpen() );
@@ -153,8 +152,19 @@ class InternalTransactionTest
     @Test
     void shouldReleaseConnectionWhenFailedToRollback() throws Throwable
     {
+        shouldReleaseConnectionWhenFailedToAction( Transaction::rollback );
+    }
+
+    @Test
+    void shouldReleaseConnectionWhenFailedToClose() throws Throwable
+    {
+        shouldReleaseConnectionWhenFailedToAction( Transaction::close );
+    }
+
+    private void shouldReleaseConnectionWhenFailedToAction( Consumer<Transaction> txAction )
+    {
         setupFailingRollback( connection );
-        assertThrows( Exception.class, () -> tx.close() );
+        assertThrows( Exception.class, () -> txAction.accept( tx ) );
 
         verify( connection ).release();
         assertFalse( tx.isOpen() );

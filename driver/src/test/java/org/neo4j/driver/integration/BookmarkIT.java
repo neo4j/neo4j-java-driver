@@ -112,7 +112,7 @@ class BookmarkIT
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (a:Person)" );
-            tx.failure();
+            tx.rollback();
         }
 
         assertEquals( bookmark, session.lastBookmark() );
@@ -130,9 +130,8 @@ class BookmarkIT
 
         Transaction tx = session.beginTransaction();
         tx.run( "RETURN" );
-        tx.success();
 
-        assertThrows( ClientException.class, tx::close );
+        assertThrows( ClientException.class, tx::commit );
         assertEquals( bookmark, session.lastBookmark() );
     }
 
@@ -210,7 +209,7 @@ class BookmarkIT
         try ( Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (a:Person)" );
-            tx.success();
+            tx.commit();
         }
     }
 }

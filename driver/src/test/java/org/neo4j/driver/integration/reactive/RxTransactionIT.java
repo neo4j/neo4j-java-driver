@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -45,8 +44,8 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
@@ -58,6 +57,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -68,8 +68,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
@@ -256,7 +256,7 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldBePossibleToCommitWhenCommitted()
+    void shouldFailToCommitWhenCommitted()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertCanRunCreate( tx );
@@ -264,12 +264,15 @@ class RxTransactionIT
 
         Mono<Void> secondCommit = Mono.from( tx.commit() );
         // second commit should wrap around a completed future
-        StepVerifier.create( secondCommit ).verifyComplete();
+        StepVerifier.create( secondCommit ).expectErrorSatisfies( error -> {
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), startsWith( "Can't commit, transaction has been committed" ) );
+        } ).verify();
 
     }
 
     @Test
-    void shouldBePossibleToRollbackWhenRolledBack()
+    void shouldFailToRollbackWhenRolledBack()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertCanRunCreate( tx );
@@ -277,7 +280,10 @@ class RxTransactionIT
 
         Mono<Void> secondRollback = Mono.from( tx.rollback() );
         // second rollback should wrap around a completed future
-        StepVerifier.create( secondRollback ).verifyComplete();
+        StepVerifier.create( secondRollback ).expectErrorSatisfies( error -> {
+            assertThat( error, instanceOf( ClientException.class ) );
+            assertThat( error.getMessage(), startsWith( "Can't rollback, transaction has been rolled back" ) );
+        } ).verify();
     }
 
     @Test
@@ -302,7 +308,6 @@ class RxTransactionIT
         // should not be possible to rollback after commit
         ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
         assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
-
     }
 
     @Test
@@ -598,67 +603,6 @@ class RxTransactionIT
         testConsume( "RETURN 42" );
     }
 
-    @Test
-    void shouldDoNothingWhenCommittedSecondTime()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertCanCommit( tx );
-
-        CompletableFuture<Object> future = Mono.from( tx.commit() ).toFuture();
-        assertTrue( future.isDone() );
-    }
-
-    @Test
-    void shouldFailToCommitAfterRollback()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertCanRollback( tx );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
-        assertEquals( "Can't commit, transaction has been rolled back", e.getMessage() );
-
-    }
-
-    @Test
-    void shouldFailToCommitAfterTermination()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commit() ) );
-        assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
-        assertCanRollback( tx );
-    }
-
-    @Test
-    void shouldDoNothingWhenRolledBackSecondTime()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertCanRollback( tx );
-
-        CompletableFuture<Object> future = Mono.from( tx.rollback() ).toFuture();
-        assertTrue( future.isDone() );
-
-    }
-
-    @Test
-    void shouldFailToRollbackAfterCommit()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertCanCommit( tx );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollback() ) );
-        assertEquals( "Can't rollback, transaction has been committed", e.getMessage() );
-    }
-
-    @Test
-    void shouldRollbackAfterTermination()
-    {
-        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
-        assertCanRollback( tx );
-    }
-
     @ParameterizedTest
     @MethodSource( "commit" )
     void shouldFailToRunQueryAfterCommit( boolean commit )
@@ -783,6 +727,16 @@ class RxTransactionIT
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commit() ) );
         assertThat( e2.getMessage(), startsWith( "Transaction can't be committed" ) );
+    }
+
+    @Test
+    void shouldBeAbleToRollbackWhenPullAllFailureIsConsumed()
+    {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxStatementResult result = tx.run( "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" );
+
+        ClientException e1 = assertThrows( ClientException.class, () -> await( result.records() ) );
+        assertThat( e1.code(), containsString( "TypeError" ) );
 
         assertCanRollback( tx );
     }

@@ -34,15 +34,17 @@ public class InternalTransaction extends AbstractStatementRunner implements Tran
     }
 
     @Override
-    public void success()
+    public void commit()
     {
-        tx.success();
+        Futures.blockingGet( tx.commitAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while committing the transaction" ) );
     }
 
     @Override
-    public void failure()
+    public void rollback()
     {
-        tx.failure();
+        Futures.blockingGet( tx.rollbackAsync(),
+                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while rolling back the transaction" ) );
     }
 
     @Override
