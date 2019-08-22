@@ -31,15 +31,15 @@ class ServerVersionTest
     void version()
     {
         assertThat( ServerVersion.version( "Neo4j/dev" ), is( ServerVersion.vInDev ) );
-        assertThat( ServerVersion.version( "Neo4j/3.2.0" ), is( ServerVersion.v3_2_0 ) );
+        assertThat( ServerVersion.version( "Neo4j/4.0.0" ), is( ServerVersion.v4_0_0 ) );
     }
 
     @Test
     void shouldHaveCorrectToString()
     {
         assertEquals( "Neo4j/dev", ServerVersion.vInDev.toString() );
-        assertEquals( "Neo4j/3.1.0", ServerVersion.v3_1_0.toString() );
-        assertEquals( "Neo4j/3.2.0", ServerVersion.v3_2_0.toString() );
+        assertEquals( "Neo4j/4.0.0", ServerVersion.v4_0_0.toString() );
+        assertEquals( "Neo4j/3.5.0", ServerVersion.v3_5_0.toString() );
         assertEquals( "Neo4j/3.5.7", ServerVersion.version( "Neo4j/3.5.7" ).toString() );
     }
 

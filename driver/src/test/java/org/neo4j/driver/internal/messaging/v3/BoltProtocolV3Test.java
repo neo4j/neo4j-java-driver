@@ -86,7 +86,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.util.ServerVersion.v3_5_0;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 
@@ -146,7 +146,7 @@ public class BoltProtocolV3Test
         assertFalse( promise.isDone() );
 
         Map<String,Value> metadata = new HashMap<>();
-        metadata.put( "server", value( v3_5_0.toString() ) );
+        metadata.put( "server", value( anyServerVersion().toString() ) );
         metadata.put( "connection_id", value( "bolt-42" ) );
 
         messageDispatcher.handleSuccessMessage( metadata );

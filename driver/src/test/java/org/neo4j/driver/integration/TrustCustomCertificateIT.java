@@ -31,7 +31,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.util.CertificateExtension;
-import org.neo4j.driver.util.CertificateToolUtil.CertificateKeyPair;
+import org.neo4j.driver.util.CertificateUtil.CertificateKeyPair;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -39,8 +39,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Config.TrustStrategy.trustCustomCertificateSignedBy;
-import static org.neo4j.driver.util.CertificateToolUtil.createNewCertificateAndKey;
-import static org.neo4j.driver.util.CertificateToolUtil.createNewCertificateAndKeySignedBy;
+import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKey;
+import static org.neo4j.driver.util.CertificateUtil.createNewCertificateAndKeySignedBy;
 
 @ParallelizableIT
 class TrustCustomCertificateIT

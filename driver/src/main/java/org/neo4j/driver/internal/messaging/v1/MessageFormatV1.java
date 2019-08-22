@@ -32,9 +32,9 @@ public class MessageFormatV1 implements MessageFormat
     public static final int NODE_FIELDS = 3;
 
     @Override
-    public MessageFormat.Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public MessageFormat.Writer newWriter( PackOutput output )
     {
-        return new MessageWriterV1( output, byteArraySupportEnabled );
+        return new MessageWriterV1( output );
     }
 
     @Override

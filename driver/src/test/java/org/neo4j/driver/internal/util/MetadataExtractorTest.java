@@ -59,10 +59,12 @@ import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
+import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 import static org.neo4j.driver.summary.StatementType.READ_ONLY;
 import static org.neo4j.driver.summary.StatementType.READ_WRITE;
 import static org.neo4j.driver.summary.StatementType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.StatementType.WRITE_ONLY;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class MetadataExtractorTest
 {
@@ -115,12 +117,12 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithServerInfo()
     {
-        Connection connection = connectionMock( new BoltServerAddress( "server:42" ), ServerVersion.v3_2_0 );
+        Connection connection = connectionMock( new BoltServerAddress( "server:42" ), v4_0_0 );
 
         ResultSummary summary = extractor.extractSummary( statement(), connection, 42, emptyMap() );
 
         assertEquals( "server:42", summary.server().address() );
-        assertEquals( "Neo4j/3.2.0", summary.server().version() );
+        assertEquals( "Neo4j/4.0.0", summary.server().version() );
     }
 
     @Test
@@ -462,7 +464,7 @@ class MetadataExtractorTest
 
     private static Connection connectionMock()
     {
-        return connectionMock( BoltServerAddress.LOCAL_DEFAULT, ServerVersion.v3_1_0 );
+        return connectionMock( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() );
     }
 
     private static Connection connectionMock( BoltServerAddress address, ServerVersion version )

@@ -186,10 +186,6 @@ public class DriverFactory
     protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
     {
-        if ( !securityPlan.isRoutingCompatible() )
-        {
-            throw new IllegalArgumentException( "The chosen security plan is not compatible with a routing driver" );
-        }
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
@@ -285,7 +281,7 @@ public class DriverFactory
     {
         try
         {
-            return createSecurityPlanImpl( address, config );
+            return createSecurityPlanImpl( config );
         }
         catch ( GeneralSecurityException | IOException ex )
         {
@@ -297,13 +293,11 @@ public class DriverFactory
      * Establish a complete SecurityPlan based on the details provided for
      * driver construction.
      */
-    @SuppressWarnings( "deprecation" )
-    private static SecurityPlan createSecurityPlanImpl( BoltServerAddress address, Config config )
+    private static SecurityPlan createSecurityPlanImpl( Config config )
             throws GeneralSecurityException, IOException
     {
         if ( config.encrypted() )
         {
-            Logger logger = config.logging().getLog( "SecurityPlan" );
             Config.TrustStrategy trustStrategy = config.trustStrategy();
             boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
             switch ( trustStrategy.strategy() )

@@ -19,16 +19,10 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -50,8 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -138,7 +130,7 @@ class ConnectionPoolImplIT
     {
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
-        ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlan.forAllCertificates( false ),
+        ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlan.insecure(),
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );

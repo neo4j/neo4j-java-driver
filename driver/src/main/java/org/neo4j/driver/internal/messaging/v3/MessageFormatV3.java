@@ -26,7 +26,7 @@ import org.neo4j.driver.internal.packstream.PackOutput;
 public class MessageFormatV3 implements MessageFormat
 {
     @Override
-    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public Writer newWriter( PackOutput output )
     {
         return new MessageWriterV3( output );
     }

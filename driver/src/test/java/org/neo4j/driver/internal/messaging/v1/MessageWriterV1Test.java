@@ -45,7 +45,7 @@ class MessageWriterV1Test extends AbstractMessageWriterTestBase
     @Override
     protected Writer newWriter( PackOutput output )
     {
-        return new MessageWriterV1( output, true );
+        return new MessageWriterV1( output );
     }
 
     @Override

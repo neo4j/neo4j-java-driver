@@ -23,10 +23,13 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
@@ -40,7 +43,7 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
 
-        return new SecurityPlan( true, sslContext, true, requiresHostnameVerification );
+        return new SecurityPlan( true, sslContext, requiresHostnameVerification );
     }
 
     public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification )
@@ -61,40 +64,33 @@ public class SecurityPlan
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
 
-        return new SecurityPlan( true, sslContext, true, requiresHostnameVerification );
+        return new SecurityPlan( true, sslContext, requiresHostnameVerification );
     }
 
     public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification ) throws NoSuchAlgorithmException
     {
-        return new SecurityPlan( true, SSLContext.getDefault(), true, requiresHostnameVerification );
+        return new SecurityPlan( true, SSLContext.getDefault(), requiresHostnameVerification );
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlan( false, null, true, false );
+        return new SecurityPlan( false, null, false );
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
-    private final boolean routingCompatible;
     private final boolean requiresHostnameVerification;
 
-    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext, boolean routingCompatible, boolean requiresHostnameVerification )
+    private SecurityPlan( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
-        this.routingCompatible = routingCompatible;
         this.requiresHostnameVerification = requiresHostnameVerification;
     }
 
     public boolean requiresEncryption()
     {
         return requiresEncryption;
-    }
-
-    public boolean isRoutingCompatible()
-    {
-        return routingCompatible;
     }
 
     public SSLContext sslContext()
@@ -105,5 +101,23 @@ public class SecurityPlan
     public boolean requiresHostnameVerification()
     {
         return requiresHostnameVerification;
+    }
+
+    private static class TrustAllTrustManager implements X509TrustManager
+    {
+        public void checkClientTrusted( X509Certificate[] chain, String authType ) throws CertificateException
+        {
+            throw new CertificateException( "All client connections to this client are forbidden." );
+        }
+
+        public void checkServerTrusted( X509Certificate[] chain, String authType ) throws CertificateException
+        {
+            // all fine, pass through
+        }
+
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return new X509Certificate[0];
+        }
     }
 }

@@ -38,9 +38,9 @@ import org.neo4j.driver.internal.util.Iterables;
 
 public class MessageWriterV1 extends AbstractMessageWriter
 {
-    public MessageWriterV1( PackOutput output, boolean byteArraySupportEnabled )
+    public MessageWriterV1( PackOutput output )
     {
-        this( new ValuePackerV1( output, byteArraySupportEnabled ) );
+        this( new ValuePackerV1( output ) );
     }
 
     protected MessageWriterV1( ValuePacker packer )

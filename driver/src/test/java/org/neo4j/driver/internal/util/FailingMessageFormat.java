@@ -58,9 +58,9 @@ public class FailingMessageFormat implements MessageFormat
     }
 
     @Override
-    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public Writer newWriter( PackOutput output )
     {
-        return new ThrowingWriter( delegate.newWriter( output, byteArraySupportEnabled ), writerThrowableRef );
+        return new ThrowingWriter( delegate.newWriter( output ), writerThrowableRef );
     }
 
     @Override

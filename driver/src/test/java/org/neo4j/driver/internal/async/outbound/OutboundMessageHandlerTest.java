@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async.outbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.EncoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,23 +29,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
-import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.Value;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -106,25 +101,11 @@ class OutboundMessageHandlerTest
         assertTrue( channel.finish() );
     }
 
-    @Test
-    void shouldFailToWriteByteArrayWhenNotSupported()
-    {
-        OutboundMessageHandler handler = newHandler( new MessageFormatV1() ).withoutByteArraySupport();
-        channel.pipeline().addLast( handler );
-        channel.pipeline().addLast( new ChannelErrorHandler( DEV_NULL_LOGGING ) );
-
-        Map<String,Value> params = new HashMap<>();
-        params.put( "array", value( new byte[]{1, 2, 3} ) );
-
-        EncoderException error = assertThrows( EncoderException.class, () -> channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
-        assertThat( error.getCause(), instanceOf( PackStream.UnPackable.class ) );
-    }
-
     private static MessageFormat mockMessageFormatWithWriter( final int... bytesToWrite )
     {
         MessageFormat messageFormat = mock( MessageFormat.class );
 
-        when( messageFormat.newWriter( any( PackOutput.class ), anyBoolean() ) ).then( invocation ->
+        when( messageFormat.newWriter( any( PackOutput.class ) ) ).then( invocation ->
         {
             PackOutput output = invocation.getArgument( 0 );
             return mockWriter( output, bytesToWrite );

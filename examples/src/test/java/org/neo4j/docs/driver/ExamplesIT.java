@@ -35,7 +35,6 @@ import java.util.UUID;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -478,11 +477,6 @@ class ExamplesIT
     @Test
     void testHostnameVerificationExample()
     {
-        if ( neo4j.version().lessThanOrEqual( ServerVersion.v3_2_0 ) )
-        {
-            return;
-        }
-
         try ( HostnameVerificationExample example = new HostnameVerificationExample( uri, USER, PASSWORD, neo4j.tlsCertFile() ) )
         {
             assertTrue( example.canConnect() );

@@ -32,7 +32,6 @@ public class Neo4jSettings
     public static final String IMPORT_DIR = "dbms.directories.import";
     public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address";
     public static final String IPV6_ENABLED_ADDR = "::";
-    public static final String PAGE_CACHE_SIZE = "dbms.memory.pagecache.size";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
     private static final String DEFAULT_IMPORT_DIR = "import";
@@ -51,7 +50,7 @@ public class Neo4jSettings
     private static final int DEFAULT_BOLT_PORT = 9000;
 
     static final int CURRENT_HTTP_PORT = DEFAULT_HTTP_PORT + TEST_JVM_ID;
-    static final int CURRENT_HTTPS_PORT = DEFAULT_HTTPS_PORT + TEST_JVM_ID;
+    private static final int CURRENT_HTTPS_PORT = DEFAULT_HTTPS_PORT + TEST_JVM_ID;
     static final int CURRENT_BOLT_PORT = DEFAULT_BOLT_PORT + TEST_JVM_ID;
 
     private static final String WINDOWS_SERVICE_NAME = "neo4j-" + TEST_JVM_ID;

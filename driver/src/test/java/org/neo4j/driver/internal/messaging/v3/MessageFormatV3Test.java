@@ -36,7 +36,7 @@ class MessageFormatV3Test
     {
         MessageFormatV3 format = new MessageFormatV3();
 
-        MessageFormat.Writer writer = format.newWriter( mock( PackOutput.class ), true );
+        MessageFormat.Writer writer = format.newWriter( mock( PackOutput.class ) );
 
         assertThat( writer, instanceOf( MessageWriterV3.class ) );
     }

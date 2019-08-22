@@ -59,7 +59,7 @@ public class ValuePackerV2 extends ValuePackerV1
 {
     public ValuePackerV2( PackOutput output )
     {
-        super( output, true );
+        super( output );
     }
 
     @Override

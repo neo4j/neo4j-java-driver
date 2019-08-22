@@ -571,6 +571,13 @@ public final class TestUtil
         return message -> message instanceof RunWithMetadataMessage && Objects.equals( statement, ((RunWithMetadataMessage) message).statement() );
     }
 
+    /**
+     * Used in tests that expect a server version but the tests do not depend on server version to behave differently.
+     */
+    public static ServerVersion anyServerVersion()
+    {
+        return ServerVersion.v4_0_0;
+    }
 
     private static void setupSuccessfulPullAll( Connection connection, String statement )
     {
@@ -682,15 +689,5 @@ public final class TestUtil
         {
             buf.release();
         }
-    }
-
-    public static Throwable getRootCause( Throwable th )
-    {
-        Throwable cause = th;
-        while ( cause.getCause() != null )
-        {
-            cause = cause.getCause();
-        }
-        return cause;
     }
 }

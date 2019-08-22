@@ -58,6 +58,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class AbstractPullAllResponseHandlerTest
@@ -1093,7 +1094,7 @@ class AbstractPullAllResponseHandlerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
+        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         return connection;
     }
 

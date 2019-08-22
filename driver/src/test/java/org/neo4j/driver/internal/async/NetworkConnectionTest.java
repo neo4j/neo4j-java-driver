@@ -66,6 +66,7 @@ import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class NetworkConnectionTest
 {
@@ -364,7 +365,7 @@ class NetworkConnectionTest
     void shouldReturnServerVersionWhenReleased()
     {
         EmbeddedChannel channel = newChannel();
-        ServerVersion version = ServerVersion.v3_2_0;
+        ServerVersion version = anyServerVersion();
         ChannelAttributes.setServerVersion( channel, version );
 
         NetworkConnection connection = newConnection( channel );

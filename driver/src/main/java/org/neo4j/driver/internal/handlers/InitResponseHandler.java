@@ -50,7 +50,6 @@ public class InitResponseHandler implements ResponseHandler
         {
             ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
             setServerVersion( channel, serverVersion );
-            updatePipelineIfNeeded( serverVersion, channel.pipeline() );
             connectionInitializedPromise.setSuccess();
         }
         catch ( Throwable error )
@@ -70,17 +69,5 @@ public class InitResponseHandler implements ResponseHandler
     public void onRecord( Value[] fields )
     {
         throw new UnsupportedOperationException();
-    }
-
-    private static void updatePipelineIfNeeded( ServerVersion serverVersion, ChannelPipeline pipeline )
-    {
-        if ( serverVersion.lessThan( ServerVersion.v3_2_0 ) )
-        {
-            OutboundMessageHandler outboundHandler = pipeline.get( OutboundMessageHandler.class );
-            if ( outboundHandler != null )
-            {
-                pipeline.replace( outboundHandler, OutboundMessageHandler.NAME, outboundHandler.withoutByteArraySupport() );
-            }
-        }
     }
 }

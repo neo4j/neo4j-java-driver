@@ -55,7 +55,7 @@ import org.neo4j.driver.types.Relationship;
 public class KnowledgeableMessageFormat extends MessageFormatV2
 {
     @Override
-    public Writer newWriter( PackOutput output, boolean byteArraySupportEnabled )
+    public Writer newWriter( PackOutput output )
     {
         return new KnowledgeableMessageWriter( output );
     }

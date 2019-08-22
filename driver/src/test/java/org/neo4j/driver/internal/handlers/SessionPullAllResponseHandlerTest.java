@@ -22,20 +22,20 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.Statement;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
+import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class SessionPullAllResponseHandlerTest
 {
@@ -88,7 +88,7 @@ class SessionPullAllResponseHandlerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_2_0 );
+        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         return connection;
     }
 }
