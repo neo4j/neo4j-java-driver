@@ -45,12 +45,6 @@ public class ExplicitTransaction
         /** The transaction is running with no explicit success or failure marked */
         ACTIVE,
 
-        /** Running, user marked for success, meaning it'll value committed */
-        MARKED_SUCCESS,
-
-        /** User marked as failed, meaning it'll be rolled back. */
-        MARKED_FAILED,
-
         /**
          * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a
          * fatal connection error.
@@ -94,29 +88,9 @@ public class ExplicitTransaction
                 } );
     }
 
-    public void success()
-    {
-        if ( state == State.ACTIVE )
-        {
-            state = State.MARKED_SUCCESS;
-        }
-    }
-
-    public void failure()
-    {
-        if ( state == State.ACTIVE || state == State.MARKED_SUCCESS )
-        {
-            state = State.MARKED_FAILED;
-        }
-    }
-
     public CompletionStage<Void> closeAsync()
     {
-        if ( state == State.MARKED_SUCCESS )
-        {
-            return commitAsync();
-        }
-        else if ( state != State.COMMITTED && state != State.ROLLED_BACK )
+        if ( isOpen() )
         {
             return rollbackAsync();
         }
@@ -130,7 +104,7 @@ public class ExplicitTransaction
     {
         if ( state == State.COMMITTED )
         {
-            return completedWithNull();
+            return failedFuture( new ClientException( "Can't commit, transaction has been committed" ) );
         }
         else if ( state == State.ROLLED_BACK )
         {
@@ -152,7 +126,7 @@ public class ExplicitTransaction
         }
         else if ( state == State.ROLLED_BACK )
         {
-            return completedWithNull();
+            return failedFuture( new ClientException( "Can't rollback, transaction has been rolled back" ) );
         }
         else
         {
@@ -204,11 +178,6 @@ public class ExplicitTransaction
         else if ( state == State.ROLLED_BACK )
         {
             throw new ClientException( "Cannot run more statements in this transaction, it has been rolled back" );
-        }
-        else if ( state == State.MARKED_FAILED )
-        {
-            throw new ClientException( "Cannot run more statements in this transaction, it has been marked for failure. " +
-                    "Please either rollback or close this transaction" );
         }
         else if ( state == State.TERMINATED )
         {

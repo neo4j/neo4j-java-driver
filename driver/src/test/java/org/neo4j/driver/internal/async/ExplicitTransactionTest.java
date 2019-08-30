@@ -107,43 +107,6 @@ class ExplicitTransactionTest
     }
 
     @Test
-    void shouldRollbackOnExplicitFailure()
-    {
-        // Given
-        Connection connection = connectionMock();
-        ExplicitTransaction tx = beginTx( connection );
-
-        // When
-        tx.failure();
-        tx.success(); // even if success is called after the failure call!
-        await( tx.closeAsync() );
-
-        // Then
-        InOrder order = inOrder( connection );
-        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).writeAndFlush( eq( new RunMessage( "ROLLBACK" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).release();
-    }
-
-    @Test
-    void shouldCommitOnSuccess()
-    {
-        // Given
-        Connection connection = connectionMock();
-        ExplicitTransaction tx = beginTx( connection );
-
-        // When
-        tx.success();
-        await( tx.closeAsync() );
-
-        // Then
-        InOrder order = inOrder( connection );
-        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).writeAndFlush( eq( new RunMessage( "COMMIT" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).release();
-    }
-
-    @Test
     void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
         Connection connection = connectionMock();
@@ -175,26 +138,6 @@ class ExplicitTransactionTest
     }
 
     @Test
-    void shouldBeOpenWhenMarkedForSuccess()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-
-        tx.success();
-
-        assertTrue( tx.isOpen() );
-    }
-
-    @Test
-    void shouldBeOpenWhenMarkedForFailure()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-
-        tx.failure();
-
-        assertTrue( tx.isOpen() );
-    }
-
-    @Test
     void shouldBeClosedWhenMarkedAsTerminated()
     {
         ExplicitTransaction tx = beginTx( connectionMock() );
@@ -202,28 +145,6 @@ class ExplicitTransactionTest
         tx.markTerminated();
 
         assertTrue( tx.isOpen() );
-    }
-
-    @Test
-    void shouldBeClosedAfterCommit()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-
-        tx.success();
-        await( tx.closeAsync() );
-
-        assertFalse( tx.isOpen() );
-    }
-
-    @Test
-    void shouldBeClosedAfterRollback()
-    {
-        ExplicitTransaction tx = beginTx( connectionMock() );
-
-        tx.failure();
-        await( tx.closeAsync() );
-
-        assertFalse( tx.isOpen() );
     }
 
     @Test

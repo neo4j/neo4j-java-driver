@@ -219,7 +219,7 @@ class ConnectionHandlingIT
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 5, tx );
-        tx.success();
+        tx.commit();
         tx.close();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
@@ -240,7 +240,7 @@ class ConnectionHandlingIT
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 8, tx );
-        tx.failure();
+        tx.rollback();
         tx.close();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
@@ -268,9 +268,8 @@ class ConnectionHandlingIT
 
         // property existence constraints are verified on commit, try to violate it
         tx.run( "CREATE (:Book)" );
-        tx.success();
 
-        assertThrows( ClientException.class, tx::close );
+        assertThrows( ClientException.class, tx::commit );
 
         // connection should have been released after failed node creation
         verify( connection2 ).release();

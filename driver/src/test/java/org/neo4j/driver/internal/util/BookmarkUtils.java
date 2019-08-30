@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.asList;
@@ -45,6 +46,16 @@ public class BookmarkUtils
         assertNotNull( bookmark );
         assertThat( bookmark, instanceOf( InternalBookmark.class ) );
         assertTrue( ((InternalBookmark) bookmark).isEmpty() );
+    }
+
+    /**
+     * Bookmark is not empty but I do not care what value it has.
+     */
+    public static void assertBookmarkIsNotEmpty( Bookmark bookmark )
+    {
+        assertNotNull( bookmark );
+        assertThat( bookmark, instanceOf( InternalBookmark.class ) );
+        assertFalse( ((InternalBookmark) bookmark).isEmpty() );
     }
 
     /**

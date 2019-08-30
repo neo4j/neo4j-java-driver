@@ -307,30 +307,27 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToCommitWhenCommitted()
+    void shouldFailToCommitWhenCommitted()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.commitAsync() ) );
 
-        CompletionStage<Void> secondCommit = tx.commitAsync();
-        // second commit should return a completed future
-        assertTrue( secondCommit.toCompletableFuture().isDone() );
-        assertNull( await( secondCommit ) );
+        // should not be possible to commit after commit
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been committed" ) );
     }
 
     @Test
-    void shouldBePossibleToRollbackWhenRolledBack()
+    void shouldFailToRollbackWhenRolledBack()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         tx.runAsync( "CREATE ()" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        CompletionStage<Void> secondRollback = tx.rollbackAsync();
-        // second rollback should return a completed future
-        assertTrue( secondRollback.toCompletableFuture().isDone() );
-        assertNull( await( secondRollback ) );
-    }
+        // should not be possible to rollback after rollback
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
+        assertThat( e.getMessage(), containsString( "transaction has been rolled back" ) );    }
 
     @Test
     void shouldFailToCommitWhenRolledBack()

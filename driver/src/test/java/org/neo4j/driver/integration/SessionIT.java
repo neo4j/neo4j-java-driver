@@ -70,6 +70,7 @@ import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
@@ -92,6 +93,7 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkContainsSingleValue;
 import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkIsEmpty;
+import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkIsNotEmpty;
 import static org.neo4j.driver.internal.util.Matchers.arithmeticError;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -370,7 +372,7 @@ class SessionIT
             long answer = session.readTransaction( tx ->
             {
                 StatementResult result = tx.run( "RETURN 42" );
-                tx.failure();
+                tx.rollback();
                 return result.single().get( 0 ).asLong();
             } );
             assertEquals( 42, answer );
@@ -390,7 +392,7 @@ class SessionIT
                 int answer = session.writeTransaction( tx ->
                 {
                     tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                    tx.failure();
+                    tx.rollback();
                     return 42;
                 } );
 
@@ -458,50 +460,37 @@ class SessionIT
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
         {
-            assertBookmarkIsEmpty( session.lastBookmark() );
-
-            long answer = session.readTransaction( tx ->
-            {
+            ClientException error = assertThrows( ClientException.class, () -> session.readTransaction( tx -> {
                 StatementResult result = tx.run( "RETURN 42" );
-                tx.success();
-                tx.failure();
+                tx.commit();
+                tx.rollback();
                 return result.single().get( 0 ).asLong();
-            } );
-            assertEquals( 42, answer );
-
-            // bookmark should remain null after rollback
-            assertBookmarkIsEmpty( session.lastBookmark() );
+            } ) );
+            assertThat( error.getMessage(), startsWith( "Can't rollback, transaction has been committed" ) );
         }
     }
 
     @Test
-    void writeTxRolledBackWhenMarkedBothSuccessAndFailure()
+    void writeTxFailWhenBothCommitAndRollback()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
             try ( Session session = driver.session() )
             {
-                int answer = session.writeTransaction( tx ->
-                {
+                ClientException error = assertThrows( ClientException.class, () -> session.writeTransaction( tx -> {
                     tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                    tx.success();
-                    tx.failure();
+                    tx.commit();
+                    tx.rollback();
                     return 42;
-                } );
+                } ) );
 
-                assertEquals( 42, answer );
-            }
-
-            try ( Session session = driver.session() )
-            {
-                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
-                assertEquals( 0, result.single().get( 0 ).asInt() );
+                assertThat( error.getMessage(), startsWith( "Can't rollback, transaction has been committed" ) );
             }
         }
     }
 
     @Test
-    void readTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    void readTxCommittedWhenCommitAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries();
               Session session = driver.session() )
@@ -512,17 +501,17 @@ class SessionIT
                     session.readTransaction( tx ->
                     {
                         tx.run( "RETURN 42" );
-                        tx.success();
+                        tx.commit();
                         throw new IllegalStateException();
                     } ) );
 
-            // bookmark should remain null after rollback
-            assertBookmarkIsEmpty( session.lastBookmark() );
+            // We successfully committed
+            assertBookmarkIsNotEmpty( session.lastBookmark() );
         }
     }
 
     @Test
-    void writeTxRolledBackWhenMarkedAsSuccessAndThrowsException()
+    void writeTxCommittedWhenCommitAndThrowsException()
     {
         try ( Driver driver = newDriverWithoutRetries() )
         {
@@ -532,7 +521,52 @@ class SessionIT
                         session.writeTransaction( tx ->
                         {
                             tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
-                            tx.success();
+                            tx.commit();
+                            throw new IllegalStateException();
+                        } ) );
+            }
+
+            try ( Session session = driver.session() )
+            {
+                StatementResult result = session.run( "MATCH (p:Person {name: 'Natasha Romanoff'}) RETURN count(p)" );
+                assertEquals( 1, result.single().get( 0 ).asInt() );
+            }
+        }
+    }
+
+    @Test
+    void readRolledBackWhenRollbackAndThrowsException()
+    {
+        try ( Driver driver = newDriverWithoutRetries();
+                Session session = driver.session() )
+        {
+            assertBookmarkIsEmpty( session.lastBookmark() );
+
+            assertThrows( IllegalStateException.class, () ->
+                    session.readTransaction( tx ->
+                    {
+                        tx.run( "RETURN 42" );
+                        tx.rollback();
+                        throw new IllegalStateException();
+                    } ) );
+
+            // bookmark should remain null after rollback
+            assertBookmarkIsEmpty( session.lastBookmark() );
+        }
+    }
+
+    @Test
+    void writeTxRolledBackWhenRollbackAndThrowsException()
+    {
+        try ( Driver driver = newDriverWithoutRetries() )
+        {
+            try ( Session session = driver.session() )
+            {
+                assertThrows( IllegalStateException.class, () ->
+                        session.writeTransaction( tx ->
+                        {
+                            tx.run( "CREATE (:Person {name: 'Natasha Romanoff'})" );
+                            tx.rollback();
                             throw new IllegalStateException();
                         } ) );
             }
@@ -573,7 +607,7 @@ class SessionIT
                 // lock second node
                 updateNodeId( tx, nodeId2, newNodeId1 ).consume();
 
-                tx.success();
+                tx.commit();
             }
             return null;
         } );
@@ -592,7 +626,7 @@ class SessionIT
                 // lock first node
                 updateNodeId( tx, nodeId1, newNodeId2 ).consume();
 
-                tx.success();
+                tx.commit();
             }
             return null;
         } );
@@ -639,7 +673,7 @@ class SessionIT
                 // lock second node
                 updateNodeId( tx, nodeId2, newNodeId1 ).consume();
 
-                tx.success();
+                tx.commit();
             }
             return null;
         } );
@@ -1033,8 +1067,7 @@ class SessionIT
             // verify that query is still executing and has not failed because of the read timeout
             assertFalse( updateFuture.isDone() );
 
-            tx.success();
-            tx.close();
+            tx.commit();
 
             long hulkPower = updateFuture.get( 10, TimeUnit.SECONDS );
             assertEquals( 100, hulkPower );
@@ -1151,7 +1184,7 @@ class SessionIT
             tx.run( "CREATE (:Node {id: 123})" );
             tx.run( "CREATE (:Node {id: 456})" );
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( 1, countNodesWithId( 123 ) );
@@ -1167,7 +1200,7 @@ class SessionIT
             tx.run( "CREATE (:Node {id: 123})" );
             tx.run( "CREATE (:Node {id: 456})" );
 
-            tx.failure();
+            tx.rollback();
         }
 
         assertEquals( 0, countNodesWithId( 123 ) );
@@ -1369,7 +1402,7 @@ class SessionIT
             String material = session.writeTransaction( tx ->
             {
                 StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
-                tx.success();
+                tx.commit();
                 Record record = result.single();
                 return record.get( 0 ).asNode().get( "material" ).asString();
             } );
@@ -1397,7 +1430,7 @@ class SessionIT
                         tx.run( "CREATE (:Person {name: 'Thanos'})" );
                         // trigger division by zero error:
                         tx.run( "UNWIND range(0, 1) AS i RETURN 10/i" );
-                        tx.success();
+                        tx.commit();
                         return null;
                     } ) );
         }
@@ -1541,7 +1574,7 @@ class SessionIT
             {
                 throw new ServiceUnavailableException( "" );
             }
-            tx.success();
+            tx.commit();
             return result.single();
         }
     }

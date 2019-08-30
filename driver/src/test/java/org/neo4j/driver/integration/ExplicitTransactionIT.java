@@ -168,17 +168,6 @@ class ExplicitTransactionIT
     }
 
     @Test
-    void shouldFailToRunQueryWhenMarkedForFailure()
-    {
-        ExplicitTransaction tx = beginTransaction();
-        txRun( tx, "CREATE (:MyLabel)" );
-        tx.failure();
-
-        ClientException e = assertThrows( ClientException.class, () -> txRun( tx, "CREATE (:MyOtherLabel)" ) );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
-    }
-
-    @Test
     void shouldFailToRunQueryWhenTerminated()
     {
         ExplicitTransaction tx = beginTransaction();
@@ -187,21 +176,6 @@ class ExplicitTransactionIT
 
         ClientException e = assertThrows( ClientException.class, () -> txRun( tx, "CREATE (:MyOtherLabel)" ) );
         assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
-    }
-
-    @Test
-    void shouldAllowQueriesWhenMarkedForSuccess()
-    {
-        ExplicitTransaction tx = beginTransaction();
-        txRun( tx, "CREATE (:MyLabel)" );
-
-        tx.success();
-
-        txRun( tx, "CREATE (:MyLabel)" );
-        assertNull( await( tx.commitAsync() ) );
-
-        StatementResultCursor cursor = sessionRun( session, new Statement( "MATCH (n:MyLabel) RETURN count(n)" ) );
-        assertEquals( 2, await( cursor.singleAsync() ).get( 0 ).asInt() );
     }
 
     @Test

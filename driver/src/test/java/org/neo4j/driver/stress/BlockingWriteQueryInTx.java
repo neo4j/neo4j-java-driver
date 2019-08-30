@@ -47,7 +47,7 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
             try ( Transaction tx = beginTransaction( session, context ) )
             {
                 result = tx.run( "CREATE ()" );
-                tx.success();
+                tx.commit();
             }
 
             context.setBookmark( session.lastBookmark() );

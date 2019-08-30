@@ -196,8 +196,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
     {
         if ( tx.isOpen() )
         {
-            tx.success();
-            tx.closeAsync().whenComplete( ( ignore, completionError ) -> {
+            tx.commitAsync().whenComplete( ( ignore, completionError ) -> {
                 Throwable commitError = Futures.completionExceptionCause( completionError );
                 if ( commitError != null )
                 {

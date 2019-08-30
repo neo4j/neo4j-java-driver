@@ -174,7 +174,7 @@ class ResultStreamIT
             {
                 StatementResult result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
                 resultRef.set( result );
-                tx.success();
+                tx.commit();
             }
         } );
 

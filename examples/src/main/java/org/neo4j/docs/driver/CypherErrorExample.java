@@ -61,6 +61,7 @@ public class CypherErrorExample extends BaseApplication
         }
         catch ( ClientException ex )
         {
+            tx.rollback();
             System.err.println( ex.getMessage() );
             return -1;
         }

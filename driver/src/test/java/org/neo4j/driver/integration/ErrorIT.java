@@ -158,16 +158,14 @@ class ErrorIT
         // given
         Transaction tx = session.beginTransaction();
         tx.run( "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE" );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         // and
         tx = session.beginTransaction();
         tx.run( "CREATE INDEX ON :`" + label + "`(name)" );
-        tx.success();
 
         // then expect
-        ClientException e = assertThrows( ClientException.class, tx::close );
+        ClientException e = assertThrows( ClientException.class, tx::commit );
         assertThat( e.getMessage(), containsString( label ) );
         assertThat( e.getMessage(), containsString( "name" ) );
     }

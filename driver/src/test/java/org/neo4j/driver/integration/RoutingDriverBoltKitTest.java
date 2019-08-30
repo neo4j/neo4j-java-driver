@@ -140,7 +140,7 @@ class RoutingDriverBoltKitTest
             List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
-            tx.success();
+            tx.commit();
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -194,7 +194,7 @@ class RoutingDriverBoltKitTest
                 {
                     assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
                             equalTo( asList( "Bob", "Alice", "Tina" ) ) );
-                    tx.success();
+                    tx.commit();
                 }
             }
         }
@@ -243,7 +243,7 @@ class RoutingDriverBoltKitTest
                     Transaction tx = session.beginTransaction() )
             {
                 tx.run( "MATCH (n) RETURN n.name" );
-                tx.success();
+                tx.commit();
             }
         } );
         assertEquals( "Server at 127.0.0.1:9005 is no longer available", e.getMessage() );
@@ -290,7 +290,6 @@ class RoutingDriverBoltKitTest
                 Transaction tx = session.beginTransaction() )
         {
             assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
-            tx.success();
         }
         finally
         {
@@ -350,7 +349,7 @@ class RoutingDriverBoltKitTest
                 Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n {name:'Bob'})" );
-            tx.success();
+            tx.commit();
         }
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
@@ -400,7 +399,7 @@ class RoutingDriverBoltKitTest
                 try ( Session session = driver.session(); Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (n {name:'Bob'})" );
-                    tx.success();
+                    tx.commit();
                 }
             }
         }
@@ -527,7 +526,7 @@ class RoutingDriverBoltKitTest
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
@@ -549,7 +548,7 @@ class RoutingDriverBoltKitTest
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
@@ -574,7 +573,7 @@ class RoutingDriverBoltKitTest
                 assertEquals( 2, records.size() );
                 assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
                 assertEquals( "Alice", records.get( 1 ).get( "name" ).asString() );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
@@ -596,7 +595,7 @@ class RoutingDriverBoltKitTest
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "BookmarkB" ), session.lastBookmark() );
@@ -606,7 +605,7 @@ class RoutingDriverBoltKitTest
                 List<Record> records = tx.run( "MATCH (n) RETURN n.name AS name" ).list();
                 assertEquals( 1, records.size() );
                 assertEquals( "Bob", records.get( 0 ).get( "name" ).asString() );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "BookmarkC" ), session.lastBookmark() );
@@ -991,7 +990,7 @@ class RoutingDriverBoltKitTest
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CREATE (n {name:'Bob'})" );
-                tx.success();
+                tx.commit();
             }
 
             assertEquals( parse( "neo4j:bookmark:v1:tx95" ), session.lastBookmark() );

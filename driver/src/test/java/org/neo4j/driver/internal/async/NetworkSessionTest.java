@@ -242,8 +242,7 @@ class NetworkSessionTest
         InternalBookmark bookmark = (InternalBookmark) session.lastBookmark();
         assertTrue( bookmark.isEmpty() );
 
-        tx.success();
-        await( tx.closeAsync() );
+        await( tx.commitAsync() );
         assertEquals( bookmarkAfterCommit, session.lastBookmark() );
     }
 
@@ -288,14 +287,12 @@ class NetworkSessionTest
         when( connection.protocol() ).thenReturn( protocol );
 
         ExplicitTransaction tx1 = beginTransaction( session );
-        tx1.success();
-        await( tx1.closeAsync() );
+        await( tx1.commitAsync() );
         assertEquals( bookmark1, session.lastBookmark() );
 
         ExplicitTransaction tx2 = beginTransaction( session );
         verifyBeginTx( connection, bookmark1 );
-        tx2.success();
-        await( tx2.closeAsync() );
+        await( tx2.commitAsync() );
 
         assertEquals( bookmark2, session.lastBookmark() );
     }

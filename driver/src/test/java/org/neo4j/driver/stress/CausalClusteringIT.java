@@ -192,7 +192,7 @@ public class CausalClusteringIT implements NestedQueries
                 try ( Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
-                    tx.success();
+                    tx.commit();
                 }
 
                 return session.lastBookmark();
@@ -205,7 +205,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                 assertEquals( 1, record.get( "count" ).asInt() );
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -230,7 +230,7 @@ public class CausalClusteringIT implements NestedQueries
                 try ( Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                    tx.success();
+                    tx.commit();
                 }
 
                 bookmark = session.lastBookmark();
@@ -243,7 +243,7 @@ public class CausalClusteringIT implements NestedQueries
                 try ( Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
-                    tx.success();
+                    tx.commit();
                 }
 
                 return null;
@@ -340,9 +340,8 @@ public class CausalClusteringIT implements NestedQueries
 
             tx1.run( "CREATE (person:Person {name: {name}, title: {title}})",
                     parameters( "name", "Webber", "title", "Mr" ) );
-            tx1.success();
 
-            assertThrows( (Class<? extends Exception>) SessionExpiredException.class, ((AutoCloseable) tx1)::close );
+            assertThrows( (Class<? extends Exception>) SessionExpiredException.class, tx1::commit );
             session1.close();
 
             Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->
@@ -351,7 +350,7 @@ public class CausalClusteringIT implements NestedQueries
                 {
                     tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
                             parameters( "name", "Webber", "title", "Mr" ) );
-                    tx.success();
+                    tx.commit();
                 }
                 return session.lastBookmark();
             } );
@@ -360,7 +359,7 @@ public class CausalClusteringIT implements NestedQueries
                   Transaction tx2 = session2.beginTransaction() )
             {
                 Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                tx2.success();
+                tx2.commit();
                 assertEquals( 1, record.get( "count" ).asInt() );
             }
         }
@@ -579,8 +578,8 @@ public class CausalClusteringIT implements NestedQueries
             driverFactory.setNextRunFailure( error );
             assertUnableToRunMoreStatementsInTx( tx2, error );
 
-            closeTx( tx2 );
-            closeTx( tx1 );
+            tx2.close();
+            tx1.commit();
 
             try ( Session session3 = driver.session( builder().withBookmarks( session1.lastBookmark() ).build() ) )
             {
@@ -704,12 +703,6 @@ public class CausalClusteringIT implements NestedQueries
             awaitAllFutures( results ); // readers and writers should stop
             assertThat( countNodes( driver.session(), label, property, value ), greaterThan( 0 ) ); // some nodes should be created
         }
-    }
-
-    private static void closeTx( Transaction tx )
-    {
-        tx.success();
-        tx.close();
     }
 
     private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )

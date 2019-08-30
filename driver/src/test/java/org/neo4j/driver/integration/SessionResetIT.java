@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
@@ -235,7 +234,7 @@ class SessionResetIT
             try ( Transaction tx2 = session.beginTransaction() )
             {
                 tx2.run( "CREATE (n:FirstNode)" );
-                tx2.success();
+                tx2.commit();
             }
 
             StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
@@ -358,7 +357,7 @@ class SessionResetIT
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "RETURN 1" );
-                tx.success();
+                tx.commit();
             }
 
             // When reset the state of this session
@@ -368,7 +367,7 @@ class SessionResetIT
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "RETURN 2" );
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -387,8 +386,7 @@ class SessionResetIT
             Exception e = assertThrows( Exception.class, () ->
             {
                 tx.run( "RETURN 1" );
-                tx.success();
-                tx.close();
+                tx.commit();
             } );
             assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
         }
@@ -410,7 +408,7 @@ class SessionResetIT
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( "RETURN 2" );
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -497,8 +495,7 @@ class SessionResetIT
             // When
             Transaction tx = session.beginTransaction();
             tx.run( "CREATE (n:FirstNode)" );
-            tx.success();
-            tx.close();
+            tx.commit();
 
             // Then the outcome of both statements should be visible
             StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
@@ -538,8 +535,7 @@ class SessionResetIT
             // session has been reset, it should not be possible to commit the transaction
             try
             {
-                tx1.success();
-                tx1.close();
+                tx1.commit();
             }
             catch ( Neo4jException ignore )
             {
@@ -548,7 +544,7 @@ class SessionResetIT
             try ( Transaction tx2 = session.beginTransaction() )
             {
                 tx2.run( "CREATE (n:SecondNode)" );
-                tx2.success();
+                tx2.commit();
             }
 
             return null;
@@ -590,7 +586,6 @@ class SessionResetIT
 
             StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
             result.consume();
-            tx.success();
 
             nodeLocked.countDown();
             // give separate thread some time to block on a lock
@@ -598,6 +593,7 @@ class SessionResetIT
             otherSessionRef.get().reset();
 
             assertTransactionTerminated( txResult );
+            tx.commit();
         }
 
         try ( Session session = neo4j.driver().session() )
@@ -732,7 +728,7 @@ class SessionResetIT
             try ( Transaction tx = session.beginTransaction() )
             {
                 tx.run( query );
-                tx.success();
+                tx.commit();
             }
         }
     }
