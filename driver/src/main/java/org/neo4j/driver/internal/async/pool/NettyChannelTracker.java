@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 
 public class NettyChannelTracker implements ChannelPoolHandler
@@ -91,27 +92,27 @@ public class NettyChannelTracker implements ChannelPoolHandler
                 channel.id(), channel.localAddress(), channel.remoteAddress() );
 
         incrementInUse( channel );
-        metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
+        metricsListener.afterCreated( poolId( channel ), creatingEvent );
 
         allChannels.add( channel );
     }
 
-    public ListenerEvent channelCreating( BoltServerAddress address )
+    public ListenerEvent channelCreating( String poolId )
     {
         ListenerEvent creatingEvent = metricsListener.createListenerEvent();
-        metricsListener.beforeCreating( address, creatingEvent );
+        metricsListener.beforeCreating( poolId, creatingEvent );
         return creatingEvent;
     }
 
-    public void channelFailedToCreate( BoltServerAddress address )
+    public void channelFailedToCreate( String poolId )
     {
-        metricsListener.afterFailedToCreate( address );
+        metricsListener.afterFailedToCreate( poolId );
     }
 
     public void channelClosed( Channel channel )
     {
         decrementIdle( channel );
-        metricsListener.afterClosed( serverAddress( channel ) );
+        metricsListener.afterClosed( poolId( channel ) );
     }
 
     public int inUseChannelCount( BoltServerAddress address )

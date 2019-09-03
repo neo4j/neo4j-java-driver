@@ -31,6 +31,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -157,9 +158,11 @@ class DriverFactoryTest
         // Given
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( true );
+        when( config.logging() ).thenReturn( Logging.none() );
         // When
         MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
         // Then
+        assertThat( provider.isMetricsEnabled(), is( true ) );
         assertThat( provider instanceof InternalMetricsProvider, is( true ) );
     }
 

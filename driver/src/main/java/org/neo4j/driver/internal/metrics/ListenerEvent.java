@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.metrics;
 
 public interface ListenerEvent
 {
-    public ListenerEvent DEV_NULL_LISTENER_EVENT = new ListenerEvent()
+    ListenerEvent DEV_NULL_LISTENER_EVENT = new ListenerEvent()
     {
         @Override
         public void start()

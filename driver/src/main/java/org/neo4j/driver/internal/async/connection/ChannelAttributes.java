@@ -30,6 +30,7 @@ import static io.netty.util.AttributeKey.newInstance;
 public final class ChannelAttributes
 {
     private static final AttributeKey<String> CONNECTION_ID = newInstance( "connectionId" );
+    private static final AttributeKey<String> POOL_ID = newInstance( "poolId" );
     private static final AttributeKey<Integer> PROTOCOL_VERSION = newInstance( "protocolVersion" );
     private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
     private static final AttributeKey<ServerVersion> SERVER_VERSION = newInstance( "serverVersion" );
@@ -50,6 +51,16 @@ public final class ChannelAttributes
     public static void setConnectionId( Channel channel, String id )
     {
         setOnce( channel, CONNECTION_ID, id );
+    }
+
+    public static String poolId( Channel channel )
+    {
+        return get( channel, POOL_ID );
+    }
+
+    public static void setPoolId( Channel channel, String id )
+    {
+        setOnce( channel, POOL_ID, id );
     }
 
     public static int protocolVersion( Channel channel )

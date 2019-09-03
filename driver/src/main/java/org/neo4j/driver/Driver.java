@@ -156,6 +156,14 @@ public interface Driver extends AutoCloseable
     Metrics metrics();
 
     /**
+     * Returns true if the driver metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}, otherwise false.
+     *
+     * @return true if the metrics reporting is enabled.
+     */
+    @Experimental
+    boolean isMetricsEnabled();
+
+    /**
      * This will return the type system supported by the driver.
      * The types supported on a particular server a session is connected against might not contain all of the types defined here.
      *

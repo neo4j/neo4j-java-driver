@@ -25,7 +25,7 @@ public class TimeRecorderListenerEvent implements ListenerEvent
     private long startTime;
     private final Clock clock;
 
-    public TimeRecorderListenerEvent( Clock clock )
+    TimeRecorderListenerEvent( Clock clock )
     {
         this.clock = clock;
     }

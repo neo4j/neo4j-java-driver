@@ -18,74 +18,75 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
 public abstract class InternalAbstractMetrics implements Metrics, MetricsListener
 {
     public static final InternalAbstractMetrics DEV_NULL_METRICS = new InternalAbstractMetrics()
     {
+
         @Override
-        public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+        public void beforeCreating( String poolId, ListenerEvent creatingEvent )
         {
 
         }
 
         @Override
-        public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+        public void afterCreated( String poolId, ListenerEvent creatingEvent )
         {
 
         }
 
         @Override
-        public void afterFailedToCreate( BoltServerAddress serverAddress )
+        public void afterFailedToCreate( String poolId )
         {
 
         }
 
         @Override
-        public void afterClosed( BoltServerAddress serverAddress )
+        public void afterClosed( String poolId )
         {
 
         }
 
         @Override
-        public void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress )
+        public void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent )
         {
 
         }
 
         @Override
-        public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+        public void afterAcquiringOrCreating( String poolId )
         {
 
         }
 
         @Override
-        public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
+        public void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent )
         {
 
         }
 
         @Override
-        public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+        public void afterTimedOutToAcquireOrCreate( String poolId )
         {
 
         }
 
         @Override
-        public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterConnectionCreated( String poolId, ListenerEvent inUseEvent )
         {
 
         }
 
         @Override
-        public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+        public void afterConnectionReleased( String poolId, ListenerEvent inUseEvent )
         {
 
         }
@@ -97,21 +98,21 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void putPoolMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool )
+        public void putPoolMetrics( String id, BoltServerAddress address, ConnectionPoolImpl connectionPool )
         {
 
         }
 
         @Override
-        public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
+        public void removePoolMetrics( String poolId )
         {
-            return Collections.emptyMap();
+
         }
 
         @Override
-        public Metrics snapshot()
+        public Collection<ConnectionPoolMetrics> connectionPoolMetrics()
         {
-            return this;
+            return Collections.emptySet();
         }
 
         @Override

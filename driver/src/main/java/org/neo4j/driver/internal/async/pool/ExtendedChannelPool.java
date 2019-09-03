@@ -23,4 +23,6 @@ import io.netty.channel.pool.ChannelPool;
 public interface ExtendedChannelPool extends ChannelPool
 {
     boolean isClosed();
+
+    String id();
 }

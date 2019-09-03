@@ -41,9 +41,17 @@ public interface MetricsProvider
             // Internally we can still register callbacks to this empty metrics listener.
             return DEV_NULL_METRICS;
         }
+
+        @Override
+        public boolean isMetricsEnabled()
+        {
+            return false;
+        }
     };
 
     Metrics metrics();
 
     MetricsListener metricsListener();
+
+    boolean isMetricsEnabled();
 }
