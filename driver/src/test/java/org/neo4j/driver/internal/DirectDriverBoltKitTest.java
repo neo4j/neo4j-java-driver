@@ -306,7 +306,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "read_server_v4_read.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDatabase( "myDatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
+                Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
             result.consume();
@@ -323,7 +323,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "read_server_v4_read_tx.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( forDatabase( "myDatabase" ) ) )
+                Session session = driver.session( forDatabase( "mydatabase" ) ) )
         {
             session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
         }
