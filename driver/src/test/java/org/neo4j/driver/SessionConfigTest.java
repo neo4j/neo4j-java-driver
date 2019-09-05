@@ -18,14 +18,16 @@
  */
 package org.neo4j.driver;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.Bookmark;
 
@@ -37,6 +39,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.defaultConfig;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
@@ -49,7 +52,7 @@ class SessionConfigTest
     {
         SessionConfig config = defaultConfig();
 
-        Assert.assertEquals( AccessMode.WRITE, config.defaultAccessMode() );
+        assertEquals( AccessMode.WRITE, config.defaultAccessMode() );
         assertFalse( config.database().isPresent() );
         assertNull( config.bookmarks() );
     }
@@ -75,6 +78,22 @@ class SessionConfigTest
     void shouldNotAllowNullDatabaseName() throws Throwable
     {
         assertThrows( NullPointerException.class, () -> builder().withDatabase( null ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource("someConfigs")
+    void nullDatabaseNameMustNotBreakEquals(SessionConfig config1, SessionConfig config2, boolean expectedEquals) {
+
+        assertEquals( config1.equals( config2 ), expectedEquals );
+    }
+
+    static Stream<Arguments> someConfigs() {
+        return Stream.of(
+                arguments( SessionConfig.builder().build(), SessionConfig.builder().build(), true ),
+                arguments( SessionConfig.builder().withDatabase( "a" ).build(), SessionConfig.builder().build(), false ),
+                arguments( SessionConfig.builder().build(), SessionConfig.builder().withDatabase( "a" ).build(), false ),
+                arguments( SessionConfig.builder().withDatabase( "a" ).build(), SessionConfig.builder().withDatabase( "a" ).build(), true )
+        );
     }
 
     @ParameterizedTest
