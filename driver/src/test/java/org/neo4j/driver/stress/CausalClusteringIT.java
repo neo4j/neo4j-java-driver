@@ -191,7 +191,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
-                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Alistair" ) );
                     tx.commit();
                 }
 
@@ -220,7 +220,7 @@ public class CausalClusteringIT implements NestedQueries
         {
             inExpirableSession( driver, createWritableSession( null ), session ->
             {
-                session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
+                session.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Jim" ) );
                 return null;
             } );
 
@@ -242,7 +242,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
-                    tx.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Alistair" ) );
+                    tx.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Alistair" ) );
                     tx.commit();
                 }
 
@@ -338,7 +338,7 @@ public class CausalClusteringIT implements NestedQueries
             // gracefully stop current leader to force re-election
             cluster.stop( leader );
 
-            tx1.run( "CREATE (person:Person {name: {name}, title: {title}})",
+            tx1.run( "CREATE (person:Person {name: $name, title: $title})",
                     parameters( "name", "Webber", "title", "Mr" ) );
 
             assertThrows( (Class<? extends Exception>) SessionExpiredException.class, tx1::commit );
@@ -348,7 +348,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
-                    tx.run( "CREATE (person:Person {name: {name}, title: {title}})",
+                    tx.run( "CREATE (person:Person {name: $name, title: $title})",
                             parameters( "name", "Webber", "title", "Mr" ) );
                     tx.commit();
                 }
@@ -799,7 +799,7 @@ public class CausalClusteringIT implements NestedQueries
         {
             return session.readTransaction( tx ->
             {
-                StatementResult result = tx.run( "MATCH (:Person {name: {name}}) RETURN count(*)",
+                StatementResult result = tx.run( "MATCH (:Person {name: $name}) RETURN count(*)",
                         parameters( "name", name ) );
                 return result.single().get( 0 ).asInt();
             } );

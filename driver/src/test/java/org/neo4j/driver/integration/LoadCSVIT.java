@@ -53,7 +53,7 @@ class LoadCSVIT
             // When
             StatementResult result = session.run(
                     "USING PERIODIC COMMIT 40\n" +
-                    "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                    "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
                     "MATCH (c:Class {name: l.class_name})\n" +
                     "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
 
@@ -71,7 +71,7 @@ class LoadCSVIT
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
-            session.run( "CREATE (c:Class {name: {className}}) RETURN c", parameters( "className", className ) );
+            session.run( "CREATE (c:Class {name: $className}) RETURN c", parameters( "className", className ) );
         }
 
         return neo4j.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();

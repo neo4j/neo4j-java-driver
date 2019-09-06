@@ -88,7 +88,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record single = rs.single();
@@ -102,7 +102,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         Record record = rs.single();
@@ -115,7 +115,7 @@ class ResultStreamIT
     void shouldNotReturnNullKeysOnEmptyResult()
     {
         // Given
-        StatementResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+        StatementResult rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
 
         // THEN
         assertNotNull( rs.keys() );

@@ -608,13 +608,13 @@ class SessionResetIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            session.run( "CREATE (n {id: {id}})", parameters( "id", id ) );
+            session.run( "CREATE (n {id: $id})", parameters( "id", id ) );
         }
     }
 
     private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: {currentId}}) SET n.id = {newId}",
+        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 
