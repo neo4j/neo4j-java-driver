@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.types.TypeSystem;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
@@ -146,6 +147,9 @@ public class DatabaseExtension implements BeforeEachCallback
 
     public void ensureProcedures( String jarName ) throws IOException
     {
+        // These procedures was written against 3.x API.
+        // As graph database service API is totally changed since 4.0. These procedures are no long valid.
+        assumeTrue( version().lessThan( ServerVersion.v4_0_0 ) );
         File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
         if ( !procedureJar.exists() )
         {

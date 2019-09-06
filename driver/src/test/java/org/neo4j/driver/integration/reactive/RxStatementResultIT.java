@@ -148,7 +148,7 @@ class RxStatementResultIT
         // Given
         RxSession session = neo4j.driver().rxSession();
         RxStatementResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         StepVerifier.create( Flux.from( rs.records() ).single() ).assertNext( record -> {
@@ -163,7 +163,7 @@ class RxStatementResultIT
         // Given
         RxSession session = neo4j.driver().rxSession();
         RxStatementResult rs =
-                session.run( "CREATE (n:Person {name:{name}}) RETURN n", parameters( "name", "Tom Hanks" ) );
+                session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
         StepVerifier.create( Flux.from( rs.records() ).single() ).assertNext( record -> {
@@ -194,7 +194,7 @@ class RxStatementResultIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxStatementResult rs = session.run( "CREATE (n:Person {name:{name}})", parameters( "name", "Tom Hanks" ) );
+        RxStatementResult rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
 
         // Then
         StepVerifier.create( rs.keys() ).expectComplete().verify();

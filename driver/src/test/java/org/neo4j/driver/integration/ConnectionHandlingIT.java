@@ -431,7 +431,7 @@ class ConnectionHandlingIT
 
     private StatementResult createNodes( int nodesToCreate, StatementRunner statementRunner )
     {
-        return statementRunner.run( "UNWIND range(1, {nodesToCreate}) AS i CREATE (n {index: i}) RETURN n",
+        return statementRunner.run( "UNWIND range(1, $nodesToCreate) AS i CREATE (n {index: i}) RETURN n",
                 parameters( "nodesToCreate", nodesToCreate ) );
     }
 

@@ -104,6 +104,7 @@ public final class TestUtil
 
     private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
     private static final String ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
+    public static final Duration TX_TIMEOUT_TEST_TIMEOUT = Duration.ofSeconds( 10 );
 
     private TestUtil()
     {

@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -57,7 +56,7 @@ class SummaryIT
     {
         // Given
         Value statementParameters = Values.parameters( "limit", 10 );
-        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
+        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
 
         // When
         StatementResult result = session.run( statementText, statementParameters );
