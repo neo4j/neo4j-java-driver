@@ -123,7 +123,7 @@ public class SessionConfig
             return false;
         }
         SessionConfig that = (SessionConfig) o;
-        return Objects.equals( bookmarks, that.bookmarks ) && defaultAccessMode == that.defaultAccessMode && database.equals( that.database );
+        return Objects.equals( bookmarks, that.bookmarks ) && defaultAccessMode == that.defaultAccessMode && Objects.equals( database, that.database );
     }
 
     @Override
