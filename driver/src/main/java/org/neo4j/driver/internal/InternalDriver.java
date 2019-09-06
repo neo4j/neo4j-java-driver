@@ -100,6 +100,12 @@ public class InternalDriver implements Driver
     }
 
     @Override
+    public boolean isMetricsEnabled()
+    {
+        return metricsProvider.isMetricsEnabled();
+    }
+
+    @Override
     public boolean isEncrypted()
     {
         assertOpen();

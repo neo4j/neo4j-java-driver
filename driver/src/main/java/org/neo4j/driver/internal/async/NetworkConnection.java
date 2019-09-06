@@ -41,6 +41,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 
 /**
@@ -76,7 +77,7 @@ public class NetworkConnection implements Connection
         this.clock = clock;
         this.metricsListener = metricsListener;
         this.inUseEvent = metricsListener.createListenerEvent();
-        metricsListener.afterConnectionCreated( this.serverAddress, this.inUseEvent );
+        metricsListener.afterConnectionCreated( poolId( this.channel ), this.inUseEvent );
     }
 
     @Override
@@ -166,7 +167,7 @@ public class NetworkConnection implements Connection
                     channelPool, messageDispatcher, clock, releaseFuture );
 
             writeResetMessageIfNeeded( handler, false );
-            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
+            metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
         }
         return releaseFuture;
     }
@@ -180,7 +181,7 @@ public class NetworkConnection implements Connection
             channel.close();
             channelPool.release( channel );
             releaseFuture.complete( null );
-            metricsListener.afterConnectionReleased( this.serverAddress, this.inUseEvent );
+            metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
         }
     }
 

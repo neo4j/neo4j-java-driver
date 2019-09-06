@@ -18,97 +18,106 @@
  */
 package org.neo4j.driver.internal.metrics;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.exceptions.ClientException;
 
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.driver.internal.metrics.ConnectionPoolMetricsListener.DEV_NULL_POOL_METRICS_LISTENER;
 
 public class InternalMetrics extends InternalAbstractMetrics
 {
     private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
     private final Clock clock;
+    private final Logger log;
 
-    public InternalMetrics( Clock clock )
+    InternalMetrics( Clock clock, Logging logging )
     {
         Objects.requireNonNull( clock );
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.clock = clock;
+        this.log = logging.getLog( getClass().getSimpleName() );
     }
 
     @Override
-    public void putPoolMetrics( BoltServerAddress serverAddress, ConnectionPoolImpl pool )
+    public void putPoolMetrics( String poolId, BoltServerAddress serverAddress, ConnectionPoolImpl pool )
     {
-        this.connectionPoolMetrics.put( serverAddressToUniqueName( serverAddress ),
-                new InternalConnectionPoolMetrics( serverAddress, pool ) );
+        this.connectionPoolMetrics.put( poolId, new InternalConnectionPoolMetrics( poolId, serverAddress, pool ) );
     }
 
     @Override
-    public void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+    public void removePoolMetrics( String id )
     {
-        poolMetrics( serverAddress ).beforeCreating( creatingEvent );
+        this.connectionPoolMetrics.remove( id );
     }
 
     @Override
-    public void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent )
+    public void beforeCreating( String poolId, ListenerEvent creatingEvent )
     {
-        poolMetrics( serverAddress ).afterCreated( creatingEvent );
+        poolMetrics( poolId ).beforeCreating( creatingEvent );
     }
 
     @Override
-    public void afterFailedToCreate( BoltServerAddress serverAddress )
+    public void afterCreated( String poolId, ListenerEvent creatingEvent )
     {
-        poolMetrics( serverAddress ).afterFailedToCreate();
+        poolMetrics( poolId ).afterCreated( creatingEvent );
     }
 
     @Override
-    public void afterClosed( BoltServerAddress serverAddress )
+    public void afterFailedToCreate( String poolId )
     {
-        poolMetrics( serverAddress ).afterClosed();
+        poolMetrics( poolId ).afterFailedToCreate();
     }
 
     @Override
-    public void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+    public void afterClosed( String poolId )
     {
-        poolMetrics( serverAddress ).beforeAcquiringOrCreating( acquireEvent );
+        poolMetrics( poolId ).afterClosed();
     }
 
     @Override
-    public void afterAcquiringOrCreating( BoltServerAddress serverAddress )
+    public void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent )
     {
-        poolMetrics( serverAddress ).afterAcquiringOrCreating();
+        poolMetrics( poolId ).beforeAcquiringOrCreating( acquireEvent );
     }
 
     @Override
-    public void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent )
+    public void afterAcquiringOrCreating( String poolId )
     {
-        poolMetrics( serverAddress ).afterAcquiredOrCreated( acquireEvent );
+        poolMetrics( poolId ).afterAcquiringOrCreating();
     }
 
     @Override
-    public void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+    public void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent )
     {
-        poolMetrics( serverAddress ).acquired( inUseEvent );
+        poolMetrics( poolId ).afterAcquiredOrCreated( acquireEvent );
     }
 
     @Override
-    public void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent )
+    public void afterConnectionCreated( String poolId, ListenerEvent inUseEvent )
     {
-        poolMetrics( serverAddress ).released( inUseEvent );
+        poolMetrics( poolId ).acquired( inUseEvent );
     }
 
     @Override
-    public void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress )
+    public void afterConnectionReleased( String poolId, ListenerEvent inUseEvent )
     {
-        poolMetrics( serverAddress ).afterTimedOutToAcquireOrCreate();
+        poolMetrics( poolId ).released( inUseEvent );
+    }
+
+    @Override
+    public void afterTimedOutToAcquireOrCreate( String poolId )
+    {
+        poolMetrics( poolId ).afterTimedOutToAcquireOrCreate();
     }
 
     @Override
@@ -118,15 +127,9 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public Map<String,ConnectionPoolMetrics> connectionPoolMetrics()
+    public Collection<ConnectionPoolMetrics> connectionPoolMetrics()
     {
-        return unmodifiableMap( this.connectionPoolMetrics );
-    }
-
-    @Override
-    public Metrics snapshot()
-    {
-        return new SnapshotMetrics( this );
+        return unmodifiableCollection( this.connectionPoolMetrics.values() );
     }
 
     @Override
@@ -135,18 +138,13 @@ public class InternalMetrics extends InternalAbstractMetrics
         return format( "PoolMetrics=%s", connectionPoolMetrics );
     }
 
-    static String serverAddressToUniqueName( BoltServerAddress serverAddress )
+    private ConnectionPoolMetricsListener poolMetrics( String poolId )
     {
-        return String.format( "%s:%d", serverAddress.host(), serverAddress.port() );
-    }
-
-    private ConnectionPoolMetricsListener poolMetrics( BoltServerAddress serverAddress )
-    {
-        InternalConnectionPoolMetrics poolMetrics =
-                (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get( serverAddressToUniqueName( serverAddress ) );
+        InternalConnectionPoolMetrics poolMetrics = (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get( poolId );
         if ( poolMetrics == null )
         {
-            throw new ClientException( format( "Failed to find pool metrics for server `%s` in %s", serverAddress, this.connectionPoolMetrics ) );
+            log.warn( format( "Failed to find pool metrics with id `%s` in %s.", poolId, this.connectionPoolMetrics ) );
+            return DEV_NULL_POOL_METRICS_LISTENER;
         }
         return poolMetrics;
     }

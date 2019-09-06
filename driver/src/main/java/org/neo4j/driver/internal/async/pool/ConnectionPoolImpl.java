@@ -94,7 +94,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         ExtendedChannelPool pool = getOrCreatePool( address );
 
         ListenerEvent acquireEvent = metricsListener.createListenerEvent();
-        metricsListener.beforeAcquiringOrCreating( address, acquireEvent );
+        metricsListener.beforeAcquiringOrCreating( pool.id(), acquireEvent );
         Future<Channel> connectionFuture = pool.acquire();
 
         return Futures.asCompletionStage( connectionFuture ).handle( ( channel, error ) ->
@@ -105,12 +105,12 @@ public class ConnectionPoolImpl implements ConnectionPool
                 assertNotClosed( address, channel, pool );
                 Connection connection = connectionFactory.createConnection( channel, pool );
 
-                metricsListener.afterAcquiredOrCreated( address, acquireEvent );
+                metricsListener.afterAcquiredOrCreated( pool.id(), acquireEvent );
                 return connection;
             }
             finally
             {
-                metricsListener.afterAcquiringOrCreating( address );
+                metricsListener.afterAcquiringOrCreating( pool.id() );
             }
         } );
     }
@@ -127,12 +127,12 @@ public class ConnectionPoolImpl implements ConnectionPool
                 {
                     // address is not present in updated routing table and has no active connections
                     // it's now safe to terminate corresponding connection pool and forget about it
-                    ChannelPool pool = pools.remove( address );
+                    ExtendedChannelPool pool = pools.remove( address );
                     if ( pool != null )
                     {
                         log.info( "Closing connection pool towards %s, it has no active connections " +
                                   "and is not in the routing table", address );
-                        pool.close();
+                        closePool( pool );
                     }
                 }
             }
@@ -162,9 +162,9 @@ public class ConnectionPoolImpl implements ConnectionPool
                 for ( Map.Entry<BoltServerAddress,ExtendedChannelPool> entry : pools.entrySet() )
                 {
                     BoltServerAddress address = entry.getKey();
-                    ChannelPool pool = entry.getValue();
+                    ExtendedChannelPool pool = entry.getValue();
                     log.info( "Closing connection pool towards %s", address );
-                    pool.close();
+                    closePool( pool );
                 }
 
                 pools.clear();
@@ -197,31 +197,24 @@ public class ConnectionPoolImpl implements ConnectionPool
 
     private ExtendedChannelPool getOrCreatePool( BoltServerAddress address )
     {
-        ExtendedChannelPool pool = pools.get( address );
-        if ( pool != null )
-        {
-            return pool;
-        }
+        return pools.computeIfAbsent( address, this::newPool );
+    }
 
-        synchronized ( this )
-        {
-            pool = pools.get( address );
-            if ( pool != null )
-            {
-                return pool;
-            }
-
-            metricsListener.putPoolMetrics( address, this );
-            pool = newPool( address );
-            pools.put( address, pool );
-        }
-        return pool;
+    private void closePool( ExtendedChannelPool pool )
+    {
+        pool.close();
+        // after the connection pool is removed/close, I can remove its metrics.
+        metricsListener.removePoolMetrics( pool.id() );
     }
 
     ExtendedChannelPool newPool( BoltServerAddress address )
     {
-        return new NettyChannelPool( address, connector, bootstrap, nettyChannelTracker, channelHealthChecker,
-                settings.connectionAcquisitionTimeout(), settings.maxConnectionPoolSize() );
+        NettyChannelPool pool =
+                new NettyChannelPool( address, connector, bootstrap, nettyChannelTracker, channelHealthChecker, settings.connectionAcquisitionTimeout(),
+                        settings.maxConnectionPoolSize() );
+        // before the connection pool is added I can add the metrics for the pool.
+        metricsListener.putPoolMetrics( pool.id(), address, this );
+        return pool;
     }
 
     private EventLoopGroup eventLoopGroup()
@@ -238,7 +231,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 // NettyChannelPool returns future failed with TimeoutException if acquire operation takes more than
                 // configured time, translate this exception to a prettier one and re-throw
-                metricsListener.afterTimedOutToAcquireOrCreate( serverAddress );
+                metricsListener.afterTimedOutToAcquireOrCreate( pool.id() );
                 throw new ClientException(
                         "Unable to acquire connection from the pool within configured maximum time of " +
                         settings.connectionAcquisitionTimeout() + "ms" );

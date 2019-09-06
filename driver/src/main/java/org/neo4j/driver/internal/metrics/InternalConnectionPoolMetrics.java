@@ -22,12 +22,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.ConnectionPoolMetrics;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.metrics.InternalMetrics.serverAddressToUniqueName;
 
 public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
 {
@@ -51,12 +50,14 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final AtomicLong totalInUseTime = new AtomicLong();
 
     private final AtomicLong totalInUseCount = new AtomicLong();
+    private final String id;
 
-    public InternalConnectionPoolMetrics( BoltServerAddress address, ConnectionPool pool )
+    InternalConnectionPoolMetrics( String poolId, BoltServerAddress address, ConnectionPool pool )
     {
         Objects.requireNonNull( address );
         Objects.requireNonNull( pool );
 
+        this.id = poolId;
         this.address = address;
         this.pool = pool;
     }
@@ -137,20 +138,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String id()
     {
-        return serverAddressToUniqueName( address );
-    }
-
-    @Override
-    public PoolStatus poolStatus()
-    {
-        if ( pool.isOpen( address ) )
-        {
-            return PoolStatus.OPEN;
-        }
-        else
-        {
-            return PoolStatus.CLOSED;
-        }
+        return this.id;
     }
 
     @Override
@@ -214,12 +202,6 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public ConnectionPoolMetrics snapshot()
-    {
-        return new SnapshotConnectionPoolMetrics( this );
-    }
-
-    @Override
     public long closed()
     {
         return closed.get();
@@ -241,11 +223,11 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public String toString()
     {
-        return format( "[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                        "timedOutToAcquire=%s, inUse=%s, idle=%s, poolStatus=%s, " +
+        return format( "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
+                        "timedOutToAcquire=%s, inUse=%s, idle=%s, " +
                         "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
-                created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                timedOutToAcquire(), inUse(), idle(), poolStatus(),
+                id(), created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
+                timedOutToAcquire(), inUse(), idle(),
                 totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 }

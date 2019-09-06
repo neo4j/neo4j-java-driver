@@ -123,7 +123,7 @@ public class DriverFactory
     {
         if( config.isMetricsEnabled() )
         {
-            return new InternalMetricsProvider( clock );
+            return new InternalMetricsProvider( clock, config.logging() );
         }
         else
         {

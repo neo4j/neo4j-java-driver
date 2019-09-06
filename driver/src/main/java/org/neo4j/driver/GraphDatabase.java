@@ -20,10 +20,10 @@ package org.neo4j.driver;
 
 import java.net.URI;
 
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 

@@ -29,71 +29,73 @@ public interface MetricsListener
 {
     /**
      * Before creating a netty channel.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
-    void beforeCreating( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
+    void beforeCreating( String poolId, ListenerEvent creatingEvent );
 
     /**
      * After a netty channel is created successfully.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterCreated( BoltServerAddress serverAddress, ListenerEvent creatingEvent );
+    void afterCreated( String poolId, ListenerEvent creatingEvent );
 
     /**
      * After a netty channel is created with a failure.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterFailedToCreate( BoltServerAddress serverAddress );
+    void afterFailedToCreate( String poolId );
 
     /**
      * After a netty channel is closed successfully.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterClosed( BoltServerAddress serverAddress );
+    void afterClosed( String poolId );
 
     /**
      * Before acquiring or creating a new netty channel from pool.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void beforeAcquiringOrCreating( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
+    void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent );
 
     /**
      * After acquiring or creating a new netty channel from pool regardless it is successful or not.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterAcquiringOrCreating( BoltServerAddress serverAddress );
+    void afterAcquiringOrCreating( String poolId );
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void afterAcquiredOrCreated( BoltServerAddress serverAddress, ListenerEvent acquireEvent );
+    void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent );
 
     /**
      * After we failed to acquire a connection from pool within maximum connection acquisition timeout set by
      * {@link Config.ConfigBuilder#withConnectionAcquisitionTimeout(long, TimeUnit)}.
-     * @param serverAddress
+     * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterTimedOutToAcquireOrCreate( BoltServerAddress serverAddress );
+    void afterTimedOutToAcquireOrCreate( String poolId );
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when created.
      */
-    void afterConnectionCreated( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
+    void afterConnectionCreated( String poolId, ListenerEvent inUseEvent );
 
     /**
      * After releasing a netty channel back to pool successfully.
-     * @param serverAddress the server the netty channel binds to.
+     * @param poolId the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when destroyed.
      */
-    void afterConnectionReleased( BoltServerAddress serverAddress, ListenerEvent inUseEvent );
+    void afterConnectionReleased( String poolId, ListenerEvent inUseEvent );
 
     ListenerEvent createListenerEvent();
 
-    void putPoolMetrics( BoltServerAddress address, ConnectionPoolImpl connectionPool );
+    void putPoolMetrics( String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool );
+
+    void removePoolMetrics( String poolId );
 }

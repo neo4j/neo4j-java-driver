@@ -31,6 +31,7 @@ import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setPoolId;
 
 public class NettyChannelPool extends FixedChannelPool implements ExtendedChannelPool
 {
@@ -47,6 +48,7 @@ public class NettyChannelPool extends FixedChannelPool implements ExtendedChanne
     private final ChannelConnector connector;
     private final NettyChannelTracker handler;
     private final AtomicBoolean closed = new AtomicBoolean( false );
+    private final String id;
 
     public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker handler,
             ChannelHealthChecker healthCheck, long acquireTimeoutMillis, int maxConnections )
@@ -57,12 +59,13 @@ public class NettyChannelPool extends FixedChannelPool implements ExtendedChanne
         this.address = requireNonNull( address );
         this.connector = requireNonNull( connector );
         this.handler = requireNonNull( handler );
+        this.id = poolId( address );
     }
 
     @Override
     protected ChannelFuture connectChannel( Bootstrap bootstrap )
     {
-        ListenerEvent creatingEvent = handler.channelCreating( address );
+        ListenerEvent creatingEvent = handler.channelCreating( this.id );
         ChannelFuture channelFuture = connector.connect( address, bootstrap );
         channelFuture.addListener( future ->
         {
@@ -70,11 +73,12 @@ public class NettyChannelPool extends FixedChannelPool implements ExtendedChanne
             {
                 // notify pool handler about a successful connection
                 Channel channel = channelFuture.channel();
+                setPoolId( channel, this.id );
                 handler.channelCreated( channel, creatingEvent );
             }
             else
             {
-                handler.channelFailedToCreate( address );
+                handler.channelFailedToCreate( this.id );
             }
         } );
         return channelFuture;
@@ -92,5 +96,15 @@ public class NettyChannelPool extends FixedChannelPool implements ExtendedChanne
     public boolean isClosed()
     {
         return closed.get();
+    }
+
+    public String id()
+    {
+        return this.id;
+    }
+
+    private String poolId( BoltServerAddress serverAddress )
+    {
+        return String.format( "%s:%d-%d", serverAddress.host(), serverAddress.port(), this.hashCode() );
     }
 }
