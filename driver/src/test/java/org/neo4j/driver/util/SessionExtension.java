@@ -32,7 +32,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 
 /**
  * A little utility for integration testing, this provides tests with a session they can work with.

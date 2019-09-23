@@ -23,7 +23,7 @@ import org.hamcrest.Matcher;
 import java.util.HashSet;
 import java.util.List;
 
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.util.Iterables.asList;
 
-public class BookmarkUtils
+public class BookmarkUtil
 {
     /**
      * Bookmark is empty.
@@ -77,6 +77,18 @@ public class BookmarkUtils
         List<String> values = asList( ((InternalBookmark) bookmark).values() );
         assertThat( values.size(), equalTo( 1 ) );
         assertThat( values.get( 0 ), matcher );
+    }
+
+    /**
+     * Bookmark contains values matching the requirement set by matcher.
+     */
+    public static void assertBookmarkContainsValues( Bookmark bookmark, Matcher<Iterable<String>> matcher )
+    {
+        assertNotNull( bookmark );
+        assertThat( bookmark, instanceOf( InternalBookmark.class ) );
+
+        List<String> values = asList( ((InternalBookmark) bookmark).values() );
+        assertThat( values, matcher );
     }
 
     /**

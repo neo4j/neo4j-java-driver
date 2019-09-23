@@ -28,7 +28,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.

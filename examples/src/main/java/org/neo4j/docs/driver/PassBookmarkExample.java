@@ -27,7 +27,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;

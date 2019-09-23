@@ -26,7 +26,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
@@ -39,9 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
-import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkContainsSingleValue;
-import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarkIsEmpty;
-import static org.neo4j.driver.internal.util.BookmarkUtils.assertBookmarksContainsSingleUniqueValues;
+import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsSingleValue;
+import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
+import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContainsSingleUniqueValues;
 
 @ParallelizableIT
 class BookmarkIT
