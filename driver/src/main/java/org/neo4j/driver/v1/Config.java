@@ -297,7 +297,7 @@ public class Config
         private LoadBalancingStrategy loadBalancingStrategy = LoadBalancingStrategy.LEAST_CONNECTED;
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
-        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 5 );
+        private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
 
@@ -687,7 +687,7 @@ public class Config
          * Timeout value should be greater or equal to zero and represent a valid {@code int} value when converted to
          * {@link TimeUnit#MILLISECONDS milliseconds}.
          * <p>
-         * The default value of this parameter is {@code 5 SECONDS}.
+         * The default value of this parameter is {@code 30 SECONDS}.
          *
          * @param value the timeout duration
          * @param unit the unit in which duration is given
