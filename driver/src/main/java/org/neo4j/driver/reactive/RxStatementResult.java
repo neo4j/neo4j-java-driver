@@ -43,7 +43,7 @@ public interface RxStatementResult
     /**
      * Returns a cold publisher of keys.
      * <p>
-     * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query statement is sent to the server and get executed.
+     * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query statement is sent to the server and executed.
      * This method does not start the record streaming nor publish query execution error.
      * To retrieve the execution result, either {@link #records()} or {@link #summary()} can be used.
      * {@link #records()} starts record streaming and reports query execution error.

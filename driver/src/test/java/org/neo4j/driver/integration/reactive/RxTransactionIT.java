@@ -179,6 +179,41 @@ class RxTransactionIT
 
     @ParameterizedTest
     @MethodSource( "commit" )
+    void shouldRunStatementsOnResultPublish( boolean commit )
+    {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+
+        RxStatementResult cursor1 = tx.run( "CREATE (n:Person {name: 'Alice'}) RETURN n.name" );
+        RxStatementResult cursor2 = tx.run( "CREATE (n:Person {name: 'Bob'}) RETURN n.name" );
+
+        // The execution order is the same as the record publishing order.
+        List<Record> records = await( Flux.from( cursor2.records() ).concatWith( cursor1.records() ) );
+        assertThat( records.size(), equalTo( 2 ) );
+        assertThat( records.get( 0 ).get( "n.name" ).asString(), equalTo( "Bob" ) );
+        assertThat( records.get( 1 ).get( "n.name" ).asString(), equalTo( "Alice" ) );
+
+        assertCanCommitOrRollback( commit, tx );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "commit" )
+    void shouldDiscardOnCommitOrRollback( boolean commit )
+    {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxStatementResult cursor = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+
+        // We only perform run without any pull
+        await( Flux.from( cursor.keys() ) );
+        // We shall perform a discard here and then commit/rollback
+        assertCanCommitOrRollback( commit, tx );
+
+        // As a result the records size shall be 0.
+        List<Record> records = await( Flux.from( cursor.records() ) );
+        assertThat( records.size(), equalTo( 0 ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "commit" )
     void shouldBePossibleToRunMultipleStatementsWithoutStreaming( boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
@@ -207,7 +242,6 @@ class RxTransactionIT
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertFailToRunWrongStatement( tx );
         assertCanRollback( tx );
-
     }
 
     @Test
