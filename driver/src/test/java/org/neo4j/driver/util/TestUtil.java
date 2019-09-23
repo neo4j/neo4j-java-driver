@@ -102,7 +102,7 @@ public final class TestUtil
     public static final int DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV4.VERSION;
     public static final BoltProtocol DEFAULT_TEST_PROTOCOL = BoltProtocol.forVersion( DEFAULT_TEST_PROTOCOL_VERSION );
 
-    private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 1 );
+    private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 2 );
     private static final String ALPHANUMERICS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
     public static final Duration TX_TIMEOUT_TEST_TIMEOUT = Duration.ofSeconds( 10 );
 
