@@ -27,6 +27,7 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.Iterables;
 
 import static java.util.Arrays.asList;

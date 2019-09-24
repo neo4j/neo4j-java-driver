@@ -30,7 +30,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;

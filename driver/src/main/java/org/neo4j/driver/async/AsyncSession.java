@@ -29,7 +29,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.Bookmark;
+import org.neo4j.driver.Bookmark;
 
 /**
  * Provides a context of work for database interactions.

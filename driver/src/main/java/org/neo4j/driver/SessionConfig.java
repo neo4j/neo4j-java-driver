@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.internal.Bookmark;
 import org.neo4j.driver.reactive.RxSession;
 
 import static java.util.Objects.requireNonNull;

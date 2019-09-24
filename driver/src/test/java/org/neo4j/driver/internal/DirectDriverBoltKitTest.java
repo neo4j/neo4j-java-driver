@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
