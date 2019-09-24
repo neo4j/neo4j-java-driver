@@ -407,7 +407,10 @@ class RoutingTableAndConnectionPoolTest
             this.channel = channel;
             this.pool = pool;
 
-            this.channel.attr( AttributeKey.valueOf( "channelPool" ) ).setIfAbsent( pool );
+            // This is needed to make netty connection pool to believe this channel is created by the pool.
+            // Otherwise the netty connection pool will refuse to release the channel back to the pool.
+            AttributeKey<ExtendedChannelPool> poolKey = AttributeKey.valueOf( "channelPool." + System.identityHashCode( pool ) );
+            this.channel.attr( poolKey ).setIfAbsent( pool );
         }
 
         @Override
