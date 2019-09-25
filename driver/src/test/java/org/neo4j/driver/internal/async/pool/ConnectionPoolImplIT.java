@@ -133,7 +133,7 @@ class ConnectionPoolImplIT
     {
         await( pool.acquire( neo4j.address() ) );
         ExtendedChannelPool channelPool = this.pool.getPool( neo4j.address() );
-        await( channelPool.repeatableCloseAsync() );
+        await( channelPool.close() );
         ServiceUnavailableException error =
                 assertThrows( ServiceUnavailableException.class, () -> await( pool.acquire( neo4j.address() ) ) );
         assertThat( error.getMessage(), containsString( "closed while acquiring a connection" ) );

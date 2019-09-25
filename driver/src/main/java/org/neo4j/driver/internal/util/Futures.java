@@ -45,7 +45,7 @@ public final class Futures
         return (CompletableFuture) COMPLETED_WITH_NULL;
     }
 
-    public static <T> CompletableFuture<T> completedWithNullIfNonError( CompletableFuture<T> future, Throwable error )
+    public static <T> CompletableFuture<T> completeWithNullIfNoError( CompletableFuture<T> future, Throwable error )
     {
         if ( error != null )
         {

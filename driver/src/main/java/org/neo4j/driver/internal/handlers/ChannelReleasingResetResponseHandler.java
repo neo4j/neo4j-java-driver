@@ -19,12 +19,12 @@
 package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
-import io.netty.channel.pool.ChannelPool;
-import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.util.Clock;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
@@ -32,10 +32,10 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLa
 public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
 {
     private final Channel channel;
-    private final ChannelPool pool;
+    private final ExtendedChannelPool pool;
     private final Clock clock;
 
-    public ChannelReleasingResetResponseHandler( Channel channel, ChannelPool pool,
+    public ChannelReleasingResetResponseHandler( Channel channel, ExtendedChannelPool pool,
             InboundMessageDispatcher messageDispatcher, Clock clock, CompletableFuture<Void> releaseFuture )
     {
         super( messageDispatcher, releaseFuture );
@@ -58,7 +58,7 @@ public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
             channel.close();
         }
 
-        Future<Void> released = pool.release( channel );
-        released.addListener( ignore -> completionFuture.complete( null ) );
+        CompletionStage<Void> released = pool.release( channel );
+        released.whenComplete( ( ignore, error ) -> completionFuture.complete( null ) );
     }
 }

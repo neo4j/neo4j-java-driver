@@ -22,7 +22,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.pool.ChannelPool;
 import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,7 @@ import java.util.function.Consumer;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -447,7 +447,7 @@ class NetworkConnectionTest
     void shouldReleaseChannelWhenTerminated()
     {
         EmbeddedChannel channel = newChannel();
-        ChannelPool pool = mock( ChannelPool.class );
+        ExtendedChannelPool pool = mock( ExtendedChannelPool.class );
         NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
@@ -460,7 +460,7 @@ class NetworkConnectionTest
     void shouldNotReleaseChannelMultipleTimesWhenTerminatedMultipleTimes()
     {
         EmbeddedChannel channel = newChannel();
-        ChannelPool pool = mock( ChannelPool.class );
+        ExtendedChannelPool pool = mock( ExtendedChannelPool.class );
         NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
@@ -478,7 +478,7 @@ class NetworkConnectionTest
     void shouldNotReleaseAfterTermination()
     {
         EmbeddedChannel channel = newChannel();
-        ChannelPool pool = mock( ChannelPool.class );
+        ExtendedChannelPool pool = mock( ExtendedChannelPool.class );
         NetworkConnection connection = newConnection( channel, pool );
         verify( pool, never() ).release( any() );
 
@@ -611,10 +611,10 @@ class NetworkConnectionTest
 
     private static NetworkConnection newConnection( Channel channel )
     {
-        return newConnection( channel, mock( ChannelPool.class ) );
+        return newConnection( channel, mock( ExtendedChannelPool.class ) );
     }
 
-    private static NetworkConnection newConnection( Channel channel, ChannelPool pool )
+    private static NetworkConnection newConnection( Channel channel, ExtendedChannelPool pool )
     {
         return new NetworkConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
     }

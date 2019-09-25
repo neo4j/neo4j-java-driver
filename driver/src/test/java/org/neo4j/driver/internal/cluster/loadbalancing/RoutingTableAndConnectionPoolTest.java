@@ -19,11 +19,6 @@
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
 
@@ -49,26 +44,19 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
-import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.pool.ConnectionFactory;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.async.pool.NettyChannelTracker;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.async.pool.TestConnectionPool;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.metrics.InternalAbstractMetrics;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -80,7 +68,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
@@ -320,27 +307,14 @@ class RoutingTableAndConnectionPoolTest
         assertThat( errors.size(), equalTo( 0 ) );
     }
 
-    private ChannelFuture newChannelFuture( BoltServerAddress address )
-    {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        ChannelPromise channelPromise = channel.newPromise();
-        channelPromise.setSuccess();
-        setServerAddress( channel, address );
-        return channelPromise;
-    }
-
     private ConnectionPool newConnectionPool()
     {
         InternalAbstractMetrics metrics = DEV_NULL_METRICS;
         PoolSettings poolSettings = new PoolSettings( 10, 5000, -1, -1 );
-
-        ChannelConnector connector = ( address, bootstrap ) -> newChannelFuture( address );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap();
-
         NettyChannelTracker channelTracker = new NettyChannelTracker( metrics, bootstrap.config().group().next(), logging );
 
-        ConnectionFactory connectionFactory = PooledConnection::new;
-        return new ConnectionPoolImpl( connector, bootstrap, channelTracker, poolSettings, metrics, logging, clock, true, connectionFactory );
+        return new TestConnectionPool( bootstrap, channelTracker, poolSettings, metrics, logging, clock, true );
     }
 
     private RoutingTableRegistryImpl newRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery )
@@ -393,110 +367,6 @@ class RoutingTableAndConnectionPoolTest
             }
             ClusterComposition composition = new ClusterComposition( clock.millis() + 1, servers, servers, servers );
             return CompletableFuture.completedFuture( composition );
-        }
-    }
-
-    // This connection can be acquired from a connection pool and/or released back to it.
-    private static class PooledConnection implements Connection
-    {
-        private final Channel channel;
-        private final ExtendedChannelPool pool;
-
-        PooledConnection( Channel channel, ExtendedChannelPool pool )
-        {
-            this.channel = channel;
-            this.pool = pool;
-
-            // This is needed to make netty connection pool to believe this channel is created by the pool.
-            // Otherwise the netty connection pool will refuse to release the channel back to the pool.
-            AttributeKey<ExtendedChannelPool> poolKey = AttributeKey.valueOf( "channelPool." + System.identityHashCode( pool ) );
-            this.channel.attr( poolKey ).setIfAbsent( pool );
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return false;
-        }
-
-        @Override
-        public void enableAutoRead()
-        {
-
-        }
-
-        @Override
-        public void disableAutoRead()
-        {
-
-        }
-
-        @Override
-        public void write( Message message, ResponseHandler handler )
-        {
-
-        }
-
-        @Override
-        public void write( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-        {
-
-        }
-
-        @Override
-        public void writeAndFlush( Message message, ResponseHandler handler )
-        {
-
-        }
-
-        @Override
-        public void writeAndFlush( Message message1, ResponseHandler handler1, Message message2, ResponseHandler handler2 )
-        {
-
-        }
-
-        @Override
-        public CompletionStage<Void> reset()
-        {
-            return Futures.completedWithNull();
-        }
-
-        @Override
-        public CompletionStage<Void> release()
-        {
-            CompletableFuture<Void> releaseFuture = new CompletableFuture<>();
-            pool.release( channel ).addListener( ignore -> releaseFuture.complete( null ) );
-            return releaseFuture;
-        }
-
-        @Override
-        public void terminateAndRelease( String reason )
-        {
-
-        }
-
-        @Override
-        public BoltServerAddress serverAddress()
-        {
-            return null;
-        }
-
-        @Override
-        public ServerVersion serverVersion()
-        {
-            return null;
-        }
-
-        @Override
-        public BoltProtocol protocol()
-        {
-            return null;
-        }
-
-        @Override
-        public void flush()
-        {
-
         }
     }
 }
