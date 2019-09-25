@@ -24,6 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Collections;
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
@@ -87,6 +90,18 @@ class ConnectionPoolImplIT
     }
 
     @Test
+    void shouldBeAbleToClosePoolInIOWorkerThread() throws Throwable
+    {
+        // In the IO worker thread of a channel obtained from a pool, we shall be able to close the pool.
+        CompletionStage<Void> future = pool.acquire( neo4j.address() ).thenCompose( Connection::release )
+                // This shall close all pools
+                .whenComplete( ( ignored, error ) -> pool.retainAll( Collections.emptySet() ) );
+
+        // We should be able to come to this line.
+        await( future );
+    }
+
+    @Test
     void shouldFailToAcquireConnectionToWrongAddress()
     {
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
@@ -118,7 +133,7 @@ class ConnectionPoolImplIT
     {
         await( pool.acquire( neo4j.address() ) );
         ExtendedChannelPool channelPool = this.pool.getPool( neo4j.address() );
-        channelPool.close();
+        await( channelPool.repeatableCloseAsync() );
         ServiceUnavailableException error =
                 assertThrows( ServiceUnavailableException.class, () -> await( pool.acquire( neo4j.address() ) ) );
         assertThat( error.getMessage(), containsString( "closed while acquiring a connection" ) );

@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +43,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 class ConnectionPoolImplTest
 {
@@ -73,9 +73,9 @@ class ConnectionPoolImplTest
         pool.acquire( ADDRESS_3 );
 
         pool.retainAll( new HashSet<>( asList( ADDRESS_1, ADDRESS_2, ADDRESS_3 ) ) );
-        for ( ChannelPool channelPool : pool.channelPoolsByAddress.values() )
+        for ( ExtendedChannelPool channelPool : pool.channelPoolsByAddress.values() )
         {
-            verify( channelPool, never() ).close();
+            verify( channelPool, never() ).repeatableCloseAsync();
         }
     }
 
@@ -94,9 +94,9 @@ class ConnectionPoolImplTest
         when( nettyChannelTracker.inUseChannelCount( ADDRESS_3 ) ).thenReturn( 3 );
 
         pool.retainAll( new HashSet<>( asList( ADDRESS_1, ADDRESS_3 ) ) );
-        verify( pool.getPool( ADDRESS_1 ), never() ).close();
-        verify( pool.getPool( ADDRESS_2 ) ).close();
-        verify( pool.getPool( ADDRESS_3 ), never() ).close();
+        verify( pool.getPool( ADDRESS_1 ), never() ).repeatableCloseAsync();
+        verify( pool.getPool( ADDRESS_2 ) ).repeatableCloseAsync();
+        verify( pool.getPool( ADDRESS_3 ), never() ).repeatableCloseAsync();
     }
 
     @Test
@@ -114,9 +114,9 @@ class ConnectionPoolImplTest
         when( nettyChannelTracker.inUseChannelCount( ADDRESS_3 ) ).thenReturn( 0 );
 
         pool.retainAll( singleton( ADDRESS_2 ) );
-        verify( pool.getPool( ADDRESS_1 ), never() ).close();
-        verify( pool.getPool( ADDRESS_2 ), never() ).close();
-        verify( pool.getPool( ADDRESS_3 ) ).close();
+        verify( pool.getPool( ADDRESS_1 ), never() ).repeatableCloseAsync();
+        verify( pool.getPool( ADDRESS_2 ), never() ).repeatableCloseAsync();
+        verify( pool.getPool( ADDRESS_3 ) ).repeatableCloseAsync();
     }
 
     private static PoolSettings newSettings()
@@ -147,6 +147,7 @@ class ConnectionPoolImplTest
             ExtendedChannelPool channelPool = mock( ExtendedChannelPool.class );
             Channel channel = mock( Channel.class );
             doReturn( ImmediateEventExecutor.INSTANCE.newSucceededFuture( channel ) ).when( channelPool ).acquire();
+            doReturn( completedWithNull() ).when( channelPool ).repeatableCloseAsync();
             channelPoolsByAddress.put( address, channelPool );
             return channelPool;
         }

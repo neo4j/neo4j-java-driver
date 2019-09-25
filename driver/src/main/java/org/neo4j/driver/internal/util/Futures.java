@@ -45,9 +45,27 @@ public final class Futures
         return (CompletableFuture) COMPLETED_WITH_NULL;
     }
 
+    public static <T> CompletableFuture<T> completedWithNullIfNonError( CompletableFuture<T> future, Throwable error )
+    {
+        if ( error != null )
+        {
+            future.completeExceptionally( error );
+        }
+        else
+        {
+            future.complete( null );
+        }
+        return future;
+    }
+
     public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future )
     {
         CompletableFuture<T> result = new CompletableFuture<>();
+        return asCompletionStage( future, result );
+    }
+
+    public static <T> CompletionStage<T> asCompletionStage( io.netty.util.concurrent.Future<T> future, CompletableFuture<T> result )
+    {
         if ( future.isCancelled() )
         {
             result.cancel( true );

@@ -24,8 +24,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.pool.ChannelPool;
 import io.netty.util.concurrent.Future;
 
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +48,8 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.util.Futures.combineErrors;
+import static org.neo4j.driver.internal.util.Futures.completedWithNullIfNonError;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -62,6 +64,7 @@ public class ConnectionPoolImpl implements ConnectionPool
 
     private final ConcurrentMap<BoltServerAddress,ExtendedChannelPool> pools = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final ConnectionFactory connectionFactory;
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging,
@@ -131,8 +134,14 @@ public class ConnectionPoolImpl implements ConnectionPool
                     if ( pool != null )
                     {
                         log.info( "Closing connection pool towards %s, it has no active connections " +
-                                  "and is not in the routing table", address );
-                        closePool( pool );
+                                  "and is not in the routing table registry.", address );
+                        // Close in the background
+                        closePool( pool ).whenComplete( ( ignored, error ) -> {
+                            if ( error != null )
+                            {
+                                log.warn( format( "An error occurred while closing connection pool towards %s.", address ), error );
+                            }
+                        } );
                     }
                 }
             }
@@ -156,37 +165,40 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            try
-            {
-                nettyChannelTracker.prepareToCloseChannels();
-                for ( Map.Entry<BoltServerAddress,ExtendedChannelPool> entry : pools.entrySet() )
-                {
-                    BoltServerAddress address = entry.getKey();
-                    ExtendedChannelPool pool = entry.getValue();
-                    log.info( "Closing connection pool towards %s", address );
-                    closePool( pool );
-                }
+            nettyChannelTracker.prepareToCloseChannels();
 
+            CompletableFuture<Void> allPoolClosedFuture = CompletableFuture.allOf(
+                    pools.entrySet().stream().map( entry -> {
+                        BoltServerAddress address = entry.getKey();
+                        ExtendedChannelPool pool = entry.getValue();
+                        log.info( "Closing connection pool towards %s", address );
+                        // Wait for all pools to be closed.
+                        return closePool( pool ).toCompletableFuture();
+                    } ).toArray( CompletableFuture[]::new ) );
+
+            // We can only shutdown event loop group when all netty pools are fully closed,
+            // otherwise the netty pools might missing threads (from event loop group) to execute clean ups.
+            allPoolClosedFuture.whenComplete( ( ignored, pollCloseError ) -> {
                 pools.clear();
-            }
-            finally
-            {
-
-                if (ownsEventLoopGroup) {
+                if ( !ownsEventLoopGroup )
+                {
+                    completedWithNullIfNonError( closeFuture, pollCloseError );
+                }
+                else
+                {
                     // This is an attempt to speed up the shut down procedure of the driver
                     // Feel free return this back to shutdownGracefully() method with default values
                     // if this proves troublesome!!!
-                    eventLoopGroup().shutdownGracefully(200, 15_000, TimeUnit.MILLISECONDS);
-                }
-            }
-        }
-        if (!ownsEventLoopGroup)
-        {
-            return Futures.completedWithNull();
-        }
+                    eventLoopGroup().shutdownGracefully( 200, 15_000, TimeUnit.MILLISECONDS );
 
-        return Futures.asCompletionStage( eventLoopGroup().terminationFuture() )
-                .thenApply( ignore -> null );
+                    Futures.asCompletionStage( eventLoopGroup().terminationFuture() ).whenComplete( ( ignore, eventLoopGroupTerminationError ) -> {
+                        CompletionException combinedErrors = combineErrors( pollCloseError, eventLoopGroupTerminationError );
+                        completedWithNullIfNonError( closeFuture, combinedErrors );
+                    } );
+                }
+            } );
+        }
+        return closeFuture;
     }
 
     @Override
@@ -200,11 +212,11 @@ public class ConnectionPoolImpl implements ConnectionPool
         return pools.computeIfAbsent( address, this::newPool );
     }
 
-    private void closePool( ExtendedChannelPool pool )
+    private CompletionStage<Void> closePool( ExtendedChannelPool pool )
     {
-        pool.close();
-        // after the connection pool is removed/close, I can remove its metrics.
-        metricsListener.removePoolMetrics( pool.id() );
+        return pool.repeatableCloseAsync().whenComplete( ( ignored, error ) ->
+                // after the connection pool is removed/close, I can remove its metrics.
+                metricsListener.removePoolMetrics( pool.id() ) );
     }
 
     ExtendedChannelPool newPool( BoltServerAddress address )
