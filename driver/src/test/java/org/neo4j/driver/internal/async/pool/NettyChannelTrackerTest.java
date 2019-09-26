@@ -49,15 +49,15 @@ class NettyChannelTrackerTest
     private final NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, mock( ChannelGroup.class ), DEV_NULL_LOGGING );
 
     @Test
-    void shouldIncrementInUseCountWhenChannelCreated()
+    void shouldIncrementIdleCountWhenChannelCreated()
     {
         Channel channel = newChannel();
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
         tracker.channelCreated( channel, null );
-        assertEquals( 1, tracker.inUseChannelCount( address ) );
-        assertEquals( 0, tracker.idleChannelCount( address ) );
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 1, tracker.idleChannelCount( address ) );
     }
 
     @Test
@@ -68,10 +68,6 @@ class NettyChannelTrackerTest
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
         tracker.channelCreated( channel, null );
-        assertEquals( 1, tracker.inUseChannelCount( address ) );
-        assertEquals( 0, tracker.idleChannelCount( address ) );
-
-        tracker.channelReleased( channel );
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 1, tracker.idleChannelCount( address ) );
 
@@ -81,20 +77,36 @@ class NettyChannelTrackerTest
     }
 
     @Test
-    void shouldIncrementInuseCountForAddress()
+    void shouldIncrementIdleCountWhenChannelReleased()
+    {
+        Channel channel = newChannel();
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+        channelCreatedAndAcquired( channel );
+        assertEquals( 1, tracker.inUseChannelCount( address ) );
+        assertEquals( 0, tracker.idleChannelCount( address ) );
+
+        tracker.channelReleased( channel );
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
+        assertEquals( 1, tracker.idleChannelCount( address ) );
+    }
+
+    @Test
+    void shouldIncrementIdleCountForAddress()
     {
         Channel channel1 = newChannel();
         Channel channel2 = newChannel();
         Channel channel3 = newChannel();
 
-        assertEquals( 0, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel1, null );
-        assertEquals( 1, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel2, null );
-        assertEquals( 2, tracker.inUseChannelCount( address ) );
-        tracker.channelCreated( channel3, null );
-        assertEquals( 3, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
+        tracker.channelCreated( channel1, null );
+        assertEquals( 1, tracker.idleChannelCount( address ) );
+        tracker.channelCreated( channel2, null );
+        assertEquals( 2, tracker.idleChannelCount( address ) );
+        tracker.channelCreated( channel3, null );
+        assertEquals( 3, tracker.idleChannelCount( address ) );
+        assertEquals( 0, tracker.inUseChannelCount( address ) );
     }
 
     @Test
@@ -104,9 +116,9 @@ class NettyChannelTrackerTest
         Channel channel2 = newChannel();
         Channel channel3 = newChannel();
 
-        tracker.channelCreated( channel1, null );
-        tracker.channelCreated( channel2, null );
-        tracker.channelCreated( channel3, null );
+        channelCreatedAndAcquired( channel1 );
+        channelCreatedAndAcquired( channel2 );
+        channelCreatedAndAcquired( channel3 );
         assertEquals( 3, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
@@ -126,7 +138,7 @@ class NettyChannelTrackerTest
     {
         // Given
         Channel channel = newChannel();
-        tracker.channelCreated( channel, null );
+        channelCreatedAndAcquired( channel );
         assertEquals( 1, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
@@ -147,7 +159,7 @@ class NettyChannelTrackerTest
     {
         // Given
         Channel channel = newChannel();
-        tracker.channelCreated( channel, null );
+        channelCreatedAndAcquired( channel );
         assertEquals( 1, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
 
@@ -160,7 +172,6 @@ class NettyChannelTrackerTest
         // Then
         assertEquals( 0, tracker.inUseChannelCount( address ) );
         assertEquals( 0, tracker.idleChannelCount( address ) );
-
     }
 
     @Test
@@ -225,5 +236,11 @@ class NettyChannelTrackerTest
         setProtocolVersion( channel, BoltProtocolV3.VERSION );
         setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
         return channel;
+    }
+
+    private void channelCreatedAndAcquired( Channel channel )
+    {
+        tracker.channelCreated( channel, null );
+        tracker.channelAcquired( channel );
     }
 }

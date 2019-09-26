@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.async.pool;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.pool.ChannelHealthChecker;
-import io.netty.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +28,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -40,28 +41,22 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ImmediateSchedulingEventExecutor;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
 class NettyChannelPoolIT
@@ -98,19 +93,12 @@ class NettyChannelPoolIT
     {
         pool = newPool( neo4j.authToken() );
 
-        Future<Channel> acquireFuture = pool.acquire();
-        acquireFuture.await( 5, TimeUnit.SECONDS );
-
-        assertTrue( acquireFuture.isSuccess() );
-        Channel channel = acquireFuture.getNow();
+        Channel channel = await( pool.acquire() );
         assertNotNull( channel );
         verify( poolHandler ).channelCreated( eq( channel ), any() );
         verify( poolHandler, never() ).channelReleased( channel );
 
-        Future<Void> releaseFuture = pool.release( channel );
-        releaseFuture.await( 5, TimeUnit.SECONDS );
-
-        assertTrue( releaseFuture.isSuccess() );
+        await( pool.release( channel ) );
         verify( poolHandler ).channelReleased( channel );
     }
 
@@ -119,12 +107,7 @@ class NettyChannelPoolIT
     {
         pool = newPool( AuthTokens.basic( "wrong", "wrong" ) );
 
-        Future<Channel> future = pool.acquire();
-        future.await( 5, TimeUnit.DAYS );
-
-        assertTrue( future.isDone() );
-        assertNotNull( future.cause() );
-        assertThat( future.cause(), instanceOf( AuthenticationException.class ) );
+        assertThrows( AuthenticationException.class, () -> await( pool.acquire() ) );
 
         verify( poolHandler, never() ).channelCreated( any() );
         verify( poolHandler, never() ).channelReleased( any() );
@@ -145,8 +128,7 @@ class NettyChannelPoolIT
 
         for ( int i = 0; i < maxConnections; i++ )
         {
-            ExecutionException e = assertThrows( ExecutionException.class, () -> acquire( pool ) );
-            assertThat( e.getCause(), instanceOf( AuthenticationException.class ) );
+            AuthenticationException e = assertThrows( AuthenticationException.class, () -> acquire( pool ) );
         }
 
         authTokenMap.put( "credentials", value( Neo4jRunner.PASSWORD ) );
@@ -165,9 +147,8 @@ class NettyChannelPoolIT
             assertNotNull( acquire( pool ) );
         }
 
-        ExecutionException e = assertThrows( ExecutionException.class, () -> acquire( pool ) );
-        assertThat( e.getCause(), instanceOf( TimeoutException.class ) );
-        assertEquals( e.getCause().getMessage(), "Acquire operation took longer then configured maximum time" );
+        TimeoutException e = assertThrows( TimeoutException.class, () -> acquire( pool ) );
+        assertEquals( e.getMessage(), "Acquire operation took longer then configured maximum time" );
     }
 
     @Test
@@ -209,11 +190,11 @@ class NettyChannelPoolIT
 
     private static Channel acquire( NettyChannelPool pool ) throws Exception
     {
-        return pool.acquire().get( 5, TimeUnit.SECONDS );
+        return await( pool.acquire() );
     }
 
     private void release( Channel channel ) throws Exception
     {
-        pool.release( channel ).get( 5, TimeUnit.SECONDS );
+        await( pool.release( channel ) );
     }
 }

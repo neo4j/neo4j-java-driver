@@ -24,6 +24,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.FixedChannelPool;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -32,8 +34,9 @@ import org.neo4j.driver.internal.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setPoolId;
+import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
-public class NettyChannelPool extends FixedChannelPool implements ExtendedChannelPool
+public class NettyChannelPool implements ExtendedChannelPool
 {
     /**
      * Unlimited amount of parties are allowed to request channels from the pool.
@@ -44,60 +47,73 @@ public class NettyChannelPool extends FixedChannelPool implements ExtendedChanne
      */
     private static final boolean RELEASE_HEALTH_CHECK = false;
 
-    private final BoltServerAddress address;
-    private final ChannelConnector connector;
-    private final NettyChannelTracker handler;
+    private final FixedChannelPool delegate;
     private final AtomicBoolean closed = new AtomicBoolean( false );
     private final String id;
+    private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
 
-    public NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker handler,
+    NettyChannelPool( BoltServerAddress address, ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker handler,
             ChannelHealthChecker healthCheck, long acquireTimeoutMillis, int maxConnections )
     {
-        super( bootstrap, handler, healthCheck, AcquireTimeoutAction.FAIL, acquireTimeoutMillis, maxConnections,
-                MAX_PENDING_ACQUIRES, RELEASE_HEALTH_CHECK );
-
-        this.address = requireNonNull( address );
-        this.connector = requireNonNull( connector );
-        this.handler = requireNonNull( handler );
+        requireNonNull( address );
+        requireNonNull( connector );
+        requireNonNull( handler );
         this.id = poolId( address );
-    }
-
-    @Override
-    protected ChannelFuture connectChannel( Bootstrap bootstrap )
-    {
-        ListenerEvent creatingEvent = handler.channelCreating( this.id );
-        ChannelFuture channelFuture = connector.connect( address, bootstrap );
-        channelFuture.addListener( future ->
+        this.delegate = new FixedChannelPool( bootstrap, handler, healthCheck, FixedChannelPool.AcquireTimeoutAction.FAIL, acquireTimeoutMillis, maxConnections,
+                MAX_PENDING_ACQUIRES, RELEASE_HEALTH_CHECK )
         {
-            if ( future.isSuccess() )
+            @Override
+            protected ChannelFuture connectChannel( Bootstrap bootstrap )
             {
-                // notify pool handler about a successful connection
-                Channel channel = channelFuture.channel();
-                setPoolId( channel, this.id );
-                handler.channelCreated( channel, creatingEvent );
+                ListenerEvent creatingEvent = handler.channelCreating( id );
+                ChannelFuture channelFuture = connector.connect( address, bootstrap );
+                channelFuture.addListener( future -> {
+                    if ( future.isSuccess() )
+                    {
+                        // notify pool handler about a successful connection
+                        Channel channel = channelFuture.channel();
+                        setPoolId( channel, id );
+                        handler.channelCreated( channel, creatingEvent );
+                    }
+                    else
+                    {
+                        handler.channelFailedToCreate( id );
+                    }
+                } );
+                return channelFuture;
             }
-            else
-            {
-                handler.channelFailedToCreate( this.id );
-            }
-        } );
-        return channelFuture;
+        };
     }
 
     @Override
-    public void close()
+    public CompletionStage<Void> close()
     {
         if ( closed.compareAndSet( false, true ) )
         {
-            super.close();
+            asCompletionStage( delegate.closeAsync(), closeFuture );
         }
+        return closeFuture;
     }
 
+    @Override
+    public CompletionStage<Channel> acquire()
+    {
+        return asCompletionStage( delegate.acquire() );
+    }
+
+    @Override
+    public CompletionStage<Void> release( Channel channel )
+    {
+        return asCompletionStage( delegate.release( channel ) );
+    }
+
+    @Override
     public boolean isClosed()
     {
         return closed.get();
     }
 
+    @Override
     public String id()
     {
         return this.id;

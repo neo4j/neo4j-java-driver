@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
-import io.netty.channel.pool.ChannelPool;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -57,7 +57,7 @@ public class NetworkConnection implements Connection
     private final BoltServerAddress serverAddress;
     private final ServerVersion serverVersion;
     private final BoltProtocol protocol;
-    private final ChannelPool channelPool;
+    private final ExtendedChannelPool channelPool;
     private final CompletableFuture<Void> releaseFuture;
     private final Clock clock;
 
@@ -65,7 +65,7 @@ public class NetworkConnection implements Connection
     private final MetricsListener metricsListener;
     private final ListenerEvent inUseEvent;
 
-    public NetworkConnection( Channel channel, ChannelPool channelPool, Clock clock, MetricsListener metricsListener )
+    public NetworkConnection( Channel channel, ExtendedChannelPool channelPool, Clock clock, MetricsListener metricsListener )
     {
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
