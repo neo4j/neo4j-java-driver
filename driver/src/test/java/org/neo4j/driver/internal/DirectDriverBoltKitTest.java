@@ -21,6 +21,8 @@ package org.neo4j.driver.internal;
 import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import java.net.URI;
 import java.util.List;
@@ -43,6 +45,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
 
 import static java.util.Arrays.asList;
@@ -327,6 +330,25 @@ class DirectDriverBoltKitTest
                 Session session = driver.session( forDatabase( "mydatabase" ) ) )
         {
             session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldDiscardIfPullNotFinished() throws Throwable
+    {
+        StubServer server = StubServer.start( "read_tx_v4_discard.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+        {
+            Flux<String> keys = Flux.using(
+                    driver::rxSession,
+                    session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
+                    RxSession::close );
+            StepVerifier.create( keys ).expectNext( "a" ).verifyComplete();
         }
         finally
         {

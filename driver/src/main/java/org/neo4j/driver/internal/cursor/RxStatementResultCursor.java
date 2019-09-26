@@ -40,7 +40,7 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     private final BasicPullResponseHandler pullHandler;
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
-    boolean isRecordHandlerInstalled = false;
+    private boolean isRecordHandlerInstalled = false;
 
     public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
     {
