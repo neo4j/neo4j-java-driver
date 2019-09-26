@@ -29,7 +29,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.DefaultChannelConnectorImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -130,7 +130,7 @@ class ConnectionPoolImplIT
     {
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
-        ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlan.insecure(),
+        ChannelConnector connector = new DefaultChannelConnectorImpl( connectionSettings, SecurityPlan.insecure(),
                 DEV_NULL_LOGGING, clock );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );

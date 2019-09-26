@@ -36,7 +36,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.DefaultChannelConnectorImpl;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -134,7 +134,7 @@ public class DriverFactory
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
             Config config, Clock clock )
     {
-        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock );
+        return new DefaultChannelConnectorImpl( settings, securityPlan, config.logging(), clock );
     }
 
     private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,

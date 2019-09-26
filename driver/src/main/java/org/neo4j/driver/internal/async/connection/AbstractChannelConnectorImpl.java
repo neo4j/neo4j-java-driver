@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
@@ -31,7 +32,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -41,29 +41,26 @@ import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 
-public class ChannelConnectorImpl implements ChannelConnector
+public abstract class AbstractChannelConnectorImpl implements ChannelConnector
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
-    private final SecurityPlan securityPlan;
     private final ChannelPipelineBuilder pipelineBuilder;
     private final int connectTimeoutMillis;
     private final Logging logging;
     private final Clock clock;
 
-    public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
+    public AbstractChannelConnectorImpl( ConnectionSettings connectionSettings, Logging logging,
             Clock clock )
     {
-        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock );
+        this( connectionSettings, new ChannelPipelineBuilderImpl(), logging, clock );
     }
 
-    public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock )
+    public AbstractChannelConnectorImpl( ConnectionSettings connectionSettings, ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock )
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
-        this.securityPlan = requireNonNull( securityPlan );
         this.pipelineBuilder = pipelineBuilder;
         this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
@@ -73,7 +70,7 @@ public class ChannelConnectorImpl implements ChannelConnector
     public ChannelFuture connect( BoltServerAddress address, Bootstrap bootstrap )
     {
         bootstrap.option( ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis );
-        bootstrap.handler( new NettyChannelInitializer( address, securityPlan, connectTimeoutMillis, clock, logging ) );
+        bootstrap.handler( createNettyChannelInitializer( address, connectTimeoutMillis, clock, logging ) );
 
         ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
 
@@ -86,6 +83,8 @@ public class ChannelConnectorImpl implements ChannelConnector
 
         return connectionInitialized;
     }
+    
+    protected abstract ChannelInitializer<Channel> createNettyChannelInitializer( BoltServerAddress address, int connectTimeoutMillis, Clock clock, Logging logging );
 
     private void installChannelConnectedListeners( BoltServerAddress address, ChannelFuture channelConnected,
             ChannelPromise handshakeCompleted )

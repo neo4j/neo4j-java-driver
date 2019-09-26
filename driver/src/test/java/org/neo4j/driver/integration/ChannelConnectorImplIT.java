@@ -44,7 +44,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.DefaultChannelConnectorImpl;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -216,21 +216,21 @@ class ChannelConnectorImplIT
         }
     }
 
-    private ChannelConnectorImpl newConnector( AuthToken authToken ) throws Exception
+    private DefaultChannelConnectorImpl newConnector( AuthToken authToken ) throws Exception
     {
         return newConnector( authToken, Integer.MAX_VALUE );
     }
 
-    private ChannelConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
+    private DefaultChannelConnectorImpl newConnector( AuthToken authToken, int connectTimeoutMillis ) throws Exception
     {
         return newConnector( authToken, trustAllCertificates(), connectTimeoutMillis );
     }
 
-    private ChannelConnectorImpl newConnector( AuthToken authToken, SecurityPlan securityPlan,
+    private DefaultChannelConnectorImpl newConnector( AuthToken authToken, SecurityPlan securityPlan,
             int connectTimeoutMillis )
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, connectTimeoutMillis );
-        return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock() );
+        return new DefaultChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock() );
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException

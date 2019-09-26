@@ -64,7 +64,7 @@ class NettyChannelInitializerTest
     void shouldAddSslHandlerWhenRequiresEncryption() throws Exception
     {
         SecurityPlan security = trustAllCertificates();
-        NettyChannelInitializer initializer = newInitializer( security );
+        DefaultNettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
 
@@ -75,7 +75,7 @@ class NettyChannelInitializerTest
     void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = newInitializer( security );
+        DefaultNettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
 
@@ -87,7 +87,7 @@ class NettyChannelInitializerTest
     {
         int timeoutMillis = 424242;
         SecurityPlan security = trustAllCertificates();
-        NettyChannelInitializer initializer = newInitializer( security, timeoutMillis );
+        DefaultNettyChannelInitializer initializer = newInitializer( security, timeoutMillis );
 
         initializer.initChannel( channel );
 
@@ -102,7 +102,7 @@ class NettyChannelInitializerTest
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
         SecurityPlan security = SecurityPlan.insecure();
-        NettyChannelInitializer initializer = newInitializer( security, Integer.MAX_VALUE, clock );
+        DefaultNettyChannelInitializer initializer = newInitializer( security, Integer.MAX_VALUE, clock );
 
         initializer.initChannel( channel );
 
@@ -115,7 +115,7 @@ class NettyChannelInitializerTest
     void shouldIncludeSniHostName() throws Exception
     {
         BoltServerAddress address = new BoltServerAddress( "database.neo4j.com", 8989 );
-        NettyChannelInitializer initializer = new NettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
+        DefaultNettyChannelInitializer initializer = new DefaultNettyChannelInitializer( address, trustAllCertificates(), 10000, Clock.SYSTEM, DEV_NULL_LOGGING );
 
         initializer.initChannel( channel );
 
@@ -142,7 +142,7 @@ class NettyChannelInitializerTest
 
     private void testHostnameVerificationSetting( boolean enabled, String expectedValue ) throws Exception
     {
-        NettyChannelInitializer initializer = newInitializer( SecurityPlan.forAllCertificates( enabled ) );
+        DefaultNettyChannelInitializer initializer = newInitializer( SecurityPlan.forAllCertificates( enabled ) );
 
         initializer.initChannel( channel );
 
@@ -152,20 +152,20 @@ class NettyChannelInitializerTest
         assertEquals( expectedValue, sslParameters.getEndpointIdentificationAlgorithm() );
     }
 
-    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan )
+    private static DefaultNettyChannelInitializer newInitializer( SecurityPlan securityPlan )
     {
         return newInitializer( securityPlan, Integer.MAX_VALUE );
     }
 
-    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis )
+    private static DefaultNettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis )
     {
         return newInitializer( securityPlan, connectTimeoutMillis, new FakeClock() );
     }
 
-    private static NettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis,
+    private static DefaultNettyChannelInitializer newInitializer( SecurityPlan securityPlan, int connectTimeoutMillis,
             Clock clock )
     {
-        return new NettyChannelInitializer( LOCAL_DEFAULT, securityPlan, connectTimeoutMillis, clock,
+        return new DefaultNettyChannelInitializer( LOCAL_DEFAULT, securityPlan, connectTimeoutMillis, clock,
                 DEV_NULL_LOGGING );
     }
 

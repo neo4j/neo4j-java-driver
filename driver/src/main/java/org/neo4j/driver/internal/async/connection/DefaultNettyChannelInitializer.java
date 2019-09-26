@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.async.connection;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.handler.ssl.SslHandler;
 
 import javax.net.ssl.SSLContext;
@@ -27,43 +26,32 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.Logging;
 
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
-
-public class NettyChannelInitializer extends ChannelInitializer<Channel>
+public class DefaultNettyChannelInitializer extends AbstractNettyChannelInitializer
 {
     private final BoltServerAddress address;
     private final SecurityPlan securityPlan;
     private final int connectTimeoutMillis;
-    private final Clock clock;
-    private final Logging logging;
 
-    public NettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, int connectTimeoutMillis,
-            Clock clock, Logging logging )
+    public DefaultNettyChannelInitializer( BoltServerAddress address, SecurityPlan securityPlan, int connectTimeoutMillis, Clock clock, Logging logging )
     {
+        super( address, clock, logging );
         this.address = address;
         this.securityPlan = securityPlan;
         this.connectTimeoutMillis = connectTimeoutMillis;
-        this.clock = clock;
-        this.logging = logging;
     }
 
     @Override
-    protected void initChannel( Channel channel )
+    protected void addSslHandler( Channel channel )
     {
         if ( securityPlan.requiresEncryption() )
         {
             SslHandler sslHandler = createSslHandler();
             channel.pipeline().addFirst( sslHandler );
         }
-
-        updateChannelAttributes( channel );
     }
 
     private SslHandler createSslHandler()
@@ -86,12 +74,5 @@ public class NettyChannelInitializer extends ChannelInitializer<Channel>
             sslEngine.setSSLParameters( sslParameters );
         }
         return sslEngine;
-    }
-
-    private void updateChannelAttributes( Channel channel )
-    {
-        setServerAddress( channel, address );
-        setCreationTimestamp( channel, clock.millis() );
-        setMessageDispatcher( channel, new InboundMessageDispatcher( channel, logging ) );
     }
 }

@@ -35,7 +35,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
-import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.async.connection.DefaultChannelConnectorImpl;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -201,7 +201,7 @@ class NettyChannelPoolIT
     private NettyChannelPool newPool( AuthToken authToken, int maxConnections )
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 5_000 );
-        ChannelConnectorImpl connector = new ChannelConnectorImpl( settings, SecurityPlan.insecure(), DEV_NULL_LOGGING,
+        DefaultChannelConnectorImpl connector = new DefaultChannelConnectorImpl( settings, SecurityPlan.insecure(), DEV_NULL_LOGGING,
                 new FakeClock() );
         return new NettyChannelPool( neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE,
                 1_000, maxConnections );

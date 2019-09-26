@@ -31,9 +31,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilder;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
+import org.neo4j.driver.internal.async.connection.DefaultChannelConnectorImpl;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -54,7 +54,7 @@ public class MessageRecordingDriverFactory extends DriverFactory
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config, Clock clock )
     {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock );
+        return new DefaultChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock );
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl
