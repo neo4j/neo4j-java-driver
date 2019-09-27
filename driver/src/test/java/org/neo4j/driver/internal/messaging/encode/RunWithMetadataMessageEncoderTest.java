@@ -40,8 +40,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 
 class RunWithMetadataMessageEncoderTest
@@ -65,7 +65,7 @@ class RunWithMetadataMessageEncoderTest
         Duration txTimeout = Duration.ofMillis( 42 );
 
         Statement statement = new Statement( "RETURN $answer", value( params ) );
-        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, ABSENT_DB_NAME, mode, bookmark ), packer );
+        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, defaultDatabase(), mode, bookmark ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );

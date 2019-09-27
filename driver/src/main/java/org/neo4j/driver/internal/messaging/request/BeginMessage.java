@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 
 import static org.neo4j.driver.internal.messaging.request.TransactionMetadataBuilder.buildMetadata;
@@ -33,12 +34,12 @@ public class BeginMessage extends MessageWithMetadata
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( InternalBookmark bookmark, TransactionConfig config, String databaseName, AccessMode mode )
+    public BeginMessage( InternalBookmark bookmark, TransactionConfig config, DatabaseName databaseName, AccessMode mode )
     {
         this( bookmark, config.timeout(), config.metadata(), mode, databaseName );
     }
 
-    public BeginMessage( InternalBookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, String databaseName )
+    public BeginMessage( InternalBookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, DatabaseName databaseName )
     {
         super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark ) );
     }

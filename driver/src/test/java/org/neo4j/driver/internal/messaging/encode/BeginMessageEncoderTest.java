@@ -27,19 +27,19 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Value;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.AccessMode.*;
+import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 
 class BeginMessageEncoderTest
 {
@@ -58,7 +58,7 @@ class BeginMessageEncoderTest
 
         Duration txTimeout = Duration.ofSeconds( 1 );
 
-        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, ABSENT_DB_NAME ), packer );
+        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, defaultDatabase() ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );

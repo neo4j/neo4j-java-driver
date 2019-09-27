@@ -31,6 +31,7 @@ import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -54,9 +55,9 @@ import static org.mockito.Mockito.startsWith;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -289,7 +290,7 @@ class RediscoveryTest
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
-        RoutingTable table = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        RoutingTable table = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
         table.update( noWritersComposition );
 
         ClusterComposition composition2 = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
@@ -412,7 +413,7 @@ class RediscoveryTest
             Map<BoltServerAddress,Object> responsesByAddress )
     {
         ClusterCompositionProvider provider = mock( ClusterCompositionProvider.class );
-        when( provider.getClusterComposition( any( Connection.class ), any( String.class ), any( InternalBookmark.class ) ) ).then( invocation ->
+        when( provider.getClusterComposition( any( Connection.class ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).then( invocation ->
         {
             Connection connection = invocation.getArgument( 0 );
             BoltServerAddress address = connection.serverAddress();
@@ -466,7 +467,7 @@ class RediscoveryTest
         AddressSet addressSet = new AddressSet();
         addressSet.update( asOrderedSet( routers ) );
         when( routingTable.routers() ).thenReturn( addressSet );
-        when( routingTable.database() ).thenReturn( ABSENT_DB_NAME );
+        when( routingTable.database() ).thenReturn( defaultDatabase() );
         when( routingTable.preferInitialRouter() ).thenReturn( preferInitialRouter );
         return routingTable;
     }

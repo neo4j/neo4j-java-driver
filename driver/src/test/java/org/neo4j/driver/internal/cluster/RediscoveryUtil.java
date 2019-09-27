@@ -23,17 +23,18 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
-public class RediscoveryUtils
+public class RediscoveryUtil
 {
     public static ConnectionContext contextWithDatabase( String databaseName )
     {
-        return new ImmutableConnectionContext( databaseName, InternalBookmark.empty(), AccessMode.WRITE );
+        return new ImmutableConnectionContext( database( databaseName ), InternalBookmark.empty(), AccessMode.WRITE );
     }
 
     public static ConnectionContext contextWithMode( AccessMode mode )
     {
-        return new ImmutableConnectionContext( ABSENT_DB_NAME, InternalBookmark.empty(), mode );
+        return new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
     }
 }

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.DatabaseName;
 
 public interface RoutingTable
 {
@@ -41,7 +42,7 @@ public interface RoutingTable
 
     Set<BoltServerAddress> servers();
 
-    String database();
+    DatabaseName database();
 
     void forgetWriter( BoltServerAddress toRemove );
 

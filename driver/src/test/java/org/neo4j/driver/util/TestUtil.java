@@ -44,12 +44,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -92,9 +92,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public final class TestUtil
@@ -266,7 +267,7 @@ public final class TestUtil
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, InternalBookmark bookmark )
     {
-        return new NetworkSession( connectionProvider, retryLogic, ABSENT_DB_NAME, mode, new DefaultBookmarkHolder( bookmark ), DEV_NULL_LOGGING );
+        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), DEV_NULL_LOGGING );
     }
 
     public static void verifyRun( Connection connection, String query )
@@ -441,7 +442,7 @@ public final class TestUtil
 
     public static Connection connectionMock( AccessMode mode, BoltProtocol protocol )
     {
-        return connectionMock( ABSENT_DB_NAME, mode, protocol );
+        return connectionMock( null, mode, protocol );
     }
 
     public static Connection connectionMock( String databaseName, BoltProtocol protocol )
@@ -456,7 +457,7 @@ public final class TestUtil
         when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
-        when( connection.databaseName() ).thenReturn( databaseName );
+        when( connection.databaseName() ).thenReturn( database( databaseName ) );
         int version = protocol.version();
         if ( version == BoltProtocolV1.VERSION || version == BoltProtocolV2.VERSION )
         {

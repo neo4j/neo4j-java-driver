@@ -18,20 +18,21 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.Objects;
+import java.util.HashMap;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 
 public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
 {
@@ -50,18 +51,17 @@ public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
     }
 
     @Override
-    Statement procedureStatement( ServerVersion serverVersion, String databaseName )
+    Statement procedureStatement( ServerVersion serverVersion, DatabaseName databaseName )
     {
-        if ( Objects.equals( ABSENT_DB_NAME, databaseName ) )
-        {
-            databaseName = null;
-        }
-        return new Statement( MULTI_DB_GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap(), DATABASE_NAME, databaseName ) );
+        HashMap<String,Value> map = new HashMap<>();
+        map.put( ROUTING_CONTEXT, value( context.asMap() ) );
+        databaseName.databaseName().ifPresent( name -> map.put( DATABASE_NAME, value( name ) ) );
+        return new Statement( MULTI_DB_GET_ROUTING_TABLE, value( map ) );
     }
 
     @Override
     DirectConnection connection( Connection connection )
     {
-        return new DirectConnection( connection, SYSTEM_DB_NAME, AccessMode.READ );
+        return new DirectConnection( connection, systemDatabase(), AccessMode.READ );
     }
 }

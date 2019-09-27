@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.connection;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.RoutingErrorHandler;
 import org.neo4j.driver.internal.handlers.RoutingResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -38,9 +39,9 @@ public class RoutingConnection implements Connection
     private final Connection delegate;
     private final AccessMode accessMode;
     private final RoutingErrorHandler errorHandler;
-    private final String databaseName;
+    private final DatabaseName databaseName;
 
-    public RoutingConnection( Connection delegate, String databaseName, AccessMode accessMode, RoutingErrorHandler errorHandler )
+    public RoutingConnection( Connection delegate, DatabaseName databaseName, AccessMode accessMode, RoutingErrorHandler errorHandler )
     {
         this.delegate = delegate;
         this.databaseName = databaseName;
@@ -139,7 +140,7 @@ public class RoutingConnection implements Connection
     }
 
     @Override
-    public String databaseName()
+    public DatabaseName databaseName()
     {
         return this.databaseName;
     }

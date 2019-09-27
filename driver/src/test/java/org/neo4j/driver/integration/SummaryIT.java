@@ -158,7 +158,7 @@ class SummaryIT
     void shouldContainNotifications()
     {
         // When
-        ResultSummary summary = session.run( "EXPLAIN MATCH (n), (m) RETURN n, m" ).consume();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n" ).consume();
 
         // Then
         List<Notification> notifications = summary.notifications();

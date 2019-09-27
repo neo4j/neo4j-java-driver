@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ConnectionContext;
 
 /**
@@ -45,10 +46,10 @@ public interface RoutingTableRegistry
     /**
      * Removes a routing table of the given database from registry.
      */
-    void remove( String databaseName );
+    void remove( DatabaseName databaseName );
 
     /**
      * Removes all routing tables that has been not used for a long time.
      */
-    void purgeAged();
+    void removeAged();
 }

@@ -77,7 +77,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.SingleBookmarkHelper.asBeginTransactionParameters;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -307,7 +307,7 @@ public class BoltProtocolV1Test
     private void testRunWithoutWaitingForRunResponse( boolean autoCommitTx ) throws Exception
     {
         Connection connection = mock( Connection.class );
-        when( connection.databaseName() ).thenReturn( ABSENT_DB_NAME );
+        when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( autoCommitTx )
@@ -332,7 +332,7 @@ public class BoltProtocolV1Test
     private void testRunWithWaitingForResponse( boolean success, boolean session ) throws Exception
     {
         Connection connection = mock( Connection.class );
-        when( connection.databaseName() ).thenReturn( ABSENT_DB_NAME );
+        when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
         CompletionStage<InternalStatementResultCursor> cursorStage;
         if ( session )

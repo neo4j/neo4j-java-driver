@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.RoutingTableHandlerFactory;
@@ -50,10 +51,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -72,10 +74,10 @@ class RoutingTableRegistryImplTest
                 new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER,
                         STALE_ROUTING_TABLE_PURGE_DELAY_MS );
 
-        RoutingTableHandler handler = factory.newInstance( "Molly", null );
+        RoutingTableHandler handler = factory.newInstance( database( "Molly" ), null );
         RoutingTable table = handler.routingTable();
 
-        assertThat( table.database(), equalTo( "Molly" ) );
+        assertThat( table.database().description(), equalTo( "Molly" ) );
 
         assertThat( table.routers().size(), equalTo( 0 ) );
         assertThat( table.readers().size(), equalTo( 0 ) );
@@ -86,34 +88,36 @@ class RoutingTableRegistryImplTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, "", "database", " molly "} )
+    @ValueSource( strings = {SYSTEM_DATABASE_NAME, "", "database", " molly "} )
     void shouldCreateRoutingTableHandlerIfAbsentWhenFreshRoutingTable( String databaseName ) throws Throwable
     {
         // Given
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
-        routingTables.refreshRoutingTable( new ImmutableConnectionContext( databaseName, InternalBookmark.empty(), AccessMode.READ ) );
+        DatabaseName database = database( databaseName );
+        routingTables.refreshRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ ) );
 
         // Then
-        assertTrue( map.containsKey( databaseName ) );
-        verify( factory ).newInstance( eq( databaseName ), eq( routingTables ) );
+        assertTrue( map.containsKey( database ) );
+        verify( factory ).newInstance( eq( database ), eq( routingTables ) );
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {ABSENT_DB_NAME, SYSTEM_DB_NAME, "", "database", " molly "} )
+    @ValueSource( strings = {SYSTEM_DATABASE_NAME, "", "database", " molly "} )
     void shouldReturnExistingRoutingTableHandlerWhenFreshRoutingTable( String databaseName ) throws Throwable
     {
         // Given
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
-        map.put( databaseName, handler );
+        DatabaseName database = database( databaseName );
+        map.put( database, handler );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
-        ImmutableConnectionContext context = new ImmutableConnectionContext( databaseName, InternalBookmark.empty(), AccessMode.READ );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ );
 
         // When
         RoutingTableHandler actual = await( routingTables.refreshRoutingTable( context ) );
@@ -129,12 +133,12 @@ class RoutingTableRegistryImplTest
     void shouldReturnFreshRoutingTable( AccessMode mode ) throws Throwable
     {
         // Given
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
         RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
 
-        ImmutableConnectionContext context = new ImmutableConnectionContext( ABSENT_DB_NAME, InternalBookmark.empty(), mode );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
         // When
         routingTables.refreshRoutingTable( context );
 
@@ -146,10 +150,10 @@ class RoutingTableRegistryImplTest
     void shouldReturnServersInAllRoutingTables() throws Throwable
     {
         // Given
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
-        map.put( "Apple", mockedRoutingTableHandler( A, B, C ) );
-        map.put( "Banana", mockedRoutingTableHandler( B, C, D ) );
-        map.put( "Orange", mockedRoutingTableHandler( E, F, C ) );
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        map.put( database( "Apple" ), mockedRoutingTableHandler( A, B, C ) );
+        map.put( database( "Banana" ), mockedRoutingTableHandler( B, C, D ) );
+        map.put( database( "Orange" ), mockedRoutingTableHandler( E, F, C ) );
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
 
@@ -164,34 +168,34 @@ class RoutingTableRegistryImplTest
     void shouldRemoveRoutingTableHandler() throws Throwable
     {
         // Given
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
-        map.put( "Apple", mockedRoutingTableHandler( A ) );
-        map.put( "Banana", mockedRoutingTableHandler( B ) );
-        map.put( "Orange", mockedRoutingTableHandler( C ) );
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        map.put( database( "Apple" ), mockedRoutingTableHandler( A ) );
+        map.put( database( "Banana" ), mockedRoutingTableHandler( B ) );
+        map.put( database( "Orange" ), mockedRoutingTableHandler( C ) );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
-        routingTables.remove( "Apple" );
-        routingTables.remove( "Banana" );
+        routingTables.remove( database( "Apple" ) );
+        routingTables.remove( database( "Banana" ) );
         // Then
         assertThat( routingTables.allServers(), contains( C ) );
     }
 
     @Test
-    void shouldRemoveStatleRoutingTableHandlers() throws Throwable
+    void shouldRemoveStaleRoutingTableHandlers() throws Throwable
     {
-        ConcurrentMap<String,RoutingTableHandler> map = new ConcurrentHashMap<>();
-        map.put( "Apple", mockedRoutingTableHandler( A ) );
-        map.put( "Banana", mockedRoutingTableHandler( B ) );
-        map.put( "Orange", mockedRoutingTableHandler( C ) );
+        ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
+        map.put( database( "Apple" ), mockedRoutingTableHandler( A ) );
+        map.put( database( "Banana" ), mockedRoutingTableHandler( B ) );
+        map.put( database( "Orange" ), mockedRoutingTableHandler( C ) );
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
 
         // When
-        routingTables.purgeAged();
+        routingTables.removeAged();
         // Then
         assertThat( routingTables.allServers(), empty() );
     }
@@ -204,7 +208,7 @@ class RoutingTableRegistryImplTest
         return handler;
     }
 
-    private RoutingTableRegistryImpl newRoutingTables( ConcurrentMap<String,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
+    private RoutingTableRegistryImpl newRoutingTables( ConcurrentMap<DatabaseName,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
     {
         return new RoutingTableRegistryImpl( handlers, factory, DEV_NULL_LOGGER );
     }

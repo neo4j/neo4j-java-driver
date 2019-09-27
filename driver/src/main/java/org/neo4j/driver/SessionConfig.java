@@ -26,7 +26,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.RxSession;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 /**
  * The session configurations used to configure a session.
@@ -222,9 +221,9 @@ public class SessionConfig
         public Builder withDatabase( String database )
         {
             requireNonNull( database, "Database name should not be null." );
-            if ( ABSENT_DB_NAME.equals( database ) )
+            if ( database.isEmpty() )
             {
-                // Disallow users to use bolt internal value directly. To users, this is totally an illegal database name.
+                // Empty string is an illegal database name. Fail fast on client.
                 throw new IllegalArgumentException( String.format( "Illegal database name '%s'.", database ) );
             }
             this.database = database;

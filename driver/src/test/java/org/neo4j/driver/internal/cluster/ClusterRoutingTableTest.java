@@ -37,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -129,7 +130,7 @@ class ClusterRoutingTableTest
         FakeClock clock = new FakeClock();
 
         // When
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, clock, A );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), clock, A );
 
         // Then
         assertTrue( routingTable.isStaleFor( READ ) );
@@ -137,17 +138,17 @@ class ClusterRoutingTableTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"Molly", ABSENT_DB_NAME, "I AM A NAME"} )
+    @ValueSource( strings = {"Molly", "", "I AM A NAME"} )
     void shouldReturnDatabaseNameCorrectly( String db )
     {
         // Given
         FakeClock clock = new FakeClock();
 
         // When
-        RoutingTable routingTable = new ClusterRoutingTable( db, clock, A );
+        RoutingTable routingTable = new ClusterRoutingTable( database( db ), clock, A );
 
         // Then
-        assertEquals( db, routingTable.database() );
+        assertEquals( db, routingTable.database().description() );
     }
 
     @Test
@@ -157,7 +158,7 @@ class ClusterRoutingTableTest
         FakeClock clock = new FakeClock();
 
         // When
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, clock, A, B, C );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), clock, A, B, C );
 
         // Then
         assertArrayEquals( new BoltServerAddress[]{A, B, C}, routingTable.routers().toArray() );
@@ -276,11 +277,11 @@ class ClusterRoutingTableTest
 
     private ClusterRoutingTable newRoutingTable()
     {
-        return new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        return new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
     }
 
     private ClusterRoutingTable newRoutingTable( Clock clock )
     {
-        return new ClusterRoutingTable( ABSENT_DB_NAME, clock );
+        return new ClusterRoutingTable( defaultDatabase(), clock );
     }
 }

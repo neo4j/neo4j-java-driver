@@ -65,12 +65,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
-import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
-import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithMode;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -101,7 +101,7 @@ class LoadBalancerTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"", "foo", "data", ABSENT_DB_NAME} )
+    @ValueSource( strings = {"", "foo", "data"} )
     void returnsCorrectDatabaseName( String databaseName )
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
@@ -115,7 +115,7 @@ class LoadBalancerTest
         Connection acquired = await( loadBalancer.acquireConnection( contextWithDatabase( databaseName ) ) );
 
         assertThat( acquired, instanceOf( RoutingConnection.class ) );
-        assertThat( acquired.databaseName(), equalTo( databaseName ) );
+        assertThat( acquired.databaseName().description(), equalTo( databaseName ) );
         verify( connectionPool ).acquire( A );
     }
 
@@ -194,7 +194,7 @@ class LoadBalancerTest
         Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A );
         ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses );
 
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
         routingTable.update( new ClusterComposition( -1, new LinkedHashSet<>( Arrays.asList( A, B ) ), emptySet(), emptySet() ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );

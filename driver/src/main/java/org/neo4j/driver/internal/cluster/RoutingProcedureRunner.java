@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
@@ -31,6 +30,7 @@ import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -38,7 +38,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 
 public class RoutingProcedureRunner
 {
@@ -52,7 +52,7 @@ public class RoutingProcedureRunner
         this.context = context;
     }
 
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, String databaseName, InternalBookmark bookmark )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, InternalBookmark bookmark )
     {
         DirectConnection delegate = connection( connection );
         Statement procedure = procedureStatement( connection.serverVersion(), databaseName );
@@ -64,16 +64,16 @@ public class RoutingProcedureRunner
 
     DirectConnection connection( Connection connection )
     {
-        return new DirectConnection( connection, ABSENT_DB_NAME, AccessMode.WRITE );
+        return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE );
     }
 
-    Statement procedureStatement( ServerVersion serverVersion, String databaseName )
+    Statement procedureStatement( ServerVersion serverVersion, DatabaseName databaseName )
     {
-        if ( !Objects.equals( ABSENT_DB_NAME, databaseName ) )
+        if ( databaseName.databaseName().isPresent() )
         {
             throw new FatalDiscoveryException( String.format(
                     "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
-                            "Current server version: %s. Database name: `%s`", serverVersion, databaseName ) );
+                            "Current server version: %s. Database name: '%s'", serverVersion, databaseName.description() ) );
         }
         return new Statement( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
     }

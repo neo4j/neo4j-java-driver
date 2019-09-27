@@ -31,6 +31,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
@@ -192,7 +193,7 @@ public class BoltProtocolV1 implements BoltProtocol
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
     }
 
-    private void verifyBeforeTransaction( TransactionConfig config, String databaseName )
+    private void verifyBeforeTransaction( TransactionConfig config, DatabaseName databaseName )
     {
         if ( config != null && !config.isEmpty() )
         {

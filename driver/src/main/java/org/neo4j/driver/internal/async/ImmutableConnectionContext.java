@@ -19,24 +19,25 @@
 package org.neo4j.driver.internal.async;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 /**
  * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
  */
 public class ImmutableConnectionContext implements ConnectionContext
 {
-    private static final ConnectionContext SIMPLE = new ImmutableConnectionContext( ABSENT_DB_NAME, empty(), AccessMode.READ );
+    private static final ConnectionContext SIMPLE = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
 
-    private final String databaseName;
+    private final DatabaseName databaseName;
     private final AccessMode mode;
     private final InternalBookmark rediscoveryBookmark;
 
-    public ImmutableConnectionContext( String databaseName, InternalBookmark bookmark, AccessMode mode )
+    public ImmutableConnectionContext( DatabaseName databaseName, InternalBookmark bookmark, AccessMode mode )
     {
         this.databaseName = databaseName;
         this.rediscoveryBookmark = bookmark;
@@ -44,7 +45,7 @@ public class ImmutableConnectionContext implements ConnectionContext
     }
 
     @Override
-    public String databaseName()
+    public DatabaseName databaseName()
     {
         return databaseName;
     }

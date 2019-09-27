@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -41,7 +42,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.defaultConfig;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 class SessionConfigTest
 {
@@ -64,7 +64,7 @@ class SessionConfigTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"foo", "data", "my awesome database", " "} )
+    @ValueSource( strings = {"foo", "data", "my awesome database", "    "} )
     void shouldChangeDatabaseName( String databaseName )
     {
         SessionConfig config = builder().withDatabase( databaseName ).build();
@@ -95,11 +95,11 @@ class SessionConfigTest
     }
 
     @ParameterizedTest
-    @ValueSource( strings = {"", ABSENT_DB_NAME} )
+    @ValueSource( strings = {""} )
     void shouldForbiddenEmptyStringDatabaseName( String databaseName ) throws Throwable
     {
         IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> builder().withDatabase( databaseName ) );
-        assertThat( error.getMessage(), equalTo( "Illegal database name ''." ) );
+        assertThat( error.getMessage(), startsWith( "Illegal database name " ) );
     }
 
     @Test

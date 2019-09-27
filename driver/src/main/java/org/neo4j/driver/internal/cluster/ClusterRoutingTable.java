@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.util.Clock;
 
 import static java.lang.String.format;
@@ -40,16 +41,16 @@ public class ClusterRoutingTable implements RoutingTable
     private final AddressSet writers;
     private final AddressSet routers;
 
-    private final String databaseName; // specifies the database this routing table is acquired for
+    private final DatabaseName databaseName; // specifies the database this routing table is acquired for
     private boolean preferInitialRouter;
 
-    public ClusterRoutingTable( String ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
+    public ClusterRoutingTable( DatabaseName ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
         this( ofDatabase, clock );
         routers.update( new LinkedHashSet<>( asList( routingAddresses ) ) );
     }
 
-    private ClusterRoutingTable( String ofDatabase, Clock clock )
+    private ClusterRoutingTable( DatabaseName ofDatabase, Clock clock )
     {
         this.databaseName = ofDatabase;
         this.clock = clock;
@@ -127,7 +128,8 @@ public class ClusterRoutingTable implements RoutingTable
         return servers;
     }
 
-    public String database()
+    @Override
+    public DatabaseName database()
     {
         return databaseName;
     }
@@ -147,6 +149,7 @@ public class ClusterRoutingTable implements RoutingTable
     @Override
     public synchronized String toString()
     {
-        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'", expirationTimestamp, clock.millis(), routers, writers, readers, databaseName );
+        return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
+                expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description() );
     }
 }
