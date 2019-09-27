@@ -31,6 +31,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -74,7 +75,7 @@ class NettyChannelInitializerTest
     @Test
     void shouldNotAddSslHandlerWhenDoesNotRequireEncryption()
     {
-        SecurityPlan security = SecurityPlan.insecure();
+        SecurityPlan security = SecurityPlanImpl.insecure();
         NettyChannelInitializer initializer = newInitializer( security );
 
         initializer.initChannel( channel );
@@ -101,7 +102,7 @@ class NettyChannelInitializerTest
     {
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 42L );
-        SecurityPlan security = SecurityPlan.insecure();
+        SecurityPlan security = SecurityPlanImpl.insecure();
         NettyChannelInitializer initializer = newInitializer( security, Integer.MAX_VALUE, clock );
 
         initializer.initChannel( channel );
@@ -142,7 +143,7 @@ class NettyChannelInitializerTest
 
     private void testHostnameVerificationSetting( boolean enabled, String expectedValue ) throws Exception
     {
-        NettyChannelInitializer initializer = newInitializer( SecurityPlan.forAllCertificates( enabled ) );
+        NettyChannelInitializer initializer = newInitializer( SecurityPlanImpl.forAllCertificates( enabled ) );
 
         initializer.initChannel( channel );
 
@@ -171,6 +172,6 @@ class NettyChannelInitializerTest
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
     {
-        return SecurityPlan.forAllCertificates( false );
+        return SecurityPlanImpl.forAllCertificates( false );
     }
 }

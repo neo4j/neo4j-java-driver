@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -162,7 +163,7 @@ class ChannelConnectorImplIT
     void shouldFailWhenProtocolNegotiationTakesTooLong() throws Exception
     {
         // run without TLS so that Bolt handshake is the very first operation after connection is established
-        testReadTimeoutOnConnect( SecurityPlan.insecure() );
+        testReadTimeoutOnConnect( SecurityPlanImpl.insecure() );
     }
 
     @Test
@@ -235,6 +236,6 @@ class ChannelConnectorImplIT
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
     {
-        return SecurityPlan.forAllCertificates( false );
+        return SecurityPlanImpl.forAllCertificates( false );
     }
 }
