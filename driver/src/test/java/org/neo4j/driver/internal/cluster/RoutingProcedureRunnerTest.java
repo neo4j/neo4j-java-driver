@@ -46,11 +46,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.ROUTING_CONTEXT;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
@@ -59,13 +60,13 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
     void shouldCallGetRoutingTableWithEmptyMap()
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        RoutingProcedureResponse response = await( runner.run( connection(), ABSENT_DB_NAME, empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
         assertThat( runner.bookmarkHolder, equalTo( BookmarkHolder.NO_OP ) );
-        assertThat( runner.connection.databaseName(), equalTo( ABSENT_DB_NAME ) );
+        assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
         Statement statement = generateRoutingStatement( EMPTY_MAP );
@@ -79,13 +80,13 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         RoutingContext context = new RoutingContext( uri );
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
-        RoutingProcedureResponse response = await( runner.run( connection(), ABSENT_DB_NAME, empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
         assertThat( runner.bookmarkHolder, equalTo( BookmarkHolder.NO_OP ) );
-        assertThat( runner.connection.databaseName(), equalTo( ABSENT_DB_NAME ) );
+        assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
         Statement statement = generateRoutingStatement( context.asMap() );
@@ -98,7 +99,7 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
     void shouldErrorWhenDatabaseIsNotAbsent( String db ) throws Throwable
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), db, empty() ) ) );
+        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), empty() ) ) );
     }
 
     RoutingProcedureRunner routingProcedureRunner( RoutingContext context )
@@ -113,7 +114,7 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
 
     private static Stream<String> invalidDatabaseNames()
     {
-        return Stream.of( SYSTEM_DB_NAME, "This is a string", null );
+        return Stream.of( SYSTEM_DATABASE_NAME, "This is a string", "null" );
     }
 
     private static Statement generateRoutingStatement( Map context )

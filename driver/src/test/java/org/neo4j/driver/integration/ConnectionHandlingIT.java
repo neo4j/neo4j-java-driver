@@ -255,7 +255,7 @@ class ConnectionHandlingIT
     {
         try ( Session session = driver.session() )
         {
-            session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)" );
+            session.run( "CREATE CONSTRAINT ON (book:Library) ASSERT exists(book.isbn)" );
         }
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
@@ -267,7 +267,7 @@ class ConnectionHandlingIT
         verify( connection2, never() ).release();
 
         // property existence constraints are verified on commit, try to violate it
-        tx.run( "CREATE (:Book)" );
+        tx.run( "CREATE (:Library)" );
 
         assertThrows( ClientException.class, tx::commit );
 

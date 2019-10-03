@@ -26,13 +26,14 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 
 public class RoutingTableRegistryImpl implements RoutingTableRegistry
 {
-    private final ConcurrentMap<String,RoutingTableHandler> routingTableHandlers;
+    private final ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers;
     private final RoutingTableHandlerFactory factory;
     private final Logger logger;
 
@@ -41,7 +42,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
         this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logger, routingTablePurgeDelayMs ), logger );
     }
 
-    RoutingTableRegistryImpl( ConcurrentMap<String,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Logger logger )
+    RoutingTableRegistryImpl( ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Logger logger )
     {
         this.factory = factory;
         this.routingTableHandlers = routingTableHandlers;
@@ -69,36 +70,36 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     }
 
     @Override
-    public void remove( String databaseName )
+    public void remove( DatabaseName databaseName )
     {
         routingTableHandlers.remove( databaseName );
-        logger.debug( "Routing table handler for database '%s' is removed.", databaseName );
+        logger.debug( "Routing table handler for database '%s' is removed.", databaseName.description() );
     }
 
     @Override
-    public void purgeAged()
+    public void removeAged()
     {
         routingTableHandlers.forEach( ( databaseName, handler ) -> {
             if ( handler.isRoutingTableAged() )
             {
                 logger.info( "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
-                        databaseName, handler.routingTable() );
+                        databaseName.description(), handler.routingTable() );
                 routingTableHandlers.remove( databaseName );
             }
         } );
     }
 
     // For tests
-    public boolean contains( String databaseName )
+    public boolean contains( DatabaseName databaseName )
     {
         return routingTableHandlers.containsKey( databaseName );
     }
 
-    private RoutingTableHandler getOrCreate( String databaseName )
+    private RoutingTableHandler getOrCreate( DatabaseName databaseName )
     {
         return routingTableHandlers.computeIfAbsent( databaseName, name -> {
             RoutingTableHandler handler = factory.newInstance( name, this );
-            logger.debug( "Routing table handler for database '%s' is added.", databaseName );
+            logger.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
             return handler;
         } );
     }
@@ -120,7 +121,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
             this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
         }
 
-        RoutingTableHandler newInstance( String databaseName, RoutingTableRegistry allTables )
+        RoutingTableHandler newInstance( DatabaseName databaseName, RoutingTableRegistry allTables )
         {
             ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
             return new RoutingTableHandler( routingTable, rediscovery, connectionPool, allTables, log, routingTablePurgeDelayMs );

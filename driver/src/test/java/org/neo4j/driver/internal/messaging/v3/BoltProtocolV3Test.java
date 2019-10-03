@@ -85,7 +85,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
@@ -190,7 +190,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), TransactionConfig.empty() );
 
-        verify( connection ).write( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -202,7 +202,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark, TransactionConfig.empty() );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, TransactionConfig.empty(), ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, TransactionConfig.empty(), defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -213,7 +213,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), txConfig );
 
-        verify( connection ).write( new BeginMessage( InternalBookmark.empty(), txConfig, ABSENT_DB_NAME, WRITE ), NoOpResponseHandler.INSTANCE );
+        verify( connection ).write( new BeginMessage( InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE ), NoOpResponseHandler.INSTANCE );
         assertNull( await( stage ) );
     }
 
@@ -225,7 +225,7 @@ public class BoltProtocolV3Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark, txConfig );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, txConfig, ABSENT_DB_NAME, WRITE ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, txConfig, defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -462,7 +462,7 @@ public class BoltProtocolV3Test
         RunWithMetadataMessage expectedMessage;
         if ( session )
         {
-            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, ABSENT_DB_NAME, mode, bookmark );
+            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, defaultDatabase(), mode, bookmark );
         }
         else
         {

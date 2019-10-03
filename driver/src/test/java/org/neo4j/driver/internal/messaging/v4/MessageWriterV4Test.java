@@ -43,10 +43,11 @@ import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
 import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
@@ -73,22 +74,22 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
                 GOODBYE,
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, ABSENT_DB_NAME ),
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, "foo" ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, defaultDatabase() ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, database( "foo" ) ),
                 COMMIT,
                 ROLLBACK,
 
                 RESET,
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), ABSENT_DB_NAME, READ,
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), "foo", WRITE,
+                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 explicitTxRunMessage( new Statement( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                        ABSENT_DB_NAME, READ, InternalBookmark.empty() ),
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), "foo",
+                        defaultDatabase(), READ, InternalBookmark.empty() ),
+                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), database( "foo" ),
                         WRITE, InternalBookmark.empty() ),
                 explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );

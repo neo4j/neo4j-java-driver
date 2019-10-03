@@ -41,8 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
 import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
 import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
@@ -109,7 +109,7 @@ class ParametersTest
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
         NetworkSession session =
-                new NetworkSession( provider, retryLogic, ABSENT_DB_NAME, AccessMode.WRITE, new DefaultBookmarkHolder(), DEV_NULL_LOGGING );
+                new NetworkSession( provider, retryLogic, defaultDatabase(), AccessMode.WRITE, new DefaultBookmarkHolder(), DEV_NULL_LOGGING );
         return new InternalSession( session );
     }
 }

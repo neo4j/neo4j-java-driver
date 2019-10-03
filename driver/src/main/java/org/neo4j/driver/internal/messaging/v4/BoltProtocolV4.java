@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.messaging.v4;
 
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.InternalStatementResultCursorFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -58,7 +59,8 @@ public class BoltProtocolV4 extends BoltProtocolV3
         return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }
 
-    protected void verifyDatabaseNameBeforeTransaction( String databaseName )
+    @Override
+    protected void verifyDatabaseNameBeforeTransaction( DatabaseName databaseName )
     {
         // Bolt V4 accepts database name
     }

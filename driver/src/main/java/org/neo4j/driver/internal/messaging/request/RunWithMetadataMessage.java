@@ -26,6 +26,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 
 import static java.util.Collections.emptyMap;
@@ -39,13 +40,13 @@ public class RunWithMetadataMessage extends MessageWithMetadata
     private final String statement;
     private final Map<String,Value> parameters;
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, String databaseName, AccessMode mode,
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
             InternalBookmark bookmark )
     {
         return autoCommitTxRunMessage( statement, config.timeout(), config.metadata(), databaseName, mode, bookmark );
     }
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, String databaseName,
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
             AccessMode mode, InternalBookmark bookmark )
     {
         Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark );

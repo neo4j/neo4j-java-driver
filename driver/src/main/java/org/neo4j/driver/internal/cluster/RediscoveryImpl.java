@@ -109,7 +109,7 @@ public class RediscoveryImpl implements Rediscovery
                 int newFailures = failures + 1;
                 if ( newFailures >= settings.maxRoutingFailures() )
                 {
-                    result.completeExceptionally( new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database() ) ) );
+                    result.completeExceptionally( new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) ) );
                 }
                 else
                 {

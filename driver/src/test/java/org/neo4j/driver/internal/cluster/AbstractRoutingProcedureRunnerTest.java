@@ -34,8 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -48,7 +48,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         ClientException error = new ClientException( "Hi" );
         RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        RoutingProcedureResponse response = await( runner.run( connection(), ABSENT_DB_NAME, empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
 
         assertFalse( response.isSuccess() );
         assertEquals( error, response.error() );
@@ -60,7 +60,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         Exception error = new Exception( "Hi" );
         RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), ABSENT_DB_NAME, empty() ) ) );
+        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), empty() ) ) );
         assertEquals( error, e );
     }
 
@@ -70,7 +70,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY );
 
         Connection connection = connection();
-        RoutingProcedureResponse response = await( runner.run( connection, ABSENT_DB_NAME, empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), empty() ) );
 
         assertTrue( response.isSuccess() );
         verify( connection ).release();
@@ -84,7 +84,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         RuntimeException releaseError = new RuntimeException( "Release failed" );
         Connection connection = connection( failedFuture( releaseError ) );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, ABSENT_DB_NAME, empty() ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, defaultDatabase(), empty() ) ) );
         assertEquals( releaseError, e );
         verify( connection ).release();
     }

@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 
-import static java.util.Arrays.asList;
-
 public final class ClusterCompositionUtil
 {
     private ClusterCompositionUtil() {}
@@ -43,12 +41,6 @@ public final class ClusterCompositionUtil
     public static final BoltServerAddress F = new BoltServerAddress( "6666:66" );
 
     public static final List<BoltServerAddress> EMPTY = new ArrayList<>();
-
-    public static final ClusterComposition VALID_CLUSTER_COMPOSITION =
-            createClusterComposition( asList( A, B ), asList( C ), asList( D, E ) );
-
-    public static final ClusterComposition INVALID_CLUSTER_COMPOSITION =
-            createClusterComposition( asList( A, B ), EMPTY, asList( D, E ) );
 
     @SafeVarargs
     public static ClusterComposition createClusterComposition( List<BoltServerAddress>... servers )

@@ -68,10 +68,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
-import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithDatabase;
+import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.SYSTEM_DB_NAME;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -85,7 +85,7 @@ class RoutingTableAndConnectionPoolTest
     private static final BoltServerAddress F = new BoltServerAddress( "localhost:30005" );
     private static final List<BoltServerAddress> SERVERS = new LinkedList<>( Arrays.asList( null, A, B, C, D, E, F ) );
 
-    private static final String[] DATABASES = new String[]{"", ABSENT_DB_NAME, SYSTEM_DB_NAME, "my database"};
+    private static final String[] DATABASES = new String[]{"", SYSTEM_DATABASE_NAME, "my database"};
 
     private final Random random = new Random();
     private final Clock clock = Clock.SYSTEM;
@@ -107,7 +107,7 @@ class RoutingTableAndConnectionPoolTest
         // Then
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
         assertTrue( routingTables.allServers().contains( A ) );
-        assertTrue( routingTables.contains( "neo4j" ) );
+        assertTrue( routingTables.contains( database( "neo4j" ) ) );
         assertTrue( connectionPool.isOpen( A ) );
     }
 
@@ -126,7 +126,7 @@ class RoutingTableAndConnectionPoolTest
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
-        assertFalse( routingTables.contains( "neo4j" ) );
+        assertFalse( routingTables.contains( database( "neo4j" ) ) );
         assertFalse( connectionPool.isOpen( A ) );
     }
 
@@ -145,7 +145,7 @@ class RoutingTableAndConnectionPoolTest
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
-        assertFalse( routingTables.contains( "neo4j" ) );
+        assertFalse( routingTables.contains( database( "neo4j" ) ) );
         assertFalse( connectionPool.isOpen( A ) );
     }
 
@@ -164,7 +164,7 @@ class RoutingTableAndConnectionPoolTest
 
         // Then
         assertTrue( routingTables.allServers().isEmpty() );
-        assertFalse( routingTables.contains( "neo4j" ) );
+        assertFalse( routingTables.contains( database( "neo4j" ) ) );
         assertFalse( connectionPool.isOpen( A ) );
     }
 
@@ -183,7 +183,7 @@ class RoutingTableAndConnectionPoolTest
         await( connection.release() );
 
         // Then
-        assertTrue( routingTables.contains( "neo4j" ) );
+        assertTrue( routingTables.contains( database( "neo4j" ) ) );
 
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
         assertTrue( routingTables.allServers().contains( A ) );
@@ -207,8 +207,8 @@ class RoutingTableAndConnectionPoolTest
         await( loadBalancer.acquireConnection( contextWithDatabase( "foo"  ) ) );
 
         // Then
-        assertFalse( routingTables.contains( "neo4j" ) );
-        assertTrue( routingTables.contains( "foo" ) );
+        assertFalse( routingTables.contains( database( "neo4j" ) ) );
+        assertTrue( routingTables.contains( database( "foo" ) ) );
 
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
         assertTrue( routingTables.allServers().contains( B ) );
@@ -234,8 +234,8 @@ class RoutingTableAndConnectionPoolTest
         assertThat( routingTables.allServers().size(), equalTo( 1 ) );
         assertTrue( routingTables.allServers().contains( B ) );
         assertTrue( connectionPool.isOpen( B ) );
-        assertFalse( routingTables.contains( "neo4j" ) );
-        assertTrue( routingTables.contains( "foo" ) );
+        assertFalse( routingTables.contains( database( "neo4j" ) ) );
+        assertTrue( routingTables.contains( database( "foo" ) ) );
 
         // I still have A as A's connection is in use
         assertTrue( connectionPool.isOpen( A ) );

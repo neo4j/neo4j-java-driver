@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.connection;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
@@ -36,9 +37,9 @@ public class DirectConnection implements Connection
 {
     private final Connection delegate;
     private final AccessMode mode;
-    private final String databaseName;
+    private final DatabaseName databaseName;
 
-    public DirectConnection( Connection delegate, String databaseName, AccessMode mode )
+    public DirectConnection( Connection delegate, DatabaseName databaseName, AccessMode mode )
     {
         this.delegate = delegate;
         this.mode = mode;
@@ -135,7 +136,7 @@ public class DirectConnection implements Connection
     }
 
     @Override
-    public String databaseName()
+    public DatabaseName databaseName()
     {
         return this.databaseName;
     }

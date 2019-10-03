@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.Connection;
@@ -53,11 +54,11 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
-import static org.neo4j.driver.internal.cluster.RediscoveryUtils.contextWithMode;
+import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -72,7 +73,7 @@ class RoutingTableHandlerTest
     @Test
     void shouldRemoveAddressFromRoutingTableOnConnectionFailure()
     {
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
         routingTable.update( new ClusterComposition(
                 42, asOrderedSet( A, B, C ), asOrderedSet( A, C, E ), asOrderedSet( B, D, F ) ) );
 
@@ -102,7 +103,7 @@ class RoutingTableHandlerTest
         BoltServerAddress router1 = new BoltServerAddress( "router-1", 5 );
 
         ConnectionPool connectionPool = newConnectionPoolMock();
-        ClusterRoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock(), initialRouter );
+        ClusterRoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock(), initialRouter );
 
         Set<BoltServerAddress> readers = new LinkedHashSet<>( asList( reader1, reader2 ) );
         Set<BoltServerAddress> writers = new LinkedHashSet<>( singletonList( writer1 ) );
@@ -149,7 +150,7 @@ class RoutingTableHandlerTest
     @Test
     void shouldRetainAllFetchedAddressesInConnectionPoolAfterFetchingOfRoutingTable()
     {
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
         routingTable.update( new ClusterComposition(
                 42, asOrderedSet(), asOrderedSet( B, C ), asOrderedSet( D, E ) ) );
 
@@ -174,13 +175,13 @@ class RoutingTableHandlerTest
             }
 
             @Override
-            public void remove( String databaseName )
+            public void remove( DatabaseName databaseName )
             {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void purgeAged()
+            public void removeAged()
             {
             }
         };
@@ -197,7 +198,7 @@ class RoutingTableHandlerTest
     void shouldRemoveRoutingTableHandlerIfFailedToLookup() throws Throwable
     {
         // Given
-        RoutingTable routingTable = new ClusterRoutingTable( ABSENT_DB_NAME, new FakeClock() );
+        RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
 
         Rediscovery rediscovery = newRediscoveryMock();
         when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( Futures.failedFuture( new RuntimeException( "Bang!" ) ) );
@@ -210,7 +211,7 @@ class RoutingTableHandlerTest
         assertThrows( RuntimeException.class, () -> await( handler.refreshRoutingTable( simple() ) ) );
 
         // Then
-        verify( registry ).remove( ABSENT_DB_NAME );
+        verify( registry ).remove( defaultDatabase() );
     }
 
     private void testRediscoveryWhenStale( AccessMode mode )
@@ -255,6 +256,7 @@ class RoutingTableHandlerTest
         addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ) );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
+        when( routingTable.database() ).thenReturn( defaultDatabase() );
 
         return routingTable;
     }

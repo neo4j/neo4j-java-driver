@@ -44,7 +44,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
+import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL;
 
 class LeakLoggingNetworkSessionTest
@@ -96,7 +96,7 @@ class LeakLoggingNetworkSessionTest
 
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
-        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), new FixedRetryLogic( 0 ), ABSENT_DB_NAME, READ,
+        return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), new FixedRetryLogic( 0 ), defaultDatabase(), READ,
                 new DefaultBookmarkHolder(), logging );
     }
 

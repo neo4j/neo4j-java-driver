@@ -19,11 +19,12 @@
 package org.neo4j.driver.internal.async;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 
 public interface ConnectionContext
 {
-    String databaseName();
+    DatabaseName databaseName();
 
     AccessMode mode();
 

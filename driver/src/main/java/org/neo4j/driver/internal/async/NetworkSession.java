@@ -23,14 +23,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
@@ -62,7 +63,7 @@ public class NetworkSession
 
     private final AtomicBoolean open = new AtomicBoolean( true );
 
-    public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode,
+    public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
             BookmarkHolder bookmarkHolder, Logging logging )
     {
         this.connectionProvider = connectionProvider;
@@ -344,9 +345,9 @@ public class NetworkSession
     /**
      * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
      */
-    private class NetworkSessionConnectionContext implements ConnectionContext
+    private static class NetworkSessionConnectionContext implements ConnectionContext
     {
-        private final String databaseName;
+        private final DatabaseName databaseName;
         private AccessMode mode;
 
         // This bookmark is only used for rediscovery.
@@ -354,7 +355,7 @@ public class NetworkSession
         // As only that bookmark could carry extra system bookmarks
         private final InternalBookmark rediscoveryBookmark;
 
-        private NetworkSessionConnectionContext( String databaseName, InternalBookmark bookmark )
+        private NetworkSessionConnectionContext( DatabaseName databaseName, InternalBookmark bookmark )
         {
             this.databaseName = databaseName;
             this.rediscoveryBookmark = bookmark;
@@ -367,7 +368,7 @@ public class NetworkSession
         }
 
         @Override
-        public String databaseName()
+        public DatabaseName databaseName()
         {
             return databaseName;
         }

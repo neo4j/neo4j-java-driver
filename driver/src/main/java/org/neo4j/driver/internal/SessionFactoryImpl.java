@@ -18,18 +18,17 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-
-import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.ABSENT_DB_NAME;
 
 public class SessionFactoryImpl implements SessionFactory
 {
@@ -50,8 +49,15 @@ public class SessionFactoryImpl implements SessionFactory
     public NetworkSession newInstance( SessionConfig sessionConfig )
     {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( InternalBookmark.from( sessionConfig.bookmarks() ) );
-        return createSession( connectionProvider, retryLogic, sessionConfig.database().orElse( ABSENT_DB_NAME ),
+        return createSession( connectionProvider, retryLogic, parseDatabaseName( sessionConfig ),
                 sessionConfig.defaultAccessMode(), bookmarkHolder, logging );
+    }
+
+    private DatabaseName parseDatabaseName( SessionConfig sessionConfig )
+    {
+        return sessionConfig.database()
+                .flatMap( name -> Optional.of( DatabaseNameUtil.database( name ) ) )
+                .orElse( DatabaseNameUtil.defaultDatabase() );
     }
 
     @Override
@@ -78,7 +84,7 @@ public class SessionFactoryImpl implements SessionFactory
         return connectionProvider;
     }
 
-    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, String databaseName, AccessMode mode,
+    private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
             BookmarkHolder bookmarkHolder, Logging logging )
     {
         return leakedSessionsLoggingEnabled

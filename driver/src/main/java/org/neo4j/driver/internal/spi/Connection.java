@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -61,7 +62,7 @@ public interface Connection
         throw new UnsupportedOperationException( format( "%s does not support access mode.", getClass() ) );
     }
 
-    default String databaseName()
+    default DatabaseName databaseName()
     {
         throw new UnsupportedOperationException( format( "%s does not support database name.", getClass() ) );
     }

@@ -16,19 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.request;
+package org.neo4j.driver.internal;
 
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.DatabaseName;
+import java.util.Optional;
 
-public final class MultiDatabaseUtil
+public interface DatabaseName
 {
-    public static void assertEmptyDatabaseName( DatabaseName databaseName, int boltVersion )
-    {
-        if ( databaseName.databaseName().isPresent() )
-        {
-            throw new ClientException( String.format( "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. " +
-                    "Database name: '%s'", boltVersion, databaseName.description() ) );
-        }
-    }
+    Optional<String> databaseName();
+
+    String description();
 }

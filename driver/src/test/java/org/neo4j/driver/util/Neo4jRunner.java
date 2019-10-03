@@ -54,7 +54,7 @@ public class Neo4jRunner
 {
     private static Neo4jRunner globalInstance;
 
-    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.5.3";
+    private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.5.11";
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", DEFAULT_NEOCTRL_ARGS );
     public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( INFO ) ).withoutEncryption().build();
 
