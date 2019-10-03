@@ -28,6 +28,7 @@ import org.neo4j.driver.v1.AccessMode;
 import org.neo4j.driver.v1.Value;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.v1.Values.value;
 
 abstract class TransactionStartingMessage implements Message
@@ -40,9 +41,9 @@ abstract class TransactionStartingMessage implements Message
 
     final Map<String,Value> metadata;
 
-    TransactionStartingMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    TransactionStartingMessage( Map<String,Value> metadata )
     {
-        this.metadata = buildMetadata( bookmarks, txTimeout, txMetadata, mode );
+        this.metadata = requireNonNull( metadata );
     }
 
     public final Map<String,Value> metadata()
@@ -50,7 +51,7 @@ abstract class TransactionStartingMessage implements Message
         return metadata;
     }
 
-    private static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
+    static Map<String,Value> buildMetadata( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
     {
         boolean bookmarksPresent = bookmarks != null && !bookmarks.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;

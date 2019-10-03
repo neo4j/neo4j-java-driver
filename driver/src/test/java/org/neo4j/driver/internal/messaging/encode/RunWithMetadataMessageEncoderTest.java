@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -61,7 +62,7 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        encoder.encode( new RunWithMetadataMessage( "RETURN $answer", params, bookmarks, txTimeout, txMetadata, mode ), packer );
+        encoder.encode( autoCommitTxRunMessage( "RETURN $answer", params, txTimeout, txMetadata, mode, bookmarks ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );

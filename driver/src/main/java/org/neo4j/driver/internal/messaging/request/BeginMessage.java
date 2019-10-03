@@ -38,7 +38,7 @@ public class BeginMessage extends TransactionStartingMessage
 
     public BeginMessage( Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode )
     {
-        super( bookmarks, txTimeout, txMetadata, mode );
+        super( buildMetadata( bookmarks, txTimeout, txMetadata, mode ) );
     }
 
     @Override

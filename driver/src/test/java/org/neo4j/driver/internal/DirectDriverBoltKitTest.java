@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -150,7 +151,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "hello_run_exit_read.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( AccessMode.READ ) )
+              Session session = driver.session( AccessMode.READ ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -167,7 +168,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( AccessMode.WRITE ) )
+              Session session = driver.session( AccessMode.WRITE ) )
         {
             List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
             assertEquals( asList( "Foo", "Bar" ), names );
@@ -209,28 +210,54 @@ class DirectDriverBoltKitTest
     }
 
     @Test
-    void shouldPropagateTransactionCommitErrorWhenSessionClosed() throws Exception
-    {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "commit_error.script", true, "Unable to commit" );
-    }
-
-    @Test
     void shouldPropagateTransactionRollbackErrorWhenSessionClosed() throws Exception
     {
-        testTransactionCloseErrorPropagationWhenSessionClosed( "rollback_error.script", false, "Unable to rollback" );
+        StubServer server = StubServer.start( "rollback_error.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                Session session = driver.session();
+
+                Transaction tx = session.beginTransaction();
+                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                assertEquals( "Alice", result.single().get( "name" ).asString() );
+
+                TransientException e = assertThrows( TransientException.class, session::close );
+                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
+                assertEquals( "Unable to rollback", e.getMessage() );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
     }
 
     @Test
-    void shouldThrowCommitErrorWhenTransactionClosed() throws Exception
+    void shouldThrowCommitErrorWhenTransactionCommit() throws Exception
     {
-        testTxCloseErrorPropagation( "commit_error.script", true, "Unable to commit" );
+        testTxCloseErrorPropagation( "commit_error.script", tx -> {
+            tx.success();
+            tx.close();
+        }, "Unable to commit" );
     }
 
     @Test
-    void shouldThrowRollbackErrorWhenTransactionClosed() throws Exception
+    void shouldThrowRollbackErrorWhenTransactionRollback() throws Exception
     {
-        testTxCloseErrorPropagation( "rollback_error.script", false, "Unable to rollback" );
+        testTxCloseErrorPropagation( "rollback_error.script", tx -> {
+            tx.failure();
+            tx.close();
+        }, "Unable to rollback" );
     }
+
+    @Test
+    void shouldThrowRollbackErrorWhenTransactionClose() throws Exception
+    {
+        testTxCloseErrorPropagation( "rollback_error.script", Transaction::close, "Unable to rollback" );
+    }
+
 
     @Test
     void shouldThrowCorrectErrorOnRunFailure() throws Throwable
@@ -238,7 +265,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "database_shutdown.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( "neo4j:bookmark:v1:tx0" );
+              Session session = driver.session( "neo4j:bookmark:v1:tx0" );
                 // has to enforce to flush BEGIN to have tx started.
                 Transaction transaction = session.beginTransaction() )
         {
@@ -260,7 +287,7 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "database_shutdown_at_commit.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session() )
+              Session session = driver.session() )
         {
             Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run( "CREATE (n {name:'Bob'})" );
@@ -276,41 +303,7 @@ class DirectDriverBoltKitTest
         }
     }
 
-    private static void testTransactionCloseErrorPropagationWhenSessionClosed( String script, boolean commit,
-            String expectedErrorMessage ) throws Exception
-    {
-        StubServer server = StubServer.start( script, 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                Session session = driver.session();
-
-                Transaction tx = session.beginTransaction();
-                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
-                assertEquals( "Alice", result.single().get( "name" ).asString() );
-
-                if ( commit )
-                {
-                    tx.success();
-                }
-                else
-                {
-                    tx.failure();
-                }
-
-                TransientException e = assertThrows( TransientException.class, session::close );
-                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                assertEquals( expectedErrorMessage, e.getMessage() );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    private static void testTxCloseErrorPropagation( String script, boolean commit, String expectedErrorMessage )
+    private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
             throws Exception
     {
         StubServer server = StubServer.start( script, 9001 );
@@ -323,16 +316,8 @@ class DirectDriverBoltKitTest
                 StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
                 assertEquals( "Alice", result.single().get( "name" ).asString() );
 
-                if ( commit )
-                {
-                    tx.success();
-                }
-                else
-                {
-                    tx.failure();
-                }
+                TransientException e = assertThrows( TransientException.class, () -> txAction.accept( tx ) );
 
-                TransientException e = assertThrows( TransientException.class, tx::close );
                 assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
                 assertEquals( expectedErrorMessage, e.getMessage() );
             }

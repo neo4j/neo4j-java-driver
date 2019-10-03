@@ -30,10 +30,8 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.v1.AccessMode;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -43,7 +41,9 @@ import static org.neo4j.driver.internal.messaging.request.GoodbyeMessage.GOODBYE
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
-import static org.neo4j.driver.v1.AccessMode.*;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
+import static org.neo4j.driver.v1.AccessMode.READ;
+import static org.neo4j.driver.v1.AccessMode.WRITE;
 import static org.neo4j.driver.v1.AuthTokens.basic;
 import static org.neo4j.driver.v1.Values.point;
 import static org.neo4j.driver.v1.Values.value;
@@ -67,23 +67,23 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                 new BeginMessage( Bookmarks.from( "neo4j:bookmark:v1:tx123" ), Duration.ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE ),
                 COMMIT,
                 ROLLBACK,
-                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), READ ),
-                new RunWithMetadataMessage( "RETURN 1", emptyMap(), Bookmarks.from( "neo4j:bookmark:v1:tx1" ), Duration.ofSeconds( 5 ),
-                        singletonMap( "key", value( 42 ) ), WRITE ),
+                autoCommitTxRunMessage( "RETURN 1", emptyMap(), Duration.ofSeconds( 5 ),
+                        singletonMap( "key", value( 42 ) ), READ, Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
+                autoCommitTxRunMessage( "RETURN 1", emptyMap(), Duration.ofSeconds( 5 ),
+                        singletonMap( "key", value( 42 ) ), WRITE, Bookmarks.from( "neo4j:bookmark:v1:tx1" ) ),
                 PULL_ALL,
                 DISCARD_ALL,
                 RESET,
 
                 // Bolt V3 messages with struct values
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), WRITE ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), READ ),
-                new RunWithMetadataMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ), Bookmarks.empty(),
-                        Duration.ofSeconds( 1 ), emptyMap(), WRITE )
+                autoCommitTxRunMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ),
+                        Duration.ofSeconds( 1 ), emptyMap(), READ, Bookmarks.empty() ),
+                autoCommitTxRunMessage( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ),
+                        Duration.ofSeconds( 1 ), emptyMap(), WRITE, Bookmarks.empty() ),
+                autoCommitTxRunMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ),
+                        Duration.ofSeconds( 1 ), emptyMap(), READ, Bookmarks.empty() ),
+                autoCommitTxRunMessage( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ),
+                        Duration.ofSeconds( 1 ), emptyMap(), WRITE, Bookmarks.empty() )
         );
     }
 

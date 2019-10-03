@@ -24,8 +24,12 @@ import java.util.Objects;
 
 import org.neo4j.driver.internal.Bookmarks;
 import org.neo4j.driver.v1.AccessMode;
+import org.neo4j.driver.v1.Statement;
 import org.neo4j.driver.v1.TransactionConfig;
 import org.neo4j.driver.v1.Value;
+
+import static java.util.Collections.emptyMap;
+import static org.neo4j.driver.v1.Values.ofValue;
 
 public class RunWithMetadataMessage extends TransactionStartingMessage
 {
@@ -34,15 +38,27 @@ public class RunWithMetadataMessage extends TransactionStartingMessage
     private final String statement;
     private final Map<String,Value> parameters;
 
-    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmarks bookmarks, TransactionConfig config, AccessMode mode )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, AccessMode mode,
+            Bookmarks bookmark )
     {
-        this( statement, parameters, bookmarks, config.timeout(), config.metadata(), mode );
+        return autoCommitTxRunMessage( statement.text(), statement.parameters().asMap( ofValue() ), config.timeout(), config.metadata(), mode, bookmark );
     }
 
-    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Bookmarks bookmarks, Duration txTimeout, Map<String,Value> txMetadata,
-            AccessMode mode )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( String statement, Map<String,Value> parameters, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode,
+            Bookmarks bookmark )
     {
-        super( bookmarks, txTimeout, txMetadata, mode );
+        Map<String,Value> metadata = buildMetadata( bookmark, txTimeout, txMetadata, mode );
+        return new RunWithMetadataMessage( statement, parameters, metadata );
+    }
+
+    public static RunWithMetadataMessage explicitTxRunMessage( Statement statement )
+    {
+        return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), emptyMap() );
+    }
+
+    public RunWithMetadataMessage( String statement, Map<String,Value> parameters, Map<String,Value> metadata )
+    {
+        super( metadata );
         this.statement = statement;
         this.parameters = parameters;
     }
