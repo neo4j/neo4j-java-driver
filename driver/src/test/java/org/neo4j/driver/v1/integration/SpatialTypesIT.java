@@ -90,9 +90,7 @@ class SpatialTypesIT
     {
         Stream<Value> randomPoints = ThreadLocalRandom.current()
                 .ints( 1_000, 0, 2 )
-                .mapToObj( idx -> idx % 2 == 0
-                                  ? point( WGS_84_CRS_CODE, randomDouble(), randomDouble() )
-                                  : point( CARTESIAN_CRS_CODE, randomDouble(), randomDouble() ) );
+                .mapToObj( SpatialTypesIT::createPoint );
 
         randomPoints.forEach( this::testPointSendAndReceive );
     }
@@ -132,15 +130,25 @@ class SpatialTypesIT
     private static List<Value> randomPointList( int index )
     {
         int size = ThreadLocalRandom.current().nextInt( 1, 100 );
-        int srid = index % 2 == 0 ? CARTESIAN_CRS_CODE : WGS_84_CRS_CODE;
         return IntStream.range( 0, size )
-                .mapToObj( i -> point( srid, randomDouble(), randomDouble() ) )
+                .mapToObj( ignored -> createPoint( index ) )
                 .collect( toList() );
+    }
+
+    private static Value createPoint( int idx )
+    {
+        return idx % 2 == 0
+               ? point( CARTESIAN_CRS_CODE, randomDouble(), randomDouble() )
+               : point( WGS_84_CRS_CODE, randomDouble(), randomDoubleWGS_84_Y() );
     }
 
     private static double randomDouble()
     {
         return ThreadLocalRandom.current().nextDouble( -180.0, 180 );
+    }
+    private static double randomDoubleWGS_84_Y()
+    {
+        return ThreadLocalRandom.current().nextDouble( -90.0, 90 );
     }
 
     private static void assertPoints2DEqual( Point expected, Point actual )

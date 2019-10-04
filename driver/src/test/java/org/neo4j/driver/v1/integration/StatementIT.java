@@ -73,7 +73,7 @@ class StatementIT
     void shouldRunWithParameters()
     {
         // When
-        session.run( "CREATE (n:FirstNode {name:{name}})", parameters( "name", "Steven" ) );
+        session.run( "CREATE (n:FirstNode {name:$name})", parameters( "name", "Steven" ) );
 
         // Then nothing should've failed
     }
@@ -121,7 +121,7 @@ class StatementIT
     void shouldRunWithCollectionAsParameter()
     {
         // When
-        session.run( "RETURN {param}", parameters( "param", Collections.singleton( "FOO" ) ) );
+        session.run( "RETURN $param", parameters( "param", Collections.singleton( "FOO" ) ) );
 
         // Then nothing should've failed
     }
@@ -131,7 +131,7 @@ class StatementIT
     {
         Iterator<String> values = asList( "FOO", "BAR", "BAZ" ).iterator();
         // When
-        session.run( "RETURN {param}", parameters( "param", values ) );
+        session.run( "RETURN $param", parameters( "param", values ) );
 
         // Then nothing should've failed
     }
@@ -150,7 +150,7 @@ class StatementIT
     {
         // When
         List<Record> result =
-                session.run( "UNWIND {list} AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).list();
+                session.run( "UNWIND $list AS k RETURN k", parameters( "list", asList( 1, 2, 3 ) ) ).list();
 
         // Then
         assertThat( result.size(), equalTo( 3 ) );

@@ -35,6 +35,7 @@ import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,7 +93,7 @@ class BookmarkIT
         createNodeInTx( session );
 
         TransientException e = assertThrows( TransientException.class, () -> session.beginTransaction( session.lastBookmark() + 42 ) );
-        assertThat( e.getMessage(), startsWith( "Database not up to the requested version" ) );
+        assertThat( e.getMessage(), containsString( "not up to the requested version" ) );
     }
 
     @Test

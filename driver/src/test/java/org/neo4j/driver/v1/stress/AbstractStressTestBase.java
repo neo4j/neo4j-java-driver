@@ -100,6 +100,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         logging = new LoggerNameTrackingLogging();
 
         Config config = Config.builder()
+                .withoutEncryption()
                 .withLogging( logging )
                 .withMaxConnectionPoolSize( 100 )
                 .withConnectionAcquisitionTimeout( 1, MINUTES )
