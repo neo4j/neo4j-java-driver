@@ -30,7 +30,7 @@ import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
@@ -139,7 +139,7 @@ class InternalRxStatementResultTest
         Record record2 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 2, 2, 2 ) );
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
 
-        BasicPullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
+        PullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
         RxStatementResult rxResult = newRxResult( pullHandler );
 
         // When
@@ -159,7 +159,7 @@ class InternalRxStatementResultTest
         Record record2 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 2, 2, 2 ) );
         Record record3 = new InternalRecord( asList( "key1", "key2", "key3" ), values( 3, 3, 3 ) );
 
-        BasicPullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
+        PullResponseHandler pullHandler = new ListBasedPullHandler( Arrays.asList( record1, record2, record3 ) );
         RxStatementResult rxResult = newRxResult( pullHandler );
 
         // When
@@ -195,7 +195,7 @@ class InternalRxStatementResultTest
         } ).verifyComplete();
     }
 
-    private InternalRxStatementResult newRxResult( BasicPullResponseHandler pullHandler )
+    private InternalRxStatementResult newRxResult( PullResponseHandler pullHandler )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         when( runHandler.runFuture() ).thenReturn( Futures.completedWithNull() );

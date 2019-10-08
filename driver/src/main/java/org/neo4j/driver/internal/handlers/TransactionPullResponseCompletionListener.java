@@ -16,37 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers.pulln;
+package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.MetadataExtractor;
 
 import static java.util.Objects.requireNonNull;
 
-public class TransactionPullResponseHandler extends AbstractBasicPullResponseHandler
+public class TransactionPullResponseCompletionListener implements PullResponseCompletionListener
 {
     private final ExplicitTransaction tx;
 
-    public TransactionPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, ExplicitTransaction tx, MetadataExtractor metadataExtractor )
+    public TransactionPullResponseCompletionListener( ExplicitTransaction tx )
     {
-        super( statement, runResponseHandler, connection, metadataExtractor );
         this.tx = requireNonNull( tx );
     }
 
     @Override
-    protected void afterSuccess( Map<String,Value> metadata )
+    public void afterSuccess( Map<String,Value> metadata )
     {
     }
 
     @Override
-    protected void afterFailure( Throwable error )
+    public void afterFailure( Throwable error )
     {
         // always mark transaction as terminated because every error is "acknowledged" with a RESET message
         // so database forgets about the transaction after the first error

@@ -34,19 +34,19 @@ import org.neo4j.driver.summary.ResultSummary;
 
 public class AsyncStatementResultCursor implements InternalStatementResultCursor
 {
-    private final RunResponseHandler runResponseHandler;
+    private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public AsyncStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
+    public AsyncStatementResultCursor( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
-        this.runResponseHandler = runResponseHandler;
+        this.runHandler = runHandler;
         this.pullAllHandler = pullAllHandler;
     }
 
     @Override
     public List<String> keys()
     {
-        return runResponseHandler.statementKeys();
+        return runHandler.statementKeys();
     }
 
     @Override
@@ -94,7 +94,7 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
     @Override
     public CompletionStage<ResultSummary> consumeAsync()
     {
-        return pullAllHandler.consumeAsync();
+        return pullAllHandler.summaryAsync();
     }
 
     @Override
@@ -120,7 +120,7 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
     @Override
     public CompletionStage<Throwable> failureAsync()
     {
-        return pullAllHandler.failureAsync();
+        return pullAllHandler.summaryAsync().handle( ( summary, error ) -> error );
     }
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )

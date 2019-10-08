@@ -30,6 +30,8 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.mockito.Mockito.mock;
@@ -38,7 +40,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
-class TransactionPullAllResponseHandlerTest
+class TransactionPullResponseCompletionListenerTest
 {
     @Test
     void shouldMarkTransactionAsTerminatedOnFailures()
@@ -62,9 +64,10 @@ class TransactionPullAllResponseHandlerTest
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        PullAllResponseHandler handler = new TransactionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler,
-                connection, tx, METADATA_EXTRACTOR );
+        PullResponseHandler handler = new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler,
+                connection, METADATA_EXTRACTOR, listener );
 
         handler.onFailure( error );
 

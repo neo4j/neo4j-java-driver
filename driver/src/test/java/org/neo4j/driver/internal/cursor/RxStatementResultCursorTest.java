@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
 
 import static java.util.Arrays.asList;
@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
 import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.Values.value;
@@ -54,7 +54,7 @@ class RxStatementResultCursorTest
         // Given
         CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = newRunResponseHandler( runFuture );
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
         IllegalStateException error = assertThrows( IllegalStateException.class, () -> new RxStatementResultCursor( runHandler, pullHandler ) );
@@ -68,7 +68,7 @@ class RxStatementResultCursorTest
         // Given
         RuntimeException error = new RuntimeException( "Hi" );
         RunResponseHandler runHandler = newRunResponseHandler( error );
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
         new RxStatementResultCursor( error, runHandler, pullHandler );
@@ -86,7 +86,7 @@ class RxStatementResultCursorTest
         List<String> expected = asList( "key1", "key2", "key3" );
         runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
 
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
@@ -104,7 +104,7 @@ class RxStatementResultCursorTest
         List<String> expected = asList( "key1", "key2", "key3" );
         runHandler.onSuccess( Collections.singletonMap( "fields", value( expected ) ) );
 
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
@@ -126,7 +126,7 @@ class RxStatementResultCursorTest
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When
@@ -141,7 +141,7 @@ class RxStatementResultCursorTest
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When
@@ -160,7 +160,7 @@ class RxStatementResultCursorTest
 
         // When
         RunResponseHandler runHandler = newRunResponseHandler( error );
-        BasicPullResponseHandler pullHandler = new ListBasedPullHandler();
+        PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
         cursor.installRecordConsumer( recordConsumer );
 
@@ -174,7 +174,7 @@ class RxStatementResultCursorTest
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        BasicPullResponseHandler pullHandler = new ListBasedPullHandler();
+        PullResponseHandler pullHandler = new ListBasedPullHandler();
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When
@@ -191,7 +191,7 @@ class RxStatementResultCursorTest
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
         RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
 
         // When

@@ -47,8 +47,8 @@ import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.SessionPullResponseCompletionListener;
+import org.neo4j.driver.internal.handlers.TransactionPullResponseCompletionListener;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
@@ -375,11 +375,11 @@ public class BoltProtocolV1Test
 
         if ( session )
         {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( SessionPullAllResponseHandler.class ) );
+            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( SessionPullResponseCompletionListener.class ) );
         }
         else
         {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( TransactionPullAllResponseHandler.class ) );
+            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( TransactionPullResponseCompletionListener.class ) );
         }
 
         return runHandlerCaptor.getValue();

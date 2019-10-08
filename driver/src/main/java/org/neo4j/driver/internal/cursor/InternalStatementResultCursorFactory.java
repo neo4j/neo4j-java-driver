@@ -23,9 +23,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static java.util.Objects.requireNonNull;
@@ -36,12 +35,12 @@ public class InternalStatementResultCursorFactory implements StatementResultCurs
     private final RunResponseHandler runHandler;
     private final Connection connection;
 
-    private final BasicPullResponseHandler pullHandler;
+    private final PullResponseHandler pullHandler;
     private final PullAllResponseHandler pullAllHandler;
     private final boolean waitForRunResponse;
     private final Message runMessage;
 
-    public InternalStatementResultCursorFactory( Connection connection, Message runMessage, RunResponseHandler runHandler, BasicPullResponseHandler pullHandler,
+    public InternalStatementResultCursorFactory( Connection connection, Message runMessage, RunResponseHandler runHandler, PullResponseHandler pullHandler,
             PullAllResponseHandler pullAllHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
@@ -62,7 +61,8 @@ public class InternalStatementResultCursorFactory implements StatementResultCurs
     public CompletionStage<InternalStatementResultCursor> asyncResult()
     {
         // only write and flush messages when async result is wanted.
-        connection.writeAndFlush( runMessage, runHandler, PullMessage.PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( runMessage, runHandler );
+        pullAllHandler.prePull();
 
         if ( waitForRunResponse )
         {

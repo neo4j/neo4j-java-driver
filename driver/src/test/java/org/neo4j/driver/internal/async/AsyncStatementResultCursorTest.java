@@ -290,7 +290,7 @@ class AsyncStatementResultCursorTest
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
-        when( pullAllHandler.failureAsync() ).thenReturn( completedFuture( error ) );
+        when( pullAllHandler.summaryAsync() ).thenReturn( failedFuture( error ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -301,7 +301,7 @@ class AsyncStatementResultCursorTest
     void shouldReturnNullFailureWhenDoesNotExist()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
+        when( pullAllHandler.summaryAsync() ).thenReturn( completedWithNull() );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -375,7 +375,7 @@ class AsyncStatementResultCursorTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 
@@ -387,7 +387,7 @@ class AsyncStatementResultCursorTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
-        when( pullAllHandler.consumeAsync() ).thenReturn( failedFuture( error ) );
+        when( pullAllHandler.summaryAsync() ).thenReturn( failedFuture( error ) );
 
         AsyncStatementResultCursor cursor = newCursor( pullAllHandler );
 

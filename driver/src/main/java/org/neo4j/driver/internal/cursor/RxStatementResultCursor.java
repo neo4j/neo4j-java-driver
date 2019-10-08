@@ -28,26 +28,26 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
+import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
 
 public class RxStatementResultCursor implements Subscription, FailableCursor
 {
     private final RunResponseHandler runHandler;
-    private final BasicPullResponseHandler pullHandler;
+    private final PullResponseHandler pullHandler;
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
-    private boolean isRecordHandlerInstalled = false;
+    private BiConsumer<Record,Throwable> recordConsumer;
 
-    public RxStatementResultCursor( RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
+    public RxStatementResultCursor( RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         this( null, runHandler, pullHandler );
     }
 
-    public RxStatementResultCursor( Throwable runError, RunResponseHandler runHandler, BasicPullResponseHandler pullHandler )
+    public RxStatementResultCursor( Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         Objects.requireNonNull( runHandler );
         Objects.requireNonNull( pullHandler );
@@ -66,13 +66,18 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
 
     public void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
     {
-        if ( isRecordHandlerInstalled )
+        if ( isRecordConsumerInstalled() )
         {
             return;
         }
-        isRecordHandlerInstalled = true;
-        pullHandler.installRecordConsumer( recordConsumer );
+        this.recordConsumer = recordConsumer;
+        pullHandler.installRecordConsumer( this.recordConsumer );
         assertRunCompletedSuccessfully();
+    }
+
+    private boolean isRecordConsumerInstalled()
+    {
+        return this.recordConsumer != null;
     }
 
     public void request( long n )
@@ -120,8 +125,10 @@ public class RxStatementResultCursor implements Subscription, FailableCursor
     private void installSummaryConsumer()
     {
         pullHandler.installSummaryConsumer( ( summary, error ) -> {
-            if ( error != null )
+            if ( error != null && recordConsumer == DISCARD_RECORD_CONSUMER )
             {
+                // We will only report the error to summary if there is no user record consumer installed
+                // When a user record consumer is installed, the error will be reported to record consumer instead.
                 summaryFuture.completeExceptionally( error );
             }
             else if ( summary != null )

@@ -144,18 +144,9 @@ class ResultStreamIT
         ResultSummary summary;
 
         // When
-        try
-        {
-            res1.consume();
-        }
-        catch ( Exception e )
-        {
-            //ignore
-        }
-        finally
-        {
-            summary = res1.summary();
-        }
+        assertThrows( Exception.class, res1::consume );
+        summary = res1.summary();
+
 
         // Then
         assertThat( summary, notNullValue() );

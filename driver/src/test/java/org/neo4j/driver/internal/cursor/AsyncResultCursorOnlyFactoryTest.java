@@ -28,7 +28,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.AutoPullResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
@@ -140,7 +140,7 @@ class AsyncResultCursorOnlyFactoryTest
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         when( runHandler.runFuture() ).thenReturn( runFuture );
 
-        AbstractPullAllResponseHandler pullHandler = mock( AbstractPullAllResponseHandler.class );
+        AutoPullResponseHandler pullHandler = mock( AutoPullResponseHandler.class );
 
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRun );
     }
@@ -154,7 +154,7 @@ class AsyncResultCursorOnlyFactoryTest
     private void verifyRunCompleted( Connection connection, CompletionStage<InternalStatementResultCursor> cursorFuture )
     {
         verify( connection ).writeAndFlush( any( Message.class ), any( RunResponseHandler.class ), eq( PULL_ALL ),
-                any( AbstractPullAllResponseHandler.class ) );
+                any( AutoPullResponseHandler.class ) );
         assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursor.class ) );
     }
 }

@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
@@ -183,7 +183,7 @@ class InternalStatementResultCursorFactoryTest
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         when( runHandler.runFuture() ).thenReturn( runFuture );
 
-        BasicPullResponseHandler pullHandler = mock( BasicPullResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRun );

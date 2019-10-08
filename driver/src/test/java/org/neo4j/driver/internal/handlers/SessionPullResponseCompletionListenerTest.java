@@ -26,7 +26,9 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -37,13 +39,13 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
-class SessionPullAllResponseHandlerTest
+class SessionPullResponseCompletionListenerTest
 {
     @Test
     void shouldReleaseConnectionOnSuccess()
     {
         Connection connection = newConnectionMock();
-        SessionPullAllResponseHandler handler = newHandler( connection );
+        ResponseHandler handler = newHandler( connection );
 
         handler.onSuccess( emptyMap() );
 
@@ -54,7 +56,7 @@ class SessionPullAllResponseHandlerTest
     void shouldReleaseConnectionOnFailure()
     {
         Connection connection = newConnectionMock();
-        SessionPullAllResponseHandler handler = newHandler( connection );
+        ResponseHandler handler = newHandler( connection );
 
         handler.onFailure( new RuntimeException() );
 
@@ -66,22 +68,22 @@ class SessionPullAllResponseHandlerTest
     {
         String bookmarkValue = "neo4j:bookmark:v1:tx42";
         BookmarkHolder bookmarkHolder = mock( BookmarkHolder.class );
-        SessionPullAllResponseHandler handler = newHandler( newConnectionMock(), bookmarkHolder );
+        ResponseHandler handler = newHandler( newConnectionMock(), bookmarkHolder );
 
         handler.onSuccess( singletonMap( "bookmark", value( bookmarkValue ) ) );
 
         verify( bookmarkHolder ).setBookmark( InternalBookmark.parse( bookmarkValue ) );
     }
 
-    private static SessionPullAllResponseHandler newHandler( Connection connection )
+    private static ResponseHandler newHandler( Connection connection )
     {
         return newHandler( connection, BookmarkHolder.NO_OP );
     }
 
-    private static SessionPullAllResponseHandler newHandler( Connection connection, BookmarkHolder bookmarkHolder )
+    private static ResponseHandler newHandler( Connection connection, BookmarkHolder bookmarkHolder ) // TODO to fix
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        return new SessionPullAllResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, bookmarkHolder, METADATA_EXTRACTOR );
+        return new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
     }
 
     private static Connection newConnectionMock()

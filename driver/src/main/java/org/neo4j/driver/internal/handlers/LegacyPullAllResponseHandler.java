@@ -28,6 +28,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
@@ -43,7 +44,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public abstract class AbstractPullAllResponseHandler implements PullAllResponseHandler
+public class LegacyPullAllResponseHandler implements PullAllResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
 
@@ -54,6 +55,7 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
     private final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
+    private final PullResponseCompletionListener completionListener;
 
     // initialized lazily when first record arrives
     private Queue<Record> records = UNINITIALIZED_RECORDS;
@@ -67,12 +69,14 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
-    public AbstractPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor )
+    public LegacyPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+            PullResponseCompletionListener completionListener )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
         this.metadataExtractor = requireNonNull( metadataExtractor );
         this.connection = requireNonNull( connection );
+        this.completionListener = requireNonNull( completionListener );
     }
 
     @Override
@@ -87,13 +91,11 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
         finished = true;
         summary = extractResultSummary( metadata );
 
-        afterSuccess( metadata );
+        completionListener.afterSuccess( metadata );
 
         completeRecordFuture( null );
         completeFailureFuture( null );
     }
-
-    protected abstract void afterSuccess( Map<String,Value> metadata );
 
     @Override
     public synchronized void onFailure( Throwable error )
@@ -101,7 +103,7 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
         finished = true;
         summary = extractResultSummary( emptyMap() );
 
-        afterFailure( error );
+        completionListener.afterFailure( error );
 
         boolean failedRecordFuture = failRecordFuture( error );
         if ( failedRecordFuture )
@@ -119,8 +121,6 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
             }
         }
     }
-
-    protected abstract void afterFailure( Throwable error );
 
     @Override
     public synchronized void onRecord( Value[] fields )
@@ -204,6 +204,12 @@ public abstract class AbstractPullAllResponseHandler implements PullAllResponseH
             }
             return recordsAsList( mapFunction );
         } );
+    }
+
+    @Override
+    public void prePull()
+    {
+        connection.writeAndFlush( PullMessage.PULL_ALL, this );
     }
 
     public synchronized CompletionStage<Throwable> failureAsync()

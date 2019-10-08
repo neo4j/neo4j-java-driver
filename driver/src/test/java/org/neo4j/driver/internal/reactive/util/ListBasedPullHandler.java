@@ -21,8 +21,9 @@ package org.neo4j.driver.internal.reactive.util;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.AbstractBasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.value.BooleanValue;
@@ -39,7 +40,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ListBasedPullHandler extends AbstractBasicPullResponseHandler
+public class ListBasedPullHandler extends BasicPullResponseHandler
 {
     private final List<Record> list;
     private final Throwable error;
@@ -62,7 +63,8 @@ public class ListBasedPullHandler extends AbstractBasicPullResponseHandler
 
     private ListBasedPullHandler( List<Record> list, Throwable error )
     {
-        super( mock( Statement.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ) );
+        super( mock( Statement.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ), mock(
+                PullResponseCompletionListener.class ) );
         this.list = list;
         this.error = error;
         when( super.metadataExtractor.extractSummary( any( Statement.class ), any( Connection.class ), anyLong(), any( Map.class ) ) ).thenReturn(
@@ -72,16 +74,6 @@ public class ListBasedPullHandler extends AbstractBasicPullResponseHandler
             Record record = list.get( 0 );
             when( super.runResponseHandler.statementKeys() ).thenReturn( record.keys() );
         }
-    }
-
-    @Override
-    protected void afterSuccess( Map<String,Value> metadata )
-    {
-    }
-
-    @Override
-    protected void afterFailure( Throwable error )
-    {
     }
 
     @Override
