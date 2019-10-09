@@ -31,7 +31,7 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorImpl;
 import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
@@ -183,7 +183,7 @@ class InternalStatementResultTest
         assertThrows( NoSuchRecordException.class, () ->
         {
             StatementResult result = createResult( 2 );
-            result.consume();
+            result.summary();
             result.single();
         } );
     }
@@ -193,10 +193,10 @@ class InternalStatementResultTest
     {
         // GIVEN
         StatementResult result = createResult( 2 );
-        result.consume();
+        result.summary();
 
         // WHEN
-        result.consume();
+        result.summary();
 
         // THEN
         assertFalse( result.hasNext() );
@@ -367,7 +367,7 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = new AsyncStatementResultCursor( runHandler, pullAllHandler );
+        StatementResultCursor cursor = new AsyncStatementResultCursorImpl( runHandler, pullAllHandler );
         return new InternalStatementResult( connection, cursor );
     }
 

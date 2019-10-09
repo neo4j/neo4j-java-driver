@@ -277,7 +277,8 @@ public final class TestUtil
 
     public static void verifyRunAndPull( Connection connection, String query )
     {
-        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static void verifyCommitTx( Connection connection, VerificationMode mode )
@@ -323,10 +324,16 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onFailure( error );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onFailure( error );
             return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
+
     }
 
     public static void setupFailingBegin( Connection connection, Throwable error )
@@ -402,10 +409,15 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static void setupSuccessfulRun( Connection connection )
@@ -424,10 +436,15 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static Connection connectionMock()

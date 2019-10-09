@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.handlers.pulln;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -28,9 +28,10 @@ import java.util.function.Function;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.summary.ResultSummary;
@@ -39,6 +40,10 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+/**
+ * Built on top of {@link BasicPullResponseHandler} to be able to pull in batches.
+ * It is exposed as {@link PullAllResponseHandler} as it can automatically pull when running out of records locally.
+ */
 public class AutoPullResponseHandler extends BasicPullResponseHandler implements PullAllResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
@@ -51,10 +56,11 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     private Queue<Record> records = UNINITIALIZED_RECORDS;
 
 //    private boolean autoReadManagementEnabled = true;
+    private ResultSummary summary;
     private Throwable failure;
 
     private CompletableFuture<Record> recordFuture;
-    private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+    private CompletableFuture<ResultSummary> summaryFuture;
 
     public AutoPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
             PullResponseCompletionListener completionListener )
@@ -71,11 +77,8 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
                 enqueueRecord( record );
                 completeRecordFuture( record );
             }
-            else if ( error != null )
-            {
-                // Handled by summary.error already
-            }
-            else
+            //  if ( error != null ) Handled by summary.error already
+            if ( record == null && error == null )
             {
                 // complete
                 completeRecordFuture( null );
@@ -89,11 +92,12 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
             }
             if ( summary != null )
             {
-                summaryFuture.complete( summary );
+                this.summary = summary;
+                completeSummaryFuture( summary );
             }
-            else
+
+            if ( error == null && summary == null ) // has_more
             {
-                // has_more
                 request( BATCH_SIZE );
             }
         } );
@@ -101,10 +105,9 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     private void handleFailure( Throwable error )
     {
-        boolean isFailureReported = failRecordFuture( error );
-        if ( !isFailureReported )
+        // error has not been propagated to the user, remember it
+        if ( !failRecordFuture( error ) && !failSummaryFuture( error ) )
         {
-            // error has not been propagated to the user, remember it
             failure = error;
         }
     }
@@ -126,14 +129,9 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         Record record = records.peek();
         if ( record == null )
         {
-            if ( failure != null )
-            {
-                return failedFuture( extractFailure() );
-            }
-
             if ( isDone() )
             {
-                return completedWithNull();
+                return completedWithValueIfNoFailure( null );
             }
 
             if ( recordFuture == null )
@@ -155,53 +153,50 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( !isDone() )
+        if ( isDone() )
+        {
+            return completedWithValueIfNoFailure( summary );
+        }
+        else
         {
             cancel();
-        }
-
-        return summaryFuture.thenApply( summary ->
-        {
-            if ( failure != null )
+            if ( summaryFuture == null )
             {
-                throw Futures.asCompletionException( extractFailure() );
+                summaryFuture = new CompletableFuture<>();
             }
-            return summary;
-        } );
+
+            return summaryFuture;
+        }
     }
 
     public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
     {
-        return pullAllAsync().thenApply( error ->
-        {
-            if ( error != null )
-            {
-                throw Futures.asCompletionException( error );
-            }
-            return recordsAsList( mapFunction );
-        } );
+        return pullAllAsync().thenApply( summary -> recordsAsList( mapFunction ) );
     }
 
     @Override
-    public void prePull()
+    public void prePopulateRecords()
     {
         request( BATCH_SIZE );
     }
 
-    private synchronized CompletionStage<Throwable> pullAllAsync()
+    private synchronized CompletionStage<ResultSummary> pullAllAsync()
     {
-        if ( !isDone() )
+        if ( isDone() )
+        {
+            return completedWithValueIfNoFailure( summary );
+        }
+        else
         {
 //            enableAutoRead();
-            request( Long.MAX_VALUE );
-        }
-        return summaryFuture.thenApply( summary -> {
-            if ( failure != null )
+            request( Long.MAX_VALUE ); // TODO -1
+            if ( summaryFuture == null )
             {
-                return extractFailure();
+                summaryFuture = new CompletableFuture<>();
             }
-            return null;
-        } );
+
+            return summaryFuture;
+        }
     }
 
     private void enqueueRecord( Record record )
@@ -278,6 +273,16 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         }
     }
 
+    private void completeSummaryFuture( ResultSummary summary )
+    {
+        if ( summaryFuture != null )
+        {
+            CompletableFuture<ResultSummary> future = summaryFuture;
+            summaryFuture = null;
+            future.complete( summary );
+        }
+    }
+
     private boolean failRecordFuture( Throwable error )
     {
         if ( recordFuture != null )
@@ -290,6 +295,33 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         return false;
     }
 
+    private boolean failSummaryFuture( Throwable error )
+    {
+        if ( summaryFuture != null )
+        {
+            CompletableFuture<ResultSummary> future = summaryFuture;
+            summaryFuture = null;
+            future.completeExceptionally( error );
+            return true;
+        }
+        return false;
+    }
+
+    private <T> CompletionStage<T> completedWithValueIfNoFailure( T value )
+    {
+        if ( failure != null )
+        {
+            return failedFuture( extractFailure() );
+        }
+        else if ( value == null )
+        {
+            return completedWithNull();
+        }
+        else
+        {
+            return completedFuture( value );
+        }
+    }
 
 //    private void enableAutoRead()
 //    {

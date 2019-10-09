@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.util.StubServer;
 
 import static java.util.Arrays.asList;
@@ -242,6 +243,46 @@ class DirectDriverBoltKitTest
     }
 
     @Test
+    void shouldStreamingRecordsInBatchesRx() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4_rx.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                RxSession session = driver.rxSession();
+                RxStatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                Flux<String> records = Flux.from( result.records() ).limitRate( 2 ).map( record -> record.get( "n.name" ).asString() );
+                StepVerifier.create( records ).expectNext( "Bob", "Alice", "Tina" ).verifyComplete();
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldStreamingRecordsInBatches() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                Session session = driver.session();
+                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
+                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
     void shouldThrowCommitErrorWhenTransactionCommit() throws Exception
     {
         testTxCloseErrorPropagation( "commit_error.script", Transaction::commit, "Unable to commit" );
@@ -273,7 +314,7 @@ class DirectDriverBoltKitTest
         {
             TransientException error = assertThrows( TransientException.class, () -> {
                 StatementResult result = transaction.run( "RETURN 1" );
-                result.consume();
+                result.summary();
             } );
             assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
         }
@@ -293,7 +334,7 @@ class DirectDriverBoltKitTest
         {
             Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run( "CREATE (n {name:'Bob'})" );
-            result.consume();
+            result.summary();
 
             TransientException error = assertThrows( TransientException.class, transaction::commit );
             assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
@@ -313,7 +354,7 @@ class DirectDriverBoltKitTest
                 Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
-            result.consume();
+            result.summary();
         }
         finally
         {

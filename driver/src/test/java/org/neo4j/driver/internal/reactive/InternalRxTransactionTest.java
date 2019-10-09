@@ -34,6 +34,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.reactive.RxStatementResult;
@@ -97,7 +98,7 @@ class InternalRxTransactionTest
     {
         // Given
         ExplicitTransaction tx = mock( ExplicitTransaction.class );
-        RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
+        RxStatementResultCursor cursor = mock( RxStatementResultCursorImpl.class );
 
         // Run succeeded with a cursor
         when( tx.runRx( any( Statement.class ) ) ).thenReturn( completedFuture( cursor ) );

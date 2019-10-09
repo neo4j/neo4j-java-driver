@@ -45,7 +45,8 @@ class SessionPullResponseCompletionListenerTest
     void shouldReleaseConnectionOnSuccess()
     {
         Connection connection = newConnectionMock();
-        ResponseHandler handler = newHandler( connection );
+        PullResponseCompletionListener listener = new SessionPullResponseCompletionListener( connection, BookmarkHolder.NO_OP );
+        ResponseHandler handler = newHandler( connection, listener );
 
         handler.onSuccess( emptyMap() );
 
@@ -56,7 +57,8 @@ class SessionPullResponseCompletionListenerTest
     void shouldReleaseConnectionOnFailure()
     {
         Connection connection = newConnectionMock();
-        ResponseHandler handler = newHandler( connection );
+        PullResponseCompletionListener listener = new SessionPullResponseCompletionListener( connection, BookmarkHolder.NO_OP );
+        ResponseHandler handler = newHandler( connection, listener );
 
         handler.onFailure( new RuntimeException() );
 
@@ -66,24 +68,25 @@ class SessionPullResponseCompletionListenerTest
     @Test
     void shouldUpdateBookmarksOnSuccess()
     {
+        Connection connection = newConnectionMock();
         String bookmarkValue = "neo4j:bookmark:v1:tx42";
         BookmarkHolder bookmarkHolder = mock( BookmarkHolder.class );
-        ResponseHandler handler = newHandler( newConnectionMock(), bookmarkHolder );
+        PullResponseCompletionListener listener = new SessionPullResponseCompletionListener( connection, bookmarkHolder );
+        ResponseHandler handler = newHandler( connection, listener );
 
         handler.onSuccess( singletonMap( "bookmark", value( bookmarkValue ) ) );
 
         verify( bookmarkHolder ).setBookmark( InternalBookmark.parse( bookmarkValue ) );
     }
 
-    private static ResponseHandler newHandler( Connection connection )
-    {
-        return newHandler( connection, BookmarkHolder.NO_OP );
-    }
-
-    private static ResponseHandler newHandler( Connection connection, BookmarkHolder bookmarkHolder ) // TODO to fix
+    private static ResponseHandler newHandler( Connection connection, PullResponseCompletionListener listener )
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        return new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+        BasicPullResponseHandler handler =
+                new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, listener );
+        handler.installRecordConsumer( ( record, throwable ) -> {} );
+        handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
+        return handler;
     }
 
     private static Connection newConnectionMock()

@@ -27,15 +27,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ResultSummary;
 
 import static java.util.Collections.emptyMap;
@@ -44,6 +44,9 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+/**
+ * This is the Pull All response handler that handles pull all messages in Bolt v3 and previous protocol versions.
+ */
 public class LegacyPullAllResponseHandler implements PullAllResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
@@ -177,6 +180,8 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
+        ignoreRecords = true;
+        records.clear();
         return failureAsync().thenApply( error ->
         {
             if ( error != null )
@@ -185,13 +190,6 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
             }
             return summary;
         } );
-    }
-
-    public synchronized CompletionStage<ResultSummary> consumeAsync()
-    {
-        ignoreRecords = true;
-        records.clear();
-        return summaryAsync();
     }
 
     public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
@@ -207,9 +205,9 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     }
 
     @Override
-    public void prePull()
+    public void prePopulateRecords()
     {
-        connection.writeAndFlush( PullMessage.PULL_ALL, this );
+        connection.writeAndFlush( PullAllMessage.PULL_ALL, this );
     }
 
     public synchronized CompletionStage<Throwable> failureAsync()

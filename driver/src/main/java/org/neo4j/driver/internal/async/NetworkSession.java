@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
@@ -76,7 +76,7 @@ public class NetworkSession
 
     public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
-        CompletionStage<InternalStatementResultCursor> newResultCursorStage =
+        CompletionStage<AsyncStatementResultCursor> newResultCursorStage =
                 buildResultCursorFactory( statement, config, waitForRunResponse ).thenCompose( StatementResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );

@@ -44,14 +44,13 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullResponseCompletionListener;
-import org.neo4j.driver.internal.handlers.TransactionPullResponseCompletionListener;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
@@ -358,7 +357,7 @@ public class BoltProtocolV3Test
         // Given
         Connection connection = connectionMock( mode, protocol );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, InternalBookmark.empty(), TransactionConfig.empty(), mode ).runHandler;
@@ -384,7 +383,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         InternalBookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
@@ -394,7 +393,7 @@ public class BoltProtocolV3Test
         {
             cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false ).asyncResult();
         }
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
@@ -414,7 +413,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
         assertFalse( cursorFuture.isDone() );
 
@@ -434,7 +433,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
         assertFalse( cursorFuture.isDone() );
 
@@ -469,19 +468,11 @@ public class BoltProtocolV3Test
             expectedMessage = RunWithMetadataMessage.explicitTxRunMessage( STATEMENT );
         }
 
-        verify( connection ).writeAndFlush( eq( expectedMessage ), runHandlerCaptor.capture(),
-                eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( expectedMessage ), runHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
-
-        if ( session )
-        {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( SessionPullResponseCompletionListener.class ) );
-        }
-        else
-        {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( TransactionPullResponseCompletionListener.class ) );
-        }
+        assertThat( pullAllHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );
 
         return new ResponseHandlers( runHandlerCaptor.getValue(), pullAllHandlerCaptor.getValue() );
     }

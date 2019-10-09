@@ -34,11 +34,7 @@ public interface PullAllResponseHandler extends ResponseHandler
 
     CompletionStage<Record> peekAsync();
 
-//    CompletionStage<ResultSummary> consumeAsync();
-
     <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
 
-    void prePull();
-
-//    CompletionStage<Throwable> failureAsync();
+    void prePopulateRecords();
 }

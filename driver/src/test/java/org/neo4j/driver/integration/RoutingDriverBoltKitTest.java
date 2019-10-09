@@ -265,7 +265,7 @@ class RoutingDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
         }
         finally
         {
@@ -289,7 +289,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
                 Transaction tx = session.beginTransaction() )
         {
-            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
         }
         finally
         {
@@ -446,7 +446,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            session.run( "CREATE ()" ).consume();
+            session.run( "CREATE ()" ).summary();
         }
         catch ( SessionExpiredException e )
         {
@@ -500,7 +500,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
-            tx.run( "CREATE ()" ).consume();
+            tx.run( "CREATE ()" ).summary();
         }
         catch ( SessionExpiredException e )
         {
@@ -902,7 +902,7 @@ class RoutingDriverBoltKitTest
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
         }
         finally
         {

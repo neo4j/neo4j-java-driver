@@ -20,11 +20,11 @@ package org.neo4j.driver;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
-import java.util.function.Function;
 import org.neo4j.driver.util.Resource;
 
 
@@ -139,28 +139,12 @@ public interface StatementResult extends Iterator<Record>
     <T> List<T> list( Function<Record, T> mapFunction );
 
     /**
-     * Consume the entire result, yielding a summary of it.
-     *
-     * Calling this method exhausts the result.
-     *
-     * <pre class="doctest:ResultDocIT#summarizeUsage">
-     * {@code
-     * ResultSummary summary = session.run( "PROFILE MATCH (n:User {id: 12345}) RETURN n" ).consume();
-     * }
-     * </pre>
-     *
-     * @return a summary for the whole query result
-     */
-    ResultSummary consume();
-
-    /**
      * Return the result summary.
      *
-     * If the records in the result is not fully consumed, then calling this method will force to pull all remaining
-     * records into buffer to yield the summary.
+     * If the records in the result is not fully consumed, then calling this method will exhausts the result.
      *
-     * If you want to obtain the summary but discard the records, use
-     * {@link StatementResult#consume()} instead.
+     * If you want to obtain the summary without discard the records, invoke
+     * {@link StatementResult#list()} before calling this method to buffer all records into memory.
      *
      * @return a summary for the whole query result.
      */

@@ -126,7 +126,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
-        assertThrows( Exception.class, res1::consume );
+        assertThrows( Exception.class, res1::summary );
 
         // When
         StatementResult res2 = session.run( "RETURN 1" );
@@ -144,7 +144,7 @@ class ResultStreamIT
         ResultSummary summary;
 
         // When
-        assertThrows( Exception.class, res1::consume );
+        assertThrows( Exception.class, res1::summary );
         summary = res1.summary();
 
 
@@ -199,7 +199,7 @@ class ResultStreamIT
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
-        ResultSummary summary = result.consume();
+        ResultSummary summary = result.summary();
 
         // Then
         assertThat( summary, notNullValue() );
@@ -282,7 +282,7 @@ class ResultStreamIT
 
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
 
-        // stream should manage to consume all elements except the last one, which produces an error
+        // stream should manage to summary all elements except the last one, which produces an error
         assertEquals( asList( 1, 1, 1, 1, 1 ), seen );
     }
 

@@ -54,8 +54,6 @@ import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDisc
  */
 public class BasicPullResponseHandler implements PullResponseHandler
 {
-    public static final BiConsumer<Record,Throwable> DISCARD_RECORD_CONSUMER = ( record, throwable ) -> {/*do nothing*/};
-
     private final Statement statement;
     protected final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
@@ -67,7 +65,8 @@ public class BasicPullResponseHandler implements PullResponseHandler
     private BiConsumer<Record,Throwable> recordConsumer = null;
     private BiConsumer<ResultSummary, Throwable> summaryConsumer = null;
 
-    public BasicPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor, PullResponseCompletionListener completionListener )
+    public BasicPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+            PullResponseCompletionListener completionListener )
     {
         this.statement = requireNonNull( statement );
         this.runResponseHandler = requireNonNull( runResponseHandler );
@@ -117,8 +116,8 @@ public class BasicPullResponseHandler implements PullResponseHandler
         assertRecordAndSummaryConsumerInstalled();
         if ( isStreamingPaused() )
         {
-            connection.writeAndFlush( new PullMessage( size, runResponseHandler.statementId() ), this );
             status = Status.STREAMING;
+            connection.writeAndFlush( new PullMessage( size, runResponseHandler.statementId() ), this );
         }
         else if ( isStreaming() )
         {
@@ -132,9 +131,9 @@ public class BasicPullResponseHandler implements PullResponseHandler
         assertRecordAndSummaryConsumerInstalled();
         if ( isStreamingPaused() )
         {
+            status = Status.CANCELED;
             // Reactive API does not provide a way to discard N. Only discard all.
             connection.writeAndFlush( newDiscardAllMessage( runResponseHandler.statementId() ), this );
-            status = Status.CANCELED;
         }
         else if ( isStreaming() )
         {

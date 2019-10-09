@@ -68,6 +68,8 @@ class TransactionPullResponseCompletionListenerTest
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         PullResponseHandler handler = new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler,
                 connection, METADATA_EXTRACTOR, listener );
+        handler.installRecordConsumer( ( record, throwable ) -> {} );
+        handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
 
         handler.onFailure( error );
 

@@ -24,8 +24,8 @@ import java.util.function.BiConsumer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.SessionPullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
@@ -79,14 +79,14 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
         assertThat( handler.status(), equalTo( FAILED ) );
         verify( conn ).release();
         verify( recordConsumer ).accept( null, error );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
+        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( error ) );
     }
 
     @Override
     protected BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
             BiConsumer<ResultSummary,Throwable> summaryConsumer, Status status )
     {
-        BookmarkHolder bookmarkHolder = mock( BookmarkHolder.class );
+        BookmarkHolder bookmarkHolder = BookmarkHolder.NO_OP;
         return newSessionResponseHandler( conn, recordConsumer, summaryConsumer, bookmarkHolder, status );
     }
 
@@ -94,9 +94,9 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
             BiConsumer<ResultSummary,Throwable> summaryConsumer, BookmarkHolder bookmarkHolder, Status status )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        SessionPullResponseCompletionListener listener = new SessionPullResponseCompletionListener( conn, bookmarkHolder );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, mock(
-                        PullResponseCompletionListener.class ) );
+                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
 
         handler.installRecordConsumer( recordConsumer );
         handler.installSummaryConsumer( summaryConsumer );

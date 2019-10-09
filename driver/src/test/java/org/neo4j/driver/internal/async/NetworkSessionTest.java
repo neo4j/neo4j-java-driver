@@ -195,7 +195,8 @@ class NetworkSessionTest
         close( session );
 
         InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+        inOrder.verify( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+        inOrder.verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
         inOrder.verify( connection, atLeastOnce() ).release();
     }
 

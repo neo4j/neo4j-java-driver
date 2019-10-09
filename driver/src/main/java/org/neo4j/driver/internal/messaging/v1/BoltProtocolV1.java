@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -190,7 +190,7 @@ public class BoltProtocolV1 implements BoltProtocol
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = PullHandlers.newBoltV1PullAllHandler( statement, runHandler, connection, tx );
 
-        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
+        return new AsyncStatementResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
     }
 
     private void verifyBeforeTransaction( TransactionConfig config, DatabaseName databaseName )

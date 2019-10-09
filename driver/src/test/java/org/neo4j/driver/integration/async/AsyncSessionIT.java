@@ -638,7 +638,7 @@ class AsyncSessionIT
         assertThrows( ServiceUnavailableException.class, () ->
         {
             StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.consumeAsync() );
+            await( cursor.summaryAsync() );
         } );
 
         neo4j.startDb();
@@ -801,7 +801,7 @@ class AsyncSessionIT
     {
         StatementResultCursor cursor = await( session.runAsync( "SomeWrongQuery" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
         assertThat( e.getMessage(), startsWith( "Invalid input" ) );
         assertNull( await( session.closeAsync() ) );
     }
@@ -811,7 +811,7 @@ class AsyncSessionIT
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND range(10, 0, -1) AS x RETURN 1 / x" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
         assertNull( await( session.closeAsync() ) );
     }
@@ -944,9 +944,9 @@ class AsyncSessionIT
         CompletionStage<SummaryAndRecords> summaryAndRecordStage = session.runAsync( query )
                 .thenCompose( cursor ->
                 {
-                    CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                    CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
                     CompletionStage<Record> recordStage = cursor.nextAsync();
-                    return consumeStage.thenCombine( recordStage, SummaryAndRecords::new );
+                    return summaryStage.thenCombine( recordStage, SummaryAndRecords::new );
                 } );
 
         SummaryAndRecords result = await( summaryAndRecordStage );
@@ -966,11 +966,11 @@ class AsyncSessionIT
                 .thenCompose( cursor -> cursor.nextAsync() // fetch just a single record
                         .thenCompose( record1 ->
                         {
-                            // then consume rest
-                            CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                            // then summary rest
+                            CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
                             // and try to fetch another record
                             CompletionStage<Record> record2Stage = cursor.nextAsync();
-                            return consumeStage.thenCombine( record2Stage,
+                            return summaryStage.thenCombine( record2Stage,
                                     ( summary, record2 ) -> new SummaryAndRecords( summary, record1, record2 ) );
                         } ) );
 
@@ -994,9 +994,9 @@ class AsyncSessionIT
         CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
                 .thenCompose( cursor ->
                 {
-                    CompletionStage<ResultSummary> consumeStage = cursor.consumeAsync();
+                    CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
                     CompletionStage<List<Record>> recordsStage = cursor.listAsync();
-                    return consumeStage.thenCombine( recordsStage, SummaryAndRecords::new );
+                    return summaryStage.thenCombine( recordsStage, SummaryAndRecords::new );
                 } );
 
         SummaryAndRecords result = await( summaryAndRecordsStage );
@@ -1099,13 +1099,13 @@ class AsyncSessionIT
     private void testConsume( String query )
     {
         StatementResultCursor cursor = await( session.runAsync( query ) );
-        ResultSummary summary = await( cursor.consumeAsync() );
+        ResultSummary summary = await( cursor.summaryAsync() );
 
         assertNotNull( summary );
         assertEquals( query, summary.statement().text() );
         assertEquals( emptyMap(), summary.statement().parameters().asMap() );
 
-        // no records should be available, they should all be consumed
+        // no records should be available, they should all be summaryd
         assertNull( await( cursor.nextAsync() ) );
     }
 

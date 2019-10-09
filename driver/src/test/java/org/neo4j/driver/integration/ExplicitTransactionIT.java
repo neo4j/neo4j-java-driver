@@ -190,7 +190,7 @@ class ExplicitTransactionIT
 
         await( session.beginTransactionAsync( TransactionConfig.empty() )
                 .thenCompose( tx -> tx.runAsync( new Statement( "CREATE (:Node {id: 42})" ), true )
-                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenCompose( StatementResultCursor::summaryAsync )
                         .thenApply( ignore -> tx )
                 ).thenCompose( ExplicitTransaction::commitAsync ) );
 

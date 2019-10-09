@@ -41,12 +41,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.DISCARD_RECORD_CONSUMER;
+import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.DISCARD_RECORD_CONSUMER;
 import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
-import static org.neo4j.driver.Values.value;
 
-class RxStatementResultCursorTest
+class RxStatementResultCursorImplTest
 {
     @Test
     void shouldWaitForRunToFinishBeforeCreatingRxResultCurosr() throws Throwable
@@ -57,7 +57,7 @@ class RxStatementResultCursorTest
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> new RxStatementResultCursor( runHandler, pullHandler ) );
+        IllegalStateException error = assertThrows( IllegalStateException.class, () -> new RxStatementResultCursorImpl( runHandler, pullHandler ) );
         // Then
         assertThat( error.getMessage(), containsString( "Should wait for response of RUN" ) );
     }
@@ -71,7 +71,7 @@ class RxStatementResultCursorTest
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
-        new RxStatementResultCursor( error, runHandler, pullHandler );
+        new RxStatementResultCursorImpl( error, runHandler, pullHandler );
 
         // Then
         verify( pullHandler ).installSummaryConsumer( any( BiConsumer.class ) );
@@ -89,7 +89,7 @@ class RxStatementResultCursorTest
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
         List<String> actual = cursor.keys();
 
         // Then
@@ -107,7 +107,7 @@ class RxStatementResultCursorTest
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
 
         // When
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
 
         // Then
         List<String> actual = cursor.keys();
@@ -127,7 +127,7 @@ class RxStatementResultCursorTest
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
 
         // When
         cursor.request( 100 );
@@ -142,7 +142,7 @@ class RxStatementResultCursorTest
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
 
         // When
         cursor.cancel();
@@ -161,7 +161,7 @@ class RxStatementResultCursorTest
         // When
         RunResponseHandler runHandler = newRunResponseHandler( error );
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxStatementResultCursor cursor = new RxStatementResultCursor( error, runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( error, runHandler, pullHandler );
         cursor.installRecordConsumer( recordConsumer );
 
         // Then
@@ -175,7 +175,7 @@ class RxStatementResultCursorTest
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = new ListBasedPullHandler();
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
 
         // When
         cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER );
@@ -192,7 +192,7 @@ class RxStatementResultCursorTest
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
         PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-        RxStatementResultCursor cursor = new RxStatementResultCursor( runHandler, pullHandler );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
 
         // When
         cursor.summaryAsync();

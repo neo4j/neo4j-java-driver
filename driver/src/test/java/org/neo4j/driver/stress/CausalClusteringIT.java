@@ -387,7 +387,7 @@ public class CausalClusteringIT implements NestedQueries
                 {
                     try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
                     {
-                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).summary();
                     }
                 } );
             }
@@ -429,7 +429,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
                 {
-                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).summary();
                 }
             } );
 
@@ -568,11 +568,11 @@ public class CausalClusteringIT implements NestedQueries
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
-            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).consume();
+            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).summary();
 
             Session session2 = driver.session();
             Transaction tx2 = session2.beginTransaction();
-            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).consume();
+            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).summary();
 
             ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
             driverFactory.setNextRunFailure( error );
@@ -627,7 +627,7 @@ public class CausalClusteringIT implements NestedQueries
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
                 SessionExpiredException e = assertThrows( SessionExpiredException.class,
-                        () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
+                        () -> runCreateNode( session, "Person", "name", "Vision" ).summary() );
                 assertEquals( "Disconnected", e.getCause().getMessage() );
             }
 
@@ -707,7 +707,7 @@ public class CausalClusteringIT implements NestedQueries
 
     private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
     {
-        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
+        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).summary() );
         assertEquals( cause, e.getCause() );
     }
 
@@ -754,7 +754,7 @@ public class CausalClusteringIT implements NestedQueries
     {
         return session ->
         {
-            session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
+            session.run( "MERGE (n:Person {name: 'Jim'})" ).summary();
             Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
             return record.get( "count" ).asInt();
         };

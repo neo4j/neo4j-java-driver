@@ -41,7 +41,7 @@ public class BlockingFailingQuery<C extends AbstractContext> extends AbstractBlo
         try ( Session session = newSession( AccessMode.READ, context ) )
         {
             StatementResult result = session.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
-            Exception e = assertThrows( Exception.class, result::consume );
+            Exception e = assertThrows( Exception.class, result::summary );
             assertThat( e, is( arithmeticError() ) );
         }
     }

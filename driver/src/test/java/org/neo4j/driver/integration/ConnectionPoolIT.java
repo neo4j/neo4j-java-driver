@@ -173,7 +173,7 @@ class ConnectionPoolIT
         {
             for ( StatementResult result : results )
             {
-                result.consume();
+                result.summary();
             }
             for ( Transaction tx : transactions )
             {

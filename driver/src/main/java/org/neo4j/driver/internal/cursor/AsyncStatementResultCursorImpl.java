@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.cursor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -24,20 +24,19 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class AsyncStatementResultCursor implements InternalStatementResultCursor
+public class AsyncStatementResultCursorImpl implements AsyncStatementResultCursor
 {
     private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public AsyncStatementResultCursor( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
+    public AsyncStatementResultCursorImpl( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
         this.runHandler = runHandler;
         this.pullAllHandler = pullAllHandler;
@@ -89,12 +88,6 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
                 return firstRecord;
             } );
         } );
-    }
-
-    @Override
-    public CompletionStage<ResultSummary> consumeAsync()
-    {
-        return pullAllHandler.summaryAsync();
     }
 
     @Override

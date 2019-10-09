@@ -24,8 +24,8 @@ import java.util.function.BiConsumer;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.TransactionPullResponseCompletionListener;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
@@ -77,7 +77,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
         assertThat( handler.status(), equalTo( FAILED ) );
         verify( tx ).markTerminated();
         verify( recordConsumer ).accept( null, error );
-        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( null ) );
+        verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( error ) );
     }
 
     @Override
@@ -92,9 +92,9 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
             BiConsumer<ResultSummary,Throwable> summaryConsumer, ExplicitTransaction tx, PullResponseHandler.Status status )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, mock(
-                        PullResponseCompletionListener.class ) );
+                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
 
         handler.installRecordConsumer( recordConsumer );
         handler.installSummaryConsumer( summaryConsumer );

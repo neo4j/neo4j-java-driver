@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -81,7 +82,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
 
         ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmark, config, mode, defaultDatabase() );
@@ -103,7 +104,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
 
         ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmark, config, mode, defaultDatabase() );
@@ -124,7 +125,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         // Given
         Connection connection = connectionMock( mode, protocol );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
                 protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
 
         ResponseHandler runHandler = verifyTxRunInvoked( connection );
@@ -152,7 +153,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         InternalBookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
@@ -164,7 +165,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         }
 
         // When I complete it immediately without waiting for any responses to run message
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
 
@@ -214,7 +215,8 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture(), eq( PullMessage.PULL_ALL ), pullHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( any( PullMessage.class ), pullHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
         assertThat( pullHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );

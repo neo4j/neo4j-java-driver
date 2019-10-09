@@ -22,7 +22,7 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursorFactory;
+import org.neo4j.driver.internal.cursor.StatementResultCursorFactoryImpl;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -56,7 +56,7 @@ public class BoltProtocolV4 extends BoltProtocolV3
         PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
         PullResponseHandler pullHandler = newBoltV4BasicPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
-        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
+        return new StatementResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
@@ -139,7 +139,7 @@ public class ExplicitTransaction
     public CompletionStage<StatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<InternalStatementResultCursor> cursorStage =
+        CompletionStage<AsyncStatementResultCursor> cursorStage =
                 protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse ).asyncResult();
         resultCursors.add( cursorStage );
         return cursorStage.thenApply( cursor -> cursor );
