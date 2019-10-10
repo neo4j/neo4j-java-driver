@@ -30,6 +30,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 
 class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPullResponseHandler>
@@ -40,7 +41,8 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
         RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         runResponseHandler.onSuccess( singletonMap( "fields", value( statementKeys ) ) );
         AutoPullResponseHandler handler =
-                new AutoPullResponseHandler( statement, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+                new AutoPullResponseHandler( statement, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ),
+                        DEFAULT_FETCH_SIZE );
         handler.prePopulateRecords();
         return handler;
     }

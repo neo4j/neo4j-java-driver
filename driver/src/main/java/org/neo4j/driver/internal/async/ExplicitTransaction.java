@@ -62,15 +62,17 @@ public class ExplicitTransaction
     private final BoltProtocol protocol;
     private final BookmarkHolder bookmarkHolder;
     private final ResultCursorsHolder resultCursors;
+    private final long fetchSize;
 
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection connection, BookmarkHolder bookmarkHolder )
+    public ExplicitTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkHolder = bookmarkHolder;
         this.resultCursors = new ResultCursorsHolder();
+        this.fetchSize = fetchSize;
     }
 
     public CompletionStage<ExplicitTransaction> beginAsync( InternalBookmark initialBookmark, TransactionConfig config )
@@ -140,7 +142,7 @@ public class ExplicitTransaction
     {
         ensureCanRunQueries();
         CompletionStage<AsyncStatementResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse ).asyncResult();
+                protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
         return cursorStage.thenApply( cursor -> cursor );
     }
@@ -149,7 +151,7 @@ public class ExplicitTransaction
     {
         ensureCanRunQueries();
         CompletionStage<RxStatementResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, statement, this, false ).rxResult();
+                protocol.runInExplicitTransaction( connection, statement, this, false, fetchSize ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;
     }

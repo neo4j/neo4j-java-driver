@@ -102,10 +102,11 @@ public interface BoltProtocol
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
      * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
      * keys populated.
+     * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse );
+    StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+            TransactionConfig config, boolean waitForRunResponse, long fetchSize );
 
     /**
      * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.
@@ -116,10 +117,11 @@ public interface BoltProtocol
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
      * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
      * keys populated.
+     * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
-            boolean waitForRunResponse );
+    StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx, boolean waitForRunResponse,
+            long fetchSize );
 
     /**
      * Returns the protocol version. It can be used for version specific error messages.

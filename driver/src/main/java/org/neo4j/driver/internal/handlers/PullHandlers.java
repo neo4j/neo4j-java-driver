@@ -47,11 +47,11 @@ public class PullHandlers
     }
 
     public static PullAllResponseHandler newBoltV4AutoPullHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
-            BookmarkHolder bookmarkHolder, ExplicitTransaction tx )
+            BookmarkHolder bookmarkHolder, ExplicitTransaction tx, long fetchSize )
     {
         PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
 
-        return new AutoPullResponseHandler( statement, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
+        return new AutoPullResponseHandler( statement, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize );
     }
 
 

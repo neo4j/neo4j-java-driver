@@ -36,6 +36,7 @@ import org.neo4j.driver.summary.ResultSummary;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDiscardAllMessage;
 
 /**
@@ -196,7 +197,7 @@ public class BasicPullResponseHandler implements PullResponseHandler
         else if ( this.status == Status.STREAMING )
         {
             this.status = Status.READY;
-            if ( toRequest > 0 )
+            if ( toRequest > 0 || toRequest == UNLIMITED_FETCH_SIZE )
             {
                 request( toRequest );
                 toRequest = 0;
@@ -214,6 +215,17 @@ public class BasicPullResponseHandler implements PullResponseHandler
 
     private void addToRequest( long toAdd )
     {
+        if ( toRequest == UNLIMITED_FETCH_SIZE )
+        {
+            return;
+        }
+        if ( toAdd == UNLIMITED_FETCH_SIZE )
+        {
+            // pull all
+            toRequest = UNLIMITED_FETCH_SIZE;
+            return;
+        }
+
         if ( toAdd <= 0 )
         {
             throw new IllegalArgumentException( "Cannot request record amount that is less than or equal to 0. Request amount: " + toAdd );

@@ -16,18 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.internal.handlers.pulln;
 
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.NetworkSession;
-
-public interface SessionFactory
+public class FetchSizeUtil
 {
-    NetworkSession newInstance( SessionConfig sessionConfig );
+    public static final long UNLIMITED_FETCH_SIZE = -1;
+    public static final long DEFAULT_FETCH_SIZE = 1000;
 
-    CompletionStage<Void> verifyConnectivity();
-
-    CompletionStage<Void> close();
+    public static long assertValidFetchSize( long size )
+    {
+        if ( size <= 0 && size != UNLIMITED_FETCH_SIZE )
+        {
+            throw new IllegalArgumentException( String.format( "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size ) );
+        }
+        return size;
+    }
 }

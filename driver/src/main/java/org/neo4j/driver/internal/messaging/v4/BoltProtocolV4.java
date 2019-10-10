@@ -49,11 +49,11 @@ public class BoltProtocolV4 extends BoltProtocolV3
 
     @Override
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long fetchSize )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
-        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx, fetchSize );
         PullResponseHandler pullHandler = newBoltV4BasicPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
         return new StatementResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );

@@ -159,8 +159,8 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
+    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+            TransactionConfig config, boolean waitForRunResponse, long ignored )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
         verifyBeforeTransaction( config, connection.databaseName() );
@@ -169,7 +169,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     @Override
     public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
-            boolean waitForRunResponse )
+            boolean waitForRunResponse, long ignored )
     {
         return buildResultCursorFactory( connection, statement, tx, waitForRunResponse );
     }

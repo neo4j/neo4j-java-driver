@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.summary.ResultSummary;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
@@ -50,7 +51,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     private static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
     private static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
-    private static final long BATCH_SIZE = 1000;
+    private final long fetchSize;
 
     // initialized lazily when first record arrives
     private Queue<Record> records = UNINITIALIZED_RECORDS;
@@ -63,9 +64,10 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     private CompletableFuture<ResultSummary> summaryFuture;
 
     public AutoPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
-            PullResponseCompletionListener completionListener )
+            PullResponseCompletionListener completionListener, long fetchSize )
     {
         super( statement, runResponseHandler, connection, metadataExtractor, completionListener );
+        this.fetchSize = fetchSize;
         installRecordAndSummaryConsumers();
     }
 
@@ -98,7 +100,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
             if ( error == null && summary == null ) // has_more
             {
-                request( BATCH_SIZE );
+                request( fetchSize );
             }
         } );
     }
@@ -185,7 +187,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     @Override
     public void prePopulateRecords()
     {
-        request( BATCH_SIZE );
+        request( fetchSize );
     }
 
     private synchronized CompletionStage<ResultSummary> pullAllAsync()
@@ -197,7 +199,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         else
         {
 //            enableAutoRead();
-            request( Long.MAX_VALUE ); // TODO -1
+            request( UNLIMITED_FETCH_SIZE );
             if ( summaryFuture == null )
             {
                 summaryFuture = new CompletableFuture<>();

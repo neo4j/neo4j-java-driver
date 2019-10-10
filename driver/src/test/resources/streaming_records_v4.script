@@ -4,9 +4,11 @@
 !: AUTO GOODBYE
 
 C: RUN "MATCH (n) RETURN n.name" {} {}
-   PULL { "n": 1000 }
+   PULL { "n": 2 }
 S: SUCCESS {"fields": ["n.name"]}
    RECORD ["Bob"]
    RECORD ["Alice"]
-   RECORD ["Tina"]
+   SUCCESS {"has_more": true}
+C: PULL { "n": -1 }
+S: RECORD ["Tina"]
    SUCCESS {}

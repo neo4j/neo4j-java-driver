@@ -57,6 +57,7 @@ public class NetworkSession
     protected final Logger logger;
 
     private final BookmarkHolder bookmarkHolder;
+    private final long fetchSize;
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
     private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
@@ -64,7 +65,7 @@ public class NetworkSession
     private final AtomicBoolean open = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-            BookmarkHolder bookmarkHolder, Logging logging )
+            BookmarkHolder bookmarkHolder, long fetchSize, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
@@ -72,6 +73,7 @@ public class NetworkSession
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
         this.bookmarkHolder = bookmarkHolder;
         this.connectionContext = new NetworkSessionConnectionContext( databaseName, bookmarkHolder.getBookmark() );
+        this.fetchSize = fetchSize;
     }
 
     public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config, boolean waitForRunResponse )
@@ -106,7 +108,7 @@ public class NetworkSession
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
-                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarkHolder );
+                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarkHolder, fetchSize );
                     return tx.beginAsync( bookmarkHolder.getBookmark(), config );
                 } );
 
@@ -231,7 +233,7 @@ public class NetworkSession
                     try
                     {
                         StatementResultCursorFactory factory = connection.protocol()
-                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse );
+                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse, fetchSize );
                         return completedFuture( factory );
                     }
                     catch ( Throwable e )

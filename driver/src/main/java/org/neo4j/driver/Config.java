@@ -18,19 +18,24 @@
  */
 package org.neo4j.driver;
 
+import org.reactivestreams.Subscription;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Resource;
 
@@ -88,6 +93,7 @@ public class Config
 
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
+    private final long fetchSize;
     private long routingTablePurgeDelayMillis;
 
     private final int connectionTimeoutMillis;
@@ -114,6 +120,7 @@ public class Config
         this.routingTablePurgeDelayMillis = builder.routingTablePurgeDelayMillis;
         this.retrySettings = builder.retrySettings;
         this.resolver = builder.resolver;
+        this.fetchSize = builder.fetchSize;
 
         this.isMetricsEnabled = builder.isMetricsEnabled;
     }
@@ -230,6 +237,11 @@ public class Config
         return retrySettings;
     }
 
+    public long fetchSize()
+    {
+        return fetchSize;
+    }
+
     /**
      * @return if the metrics is enabled or not on this driver.
      */
@@ -258,7 +270,7 @@ public class Config
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
         private boolean isMetricsEnabled = false;
-
+        private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
         private ConfigBuilder() {}
 
@@ -563,6 +575,26 @@ public class Config
                         "The routing table purge delay may not be smaller than 0, but was %d %s.", delay, unit ) );
             }
             this.routingTablePurgeDelayMillis = routingTablePurgeDelayMillis;
+            return this;
+        }
+
+        /**
+         * Specify how many records to fetch in each batch.
+         * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
+         *
+         * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
+         * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
+         * By default, the value is set to {@code 1000}.
+         * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
+         *
+         * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
+         * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
+         * @param size the default record fetch size when pulling records in batches using Bolt V4.
+         * @return this builder
+         */
+        public ConfigBuilder withFetchSize( long size )
+        {
+            this.fetchSize = FetchSizeUtil.assertValidFetchSize( size );
             return this;
         }
 

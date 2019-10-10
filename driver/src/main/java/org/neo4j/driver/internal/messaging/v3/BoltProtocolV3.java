@@ -137,25 +137,25 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
+    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+            TransactionConfig config, boolean waitForRunResponse, long fetchSize )
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
                 autoCommitTxRunMessage( statement, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark() );
-        return buildResultCursorFactory( connection, statement, bookmarkHolder, null, runMessage, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, bookmarkHolder, null, runMessage, waitForRunResponse, fetchSize );
     }
 
     @Override
     public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
-            boolean waitForRunResponse )
+            boolean waitForRunResponse, long fetchSize )
     {
         RunWithMetadataMessage runMessage = explicitTxRunMessage( statement );
-        return buildResultCursorFactory( connection, statement, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse, fetchSize );
     }
 
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long ignored )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
         PullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );

@@ -67,6 +67,7 @@ import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
+import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
 class DirectDriverBoltKitTest
 {
@@ -268,9 +269,29 @@ class DirectDriverBoltKitTest
         StubServer server = StubServer.start( "streaming_records_v4.script", 9001 );
         try
         {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( 2 ).build() ) )
             {
                 Session session = driver.session();
+                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
+                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldChangeFetchSize() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                Session session = driver.session( builder().withFetchSize( 2 ).build() );
                 StatementResult result = session.run( "MATCH (n) RETURN n.name" );
                 List<String> list = result.list( record -> record.get( "n.name" ).asString() );
                 assertEquals( list, asList( "Bob", "Alice", "Tina" ) );

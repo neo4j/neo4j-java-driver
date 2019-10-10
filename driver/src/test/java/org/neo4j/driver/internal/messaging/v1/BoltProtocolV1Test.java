@@ -77,6 +77,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.SingleBookmarkHelper.asBeginTransactionParameters;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -271,7 +272,8 @@ public class BoltProtocolV1Test
                 .build();
 
         ClientException e = assertThrows( ClientException.class,
-                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, config, true ) );
+                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, config, true,
+                        UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
@@ -289,7 +291,7 @@ public class BoltProtocolV1Test
     {
         ClientException e = assertThrows( ClientException.class,
                 () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
-                        new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true ) );
+                        new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
@@ -312,13 +314,13 @@ public class BoltProtocolV1Test
         if ( autoCommitTx )
         {
             cursorStage = protocol
-                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false )
+                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
             cursorStage = protocol
-                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false )
+                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
@@ -336,12 +338,12 @@ public class BoltProtocolV1Test
         CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true )
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true )
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();

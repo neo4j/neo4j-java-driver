@@ -164,10 +164,10 @@ public class InternalDriver implements Driver
         return new IllegalStateException( "This driver instance has already been closed" );
     }
 
-    public NetworkSession newSession( SessionConfig parameters )
+    public NetworkSession newSession( SessionConfig config )
     {
         assertOpen();
-        NetworkSession session = sessionFactory.newInstance( parameters );
+        NetworkSession session = sessionFactory.newInstance( config );
         if ( closed.get() )
         {
             // session does not immediately acquire connection, it is fine to just throw
