@@ -817,7 +817,7 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    void shouldNotBePossibleToConsumeResultAfterSessionIsClosed()
     {
         CompletionStage<StatementResultCursor> cursorStage = session.runAsync( "UNWIND range(1, 20000) AS x RETURN x" );
 
@@ -825,7 +825,7 @@ class AsyncSessionIT
 
         StatementResultCursor cursor = await( cursorStage );
         List<Integer> ints = await( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
-        assertEquals( 20000, ints.size() );
+        assertEquals( 0, ints.size() );
     }
 
     @Test
@@ -879,7 +879,7 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSummary()
+    void shouldNotAllowAccessingRecordsAfterSummary()
     {
         int recordCount = 10_000;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Hello-' + x";
@@ -899,16 +899,11 @@ class AsyncSessionIT
         assertEquals( query, summary.statement().text() );
         assertEquals( StatementType.READ_ONLY, summary.statementType() );
 
-        assertEquals( recordCount, records.size() );
-        for ( int i = 1; i <= recordCount; i++ )
-        {
-            Record record = records.get( i - 1 );
-            assertEquals( "Hello-" + i, record.get( 0 ).asString() );
-        }
+        assertEquals( 0, records.size() );
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSessionClosed()
+    void shouldNotAllowAccessingRecordsAfterSessionClosed()
     {
         int recordCount = 7_500;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
@@ -919,12 +914,7 @@ class AsyncSessionIT
 
         List<Record> records = await( recordsStage );
 
-        assertEquals( recordCount, records.size() );
-        for ( int i = 1; i <= recordCount; i++ )
-        {
-            Record record = records.get( i - 1 );
-            assertEquals( i, record.get( 0 ).asInt() );
-        }
+        assertEquals( 0, records.size() );
     }
 
     @Test

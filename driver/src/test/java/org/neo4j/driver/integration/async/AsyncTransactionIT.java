@@ -872,7 +872,7 @@ class AsyncTransactionIT
         assertEquals( query, summary.statement().text() );
         assertEquals( emptyMap(), summary.statement().parameters().asMap() );
 
-        // no records should be available, they should all be summaryd
+        // no records should be available, they should all be consumed
         assertNull( await( cursor.nextAsync() ) );
     }
 }

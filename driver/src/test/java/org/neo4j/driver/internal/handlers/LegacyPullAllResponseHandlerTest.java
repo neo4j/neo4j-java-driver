@@ -231,16 +231,6 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
 
         ResultSummary summary = await( summaryFuture );
         assertNotNull( summary );
-
-        for ( int i = 0; i < recordCount; i++ )
-        {
-            Record record = await( handler.nextAsync() );
-            assertNotNull( record );
-            assertEquals( keys, record.keys() );
-            assertEquals( "a", record.get( "key1" ).asString() );
-            assertEquals( "b", record.get( "key2" ).asString() );
-        }
-
         assertNull( await( handler.nextAsync() ) );
     }
 
@@ -336,18 +326,38 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 
+
+    @Test
+    void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception // TODO for auto run
+    {
+        Connection connection = connectionMock();
+        PullAllResponseHandler handler = newHandler( asList( "key1", "key2", "key3" ), connection );
+
+        handler.onRecord( values( 1, 2, 3 ) );
+        handler.onRecord( values( 4, 5, 6 ) );
+
+        verify( connection, never() ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        assertFalse( summaryFuture.isDone() );
+
+        verify( connection ).enableAutoRead();
+        verify( connection, never() ).disableAutoRead();
+
+        assertNull( await( handler.nextAsync() ) );
+
+        handler.onSuccess( emptyMap() );
+
+        assertTrue( summaryFuture.isDone() );
+        assertNotNull( summaryFuture.get() );
+    }
+
     protected LegacyPullAllResponseHandler newHandler( Statement statement, List<String> statementKeys,
             Connection connection )
     {
         RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         runResponseHandler.onSuccess( singletonMap( "fields", value( statementKeys ) ) );
         return new LegacyPullAllResponseHandler( statement, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
-    }
-
-    private static void assertNoRecordsCanBeFetched( LegacyPullAllResponseHandler handler )
-    {
-        assertNull( await( handler.peekAsync() ) );
-        assertNull( await( handler.nextAsync() ) );
-        assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 }

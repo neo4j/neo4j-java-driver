@@ -155,11 +155,13 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     {
         if ( isDone() )
         {
+            records.clear();
             return completedWithValueIfNoFailure( summary );
         }
         else
         {
             cancel();
+            records.clear();
             if ( summaryFuture == null )
             {
                 summaryFuture = new CompletableFuture<>();

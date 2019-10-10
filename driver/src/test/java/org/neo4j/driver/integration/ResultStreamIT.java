@@ -175,7 +175,7 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldBufferRecordsAfterSummary()
+    void shouldNotBufferRecordsAfterSummary()
     {
         // Given
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
@@ -188,8 +188,7 @@ class ResultStreamIT
         assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
 
-        assertThat( result.next().get( "a" ).asInt(), equalTo( 1 ) );
-        assertThat( result.next().get( "a" ).asInt(), equalTo( 2 ) );
+        assertFalse( result.hasNext() );
     }
 
     @Test

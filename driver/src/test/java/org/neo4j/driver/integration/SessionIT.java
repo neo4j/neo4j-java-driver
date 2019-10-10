@@ -372,8 +372,9 @@ class SessionIT
             long answer = session.readTransaction( tx ->
             {
                 StatementResult result = tx.run( "RETURN 42" );
+                long single = result.single().get( 0 ).asLong();
                 tx.rollback();
-                return result.single().get( 0 ).asLong();
+                return single;
             } );
             assertEquals( 42, answer );
 
@@ -786,7 +787,7 @@ class SessionIT
     }
 
     @Test
-    void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    void shouldNotBePossibleToConsumeResultAfterSessionIsClosed()
     {
         StatementResult result;
         try ( Session session = neo4j.driver().session() )
@@ -795,7 +796,7 @@ class SessionIT
         }
 
         List<Integer> ints = result.list( record -> record.get( 0 ).asInt() );
-        assertEquals( 20000, ints.size() );
+        assertEquals( 0, ints.size() );
     }
 
     @Test
@@ -899,7 +900,7 @@ class SessionIT
     }
 
     @Test
-    void shouldAllowConsumingRecordsAfterFailureInSessionClose()
+    void shouldNotAllowConsumingRecordsAfterFailureInSessionClose()
     {
         Session session = neo4j.driver().session();
 
@@ -908,17 +909,11 @@ class SessionIT
         ClientException e = assertThrows( ClientException.class, session::close );
         assertThat( e, is( arithmeticError() ) );
 
-        assertTrue( result.hasNext() );
-        assertEquals( 16, result.next().get( 0 ).asInt() );
-        assertTrue( result.hasNext() );
-        assertEquals( 8, result.next().get( 0 ).asInt() );
-        assertTrue( result.hasNext() );
-        assertEquals( 4, result.next().get( 0 ).asInt() );
         assertFalse( result.hasNext() );
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSummary()
+    void shouldNotAllowAccessingRecordsAfterSummary()
     {
         int recordCount = 10_000;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
@@ -932,17 +927,12 @@ class SessionIT
             assertEquals( StatementType.READ_ONLY, summary.statementType() );
 
             List<Record> records = result.list();
-            assertEquals( recordCount, records.size() );
-            for ( int i = 1; i <= recordCount; i++ )
-            {
-                Record record = records.get( i - 1 );
-                assertEquals( i, record.get( 0 ).asInt() );
-            }
+            assertEquals( 0, records.size() );
         }
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSessionClosed()
+    void shouldNotAllowAccessingRecordsAfterSessionClosed()
     {
         int recordCount = 11_333;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
@@ -954,12 +944,7 @@ class SessionIT
         }
 
         List<Record> records = result.list();
-        assertEquals( recordCount, records.size() );
-        for ( int i = 1; i <= recordCount; i++ )
-        {
-            Record record = records.get( i - 1 );
-            assertEquals( "Result-" + i, record.get( 0 ).asString() );
-        }
+        assertEquals( 0, records.size() );
     }
 
     @Test
@@ -1402,8 +1387,8 @@ class SessionIT
             String material = session.writeTransaction( tx ->
             {
                 StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
-                tx.commit();
                 Record record = result.single();
+                tx.commit();
                 return record.get( 0 ).asNode().get( "material" ).asString();
             } );
 
@@ -1574,8 +1559,9 @@ class SessionIT
             {
                 throw new ServiceUnavailableException( "" );
             }
+            Record single = result.single();
             tx.commit();
-            return result.single();
+            return single;
         }
     }
 }

@@ -48,8 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
@@ -464,33 +462,6 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         assertTrue( recordFuture.isDone() );
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( recordFuture ) );
         assertEquals( error, e );
-    }
-
-    @Test
-    void shouldEnableAutoReadOnConnectionWhenSummaryRequestedButNotAvailable() throws Exception // TODO for auto run
-    {
-        Connection connection = connectionMock();
-        PullAllResponseHandler handler = newHandler( asList( "key1", "key2", "key3" ), connection );
-
-        handler.onRecord( values( 1, 2, 3 ) );
-        handler.onRecord( values( 4, 5, 6 ) );
-
-        verify( connection, never() ).enableAutoRead();
-        verify( connection, never() ).disableAutoRead();
-
-        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
-        assertFalse( summaryFuture.isDone() );
-
-        verify( connection ).enableAutoRead();
-        verify( connection, never() ).disableAutoRead();
-
-        assertNotNull( await( handler.nextAsync() ) );
-        assertNotNull( await( handler.nextAsync() ) );
-
-        handler.onSuccess( emptyMap() );
-
-        assertTrue( summaryFuture.isDone() );
-        assertNotNull( summaryFuture.get() );
     }
 
     @Test

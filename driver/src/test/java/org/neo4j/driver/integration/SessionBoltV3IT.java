@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
@@ -38,7 +40,6 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
@@ -329,12 +330,11 @@ class SessionBoltV3IT
                 .build();
 
         // call listTransactions procedure that should list itself with the specified metadata
-        CompletionStage<StatementResultCursor> cursorFuture =
-                read ? asyncSession.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config )
-                     : asyncSession.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ), config );
+        CompletionStage<Record> singleFuture =
+                read ? asyncSession.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( StatementResultCursor::singleAsync ), config )
+                     : asyncSession.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( StatementResultCursor::singleAsync ), config );
 
-        CompletionStage<Map<String,Object>> metadataFuture = cursorFuture.thenCompose( StatementResultCursor::singleAsync )
-                .thenApply( record -> record.get( "metaData" ).asMap() );
+        CompletionStage<Map<String,Object>> metadataFuture = singleFuture.thenApply( record -> record.get( "metaData" ).asMap() );
 
         assertEquals( metadata, await( metadataFuture ) );
     }
@@ -352,10 +352,10 @@ class SessionBoltV3IT
                 .build();
 
         // call listTransactions procedure that should list itself with the specified metadata
-        StatementResult result = read ? session.readTransaction( tx -> tx.run( "CALL dbms.listTransactions()" ), config )
-                                      : session.writeTransaction( tx -> tx.run( "CALL dbms.listTransactions()" ), config );
+        Record single = read ? session.readTransaction( tx -> tx.run( "CALL dbms.listTransactions()" ).single(), config )
+                             : session.writeTransaction( tx -> tx.run( "CALL dbms.listTransactions()" ).single(), config );
 
-        Map<String,Object> receivedMetadata = result.single().get( "metaData" ).asMap();
+        Map<String,Object> receivedMetadata = single.get( "metaData" ).asMap();
 
         assertEquals( metadata, receivedMetadata );
     }
