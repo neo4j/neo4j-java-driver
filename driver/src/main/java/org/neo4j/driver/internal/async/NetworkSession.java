@@ -194,7 +194,7 @@ public class NetworkSession
                 if ( cursor != null )
                 {
                     // there exists a cursor with potentially unconsumed error, try to extract and propagate it
-                    return cursor.failureAsync();
+                    return cursor.consumeAsync();
                 }
                 // no result cursor exists so no error exists
                 return completedWithNull();

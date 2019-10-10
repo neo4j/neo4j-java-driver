@@ -22,5 +22,6 @@ import java.util.concurrent.CompletionStage;
 
 public interface FailableCursor
 {
+    CompletionStage<Throwable> consumeAsync();
     CompletionStage<Throwable> failureAsync();
 }

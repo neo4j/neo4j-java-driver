@@ -36,5 +36,7 @@ public interface PullAllResponseHandler extends ResponseHandler
 
     <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
 
+    CompletionStage<Throwable> failureAsync();
+
     void prePopulateRecords();
 }

@@ -177,6 +177,12 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     }
 
     @Override
+    public synchronized CompletionStage<Throwable> failureAsync()
+    {
+        return pullAllAsync().handle( ( ignore, error ) -> error );
+    }
+
+    @Override
     public void prePopulateRecords()
     {
         request( BATCH_SIZE );

@@ -111,10 +111,17 @@ public class AsyncStatementResultCursorImpl implements AsyncStatementResultCurso
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> consumeAsync()
     {
         return pullAllHandler.summaryAsync().handle( ( summary, error ) -> error );
     }
+
+    @Override
+    public CompletionStage<Throwable> failureAsync()
+    {
+        return pullAllHandler.failureAsync();
+    }
+
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )
     {

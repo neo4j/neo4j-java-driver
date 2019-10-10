@@ -30,6 +30,8 @@ import java.util.function.Function;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
@@ -56,6 +58,121 @@ import static org.neo4j.driver.util.TestUtil.await;
 
 public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHandler>
 {
+    @Test
+    void shouldReturnNoFailureWhenAlreadySucceeded()
+    {
+        PullAllResponseHandler handler = newHandler();
+        handler.onSuccess( emptyMap() );
+
+        Throwable failure = await( handler.failureAsync() );
+
+        assertNull( failure );
+    }
+
+    @Test
+    void shouldReturnNoFailureWhenSucceededAfterFailureRequested()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        assertFalse( failureFuture.isDone() );
+
+        handler.onSuccess( emptyMap() );
+
+        assertTrue( failureFuture.isDone() );
+        assertNull( await( failureFuture ) );
+    }
+
+    @Test
+    void shouldReturnFailureWhenAlreadyFailed()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        RuntimeException failure = new RuntimeException( "Ops" );
+        handler.onFailure( failure );
+
+        Throwable receivedFailure = await( handler.failureAsync() );
+        assertEquals( failure, receivedFailure );
+    }
+
+    @Test
+    void shouldReturnFailureWhenFailedAfterFailureRequested()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        assertFalse( failureFuture.isDone() );
+
+        IOException failure = new IOException( "Broken pipe" );
+        handler.onFailure( failure );
+
+        assertTrue( failureFuture.isDone() );
+        assertEquals( failure, await( failureFuture ) );
+    }
+
+    @Test
+    void shouldReturnFailureWhenRequestedMultipleTimes()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        CompletableFuture<Throwable> failureFuture1 = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture2 = handler.failureAsync().toCompletableFuture();
+
+        assertFalse( failureFuture1.isDone() );
+        assertFalse( failureFuture2.isDone() );
+
+        RuntimeException failure = new RuntimeException( "Unable to contact database" );
+        handler.onFailure( failure );
+
+        assertTrue( failureFuture1.isDone() );
+        assertTrue( failureFuture2.isDone() );
+
+        assertEquals( failure, await( failureFuture1 ) );
+        assertEquals( failure, await( failureFuture2 ) );
+    }
+
+    @Test
+    void shouldReturnFailureOnlyOnceWhenFailedBeforeFailureRequested()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        ServiceUnavailableException failure = new ServiceUnavailableException( "Connection terminated" );
+        handler.onFailure( failure );
+
+        assertEquals( failure, await( handler.failureAsync() ) );
+        assertNull( await( handler.failureAsync() ) );
+    }
+
+    @Test
+    void shouldReturnFailureOnlyOnceWhenFailedAfterFailureRequested()
+    {
+        PullAllResponseHandler handler = newHandler();
+
+        CompletionStage<Throwable> failureFuture = handler.failureAsync();
+
+        SessionExpiredException failure = new SessionExpiredException( "Network unreachable" );
+        handler.onFailure( failure );
+        assertEquals( failure, await( failureFuture ) );
+
+        assertNull( await( handler.failureAsync() ) );
+    }
+
+    @Test
+    void shouldReturnSummaryWhenAlreadyFailedAndFailureConsumed()
+    {
+        Statement statement = new Statement( "CREATE ()" );
+        PullAllResponseHandler handler = newHandler( statement );
+
+        ServiceUnavailableException failure = new ServiceUnavailableException( "Neo4j unreachable" );
+        handler.onFailure( failure );
+
+        assertEquals( failure, await( handler.failureAsync() ) );
+
+        ResultSummary summary = await( handler.summaryAsync() );
+        assertNotNull( summary );
+        assertEquals( statement, summary.statement() );
+    }
+
     @Test
     void shouldReturnSummaryWhenAlreadySucceeded()
     {

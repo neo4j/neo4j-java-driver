@@ -496,8 +496,8 @@ public class CausalClusteringIT implements NestedQueries
 
             CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
                     .thenCompose( cursor1 ->
-                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" ) )
-                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) );
+                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" )
+                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) ) );
 
             List<RecordAndSummary> results = await( resultsStage );
             assertEquals( 2, results.size() );

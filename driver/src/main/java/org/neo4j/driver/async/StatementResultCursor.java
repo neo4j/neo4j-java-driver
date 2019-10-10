@@ -27,6 +27,7 @@ import java.util.function.Function;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Records;
+import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -74,8 +75,7 @@ public interface StatementResultCursor
      * <p>
      * If the records in the result is not fully consumed, then calling this method will exhausts the result.
      * <p>
-     * If you want to obtain the summary without discarding the records, invoke {@link #listAsync()}
-     * to buffer records into memory before calling this method.
+     * If you want to access unconsumed records after summary, you shall use {@link StatementResult#list()} to buffer all records into memory before summary.
      *
      * @return a {@link CompletionStage} completed with a summary for the whole query result. Stage can also be
      * completed exceptionally if query execution fails.

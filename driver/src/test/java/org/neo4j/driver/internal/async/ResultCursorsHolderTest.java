@@ -149,7 +149,7 @@ class ResultCursorsHolderTest
     private static CompletionStage<AsyncStatementResultCursorImpl> cursorWithFailureFuture( CompletableFuture<Throwable> future )
     {
         AsyncStatementResultCursorImpl cursor = mock( AsyncStatementResultCursorImpl.class );
-        when( cursor.failureAsync() ).thenReturn( future );
+        when( cursor.consumeAsync() ).thenReturn( future );
         return completedFuture( cursor );
     }
 }

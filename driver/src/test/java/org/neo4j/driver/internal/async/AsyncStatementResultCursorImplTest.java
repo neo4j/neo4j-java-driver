@@ -291,7 +291,7 @@ class AsyncStatementResultCursorImplTest
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
-        when( pullAllHandler.summaryAsync() ).thenReturn( failedFuture( error ) );
+        when( pullAllHandler.failureAsync() ).thenReturn( completedFuture( error ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
@@ -302,7 +302,7 @@ class AsyncStatementResultCursorImplTest
     void shouldReturnNullFailureWhenDoesNotExist()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedWithNull() );
+        when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 

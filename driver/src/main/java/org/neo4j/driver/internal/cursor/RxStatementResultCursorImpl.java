@@ -91,10 +91,17 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> consumeAsync()
     {
         // calling this method will enforce discarding record stream and finish running cypher query
         return summaryAsync().thenApply( summary -> (Throwable) null ).exceptionally( error -> error );
+    }
+
+    @Override
+    public CompletionStage<Throwable> failureAsync()
+    {
+        // It is safe to discard records as either the streaming has not started at all, or the streaming is fully finished.
+        return consumeAsync();
     }
 
     @Override

@@ -143,8 +143,7 @@ public interface StatementResult extends Iterator<Record>
      *
      * If the records in the result is not fully consumed, then calling this method will exhausts the result.
      *
-     * If you want to obtain the summary without discard the records, invoke
-     * {@link StatementResult#list()} before calling this method to buffer all records into memory.
+     * If you want to access unconsumed records after summary, you shall use {@link StatementResult#list()} to buffer all records into memory before summary.
      *
      * @return a summary for the whole query result.
      */
