@@ -130,7 +130,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         if ( driver != null )
         {
             driver.close();
-            System.out.println( driver.metrics() );
         }
     }
 

@@ -65,11 +65,11 @@ import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.newSession;
 import static org.neo4j.driver.util.TestUtil.setupFailingBegin;
-import static org.neo4j.driver.util.TestUtil.setupSuccessfulRun;
+import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyBeginTx;
 import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
-import static org.neo4j.driver.util.TestUtil.verifyRun;
+import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
 class NetworkSessionTest
@@ -101,10 +101,10 @@ class NetworkSessionTest
     @Test
     void shouldFlushOnRunRx()
     {
-        setupSuccessfulRun( connection );
+        setupSuccessfulRunRx( connection );
         await( session.runRx( new Statement( "RETURN 1" ), TransactionConfig.empty() ) );
 
-        verifyRun( connection, "RETURN 1" );
+        verifyRunRx( connection, "RETURN 1" );
     }
 
     @Test
@@ -195,7 +195,7 @@ class NetworkSessionTest
         close( session );
 
         InOrder inOrder = inOrder( connection );
-        inOrder.verify( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+        inOrder.verify( connection ).write( any( RunWithMetadataMessage.class ), any() );
         inOrder.verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
         inOrder.verify( connection, atLeastOnce() ).release();
     }

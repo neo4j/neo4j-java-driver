@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -174,7 +173,7 @@ class AsyncStatementResultCursorOnlyFactoryTest
 
     private void verifyRunCompleted( Connection connection, CompletionStage<AsyncStatementResultCursor> cursorFuture )
     {
-        verify( connection ).writeAndFlush( any( Message.class ), any( RunResponseHandler.class ) );
+        verify( connection ).write( any( Message.class ), any( RunResponseHandler.class ) );
         assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursorImpl.class ) );
     }
 }

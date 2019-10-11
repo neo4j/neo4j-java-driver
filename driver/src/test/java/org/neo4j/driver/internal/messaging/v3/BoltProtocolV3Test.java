@@ -473,7 +473,7 @@ public class BoltProtocolV3Test
             expectedMessage = RunWithMetadataMessage.explicitTxRunMessage( STATEMENT );
         }
 
-        verify( connection ).writeAndFlush( eq( expectedMessage ), runHandlerCaptor.capture() );
+        verify( connection ).write( eq( expectedMessage ), runHandlerCaptor.capture() );
         verify( connection ).writeAndFlush( eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );

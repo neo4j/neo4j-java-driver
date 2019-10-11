@@ -224,7 +224,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture() );
+        verify( connection ).write( eq( runMessage ), runHandlerCaptor.capture() );
         verify( connection ).writeAndFlush( any( PullMessage.class ), pullHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );

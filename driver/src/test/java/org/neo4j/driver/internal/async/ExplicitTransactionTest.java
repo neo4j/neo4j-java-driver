@@ -52,9 +52,9 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_F
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.runMessageWithStatementMatcher;
-import static org.neo4j.driver.util.TestUtil.setupSuccessfulRun;
+import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.util.TestUtil.verifyRun;
+import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
 class ExplicitTransactionTest
@@ -81,13 +81,13 @@ class ExplicitTransactionTest
         // Given
         Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
         ExplicitTransaction tx = beginTx( connection );
-        setupSuccessfulRun( connection );
+        setupSuccessfulRunRx( connection );
 
         // When
         await( tx.runRx( new Statement( "RETURN 1" ) ) );
 
         // Then
-        verifyRun( connection, "RETURN 1" );
+        verifyRunRx( connection, "RETURN 1" );
     }
 
     @Test

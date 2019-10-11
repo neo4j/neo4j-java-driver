@@ -1,0 +1,12 @@
+!: BOLT 4
+!: AUTO RESET
+!: AUTO HELLO
+!: AUTO GOODBYE
+
+C: RUN "MATCH (n) RETURN n.name" {} {}
+   PULL { "n": -1 }
+S: SUCCESS {"fields": ["n.name"]}
+   RECORD ["Bob"]
+   RECORD ["Alice"]
+   RECORD ["Tina"]
+   SUCCESS {}

@@ -304,6 +304,26 @@ class DirectDriverBoltKitTest
     }
 
     @Test
+    void shouldAllowPullAll() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4_all.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( -1 ).build() ) )
+            {
+                Session session = driver.session();
+                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
+                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
     void shouldThrowCommitErrorWhenTransactionCommit() throws Exception
     {
         testTxCloseErrorPropagation( "commit_error.script", Transaction::commit, "Unable to commit" );

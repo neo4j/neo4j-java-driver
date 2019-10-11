@@ -48,15 +48,11 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 public class AutoPullResponseHandler extends BasicPullResponseHandler implements PullAllResponseHandler
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
-
-    private static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
-    private static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
     private final long fetchSize;
 
     // initialized lazily when first record arrives
     private Queue<Record> records = UNINITIALIZED_RECORDS;
 
-//    private boolean autoReadManagementEnabled = true;
     private ResultSummary summary;
     private Throwable failure;
 
@@ -113,18 +109,6 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
             failure = error;
         }
     }
-//
-//    @Override
-//    public boolean canManageAutoRead()
-//    {
-//        return true;
-//    }
-
-//    @Override
-//    public synchronized void disableAutoReadManagement()
-//    {
-//        autoReadManagementEnabled = false;
-//    }
 
     public synchronized CompletionStage<Record> peekAsync()
     {
@@ -198,7 +182,6 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         }
         else
         {
-//            enableAutoRead();
             request( UNLIMITED_FETCH_SIZE );
             if ( summaryFuture == null )
             {
@@ -217,32 +200,11 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         }
 
         records.add( record );
-
-//        boolean shouldBufferAllRecords = failureFuture != null;
-//        // when failure is requested we have to buffer all remaining records and then return the error
-//        // do not disable auto-read in this case, otherwise records will not be consumed and trailing
-//        // SUCCESS or FAILURE message will not arrive as well, so callers will get stuck waiting for the error
-//        if ( !shouldBufferAllRecords && records.size() > RECORD_BUFFER_HIGH_WATERMARK )
-//        {
-//            // more than high watermark records are already queued, tell connection to stop auto-reading from network
-//            // this is needed to deal with slow consumers, we do not want to buffer all records in memory if they are
-//            // fetched from network faster than consumed
-//            disableAutoRead();
-//        }
     }
 
     private Record dequeueRecord()
     {
-        Record record = records.poll();
-
-//        if ( records.size() < RECORD_BUFFER_LOW_WATERMARK )
-//        {
-//            // less than low watermark records are now available in the buffer, tell connection to pre-fetch more
-//            // and populate queue with new records from network
-//            enableAutoRead();
-//        }
-
-        return record;
+        return records.poll();
     }
 
     private <T> List<T> recordsAsList( Function<Record,T> mapFunction )
@@ -332,20 +294,4 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
             return completedFuture( value );
         }
     }
-
-//    private void enableAutoRead()
-//    {
-//        if ( autoReadManagementEnabled )
-//        {
-//            connection.enableAutoRead();
-//        }
-//    }
-//
-//    private void disableAutoRead()
-//    {
-//        if ( autoReadManagementEnabled )
-//        {
-//            connection.disableAutoRead();
-//        }
-//    }
 }

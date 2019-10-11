@@ -22,6 +22,7 @@ import io.netty.bootstrap.Bootstrap;
 
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -106,6 +107,7 @@ public class FailingConnectionDriverFactory extends DriverFactory
     {
         final Connection delegate;
         final AtomicReference<Throwable> nextRunFailure;
+        final AtomicInteger count = new AtomicInteger( 2 ); // one failure for run, one failure for pull
 
         FailingConnection( Connection delegate, AtomicReference<Throwable> nextRunFailure )
         {
@@ -222,13 +224,21 @@ public class FailingConnectionDriverFactory extends DriverFactory
             Throwable failure = nextRunFailure.getAndSet( null );
             if ( failure != null )
             {
+                int reportCount = count.get();
                 if ( handler1 != null )
                 {
                     handler1.onFailure( failure );
+                    reportCount = count.decrementAndGet();
                 }
                 if ( handler2 != null )
                 {
                     handler2.onFailure( failure );
+                    reportCount = count.decrementAndGet();
+                }
+
+                if ( reportCount > 0 )
+                {
+                    nextRunFailure.compareAndSet( null, failure );
                 }
                 return true;
             }

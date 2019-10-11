@@ -272,14 +272,14 @@ public final class TestUtil
                 DEV_NULL_LOGGING );
     }
 
-    public static void verifyRun( Connection connection, String query )
+    public static void verifyRunRx( Connection connection, String query )
     {
         verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
     }
 
     public static void verifyRunAndPull( Connection connection, String query )
     {
-        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        verify( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
         verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
@@ -412,7 +412,7 @@ public final class TestUtil
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+        } ).when( connection ).write( any( RunWithMetadataMessage.class ), any() );
 
         doAnswer( invocation ->
         {
@@ -422,7 +422,7 @@ public final class TestUtil
         } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
-    public static void setupSuccessfulRun( Connection connection )
+    public static void setupSuccessfulRunRx( Connection connection )
     {
         doAnswer( invocation ->
         {
@@ -439,7 +439,7 @@ public final class TestUtil
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        } ).when( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
 
         doAnswer( invocation ->
         {

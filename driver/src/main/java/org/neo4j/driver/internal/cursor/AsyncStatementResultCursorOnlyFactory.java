@@ -60,7 +60,7 @@ public class AsyncStatementResultCursorOnlyFactory implements StatementResultCur
     public CompletionStage<AsyncStatementResultCursor> asyncResult()
     {
         // only write and flush messages when async result is wanted.
-        connection.writeAndFlush( runMessage, runHandler );
+        connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
         pullAllHandler.prePopulateRecords();
 
         if ( waitForRunResponse )
