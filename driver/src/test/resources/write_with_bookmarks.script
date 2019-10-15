@@ -3,8 +3,7 @@
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: RUN "RETURN {x}" {"x": 1} {}
+C: RUN "CREATE (n {name:'Bob'})" {} {"bookmarks": ["ABookmark"]}
    PULL_ALL
-S: SUCCESS {"fields": ["x"]}
-   RECORD [1]
+S: SUCCESS {}
    SUCCESS {}

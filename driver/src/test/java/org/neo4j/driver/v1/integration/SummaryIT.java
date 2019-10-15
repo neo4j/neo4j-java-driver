@@ -36,7 +36,6 @@ import org.neo4j.driver.v1.summary.StatementType;
 import org.neo4j.driver.v1.util.ParallelizableIT;
 import org.neo4j.driver.v1.util.SessionExtension;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -59,7 +58,7 @@ class SummaryIT
     {
         // Given
         Value statementParameters = Values.parameters( "limit", 10 );
-        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT {limit}";
+        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
 
         // When
         StatementResult result = session.run( statementText, statementParameters );

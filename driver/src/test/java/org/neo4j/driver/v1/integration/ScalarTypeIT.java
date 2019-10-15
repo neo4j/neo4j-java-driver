@@ -245,7 +245,7 @@ class ScalarTypeIT
     private void verifyCanEncodeAndDecode( Value input )
     {
         // When
-        StatementResult cursor = session.run( "RETURN {x} as y", parameters( "x", input ) );
+        StatementResult cursor = session.run( "RETURN $x as y", parameters( "x", input ) );
 
         // Then
         assertThat( cursor.single().get( "y" ), equalTo( input ) );

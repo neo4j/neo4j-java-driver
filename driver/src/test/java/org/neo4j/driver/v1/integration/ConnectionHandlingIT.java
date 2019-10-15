@@ -243,7 +243,7 @@ class ConnectionHandlingIT
     {
         try ( Session session = driver.session() )
         {
-            session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)" );
+            session.run( "CREATE CONSTRAINT ON (book:Library) ASSERT exists(book.isbn)" );
         }
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
@@ -255,7 +255,7 @@ class ConnectionHandlingIT
         verify( connection2, never() ).release();
 
         // property existence constraints are verified on commit, try to violate it
-        tx.run( "CREATE (:Book)" );
+        tx.run( "CREATE (:Library)" );
         tx.success();
 
         assertThrows( ClientException.class, tx::close );
@@ -271,7 +271,7 @@ class ConnectionHandlingIT
 
     private StatementResult createNodes( int nodesToCreate, StatementRunner statementRunner )
     {
-        return statementRunner.run( "UNWIND range(1, {nodesToCreate}) AS i CREATE (n {index: i}) RETURN n",
+        return statementRunner.run( "UNWIND range(1, $nodesToCreate) AS i CREATE (n {index: i}) RETURN n",
                 parameters( "nodesToCreate", nodesToCreate ) );
     }
 

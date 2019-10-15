@@ -32,14 +32,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.Record;
-import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ResultSummary;
 import org.neo4j.driver.v1.util.cc.ClusterMemberRole;
+import org.neo4j.driver.v1.util.cc.ClusterMemberRoleDiscoveryFactory;
 import org.neo4j.driver.v1.util.cc.LocalOrRemoteClusterExtension;
 
 import static org.hamcrest.Matchers.both;
@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.neo4j.driver.internal.util.Neo4jFeature.READ_ON_FOLLOWERS_BY_DEFAULT;
-import static org.neo4j.driver.v1.util.cc.ClusterMember.SIMPLE_SCHEME;
 
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
@@ -145,23 +144,21 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         Set<String> followers = new HashSet<>();
         Set<String> readReplicas = new HashSet<>();
 
-        try ( Session session = driver.session() )
-        {
-            List<Record> records = session.run( "CALL dbms.cluster.overview()" ).list();
-            for ( Record record : records )
-            {
-                List<Object> addresses = record.get( "addresses" ).asList();
-                String boltAddress = ((String) addresses.get( 0 )).replace( SIMPLE_SCHEME, "" );
+        final ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery discovery =
+                ClusterMemberRoleDiscoveryFactory.newInstance( ServerVersion.version( driver ) );
+        final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
 
-                ClusterMemberRole role = ClusterMemberRole.valueOf( record.get( "role" ).asString() );
-                if ( role == ClusterMemberRole.FOLLOWER )
-                {
-                    followers.add( boltAddress );
-                }
-                else if ( role == ClusterMemberRole.READ_REPLICA )
-                {
-                    readReplicas.add( boltAddress );
-                }
+        for ( BoltServerAddress address : clusterOverview.keySet() )
+        {
+            String boltAddress = String.format( "%s:%s", address.host(), address.port() );
+            ClusterMemberRole role = clusterOverview.get( address );
+            if ( role == ClusterMemberRole.FOLLOWER )
+            {
+                followers.add( boltAddress );
+            }
+            else if ( role == ClusterMemberRole.READ_REPLICA )
+            {
+                readReplicas.add( boltAddress );
             }
         }
 

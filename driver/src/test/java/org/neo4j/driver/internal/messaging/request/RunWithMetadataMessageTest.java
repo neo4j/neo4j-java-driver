@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.Value;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 import static org.neo4j.driver.v1.AccessMode.READ;
 import static org.neo4j.driver.v1.Values.value;
 
@@ -51,7 +52,7 @@ class RunWithMetadataMessageTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        RunWithMetadataMessage message = new RunWithMetadataMessage( "RETURN 1", emptyMap(), bookmarks, txTimeout, txMetadata, mode );
+        RunWithMetadataMessage message = autoCommitTxRunMessage( "RETURN 1", emptyMap(), txTimeout, txMetadata, mode, bookmarks );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmarks.values() ) );

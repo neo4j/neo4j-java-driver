@@ -146,7 +146,7 @@ class ConfigTest
     void shouldHaveDefaultConnectionTimeout()
     {
         Config defaultConfig = Config.defaultConfig();
-        assertEquals( TimeUnit.SECONDS.toMillis( 5 ), defaultConfig.connectionTimeoutMillis() );
+        assertEquals( TimeUnit.SECONDS.toMillis( 30 ), defaultConfig.connectionTimeoutMillis() );
     }
 
     @Test

@@ -44,7 +44,6 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -57,6 +56,8 @@ import static org.neo4j.driver.internal.async.ChannelAttributes.messageDispatche
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
 import static org.neo4j.driver.v1.Values.ofValue;
 
 public class BoltProtocolV3 implements BoltProtocol
@@ -131,24 +132,25 @@ public class BoltProtocolV3 implements BoltProtocol
     public CompletionStage<InternalStatementResultCursor> runInAutoCommitTransaction( Connection connection, Statement statement,
             BookmarksHolder bookmarksHolder, TransactionConfig config, boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, bookmarksHolder, null, config, waitForRunResponse );
+        Message runMessage = autoCommitTxRunMessage( statement, config, connection.mode(), bookmarksHolder.getBookmarks() );
+        return runStatement( connection, statement, bookmarksHolder, null, waitForRunResponse, runMessage );
     }
 
     @Override
     public CompletionStage<InternalStatementResultCursor> runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
             boolean waitForRunResponse )
     {
-        return runStatement( connection, statement, BookmarksHolder.NO_OP, tx, TransactionConfig.empty(), waitForRunResponse );
+        Message runMessage = explicitTxRunMessage( statement );
+        return runStatement( connection, statement, BookmarksHolder.NO_OP, tx, waitForRunResponse, runMessage );
     }
 
-    private static CompletionStage<InternalStatementResultCursor> runStatement( Connection connection, Statement statement,
-            BookmarksHolder bookmarksHolder, ExplicitTransaction tx, TransactionConfig config, boolean waitForRunResponse )
+    private static CompletionStage<InternalStatementResultCursor> runStatement( Connection connection, Statement statement, BookmarksHolder bookmarksHolder,
+            ExplicitTransaction tx, boolean waitForRunResponse, Message runMessage )
     {
         String query = statement.text();
         Map<String,Value> params = statement.parameters().asMap( ofValue() );
 
         CompletableFuture<Void> runCompletedFuture = new CompletableFuture<>();
-        Message runMessage = new RunWithMetadataMessage( query, params, bookmarksHolder.getBookmarks(), config, connection.mode() );
         RunResponseHandler runHandler = new RunResponseHandler( runCompletedFuture, METADATA_EXTRACTOR );
         PullAllResponseHandler pullAllHandler = newPullAllHandler( statement, runHandler, connection, bookmarksHolder, tx );
 

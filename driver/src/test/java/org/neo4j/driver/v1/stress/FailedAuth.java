@@ -44,7 +44,7 @@ public class FailedAuth<C extends AbstractContext> implements BlockingCommand<C>
     @Override
     public void execute( C context )
     {
-        Config config = Config.builder().withLogging( logging ).build();
+        Config config = Config.builder().withLogging( logging ).withoutEncryption().build();
 
         SecurityException e = assertThrows( SecurityException.class,
                 () -> GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config ) );

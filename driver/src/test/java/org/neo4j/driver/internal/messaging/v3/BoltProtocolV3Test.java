@@ -402,7 +402,8 @@ class BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        RunWithMetadataMessage expectedMessage = new RunWithMetadataMessage( QUERY, PARAMS, bookmarks, config, mode );
+        RunWithMetadataMessage expectedMessage = session ? RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, mode, bookmarks )
+                                                         : RunWithMetadataMessage.explicitTxRunMessage( STATEMENT );
 
         verify( connection ).writeAndFlush( eq( expectedMessage ), runHandlerCaptor.capture(),
                 eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );

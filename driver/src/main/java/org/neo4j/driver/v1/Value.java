@@ -117,7 +117,7 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     /**
      * If this value represents a list or map, test if the collection is empty.
      *
-     * @return <tt>true</tt> if size() is 0, otherwise <tt>false</tt>
+     * @return {@code true} if size() is 0, otherwise {@code false}
      */
     boolean isEmpty();
 
@@ -154,17 +154,17 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     boolean hasType( Type type );
 
     /**
-     * @return <tt>true</tt> if the value is a Boolean value and has the value True.
+     * @return {@code true} if the value is a Boolean value and has the value True.
      */
     boolean isTrue();
 
     /**
-     * @return <tt>true</tt> if the value is a Boolean value and has the value False.
+     * @return {@code true} if the value is a Boolean value and has the value False.
      */
     boolean isFalse();
 
     /**
-     * @return <tt>true</tt> if the value is a Null, otherwise <tt>false</tt>
+     * @return {@code true} if the value is a Null, otherwise {@code false}
      */
     boolean isNull();
 

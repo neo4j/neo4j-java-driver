@@ -73,6 +73,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -144,9 +145,11 @@ class SessionResetIT
 
     /**
      * It is currently unsafe to terminate periodic commit query because it'll then be half-committed.
+     * So the driver give no guarantee when the periodic commit could be terminated.
+     * For a user who want to terminate a periodic commit, he or she should use kill query by id.
      */
     @Test
-    void shouldNotTerminatePeriodicCommitQuery()
+    void shouldTerminatePeriodicCommitQueryRandomly()
     {
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( longPeriodicCommitQuery(), true );
 
@@ -155,7 +158,7 @@ class SessionResetIT
 
         awaitNoActiveQueries();
 
-        assertEquals( CSV_FILE_SIZE * LOAD_CSV_BATCH_SIZE, countNodes() );
+        assertThat( countNodes(), lessThanOrEqualTo( ((long) CSV_FILE_SIZE) * LOAD_CSV_BATCH_SIZE ) );
     }
 
     @Test
@@ -179,7 +182,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
+            StatementResult result = tx1.run( "CALL test.driver.longRunningStatement($seconds)", parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
@@ -202,7 +205,7 @@ class SessionResetIT
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
         Session session = neo4j.driver().session();
-        session.run( "CALL test.driver.longRunningStatement({seconds})",
+        session.run( "CALL test.driver.longRunningStatement($seconds)",
                 parameters( "seconds", 10 ) );
 
         awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
@@ -221,7 +224,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
+            StatementResult procedureResult = tx1.run( "CALL test.driver.longRunningStatement($seconds)",
                     parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
@@ -257,7 +260,7 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longRunningStatement({seconds})",
+                StatementResult result = session.run( "CALL test.driver.longRunningStatement($seconds)",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
@@ -289,7 +292,7 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
+                StatementResult result = session.run( "CALL test.driver.longStreamingResult($seconds)",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
@@ -611,13 +614,13 @@ class SessionResetIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            session.run( "CREATE (n {id: {id}})", parameters( "id", id ) );
+            session.run( "CREATE (n {id: $id})", parameters( "id", id ) );
         }
     }
 
     private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: {currentId}}) SET n.id = {newId}",
+        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 

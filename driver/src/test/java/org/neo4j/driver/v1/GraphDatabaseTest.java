@@ -19,10 +19,7 @@
 package org.neo4j.driver.v1;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -34,6 +31,7 @@ import org.neo4j.driver.v1.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -48,7 +46,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
 import static org.neo4j.driver.internal.util.Matchers.directDriver;
-import static org.neo4j.driver.v1.Config.TrustStrategy.trustOnFirstUse;
 import static org.neo4j.driver.v1.util.StubServer.INSECURE_CONFIG;
 
 class GraphDatabaseTest
@@ -71,16 +68,15 @@ class GraphDatabaseTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
-    @ParameterizedTest
-    @ValueSource( strings = {"bolt+routing://127.0.0.1:9001", "neo4j://127.0.0.1:9001"} )
-    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver( String uri ) throws Exception
+    @Test
+    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
     {
         // Given
         StubServer server = StubServer.start( "discover_servers.script", 9001 );
-        URI driverUri = URI.create( uri );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         // When
-        Driver driver = GraphDatabase.driver( driverUri, INSECURE_CONFIG );
+        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
         // Then
         assertThat( driver, is( clusterDriver() ) );
@@ -91,31 +87,16 @@ class GraphDatabaseTest
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
-    void boltPlusDiscoverySchemeShouldNotSupportTrustOnFirstUse()
-    {
-        URI uri = URI.create( "bolt+routing://127.0.0.1:9001" );
-
-        Config config = Config.builder()
-                .withEncryption()
-                .withTrustStrategy( trustOnFirstUse( new File( "./known_hosts" ) ) )
-                .build();
-
-        assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, config ) );
-    }
-
-    @Test
     void throwsWhenBoltSchemeUsedWithRoutingParams()
     {
         assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( "bolt://localhost:7687/?policy=my_policy" ) );
     }
 
-    @ParameterizedTest
-    @ValueSource( strings = {"bolt+routing", "neo4j"} )
-    void shouldLogWhenUnableToCreateRoutingDriver( String scheme ) throws Exception
+    @Test
+    void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
     {
-        StubServer server1 = StubServer.start( "non_discovery_server.script", 9001 );
-        StubServer server2 = StubServer.start( "non_discovery_server.script", 9002 );
+        StubServer server1 = StubServer.start( "discover_not_supported.script", 9001 );
+        StubServer server2 = StubServer.start( "discover_not_supported.script", 9002 );
 
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
@@ -127,29 +108,19 @@ class GraphDatabaseTest
                 .build();
 
         List<URI> routingUris = asList(
-                URI.create( scheme + "://localhost:9001" ),
-                URI.create( scheme + "://localhost:9002" ) );
+                URI.create( "neo4j://localhost:9001" ),
+                URI.create( "neo4j://localhost:9002" ) );
 
         assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
 
-        verify( logger ).warn( eq( String.format( "Unable to create routing driver for URI: %s://localhost:9001", scheme ) ),
+        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9001" ),
                 any( Throwable.class ) );
 
-        verify( logger ).warn( eq( String.format( "Unable to create routing driver for URI: %s://localhost:9002", scheme ) ),
+        verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9002" ),
                 any( Throwable.class ) );
 
         assertEquals( 0, server1.exitStatus() );
         assertEquals( 0, server2.exitStatus() );
-    }
-
-    @Test
-    void shouldFailWhenUnsupportedSchemeIsProvidedToRoutingDriver()
-    {
-        IllegalArgumentException exc =
-                assertThrows( IllegalArgumentException.class, () ->
-                        GraphDatabase.routingDriver( asList( URI.create( "xscheme://localhost:7687" ) ), AuthTokens.none(), Config.defaultConfig() ) );
-
-        assertThat( exc.getMessage(), equalTo( "Illegal URI scheme, expected URI scheme 'xscheme' to be among '[bolt+routing, neo4j]'" ) );
     }
 
     @Test
@@ -170,6 +141,23 @@ class GraphDatabaseTest
                 Thread.interrupted();
             }
         }
+    }
+
+    @Test
+    void shouldPrintNiceErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        final ServiceUnavailableException error =
+                assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( addressToUnresponsiveServer(), INSECURE_CONFIG ) );
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
+    }
+
+    @Test
+    void shouldPrintNiceRoutingErrorWhenConnectingToUnresponsiveServer() throws Exception
+    {
+        final ServiceUnavailableException error =
+                assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.driver( addressToUnresponsiveServer(), INSECURE_CONFIG ) );
+        error.printStackTrace();
+        assertThat( error.getMessage(), containsString( "Unable to connect to" ) );
     }
 
     @Test
@@ -213,5 +201,15 @@ class GraphDatabaseTest
         }
 
         return configBuilder.build();
+    }
+
+    private String addressToUnresponsiveServer() throws IOException
+    {
+        int localPort;
+        try ( ServerSocket serverSocket = new ServerSocket( 0 ) )
+        {
+            localPort = serverSocket.getLocalPort();
+        }
+        return "bolt://localhost:" + localPort;
     }
 }

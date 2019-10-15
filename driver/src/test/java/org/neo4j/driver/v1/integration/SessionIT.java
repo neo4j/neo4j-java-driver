@@ -1320,7 +1320,7 @@ class SessionIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n {id: {id}}) RETURN count(n)", parameters( "id", id ) );
+            StatementResult result = session.run( "MATCH (n {id: $id}) RETURN count(n)", parameters( "id", id ) );
             return result.single().get( 0 ).asInt();
         }
     }
@@ -1329,13 +1329,13 @@ class SessionIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            session.run( "CREATE (n {id: {id}})", parameters( "id", id ) );
+            session.run( "CREATE (n {id: $id})", parameters( "id", id ) );
         }
     }
 
     private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: {currentId}}) SET n.id = {newId}",
+        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 
