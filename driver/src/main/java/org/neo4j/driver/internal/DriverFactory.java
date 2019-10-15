@@ -50,6 +50,7 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -60,7 +61,7 @@ import org.neo4j.driver.net.ServerAddressResolver;
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
-import static org.neo4j.driver.internal.security.SecurityPlan.insecure;
+import static org.neo4j.driver.internal.security.SecurityPlanImpl.insecure;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
@@ -71,11 +72,11 @@ public class DriverFactory
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
             RetrySettings retrySettings, Config config )
     {
-        return newInstance( uri, authToken, routingSettings, retrySettings, config, null );
+        return newInstance( uri, authToken, routingSettings, retrySettings, config, null, null );
     }
 
     public final Driver newInstance ( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup )
+            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup, SecurityPlan customSecurityPlan )
     {
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
@@ -94,7 +95,16 @@ public class DriverFactory
 
         BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
-        SecurityPlan securityPlan = createSecurityPlan( address, config );
+
+        SecurityPlan securityPlan;
+        if ( customSecurityPlan != null )
+        {
+            securityPlan = customSecurityPlan;
+        }
+        else
+        {
+            securityPlan = createSecurityPlan( address, config );
+        }
 
         InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
@@ -303,11 +313,11 @@ public class DriverFactory
             switch ( trustStrategy.strategy() )
             {
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
+                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlan.forSystemCASignedCertificates( hostnameVerificationEnabled );
+                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled );
             case TRUST_ALL_CERTIFICATES:
-                return SecurityPlan.forAllCertificates( hostnameVerificationEnabled );
+                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );
