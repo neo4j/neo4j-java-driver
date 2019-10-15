@@ -95,7 +95,7 @@ public interface Driver extends AutoCloseable
      * <p>
      * Alias to {@link #rxSession(SessionConfig)}}.
      *
-     * @return @return a new {@link RxSession} object.
+     * @return a new {@link RxSession} object.
      */
     RxSession rxSession();
 
@@ -104,7 +104,7 @@ public interface Driver extends AutoCloseable
      * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
      * The {@link RxSession} provides a reactive way to run queries and process results.
      * @param sessionConfig used to customize the session.
-     * @return @return a new {@link RxSession} object.
+     * @return a new {@link RxSession} object.
      */
     RxSession rxSession( SessionConfig sessionConfig );
 
@@ -114,7 +114,7 @@ public interface Driver extends AutoCloseable
      * <p>
      * Alias to {@link #asyncSession(SessionConfig)}}.
      *
-     * @return @return a new {@link AsyncSession} object.
+     * @return a new {@link AsyncSession} object.
      */
     AsyncSession asyncSession();
 

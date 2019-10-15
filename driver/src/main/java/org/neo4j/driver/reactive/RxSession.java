@@ -100,6 +100,7 @@ public interface RxSession extends RxStatementRunner
      *
      * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
      * Operation executed by the given work must NOT include any blocking operation.
+     * @param config the transaction configuration.
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
@@ -143,6 +144,7 @@ public interface RxSession extends RxStatementRunner
      *
      * @param work the {@link RxTransactionWork} to be applied to a new read transaction.
      * Operation executed by the given work must NOT include any blocking operation.
+     * @param config the transaction configuration.
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.

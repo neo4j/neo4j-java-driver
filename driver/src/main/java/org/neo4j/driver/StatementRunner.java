@@ -20,9 +20,6 @@ package org.neo4j.driver;
 
 import java.util.Map;
 
-import org.neo4j.driver.types.TypeSystem;
-import org.neo4j.driver.util.Experimental;
-
 /**
  * Common interface for components that can execute Neo4j statements.
  *
@@ -45,7 +42,7 @@ import org.neo4j.driver.util.Experimental;
  *
  * <ul>
  * <li>Read from or discard a result, for instance via
- * {@link StatementResult#next()} or {@link StatementResult#consume()} </li>
+ * {@link StatementResult#next()} or {@link StatementResult#summary()} </li>
  * <li>Explicitly commit/rollback a transaction using blocking {@link Transaction#close()} </li>
  * <li>Close a session using blocking {@link Session#close()}</li>
  * </ul>

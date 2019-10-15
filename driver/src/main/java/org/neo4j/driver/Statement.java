@@ -36,7 +36,7 @@ import static org.neo4j.driver.Values.value;
  * @see Session
  * @see Transaction
  * @see StatementResult
- * @see StatementResult#consume()
+ * @see StatementResult#summary()
  * @see ResultSummary
  * @since 1.0
  */
