@@ -776,14 +776,11 @@ class SessionIT
     }
 
     @Test
-    void shouldPropagatePullAllFailureWhenClosed()
+    void shouldNotPropagateFailureWhenStreamingIsCancelled()
     {
         Session session = neo4j.driver().session();
-
         session.run( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
-
-        ClientException e = assertThrows( ClientException.class, session::close );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        session.close();
     }
 
     @Test

@@ -779,21 +779,19 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldPropagatePullAllFailureWhenClosed()
+    void shouldNotPropagateFailureWhenStreamingIsCancelled()
     {
         session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        await( session.closeAsync() );
     }
 
     @Test
-    void shouldPropagateBlockedPullAllFailureWhenClosed()
+    void shouldNotPropagateBlockedPullAllFailureWhenClosed()
     {
         await( session.runAsync( "UNWIND range(20000, 0, -1) AS x RETURN 10 / x" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        await( session.closeAsync() );
     }
 
     @Test
