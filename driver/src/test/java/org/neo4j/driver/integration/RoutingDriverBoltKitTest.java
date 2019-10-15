@@ -114,8 +114,8 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
 
         {
-            List<String> result = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) )
-                    .list( record -> record.get( "n.name" ).asString() );
+            List<String> result = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" )
+                    .list( record -> record.get( "n.name" ).asString() ) );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
         }
@@ -265,7 +265,7 @@ class RoutingDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
         }
         finally
         {
@@ -289,7 +289,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
                 Transaction tx = session.beginTransaction() )
         {
-            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
         }
         finally
         {
@@ -446,7 +446,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            session.run( "CREATE ()" ).consume();
+            session.run( "CREATE ()" ).summary();
         }
         catch ( SessionExpiredException e )
         {
@@ -500,7 +500,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
-            tx.run( "CREATE ()" ).consume();
+            tx.run( "CREATE ()" ).summary();
         }
         catch ( SessionExpiredException e )
         {
@@ -902,7 +902,7 @@ class RoutingDriverBoltKitTest
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
         }
         finally
         {
@@ -960,12 +960,12 @@ class RoutingDriverBoltKitTest
             // read multiple times without additional rediscovery
 
             StatementResult readResult1 = session.run( "MATCH (n) RETURN n.name" );
-            assertEquals( "127.0.0.1:9003", readResult1.summary().server().address() );
             assertEquals( 3, readResult1.list().size() );
+            assertEquals( "127.0.0.1:9003", readResult1.summary().server().address() );
 
             StatementResult readResult2 = session.run( "MATCH (n) RETURN n.name" );
-            assertEquals( "127.0.0.1:9004", readResult2.summary().server().address() );
             assertEquals( 3, readResult2.list().size() );
+            assertEquals( "127.0.0.1:9004", readResult2.summary().server().address() );
         }
         finally
         {
@@ -1076,11 +1076,13 @@ class RoutingDriverBoltKitTest
             try ( Session session = driver.session() )
             {
                 // run first query against 9001, which should return result and exit
-                List<String> names1 = session.run( "MATCH (n) RETURN n.name AS name" ).list( record -> record.get( "name" ).asString() );
+                List<String> names1 = session.run( "MATCH (n) RETURN n.name AS name" )
+                        .list( record -> record.get( "name" ).asString() );
                 assertEquals( asList( "Alice", "Bob", "Eve" ), names1 );
 
                 // run second query with retries, it should rediscover using 9042 returned by the resolver and read from 9005
-                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) ).list( record -> record.get( 0 ).asString() );
+                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" )
+                        .list( record -> record.get( 0 ).asString() ) );
                 assertEquals( asList( "Bob", "Alice", "Tina" ), names2 );
             }
         }
@@ -1140,7 +1142,7 @@ class RoutingDriverBoltKitTest
         {
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
-                List<Record> records = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ) ).list();
+                List<Record> records = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list() );
                 assertEquals( 3, records.size() );
             }
         }

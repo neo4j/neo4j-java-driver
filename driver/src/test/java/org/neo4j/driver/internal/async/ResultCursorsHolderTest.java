@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorImpl;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -135,20 +136,20 @@ class ResultCursorsHolderTest
         assertEquals( error1, await( failureFuture ) );
     }
 
-    private static CompletionStage<AsyncStatementResultCursor> cursorWithoutError()
+    private static CompletionStage<AsyncStatementResultCursorImpl> cursorWithoutError()
     {
         return cursorWithError( null );
     }
 
-    private static CompletionStage<AsyncStatementResultCursor> cursorWithError( Throwable error )
+    private static CompletionStage<AsyncStatementResultCursorImpl> cursorWithError( Throwable error )
     {
         return cursorWithFailureFuture( completedFuture( error ) );
     }
 
-    private static CompletionStage<AsyncStatementResultCursor> cursorWithFailureFuture( CompletableFuture<Throwable> future )
+    private static CompletionStage<AsyncStatementResultCursorImpl> cursorWithFailureFuture( CompletableFuture<Throwable> future )
     {
-        AsyncStatementResultCursor cursor = mock( AsyncStatementResultCursor.class );
-        when( cursor.failureAsync() ).thenReturn( future );
+        AsyncStatementResultCursorImpl cursor = mock( AsyncStatementResultCursorImpl.class );
+        when( cursor.consumeAsync() ).thenReturn( future );
         return completedFuture( cursor );
     }
 }

@@ -36,6 +36,7 @@ public class SessionFactoryImpl implements SessionFactory
     private final RetryLogic retryLogic;
     private final Logging logging;
     private final boolean leakedSessionsLoggingEnabled;
+    private final long defaultFetchSize;
 
     SessionFactoryImpl( ConnectionProvider connectionProvider, RetryLogic retryLogic, Config config )
     {
@@ -43,6 +44,7 @@ public class SessionFactoryImpl implements SessionFactory
         this.leakedSessionsLoggingEnabled = config.logLeakedSessions();
         this.retryLogic = retryLogic;
         this.logging = config.logging();
+        this.defaultFetchSize = config.fetchSize();
     }
 
     @Override
@@ -50,7 +52,12 @@ public class SessionFactoryImpl implements SessionFactory
     {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( InternalBookmark.from( sessionConfig.bookmarks() ) );
         return createSession( connectionProvider, retryLogic, parseDatabaseName( sessionConfig ),
-                sessionConfig.defaultAccessMode(), bookmarkHolder, logging );
+                sessionConfig.defaultAccessMode(), bookmarkHolder, parseFetchSize( sessionConfig ), logging );
+    }
+
+    private long parseFetchSize( SessionConfig sessionConfig )
+    {
+        return sessionConfig.fetchSize().orElse( defaultFetchSize );
     }
 
     private DatabaseName parseDatabaseName( SessionConfig sessionConfig )
@@ -85,10 +92,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-            BookmarkHolder bookmarkHolder, Logging logging )
+            BookmarkHolder bookmarkHolder, long fetchSize, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, logging )
-               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, logging );
+               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, fetchSize, logging )
+               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, fetchSize, logging );
     }
 }

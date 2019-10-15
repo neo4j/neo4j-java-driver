@@ -126,7 +126,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
-        assertThrows( Exception.class, res1::consume );
+        assertThrows( Exception.class, res1::summary );
 
         // When
         StatementResult res2 = session.run( "RETURN 1" );
@@ -144,18 +144,9 @@ class ResultStreamIT
         ResultSummary summary;
 
         // When
-        try
-        {
-            res1.consume();
-        }
-        catch ( Exception e )
-        {
-            //ignore
-        }
-        finally
-        {
-            summary = res1.summary();
-        }
+        assertThrows( Exception.class, res1::summary );
+        summary = res1.summary();
+
 
         // Then
         assertThat( summary, notNullValue() );
@@ -184,7 +175,7 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldBufferRecordsAfterSummary()
+    void shouldNotBufferRecordsAfterSummary()
     {
         // Given
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
@@ -197,8 +188,7 @@ class ResultStreamIT
         assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
         assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
 
-        assertThat( result.next().get( "a" ).asInt(), equalTo( 1 ) );
-        assertThat( result.next().get( "a" ).asInt(), equalTo( 2 ) );
+        assertFalse( result.hasNext() );
     }
 
     @Test
@@ -208,7 +198,7 @@ class ResultStreamIT
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
-        ResultSummary summary = result.consume();
+        ResultSummary summary = result.summary();
 
         // Then
         assertThat( summary, notNullValue() );
@@ -291,7 +281,7 @@ class ResultStreamIT
 
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
 
-        // stream should manage to consume all elements except the last one, which produces an error
+        // stream should manage to summary all elements except the last one, which produces an error
         assertEquals( asList( 1, 1, 1, 1, 1 ), seen );
     }
 

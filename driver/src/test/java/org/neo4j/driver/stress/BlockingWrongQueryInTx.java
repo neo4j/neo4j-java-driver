@@ -42,7 +42,7 @@ public class BlockingWrongQueryInTx<C extends AbstractContext> extends AbstractB
         {
             try ( Transaction tx = beginTransaction( session, context ) )
             {
-                Exception e = assertThrows( Exception.class, () -> tx.run( "RETURN" ).consume() );
+                Exception e = assertThrows( Exception.class, () -> tx.run( "RETURN" ).summary() );
                 assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
             }
         }

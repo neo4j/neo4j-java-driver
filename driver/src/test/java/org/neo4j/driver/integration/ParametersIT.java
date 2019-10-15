@@ -495,7 +495,7 @@ class ParametersIT
 
     private static void expectIOExceptionWithMessage( Value value, String message )
     {
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.run( "RETURN {a}", value ).consume() );
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> session.run( "RETURN {a}", value ).summary() );
         Throwable cause = e.getCause();
         assertThat( cause, instanceOf( IOException.class ) );
         assertThat( cause.getMessage(), equalTo( message ) );

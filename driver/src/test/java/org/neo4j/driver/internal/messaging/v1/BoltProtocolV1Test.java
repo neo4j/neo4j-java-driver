@@ -41,14 +41,13 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.TransactionPullAllResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
@@ -78,6 +77,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.SingleBookmarkHelper.asBeginTransactionParameters;
 import static org.neo4j.driver.internal.util.Futures.blockingGet;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -272,7 +272,8 @@ public class BoltProtocolV1Test
                 .build();
 
         ClientException e = assertThrows( ClientException.class,
-                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, config, true ) );
+                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, config, true,
+                        UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
 
@@ -290,7 +291,7 @@ public class BoltProtocolV1Test
     {
         ClientException e = assertThrows( ClientException.class,
                 () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
-                        new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true ) );
+                        new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
@@ -309,24 +310,24 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             cursorStage = protocol
-                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false )
+                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
             cursorStage = protocol
-                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false )
+                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
-        verifyRunInvoked( connection, autoCommitTx );
+        verifyRunInvoked( connection );
     }
 
     private void testRunWithWaitingForResponse( boolean success, boolean session ) throws Exception
@@ -334,21 +335,21 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true )
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true )
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertFalse( cursorFuture.isDone() );
-        ResponseHandler runResponseHandler = verifyRunInvoked( connection, session );
+        ResponseHandler runResponseHandler = verifyRunInvoked( connection );
 
         if ( success )
         {
@@ -363,24 +364,16 @@ public class BoltProtocolV1Test
         assertNotNull( cursorFuture.get() );
     }
 
-    private static ResponseHandler verifyRunInvoked( Connection connection, boolean session )
+    private static ResponseHandler verifyRunInvoked( Connection connection )
     {
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).writeAndFlush( eq( new RunMessage( QUERY, PARAMS ) ), runHandlerCaptor.capture(),
-                eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
+        verify( connection ).write( eq( new RunMessage( QUERY, PARAMS ) ), runHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
-
-        if ( session )
-        {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( SessionPullAllResponseHandler.class ) );
-        }
-        else
-        {
-            assertThat( pullAllHandlerCaptor.getValue(), instanceOf( TransactionPullAllResponseHandler.class ) );
-        }
+        assertThat( pullAllHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );
 
         return runHandlerCaptor.getValue();
     }

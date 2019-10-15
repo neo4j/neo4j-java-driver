@@ -166,7 +166,7 @@ class BookmarkIT
         Bookmark bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue( bookmark );
 
-        session.run( "RETURN 1" ).consume();
+        session.run( "RETURN 1" ).summary();
 
         assertEquals( bookmark, session.lastBookmark() );
     }
@@ -181,7 +181,7 @@ class BookmarkIT
         Bookmark bookmark = session.lastBookmark();
         assertBookmarkContainsSingleValue( bookmark );
 
-        assertThrows( ClientException.class, () -> session.run( "RETURN" ).consume() );
+        assertThrows( ClientException.class, () -> session.run( "RETURN" ).summary() );
         assertEquals( bookmark, session.lastBookmark() );
     }
 

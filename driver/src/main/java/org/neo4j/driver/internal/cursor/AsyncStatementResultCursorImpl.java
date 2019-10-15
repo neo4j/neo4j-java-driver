@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.async;
+package org.neo4j.driver.internal.cursor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -24,29 +24,28 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class AsyncStatementResultCursor implements InternalStatementResultCursor
+public class AsyncStatementResultCursorImpl implements AsyncStatementResultCursor
 {
-    private final RunResponseHandler runResponseHandler;
+    private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public AsyncStatementResultCursor( RunResponseHandler runResponseHandler, PullAllResponseHandler pullAllHandler )
+    public AsyncStatementResultCursorImpl( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
-        this.runResponseHandler = runResponseHandler;
+        this.runHandler = runHandler;
         this.pullAllHandler = pullAllHandler;
     }
 
     @Override
     public List<String> keys()
     {
-        return runResponseHandler.statementKeys();
+        return runHandler.statementKeys();
     }
 
     @Override
@@ -92,12 +91,6 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
     }
 
     @Override
-    public CompletionStage<ResultSummary> consumeAsync()
-    {
-        return pullAllHandler.consumeAsync();
-    }
-
-    @Override
     public CompletionStage<ResultSummary> forEachAsync( Consumer<Record> action )
     {
         CompletableFuture<Void> resultFuture = new CompletableFuture<>();
@@ -118,10 +111,17 @@ public class AsyncStatementResultCursor implements InternalStatementResultCursor
     }
 
     @Override
+    public CompletionStage<Throwable> consumeAsync()
+    {
+        return pullAllHandler.summaryAsync().handle( ( summary, error ) -> error );
+    }
+
+    @Override
     public CompletionStage<Throwable> failureAsync()
     {
         return pullAllHandler.failureAsync();
     }
+
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )
     {

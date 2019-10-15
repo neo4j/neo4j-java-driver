@@ -95,6 +95,7 @@ import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
@@ -267,17 +268,19 @@ public final class TestUtil
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
             RetryLogic retryLogic, InternalBookmark bookmark )
     {
-        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), DEV_NULL_LOGGING );
+        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), UNLIMITED_FETCH_SIZE,
+                DEV_NULL_LOGGING );
     }
 
-    public static void verifyRun( Connection connection, String query )
+    public static void verifyRunRx( Connection connection, String query )
     {
         verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
     }
 
     public static void verifyRunAndPull( Connection connection, String query )
     {
-        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+        verify( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static void verifyCommitTx( Connection connection, VerificationMode mode )
@@ -323,10 +326,16 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onFailure( error );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onFailure( error );
             return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
+
     }
 
     public static void setupFailingBegin( Connection connection, Throwable error )
@@ -402,13 +411,18 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).write( any( RunWithMetadataMessage.class ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
-    public static void setupSuccessfulRun( Connection connection )
+    public static void setupSuccessfulRunRx( Connection connection )
     {
         doAnswer( invocation ->
         {
@@ -424,10 +438,15 @@ public final class TestUtil
         {
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
-            ResponseHandler pullHandler = invocation.getArgument( 3 );
+            return null;
+        } ).when( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+
+        doAnswer( invocation ->
+        {
+            ResponseHandler pullHandler = invocation.getArgument( 1 );
             pullHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any(), any( PullMessage.class ), any() );
+        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static Connection connectionMock()

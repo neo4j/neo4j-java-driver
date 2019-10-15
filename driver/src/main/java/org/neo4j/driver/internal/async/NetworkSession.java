@@ -34,7 +34,7 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
@@ -57,6 +57,7 @@ public class NetworkSession
     protected final Logger logger;
 
     private final BookmarkHolder bookmarkHolder;
+    private final long fetchSize;
     private volatile CompletionStage<ExplicitTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
     private volatile CompletionStage<? extends FailableCursor> resultCursorStage = completedWithNull();
@@ -64,7 +65,7 @@ public class NetworkSession
     private final AtomicBoolean open = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-            BookmarkHolder bookmarkHolder, Logging logging )
+            BookmarkHolder bookmarkHolder, long fetchSize, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
@@ -72,11 +73,12 @@ public class NetworkSession
         this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
         this.bookmarkHolder = bookmarkHolder;
         this.connectionContext = new NetworkSessionConnectionContext( databaseName, bookmarkHolder.getBookmark() );
+        this.fetchSize = fetchSize;
     }
 
     public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config, boolean waitForRunResponse )
     {
-        CompletionStage<InternalStatementResultCursor> newResultCursorStage =
+        CompletionStage<AsyncStatementResultCursor> newResultCursorStage =
                 buildResultCursorFactory( statement, config, waitForRunResponse ).thenCompose( StatementResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
@@ -106,7 +108,7 @@ public class NetworkSession
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenCompose( connection ->
                 {
-                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarkHolder );
+                    ExplicitTransaction tx = new ExplicitTransaction( connection, bookmarkHolder, fetchSize );
                     return tx.beginAsync( bookmarkHolder.getBookmark(), config );
                 } );
 
@@ -194,7 +196,7 @@ public class NetworkSession
                 if ( cursor != null )
                 {
                     // there exists a cursor with potentially unconsumed error, try to extract and propagate it
-                    return cursor.failureAsync();
+                    return cursor.consumeAsync();
                 }
                 // no result cursor exists so no error exists
                 return completedWithNull();
@@ -231,7 +233,7 @@ public class NetworkSession
                     try
                     {
                         StatementResultCursorFactory factory = connection.protocol()
-                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse );
+                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse, fetchSize );
                         return completedFuture( factory );
                     }
                     catch ( Throwable e )

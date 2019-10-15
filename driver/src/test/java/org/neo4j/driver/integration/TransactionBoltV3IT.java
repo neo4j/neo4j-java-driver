@@ -70,7 +70,7 @@ class TransactionBoltV3IT
 
         try ( Transaction tx = driver.session().beginTransaction( config ) )
         {
-            tx.run( "RETURN 1" ).consume();
+            tx.run( "RETURN 1" ).summary();
 
             verifyTransactionMetadata( metadata );
         }
@@ -89,7 +89,7 @@ class TransactionBoltV3IT
 
         CompletionStage<AsyncTransaction> txFuture = driver.asyncSession().beginTransactionAsync( config )
                 .thenCompose( tx -> tx.runAsync( "RETURN 1" )
-                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenCompose( StatementResultCursor::summaryAsync )
                         .thenApply( ignore -> tx ) );
 
         AsyncTransaction transaction = await( txFuture );
@@ -108,14 +108,14 @@ class TransactionBoltV3IT
     {
         // create a dummy node
         Session session = driver.session();
-        session.run( "CREATE (:Node)" ).consume();
+        session.run( "CREATE (:Node)" ).summary();
 
         try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
                 // lock dummy node but keep the transaction open
-                otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).consume();
+                otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).summary();
 
                 assertTimeoutPreemptively( TX_TIMEOUT_TEST_TIMEOUT, () -> {
                     TransactionConfig config = TransactionConfig.builder()
@@ -145,14 +145,14 @@ class TransactionBoltV3IT
         Session session = driver.session();
         AsyncSession asyncSession = driver.asyncSession();
 
-        session.run( "CREATE (:Node)" ).consume();
+        session.run( "CREATE (:Node)" ).summary();
 
         try ( Session otherSession = driver.driver().session() )
         {
             try ( Transaction otherTx = otherSession.beginTransaction() )
             {
                 // lock dummy node but keep the transaction open
-                otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).consume();
+                otherTx.run( "MATCH (n:Node) SET n.prop = 1" ).summary();
 
                 assertTimeoutPreemptively( TX_TIMEOUT_TEST_TIMEOUT, () -> {
                     TransactionConfig config = TransactionConfig.builder()

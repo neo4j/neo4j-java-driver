@@ -20,71 +20,63 @@ package org.neo4j.driver.internal.cursor;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
-public class InternalStatementResultCursorFactory implements StatementResultCursorFactory
+/**
+ * Used by Bolt V1, V2, V3
+ */
+public class AsyncStatementResultCursorOnlyFactory implements StatementResultCursorFactory
 {
-    private final RunResponseHandler runHandler;
-    private final Connection connection;
-
-    private final BasicPullResponseHandler pullHandler;
-    private final PullAllResponseHandler pullAllHandler;
+    protected final Connection connection;
+    protected final Message runMessage;
+    protected final RunResponseHandler runHandler;
+    protected final PullAllResponseHandler pullAllHandler;
     private final boolean waitForRunResponse;
-    private final Message runMessage;
 
-    public InternalStatementResultCursorFactory( Connection connection, Message runMessage, RunResponseHandler runHandler, BasicPullResponseHandler pullHandler,
-            PullAllResponseHandler pullAllHandler, boolean waitForRunResponse )
+    public AsyncStatementResultCursorOnlyFactory( Connection connection, Message runMessage, RunResponseHandler runHandler,
+            PullAllResponseHandler pullHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
         requireNonNull( runHandler );
         requireNonNull( pullHandler );
-        requireNonNull( pullAllHandler );
 
         this.connection = connection;
         this.runMessage = runMessage;
         this.runHandler = runHandler;
-        this.pullHandler = pullHandler;
-        this.pullAllHandler = pullAllHandler;
+
+        this.pullAllHandler = pullHandler;
         this.waitForRunResponse = waitForRunResponse;
     }
 
-    @Override
-    public CompletionStage<InternalStatementResultCursor> asyncResult()
+    public CompletionStage<AsyncStatementResultCursor> asyncResult()
     {
         // only write and flush messages when async result is wanted.
-        connection.writeAndFlush( runMessage, runHandler, PullMessage.PULL_ALL, pullAllHandler );
+        connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
+        pullAllHandler.prePopulateRecords();
 
         if ( waitForRunResponse )
         {
             // wait for response of RUN before proceeding
-            return runHandler.runFuture().thenApply( ignore -> new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
+            return runHandler.runFuture().thenApply( ignore -> new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) );
         }
         else
         {
-            return completedFuture( new AsyncStatementResultCursor( runHandler, pullAllHandler ) );
+            return completedFuture( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) );
         }
     }
 
-    @Override
     public CompletionStage<RxStatementResultCursor> rxResult()
     {
-        connection.writeAndFlush( runMessage, runHandler );
-        // we always wait for run reply
-        return runHandler.runFuture().thenApply( this::composeRxCursor );
-    }
-
-    private RxStatementResultCursor composeRxCursor( Throwable runError )
-    {
-        return new RxStatementResultCursor( runError, runHandler, pullHandler );
+        return Futures.failedFuture( new ClientException( "Driver is connected to the database that does not support driver reactive API. " +
+                "In order to use the driver reactive API, please upgrade to neo4j 4.0.0 or later." ) );
     }
 }

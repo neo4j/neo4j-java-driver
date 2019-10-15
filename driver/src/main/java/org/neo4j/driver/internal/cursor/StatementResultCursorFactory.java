@@ -22,7 +22,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface StatementResultCursorFactory
 {
-    CompletionStage<InternalStatementResultCursor> asyncResult();
+    CompletionStage<AsyncStatementResultCursor> asyncResult();
 
     CompletionStage<RxStatementResultCursor> rxResult();
 }

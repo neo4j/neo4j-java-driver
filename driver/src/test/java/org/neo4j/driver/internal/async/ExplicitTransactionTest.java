@@ -48,12 +48,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.runMessageWithStatementMatcher;
-import static org.neo4j.driver.util.TestUtil.setupSuccessfulRun;
+import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.util.TestUtil.verifyRun;
+import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 
 class ExplicitTransactionTest
@@ -80,13 +81,13 @@ class ExplicitTransactionTest
         // Given
         Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
         ExplicitTransaction tx = beginTx( connection );
-        setupSuccessfulRun( connection );
+        setupSuccessfulRunRx( connection );
 
         // When
         await( tx.runRx( new Statement( "RETURN 1" ) ) );
 
         // Then
-        verifyRun( connection, "RETURN 1" );
+        verifyRunRx( connection, "RETURN 1" );
     }
 
     @Test
@@ -163,7 +164,7 @@ class ExplicitTransactionTest
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         InternalBookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -178,7 +179,7 @@ class ExplicitTransactionTest
     void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         InternalBookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -192,7 +193,7 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndCommitted()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated();
 
@@ -206,7 +207,7 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndRolledBack()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated();
         await( tx.rollbackAsync() );
@@ -218,7 +219,7 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenClose() throws Throwable
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         await( tx.closeAsync() );
 
@@ -232,7 +233,7 @@ class ExplicitTransactionTest
 
     private static ExplicitTransaction beginTx( Connection connection, InternalBookmark initialBookmark )
     {
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder() );
+        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
         return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );
     }
 

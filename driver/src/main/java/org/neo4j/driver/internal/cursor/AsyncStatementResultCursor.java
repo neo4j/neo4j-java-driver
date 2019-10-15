@@ -16,27 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.cursor;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.async.StatementResultCursor;
 
-import org.neo4j.driver.Record;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.summary.ResultSummary;
-
-public interface PullAllResponseHandler extends ResponseHandler
+public interface AsyncStatementResultCursor extends StatementResultCursor, FailableCursor
 {
-    CompletionStage<ResultSummary> summaryAsync();
-
-    CompletionStage<Record> nextAsync();
-
-    CompletionStage<Record> peekAsync();
-
-    <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
-
-    CompletionStage<Throwable> failureAsync();
-
-    void prePopulateRecords();
 }

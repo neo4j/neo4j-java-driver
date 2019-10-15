@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 
 public class RoutingProcedureRunner
 {
@@ -86,7 +87,7 @@ public class RoutingProcedureRunner
     CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure, BookmarkHolder bookmarkHolder )
     {
         return connection.protocol()
-                .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true )
+                .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
                 .asyncResult().thenCompose( StatementResultCursor::listAsync );
     }
 

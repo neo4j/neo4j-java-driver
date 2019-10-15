@@ -22,18 +22,18 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
-import java.util.function.Function;
 
 public class InternalStatementResult implements StatementResult
 {
@@ -109,12 +109,6 @@ public class InternalStatementResult implements StatementResult
     public <T> List<T> list( Function<Record, T> mapFunction )
     {
         return blockingGet( cursor.listAsync( mapFunction ) );
-    }
-
-    @Override
-    public ResultSummary consume()
-    {
-        return blockingGet( cursor.consumeAsync() );
     }
 
     @Override

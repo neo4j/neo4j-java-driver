@@ -34,13 +34,13 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullHandlers;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -159,8 +159,8 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
+    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+            TransactionConfig config, boolean waitForRunResponse, long ignored )
     {
         // bookmarks are ignored for auto-commit transactions in this version of the protocol
         verifyBeforeTransaction( config, connection.databaseName() );
@@ -169,7 +169,7 @@ public class BoltProtocolV1 implements BoltProtocol
 
     @Override
     public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
-            boolean waitForRunResponse )
+            boolean waitForRunResponse, long ignored )
     {
         return buildResultCursorFactory( connection, statement, tx, waitForRunResponse );
     }
@@ -188,9 +188,9 @@ public class BoltProtocolV1 implements BoltProtocol
 
         RunMessage runMessage = new RunMessage( query, params );
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
-        AbstractPullAllResponseHandler pullAllHandler = PullHandlers.newBoltV1PullAllHandler( statement, runHandler, connection, tx );
+        PullAllResponseHandler pullAllHandler = PullHandlers.newBoltV1PullAllHandler( statement, runHandler, connection, tx );
 
-        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
+        return new AsyncStatementResultCursorOnlyFactory( connection, runMessage, runHandler, pullAllHandler, waitForRunResponse );
     }
 
     private void verifyBeforeTransaction( TransactionConfig config, DatabaseName databaseName )

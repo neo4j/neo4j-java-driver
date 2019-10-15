@@ -32,13 +32,13 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -137,30 +137,30 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement,
-            BookmarkHolder bookmarkHolder, TransactionConfig config, boolean waitForRunResponse )
+    public StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+            TransactionConfig config, boolean waitForRunResponse, long fetchSize )
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
                 autoCommitTxRunMessage( statement, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark() );
-        return buildResultCursorFactory( connection, statement, bookmarkHolder, null, runMessage, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, bookmarkHolder, null, runMessage, waitForRunResponse, fetchSize );
     }
 
     @Override
     public StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx,
-            boolean waitForRunResponse )
+            boolean waitForRunResponse, long fetchSize )
     {
         RunWithMetadataMessage runMessage = explicitTxRunMessage( statement );
-        return buildResultCursorFactory( connection, statement, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse );
+        return buildResultCursorFactory( connection, statement, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse, fetchSize );
     }
 
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long ignored )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
-        AbstractPullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
-        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
+        return new AsyncStatementResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
     }
 
     protected void verifyDatabaseNameBeforeTransaction( DatabaseName databaseName )

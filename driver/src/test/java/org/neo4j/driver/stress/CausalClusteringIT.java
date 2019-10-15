@@ -42,6 +42,7 @@ import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -59,7 +60,6 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
@@ -89,8 +89,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
@@ -387,7 +388,7 @@ public class CausalClusteringIT implements NestedQueries
                 {
                     try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
                     {
-                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).summary();
                     }
                 } );
             }
@@ -429,7 +430,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
                 {
-                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
+                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).summary();
                 }
             } );
 
@@ -496,8 +497,8 @@ public class CausalClusteringIT implements NestedQueries
 
             CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
                     .thenCompose( cursor1 ->
-                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" ) )
-                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) );
+                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" )
+                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) ) );
 
             List<RecordAndSummary> results = await( resultsStage );
             assertEquals( 2, results.size() );
@@ -568,11 +569,11 @@ public class CausalClusteringIT implements NestedQueries
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
-            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).consume();
+            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).summary();
 
             Session session2 = driver.session();
             Transaction tx2 = session2.beginTransaction();
-            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).consume();
+            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).summary();
 
             ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
             driverFactory.setNextRunFailure( error );
@@ -627,7 +628,7 @@ public class CausalClusteringIT implements NestedQueries
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
                 SessionExpiredException e = assertThrows( SessionExpiredException.class,
-                        () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
+                        () -> runCreateNode( session, "Person", "name", "Vision" ).summary() );
                 assertEquals( "Disconnected", e.getCause().getMessage() );
             }
 
@@ -707,7 +708,7 @@ public class CausalClusteringIT implements NestedQueries
 
     private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
     {
-        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
+        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).summary() );
         assertEquals( cause, e.getCause() );
     }
 
@@ -754,7 +755,7 @@ public class CausalClusteringIT implements NestedQueries
     {
         return session ->
         {
-            session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
+            session.run( "MERGE (n:Person {name: 'Jim'})" ).summary();
             Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
             return record.get( "count" ).asInt();
         };
@@ -1018,7 +1019,7 @@ public class CausalClusteringIT implements NestedQueries
 
     private static Config configWithoutLogging()
     {
-        return Config.builder().withLogging( DEV_NULL_LOGGING ).build();
+        return Config.builder().withLogging( none() ).build();
     }
 
     private static ExecutorService newExecutor()

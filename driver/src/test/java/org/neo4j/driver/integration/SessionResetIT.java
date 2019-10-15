@@ -191,7 +191,7 @@ class SessionResetIT
             assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
 
             // Make sure failure from the terminated long running statement is propagated
-            Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
+            Neo4jException e3 = assertThrows( Neo4jException.class, result::summary );
             assertThat( e3.getMessage(), containsString( "The transaction has been terminated" ) );
         }
     }
@@ -227,7 +227,7 @@ class SessionResetIT
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
 
-            Neo4jException e = assertThrows( Neo4jException.class, procedureResult::consume );
+            Neo4jException e = assertThrows( Neo4jException.class, procedureResult::summary );
             assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
             tx1.close();
 
@@ -264,7 +264,7 @@ class SessionResetIT
 
                 // When
                 startTime.set( System.currentTimeMillis() );
-                result.consume(); // blocking to run the statement
+                result.summary(); // blocking to run the statement
             }
         } );
 
@@ -338,13 +338,13 @@ class SessionResetIT
         try ( Session session = neo4j.driver().session() )
         {
 
-            session.run( "RETURN 1" ).consume();
+            session.run( "RETURN 1" ).summary();
 
             // When reset the state of this session
             session.reset();
 
             // Then can run successfully more statements without any error
-            session.run( "RETURN 2" ).consume();
+            session.run( "RETURN 2" ).summary();
         }
     }
 
@@ -427,7 +427,7 @@ class SessionResetIT
                     usedSessionRef.set( session );
                     latchToWait.await();
                     StatementResult result = updateNodeId( session, nodeId, newNodeId );
-                    result.consume();
+                    result.summary();
                 }
             }
         } );
@@ -448,7 +448,7 @@ class SessionResetIT
                     usedSessionRef.set( session );
                     latchToWait.await();
                     StatementResult result = updateNodeId( tx, nodeId, newNodeId );
-                    result.consume();
+                    result.summary();
                 }
             }
         } );
@@ -474,7 +474,7 @@ class SessionResetIT
                     {
                         invocationsOfWork.incrementAndGet();
                         StatementResult result = updateNodeId( tx, nodeId, newNodeId );
-                        result.consume();
+                        result.summary();
                         return null;
                     } );
                 }
@@ -585,7 +585,7 @@ class SessionResetIT
             Future<Void> txResult = nodeIdUpdater.update( nodeId, newNodeId1, otherSessionRef, nodeLocked );
 
             StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
-            result.consume();
+            result.summary();
 
             nodeLocked.countDown();
             // give separate thread some time to block on a lock
@@ -721,7 +721,7 @@ class SessionResetIT
     {
         if ( autoCommit )
         {
-            session.run( query ).consume();
+            session.run( query ).summary();
         }
         else
         {

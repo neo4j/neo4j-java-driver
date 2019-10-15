@@ -22,19 +22,19 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursorFactory;
+import org.neo4j.driver.internal.cursor.StatementResultCursorFactoryImpl;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
-import org.neo4j.driver.internal.handlers.AbstractPullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV3PullAllHandler;
-import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4PullHandler;
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4AutoPullHandler;
+import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4BasicPullHandler;
 
 public class BoltProtocolV4 extends BoltProtocolV3
 {
@@ -49,14 +49,14 @@ public class BoltProtocolV4 extends BoltProtocolV3
 
     @Override
     protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse )
+            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long fetchSize )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
-        AbstractPullAllResponseHandler pullAllHandler = newBoltV3PullAllHandler( statement, runHandler, connection, bookmarkHolder, tx );
-        BasicPullResponseHandler pullHandler = newBoltV4PullHandler( statement, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx, fetchSize );
+        PullResponseHandler pullHandler = newBoltV4BasicPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
-        return new InternalStatementResultCursorFactory( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
+        return new StatementResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }
 
     @Override

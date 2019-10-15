@@ -16,11 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cursor;
+package org.neo4j.driver.internal.handlers;
 
-import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.async.StatementResultCursor;
+import java.util.Map;
 
-public interface InternalStatementResultCursor extends StatementResultCursor, FailableCursor
+import org.neo4j.driver.Value;
+
+public interface PullResponseCompletionListener
 {
+    void afterSuccess( Map<String,Value> metadata );
+
+    void afterFailure( Throwable error );
+
 }

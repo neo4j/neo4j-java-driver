@@ -28,6 +28,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
+import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
@@ -97,7 +98,7 @@ class LeakLoggingNetworkSessionTest
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
         return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), new FixedRetryLogic( 0 ), defaultDatabase(), READ,
-                new DefaultBookmarkHolder(), logging );
+                new DefaultBookmarkHolder(), FetchSizeUtil.UNLIMITED_FETCH_SIZE, logging );
     }
 
     private static ConnectionProvider connectionProviderMock( boolean openConnection )

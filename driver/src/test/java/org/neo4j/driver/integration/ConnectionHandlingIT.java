@@ -116,7 +116,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        result.consume();
+        result.summary();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
@@ -201,7 +201,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        assertThrows( ClientException.class, result::consume );
+        assertThrows( ClientException.class, result::summary );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
@@ -219,6 +219,7 @@ class ConnectionHandlingIT
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 5, tx );
+        int size = result.list().size();
         tx.commit();
         tx.close();
 
@@ -226,7 +227,7 @@ class ConnectionHandlingIT
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
 
-        assertEquals( 5, result.list().size() );
+        assertEquals( 5, size );
     }
 
     @Test
@@ -240,6 +241,7 @@ class ConnectionHandlingIT
         verify( connection1, never() ).release();
 
         StatementResult result = createNodes( 8, tx );
+        int size = result.list().size();
         tx.rollback();
         tx.close();
 
@@ -247,7 +249,7 @@ class ConnectionHandlingIT
         assertSame( connection1, connection2 );
         verify( connection1 ).release();
 
-        assertEquals( 8, result.list().size() );
+        assertEquals( 8, size );
     }
 
     @Test

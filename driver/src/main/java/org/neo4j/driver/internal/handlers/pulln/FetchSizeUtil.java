@@ -16,27 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers;
+package org.neo4j.driver.internal.handlers.pulln;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-
-import org.neo4j.driver.Record;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.summary.ResultSummary;
-
-public interface PullAllResponseHandler extends ResponseHandler
+public class FetchSizeUtil
 {
-    CompletionStage<ResultSummary> summaryAsync();
+    public static final long UNLIMITED_FETCH_SIZE = -1;
+    public static final long DEFAULT_FETCH_SIZE = 1000;
 
-    CompletionStage<Record> nextAsync();
-
-    CompletionStage<Record> peekAsync();
-
-    <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
-
-    CompletionStage<Throwable> failureAsync();
-
-    void prePopulateRecords();
+    public static long assertValidFetchSize( long size )
+    {
+        if ( size <= 0 && size != UNLIMITED_FETCH_SIZE )
+        {
+            throw new IllegalArgumentException( String.format( "The record fetch size may not be 0 or negative. Illegal record fetch size: %s.", size ) );
+        }
+        return size;
+    }
 }

@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
@@ -53,6 +54,7 @@ class SessionConfigTest
         assertEquals( AccessMode.WRITE, config.defaultAccessMode() );
         assertFalse( config.database().isPresent() );
         assertNull( config.bookmarks() );
+        assertFalse( config.fetchSize().isPresent() );
     }
 
     @ParameterizedTest
@@ -144,5 +146,29 @@ class SessionConfigTest
 
         SessionConfig config2 = builder().withBookmarks( Arrays.asList( one, two, null ) ).build();
         assertThat( config2.bookmarks(), equalTo( Arrays.asList( one, two, null ) ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( longs = {100, 1, 1000, Long.MAX_VALUE, -1} )
+    void shouldChangeFetchSize( long value ) throws Throwable
+    {
+        SessionConfig config = builder().withFetchSize( value ).build();
+        assertThat( config.fetchSize(), equalTo( Optional.of( value ) ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( longs = {0, -100, -2} )
+    void shouldErrorWithIllegalFetchSize( long value ) throws Throwable
+    {
+        assertThrows( IllegalArgumentException.class, () -> builder().withFetchSize( value ).build() );
+    }
+
+    @Test
+    void shouldTwoConfigBeEqual() throws Throwable
+    {
+        SessionConfig config1 = builder().withFetchSize( 100 ).build();
+        SessionConfig config2 = builder().withFetchSize( 100 ).build();
+
+        assertEquals( config1, config2 );
     }
 }

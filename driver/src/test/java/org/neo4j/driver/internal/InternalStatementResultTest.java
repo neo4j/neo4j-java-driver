@@ -31,10 +31,11 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.internal.async.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorImpl;
+import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.handlers.SessionPullAllResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.util.Pair;
@@ -182,7 +183,7 @@ class InternalStatementResultTest
         assertThrows( NoSuchRecordException.class, () ->
         {
             StatementResult result = createResult( 2 );
-            result.consume();
+            result.summary();
             result.single();
         } );
     }
@@ -192,10 +193,10 @@ class InternalStatementResultTest
     {
         // GIVEN
         StatementResult result = createResult( 2 );
-        result.consume();
+        result.summary();
 
         // WHEN
-        result.consume();
+        result.summary();
 
         // THEN
         assertFalse( result.hasNext() );
@@ -358,7 +359,7 @@ class InternalStatementResultTest
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         PullAllResponseHandler pullAllHandler =
-                new SessionPullAllResponseHandler( statement, runHandler, connection, BookmarkHolder.NO_OP, METADATA_EXTRACTOR );
+                new LegacyPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
         {
@@ -366,7 +367,7 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = new AsyncStatementResultCursor( runHandler, pullAllHandler );
+        StatementResultCursor cursor = new AsyncStatementResultCursorImpl( runHandler, pullAllHandler );
         return new InternalStatementResult( connection, cursor );
     }
 

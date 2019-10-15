@@ -30,7 +30,7 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.InternalStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -52,11 +52,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 
@@ -81,8 +83,10 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
+                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                        .asyncResult()
+                        .toCompletableFuture();
 
         ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmark, config, mode, defaultDatabase() );
         assertFalse( cursorFuture.isDone() );
@@ -103,8 +107,10 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true ).asyncResult().toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
+                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                        .asyncResult()
+                        .toCompletableFuture();
 
         ResponseHandler runHandler = verifySessionRunInvoked( connection, bookmark, config, mode, defaultDatabase() );
         assertFalse( cursorFuture.isDone() );
@@ -124,8 +130,10 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         // Given
         Connection connection = connectionMock( mode, protocol );
 
-        CompletableFuture<InternalStatementResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true ).asyncResult().toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
+                protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+                        .asyncResult()
+                        .toCompletableFuture();
 
         ResponseHandler runHandler = verifyTxRunInvoked( connection );
         assertFalse( cursorFuture.isDone() );
@@ -152,19 +160,21 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         InternalBookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
 
-        CompletionStage<InternalStatementResultCursor> cursorStage;
+        CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, false ).asyncResult();
+            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, false, UNLIMITED_FETCH_SIZE )
+                    .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false ).asyncResult();
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+                    .asyncResult();
         }
 
         // When I complete it immediately without waiting for any responses to run message
-        CompletableFuture<InternalStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
 
@@ -186,7 +196,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         if ( autoCommitTx )
         {
             StatementResultCursorFactory factory =
-                    protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false );
+                    protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE );
             await( factory.asyncResult() );
             verifySessionRunInvoked( connection, InternalBookmark.empty(), TransactionConfig.empty(), AccessMode.WRITE, database( "foo" ) );
         }
@@ -214,7 +224,8 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).writeAndFlush( eq( runMessage ), runHandlerCaptor.capture(), eq( PullMessage.PULL_ALL ), pullHandlerCaptor.capture() );
+        verify( connection ).write( eq( runMessage ), runHandlerCaptor.capture() );
+        verify( connection ).writeAndFlush( any( PullMessage.class ), pullHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );
         assertThat( pullHandlerCaptor.getValue(), instanceOf( PullAllResponseHandler.class ) );

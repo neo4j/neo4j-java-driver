@@ -372,8 +372,9 @@ class SessionIT
             long answer = session.readTransaction( tx ->
             {
                 StatementResult result = tx.run( "RETURN 42" );
+                long single = result.single().get( 0 ).asLong();
                 tx.rollback();
-                return result.single().get( 0 ).asLong();
+                return single;
             } );
             assertEquals( 42, answer );
 
@@ -599,13 +600,13 @@ class SessionIT
                   Transaction tx = session.beginTransaction() )
             {
                 // lock first node
-                updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+                updateNodeId( tx, nodeId1, newNodeId1 ).summary();
 
                 latch1.await();
                 latch2.countDown();
 
                 // lock second node
-                updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+                updateNodeId( tx, nodeId2, newNodeId1 ).summary();
 
                 tx.commit();
             }
@@ -618,13 +619,13 @@ class SessionIT
                   Transaction tx = session.beginTransaction() )
             {
                 // lock second node
-                updateNodeId( tx, nodeId2, newNodeId2 ).consume();
+                updateNodeId( tx, nodeId2, newNodeId2 ).summary();
 
                 latch1.countDown();
                 latch2.await();
 
                 // lock first node
-                updateNodeId( tx, nodeId1, newNodeId2 ).consume();
+                updateNodeId( tx, nodeId1, newNodeId2 ).summary();
 
                 tx.commit();
             }
@@ -665,13 +666,13 @@ class SessionIT
                   Transaction tx = session.beginTransaction() )
             {
                 // lock first node
-                updateNodeId( tx, nodeId1, newNodeId1 ).consume();
+                updateNodeId( tx, nodeId1, newNodeId1 ).summary();
 
                 latch1.await();
                 latch2.countDown();
 
                 // lock second node
-                updateNodeId( tx, nodeId2, newNodeId1 ).consume();
+                updateNodeId( tx, nodeId2, newNodeId1 ).summary();
 
                 tx.commit();
             }
@@ -685,13 +686,13 @@ class SessionIT
                 session.writeTransaction( tx ->
                 {
                     // lock second node
-                    updateNodeId( tx, nodeId2, newNodeId2 ).consume();
+                    updateNodeId( tx, nodeId2, newNodeId2 ).summary();
 
                     latch1.countDown();
                     await( latch2 );
 
                     // lock first node
-                    updateNodeId( tx, nodeId1, newNodeId2 ).consume();
+                    updateNodeId( tx, nodeId1, newNodeId2 ).summary();
 
                     createNodeWithId( nodeId3 );
 
@@ -786,7 +787,7 @@ class SessionIT
     }
 
     @Test
-    void shouldBePossibleToConsumeResultAfterSessionIsClosed()
+    void shouldNotBePossibleToConsumeResultAfterSessionIsClosed()
     {
         StatementResult result;
         try ( Session session = neo4j.driver().session() )
@@ -795,7 +796,7 @@ class SessionIT
         }
 
         List<Integer> ints = result.list( record -> record.get( 0 ).asInt() );
-        assertEquals( 20000, ints.size() );
+        assertEquals( 0, ints.size() );
     }
 
     @Test
@@ -851,7 +852,7 @@ class SessionIT
 
         session.run( "CREATE ()" );
 
-        ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).consume() );
+        ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).summary() );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
 
         session.run( "CREATE ()" );
@@ -899,7 +900,7 @@ class SessionIT
     }
 
     @Test
-    void shouldAllowConsumingRecordsAfterFailureInSessionClose()
+    void shouldNotAllowConsumingRecordsAfterFailureInSessionClose()
     {
         Session session = neo4j.driver().session();
 
@@ -908,17 +909,11 @@ class SessionIT
         ClientException e = assertThrows( ClientException.class, session::close );
         assertThat( e, is( arithmeticError() ) );
 
-        assertTrue( result.hasNext() );
-        assertEquals( 16, result.next().get( 0 ).asInt() );
-        assertTrue( result.hasNext() );
-        assertEquals( 8, result.next().get( 0 ).asInt() );
-        assertTrue( result.hasNext() );
-        assertEquals( 4, result.next().get( 0 ).asInt() );
         assertFalse( result.hasNext() );
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSummary()
+    void shouldNotAllowAccessingRecordsAfterSummary()
     {
         int recordCount = 10_000;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
@@ -932,17 +927,12 @@ class SessionIT
             assertEquals( StatementType.READ_ONLY, summary.statementType() );
 
             List<Record> records = result.list();
-            assertEquals( recordCount, records.size() );
-            for ( int i = 1; i <= recordCount; i++ )
-            {
-                Record record = records.get( i - 1 );
-                assertEquals( i, record.get( 0 ).asInt() );
-            }
+            assertEquals( 0, records.size() );
         }
     }
 
     @Test
-    void shouldAllowAccessingRecordsAfterSessionClosed()
+    void shouldNotAllowAccessingRecordsAfterSessionClosed()
     {
         int recordCount = 11_333;
         String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Result-' + x";
@@ -954,12 +944,7 @@ class SessionIT
         }
 
         List<Record> records = result.list();
-        assertEquals( recordCount, records.size() );
-        for ( int i = 1; i <= recordCount; i++ )
-        {
-            Record record = records.get( i - 1 );
-            assertEquals( "Result-" + i, record.get( 0 ).asString() );
-        }
+        assertEquals( 0, records.size() );
     }
 
     @Test
@@ -969,7 +954,7 @@ class SessionIT
 
         StatementResult result = session.run( "UNWIND range(10000, 0, -1) AS x RETURN 10 / x" );
 
-        // consume couple records slowly with a sleep in-between
+        // summary couple records slowly with a sleep in-between
         for ( int i = 0; i < 10; i++ )
         {
             assertTrue( result.hasNext() );
@@ -988,7 +973,7 @@ class SessionIT
         {
             StatementResult result = session.run( "UNWIND range(8000, 1, -1) AS x RETURN 42 / x" );
 
-            // consume couple records slowly with a sleep in-between
+            // summary couple records slowly with a sleep in-between
             for ( int i = 0; i < 12; i++ )
             {
                 assertTrue( result.hasNext() );
@@ -1007,10 +992,10 @@ class SessionIT
         try ( Session session1 = neo4j.driver().session();
               Session session2 = neo4j.driver().session() )
         {
-            session1.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
+            session1.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).summary();
 
             Transaction tx = session1.beginTransaction();
-            tx.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
+            tx.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).summary();
 
             // now 'Beta Ray Bill' node is locked
 
@@ -1020,7 +1005,7 @@ class SessionIT
             try
             {
                 ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
-                        () -> session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume() );
+                        () -> session2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).summary() );
                 assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
                 assertThat( e.getMessage(), containsString( "Thread interrupted" ) );
             }
@@ -1046,10 +1031,10 @@ class SessionIT
             Session session1 = driver.session();
             Session session2 = driver.session();
 
-            session1.run( "CREATE (:Avenger {name: 'Hulk'})" ).consume();
+            session1.run( "CREATE (:Avenger {name: 'Hulk'})" ).summary();
 
             Transaction tx = session1.beginTransaction();
-            tx.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.power = 100 RETURN a" ).consume();
+            tx.run( "MATCH (a:Avenger {name: 'Hulk'}) SET a.power = 100 RETURN a" ).summary();
 
             // Hulk node is now locked
 
@@ -1102,7 +1087,7 @@ class SessionIT
         try ( Session session = neo4j.driver().session() )
         {
             StatementResult result = session.run( "UNWIND [] AS x RETURN x" );
-            ResultSummary summary = result.consume();
+            ResultSummary summary = result.summary();
             assertNotNull( summary );
             assertEquals( StatementType.READ_ONLY, summary.statementType() );
         }
@@ -1126,7 +1111,7 @@ class SessionIT
             String query = "UNWIND [1, 2, 3, 4, 5] AS x RETURN x";
             StatementResult result = session.run( query );
 
-            ResultSummary summary = result.consume();
+            ResultSummary summary = result.summary();
             assertEquals( query, summary.statement().text() );
             assertEquals( StatementType.READ_ONLY, summary.statementType() );
 
@@ -1143,7 +1128,7 @@ class SessionIT
             String query = "UNWIND [1, 2, 3, 4, 0] AS x RETURN 10 / x";
             StatementResult result = session.run( query );
 
-            ClientException e = assertThrows( ClientException.class, result::consume );
+            ClientException e = assertThrows( ClientException.class, result::summary );
             assertThat( e, is( arithmeticError() ) );
 
             assertFalse( result.hasNext() );
@@ -1213,8 +1198,8 @@ class SessionIT
         try ( Session session = neo4j.driver().session() )
         {
             // populate db with test data
-            session.run( "UNWIND range(1, 100) AS x CREATE (:Property {id: x})" ).consume();
-            session.run( "UNWIND range(1, 10) AS x CREATE (:Resource {id: x})" ).consume();
+            session.run( "UNWIND range(1, 100) AS x CREATE (:Property {id: x})" ).summary();
+            session.run( "UNWIND range(1, 10) AS x CREATE (:Resource {id: x})" ).summary();
 
             int seenProperties = 0;
             int seenResources = 0;
@@ -1324,7 +1309,7 @@ class SessionIT
 
         ClientException error = assertThrows( ClientException.class, () -> {
             StatementResult result = session.run( "RETURN 1" );
-            result.consume();
+            result.summary();
         } );
 
         assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
@@ -1342,7 +1327,7 @@ class SessionIT
         ClientException error = assertThrows( ClientException.class, () -> {
             Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run( "RETURN 1" );
-            result.consume();
+            result.summary();
         });
         assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
@@ -1357,7 +1342,7 @@ class SessionIT
 
         // When trying to run the query on a database that does not exist
         ClientException error = assertThrows( ClientException.class, () -> {
-            session.readTransaction( tx -> tx.run( "RETURN 1" ).consume() );
+            session.readTransaction( tx -> tx.run( "RETURN 1" ).summary() );
         });
         assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'foo'" ) );
         session.close();
@@ -1402,8 +1387,8 @@ class SessionIT
             String material = session.writeTransaction( tx ->
             {
                 StatementResult result = tx.run( "CREATE (s:Shield {material: 'Vibranium'}) RETURN s" );
-                tx.commit();
                 Record record = result.single();
+                tx.commit();
                 return record.get( 0 ).asNode().get( "material" ).asString();
             } );
 
@@ -1574,8 +1559,9 @@ class SessionIT
             {
                 throw new ServiceUnavailableException( "" );
             }
+            Record single = result.single();
             tx.commit();
-            return result.single();
+            return single;
         }
     }
 }

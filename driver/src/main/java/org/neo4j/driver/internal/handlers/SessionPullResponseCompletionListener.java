@@ -16,39 +16,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.handlers.pulln;
+package org.neo4j.driver.internal.handlers;
 
 import java.util.Map;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
 
 import static java.util.Objects.requireNonNull;
 
-public class SessionPullResponseHandler extends AbstractBasicPullResponseHandler
+public class SessionPullResponseCompletionListener implements PullResponseCompletionListener
 {
     private final BookmarkHolder bookmarkHolder;
+    private final Connection connection;
 
-    public SessionPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler,
-            Connection connection, BookmarkHolder bookmarkHolder, MetadataExtractor metadataExtractor )
+    public SessionPullResponseCompletionListener( Connection connection, BookmarkHolder bookmarkHolder )
     {
-        super( statement, runResponseHandler, connection, metadataExtractor );
+        this.connection = requireNonNull( connection );
         this.bookmarkHolder = requireNonNull( bookmarkHolder );
     }
 
     @Override
-    protected void afterSuccess( Map<String,Value> metadata )
+    public void afterSuccess( Map<String,Value> metadata )
     {
         releaseConnection();
-        bookmarkHolder.setBookmark( metadataExtractor.extractBookmarks( metadata ) );
+        bookmarkHolder.setBookmark( MetadataExtractor.extractBookmarks( metadata ) );
     }
 
     @Override
-    protected void afterFailure( Throwable error )
+    public void afterFailure( Throwable error )
     {
         releaseConnection();
     }

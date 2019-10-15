@@ -41,6 +41,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -105,7 +106,7 @@ class InternalRxSessionTest
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
-        RxStatementResultCursor cursor = mock( RxStatementResultCursor.class );
+        RxStatementResultCursor cursor = mock( RxStatementResultCursorImpl.class );
 
         // Run succeeded with a cursor
         when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( cursor ) );

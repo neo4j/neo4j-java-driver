@@ -130,7 +130,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         if ( driver != null )
         {
             driver.close();
-            System.out.println( driver.metrics() );
         }
     }
 
@@ -683,7 +682,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static void createNodeInTx( Transaction tx, int nodeIndex )
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
-        tx.run( statement ).consume();
+        tx.run( statement ).summary();
     }
 
     private static CompletionStage<Throwable> createNodesInTxAsync( AsyncTransaction tx, int batchIndex, int batchSize )
@@ -703,7 +702,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
         return tx.runAsync( statement )
-                .thenCompose( StatementResultCursor::consumeAsync )
+                .thenCompose( StatementResultCursor::summaryAsync )
                 .thenApply( ignore -> (Void) null )
                 .toCompletableFuture();
     }

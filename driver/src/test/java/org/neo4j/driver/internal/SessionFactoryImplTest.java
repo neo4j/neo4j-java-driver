@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
+import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 

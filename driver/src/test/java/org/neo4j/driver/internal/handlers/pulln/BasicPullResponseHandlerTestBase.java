@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status;
+import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status;
 import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -45,17 +45,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.CANCELED;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.DONE;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.FAILED;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.READY;
-import static org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler.Status.STREAMING;
+import static org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status.CANCELED;
+import static org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status.SUCCEEDED;
+import static org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status.FAILED;
+import static org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status.READY;
+import static org.neo4j.driver.internal.handlers.pulln.PullResponseHandler.Status.STREAMING;
 
-abstract class AbstractBasicPullResponseHandlerTestBase
+abstract class BasicPullResponseHandlerTestBase
 {
     protected abstract void shouldHandleSuccessWithSummary( Status status );
     protected abstract void shouldHandleFailure( Status status );
-    protected abstract AbstractBasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
+    protected abstract BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
             BiConsumer<ResultSummary,Throwable> summaryConsumer, Status status );
 
     // on success with summary
@@ -72,7 +72,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given a handler in streaming state
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.request( 100 ); // I append a request to ask for more
@@ -91,7 +91,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
         // When
 
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
@@ -108,7 +108,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given a handler in streaming state
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
         handler.onSuccess( metaWithHasMoreEqualsTrue() );
 
         // Then
@@ -132,7 +132,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, STREAMING );
 
         // When
         handler.onRecord( new Value[0] );
@@ -152,7 +152,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, status );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, recordConsumer, summaryConsumer, status );
 
         // When
         handler.onRecord( new Value[0] );
@@ -169,7 +169,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.request( 100 );
@@ -183,7 +183,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
 
         // When
         handler.request( 100 );
@@ -199,7 +199,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, CANCELED );
 
         // When
         handler.cancel();
@@ -214,7 +214,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, STREAMING );
 
         // When
         handler.cancel();
@@ -229,7 +229,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
     {
         // Given
         Connection conn = mockConnection();
-        AbstractBasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
+        BasicPullResponseHandler handler = newResponseHandlerWithStatus( conn, READY );
 
         // When
         handler.cancel();
@@ -247,7 +247,7 @@ abstract class AbstractBasicPullResponseHandlerTestBase
         return conn;
     }
 
-    private AbstractBasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, Status status )
+    private BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, Status status )
     {
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
@@ -263,11 +263,11 @@ abstract class AbstractBasicPullResponseHandlerTestBase
 
     private static Stream<Status> allStatusExceptStreaming()
     {
-        return Stream.of( DONE, FAILED, CANCELED, READY );
+        return Stream.of( SUCCEEDED, FAILED, CANCELED, READY );
     }
 
     private static Stream<Status> allStatus()
     {
-        return Stream.of( DONE, FAILED, CANCELED, STREAMING, READY );
+        return Stream.of( SUCCEEDED, FAILED, CANCELED, STREAMING, READY );
     }
 }

@@ -3,8 +3,8 @@
 !: AUTO HELLO
 !: AUTO GOODBYE
 
-C: RUN "MATCH (n) RETURN n.name" {} { "mode": "r", "db": "mydatabase" }
-   PULL { "n": 1000 }
+C: RUN "MATCH (n) RETURN n.name" {} {}
+   PULL { "n": -1 }
 S: SUCCESS {"fields": ["n.name"]}
    RECORD ["Bob"]
    RECORD ["Alice"]

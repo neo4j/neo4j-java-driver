@@ -131,7 +131,7 @@ class InternalTransactionTest
     void shouldRollbackWhenFailedRun() throws Throwable
     {
         setupFailingRun( connection, new RuntimeException( "Bang!" ) );
-        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).consume() );
+        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).summary() );
 
         tx.close();
 

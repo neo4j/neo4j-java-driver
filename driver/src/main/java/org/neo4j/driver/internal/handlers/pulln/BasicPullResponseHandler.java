@@ -18,38 +18,262 @@
  */
 package org.neo4j.driver.internal.handlers.pulln;
 
-import org.reactivestreams.Subscription;
-
+import java.util.Map;
 import java.util.function.BiConsumer;
 
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Statement;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.summary.ResultSummary;
 
-public interface BasicPullResponseHandler extends ResponseHandler, Subscription
+import static java.lang.String.format;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDiscardAllMessage;
+
+/**
+ * In this class we have a hidden state machine.
+ * Here is how it looks like:
+ * |                    | DONE | FAILED | STREAMING                      | READY              | CANCELED       |
+ * |--------------------|------|--------|--------------------------------|--------------------|----------------|
+ * | request            | X    | X      | toRequest++ ->STREAMING        | PULL ->STREAMING   | X              |
+ * | cancel             | X    | X      | ->CANCELED                     | DISCARD ->CANCELED | ->CANCELED     |
+ * | onSuccess has_more | X    | X      | ->READY request if toRequest>0 | X                  | ->READY cancel |
+ * | onSuccess          | X    | X      | summary ->DONE                 | X                  | summary ->DONE |
+ * | onRecord           | X    | X      | yield record ->STREAMING       | X                  | ->CANCELED     |
+ * | onFailure          | X    | X      | ->FAILED                       | X                  | ->FAILED       |
+ *
+ * Currently the error state (marked with X on the table above) might not be enforced.
+ */
+public class BasicPullResponseHandler implements PullResponseHandler
 {
-    /**
-     * Register a record consumer for each record received.
-     * STREAMING shall not be started before this consumer is registered.
-     * A null record with no error indicates the end of streaming.
-     * @param recordConsumer register a record consumer to be notified for each record received.
-     */
-    void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer );
+    private final Statement statement;
+    protected final RunResponseHandler runResponseHandler;
+    protected final MetadataExtractor metadataExtractor;
+    protected final Connection connection;
+    private final PullResponseCompletionListener completionListener;
 
-    /**
-     * Register a summary consumer to be notified when a summary is received.
-     * STREAMING shall not be started before this consumer is registered.
-     * A null summary with no error indicates a SUCCESS message with has_more=true has arrived.
-     * @param summaryConsumer register a summary consumer
-     */
-    void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
+    private Status status = Status.READY;
+    private long toRequest;
+    private BiConsumer<Record,Throwable> recordConsumer = null;
+    private BiConsumer<ResultSummary, Throwable> summaryConsumer = null;
 
-    enum Status
+    public BasicPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+            PullResponseCompletionListener completionListener )
     {
-        DONE,       // successfully completed
-        FAILED,     // failed
-        CANCELED,   // canceled
-        STREAMING,  // streaming records
-        READY       // steaming is paused. ready to accept request or cancel commands from user
+        this.statement = requireNonNull( statement );
+        this.runResponseHandler = requireNonNull( runResponseHandler );
+        this.metadataExtractor = requireNonNull( metadataExtractor );
+        this.connection = requireNonNull( connection );
+        this.completionListener = requireNonNull( completionListener );
+    }
+
+    @Override
+    public synchronized void onSuccess( Map<String,Value> metadata )
+    {
+        assertRecordAndSummaryConsumerInstalled();
+        if ( metadata.getOrDefault( "has_more", BooleanValue.FALSE ).asBoolean() )
+        {
+            handleSuccessWithHasMore();
+        }
+        else
+        {
+            handleSuccessWithSummary( metadata );
+        }
+    }
+
+    @Override
+    public synchronized void onFailure( Throwable error )
+    {
+        assertRecordAndSummaryConsumerInstalled();
+        status = Status.FAILED;
+        completionListener.afterFailure( error );
+
+        complete( extractResultSummary( emptyMap() ), error );
+    }
+
+    @Override
+    public synchronized void onRecord( Value[] fields )
+    {
+        assertRecordAndSummaryConsumerInstalled();
+        if ( isStreaming() )
+        {
+            Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
+            recordConsumer.accept( record, null );
+        }
+    }
+
+    @Override
+    public synchronized void request( long size )
+    {
+        assertRecordAndSummaryConsumerInstalled();
+        if ( isStreamingPaused() )
+        {
+            status = Status.STREAMING;
+            connection.writeAndFlush( new PullMessage( size, runResponseHandler.statementId() ), this );
+        }
+        else if ( isStreaming() )
+        {
+            addToRequest( size );
+        }
+    }
+
+    @Override
+    public synchronized void cancel()
+    {
+        assertRecordAndSummaryConsumerInstalled();
+        if ( isStreamingPaused() )
+        {
+            status = Status.CANCELED;
+            // Reactive API does not provide a way to discard N. Only discard all.
+            connection.writeAndFlush( newDiscardAllMessage( runResponseHandler.statementId() ), this );
+        }
+        else if ( isStreaming() )
+        {
+            status = Status.CANCELED;
+        }
+        // no need to change status if it is already done
+    }
+
+    @Override
+    public synchronized void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer )
+    {
+        if( this.summaryConsumer != null )
+        {
+            throw new IllegalStateException( "Summary consumer already installed." );
+        }
+        this.summaryConsumer = summaryConsumer;
+    }
+
+    @Override
+    public synchronized void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
+    {
+        if( this.recordConsumer != null )
+        {
+            throw new IllegalStateException( "Record consumer already installed." );
+        }
+        this.recordConsumer = recordConsumer;
+    }
+
+    private boolean isStreaming()
+    {
+        return status == Status.STREAMING;
+    }
+
+    private boolean isStreamingPaused()
+    {
+        return status == Status.READY;
+    }
+
+    protected boolean isDone()
+    {
+        return status == Status.SUCCEEDED || status == Status.FAILED;
+    }
+
+    private void handleSuccessWithSummary( Map<String,Value> metadata )
+    {
+        status = Status.SUCCEEDED;
+        completionListener.afterSuccess( metadata );
+        ResultSummary summary = extractResultSummary( metadata );
+
+        complete( summary, null );
+    }
+
+    private void handleSuccessWithHasMore()
+    {
+        if ( this.status == Status.CANCELED )
+        {
+            this.status = Status.READY; // cancel request accepted.
+            cancel();
+        }
+        else if ( this.status == Status.STREAMING )
+        {
+            this.status = Status.READY;
+            if ( toRequest > 0 || toRequest == UNLIMITED_FETCH_SIZE )
+            {
+                request( toRequest );
+                toRequest = 0;
+            }
+            // summary consumer use (null, null) to identify done handling of success with has_more
+            summaryConsumer.accept( null, null );
+        }
+    }
+
+    private ResultSummary extractResultSummary( Map<String,Value> metadata )
+    {
+        long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
+        return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
+    }
+
+    private void addToRequest( long toAdd )
+    {
+        if ( toRequest == UNLIMITED_FETCH_SIZE )
+        {
+            return;
+        }
+        if ( toAdd == UNLIMITED_FETCH_SIZE )
+        {
+            // pull all
+            toRequest = UNLIMITED_FETCH_SIZE;
+            return;
+        }
+
+        if ( toAdd <= 0 )
+        {
+            throw new IllegalArgumentException( "Cannot request record amount that is less than or equal to 0. Request amount: " + toAdd );
+        }
+        toRequest += toAdd;
+        if ( toRequest <= 0 ) // toAdd is already at least 1, we hit buffer overflow
+        {
+            toRequest = Long.MAX_VALUE;
+        }
+    }
+
+    private void assertRecordAndSummaryConsumerInstalled()
+    {
+        if( isDone() )
+        {
+            // no need to check if we've finished.
+            return;
+        }
+        if( recordConsumer == null || summaryConsumer == null )
+        {
+            throw new IllegalStateException( format("Access record stream without record consumer and/or summary consumer. " +
+                    "Record consumer=%s, Summary consumer=%s", recordConsumer, summaryConsumer) );
+        }
+    }
+
+    private void complete( ResultSummary summary, Throwable error )
+    {
+        // we first inform the summary consumer to ensure when streaming finished, summary is definitely available.
+        summaryConsumer.accept( summary, error );
+        // record consumer use (null, null) to identify the end of record stream
+        recordConsumer.accept( null, error );
+        dispose();
+    }
+
+    private void dispose()
+    {
+        // release the reference to the consumers who hold the reference to subscribers which shall be released when subscription is completed.
+        this.recordConsumer = null;
+        this.summaryConsumer = null;
+    }
+
+    protected Status status()
+    {
+        return this.status;
+    }
+
+    protected void status( Status status )
+    {
+        this.status = status;
     }
 }
