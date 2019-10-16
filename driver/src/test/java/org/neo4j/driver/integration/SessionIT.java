@@ -775,6 +775,7 @@ class SessionIT
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
+    @EnabledOnNeo4jWith( BOLT_V4 )
     @Test
     void shouldNotPropagateFailureWhenStreamingIsCancelled()
     {
