@@ -113,7 +113,7 @@ public class AsyncStatementResultCursorImpl implements AsyncStatementResultCurso
     @Override
     public CompletionStage<Throwable> consumeAsync()
     {
-        return pullAllHandler.summaryAsync().handle( ( summary, error ) -> error );
+        return summaryAsync().handle( ( summary, error ) -> error );
     }
 
     @Override

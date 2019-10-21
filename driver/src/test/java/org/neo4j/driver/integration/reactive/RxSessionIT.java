@@ -26,7 +26,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -181,43 +180,6 @@ class RxSessionIT
         assertEquals( 2, work.invocationCount() );
         assertEquals( 0, countNodesByLabel( "Person" ) );
         assertNoParallelScheduler();
-    }
-
-    @Test
-    void shouldHandleNestedQueries() {
-        int size = 12555;
-
-        Flux<Integer> nodeIds = Flux.using( neo4j.driver()::rxSession,
-                session -> Flux.from( session.run( "UNWIND range(1, $size) AS x RETURN x",
-                        Collections.singletonMap( "size", size ) ).records() )
-                        .limitRate( 20 )
-                        .flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            RxStatementResult innerResult = session.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                    Collections.singletonMap( "x", x ) );
-                            return innerResult.records();
-                        } ).map( r -> r.get( 0 ).asInt() ), RxSession::close );
-
-        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
-    }
-
-    @Test
-    void shouldGiveHelpfulErrorMessageWhenNestingTransactionFunctions() {
-
-        int size = 12555;
-        Flux<Integer> nodeIds = Flux.using( neo4j.driver()::rxSession,
-                session -> Flux.from( session.readTransaction( tx ->
-                        tx.run( "UNWIND range(1, $size) AS x RETURN x",
-                        Collections.singletonMap( "size", size ) ).records() ) )
-                        .limitRate( 20 )
-                        .flatMap( record -> {
-                            int x = record.get( "x" ).asInt();
-                            return session.writeTransaction( tx ->
-                                    tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
-                                    Collections.singletonMap( "x", x ) ).records() );
-                        } ).map( r -> r.get( 0 ).asInt() ), RxSession::close );
-
-        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
     }
 
     private void assertNoParallelScheduler()

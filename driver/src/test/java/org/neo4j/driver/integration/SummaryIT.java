@@ -91,7 +91,6 @@ class SummaryIT
         ResultSummary summary = result.summary();
 
         // Then
-        assertFalse( result.hasNext() );
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
         assertThat( summary.statement().text(), equalTo( statementText ) );
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );

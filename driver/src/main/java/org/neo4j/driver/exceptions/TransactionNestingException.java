@@ -16,19 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.exceptions;
 
-import java.util.concurrent.CompletionStage;
-
-public interface FailableCursor
+/**
+ * This exception indicates a user is nesting new transaction with a on-going transaction (explicit and/or auto-commit).
+ */
+public class TransactionNestingException extends ClientException
 {
-    /**
-     * Dispose this cursor by discarding all unconsumed records and returning failure if there is any to run and/or pulls.
-     */
-    CompletionStage<Throwable> consumeAsync();
-
-    /**
-     * Pulling all unconsumed records into memory and returning failure if there is any to run and/or pulls.
-     */
-    CompletionStage<Throwable> failureAsync();
+    public TransactionNestingException( String message )
+    {
+        super( message );
+    }
 }

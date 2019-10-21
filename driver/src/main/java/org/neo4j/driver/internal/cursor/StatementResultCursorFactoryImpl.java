@@ -69,11 +69,12 @@ public class StatementResultCursorFactoryImpl implements StatementResultCursorFa
         if ( waitForRunResponse )
         {
             // wait for response of RUN before proceeding
-            return runHandler.runFuture().thenApply( ignore -> new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) );
+            return runHandler.runFuture().thenApply(
+                    ignore -> new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
         else
         {
-            return completedFuture( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) );
+            return completedFuture( new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
     }
 

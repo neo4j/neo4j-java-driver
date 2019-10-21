@@ -30,19 +30,18 @@ import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxStatementResult;
@@ -786,26 +785,6 @@ class RxTransactionIT
 
         await( result.summary() );
         assertCanRollback( tx );
-    }
-
-    @Test
-    void shouldHandleNestedQueries() throws Throwable
-    {
-        int size = 12555;
-
-        Flux<Integer> nodeIds = Flux.usingWhen( session.beginTransaction(),
-                tx -> {
-                    RxStatementResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) );
-                    return Flux.from( result.records() ).limitRate( 20 ).flatMap( record -> {
-                        int x = record.get( "x" ).asInt();
-                        RxStatementResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
-                        return innerResult.records();
-                    } ).map( record -> record.get( 0 ).asInt() );
-                },
-                RxTransaction::commit, RxTransaction::rollback
-        );
-
-        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
     }
 
     private int countNodes( Object id )

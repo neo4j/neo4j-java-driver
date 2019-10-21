@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -323,7 +324,7 @@ public class NetworkSession
         {
             if ( tx != null )
             {
-                throw new ClientException( errorMessage );
+                throw new TransactionNestingException( errorMessage );
             }
         } );
     }

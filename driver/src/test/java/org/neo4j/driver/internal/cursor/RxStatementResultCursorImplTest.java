@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
@@ -184,6 +185,53 @@ class RxStatementResultCursorImplTest
 
         // Then
         assertTrue( cursor.isDone() );
+    }
+
+    @Test
+    void shouldNotAllowToInstallRecordConsumerAfterSummary() throws Throwable
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        PullResponseHandler pullHandler = new ListBasedPullHandler();
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
+
+        // When
+        cursor.summaryAsync();
+
+        // Then
+        assertThrows( ResultConsumedException.class, () -> cursor.installRecordConsumer( null ) );
+    }
+
+    @Test
+    void shouldAllowToCallSummaryMultipleTimes() throws Throwable
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        PullResponseHandler pullHandler = new ListBasedPullHandler();
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
+
+        // When
+        cursor.summaryAsync();
+
+        // Then
+        cursor.summaryAsync();
+        cursor.summaryAsync();
+    }
+
+    @Test
+    void shouldOnlyInstallRecordConsumerOnce() throws Throwable
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        RxStatementResultCursor cursor = new RxStatementResultCursorImpl( runHandler, pullHandler );
+
+        // When
+        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER ); // any consumer
+        cursor.installRecordConsumer( DISCARD_RECORD_CONSUMER ); // any consumer
+
+        // Then
+        verify( pullHandler ).installRecordConsumer( any() );
     }
 
     @Test

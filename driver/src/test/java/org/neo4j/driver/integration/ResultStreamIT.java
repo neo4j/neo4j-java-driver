@@ -175,40 +175,6 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldNotBufferRecordsAfterSummary()
-    {
-        // Given
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
-
-        // When
-        ResultSummary summary = result.summary();
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-
-        assertFalse( result.hasNext() );
-    }
-
-    @Test
-    void shouldDiscardRecordsAfterConsume()
-    {
-        // Given
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
-
-        // When
-        ResultSummary summary = result.summary();
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-
-        assertThat( result.hasNext(), equalTo( false ) );
-    }
-
-    @Test
     void shouldHasNoElementsAfterFailure()
     {
         StatementResult result = session.run( "INVALID" );

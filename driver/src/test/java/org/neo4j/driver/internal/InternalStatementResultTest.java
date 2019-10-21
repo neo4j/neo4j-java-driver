@@ -29,12 +29,14 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorImpl;
+import org.neo4j.driver.internal.cursor.DisposableAsyncStatementResultCursor;
 import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
@@ -180,7 +182,7 @@ class InternalStatementResultTest
     @Test
     void singleShouldThrowOnConsumedResult()
     {
-        assertThrows( NoSuchRecordException.class, () ->
+        assertThrows( ResultConsumedException.class, () ->
         {
             StatementResult result = createResult( 2 );
             result.summary();
@@ -199,7 +201,7 @@ class InternalStatementResultTest
         result.summary();
 
         // THEN
-        assertFalse( result.hasNext() );
+        assertThrows( ResultConsumedException.class, result::hasNext );
     }
 
     @Test
@@ -367,8 +369,8 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        StatementResultCursor cursor = new AsyncStatementResultCursorImpl( runHandler, pullAllHandler );
-        return new InternalStatementResult( connection, cursor );
+        AsyncStatementResultCursor cursor = new AsyncStatementResultCursorImpl( runHandler, pullAllHandler );
+        return new InternalStatementResult( connection, new DisposableAsyncStatementResultCursor( cursor ) );
     }
 
     private List<Value> values( Record record )

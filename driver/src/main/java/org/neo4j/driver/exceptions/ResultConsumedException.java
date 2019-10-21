@@ -16,19 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal;
+package org.neo4j.driver.exceptions;
 
-import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.StatementRunner;
 
-public interface FailableCursor
+/**
+ * A user is trying to access resources that are no longer valid due to
+ * the resources have already been consumed or
+ * the {@link StatementRunner} where the resources are created has already been closed.
+ */
+public class ResultConsumedException extends ClientException
 {
-    /**
-     * Dispose this cursor by discarding all unconsumed records and returning failure if there is any to run and/or pulls.
-     */
-    CompletionStage<Throwable> consumeAsync();
-
-    /**
-     * Pulling all unconsumed records into memory and returning failure if there is any to run and/or pulls.
-     */
-    CompletionStage<Throwable> failureAsync();
+    public ResultConsumedException()
+    {
+        super( "Cannot access records on this result any more as the result has already been consumed " +
+                "or the statement runner where the result is created has already been closed." );
+    }
 }

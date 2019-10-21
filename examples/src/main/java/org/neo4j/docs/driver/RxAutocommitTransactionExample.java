@@ -20,6 +20,7 @@ package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class RxAutocommitTransactionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        return Flux.using( driver::rxSession,
+        return Flux.usingWhen( Mono.fromSupplier( driver::rxSession ),
                 session -> Flux.from( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
                 RxSession::close );
         // end::reactor-autocommit-transaction[]
@@ -51,9 +52,13 @@ public class RxAutocommitTransactionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        return Flowable.using( driver::rxSession,
-                session -> Flowable.fromPublisher( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
-                RxSession::close );
+        RxSession session = driver.rxSession();
+        return Flowable.fromPublisher( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() )
+                // It is okay to skip session.close() when publisher is completed successfully or cancelled
+                .onErrorResumeNext( error -> {
+                    // We still rethrows the original error here. In a real application, you may want to handle the error directly here.
+                    return Flowable.<String>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
+                } );
         // end::RxJava-autocommit-transaction[]
     }
 }

@@ -43,7 +43,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C>
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.using( () -> newSession( AccessMode.READ, context ), this::processAndGetSummary, RxSession::close )
+        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ), this::processAndGetSummary, RxSession::close )
                 .subscribe( summary -> {
                     context.readCompleted( summary );
                     queryFinished.complete( null );

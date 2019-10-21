@@ -53,6 +53,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
@@ -793,8 +794,7 @@ class SessionIT
             result = session.run( "UNWIND range(1, 20000) AS x RETURN x" );
         }
 
-        List<Integer> ints = result.list( record -> record.get( 0 ).asInt() );
-        assertEquals( 0, ints.size() );
+        assertThrows( ResultConsumedException.class, () -> result.list( record -> record.get( 0 ).asInt() ) );
     }
 
     @Test
@@ -898,7 +898,7 @@ class SessionIT
     }
 
     @Test
-    void shouldNotAllowConsumingRecordsAfterFailureInSessionClose()
+    void shouldReportFailureInClose()
     {
         Session session = neo4j.driver().session();
 
@@ -906,8 +906,6 @@ class SessionIT
 
         ClientException e = assertThrows( ClientException.class, session::close );
         assertThat( e, is( arithmeticError() ) );
-
-        assertFalse( result.hasNext() );
     }
 
     @Test
@@ -924,8 +922,7 @@ class SessionIT
             assertEquals( query, summary.statement().text() );
             assertEquals( StatementType.READ_ONLY, summary.statementType() );
 
-            List<Record> records = result.list();
-            assertEquals( 0, records.size() );
+            assertThrows( ResultConsumedException.class, result::list );
         }
     }
 
@@ -941,8 +938,7 @@ class SessionIT
             result = session.run( query );
         }
 
-        List<Record> records = result.list();
-        assertEquals( 0, records.size() );
+        assertThrows( ResultConsumedException.class, result::list );
     }
 
     @Test
@@ -1102,24 +1098,7 @@ class SessionIT
     }
 
     @Test
-    void shouldConsume()
-    {
-        try ( Session session = neo4j.driver().session() )
-        {
-            String query = "UNWIND [1, 2, 3, 4, 5] AS x RETURN x";
-            StatementResult result = session.run( query );
-
-            ResultSummary summary = result.summary();
-            assertEquals( query, summary.statement().text() );
-            assertEquals( StatementType.READ_ONLY, summary.statementType() );
-
-            assertFalse( result.hasNext() );
-            assertEquals( emptyList(), result.list() );
-        }
-    }
-
-    @Test
-    void shouldConsumeWithFailure()
+    void shouldReportFailureInSummary()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -1128,9 +1107,6 @@ class SessionIT
 
             ClientException e = assertThrows( ClientException.class, result::summary );
             assertThat( e, is( arithmeticError() ) );
-
-            assertFalse( result.hasNext() );
-            assertEquals( emptyList(), result.list() );
 
             ResultSummary summary = result.summary();
             assertEquals( query, summary.statement().text() );

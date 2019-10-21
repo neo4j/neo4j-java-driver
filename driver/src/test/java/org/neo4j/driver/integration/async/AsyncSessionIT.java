@@ -49,6 +49,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
@@ -59,7 +60,6 @@ import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
 import static java.util.Collections.emptyIterator;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
@@ -818,18 +818,6 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldNotBePossibleToConsumeResultAfterSessionIsClosed()
-    {
-        CompletionStage<StatementResultCursor> cursorStage = session.runAsync( "UNWIND range(1, 20000) AS x RETURN x" );
-
-        await( session.closeAsync() );
-
-        StatementResultCursor cursor = await( cursorStage );
-        List<Integer> ints = await( cursor.listAsync( record -> record.get( 0 ).asInt() ) );
-        assertEquals( 0, ints.size() );
-    }
-
-    @Test
     void shouldPropagateFailureFromSummary()
     {
         StatementResultCursor cursor = await( session.runAsync( "RETURN Something" ) );
@@ -880,45 +868,6 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldNotAllowAccessingRecordsAfterSummary()
-    {
-        int recordCount = 10_000;
-        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN 'Hello-' + x";
-
-        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
-                .thenCompose( cursor -> cursor.summaryAsync().thenCompose( summary -> cursor.listAsync()
-                        .thenApply( records -> new SummaryAndRecords( summary, records ) ) ) );
-
-        SummaryAndRecords summaryAndRecords = await( summaryAndRecordsStage );
-        ResultSummary summary = summaryAndRecords.summary;
-        List<Record> records = summaryAndRecords.records;
-
-        assertNotNull( summary );
-        assertNotNull( records );
-
-        assertEquals( neo4j.address().toString(), summary.server().address() );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( StatementType.READ_ONLY, summary.statementType() );
-
-        assertEquals( 0, records.size() );
-    }
-
-    @Test
-    void shouldNotAllowAccessingRecordsAfterSessionClosed()
-    {
-        int recordCount = 7_500;
-        String query = "UNWIND range(1, " + recordCount + ") AS x RETURN x";
-
-        CompletionStage<List<Record>> recordsStage = session.runAsync( query )
-                .thenCompose( cursor -> session.closeAsync().thenApply( ignore -> cursor ) )
-                .thenCompose( StatementResultCursor::listAsync );
-
-        List<Record> records = await( recordsStage );
-
-        assertEquals( 0, records.size() );
-    }
-
-    @Test
     void shouldAllowReturningNullFromAsyncTransactionFunction()
     {
         CompletionStage<Object> readResult = session.readTransactionAsync( tx -> null );
@@ -926,75 +875,6 @@ class AsyncSessionIT
 
         CompletionStage<Object> writeResult = session.writeTransactionAsync( tx -> null );
         assertNull( await( writeResult ) );
-    }
-
-    @Test
-    void shouldReturnNoRecordsWhenConsumed()
-    {
-        String query = "UNWIND range(1, 5) AS x RETURN x";
-        CompletionStage<SummaryAndRecords> summaryAndRecordStage = session.runAsync( query )
-                .thenCompose( cursor ->
-                {
-                    CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
-                    CompletionStage<Record> recordStage = cursor.nextAsync();
-                    return summaryStage.thenCombine( recordStage, SummaryAndRecords::new );
-                } );
-
-        SummaryAndRecords result = await( summaryAndRecordStage );
-
-        assertEquals( query, result.summary.statement().text() );
-        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
-
-        assertEquals( 1, result.records.size() );
-        assertNull( result.records.get( 0 ) );
-    }
-
-    @Test
-    void shouldStopReturningRecordsAfterConsumed()
-    {
-        String query = "UNWIND range(1, 5) AS x RETURN x";
-        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
-                .thenCompose( cursor -> cursor.nextAsync() // fetch just a single record
-                        .thenCompose( record1 ->
-                        {
-                            // then summary rest
-                            CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
-                            // and try to fetch another record
-                            CompletionStage<Record> record2Stage = cursor.nextAsync();
-                            return summaryStage.thenCombine( record2Stage,
-                                    ( summary, record2 ) -> new SummaryAndRecords( summary, record1, record2 ) );
-                        } ) );
-
-        SummaryAndRecords result = await( summaryAndRecordsStage );
-
-        assertEquals( query, result.summary.statement().text() );
-        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
-
-        assertEquals( 2, result.records.size() );
-        Record record1 = result.records.get( 0 );
-        assertNotNull( record1 );
-        assertEquals( 1, record1.get( 0 ).asInt() );
-        Record record2 = result.records.get( 1 );
-        assertNull( record2 );
-    }
-
-    @Test
-    void shouldReturnEmptyListOfRecordsWhenConsumed()
-    {
-        String query = "UNWIND range(1, 5) AS x RETURN x";
-        CompletionStage<SummaryAndRecords> summaryAndRecordsStage = session.runAsync( query )
-                .thenCompose( cursor ->
-                {
-                    CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
-                    CompletionStage<List<Record>> recordsStage = cursor.listAsync();
-                    return summaryStage.thenCombine( recordsStage, SummaryAndRecords::new );
-                } );
-
-        SummaryAndRecords result = await( summaryAndRecordsStage );
-
-        assertEquals( query, result.summary.statement().text() );
-        assertEquals( StatementType.READ_ONLY, result.summary.statementType() );
-        assertEquals( emptyList(), result.records );
     }
 
     private Future<List<CompletionStage<Record>>> runNestedQueries( StatementResultCursor inputCursor )
@@ -1096,8 +976,8 @@ class AsyncSessionIT
         assertEquals( query, summary.statement().text() );
         assertEquals( emptyMap(), summary.statement().parameters().asMap() );
 
-        // no records should be available, they should all be summaryd
-        assertNull( await( cursor.nextAsync() ) );
+        // no records should be available, they should all be consumed
+        assertThrows( ResultConsumedException.class, () -> await( cursor.nextAsync() ) );
     }
 
     private static class InvocationTrackingWork implements AsyncTransactionWork<CompletionStage<Record>>
@@ -1184,24 +1064,6 @@ class AsyncSessionIT
             {
                 resultFuture.complete( record );
             }
-        }
-    }
-
-    private static class SummaryAndRecords
-    {
-        final ResultSummary summary;
-        final List<Record> records;
-
-        SummaryAndRecords( ResultSummary summary, Record... records )
-        {
-            this.summary = summary;
-            this.records = Arrays.asList( records );
-        }
-
-        SummaryAndRecords( ResultSummary summary, List<Record> records )
-        {
-            this.summary = summary;
-            this.records = records;
         }
     }
 }

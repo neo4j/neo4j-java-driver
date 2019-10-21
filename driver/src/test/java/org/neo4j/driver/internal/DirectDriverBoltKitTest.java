@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.net.URI;
@@ -426,8 +427,8 @@ class DirectDriverBoltKitTest
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
-            Flux<String> keys = Flux.using(
-                    driver::rxSession,
+            Flux<String> keys = Flux.usingWhen(
+                    Mono.fromSupplier( driver::rxSession ),
                     session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
                     RxSession::close );
             StepVerifier.create( keys ).expectNext( "a" ).verifyComplete();

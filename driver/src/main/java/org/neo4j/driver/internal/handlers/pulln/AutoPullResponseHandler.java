@@ -139,15 +139,14 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
     public synchronized CompletionStage<ResultSummary> summaryAsync()
     {
+        records.clear();
         if ( isDone() )
         {
-            records.clear();
             return completedWithValueIfNoFailure( summary );
         }
         else
         {
             cancel();
-            records.clear();
             if ( summaryFuture == null )
             {
                 summaryFuture = new CompletableFuture<>();

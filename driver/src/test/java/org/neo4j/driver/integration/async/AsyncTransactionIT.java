@@ -43,6 +43,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.types.Node;
@@ -873,6 +874,6 @@ class AsyncTransactionIT
         assertEquals( emptyMap(), summary.statement().parameters().asMap() );
 
         // no records should be available, they should all be consumed
-        assertNull( await( cursor.nextAsync() ) );
+        assertThrows( ResultConsumedException.class, () -> await( cursor.nextAsync() ) );
     }
 }
