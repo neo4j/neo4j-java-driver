@@ -87,4 +87,15 @@ public interface SummaryCounters
      * @return number of constraints removed from the schema.
      */
     int constraintsRemoved();
+
+    /**
+     * If the query updated the system graph in any way, this method will return true,
+     * @return true if the system graph has been updated.
+     */
+    boolean containsSystemUpdates();
+
+    /**
+     * @return the number of system updates performed by this query.
+     */
+    int systemUpdates();
 }

@@ -178,7 +178,8 @@ public class MetadataExtractor
                     counterValue( countersValue, "indexes-added" ),
                     counterValue( countersValue, "indexes-removed" ),
                     counterValue( countersValue, "constraints-added" ),
-                    counterValue( countersValue, "constraints-removed" )
+                    counterValue( countersValue, "constraints-removed" ),
+                    counterValue( countersValue, "system-updates" )
             );
         }
         return null;
