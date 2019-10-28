@@ -27,16 +27,6 @@ import java.util.List;
  */
 public interface ProfiledPlan extends Plan
 {
-    /**
-     * @return the number of times this part of the plan touched the underlying data stores
-     */
-    long dbHits();
-
-    /**
-     * @return the number of records this part of the plan produced
-     */
-    long records();
-
     @Override
     List<ProfiledPlan> children();
 }

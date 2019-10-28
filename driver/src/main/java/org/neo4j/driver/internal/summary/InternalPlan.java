@@ -21,11 +21,11 @@ package org.neo4j.driver.internal.summary;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.summary.Plan;
-import java.util.function.Function;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.Values.ofString;
@@ -122,14 +122,8 @@ public class InternalPlan<T extends Plan> implements Plan
         return EXPLAIN_PLAN.create( operatorType, arguments, identifiers, children, null );
     }
 
-    public static final PlanCreator<Plan> EXPLAIN_PLAN = new PlanCreator<Plan>()
-    {
-        @Override
-        public Plan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<Plan> children, Value originalPlanValue )
-        {
-            return new InternalPlan<>( operatorType, arguments, identifiers, children );
-        }
-    };
+    public static final PlanCreator<Plan> EXPLAIN_PLAN =
+            ( operatorType, arguments, identifiers, children, originalPlanValue ) -> new InternalPlan<>( operatorType, arguments, identifiers, children );
 
     /** Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` statement */
     public static final Function<Value, Plan> EXPLAIN_PLAN_FROM_VALUE = new Converter<>(EXPLAIN_PLAN);

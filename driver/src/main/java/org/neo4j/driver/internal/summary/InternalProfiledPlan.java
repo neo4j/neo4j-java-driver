@@ -20,46 +20,20 @@ package org.neo4j.driver.internal.summary;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ProfiledPlan;
-import java.util.function.Function;
 
 public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements ProfiledPlan
 {
-    private final long dbHits;
-    private final long records;
-
-    protected InternalProfiledPlan( String operatorType, Map<String, Value> arguments,
-                                    List<String> identifiers, List<ProfiledPlan> children, long dbHits, long records )
+    protected InternalProfiledPlan( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children )
     {
         super( operatorType, arguments, identifiers, children );
-        this.dbHits = dbHits;
-        this.records = records;
     }
 
-    @Override
-    public long dbHits()
-    {
-        return dbHits;
-    }
-
-    @Override
-    public long records()
-    {
-        return records;
-    }
-
-    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN = new PlanCreator<ProfiledPlan>()
-    {
-        @Override
-        public ProfiledPlan create( String operatorType, Map<String,Value> arguments, List<String> identifiers, List<ProfiledPlan> children, Value originalPlanValue )
-        {
-            return new InternalProfiledPlan( operatorType, arguments, identifiers, children,
-                    originalPlanValue.get( "dbHits" ).asLong(),
-                    originalPlanValue.get( "rows" ).asLong() );
-        }
-    };
+    public static final PlanCreator<ProfiledPlan> PROFILED_PLAN =
+            ( operatorType, arguments, identifiers, children, originalPlanValue ) -> new InternalProfiledPlan( operatorType, arguments, identifiers, children );
 
     /** Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` statement */
     public static final Function<Value, ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>(PROFILED_PLAN);

@@ -144,6 +144,10 @@ class SummaryIT
             StatementResult result = session.run( "CREATE USER foo SET PASSWORD 'bar'" );
             assertThat( result.summary().counters().containsUpdates(), equalTo( false ) );
             assertThat( result.summary().counters().containsSystemUpdates(), equalTo( true ) );
+
+            StatementResult deleteResult = session.run( "DROP USER foo" );
+            assertThat( deleteResult.summary().counters().containsUpdates(), equalTo( false ) );
+            assertThat( deleteResult.summary().counters().containsSystemUpdates(), equalTo( true ) );
         }
     }
 
@@ -184,9 +188,8 @@ class SummaryIT
         assertEquals( summary.plan(), summary.profile() );
 
         ProfiledPlan profile = summary.profile();
-
-        assertEquals( 0, profile.dbHits() );
-        assertEquals( 1, profile.records() );
+        assertEquals( 0, profile.arguments().get( "dbHits" ).asInt() );
+        assertEquals( 1, profile.arguments().get( "rows" ).asInt() );
     }
 
     @Test

@@ -226,15 +226,11 @@ class MetadataExtractorTest
                 "operatorType", "ProduceResult",
                 "args", parameters( "a", 42 ),
                 "identifiers", values( "a", "b" ),
-                "rows", value( 424242 ),
-                "dbHits", value( 242424 ),
                 "children", values(
                         parameters(
                                 "operatorType", "LabelScan",
                                 "args", parameters( "x", 1 ),
-                                "identifiers", values( "y", "z" ),
-                                "rows", value( 2 ),
-                                "dbHits", value( 4 )
+                                "identifiers", values( "y", "z" )
                         )
                 )
         ) );
@@ -247,8 +243,6 @@ class MetadataExtractorTest
         assertEquals( "ProduceResult", summary.profile().operatorType() );
         assertEquals( singletonMap( "a", value( 42 ) ), summary.profile().arguments() );
         assertEquals( asList( "a", "b" ), summary.profile().identifiers() );
-        assertEquals( 424242, summary.profile().records() );
-        assertEquals( 242424, summary.profile().dbHits() );
 
         List<ProfiledPlan> children = summary.profile().children();
         assertEquals( 1, children.size() );
@@ -257,8 +251,6 @@ class MetadataExtractorTest
         assertEquals( "LabelScan", child.operatorType() );
         assertEquals( singletonMap( "x", value( 1 ) ), child.arguments() );
         assertEquals( asList( "y", "z" ), child.identifiers() );
-        assertEquals( 2, child.records() );
-        assertEquals( 4, child.dbHits() );
     }
 
     @Test

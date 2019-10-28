@@ -49,8 +49,6 @@ class InternalProfiledPlanTest
         ProfiledPlan plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( value );
 
         // THEN
-        assertThat( plan.dbHits(), equalTo( 42L ) );
-        assertThat( plan.records(), equalTo( 1337L ) );
         assertThat( plan.operatorType(), equalTo( "AwesomeOperator" ) );
         assertThat( plan.identifiers(), equalTo( asList( "n1", "n2" ) ) );
         assertThat( plan.arguments().values(), hasItem( new StringValue( "CYPHER 1337" ) ) );
@@ -71,8 +69,6 @@ class InternalProfiledPlanTest
         // THEN
         for ( ProfiledPlan child : plan.children() )
         {
-            assertThat( child.dbHits(), equalTo( 42L ) );
-            assertThat( child.records(), equalTo( 1337L ) );
             assertThat( child.operatorType(), equalTo( "AwesomeOperator" ) );
             assertThat( child.identifiers(), equalTo( asList( "n1", "n2" ) ) );
             assertThat( child.arguments().values(), hasItem( new StringValue( "CYPHER 1337" ) ) );
@@ -84,8 +80,6 @@ class InternalProfiledPlanTest
     {
         Map<String,Value> map = new HashMap<>();
         map.put( "operatorType", new StringValue( "AwesomeOperator" ) );
-        map.put( "rows", new IntegerValue( 1337L ) );
-        map.put( "dbHits", new IntegerValue( 42 ) );
         map.put( "identifiers", new ListValue( new StringValue( "n1" ), new StringValue( "n2" ) ) );
         Map<String,Value> args = new HashMap<>();
         args.put( "version", new StringValue( "CYPHER 1337" ) );
