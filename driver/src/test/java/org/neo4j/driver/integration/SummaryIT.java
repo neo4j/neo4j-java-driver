@@ -18,22 +18,27 @@
  */
 package org.neo4j.driver.integration;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-import org.neo4j.driver.util.SessionExtension;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -44,12 +49,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.SessionConfig.forDatabase;
 
 @ParallelizableIT
 class SummaryIT
 {
     @RegisterExtension
-    static final SessionExtension session = new SessionExtension();
+    static final DatabaseExtension neo4j = new DatabaseExtension();
+    private Session session;
+
+    @BeforeEach
+    void setup()
+    {
+        session = neo4j.driver().session();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        if ( session != null && session.isOpen() )
+        {
+            session.close();
+        }
+        session = null;
+    }
 
     @Test
     void shouldContainBasicMetadata()
@@ -110,6 +133,18 @@ class SummaryIT
                 .summary().counters().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
                 .summary().counters().constraintsRemoved(), equalTo( 1 ) );
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
+    void shouldGetSystemUpdates() throws Throwable
+    {
+        try ( Session session = neo4j.driver().session( forDatabase( "system" ) ) )
+        {
+            StatementResult result = session.run( "CREATE USER foo SET PASSWORD 'bar'" );
+            assertThat( result.summary().counters().containsUpdates(), equalTo( false ) );
+            assertThat( result.summary().counters().containsSystemUpdates(), equalTo( true ) );
+        }
     }
 
     @Test

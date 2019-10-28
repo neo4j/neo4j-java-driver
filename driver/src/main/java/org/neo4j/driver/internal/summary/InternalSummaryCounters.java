@@ -23,7 +23,7 @@ import org.neo4j.driver.summary.SummaryCounters;
 public class InternalSummaryCounters implements SummaryCounters
 {
     public static final InternalSummaryCounters EMPTY_STATS =
-            new InternalSummaryCounters( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
+            new InternalSummaryCounters( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );
     private final int nodesCreated;
     private final int nodesDeleted;
     private final int relationshipsCreated;
@@ -35,6 +35,7 @@ public class InternalSummaryCounters implements SummaryCounters
     private final int indexesRemoved;
     private final int constraintsAdded;
     private final int constraintsRemoved;
+    private final int systemUpdates;
 
     public InternalSummaryCounters(
             int nodesCreated, int nodesDeleted,
@@ -42,7 +43,7 @@ public class InternalSummaryCounters implements SummaryCounters
             int propertiesSet,
             int labelsAdded, int labelsRemoved,
             int indexesAdded, int indexesRemoved,
-            int constraintsAdded, int constraintsRemoved )
+            int constraintsAdded, int constraintsRemoved, int systemUpdates )
     {
         this.nodesCreated = nodesCreated;
         this.nodesDeleted = nodesDeleted;
@@ -55,6 +56,7 @@ public class InternalSummaryCounters implements SummaryCounters
         this.indexesRemoved = indexesRemoved;
         this.constraintsAdded = constraintsAdded;
         this.constraintsRemoved = constraintsRemoved;
+        this.systemUpdates = systemUpdates;
     }
 
     @Override
@@ -141,6 +143,18 @@ public class InternalSummaryCounters implements SummaryCounters
     }
 
     @Override
+    public boolean containsSystemUpdates()
+    {
+        return isPositive( systemUpdates );
+    }
+
+    @Override
+    public int systemUpdates()
+    {
+        return systemUpdates;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
@@ -164,7 +178,8 @@ public class InternalSummaryCounters implements SummaryCounters
             && indexesAdded == that.indexesAdded
             && indexesRemoved == that.indexesRemoved
             && constraintsAdded == that.constraintsAdded
-            && constraintsRemoved == that.constraintsRemoved;
+            && constraintsRemoved == that.constraintsRemoved
+            && systemUpdates == that.systemUpdates;
     }
 
     @Override
@@ -181,6 +196,7 @@ public class InternalSummaryCounters implements SummaryCounters
         result = 31 * result + indexesRemoved;
         result = 31 * result + constraintsAdded;
         result = 31 * result + constraintsRemoved;
+        result = 31 * result + systemUpdates;
         return result;
     }
 

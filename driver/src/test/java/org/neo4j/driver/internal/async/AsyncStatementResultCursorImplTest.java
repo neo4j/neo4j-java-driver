@@ -88,7 +88,8 @@ class AsyncStatementResultCursorImplTest
 
         ResultSummary summary = new InternalResultSummary( new Statement( "RETURN 42" ),
                 new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() ), DEFAULT_DATABASE_INFO, StatementType.SCHEMA_WRITE,
-                new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ), null, null, emptyList(), 42, 42 );
+                new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0 ),
+                null, null, emptyList(), 42, 42 );
         when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
