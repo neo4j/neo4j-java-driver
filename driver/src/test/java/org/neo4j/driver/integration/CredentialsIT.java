@@ -35,6 +35,8 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.SecurityException;
+import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
+import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -58,6 +60,8 @@ class CredentialsIT
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
     @Test
+    @DisabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
+    // This feature is removed in 4.0
     void shouldBePossibleToChangePassword() throws Exception
     {
         String newPassword = "secret";
