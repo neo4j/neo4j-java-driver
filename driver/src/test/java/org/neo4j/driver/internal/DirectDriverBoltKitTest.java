@@ -51,6 +51,7 @@ import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.util.StubServer;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -427,11 +428,11 @@ class DirectDriverBoltKitTest
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
-            Flux<String> keys = Flux.usingWhen(
+            Flux<List<String>> keys = Flux.usingWhen(
                     Mono.fromSupplier( driver::rxSession ),
                     session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
                     RxSession::close );
-            StepVerifier.create( keys ).expectNext( "a" ).verifyComplete();
+            StepVerifier.create( keys ).expectNext( singletonList( "a" ) ).verifyComplete();
         }
         finally
         {

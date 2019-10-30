@@ -33,6 +33,16 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.Transaction;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.DriverFactory;
@@ -47,23 +57,14 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxSession;
+import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementRunner;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,10 +76,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
+import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -317,7 +318,7 @@ class ConnectionHandlingIT
         RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // When we only run but not pull
-        StepVerifier.create( Flux.from( res.keys() ) ).expectNext( "a" ).verifyComplete();
+        StepVerifier.create( Flux.from( res.keys() ) ).expectNext( singletonList( "a" ) ).verifyComplete();
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
