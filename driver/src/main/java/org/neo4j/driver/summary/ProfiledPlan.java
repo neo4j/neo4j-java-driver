@@ -37,6 +37,31 @@ public interface ProfiledPlan extends Plan
      */
     long records();
 
+    /**
+     * @return if the number page cache hits and misses and the ratio was recorded.
+     */
+    boolean hasPageCacheStats();
+
+    /**
+     * @return number of page cache hits caused by executing the associated execution step
+     */
+    long pageCacheHits();
+
+    /**
+     * @return number of page cache misses caused by executing the associated execution step
+     */
+    long pageCacheMisses();
+
+    /**
+     * @return the ratio of page cache hits to total number of lookups or {@link Double#NaN} if no data is available
+     */
+    double pageCacheHitRatio();
+
+    /**
+     * @return amount of time spent in the associated execution step.
+     */
+    long time();
+
     @Override
     List<ProfiledPlan> children();
 }

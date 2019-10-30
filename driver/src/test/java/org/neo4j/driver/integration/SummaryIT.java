@@ -185,6 +185,7 @@ class SummaryIT
 
         ProfiledPlan profile = summary.profile();
 
+        assertEquals( 0, profile.time() );
         assertEquals( 0, profile.dbHits() );
         assertEquals( 1, profile.records() );
     }
