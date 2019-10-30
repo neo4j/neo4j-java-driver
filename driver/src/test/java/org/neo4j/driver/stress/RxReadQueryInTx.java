@@ -45,7 +45,8 @@ public class RxReadQueryInTx<C extends AbstractContext> extends AbstractRxQuery<
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         RxSession session = newSession( AccessMode.READ, context );
-        Flux.usingWhen( session.beginTransaction(), this::processAndGetSummary, RxTransaction::commit, RxTransaction::rollback )
+        Flux.usingWhen( session.beginTransaction(), this::processAndGetSummary,
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null )
                 .subscribe( summary -> {
                     context.readCompleted( summary );
                     queryFinished.complete( null );

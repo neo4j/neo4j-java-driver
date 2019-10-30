@@ -141,8 +141,8 @@ class SummaryIT
         try ( Session session = neo4j.driver().session( forDatabase( "system" ) ) )
         {
             StatementResult result = session.run( "CREATE USER foo SET PASSWORD 'bar'" );
-            assertThat( result.summary().counters().containsUpdates(), equalTo( false ) );
-            assertThat( result.summary().counters().containsSystemUpdates(), equalTo( true ) );
+            assertThat( result.consume().counters().containsUpdates(), equalTo( false ) );
+            assertThat( result.consume().counters().containsSystemUpdates(), equalTo( true ) );
         }
     }
 

@@ -123,7 +123,7 @@ class RxTransactionIT
         Flux<Integer> ids = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "CREATE (n:Node {id: 42}) RETURN n" ).records() )
                         .map( record -> record.get( 0 ).asNode().get( "id" ).asInt() ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( ids ).expectNext( 42 ).verifyComplete();
         assertEquals( 1, countNodes( 42 ) );
@@ -348,7 +348,7 @@ class RxTransactionIT
     {
         Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "WRONG" ).records() ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).verifyErrorSatisfies( error ->
                 assertThat( error.getMessage(), containsString( "Invalid input" ) ) );
@@ -501,7 +501,7 @@ class RxTransactionIT
         Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).doOnNext( record -> { throw e; } ),
                 RxTransaction::commit,
-                RxTransaction::rollback );
+                ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> assertEquals( e, error ) ).verify();
     }
@@ -546,7 +546,7 @@ class RxTransactionIT
 
         Flux<Object> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).map( record -> { throw e; } ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> {
             assertEquals( e, error );
@@ -680,7 +680,7 @@ class RxTransactionIT
         await( Flux.usingWhen( session.beginTransaction(),
                 tx -> tx.run( "CREATE (:MyNode)" ).records(),
                 RxTransaction::commit,
-                RxTransaction::rollback ) );
+                ( tx, error ) -> tx.rollback(), null ) );
 
         Bookmark bookmarkAfter = session.lastBookmark();
 
@@ -795,7 +795,6 @@ class RxTransactionIT
 
     private void testForEach( String query, int expectedSeenRecords )
     {
-
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx -> {
             RxStatementResult result = tx.run( query );
             AtomicInteger recordsSeen = new AtomicInteger();
@@ -808,7 +807,7 @@ class RxTransactionIT
                         assertEquals( emptyMap(), s.statement().parameters().asMap() );
                         assertEquals( expectedSeenRecords, recordsSeen.get() );
                     } );
-            }, RxTransaction::commit, RxTransaction::rollback );
+        }, RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( summary ).expectNextCount( 1 ).verifyComplete(); // we indeed get a summary.
     }
@@ -820,7 +819,7 @@ class RxTransactionIT
         Flux<List<Record>> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( query ).records() ).collectList(),
                 RxTransaction::commit,
-                RxTransaction::rollback );
+                ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records.single() ).consumeNextWith( allRecords -> {
             for ( Record record : allRecords )
@@ -836,9 +835,7 @@ class RxTransactionIT
     {
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx ->
             tx.run( query ).consume(),
-            RxTransaction::commit,
-            RxTransaction::rollback
-        );
+            RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( summary.single() ).consumeNextWith( Assertions::assertNotNull ).verifyComplete();
     }
