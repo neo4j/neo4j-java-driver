@@ -68,7 +68,7 @@ class StatementRunnerCloseIT
         StatementResult result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
 
         // When
-        result.summary();
+        result.consume();
 
         // Then
         assertThrows( ResultConsumedException.class, result::hasNext );
@@ -110,10 +110,10 @@ class StatementRunnerCloseIT
         List<String> keys = result.keys();
 
         // When
-        ResultSummary summary = result.summary();
+        ResultSummary summary = result.consume();
 
         // Then
-        ResultSummary summary1 = result.summary();
+        ResultSummary summary1 = result.consume();
         List<String> keys1 = result.keys();
 
         assertEquals( summary, summary1 );
@@ -127,13 +127,13 @@ class StatementRunnerCloseIT
         Session session = neo4j.driver().session();
         StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
         List<String> keys = result.keys();
-        ResultSummary summary = result.summary();
+        ResultSummary summary = result.consume();
 
         // When
         session.close();
 
         // Then
-        ResultSummary summary1 = result.summary();
+        ResultSummary summary1 = result.consume();
         List<String> keys1 = result.keys();
 
         assertEquals( summary, summary1 );
@@ -148,7 +148,7 @@ class StatementRunnerCloseIT
         StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
 
         // When
-        await( result.summaryAsync() );
+        await( result.consumeAsync() );
 
         // Then
         assertThrows( ResultConsumedException.class, () -> await( result.nextAsync() ) );
@@ -187,10 +187,10 @@ class StatementRunnerCloseIT
         List<String> keys = result.keys();
 
         // When
-        ResultSummary summary = await( result.summaryAsync() );
+        ResultSummary summary = await( result.consumeAsync() );
 
         // Then
-        ResultSummary summary1 = await( result.summaryAsync() );
+        ResultSummary summary1 = await( result.consumeAsync() );
         List<String> keys1 = result.keys();
 
         assertEquals( summary, summary1 );
@@ -204,14 +204,14 @@ class StatementRunnerCloseIT
         AsyncSession session = neo4j.driver().asyncSession();
         StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
         List<String> keys = result.keys();
-        ResultSummary summary = await( result.summaryAsync() );
+        ResultSummary summary = await( result.consumeAsync() );
 
         // When
         await( session.closeAsync() );
 
         // Then
         List<String> keys1 = result.keys();
-        ResultSummary summary1 = await( result.summaryAsync() );
+        ResultSummary summary1 = await( result.consumeAsync() );
 
         assertEquals( summary, summary1 );
         assertEquals( keys, keys1 );

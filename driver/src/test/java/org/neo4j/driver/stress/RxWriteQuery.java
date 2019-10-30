@@ -46,7 +46,7 @@ public class RxWriteQuery<C extends AbstractContext> extends AbstractRxQuery<C>
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.WRITE, context ) ),
-                session -> session.run( "CREATE ()" ).summary(), RxSession::close )
+                session -> session.run( "CREATE ()" ).consume(), RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
                     assertEquals( 1, summary.counters().nodesCreated() );

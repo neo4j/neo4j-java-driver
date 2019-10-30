@@ -53,6 +53,6 @@ public class BlockingWriteQueryUsingReadSessionInTx<C extends AbstractContext> e
             }
         } );
         assertNotNull( resultRef.get() );
-        assertEquals( 0, resultRef.get().summary().counters().nodesCreated() );
+        assertEquals( 0, resultRef.get().consume().counters().nodesCreated() );
     }
 }

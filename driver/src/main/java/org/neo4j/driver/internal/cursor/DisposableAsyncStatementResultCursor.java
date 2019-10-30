@@ -48,10 +48,10 @@ public class DisposableAsyncStatementResultCursor implements AsyncStatementResul
     }
 
     @Override
-    public CompletionStage<ResultSummary> summaryAsync()
+    public CompletionStage<ResultSummary> consumeAsync()
     {
         isDisposed = true;
-        return delegate.summaryAsync();
+        return delegate.consumeAsync();
     }
 
     @Override
@@ -91,18 +91,18 @@ public class DisposableAsyncStatementResultCursor implements AsyncStatementResul
     }
 
     @Override
-    public CompletionStage<Throwable> consumeAsync()
+    public CompletionStage<Throwable> discardAllFailureAsync()
     {
         isDisposed = true;
-        return delegate.consumeAsync();
+        return delegate.discardAllFailureAsync();
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> pullAllFailureAsync()
     {
         // This one does not dispose the result so that a user could still visit the buffered result after this method call.
         // This also does not assert not disposed so that this method can be called after summary.
-        return delegate.failureAsync();
+        return delegate.pullAllFailureAsync();
     }
 
     private <T> CompletableFuture<T> assertNotDisposed()

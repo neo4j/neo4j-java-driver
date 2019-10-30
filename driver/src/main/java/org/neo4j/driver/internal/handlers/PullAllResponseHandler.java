@@ -28,7 +28,7 @@ import org.neo4j.driver.summary.ResultSummary;
 
 public interface PullAllResponseHandler extends ResponseHandler
 {
-    CompletionStage<ResultSummary> summaryAsync();
+    CompletionStage<ResultSummary> consumeAsync();
 
     CompletionStage<Record> nextAsync();
 
@@ -36,7 +36,7 @@ public interface PullAllResponseHandler extends ResponseHandler
 
     <T> CompletionStage<List<T>> listAsync( Function<Record, T> mapFunction );
 
-    CompletionStage<Throwable> failureAsync();
+    CompletionStage<Throwable> pullAllFailureAsync();
 
     void prePopulateRecords();
 }

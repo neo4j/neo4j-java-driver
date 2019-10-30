@@ -96,7 +96,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         List<String> keys = asList( "key1", "key2" );
         LegacyPullAllResponseHandler handler = newHandler( keys, connection );
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
 
         int recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 10;
@@ -122,7 +122,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         List<String> keys = asList( "key1", "key2" );
         LegacyPullAllResponseHandler handler = newHandler( keys, connection );
 
-        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse( failureFuture.isDone() );
 
         int recordCount = LegacyPullAllResponseHandler.RECORD_BUFFER_HIGH_WATERMARK + 5;
@@ -163,7 +163,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         verify( connection, never() ).enableAutoRead();
         verify( connection, never() ).disableAutoRead();
 
-        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse( failureFuture.isDone() );
 
         verify( connection ).enableAutoRead();
@@ -203,7 +203,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         handler.onFailure( error );
 
         // consume the error
-        assertEquals( error, await( handler.failureAsync() ) );
+        assertEquals( error, await( handler.pullAllFailureAsync() ) );
         assertEquals( emptyList(), await( handler.listAsync( Function.identity() ) ) );
     }
 
@@ -220,7 +220,7 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         verify( connection, never() ).enableAutoRead();
         verify( connection, never() ).disableAutoRead();
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
 
         verify( connection ).enableAutoRead();

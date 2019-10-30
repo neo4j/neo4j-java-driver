@@ -221,7 +221,7 @@ class AsyncTransactionIT
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( cursor.summaryAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -256,7 +256,7 @@ class AsyncTransactionIT
 
         StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( cursor3.summaryAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -279,7 +279,7 @@ class AsyncTransactionIT
 
         StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( cursor3.summaryAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
@@ -380,7 +380,7 @@ class AsyncTransactionIT
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query, params ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 2, summary.counters().nodesCreated() );
@@ -403,7 +403,7 @@ class AsyncTransactionIT
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query ), summary.statement() );
         assertEquals( 0, summary.counters().nodesCreated() );
@@ -431,7 +431,7 @@ class AsyncTransactionIT
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query, params ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 1, summary.counters().nodesCreated() );
@@ -774,7 +774,7 @@ class AsyncTransactionIT
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e1.code(), containsString( "SyntaxError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -788,7 +788,7 @@ class AsyncTransactionIT
         StatementResultCursor cursor = await( tx.runAsync(
                 "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" ) );
 
-        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e1.code(), containsString( "TypeError" ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -801,7 +801,7 @@ class AsyncTransactionIT
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
         assertNull( await( tx.rollbackAsync() ) );
     }
@@ -812,7 +812,7 @@ class AsyncTransactionIT
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 5 / x" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
         assertNull( await( tx.rollbackAsync() ) );
     }
@@ -824,9 +824,9 @@ class AsyncTransactionIT
 
         StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
-        assertNotNull( await( cursor.summaryAsync() ) );
+        assertNotNull( await( cursor.consumeAsync() ) );
     }
 
     private int countNodes( Object id )
@@ -867,7 +867,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         StatementResultCursor cursor = await( tx.runAsync( query ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertNotNull( summary );
         assertEquals( query, summary.statement().text() );

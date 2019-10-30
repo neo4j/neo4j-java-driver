@@ -285,7 +285,7 @@ class AsyncSessionIT
         Value params = parameters( "id", 1, "name", "TheNode" );
 
         StatementResultCursor cursor = await( session.runAsync( query, params ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 1, summary.counters().nodesCreated() );
@@ -307,7 +307,7 @@ class AsyncSessionIT
         String query = "EXPLAIN CREATE (),() WITH * MATCH (n)-->(m) CREATE (n)-[:HI {id: 'id'}]->(m) RETURN n, m";
 
         StatementResultCursor cursor = await( session.runAsync( query ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query ), summary.statement() );
         assertEquals( 0, summary.counters().nodesCreated() );
@@ -333,7 +333,7 @@ class AsyncSessionIT
         String query = "PROFILE CREATE (:Node)-[:KNOWS]->(:Node) WITH * MATCH (n) RETURN n";
 
         StatementResultCursor cursor = await( session.runAsync( query ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertEquals( new Statement( query ), summary.statement() );
         assertEquals( 2, summary.counters().nodesCreated() );
@@ -639,7 +639,7 @@ class AsyncSessionIT
         assertThrows( ServiceUnavailableException.class, () ->
         {
             StatementResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.summaryAsync() );
+            await( cursor.consumeAsync() );
         } );
 
         neo4j.startDb();
@@ -802,7 +802,7 @@ class AsyncSessionIT
     {
         StatementResultCursor cursor = await( session.runAsync( "SomeWrongQuery" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), startsWith( "Invalid input" ) );
         assertNull( await( session.closeAsync() ) );
     }
@@ -812,7 +812,7 @@ class AsyncSessionIT
     {
         StatementResultCursor cursor = await( session.runAsync( "UNWIND range(10, 0, -1) AS x RETURN 1 / x" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
         assertNull( await( session.closeAsync() ) );
     }
@@ -822,9 +822,9 @@ class AsyncSessionIT
     {
         StatementResultCursor cursor = await( session.runAsync( "RETURN Something" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.summaryAsync() ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
-        assertNotNull( await( cursor.summaryAsync() ) );
+        assertNotNull( await( cursor.consumeAsync() ) );
     }
 
     @Test
@@ -970,7 +970,7 @@ class AsyncSessionIT
     private void testConsume( String query )
     {
         StatementResultCursor cursor = await( session.runAsync( query ) );
-        ResultSummary summary = await( cursor.summaryAsync() );
+        ResultSummary summary = await( cursor.consumeAsync() );
 
         assertNotNull( summary );
         assertEquals( query, summary.statement().text() );

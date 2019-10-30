@@ -53,7 +53,7 @@ public class BlockingReadQueryInTx<C extends AbstractContext> extends AbstractBl
                 assertNotNull( node );
             }
 
-            context.readCompleted( result.summary() );
+            context.readCompleted( result.consume() );
             tx.commit();
         }
     }

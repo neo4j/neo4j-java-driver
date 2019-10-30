@@ -45,7 +45,7 @@ public class BlockingFailingQueryInTx<C extends AbstractContext> extends Abstrac
             {
                 StatementResult result = tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
 
-                Exception e = assertThrows( Exception.class, result::summary );
+                Exception e = assertThrows( Exception.class, result::consume );
                 assertThat( e, is( arithmeticError() ) );
             }
         }

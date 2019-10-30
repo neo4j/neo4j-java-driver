@@ -185,7 +185,7 @@ class InternalStatementResultTest
         assertThrows( ResultConsumedException.class, () ->
         {
             StatementResult result = createResult( 2 );
-            result.summary();
+            result.consume();
             result.single();
         } );
     }
@@ -195,10 +195,10 @@ class InternalStatementResultTest
     {
         // GIVEN
         StatementResult result = createResult( 2 );
-        result.summary();
+        result.consume();
 
         // WHEN
-        result.summary();
+        result.consume();
 
         // THEN
         assertThrows( ResultConsumedException.class, result::hasNext );

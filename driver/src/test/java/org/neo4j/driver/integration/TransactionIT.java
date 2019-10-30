@@ -230,12 +230,12 @@ class TransactionIT
         // GIVEN a successful query in a transaction
         Transaction tx = session.beginTransaction();
         StatementResult result = tx.run( "CREATE (n) RETURN n" );
-        result.summary();
+        result.consume();
         tx.commit();
         tx.close();
 
         // WHEN when running a malformed query in the original session
-        assertThrows( ClientException.class, () -> session.run( "CREAT (n) RETURN n" ).summary() );
+        assertThrows( ClientException.class, () -> session.run( "CREAT (n) RETURN n" ).consume() );
     }
 
     @SuppressWarnings( "ConstantConditions" )
@@ -308,7 +308,7 @@ class TransactionIT
             try ( Transaction tx = session.beginTransaction() )
             {
                 StatementResult result = tx.run( "invalid" );
-                result.summary();
+                result.consume();
             }
         } );
 
@@ -327,9 +327,9 @@ class TransactionIT
         {
             StatementResult result = tx.run( "RETURN Wrong" );
 
-            ClientException e = assertThrows( ClientException.class, result::summary );
+            ClientException e = assertThrows( ClientException.class, result::consume );
             assertThat( e.code(), containsString( "SyntaxError" ) );
-            assertNotNull( result.summary() );
+            assertNotNull( result.consume() );
         }
     }
 
@@ -338,11 +338,11 @@ class TransactionIT
     {
         try ( Session otherSession = session.driver().session() )
         {
-            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).summary();
+            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
             Transaction tx1 = session.beginTransaction();
             Transaction tx2 = otherSession.beginTransaction();
-            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).summary();
+            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
 
             // now 'Beta Ray Bill' node is locked
 
@@ -352,7 +352,7 @@ class TransactionIT
             try
             {
                 ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
-                        () -> tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).summary() );
+                        () -> tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume() );
                 assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
                 assertThat( e.getMessage(), containsString( "Thread interrupted while waiting for result to arrive" ) );
             }
@@ -369,11 +369,11 @@ class TransactionIT
     {
         try ( Session otherSession = session.driver().session() )
         {
-            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).summary();
+            session.run( "CREATE (:Person {name: 'Beta Ray Bill'})" ).consume();
 
             Transaction tx1 = session.beginTransaction();
             Transaction tx2 = otherSession.beginTransaction();
-            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).summary();
+            tx1.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Mjolnir'" ).consume();
 
             // now 'Beta Ray Bill' node is locked
 
@@ -407,7 +407,7 @@ class TransactionIT
                 try ( Session session1 = driver.session();
                       Transaction tx = session1.beginTransaction() )
                 {
-                    tx.run( "CREATE (:MyNode {id: 1})" ).summary();
+                    tx.run( "CREATE (:MyNode {id: 1})" ).consume();
 
                     // kill all network channels
                     for ( Channel channel: factory.channels() )
@@ -415,7 +415,7 @@ class TransactionIT
                         channel.close().syncUninterruptibly();
                     }
 
-                    tx.run( "CREATE (:MyNode {id: 1})" ).summary();
+                    tx.run( "CREATE (:MyNode {id: 1})" ).consume();
                 }
             } );
 
@@ -433,7 +433,7 @@ class TransactionIT
             List<Integer> xs = tx.run( "UNWIND [1,2,3] AS x CREATE (:Node) RETURN x" ).list( record -> record.get( 0 ).asInt() );
             assertEquals( asList( 1, 2, 3 ), xs );
 
-            ClientException error1 = assertThrows( ClientException.class, () -> tx.run( "RETURN unknown" ).summary() );
+            ClientException error1 = assertThrows( ClientException.class, () -> tx.run( "RETURN unknown" ).consume() );
             assertThat( error1.code(), containsString( "SyntaxError" ) );
 
             ClientException error2 = assertThrows( ClientException.class, tx::commit );
@@ -449,13 +449,13 @@ class TransactionIT
             List<Integer> xs = tx.run( "UNWIND [1,2,3] AS x CREATE (:Node) RETURN x" ).list( record -> record.get( 0 ).asInt() );
             assertEquals( asList( 1, 2, 3 ), xs );
 
-            ClientException error1 = assertThrows( ClientException.class, () -> tx.run( "RETURN unknown" ).summary() );
+            ClientException error1 = assertThrows( ClientException.class, () -> tx.run( "RETURN unknown" ).consume() );
             assertThat( error1.code(), containsString( "SyntaxError" ) );
 
-            ClientException error2 = assertThrows( ClientException.class, () -> tx.run( "CREATE (:OtherNode)" ).summary() );
+            ClientException error2 = assertThrows( ClientException.class, () -> tx.run( "CREATE (:OtherNode)" ).consume() );
             assertThat( error2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
 
-            ClientException error3 = assertThrows( ClientException.class, () -> tx.run( "RETURN 42" ).summary() );
+            ClientException error3 = assertThrows( ClientException.class, () -> tx.run( "RETURN 42" ).consume() );
             assertThat( error3.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
         }
 

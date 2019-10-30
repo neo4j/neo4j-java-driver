@@ -88,7 +88,7 @@ class SummaryIT
         assertTrue( result.hasNext() );
 
         // When
-        ResultSummary summary = result.summary();
+        ResultSummary summary = result.consume();
 
         // Then
         assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
@@ -96,7 +96,7 @@ class SummaryIT
         assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
-        assertThat( summary, equalTo( result.summary() ) );
+        assertThat( summary, equalTo( result.consume() ) );
 
     }
 
@@ -104,7 +104,7 @@ class SummaryIT
     void shouldContainTimeInformation()
     {
         // Given
-        ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).summary();
+        ResultSummary summary = session.run( "UNWIND range(1,1000) AS n RETURN n AS number" ).consume();
 
         // Then
         assertThat( summary.resultAvailableAfter( TimeUnit.MILLISECONDS ), greaterThanOrEqualTo( 0L ) );
@@ -114,24 +114,24 @@ class SummaryIT
     @Test
     void shouldContainCorrectStatistics()
     {
-        assertThat( session.run( "CREATE (n)" ).summary().counters().nodesCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH (n) DELETE (n)" ).summary().counters().nodesDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n)" ).consume().counters().nodesCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH (n) DELETE (n)" ).consume().counters().nodesDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).summary().counters().relationshipsCreated(), equalTo( 1 ) );
-        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).summary().counters().relationshipsDeleted(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE ()-[:KNOWS]->()" ).consume().counters().relationshipsCreated(), equalTo( 1 ) );
+        assertThat( session.run( "MATCH ()-[r:KNOWS]->() DELETE r" ).consume().counters().relationshipsDeleted(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE (n:ALabel)" ).summary().counters().labelsAdded(), equalTo( 1 ) );
-        assertThat( session.run( "CREATE (n {magic: 42})" ).summary().counters().propertiesSet(), equalTo( 1 ) );
-        assertTrue( session.run( "CREATE (n {magic: 42})" ).summary().counters().containsUpdates() );
-        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).summary().counters().labelsRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n:ALabel)" ).consume().counters().labelsAdded(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE (n {magic: 42})" ).consume().counters().propertiesSet(), equalTo( 1 ) );
+        assertTrue( session.run( "CREATE (n {magic: 42})" ).consume().counters().containsUpdates() );
+        assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).consume().counters().labelsRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).summary().counters().indexesAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).summary().counters().indexesRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
+        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
 
         assertThat( session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summary().counters().constraintsAdded(), equalTo( 1 ) );
+                .consume().counters().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
-                .summary().counters().constraintsRemoved(), equalTo( 1 ) );
+                .consume().counters().constraintsRemoved(), equalTo( 1 ) );
     }
 
     @Test
@@ -149,17 +149,17 @@ class SummaryIT
     @Test
     void shouldContainCorrectStatementType()
     {
-        assertThat( session.run("MATCH (n) RETURN 1").summary().statementType(), equalTo( StatementType.READ_ONLY ));
-        assertThat( session.run("CREATE (n)").summary().statementType(), equalTo( StatementType.WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").summary().statementType(), equalTo( StatementType.READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").summary().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").consume().statementType(), equalTo( StatementType.READ_ONLY ));
+        assertThat( session.run("CREATE (n)").consume().statementType(), equalTo( StatementType.WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").consume().statementType(), equalTo( StatementType.READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").consume().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
     }
 
     @Test
     void shouldContainCorrectPlan()
     {
         // When
-        ResultSummary summary = session.run( "EXPLAIN MATCH (n) RETURN 1" ).summary();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n) RETURN 1" ).consume();
 
         // Then
         assertTrue( summary.hasPlan() );
@@ -175,7 +175,7 @@ class SummaryIT
     void shouldContainProfile()
     {
         // When
-        ResultSummary summary = session.run( "PROFILE RETURN 1" ).summary();
+        ResultSummary summary = session.run( "PROFILE RETURN 1" ).consume();
 
         // Then
         assertTrue( summary.hasProfile() );
@@ -192,7 +192,7 @@ class SummaryIT
     void shouldContainNotifications()
     {
         // When
-        ResultSummary summary = session.run( "EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n" ).summary();
+        ResultSummary summary = session.run( "EXPLAIN MATCH (n:ThisLabelDoesNotExist) RETURN n" ).consume();
 
         // Then
         List<Notification> notifications = summary.notifications();
@@ -210,7 +210,7 @@ class SummaryIT
     void shouldContainNoNotifications() throws Throwable
     {
         // When
-        ResultSummary summary = session.run( "RETURN 1" ).summary();
+        ResultSummary summary = session.run( "RETURN 1" ).consume();
 
         // Then
         assertThat( summary.notifications().size(), equalTo( 0 ) );

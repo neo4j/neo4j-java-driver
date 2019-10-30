@@ -388,7 +388,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 2, summary.counters().nodesCreated() );
@@ -416,7 +416,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query ), summary.statement() );
         assertEquals( 0, summary.counters().nodesCreated() );
@@ -448,7 +448,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 1, summary.counters().nodesCreated() );
@@ -783,7 +783,7 @@ class RxTransactionIT
         ClientException e = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
 
-        await( result.summary() );
+        await( result.consume() );
         assertCanRollback( tx );
     }
 
@@ -801,7 +801,7 @@ class RxTransactionIT
             AtomicInteger recordsSeen = new AtomicInteger();
             return Flux.from( result.records() )
                     .doOnNext( record -> recordsSeen.incrementAndGet() )
-                    .then( Mono.from( result.summary() ) )
+                    .then( Mono.from( result.consume() ) )
                     .doOnSuccess( s -> {
                         assertNotNull( s );
                         assertEquals( query, s.statement().text() );
@@ -835,7 +835,7 @@ class RxTransactionIT
     private void testConsume( String query )
     {
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx ->
-            tx.run( query ).summary(),
+            tx.run( query ).consume(),
             RxTransaction::commit,
             RxTransaction::rollback
         );

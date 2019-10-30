@@ -38,7 +38,7 @@ class DisposableAsyncStatementResultCursorTest
         DisposableAsyncStatementResultCursor cursor = newCursor();
 
         // When
-        await( cursor.summaryAsync() );
+        await( cursor.consumeAsync() );
 
         // Then
         assertTrue( cursor.isDisposed() );
@@ -51,7 +51,7 @@ class DisposableAsyncStatementResultCursorTest
         DisposableAsyncStatementResultCursor cursor = newCursor();
 
         // When
-        await( cursor.consumeAsync() );
+        await( cursor.discardAllFailureAsync() );
 
         // Then
         assertTrue( cursor.isDisposed() );
@@ -71,7 +71,7 @@ class DisposableAsyncStatementResultCursorTest
         await( cursor.forEachAsync( record -> {} ) );
         await( cursor.listAsync() );
         await( cursor.listAsync( record -> record ) );
-        await( cursor.failureAsync() );
+        await( cursor.pullAllFailureAsync() );
 
         // Then
         assertFalse( cursor.isDisposed() );
@@ -80,15 +80,15 @@ class DisposableAsyncStatementResultCursorTest
     private static DisposableAsyncStatementResultCursor newCursor()
     {
         AsyncStatementResultCursor delegate = mock( AsyncStatementResultCursor.class );
-        when( delegate.summaryAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.consumeAsync() ).thenReturn( Futures.completedWithNull() );
+        when( delegate.discardAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.peekAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.nextAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.singleAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.forEachAsync( any() ) ).thenReturn( Futures.completedWithNull() );
         when( delegate.listAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.listAsync( any() ) ).thenReturn( Futures.completedWithNull() );
-        when( delegate.failureAsync() ).thenReturn( Futures.completedWithNull() );
+        when( delegate.pullAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
         return new DisposableAsyncStatementResultCursor( delegate );
     }
 }

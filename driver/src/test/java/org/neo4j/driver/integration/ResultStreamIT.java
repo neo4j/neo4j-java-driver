@@ -126,7 +126,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
-        assertThrows( Exception.class, res1::summary );
+        assertThrows( Exception.class, res1::consume );
 
         // When
         StatementResult res2 = session.run( "RETURN 1" );
@@ -144,8 +144,8 @@ class ResultStreamIT
         ResultSummary summary;
 
         // When
-        assertThrows( Exception.class, res1::summary );
-        summary = res1.summary();
+        assertThrows( Exception.class, res1::consume );
+        summary = res1.consume();
 
 
         // Then
@@ -171,7 +171,7 @@ class ResultStreamIT
 
         StatementResult result = resultRef.get();
         assertNotNull( result );
-        assertEquals( 0, result.summary().counters().nodesCreated() );
+        assertEquals( 0, result.consume().counters().nodesCreated() );
     }
 
     @Test

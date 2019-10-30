@@ -116,7 +116,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        result.summary();
+        result.consume();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
@@ -131,7 +131,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        ResultSummary summary = result.summary();
+        ResultSummary summary = result.consume();
 
         assertEquals( 5, summary.counters().nodesCreated() );
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
@@ -201,7 +201,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();
 
-        assertThrows( ClientException.class, result::summary );
+        assertThrows( ClientException.class, result::consume );
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertSame( connection1, connection2 );
@@ -355,7 +355,7 @@ class ConnectionHandlingIT
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         assertNull( connection1 );
 
-        StepVerifier.create( Mono.from( res.summary() ) ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( Mono.from( res.consume() ) ).expectNextCount( 1 ).verifyComplete();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertNotSame( connection1, connection2 );

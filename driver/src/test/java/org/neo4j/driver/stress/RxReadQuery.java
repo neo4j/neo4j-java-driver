@@ -58,7 +58,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C>
     {
         RxStatementResult result = session.run( "MATCH (n) RETURN n LIMIT 1" );
         Mono<Node> records = Flux.from( result.records() ).singleOrEmpty().map( record -> record.get( 0 ).asNode() );
-        Mono<ResultSummary> summaryMono = Mono.from( result.summary() ).single();
+        Mono<ResultSummary> summaryMono = Mono.from( result.consume() ).single();
         return records.then( summaryMono );
     }
 }

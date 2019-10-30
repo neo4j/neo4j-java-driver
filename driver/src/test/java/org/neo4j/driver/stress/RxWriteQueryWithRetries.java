@@ -46,7 +46,7 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ),
-                session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).summary() ), RxSession::close )
+                session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ), RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
                     assertEquals( 1, summary.counters().nodesCreated() );

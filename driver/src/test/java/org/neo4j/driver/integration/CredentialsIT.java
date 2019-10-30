@@ -76,7 +76,7 @@ class CredentialsIT
         try ( Driver driver = GraphDatabase.driver( neo4j.uri(), authToken );
               Session session = driver.session() )
         {
-            session.run( "RETURN 1" ).summary();
+            session.run( "RETURN 1" ).consume();
         }
 
         // verify old password does not work
@@ -87,7 +87,7 @@ class CredentialsIT
         try ( Driver driver = GraphDatabase.driver( CredentialsIT.neo4j.uri(), AuthTokens.basic( "neo4j", newPassword ) );
               Session session = driver.session() )
         {
-            session.run( "RETURN 2" ).summary();
+            session.run( "RETURN 2" ).consume();
         }
     }
 

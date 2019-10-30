@@ -46,7 +46,7 @@ public class RxTransactionFunctionExample extends BaseApplication
                 session -> session.readTransaction( tx -> {
                     RxStatementResult result = tx.run( query, parameters );
                     return Flux.from( result.records() )
-                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.summary() ) );
+                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.consume() ) );
                 }
              ), RxSession::close );
         // end::reactor-transaction-function[]
@@ -62,7 +62,7 @@ public class RxTransactionFunctionExample extends BaseApplication
         return Flowable.fromPublisher( session.readTransaction( tx -> {
                     RxStatementResult result = tx.run( query, parameters );
                     return Flowable.fromPublisher( result.records() )
-                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.summary() );
+                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.consume() );
                 } ) ).onErrorResumeNext( error -> {
                     // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
                     return Flowable.<ResultSummary>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );

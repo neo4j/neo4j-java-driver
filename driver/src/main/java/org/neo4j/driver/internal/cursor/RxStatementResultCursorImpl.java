@@ -98,22 +98,21 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     }
 
     @Override
-    public CompletionStage<Throwable> consumeAsync()
+    public CompletionStage<Throwable> discardAllFailureAsync()
     {
         // calling this method will enforce discarding record stream and finish running cypher query
         return summaryAsync().thenApply( summary -> (Throwable) null ).exceptionally( error -> error );
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> pullAllFailureAsync()
     {
         if ( isRecordConsumerInstalled() && !isDone() )
         {
-            throw new TransactionNestingException(
-                    "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result." );
+            return CompletableFuture.completedFuture( new TransactionNestingException() );
         }
         // It is safe to discard records as either the streaming has not started at all, or the streaming is fully finished.
-        return consumeAsync();
+        return discardAllFailureAsync();
     }
 
     @Override

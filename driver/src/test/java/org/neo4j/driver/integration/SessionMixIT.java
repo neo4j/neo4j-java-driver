@@ -109,8 +109,8 @@ class SessionMixIT
                 // move execution to ForkJoinPool.commonPool()
                 .thenApplyAsync( tx ->
                 {
-                    session.run( "UNWIND [1,1,2] AS x CREATE (:Node {id: x})" ).summary();
-                    session.run( "CREATE (:Node {id: 42})" ).summary();
+                    session.run( "UNWIND [1,1,2] AS x CREATE (:Node {id: x})" ).consume();
+                    session.run( "CREATE (:Node {id: 42})" ).consume();
                     tx.commitAsync();
                     return tx;
                 } );

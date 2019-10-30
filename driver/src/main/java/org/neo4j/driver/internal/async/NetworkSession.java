@@ -197,7 +197,7 @@ public class NetworkSession
                 if ( cursor != null )
                 {
                     // there exists a cursor with potentially unconsumed error, try to extract and propagate it
-                    return cursor.consumeAsync();
+                    return cursor.discardAllFailureAsync();
                 }
                 // no result cursor exists so no error exists
                 return completedWithNull();
@@ -255,7 +255,7 @@ public class NetworkSession
                 return completedWithNull();
             }
             // make sure previous result is fully consumed and connection is released back to the pool
-            return cursor.failureAsync();
+            return cursor.pullAllFailureAsync();
         } ).thenCompose( error ->
         {
             if ( error == null )

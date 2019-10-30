@@ -81,7 +81,7 @@ class ErrorIT
         ClientException e = assertThrows( ClientException.class, () ->
         {
             StatementResult result = session.run( "invalid statement" );
-            result.summary();
+            result.consume();
         } );
 
         assertThat( e.getMessage(), startsWith( "Invalid input" ) );
@@ -94,7 +94,7 @@ class ErrorIT
         Transaction tx = session.beginTransaction();
 
         // And Given an error has occurred
-        try { tx.run( "invalid" ).summary(); } catch ( ClientException e ) {/*empty*/}
+        try { tx.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // Expect
         ClientException e = assertThrows( ClientException.class, () ->
@@ -109,7 +109,7 @@ class ErrorIT
     void shouldAllowNewStatementAfterRecoverableError()
     {
         // Given an error has occurred
-        try { session.run( "invalid" ).summary(); } catch ( ClientException e ) {/*empty*/}
+        try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // When
         StatementResult cursor = session.run( "RETURN 1" );
@@ -125,7 +125,7 @@ class ErrorIT
         // Given an error has occurred in a prior transaction
         try ( Transaction tx = session.beginTransaction() )
         {
-            tx.run( "invalid" ).summary();
+            tx.run( "invalid" ).consume();
         }
         catch ( ClientException e ) {/*empty*/}
 
@@ -241,7 +241,7 @@ class ErrorIT
     @Test
     void shouldThrowErrorWithNiceStackTrace( TestInfo testInfo )
     {
-        ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).summary() );
+        ClientException error = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ).consume() );
 
         // thrown error should have this class & method in the stacktrace
         StackTraceElement[] stackTrace = error.getStackTrace();
@@ -273,7 +273,7 @@ class ErrorIT
 
                 try
                 {
-                    session.run( "RETURN 1" ).summary();
+                    session.run( "RETURN 1" ).consume();
                     fail( "Exception expected" );
                 }
                 catch ( Throwable error )

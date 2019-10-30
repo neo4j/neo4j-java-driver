@@ -74,6 +74,6 @@ public class ResultCursorsHolder
     {
         return cursorStage
                 .exceptionally( cursor -> null )
-                .thenCompose( cursor -> cursor == null ? completedWithNull() : cursor.consumeAsync() );
+                .thenCompose( cursor -> cursor == null ? completedWithNull() : cursor.discardAllFailureAsync() );
     }
 }

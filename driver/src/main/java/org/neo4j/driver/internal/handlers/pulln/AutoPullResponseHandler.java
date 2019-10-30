@@ -137,7 +137,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         return peekAsync().thenApply( ignore -> dequeueRecord() );
     }
 
-    public synchronized CompletionStage<ResultSummary> summaryAsync()
+    public synchronized CompletionStage<ResultSummary> consumeAsync()
     {
         records.clear();
         if ( isDone() )
@@ -162,7 +162,7 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     }
 
     @Override
-    public synchronized CompletionStage<Throwable> failureAsync()
+    public synchronized CompletionStage<Throwable> pullAllFailureAsync()
     {
         return pullAllAsync().handle( ( ignore, error ) -> error );
     }

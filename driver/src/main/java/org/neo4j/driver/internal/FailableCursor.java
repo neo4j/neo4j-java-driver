@@ -23,12 +23,12 @@ import java.util.concurrent.CompletionStage;
 public interface FailableCursor
 {
     /**
-     * Dispose this cursor by discarding all unconsumed records and returning failure if there is any to run and/or pulls.
+     * Discarding all unconsumed records and returning failure if there is any to run and/or pulls.
      */
-    CompletionStage<Throwable> consumeAsync();
+    CompletionStage<Throwable> discardAllFailureAsync();
 
     /**
      * Pulling all unconsumed records into memory and returning failure if there is any to run and/or pulls.
      */
-    CompletionStage<Throwable> failureAsync();
+    CompletionStage<Throwable> pullAllFailureAsync();
 }

@@ -112,7 +112,7 @@ public class InternalRxStatementResult implements RxStatementResult
     }
 
     @Override
-    public Publisher<ResultSummary> summary()
+    public Publisher<ResultSummary> consume()
     {
         return Mono.create( sink -> getCursorFuture().whenComplete( ( cursor, completionError ) -> {
             if ( cursor != null )
