@@ -25,9 +25,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
@@ -109,7 +109,7 @@ public class DisposableAsyncStatementResultCursor implements AsyncStatementResul
     {
         if ( isDisposed )
         {
-            return failedFuture( new ResultConsumedException() );
+            return failedFuture( newResultConsumedError() );
         }
         return completedWithNull();
     }

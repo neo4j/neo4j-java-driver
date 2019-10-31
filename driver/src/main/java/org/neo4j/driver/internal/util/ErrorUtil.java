@@ -26,8 +26,9 @@ import java.util.stream.Stream;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 
@@ -51,6 +52,12 @@ public final class ErrorUtil
         return new ServiceUnavailableException( "Connection to the database terminated. " +
                                                 "This can happen due to network instabilities, " +
                                                 "or due to restarts of the database" );
+    }
+
+    public static ResultConsumedException newResultConsumedError()
+    {
+        return new ResultConsumedException( "Cannot access records on this result any more as the result has already been consumed " +
+                "or the statement runner where the result is created has already been closed." );
     }
 
     public static Neo4jException newNeo4jError( String code, String message )

@@ -25,11 +25,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.exceptions.ResultConsumedException;
+import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
-import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.summary.ResultSummary;
+
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 
 public class RxStatementResultCursorImpl implements RxStatementResultCursor
 {
@@ -69,7 +70,7 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     {
         if ( resultConsumed )
         {
-            throw new ResultConsumedException();
+            throw newResultConsumedError();
         }
         if ( isRecordConsumerInstalled() )
         {
@@ -109,7 +110,8 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     {
         if ( isRecordConsumerInstalled() && !isDone() )
         {
-            return CompletableFuture.completedFuture( new TransactionNestingException() );
+            return CompletableFuture.completedFuture( new TransactionNestingException(
+                    "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result." ) );
         }
         // It is safe to discard records as either the streaming has not started at all, or the streaming is fully finished.
         return discardAllFailureAsync();

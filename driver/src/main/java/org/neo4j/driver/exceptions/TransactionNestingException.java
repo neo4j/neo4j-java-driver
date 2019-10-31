@@ -27,9 +27,4 @@ public class TransactionNestingException extends ClientException
     {
         super( message );
     }
-
-    public TransactionNestingException()
-    {
-        this( "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result." );
-    }
 }

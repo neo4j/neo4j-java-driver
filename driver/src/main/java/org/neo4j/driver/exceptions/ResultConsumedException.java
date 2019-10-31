@@ -27,9 +27,8 @@ import org.neo4j.driver.StatementRunner;
  */
 public class ResultConsumedException extends ClientException
 {
-    public ResultConsumedException()
+    public ResultConsumedException( String message )
     {
-        super( "Cannot access records on this result any more as the result has already been consumed " +
-                "or the statement runner where the result is created has already been closed." );
+        super( message );
     }
 }

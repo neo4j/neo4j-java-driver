@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
@@ -83,8 +84,7 @@ public interface RxStatementResult
      * This publisher can only be subscribed by one {@link Subscriber} once.
      * <p>
      * If this publisher is subscribed after {@link #keys()}, then the publish of records is carried out after the arrival of keys.
-     * If this publisher is subscribed after {@link #consume()}, then the publish of records is already cancelled
-     * and an empty publisher of zero record will be return.
+     * If this publisher is subscribed after {@link #consume()}, then a {@link ResultConsumedException} will be thrown.
      * @return a cold unicast publisher of records.
      */
     Publisher<Record> records();
@@ -94,7 +94,7 @@ public interface RxStatementResult
      * <p>
      * {@linkplain Publisher#subscribe(Subscriber) Subscribing} the summary publisher results in the execution of the query followed by the result summary returned.
      * The summary publisher cancels record publishing if not yet subscribed and directly streams back the summary on query execution completion.
-     * As a result, the invocation of {@link #records()} after this method, would receive an empty publisher.
+     * As a result, the invocation of {@link #records()} after this method, would receive an {@link ResultConsumedException}.
      * <p>
      * If subscribed after {@link #keys()}, then the result summary will be published after the query execution without streaming any record to client.
      * If subscribed after {@link #records()}, then the result summary will be published after the query execution and the streaming of records.
