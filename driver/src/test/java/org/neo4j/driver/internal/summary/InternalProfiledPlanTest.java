@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
@@ -35,6 +36,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InternalProfiledPlanTest
 {
@@ -49,12 +51,7 @@ class InternalProfiledPlanTest
         ProfiledPlan plan = InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE.apply( value );
 
         // THEN
-        assertThat( plan.dbHits(), equalTo( 42L ) );
-        assertThat( plan.records(), equalTo( 1337L ) );
-        assertThat( plan.operatorType(), equalTo( "AwesomeOperator" ) );
-        assertThat( plan.identifiers(), equalTo( asList( "n1", "n2" ) ) );
-        assertThat( plan.arguments().values(), hasItem( new StringValue( "CYPHER 1337" ) ) );
-        assertThat( plan.children(), empty() );
+        verifyPlan( plan );
     }
 
     @Test
@@ -71,12 +68,7 @@ class InternalProfiledPlanTest
         // THEN
         for ( ProfiledPlan child : plan.children() )
         {
-            assertThat( child.dbHits(), equalTo( 42L ) );
-            assertThat( child.records(), equalTo( 1337L ) );
-            assertThat( child.operatorType(), equalTo( "AwesomeOperator" ) );
-            assertThat( child.identifiers(), equalTo( asList( "n1", "n2" ) ) );
-            assertThat( child.arguments().values(), hasItem( new StringValue( "CYPHER 1337" ) ) );
-            assertThat( child.children(), empty() );
+            verifyPlan( child );
         }
     }
 
@@ -86,6 +78,10 @@ class InternalProfiledPlanTest
         map.put( "operatorType", new StringValue( "AwesomeOperator" ) );
         map.put( "rows", new IntegerValue( 1337L ) );
         map.put( "dbHits", new IntegerValue( 42 ) );
+        map.put( "pageCacheHits", new IntegerValue( 1234 ) );
+        map.put( "pageCacheMisses", new IntegerValue( 3456 ) );
+        map.put( "pageCacheHitRatio", new FloatValue( 0.123 ) );
+        map.put( "time", new IntegerValue( 999 ) );
         map.put( "identifiers", new ListValue( new StringValue( "n1" ), new StringValue( "n2" ) ) );
         Map<String,Value> args = new HashMap<>();
         args.put( "version", new StringValue( "CYPHER 1337" ) );
@@ -93,5 +89,18 @@ class InternalProfiledPlanTest
         return map;
     }
 
-
+    private void verifyPlan( ProfiledPlan plan )
+    {
+        assertThat( plan.dbHits(), equalTo( 42L ) );
+        assertThat( plan.records(), equalTo( 1337L ) );
+        assertTrue( plan.hasPageCacheStats() );
+        assertThat( plan.pageCacheHits(), equalTo( 1234L ) );
+        assertThat( plan.pageCacheMisses(), equalTo( 3456L ) );
+        assertThat( plan.pageCacheHitRatio(), equalTo( 0.123 ) );
+        assertThat( plan.time(), equalTo( 999L ) );
+        assertThat( plan.operatorType(), equalTo( "AwesomeOperator" ) );
+        assertThat( plan.identifiers(), equalTo( asList( "n1", "n2" ) ) );
+        assertThat( plan.arguments().values(), hasItem( new StringValue( "CYPHER 1337" ) ) );
+        assertThat( plan.children(), empty() );
+    }
 }

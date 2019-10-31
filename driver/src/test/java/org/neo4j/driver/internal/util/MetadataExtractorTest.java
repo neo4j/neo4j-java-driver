@@ -228,6 +228,7 @@ class MetadataExtractorTest
                 "identifiers", values( "a", "b" ),
                 "rows", value( 424242 ),
                 "dbHits", value( 242424 ),
+                "time", value( 999 ),
                 "children", values(
                         parameters(
                                 "operatorType", "LabelScan",
@@ -249,6 +250,11 @@ class MetadataExtractorTest
         assertEquals( asList( "a", "b" ), summary.profile().identifiers() );
         assertEquals( 424242, summary.profile().records() );
         assertEquals( 242424, summary.profile().dbHits() );
+        assertEquals( 999, summary.profile().time() );
+        assertFalse( summary.profile().hasPageCacheStats() );
+        assertEquals( Double.NaN, summary.profile().pageCacheHitRatio() );
+        assertEquals( 0, summary.profile().pageCacheMisses() );
+        assertEquals( 0, summary.profile().pageCacheHits() );
 
         List<ProfiledPlan> children = summary.profile().children();
         assertEquals( 1, children.size() );
