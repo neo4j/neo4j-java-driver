@@ -97,9 +97,7 @@ class InternalRxStatementResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ) )
-                .expectNext( "one" )
-                .expectNext( "two" )
-                .expectNext( "three" )
+                .expectNext( Arrays.asList( "one", "two", "three" ) )
                 .verifyComplete();
     }
 
@@ -128,7 +126,7 @@ class InternalRxStatementResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ).limitRate( 1 ).take( 1 ) )
-                .expectNext( "one" )
+                .expectNext( Arrays.asList( "one", "two", "three" ) )
                 .verifyComplete();
     }
 

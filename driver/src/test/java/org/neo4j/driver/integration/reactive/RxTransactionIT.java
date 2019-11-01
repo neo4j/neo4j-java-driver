@@ -360,7 +360,7 @@ class RxTransactionIT
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         RxStatementResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
 
-        List<String> keys = await( result.keys() );
+        List<String> keys = await( Mono.from( result.keys() ) );
         assertEquals( Arrays.asList( "one", "two", "three", "five" ), keys );
 
         assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed
@@ -372,7 +372,7 @@ class RxTransactionIT
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         RxStatementResult result = tx.run( "RETURN 1, 2, 3, 5" );
 
-        List<String> keys = await( result.keys() );
+        List<String> keys = await( Mono.from( result.keys() ) );
         assertEquals( Arrays.asList( "1", "2", "3", "5" ), keys );
 
         assertCanRollback( tx ); // you still need to rollback the tx as tx will not automatically closed

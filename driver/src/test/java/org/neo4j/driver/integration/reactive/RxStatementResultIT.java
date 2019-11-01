@@ -24,6 +24,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
+
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -34,6 +36,8 @@ import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -180,7 +184,7 @@ class RxStatementResultIT
         RxStatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
-        StepVerifier.create( res.keys() ).expectNext( "n" ).expectComplete().verify();
+        StepVerifier.create( res.keys() ).expectNext( singletonList( "n" ) ).expectComplete().verify();
         StepVerifier.create( res.records() )
                 .assertNext( record -> {
                     assertEquals( "[n]", record.keys().toString() );
@@ -197,7 +201,7 @@ class RxStatementResultIT
         RxStatementResult rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
 
         // Then
-        StepVerifier.create( rs.keys() ).expectComplete().verify();
+        StepVerifier.create( rs.keys() ).expectNext( emptyList() ).expectComplete().verify();
         StepVerifier.create( rs.records() ).expectComplete().verify();
     }
 
@@ -209,12 +213,12 @@ class RxStatementResultIT
         RxStatementResult result = session.run( "INVALID" );
 
         // When
-        Flux<String> keys = Flux.from( result.keys() );
+        Flux<List<String>> keys = Flux.from( result.keys() );
         Flux<Record> records = Flux.from( result.records() );
         Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
-        StepVerifier.create( keys ).verifyComplete();
+        StepVerifier.create( keys ).expectNext( emptyList() ).verifyComplete();
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> {
             assertThat( error, instanceOf( ClientException.class ) );
@@ -238,11 +242,11 @@ class RxStatementResultIT
         RxStatementResult result = session.run( "INVALID" );
 
         // When
-        Flux<String> keys = Flux.from( result.keys() );
+        Flux<List<String>> keys = Flux.from( result.keys() );
         Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
-        StepVerifier.create( keys ).verifyComplete();
+        StepVerifier.create( keys ).expectNext( emptyList() ).verifyComplete();
 
         StepVerifier.create( summaryMono ).expectErrorSatisfies( error -> {
             assertThat( error, instanceOf( ClientException.class ) );
@@ -322,7 +326,7 @@ class RxStatementResultIT
 
     private void verifyCanAccessKeys( RxStatementResult res )
     {
-        StepVerifier.create( res.keys() ).expectNext( "a" ).verifyComplete();
+        StepVerifier.create( res.keys() ).expectNext( singletonList( "a" ) ).verifyComplete();
     }
 
     private RxStatementResult sessionRunUnwind()
