@@ -222,7 +222,7 @@ class StatementResultCursorFactoryImplTest
     private void verifyRunCompleted( Connection connection, CompletionStage<AsyncStatementResultCursor> cursorFuture )
     {
         verify( connection ).write( any( Message.class ), any( RunResponseHandler.class ) );
-        assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursorImpl.class ) );
+        assertThat( getNow( cursorFuture ), instanceOf( AsyncStatementResultCursor.class ) );
     }
 
     private void verifyRxRunCompleted( Connection connection, CompletionStage<RxStatementResultCursor> cursorFuture )

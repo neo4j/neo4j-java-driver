@@ -45,7 +45,8 @@ public class RxReadQueryInTx<C extends AbstractContext> extends AbstractRxQuery<
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         RxSession session = newSession( AccessMode.READ, context );
-        Flux.usingWhen( session.beginTransaction(), this::processAndGetSummary, RxTransaction::commit, RxTransaction::rollback )
+        Flux.usingWhen( session.beginTransaction(), this::processAndGetSummary,
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null )
                 .subscribe( summary -> {
                     context.readCompleted( summary );
                     queryFinished.complete( null );
@@ -60,7 +61,7 @@ public class RxReadQueryInTx<C extends AbstractContext> extends AbstractRxQuery<
     {
         RxStatementResult result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
         Mono<Node> records = Flux.from( result.records() ).singleOrEmpty().map( record -> record.get( 0 ).asNode() );
-        Mono<ResultSummary> summaryMono = Mono.from( result.summary() ).single();
+        Mono<ResultSummary> summaryMono = Mono.from( result.consume() ).single();
         return records.then( summaryMono );
     }
 }

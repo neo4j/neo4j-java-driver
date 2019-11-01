@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.net.URI;
@@ -355,7 +356,7 @@ class DirectDriverBoltKitTest
         {
             TransientException error = assertThrows( TransientException.class, () -> {
                 StatementResult result = transaction.run( "RETURN 1" );
-                result.summary();
+                result.consume();
             } );
             assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
         }
@@ -375,7 +376,7 @@ class DirectDriverBoltKitTest
         {
             Transaction transaction = session.beginTransaction();
             StatementResult result = transaction.run( "CREATE (n {name:'Bob'})" );
-            result.summary();
+            result.consume();
 
             TransientException error = assertThrows( TransientException.class, transaction::commit );
             assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
@@ -395,7 +396,7 @@ class DirectDriverBoltKitTest
                 Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
-            result.summary();
+            result.consume();
         }
         finally
         {
@@ -411,7 +412,7 @@ class DirectDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( forDatabase( "mydatabase" ) ) )
         {
-            session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
+            session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
         }
         finally
         {
@@ -426,8 +427,8 @@ class DirectDriverBoltKitTest
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
-            Flux<String> keys = Flux.using(
-                    driver::rxSession,
+            Flux<String> keys = Flux.usingWhen(
+                    Mono.fromSupplier( driver::rxSession ),
                     session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
                     RxSession::close );
             StepVerifier.create( keys ).expectNext( "a" ).verifyComplete();

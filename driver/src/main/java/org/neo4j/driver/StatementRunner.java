@@ -42,7 +42,7 @@ import java.util.Map;
  *
  * <ul>
  * <li>Read from or discard a result, for instance via
- * {@link StatementResult#next()} or {@link StatementResult#summary()} </li>
+ * {@link StatementResult#next()} or {@link StatementResult#consume()} </li>
  * <li>Explicitly commit/rollback a transaction using blocking {@link Transaction#close()} </li>
  * <li>Close a session using blocking {@link Session#close()}</li>
  * </ul>

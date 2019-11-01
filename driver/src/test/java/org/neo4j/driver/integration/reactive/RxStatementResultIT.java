@@ -211,7 +211,7 @@ class RxStatementResultIT
         // When
         Flux<String> keys = Flux.from( result.keys() );
         Flux<Record> records = Flux.from( result.records() );
-        Mono<ResultSummary> summaryMono = Mono.from( result.summary() );
+        Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
         StepVerifier.create( keys ).verifyComplete();
@@ -239,7 +239,7 @@ class RxStatementResultIT
 
         // When
         Flux<String> keys = Flux.from( result.keys() );
-        Mono<ResultSummary> summaryMono = Mono.from( result.summary() );
+        Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
         StepVerifier.create( keys ).verifyComplete();
@@ -272,7 +272,7 @@ class RxStatementResultIT
                 .thenCancel()
                 .verify();
 
-        StepVerifier.create( result.summary() ) // I shall be able to receive summary
+        StepVerifier.create( result.consume() ) // I shall be able to receive summary
                 .assertNext( summary -> {
                     // Then
                     assertThat( summary, notNullValue() );
@@ -300,7 +300,7 @@ class RxStatementResultIT
 
     private void verifyCanAccessSummary( RxStatementResult res )
     {
-        StepVerifier.create( res.summary() ).assertNext( summary -> {
+        StepVerifier.create( res.consume() ).assertNext( summary -> {
             assertThat( summary.statement().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
             assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
             assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );

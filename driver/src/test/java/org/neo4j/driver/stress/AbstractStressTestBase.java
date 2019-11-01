@@ -638,7 +638,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         return Flux.concat( Flux.range( 0, batchSize ).map( index -> batchIndex * batchSize + index ).map( nodeIndex -> {
             Statement statement = createNodeInTxStatement( nodeIndex );
-            return Flux.from( tx.run( statement ).summary() ).then(); // As long as there is no error
+            return Flux.from( tx.run( statement ).consume() ).then(); // As long as there is no error
         } ) );
     }
 
@@ -682,7 +682,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static void createNodeInTx( Transaction tx, int nodeIndex )
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
-        tx.run( statement ).summary();
+        tx.run( statement ).consume();
     }
 
     private static CompletionStage<Throwable> createNodesInTxAsync( AsyncTransaction tx, int batchIndex, int batchSize )
@@ -702,7 +702,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
         return tx.runAsync( statement )
-                .thenCompose( StatementResultCursor::summaryAsync )
+                .thenCompose( StatementResultCursor::consumeAsync )
                 .thenApply( ignore -> (Void) null )
                 .toCompletableFuture();
     }

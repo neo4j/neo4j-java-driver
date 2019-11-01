@@ -25,9 +25,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.summary.ResultSummary;
+
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 
 public class RxStatementResultCursorImpl implements RxStatementResultCursor
 {
@@ -37,6 +40,7 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
     private BiConsumer<Record,Throwable> recordConsumer;
+    private boolean resultConsumed;
 
     public RxStatementResultCursorImpl( RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
@@ -64,6 +68,10 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     @Override
     public void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer )
     {
+        if ( resultConsumed )
+        {
+            throw newResultConsumedError();
+        }
         if ( isRecordConsumerInstalled() )
         {
             return;
@@ -91,28 +99,33 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     }
 
     @Override
-    public CompletionStage<Throwable> consumeAsync()
+    public CompletionStage<Throwable> discardAllFailureAsync()
     {
         // calling this method will enforce discarding record stream and finish running cypher query
         return summaryAsync().thenApply( summary -> (Throwable) null ).exceptionally( error -> error );
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> pullAllFailureAsync()
     {
+        if ( isRecordConsumerInstalled() && !isDone() )
+        {
+            return CompletableFuture.completedFuture( new TransactionNestingException(
+                    "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result." ) );
+        }
         // It is safe to discard records as either the streaming has not started at all, or the streaming is fully finished.
-        return consumeAsync();
+        return discardAllFailureAsync();
     }
 
     @Override
     public CompletionStage<ResultSummary> summaryAsync()
     {
-        if ( !isDone() ) // the summary is called before record streaming
+        if ( !isDone() && !resultConsumed ) // the summary is called before record streaming
         {
             installRecordConsumer( DISCARD_RECORD_CONSUMER );
             cancel();
+            resultConsumed = true;
         }
-
         return this.summaryFuture;
     }
 

@@ -51,7 +51,7 @@ import org.neo4j.driver.Values;
  *
  * <ul>
  * <li>Read from or discard a result, for instance via
- * {@link StatementResultCursor#nextAsync()}, {@link StatementResultCursor#summaryAsync()}</li>
+ * {@link StatementResultCursor#nextAsync()}, {@link StatementResultCursor#consumeAsync()}</li>
  * <li>Explicitly commit/rollback a transaction using {@link AsyncTransaction#commitAsync()}, {@link AsyncTransaction#rollbackAsync()}</li>
  * <li>Close a session using {@link AsyncSession#closeAsync()}</li>
  * </ul>

@@ -56,7 +56,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
 
         if ( queryError == null && result != null )
         {
-            assertEquals( 1, result.summary().counters().nodesCreated() );
+            assertEquals( 1, result.consume().counters().nodesCreated() );
             context.nodeCreated();
         }
     }

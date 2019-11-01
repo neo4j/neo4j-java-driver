@@ -46,7 +46,8 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
         RxSession session = newSession( AccessMode.WRITE, context );
-        Flux.usingWhen( session.beginTransaction(), tx -> tx.run( "CREATE ()" ).summary(), RxTransaction::commit, RxTransaction::rollback ).subscribe(
+        Flux.usingWhen( session.beginTransaction(), tx -> tx.run( "CREATE ()" ).consume(),
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null ).subscribe(
                 summary -> {
                     assertEquals( 1, summary.counters().nodesCreated() );
                     context.nodeCreated();

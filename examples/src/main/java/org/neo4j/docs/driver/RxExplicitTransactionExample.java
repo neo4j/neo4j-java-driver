@@ -41,12 +41,9 @@ public class RxExplicitTransactionExample extends BaseApplication
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
         RxSession session = driver.rxSession();
-        // It is recommended to use Flux.usingWhen for explicit transactions and Flux.using for autocommit transactions (session).
-        // This is because an explicit transaction needs to be supplied via a another resource publisher session.beginTransaction.
         return Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
-                RxTransaction::commit,
-                RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
         // end::reactor-explicit-transaction[]
     }
 
@@ -58,9 +55,14 @@ public class RxExplicitTransactionExample extends BaseApplication
 
         RxSession session = driver.rxSession();
         return Flowable.fromPublisher( session.beginTransaction() )
-                .flatMap( tx -> Flowable.fromPublisher( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() )
-                        .doOnComplete( tx::commit )
-                        .doOnError( error -> tx.rollback() ) );
+                .flatMap( tx ->
+                        Flowable.fromPublisher( tx.run( query, parameters ).records() )
+                                .map( record -> record.get( 0 ).asString() )
+                                .concatWith( tx.commit() )
+                                .onErrorResumeNext( error -> {
+                                    // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
+                                    return Flowable.<String>fromPublisher( tx.rollback() ).concatWith( Flowable.error( error ) );
+                                } ) );
         // end::RxJava-explicit-transaction[]
     }
 }

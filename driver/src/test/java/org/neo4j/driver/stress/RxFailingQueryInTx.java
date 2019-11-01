@@ -49,7 +49,7 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
         RxSession session = newSession( AccessMode.READ, context );
         Flux.usingWhen( session.beginTransaction(),
                 tx -> tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" ).records(),
-                RxTransaction::commit, RxTransaction::rollback )
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null )
                 .subscribe( record -> {
                     assertThat( record.get( 0 ).asInt(), either( equalTo( 1 ) ).or( equalTo( 2 ) ) );
                     queryFinished.complete( null );

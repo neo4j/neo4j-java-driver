@@ -42,11 +42,11 @@ public class RxTransactionFunctionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-
-        return Flux.using( driver::rxSession, session -> session.readTransaction( tx -> {
+        return Flux.usingWhen( Mono.fromSupplier( driver::rxSession ),
+                session -> session.readTransaction( tx -> {
                     RxStatementResult result = tx.run( query, parameters );
                     return Flux.from( result.records() )
-                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.summary() ) );
+                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.consume() ) );
                 }
              ), RxSession::close );
         // end::reactor-transaction-function[]
@@ -58,13 +58,15 @@ public class RxTransactionFunctionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-
-        return Flowable.using( driver::rxSession, session -> session.readTransaction( tx -> {
+        RxSession session = driver.rxSession();
+        return Flowable.fromPublisher( session.readTransaction( tx -> {
                     RxStatementResult result = tx.run( query, parameters );
                     return Flowable.fromPublisher( result.records() )
-                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.summary() );
-                }
-        ), RxSession::close );
+                            .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.consume() );
+                } ) ).onErrorResumeNext( error -> {
+                    // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
+                    return Flowable.<ResultSummary>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
+                } );
         // end::RxJava-transaction-function[]
     }
 }

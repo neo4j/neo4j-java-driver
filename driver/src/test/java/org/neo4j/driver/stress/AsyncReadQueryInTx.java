@@ -61,7 +61,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
             Node node = record.get( 0 ).asNode();
             assertNotNull( node );
         }
-        return cursor.summaryAsync();
+        return cursor.consumeAsync();
     }
 
     private CompletionStage<Void> processSummaryAndCommit( ResultSummary summary, AsyncTransaction tx, C context )

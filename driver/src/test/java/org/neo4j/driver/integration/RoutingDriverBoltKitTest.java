@@ -265,7 +265,7 @@ class RoutingDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
         }
         finally
         {
@@ -289,7 +289,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
                 Transaction tx = session.beginTransaction() )
         {
-            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).summary() );
+            assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
         }
         finally
         {
@@ -446,7 +446,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            session.run( "CREATE ()" ).summary();
+            session.run( "CREATE ()" ).consume();
         }
         catch ( SessionExpiredException e )
         {
@@ -500,7 +500,7 @@ class RoutingDriverBoltKitTest
         boolean failed = false;
         try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
-            tx.run( "CREATE ()" ).summary();
+            tx.run( "CREATE ()" ).consume();
         }
         catch ( SessionExpiredException e )
         {
@@ -902,7 +902,7 @@ class RoutingDriverBoltKitTest
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
-            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).summary() );
+            assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
         }
         finally
         {
@@ -961,11 +961,11 @@ class RoutingDriverBoltKitTest
 
             StatementResult readResult1 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult1.list().size() );
-            assertEquals( "127.0.0.1:9003", readResult1.summary().server().address() );
+            assertEquals( "127.0.0.1:9003", readResult1.consume().server().address() );
 
             StatementResult readResult2 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult2.list().size() );
-            assertEquals( "127.0.0.1:9004", readResult2.summary().server().address() );
+            assertEquals( "127.0.0.1:9004", readResult2.consume().server().address() );
         }
         finally
         {

@@ -49,9 +49,9 @@ public class AsyncStatementResultCursorImpl implements AsyncStatementResultCurso
     }
 
     @Override
-    public CompletionStage<ResultSummary> summaryAsync()
+    public CompletionStage<ResultSummary> consumeAsync()
     {
-        return pullAllHandler.summaryAsync();
+        return pullAllHandler.consumeAsync();
     }
 
     @Override
@@ -95,7 +95,7 @@ public class AsyncStatementResultCursorImpl implements AsyncStatementResultCurso
     {
         CompletableFuture<Void> resultFuture = new CompletableFuture<>();
         internalForEachAsync( action, resultFuture );
-        return resultFuture.thenCompose( ignore -> summaryAsync() );
+        return resultFuture.thenCompose( ignore -> consumeAsync() );
     }
 
     @Override
@@ -111,17 +111,16 @@ public class AsyncStatementResultCursorImpl implements AsyncStatementResultCurso
     }
 
     @Override
-    public CompletionStage<Throwable> consumeAsync()
+    public CompletionStage<Throwable> discardAllFailureAsync()
     {
-        return pullAllHandler.summaryAsync().handle( ( summary, error ) -> error );
+        return consumeAsync().handle( ( summary, error ) -> error );
     }
 
     @Override
-    public CompletionStage<Throwable> failureAsync()
+    public CompletionStage<Throwable> pullAllFailureAsync()
     {
-        return pullAllHandler.failureAsync();
+        return pullAllHandler.pullAllFailureAsync();
     }
-
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )
     {

@@ -112,9 +112,9 @@ public class InternalStatementResult implements StatementResult
     }
 
     @Override
-    public ResultSummary summary()
+    public ResultSummary consume()
     {
-        return blockingGet( cursor.summaryAsync() );
+        return blockingGet( cursor.consumeAsync() );
     }
 
     @Override

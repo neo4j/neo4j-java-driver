@@ -149,7 +149,7 @@ class InternalRxStatementResultTest
                 .expectNext( record2 )
                 .expectNext( record3 )
                 .verifyComplete();
-        StepVerifier.create( Mono.from( rxResult.summary() ) ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( Mono.from( rxResult.consume() ) ).expectNextCount( 1 ).verifyComplete();
     }
 
     @Test
@@ -167,7 +167,7 @@ class InternalRxStatementResultTest
         StepVerifier.create( Flux.from( rxResult.records() ).limitRate( 1 ).take( 1 ) )
                 .expectNext( record1 )
                 .verifyComplete();
-        StepVerifier.create( Mono.from( rxResult.summary() ) ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( Mono.from( rxResult.consume() ) ).expectNextCount( 1 ).verifyComplete();
     }
 
     @Test
@@ -179,7 +179,7 @@ class InternalRxStatementResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
-        StepVerifier.create( Mono.from( rxResult.summary() ) ).expectErrorMatches( isEqual( error ) ).verify();
+        StepVerifier.create( Mono.from( rxResult.consume() ) ).expectErrorMatches( isEqual( error ) ).verify();
     }
 
     @Test
@@ -191,7 +191,7 @@ class InternalRxStatementResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
-        StepVerifier.create( Mono.from( rxResult.summary() ) ).assertNext( summary -> {
+        StepVerifier.create( Mono.from( rxResult.consume() ) ).assertNext( summary -> {
             assertThat( summary, instanceOf( ResultSummary.class ) );
         } ).verifyComplete();
     }

@@ -160,7 +160,7 @@ class SessionPoolingStressIT
             {
                 StatementResult run = session.run( query );
                 Thread.sleep( random.nextInt( 100 ) );
-                run.summary();
+                run.consume();
                 Thread.sleep( random.nextInt( 100 ) );
             }
         }

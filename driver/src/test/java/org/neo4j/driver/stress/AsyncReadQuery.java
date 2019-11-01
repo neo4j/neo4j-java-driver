@@ -65,6 +65,6 @@ public class AsyncReadQuery<C extends AbstractContext> extends AbstractAsyncQuer
             Node node = record.get( 0 ).asNode();
             assertNotNull( node );
         }
-        return cursor.summaryAsync();
+        return cursor.consumeAsync();
     }
 }

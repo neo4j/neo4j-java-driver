@@ -147,5 +147,5 @@ public interface StatementResult extends Iterator<Record>
      *
      * @return a summary for the whole query result.
      */
-    ResultSummary summary();
+    ResultSummary consume();
 }

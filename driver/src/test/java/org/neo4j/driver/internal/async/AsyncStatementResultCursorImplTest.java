@@ -90,11 +90,11 @@ class AsyncStatementResultCursorImplTest
                 new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() ), DEFAULT_DATABASE_INFO, StatementType.SCHEMA_WRITE,
                 new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0 ),
                 null, null, emptyList(), 42, 42 );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
-        assertEquals( summary, await( cursor.summaryAsync() ) );
+        assertEquals( summary, await( cursor.consumeAsync() ) );
     }
 
     @Test
@@ -200,7 +200,7 @@ class AsyncStatementResultCursorImplTest
                 .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
@@ -221,7 +221,7 @@ class AsyncStatementResultCursorImplTest
                 .thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
@@ -239,7 +239,7 @@ class AsyncStatementResultCursorImplTest
         when( pullAllHandler.nextAsync() ).thenReturn( completedWithNull() );
 
         ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
@@ -292,22 +292,22 @@ class AsyncStatementResultCursorImplTest
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
         ServiceUnavailableException error = new ServiceUnavailableException( "Hi" );
-        when( pullAllHandler.failureAsync() ).thenReturn( completedFuture( error ) );
+        when( pullAllHandler.pullAllFailureAsync() ).thenReturn( completedFuture( error ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
-        assertEquals( error, await( cursor.failureAsync() ) );
+        assertEquals( error, await( cursor.pullAllFailureAsync() ) );
     }
 
     @Test
     void shouldReturnNullFailureWhenDoesNotExist()
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
-        when( pullAllHandler.failureAsync() ).thenReturn( completedWithNull() );
+        when( pullAllHandler.pullAllFailureAsync() ).thenReturn( completedWithNull() );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
-        assertNull( await( cursor.failureAsync() ) );
+        assertNull( await( cursor.pullAllFailureAsync() ) );
     }
 
     @Test
@@ -377,11 +377,11 @@ class AsyncStatementResultCursorImplTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         ResultSummary summary = mock( ResultSummary.class );
-        when( pullAllHandler.summaryAsync() ).thenReturn( completedFuture( summary ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
-        assertEquals( summary, await( cursor.summaryAsync() ) );
+        assertEquals( summary, await( cursor.consumeAsync() ) );
     }
 
     @Test
@@ -389,11 +389,11 @@ class AsyncStatementResultCursorImplTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
         RuntimeException error = new RuntimeException( "Hi" );
-        when( pullAllHandler.summaryAsync() ).thenReturn( failedFuture( error ) );
+        when( pullAllHandler.consumeAsync() ).thenReturn( failedFuture( error ) );
 
         AsyncStatementResultCursorImpl cursor = newCursor( pullAllHandler );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.summaryAsync() ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( cursor.consumeAsync() ) );
         assertEquals( error, e );
     }
 

@@ -63,7 +63,7 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
 
         if ( txError == null && result != null )
         {
-            assertEquals( 1, result.summary().counters().nodesCreated() );
+            assertEquals( 1, result.consume().counters().nodesCreated() );
             context.nodeCreated();
         }
     }

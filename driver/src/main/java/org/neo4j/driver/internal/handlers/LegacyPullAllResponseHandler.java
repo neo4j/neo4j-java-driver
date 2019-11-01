@@ -178,11 +178,11 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         return peekAsync().thenApply( ignore -> dequeueRecord() );
     }
 
-    public synchronized CompletionStage<ResultSummary> summaryAsync()
+    public synchronized CompletionStage<ResultSummary> consumeAsync()
     {
         ignoreRecords = true;
         records.clear();
-        return failureAsync().thenApply( error ->
+        return pullAllFailureAsync().thenApply( error ->
         {
             if ( error != null )
             {
@@ -194,7 +194,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
 
     public synchronized <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction )
     {
-        return failureAsync().thenApply( error ->
+        return pullAllFailureAsync().thenApply( error ->
         {
             if ( error != null )
             {
@@ -210,7 +210,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         connection.writeAndFlush( PullAllMessage.PULL_ALL, this );
     }
 
-    public synchronized CompletionStage<Throwable> failureAsync()
+    public synchronized CompletionStage<Throwable> pullAllFailureAsync()
     {
         if ( failure != null )
         {

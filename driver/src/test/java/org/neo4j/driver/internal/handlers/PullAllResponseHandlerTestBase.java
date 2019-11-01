@@ -64,7 +64,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         PullAllResponseHandler handler = newHandler();
         handler.onSuccess( emptyMap() );
 
-        Throwable failure = await( handler.failureAsync() );
+        Throwable failure = await( handler.pullAllFailureAsync() );
 
         assertNull( failure );
     }
@@ -74,7 +74,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse( failureFuture.isDone() );
 
         handler.onSuccess( emptyMap() );
@@ -91,7 +91,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         RuntimeException failure = new RuntimeException( "Ops" );
         handler.onFailure( failure );
 
-        Throwable receivedFailure = await( handler.failureAsync() );
+        Throwable receivedFailure = await( handler.pullAllFailureAsync() );
         assertEquals( failure, receivedFailure );
     }
 
@@ -100,7 +100,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture = handler.pullAllFailureAsync().toCompletableFuture();
         assertFalse( failureFuture.isDone() );
 
         IOException failure = new IOException( "Broken pipe" );
@@ -115,8 +115,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<Throwable> failureFuture1 = handler.failureAsync().toCompletableFuture();
-        CompletableFuture<Throwable> failureFuture2 = handler.failureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture1 = handler.pullAllFailureAsync().toCompletableFuture();
+        CompletableFuture<Throwable> failureFuture2 = handler.pullAllFailureAsync().toCompletableFuture();
 
         assertFalse( failureFuture1.isDone() );
         assertFalse( failureFuture2.isDone() );
@@ -139,8 +139,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         ServiceUnavailableException failure = new ServiceUnavailableException( "Connection terminated" );
         handler.onFailure( failure );
 
-        assertEquals( failure, await( handler.failureAsync() ) );
-        assertNull( await( handler.failureAsync() ) );
+        assertEquals( failure, await( handler.pullAllFailureAsync() ) );
+        assertNull( await( handler.pullAllFailureAsync() ) );
     }
 
     @Test
@@ -148,13 +148,13 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletionStage<Throwable> failureFuture = handler.failureAsync();
+        CompletionStage<Throwable> failureFuture = handler.pullAllFailureAsync();
 
         SessionExpiredException failure = new SessionExpiredException( "Network unreachable" );
         handler.onFailure( failure );
         assertEquals( failure, await( failureFuture ) );
 
-        assertNull( await( handler.failureAsync() ) );
+        assertNull( await( handler.pullAllFailureAsync() ) );
     }
 
     @Test
@@ -166,9 +166,9 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         ServiceUnavailableException failure = new ServiceUnavailableException( "Neo4j unreachable" );
         handler.onFailure( failure );
 
-        assertEquals( failure, await( handler.failureAsync() ) );
+        assertEquals( failure, await( handler.pullAllFailureAsync() ) );
 
-        ResultSummary summary = await( handler.summaryAsync() );
+        ResultSummary summary = await( handler.consumeAsync() );
         assertNotNull( summary );
         assertEquals( statement, summary.statement() );
     }
@@ -180,7 +180,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         PullAllResponseHandler handler = newHandler( statement );
         handler.onSuccess( singletonMap( "type", value( "rw" ) ) );
 
-        ResultSummary summary = await( handler.summaryAsync() );
+        ResultSummary summary = await( handler.consumeAsync() );
 
         assertEquals( statement, summary.statement() );
         assertEquals( StatementType.READ_WRITE, summary.statementType() );
@@ -192,7 +192,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         Statement statement = new Statement( "RETURN 'Hi!" );
         PullAllResponseHandler handler = newHandler( statement );
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
 
         handler.onSuccess( singletonMap( "type", value( "r" ) ) );
@@ -212,7 +212,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         RuntimeException failure = new RuntimeException( "Computer is burning" );
         handler.onFailure( failure );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.summaryAsync() ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.consumeAsync() ) );
         assertEquals( failure, e );
     }
 
@@ -221,7 +221,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<ResultSummary> summaryFuture = handler.summaryAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
 
         IOException failure = new IOException( "FAILED to write" );
@@ -237,8 +237,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     {
         PullAllResponseHandler handler = newHandler();
 
-        CompletableFuture<ResultSummary> summaryFuture1 = handler.summaryAsync().toCompletableFuture();
-        CompletableFuture<ResultSummary> summaryFuture2 = handler.summaryAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture1 = handler.consumeAsync().toCompletableFuture();
+        CompletableFuture<ResultSummary> summaryFuture2 = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture1.isDone() );
         assertFalse( summaryFuture2.isDone() );
 
@@ -264,10 +264,10 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         IllegalStateException failure = new IllegalStateException( "Some state is illegal :(" );
         handler.onFailure( failure );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.summaryAsync() ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( handler.consumeAsync() ) );
         assertEquals( failure, e );
 
-        ResultSummary summary = await( handler.summaryAsync() );
+        ResultSummary summary = await( handler.consumeAsync() );
         assertNotNull( summary );
         assertEquals( statement, summary.statement() );
     }

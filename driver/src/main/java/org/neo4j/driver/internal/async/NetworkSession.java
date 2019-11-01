@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
+import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -196,7 +197,7 @@ public class NetworkSession
                 if ( cursor != null )
                 {
                     // there exists a cursor with potentially unconsumed error, try to extract and propagate it
-                    return cursor.consumeAsync();
+                    return cursor.discardAllFailureAsync();
                 }
                 // no result cursor exists so no error exists
                 return completedWithNull();
@@ -254,7 +255,7 @@ public class NetworkSession
                 return completedWithNull();
             }
             // make sure previous result is fully consumed and connection is released back to the pool
-            return cursor.failureAsync();
+            return cursor.pullAllFailureAsync();
         } ).thenCompose( error ->
         {
             if ( error == null )
@@ -323,7 +324,7 @@ public class NetworkSession
         {
             if ( tx != null )
             {
-                throw new ClientException( errorMessage );
+                throw new TransactionNestingException( errorMessage );
             }
         } );
     }

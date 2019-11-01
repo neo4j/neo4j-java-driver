@@ -30,19 +30,18 @@ import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxStatementResult;
@@ -124,7 +123,7 @@ class RxTransactionIT
         Flux<Integer> ids = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "CREATE (n:Node {id: 42}) RETURN n" ).records() )
                         .map( record -> record.get( 0 ).asNode().get( "id" ).asInt() ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( ids ).expectNext( 42 ).verifyComplete();
         assertEquals( 1, countNodes( 42 ) );
@@ -349,7 +348,7 @@ class RxTransactionIT
     {
         Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "WRONG" ).records() ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).verifyErrorSatisfies( error ->
                 assertThat( error.getMessage(), containsString( "Invalid input" ) ) );
@@ -389,7 +388,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 2, summary.counters().nodesCreated() );
@@ -417,7 +416,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query ), summary.statement() );
         assertEquals( 0, summary.counters().nodesCreated() );
@@ -449,7 +448,7 @@ class RxTransactionIT
         RxStatementResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
-        ResultSummary summary = await( Mono.from( result.summary() ) );
+        ResultSummary summary = await( Mono.from( result.consume() ) );
 
         assertEquals( new Statement( query, params ), summary.statement() );
         assertEquals( 1, summary.counters().nodesCreated() );
@@ -502,7 +501,7 @@ class RxTransactionIT
         Flux<Record> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).doOnNext( record -> { throw e; } ),
                 RxTransaction::commit,
-                RxTransaction::rollback );
+                ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> assertEquals( e, error ) ).verify();
     }
@@ -547,7 +546,7 @@ class RxTransactionIT
 
         Flux<Object> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "RETURN 'Hi!'" ).records() ).map( record -> { throw e; } ),
-                RxTransaction::commit, RxTransaction::rollback );
+                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records ).expectErrorSatisfies( error -> {
             assertEquals( e, error );
@@ -681,7 +680,7 @@ class RxTransactionIT
         await( Flux.usingWhen( session.beginTransaction(),
                 tx -> tx.run( "CREATE (:MyNode)" ).records(),
                 RxTransaction::commit,
-                RxTransaction::rollback ) );
+                ( tx, error ) -> tx.rollback(), null ) );
 
         Bookmark bookmarkAfter = session.lastBookmark();
 
@@ -784,28 +783,8 @@ class RxTransactionIT
         ClientException e = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
 
-        await( result.summary() );
+        await( result.consume() );
         assertCanRollback( tx );
-    }
-
-    @Test
-    void shouldHandleNestedQueries() throws Throwable
-    {
-        int size = 12555;
-
-        Flux<Integer> nodeIds = Flux.usingWhen( session.beginTransaction(),
-                tx -> {
-                    RxStatementResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) );
-                    return Flux.from( result.records() ).limitRate( 20 ).flatMap( record -> {
-                        int x = record.get( "x" ).asInt();
-                        RxStatementResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
-                        return innerResult.records();
-                    } ).map( record -> record.get( 0 ).asInt() );
-                },
-                RxTransaction::commit, RxTransaction::rollback
-        );
-
-        StepVerifier.create( nodeIds ).expectNextCount( size ).verifyComplete();
     }
 
     private int countNodes( Object id )
@@ -816,20 +795,19 @@ class RxTransactionIT
 
     private void testForEach( String query, int expectedSeenRecords )
     {
-
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx -> {
             RxStatementResult result = tx.run( query );
             AtomicInteger recordsSeen = new AtomicInteger();
             return Flux.from( result.records() )
                     .doOnNext( record -> recordsSeen.incrementAndGet() )
-                    .then( Mono.from( result.summary() ) )
+                    .then( Mono.from( result.consume() ) )
                     .doOnSuccess( s -> {
                         assertNotNull( s );
                         assertEquals( query, s.statement().text() );
                         assertEquals( emptyMap(), s.statement().parameters().asMap() );
                         assertEquals( expectedSeenRecords, recordsSeen.get() );
                     } );
-            }, RxTransaction::commit, RxTransaction::rollback );
+        }, RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( summary ).expectNextCount( 1 ).verifyComplete(); // we indeed get a summary.
     }
@@ -841,7 +819,7 @@ class RxTransactionIT
         Flux<List<Record>> records = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( query ).records() ).collectList(),
                 RxTransaction::commit,
-                RxTransaction::rollback );
+                ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( records.single() ).consumeNextWith( allRecords -> {
             for ( Record record : allRecords )
@@ -856,10 +834,8 @@ class RxTransactionIT
     private void testConsume( String query )
     {
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx ->
-            tx.run( query ).summary(),
-            RxTransaction::commit,
-            RxTransaction::rollback
-        );
+            tx.run( query ).consume(),
+            RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
 
         StepVerifier.create( summary.single() ).consumeNextWith( Assertions::assertNotNull ).verifyComplete();
     }

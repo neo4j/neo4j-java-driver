@@ -138,7 +138,7 @@ class InternalAsyncSessionTest
 
         StatementResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
 
-        verifyRunAndPull( connection, await( cursor.summaryAsync() ).statement().text() );
+        verifyRunAndPull( connection, await( cursor.consumeAsync() ).statement().text() );
     }
 
     @ParameterizedTest

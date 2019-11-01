@@ -96,7 +96,7 @@ class InternalAsyncTransactionTest
         setupSuccessfulRunAndPull( connection );
 
         StatementResultCursor result = await( runReturnOne.apply( tx ) );
-        ResultSummary summary = await( result.summaryAsync() );
+        ResultSummary summary = await( result.consumeAsync() );
 
         verifyRunAndPull( connection, summary.statement().text() );
     }

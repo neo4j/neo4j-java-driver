@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
@@ -45,9 +46,9 @@ public interface RxStatementResult
      * <p>
      * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query statement is sent to the server and executed.
      * This method does not start the record streaming nor publish query execution error.
-     * To retrieve the execution result, either {@link #records()} or {@link #summary()} can be used.
+     * To retrieve the execution result, either {@link #records()} or {@link #consume()} can be used.
      * {@link #records()} starts record streaming and reports query execution error.
-     * {@link #summary()} skips record streaming and directly reports query execution error.
+     * {@link #consume()} skips record streaming and directly reports query execution error.
      * <p>
      * Consuming of execution result ensures the resources (such as network connections) used by this result is freed correctly.
      * Consuming the keys without consuming the execution result will result in resource leak.
@@ -55,7 +56,7 @@ public interface RxStatementResult
      * and subscribed to enforce the result resources created in the {@link RxSession} (and/or {@link RxTransaction}) to be freed correctly.
      * <p>
      * This publisher can be subscribed many times. The keys published stays the same as the keys are buffered.
-     * If this publisher is subscribed after the publisher of {@link #records()} or {@link #summary()},
+     * If this publisher is subscribed after the publisher of {@link #records()} or {@link #consume()},
      * then the buffered keys will be returned.
      * @return a cold publisher of keys.
      */
@@ -83,8 +84,7 @@ public interface RxStatementResult
      * This publisher can only be subscribed by one {@link Subscriber} once.
      * <p>
      * If this publisher is subscribed after {@link #keys()}, then the publish of records is carried out after the arrival of keys.
-     * If this publisher is subscribed after {@link #summary()}, then the publish of records is already cancelled
-     * and an empty publisher of zero record will be return.
+     * If this publisher is subscribed after {@link #consume()}, then a {@link ResultConsumedException} will be thrown.
      * @return a cold unicast publisher of records.
      */
     Publisher<Record> records();
@@ -94,7 +94,7 @@ public interface RxStatementResult
      * <p>
      * {@linkplain Publisher#subscribe(Subscriber) Subscribing} the summary publisher results in the execution of the query followed by the result summary returned.
      * The summary publisher cancels record publishing if not yet subscribed and directly streams back the summary on query execution completion.
-     * As a result, the invocation of {@link #records()} after this method, would receive an empty publisher.
+     * As a result, the invocation of {@link #records()} after this method, would receive an {@link ResultConsumedException}.
      * <p>
      * If subscribed after {@link #keys()}, then the result summary will be published after the query execution without streaming any record to client.
      * If subscribed after {@link #records()}, then the result summary will be published after the query execution and the streaming of records.
@@ -104,5 +104,5 @@ public interface RxStatementResult
      * This method can be subscribed multiple times. When the {@linkplain ResultSummary summary} arrives, it will be buffered locally for all subsequent calls.
      * @return a cold publisher of result summary which only arrives after all records.
      */
-    Publisher<ResultSummary> summary();
+    Publisher<ResultSummary> consume();
 }

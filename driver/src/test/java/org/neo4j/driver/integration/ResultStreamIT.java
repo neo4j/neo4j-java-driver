@@ -126,7 +126,7 @@ class ResultStreamIT
     {
         // Given
         StatementResult res1 = session.run( "INVALID" );
-        assertThrows( Exception.class, res1::summary );
+        assertThrows( Exception.class, res1::consume );
 
         // When
         StatementResult res2 = session.run( "RETURN 1" );
@@ -144,8 +144,8 @@ class ResultStreamIT
         ResultSummary summary;
 
         // When
-        assertThrows( Exception.class, res1::summary );
-        summary = res1.summary();
+        assertThrows( Exception.class, res1::consume );
+        summary = res1.consume();
 
 
         // Then
@@ -171,41 +171,7 @@ class ResultStreamIT
 
         StatementResult result = resultRef.get();
         assertNotNull( result );
-        assertEquals( 0, result.summary().counters().nodesCreated() );
-    }
-
-    @Test
-    void shouldNotBufferRecordsAfterSummary()
-    {
-        // Given
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
-
-        // When
-        ResultSummary summary = result.summary();
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-
-        assertFalse( result.hasNext() );
-    }
-
-    @Test
-    void shouldDiscardRecordsAfterConsume()
-    {
-        // Given
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
-
-        // When
-        ResultSummary summary = result.summary();
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-
-        assertThat( result.hasNext(), equalTo( false ) );
+        assertEquals( 0, result.consume().counters().nodesCreated() );
     }
 
     @Test

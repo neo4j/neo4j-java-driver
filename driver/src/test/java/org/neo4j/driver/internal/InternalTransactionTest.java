@@ -93,7 +93,7 @@ class InternalTransactionTest
         setupSuccessfulRunAndPull( connection );
 
         StatementResult result = runReturnOne.apply( tx );
-        ResultSummary summary = result.summary();
+        ResultSummary summary = result.consume();
 
         verifyRunAndPull( connection, summary.statement().text() );
     }
@@ -131,7 +131,7 @@ class InternalTransactionTest
     void shouldRollbackWhenFailedRun() throws Throwable
     {
         setupFailingRun( connection, new RuntimeException( "Bang!" ) );
-        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).summary() );
+        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).consume() );
 
         tx.close();
 

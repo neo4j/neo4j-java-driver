@@ -43,7 +43,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.using( () -> newSession( AccessMode.READ, context ), this::processAndGetSummary, RxSession::close )
+        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ), this::processAndGetSummary, RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
                     context.readCompleted( summary );
@@ -59,7 +59,7 @@ public class RxReadQueryWithRetries<C extends AbstractContext> extends AbstractR
         return session.readTransaction( tx -> {
             RxStatementResult result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
             Mono<Node> records = Flux.from( result.records() ).singleOrEmpty().map( record -> record.get( 0 ).asNode() );
-            Mono<ResultSummary> summaryMono = Mono.from( result.summary() ).single();
+            Mono<ResultSummary> summaryMono = Mono.from( result.consume() ).single();
             return records.then( summaryMono );
         } );
     }

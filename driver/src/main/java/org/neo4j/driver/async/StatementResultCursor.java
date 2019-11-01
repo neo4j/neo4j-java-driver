@@ -80,7 +80,7 @@ public interface StatementResultCursor
      * @return a {@link CompletionStage} completed with a summary for the whole query result. Stage can also be
      * completed exceptionally if query execution fails.
      */
-    CompletionStage<ResultSummary> summaryAsync();
+    CompletionStage<ResultSummary> consumeAsync();
 
     /**
      * Asynchronously navigate to and retrieve the next {@link Record} in this result. Returned stage can contain
