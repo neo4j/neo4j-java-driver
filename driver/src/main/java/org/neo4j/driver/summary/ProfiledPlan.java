@@ -53,7 +53,7 @@ public interface ProfiledPlan extends Plan
     long pageCacheMisses();
 
     /**
-     * @return the ratio of page cache hits to total number of lookups or {@link Double#NaN} if no data is available
+     * @return the ratio of page cache hits to total number of lookups or 0 if no data is available
      */
     double pageCacheHitRatio();
 
