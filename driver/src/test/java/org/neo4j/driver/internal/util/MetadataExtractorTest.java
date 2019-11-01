@@ -252,7 +252,7 @@ class MetadataExtractorTest
         assertEquals( 242424, summary.profile().dbHits() );
         assertEquals( 999, summary.profile().time() );
         assertFalse( summary.profile().hasPageCacheStats() );
-        assertEquals( Double.NaN, summary.profile().pageCacheHitRatio() );
+        assertEquals( 0, summary.profile().pageCacheHitRatio() );
         assertEquals( 0, summary.profile().pageCacheMisses() );
         assertEquals( 0, summary.profile().pageCacheHits() );
 

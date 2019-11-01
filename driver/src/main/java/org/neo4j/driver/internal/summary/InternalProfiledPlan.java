@@ -61,7 +61,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
     @Override
     public boolean hasPageCacheStats()
     {
-        return pageCacheHits > 0 || pageCacheMisses > 0 || !Double.isNaN( pageCacheHitRatio );
+        return pageCacheHits > 0 || pageCacheMisses > 0 || pageCacheHitRatio > 0;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
         {
             return new InternalProfiledPlan( operatorType, arguments, identifiers, children, originalPlanValue.get( "dbHits" ).asLong( 0 ),
                     originalPlanValue.get( "rows" ).asLong( 0 ), originalPlanValue.get( "pageCacheHits" ).asLong( 0 ),
-                    originalPlanValue.get( "pageCacheMisses" ).asLong( 0 ), originalPlanValue.get( "pageCacheHitRatio" ).asDouble( Double.NaN ),
+                    originalPlanValue.get( "pageCacheMisses" ).asLong( 0 ), originalPlanValue.get( "pageCacheHitRatio" ).asDouble( 0 ),
                     originalPlanValue.get( "time" ).asLong( 0 ) );
         }
     };
