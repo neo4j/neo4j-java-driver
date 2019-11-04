@@ -20,10 +20,12 @@ package org.neo4j.driver.internal.reactive;
 
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Record;
@@ -63,20 +65,7 @@ public class InternalRxStatementResult implements RxStatementResult
                 }
                 else
                 {
-                    cursor.installRecordConsumer( ( r, e ) -> {
-                        if ( r != null )
-                        {
-                            sink.next( r );
-                        }
-                        else if ( e != null )
-                        {
-                            sink.error( e );
-                        }
-                        else
-                        {
-                            sink.complete();
-                        }
-                    } );
+                    cursor.installRecordConsumer( createRecordConsumer( sink ) );
                     sink.onCancel( cursor::cancel );
                     sink.onRequest( cursor::request );
                 }
@@ -87,6 +76,32 @@ public class InternalRxStatementResult implements RxStatementResult
                 sink.error( error );
             }
         } ), IGNORE );
+    }
+
+    /**
+     * Defines how a subscriber shall consume records.
+     * A record consumer holds a reference to a subscriber.
+     * A publisher and/or a subscription who holds a reference to this consumer shall release the reference to this object
+     * after subscription is done or cancelled so that the subscriber can be garbage collected.
+     * @param sink the subscriber
+     * @return a record consumer.
+     */
+    private BiConsumer<Record,Throwable> createRecordConsumer( FluxSink<Record> sink )
+    {
+        return ( r, e ) -> {
+            if ( r != null )
+            {
+                sink.next( r );
+            }
+            else if ( e != null )
+            {
+                sink.error( e );
+            }
+            else
+            {
+                sink.complete();
+            }
+        };
     }
 
     private CompletionStage<RxStatementResultCursor> getCursorFuture()

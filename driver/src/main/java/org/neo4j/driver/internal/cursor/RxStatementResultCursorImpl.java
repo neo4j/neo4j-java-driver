@@ -30,6 +30,9 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.summary.ResultSummary;
 
+import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.DISCARD_INSTALLED;
+import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.INSTALLED;
+import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.NOT_INSTALLED;
 import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 
 public class RxStatementResultCursorImpl implements RxStatementResultCursor
@@ -39,8 +42,8 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     private final PullResponseHandler pullHandler;
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
-    private BiConsumer<Record,Throwable> recordConsumer;
     private boolean resultConsumed;
+    private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
 
     public RxStatementResultCursorImpl( RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
@@ -72,18 +75,15 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
         {
             throw newResultConsumedError();
         }
-        if ( isRecordConsumerInstalled() )
+
+        if ( consumerStatus.isInstalled() )
         {
             return;
         }
-        this.recordConsumer = recordConsumer;
-        pullHandler.installRecordConsumer( this.recordConsumer );
+        consumerStatus = recordConsumer == DISCARD_RECORD_CONSUMER ?
+                         DISCARD_INSTALLED : INSTALLED;
+        pullHandler.installRecordConsumer( recordConsumer );
         assertRunCompletedSuccessfully();
-    }
-
-    private boolean isRecordConsumerInstalled()
-    {
-        return this.recordConsumer != null;
     }
 
     @Override
@@ -108,7 +108,7 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     @Override
     public CompletionStage<Throwable> pullAllFailureAsync()
     {
-        if ( isRecordConsumerInstalled() && !isDone() )
+        if ( consumerStatus.isInstalled() && !isDone() )
         {
             return CompletableFuture.completedFuture( new TransactionNestingException(
                     "You cannot run another query or begin a new transaction in the same session before you've fully consumed the previous run result." ) );
@@ -146,7 +146,7 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     private void installSummaryConsumer()
     {
         pullHandler.installSummaryConsumer( ( summary, error ) -> {
-            if ( error != null && recordConsumer == DISCARD_RECORD_CONSUMER )
+            if ( error != null && consumerStatus.isDiscardConsumer() )
             {
                 // We will only report the error to summary if there is no user record consumer installed
                 // When a user record consumer is installed, the error will be reported to record consumer instead.
@@ -165,6 +165,32 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
         if ( !runHandler.runFuture().isDone() )
         {
             throw new IllegalStateException( "Should wait for response of RUN before allowing PULL." );
+        }
+    }
+
+    enum RecordConsumerStatus
+    {
+        NOT_INSTALLED( false, false ),
+        INSTALLED( true, false ),
+        DISCARD_INSTALLED( true, true );
+
+        private final boolean isInstalled;
+        private final boolean isDiscardConsumer;
+
+        RecordConsumerStatus( boolean isInstalled, boolean isDiscardConsumer )
+        {
+            this.isInstalled = isInstalled;
+            this.isDiscardConsumer = isDiscardConsumer;
+        }
+
+        boolean isInstalled()
+        {
+            return isInstalled;
+        }
+
+        boolean isDiscardConsumer()
+        {
+            return isDiscardConsumer;
         }
     }
 }
