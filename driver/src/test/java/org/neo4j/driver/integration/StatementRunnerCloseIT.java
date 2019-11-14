@@ -62,7 +62,7 @@ class StatementRunnerCloseIT
     }
 
     @Test
-    void shouldErrorToAccessRecordsAfterSummary()
+    void shouldErrorToAccessRecordsAfterConsume()
     {
         // Given
         StatementResult result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
@@ -103,7 +103,7 @@ class StatementRunnerCloseIT
     }
 
     @Test
-    void shouldAllowSummaryAndKeysAfterSummary()
+    void shouldAllowConsumeAndKeysAfterConsume()
     {
         // Given
         StatementResult result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
@@ -141,7 +141,7 @@ class StatementRunnerCloseIT
     }
 
     @Test
-    void shouldErrorToAccessRecordsAfterSummaryAsync()
+    void shouldErrorToAccessRecordsAfterConsumeAsync()
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
@@ -178,7 +178,7 @@ class StatementRunnerCloseIT
         assertThrows( ResultConsumedException.class, () -> await( result.listAsync( record -> record ) ) );    }
 
     @Test
-    void shouldAllowSummaryAndKeysAfterSummaryAsync()
+    void shouldAllowConsumeAndKeysAfterConsumeAsync()
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
@@ -198,7 +198,7 @@ class StatementRunnerCloseIT
     }
 
     @Test
-    void shouldAllowSummaryAndKeysAfterCloseAsync()
+    void shouldAllowConsumeAndKeysAfterCloseAsync()
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();

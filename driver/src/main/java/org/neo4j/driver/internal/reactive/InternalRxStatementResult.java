@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxStatementResult;
 import org.neo4j.driver.summary.ResultSummary;
 
+import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
 public class InternalRxStatementResult implements RxStatementResult
@@ -59,7 +60,7 @@ public class InternalRxStatementResult implements RxStatementResult
             {
                 if( cursor.isDone() )
                 {
-                    sink.complete();
+                    sink.error( newResultConsumedError() );
                 }
                 else
                 {
