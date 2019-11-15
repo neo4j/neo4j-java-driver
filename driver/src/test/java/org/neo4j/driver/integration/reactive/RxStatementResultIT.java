@@ -36,6 +36,7 @@ import org.neo4j.driver.summary.StatementType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
+import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -302,6 +303,154 @@ class RxStatementResultIT
                 .verify();
     }
 
+    @Test
+    void shouldErrorToAccessRecordAfterSessionClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create( Flux.from( session.close() ).thenMany( result.records() ) ).expectErrorSatisfies( error -> {
+            assertThat( error.getMessage(), containsString( "session is already closed" ) );
+        } ).verify();
+    }
+
+    @Test
+    void shouldErrorToAccessKeysAfterSessionClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create( Flux.from( session.close() ).thenMany( result.keys() ) ).expectErrorSatisfies( error -> {
+            assertThat( error.getMessage(), containsString( "session is already closed" ) );
+        } ).verify();
+    }
+
+    @Test
+    void shouldErrorToAccessSummaryAfterSessionClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create( Flux.from( session.close() ).thenMany( result.consume() ) ).expectErrorSatisfies( error -> {
+            assertThat( error.getMessage(), containsString( "session is already closed" ) );
+        } ).verify();
+    }
+
+    @Test
+    void shouldErrorToAccessRecordAfterTxClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create(
+                Flux.from( session.beginTransaction() ).single()
+                        .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
+                        .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).records() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .verify();
+    }
+
+    @Test
+    void shouldErrorToAccessKeysAfterTxClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create(
+                Flux.from( session.beginTransaction() ).single()
+                        .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
+                        .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).keys() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .verify();
+    }
+
+    @Test
+    void shouldErrorToAccessSummaryAfterTxClose()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create(
+                Flux.from( session.beginTransaction() ).single()
+                        .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
+                        .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).consume() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .verify();
+    }
+
+    @Test
+    void throwErrorAfterKeys()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "UNWIND [1,2] AS a RETURN a" );
+
+        // When
+        StepVerifier.create(
+                Flux.from( session.beginTransaction() ).single()
+                        .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
+                        .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).consume() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .verify();
+    }
+
+    @Test
+    void throwTheSameErrorWhenCallingConsumeMultipleTimes()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "Invalid" );
+
+        // When
+        StepVerifier.create( Flux.from( result.consume() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Invalid" ) ) )
+                .verify();
+
+        StepVerifier.create( Flux.from( result.consume() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Invalid" ) ) )
+                .verify();
+    }
+
+    @Test
+    void keysShouldNotReportRunError()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "Invalid" );
+
+        // When
+        StepVerifier.create( Flux.from( result.keys() ) ).expectNext( EMPTY_LIST ).verifyComplete();
+        StepVerifier.create( Flux.from( result.keys() ) ).expectNext( EMPTY_LIST ).verifyComplete();
+    }
+
+    @Test
+    void throwResultConsumedErrorWhenCallingRecordsMultipleTimes()
+    {
+        // Given
+        RxSession session = neo4j.driver().rxSession();
+        RxStatementResult result = session.run( "Invalid" );
+
+        // When
+        StepVerifier.create( Flux.from( result.records() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Invalid" ) ) )
+                .verify();
+
+        verifyRecordsAlreadyDiscarded( result );
+        verifyRecordsAlreadyDiscarded( result );
+    }
+
     private void verifyCanAccessSummary( RxStatementResult res )
     {
         StepVerifier.create( res.consume() ).assertNext( summary -> {
@@ -313,8 +462,8 @@ class RxStatementResultIT
 
     private void verifyRecordsAlreadyDiscarded( RxStatementResult res )
     {
-        StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
-                .expectComplete()
+        StepVerifier.create( Flux.from( res.records() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "has already been consumed" ) ) )
                 .verify();
     }
 

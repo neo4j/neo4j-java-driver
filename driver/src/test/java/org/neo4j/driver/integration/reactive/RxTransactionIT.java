@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.integration.reactive;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -207,8 +208,10 @@ class RxTransactionIT
         assertCanCommitOrRollback( commit, tx );
 
         // As a result the records size shall be 0.
-        List<Record> records = await( Flux.from( cursor.records() ) );
-        assertThat( records.size(), equalTo( 0 ) );
+
+        StepVerifier.create( Flux.from( cursor.records() ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), CoreMatchers.containsString( "has already been consumed" ) ) )
+                .verify();
     }
 
     @ParameterizedTest
