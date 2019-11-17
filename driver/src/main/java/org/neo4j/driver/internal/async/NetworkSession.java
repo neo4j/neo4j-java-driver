@@ -30,15 +30,14 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
-import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -356,9 +355,9 @@ public class NetworkSession
         // This bookmark is only used for rediscovery.
         // It has to be the initial bookmark given at the creation of the session.
         // As only that bookmark could carry extra system bookmarks
-        private final InternalBookmark rediscoveryBookmark;
+        private final Bookmark rediscoveryBookmark;
 
-        private NetworkSessionConnectionContext( DatabaseName databaseName, InternalBookmark bookmark )
+        private NetworkSessionConnectionContext( DatabaseName databaseName, Bookmark bookmark )
         {
             this.databaseName = databaseName;
             this.rediscoveryBookmark = bookmark;
@@ -383,7 +382,7 @@ public class NetworkSession
         }
 
         @Override
-        public InternalBookmark rediscoveryBookmark()
+        public Bookmark rediscoveryBookmark()
         {
             return rediscoveryBookmark;
         }

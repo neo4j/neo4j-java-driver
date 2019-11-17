@@ -46,8 +46,8 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
@@ -77,6 +77,7 @@ import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
+import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 
 class RoutingDriverBoltKitTest
 {
@@ -981,11 +982,10 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
         StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
 
-        Bookmark bookmark = parse(
-                asList( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16",
-                        "neo4j:bookmark:v1:tx68" ) );
-
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ); Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG );
+                Session session = driver.session( builder().withBookmarks( InternalBookmark.parse(
+                        asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
+                                "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {

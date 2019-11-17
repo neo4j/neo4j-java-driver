@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +52,6 @@ import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -223,6 +223,12 @@ public final class TestUtil
         return new LinkedHashSet<>( Arrays.asList( elements ) );
     }
 
+    @SafeVarargs
+    public static <T> Set<T> asSet( T... elements )
+    {
+        return new HashSet<>( Arrays.asList( elements ) );
+    }
+
     public static long countNodes( Driver driver, Bookmark bookmark )
     {
         try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
@@ -240,12 +246,12 @@ public final class TestUtil
         }
     }
 
-    public static NetworkSession newSession( ConnectionProvider connectionProvider, InternalBookmark x )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, Bookmark x )
     {
         return newSession( connectionProvider, WRITE, x );
     }
 
-    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, InternalBookmark x )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmark x )
     {
         return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), x );
     }
@@ -266,7 +272,7 @@ public final class TestUtil
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, InternalBookmark bookmark )
+            RetryLogic retryLogic, Bookmark bookmark )
     {
         return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), UNLIMITED_FETCH_SIZE,
                 DEV_NULL_LOGGING );
@@ -308,7 +314,7 @@ public final class TestUtil
         verifyBeginTx( connectionMock, empty() );
     }
 
-    public static void verifyBeginTx( Connection connectionMock, InternalBookmark bookmark )
+    public static void verifyBeginTx( Connection connectionMock, Bookmark bookmark )
     {
         if ( bookmark.isEmpty() )
         {

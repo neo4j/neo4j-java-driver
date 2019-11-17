@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -56,7 +56,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, InternalBookmark bookmark )
+    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark )
     {
         RoutingProcedureRunner runner;
         if ( connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) )

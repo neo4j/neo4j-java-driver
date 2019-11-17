@@ -18,22 +18,24 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.driver.Bookmark;
+
 public interface BookmarkHolder
 {
-    InternalBookmark getBookmark();
+    Bookmark getBookmark();
 
-    void setBookmark( InternalBookmark bookmark );
+    void setBookmark( Bookmark bookmark );
 
     BookmarkHolder NO_OP = new BookmarkHolder()
     {
         @Override
-        public InternalBookmark getBookmark()
+        public Bookmark getBookmark()
         {
             return InternalBookmark.empty();
         }
 
         @Override
-        public void setBookmark( InternalBookmark bookmark )
+        public void setBookmark( Bookmark bookmark )
         {
         }
     };

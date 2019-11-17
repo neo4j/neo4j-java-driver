@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.async;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 
 public interface ConnectionContext
 {
@@ -28,5 +28,5 @@ public interface ConnectionContext
 
     AccessMode mode();
 
-    InternalBookmark rediscoveryBookmark();
+    Bookmark rediscoveryBookmark();
 }

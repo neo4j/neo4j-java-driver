@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 
@@ -35,7 +36,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 
 class CommitTxResponseHandlerTest
 {
-    private final CompletableFuture<InternalBookmark> future = new CompletableFuture<>();
+    private final CompletableFuture<Bookmark> future = new CompletableFuture<>();
     private final CommitTxResponseHandler handler = new CommitTxResponseHandler( future );
 
     @Test

@@ -25,6 +25,7 @@ import org.mockito.InOrder;
 
 import java.util.function.Consumer;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
@@ -52,10 +53,10 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_F
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.runMessageWithStatementMatcher;
-import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
-import static org.neo4j.driver.util.TestUtil.verifyRunRx;
+import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
+import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
 class ExplicitTransactionTest
 {
@@ -121,7 +122,7 @@ class ExplicitTransactionTest
     @Test
     void shouldFlushWhenBookmarkGiven()
     {
-        InternalBookmark bookmark = InternalBookmark.parse( "hi, I'm bookmark" );
+        Bookmark bookmark = InternalBookmark.parse( "hi, I'm bookmark" );
         Connection connection = connectionMock();
 
         beginTx( connection, bookmark );
@@ -166,7 +167,7 @@ class ExplicitTransactionTest
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
-        InternalBookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
 
         RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
@@ -181,7 +182,7 @@ class ExplicitTransactionTest
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
         ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
-        InternalBookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
 
         await( tx.beginAsync( bookmark, txConfig ) );
@@ -231,7 +232,7 @@ class ExplicitTransactionTest
         return beginTx( connection, InternalBookmark.empty() );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, InternalBookmark initialBookmark )
+    private static ExplicitTransaction beginTx( Connection connection, Bookmark initialBookmark )
     {
         ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
         return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );

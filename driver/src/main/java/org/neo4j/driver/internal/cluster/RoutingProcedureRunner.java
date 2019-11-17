@@ -23,6 +23,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
@@ -31,7 +32,6 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
@@ -53,7 +53,7 @@ public class RoutingProcedureRunner
         this.context = context;
     }
 
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, InternalBookmark bookmark )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark )
     {
         DirectConnection delegate = connection( connection );
         Statement procedure = procedureStatement( connection.serverVersion(), databaseName );
@@ -79,7 +79,7 @@ public class RoutingProcedureRunner
         return new Statement( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
     }
 
-    BookmarkHolder bookmarkHolder( InternalBookmark ignored )
+    BookmarkHolder bookmarkHolder( Bookmark ignored )
     {
         return BookmarkHolder.NO_OP;
     }

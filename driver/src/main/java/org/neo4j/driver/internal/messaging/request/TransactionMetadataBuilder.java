@@ -22,9 +22,9 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.Iterables;
 
 import static java.util.Collections.emptyMap;
@@ -40,12 +40,12 @@ public class TransactionMetadataBuilder
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, InternalBookmark bookmark )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmark bookmark )
     {
         return buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark );
     }
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName, AccessMode mode, InternalBookmark bookmark )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName, AccessMode mode, Bookmark bookmark )
     {
         boolean bookmarksPresent = bookmark != null && !bookmark.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;

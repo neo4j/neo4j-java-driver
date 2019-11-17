@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -50,7 +51,7 @@ class BeginMessageEncoderTest
     @EnumSource( AccessMode.class )
     void shouldEncodeBeginMessage( AccessMode mode ) throws Exception
     {
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "hello", value( "world" ) );

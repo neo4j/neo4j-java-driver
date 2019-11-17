@@ -24,6 +24,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
@@ -74,7 +75,7 @@ public interface BoltProtocol
      * @param config the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config );
+    CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config );
 
     /**
      * Commit the explicit transaction.
@@ -82,7 +83,7 @@ public interface BoltProtocol
      * @param connection the connection to use.
      * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
      */
-    CompletionStage<InternalBookmark> commitTransaction( Connection connection );
+    CompletionStage<Bookmark> commitTransaction( Connection connection );
 
     /**
      * Rollback the explicit transaction.

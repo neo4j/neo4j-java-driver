@@ -22,13 +22,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
 import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -75,7 +75,7 @@ public class ExplicitTransaction
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<ExplicitTransaction> beginAsync( InternalBookmark initialBookmark, TransactionConfig config )
+    public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark, TransactionConfig config )
     {
         return protocol.beginTransaction( connection, initialBookmark, config )
                 .handle( ( ignore, beginError ) ->

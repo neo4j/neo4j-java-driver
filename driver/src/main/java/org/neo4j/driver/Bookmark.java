@@ -18,7 +18,10 @@
  */
 package org.neo4j.driver;
 
-import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Set;
+
+import org.neo4j.driver.internal.InternalBookmark;
 
 /**
  * Causal chaining is carried out by passing bookmarks between transactions.
@@ -31,6 +34,50 @@ import java.io.Serializable;
  *
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
-public interface Bookmark extends Serializable
+public interface Bookmark
 {
+    /**
+     * Returns a read-only set of bookmark strings that this bookmark instance identifies.
+     * This method shall only be used to serialize bookmarks.
+     * @return a read-only set of bookmark strings that this bookmark instance identifies.
+     */
+    Set<String> values();
+
+    /**
+     * Reconstruct bookmark from de-serialized bookmarks string values.
+     * This method shall not be used to create non-existing bookmarks from random string values.
+     * To create a bookmark from two and more existing bookmarks, using {@link this#merge(Bookmark...)} and {@link this#merge(Iterable)} instead.
+     * @param values values obtained from a previous bookmark.
+     * @return A bookmark.
+     */
+    static Bookmark parse( Set<String> values )
+    {
+        return InternalBookmark.parse( values );
+    }
+
+    /**
+     * Return true if the bookmark is empty.
+     * @return true if the bookmark is empty.
+     */
+    boolean isEmpty();
+
+    /**
+     * Merge more than one bookmarks together into one bookmark.
+     * @param bookmarks bookmarks to merge
+     * @return Merged single bookmark.
+     */
+    static Bookmark merge( Bookmark... bookmarks )
+    {
+        return merge( Arrays.asList( bookmarks ) );
+    }
+
+    /**
+     * Merge more than one bookmarks together into one bookmark.
+     * @param bookmarks bookmarks to merge
+     * @return Merged singled bookmark.
+     */
+    static Bookmark merge( Iterable<Bookmark> bookmarks )
+    {
+        return InternalBookmark.from( bookmarks );
+    }
 }
