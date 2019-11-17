@@ -98,30 +98,30 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     }
 
     @Override
-    public <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work )
+    public <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work )
     {
         return readTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
-    public <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config )
+    public <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         return runTransaction( AccessMode.READ, work, config );
     }
 
     @Override
-    public <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work )
+    public <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work )
     {
         return writeTransaction( work, TransactionConfig.empty() );
     }
 
     @Override
-    public <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config )
+    public <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         return runTransaction( AccessMode.WRITE, work, config );
     }
 
-    private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<Publisher<T>> work, TransactionConfig config )
+    private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute,
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );

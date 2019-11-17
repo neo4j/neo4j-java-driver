@@ -83,7 +83,7 @@ public interface RxSession extends RxStatementRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work );
+    <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work );
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction with
@@ -106,7 +106,7 @@ public interface RxSession extends RxStatementRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> readTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config );
+    <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction.
@@ -127,7 +127,7 @@ public interface RxSession extends RxStatementRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work );
+    <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work );
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction with
@@ -150,7 +150,7 @@ public interface RxSession extends RxStatementRunner
      * publisher can be completed exceptionally if given work or commit fails.
      *
      */
-    <T> Publisher<T> writeTransaction( RxTransactionWork<Publisher<T>> work, TransactionConfig config );
+    <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
 
     /**
      * Run a statement with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream.
