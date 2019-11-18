@@ -367,6 +367,7 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldNotServeWritesWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
@@ -396,6 +397,7 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
+    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldServeReadsWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
