@@ -85,7 +85,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
 
@@ -109,7 +109,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
 
@@ -132,7 +132,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+                protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
 
@@ -165,12 +165,12 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, false, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
 
@@ -197,7 +197,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         if ( autoCommitTx )
         {
             ResultCursorFactory factory =
-                    protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE );
+                    protocol.runInAutoCommitTransaction( connection, QUERY, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE );
             await( factory.asyncResult() );
             verifySessionRunInvoked( connection, InternalBookmark.empty(), TransactionConfig.empty(), AccessMode.WRITE, database( "foo" ) );
         }
@@ -211,12 +211,12 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
 
     private ResponseHandler verifyTxRunInvoked( Connection connection )
     {
-        return verifyRunInvoked( connection, RunWithMetadataMessage.explicitTxRunMessage( STATEMENT ) );
+        return verifyRunInvoked( connection, RunWithMetadataMessage.explicitTxRunMessage(QUERY) );
     }
 
     private ResponseHandler verifySessionRunInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
     {
-        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, databaseName, mode, bookmark );
+        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, databaseName, mode, bookmark );
         return verifyRunInvoked( connection, runMessage );
     }
 

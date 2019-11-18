@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
@@ -105,8 +105,8 @@ class InternalAsyncSessionTest
                 session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ) ),
                 session -> session.runAsync( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                session -> session.runAsync( new Statement( "RETURN $x", parameters( "x", 1 ) ) ),
-                session -> session.runAsync( new Statement( "RETURN $x", parameters( "x", 1 ) ), empty() ),
+                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ) ),
+                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ), empty() ),
                 session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ), empty() ),
                 session -> session.runAsync( "RETURN 1", empty() )
         );
@@ -138,7 +138,7 @@ class InternalAsyncSessionTest
 
         ResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
 
-        verifyRunAndPull( connection, await( cursor.consumeAsync() ).statement().text() );
+        verifyRunAndPull( connection, await( cursor.consumeAsync() ).query().text() );
     }
 
     @ParameterizedTest

@@ -114,7 +114,7 @@ class TransactionIT
     }
 
     @Test
-    void shouldNotAllowSessionLevelStatementsWhenThereIsATransaction()
+    void shouldNotAllowSessionLevelQueriesWhenThereIsATransaction()
     {
         session.beginTransaction();
 
@@ -453,10 +453,10 @@ class TransactionIT
             assertThat( error1.code(), containsString( "SyntaxError" ) );
 
             ClientException error2 = assertThrows( ClientException.class, () -> tx.run( "CREATE (:OtherNode)" ).consume() );
-            assertThat( error2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+            assertThat( error2.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
 
             ClientException error3 = assertThrows( ClientException.class, () -> tx.run( "RETURN 42" ).consume() );
-            assertThat( error3.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+            assertThat( error3.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
         }
 
         assertEquals( 0, countNodesByLabel( "Node" ) );
@@ -464,7 +464,7 @@ class TransactionIT
     }
 
     @Test
-    void shouldRollbackWhenMarkedSuccessfulButOneStatementFails()
+    void shouldRollbackWhenMarkedSuccessfulButOneQueryFails()
     {
         ClientException error = assertThrows( ClientException.class, () ->
         {
@@ -502,7 +502,7 @@ class TransactionIT
             txConsumer.accept( tx );
         }
 
-        // Then the outcome of both statements should be visible
+        // Then the outcome of both queries should be visible
         Result result = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = result.single().get( "count(n)" ).asLong();
         if (isCommit)
@@ -532,7 +532,7 @@ class TransactionIT
         txConsumer.accept( tx );
 
         ClientException e = assertThrows( ClientException.class, () -> tx.run( "CREATE (:MyOtherLabel)" ) );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
     }
 
     private static int countNodesByLabel( String label )

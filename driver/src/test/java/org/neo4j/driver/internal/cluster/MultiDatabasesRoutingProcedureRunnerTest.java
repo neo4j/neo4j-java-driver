@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
@@ -69,8 +69,8 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat( runner.connection.databaseName(), equalTo( systemDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.READ ) );
 
-        Statement statement = generateMultiDatabaseRoutingStatement( EMPTY_MAP, db );
-        assertThat( runner.procedure, equalTo( statement ) );
+        Query query = generateMultiDatabaseRoutingQuery( EMPTY_MAP, db );
+        assertThat( runner.procedure, equalTo(query) );
     }
 
     @ParameterizedTest
@@ -90,9 +90,9 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat( runner.connection.databaseName(), equalTo( systemDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.READ ) );
 
-        Statement statement = generateMultiDatabaseRoutingStatement( context.asMap(), db );
-        assertThat( response.procedure(), equalTo( statement ) );
-        assertThat( runner.procedure, equalTo( statement ) );
+        Query query = generateMultiDatabaseRoutingQuery( context.asMap(), db );
+        assertThat( response.procedure(), equalTo(query) );
+        assertThat( runner.procedure, equalTo(query) );
     }
 
     @Override
@@ -107,17 +107,17 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         return new TestRoutingProcedureRunner( context, runProcedureResult );
     }
 
-    private static Statement generateMultiDatabaseRoutingStatement( Map context, String db )
+    private static Query generateMultiDatabaseRoutingQuery(Map context, String db )
     {
         Value parameters = parameters( ROUTING_CONTEXT, context, DATABASE_NAME, db );
-        return new Statement( MULTI_DB_GET_ROUTING_TABLE, parameters );
+        return new Query( MULTI_DB_GET_ROUTING_TABLE, parameters );
     }
 
     private static class TestRoutingProcedureRunner extends MultiDatabasesRoutingProcedureRunner
     {
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
-        private Statement procedure;
+        private Query procedure;
         private BookmarkHolder bookmarkHolder;
 
         TestRoutingProcedureRunner( RoutingContext context )
@@ -132,7 +132,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure, BookmarkHolder bookmarkHolder )
+        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
         {
             this.connection = connection;
             this.procedure = procedure;

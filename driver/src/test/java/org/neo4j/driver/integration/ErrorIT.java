@@ -80,7 +80,7 @@ class ErrorIT
     {
         ClientException e = assertThrows( ClientException.class, () ->
         {
-            Result result = session.run( "invalid statement" );
+            Result result = session.run( "invalid query" );
             result.consume();
         } );
 
@@ -102,11 +102,11 @@ class ErrorIT
             Result cursor = tx.run( "RETURN 1" );
             cursor.single().get( "1" ).asInt();
         } );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
     }
 
     @Test
-    void shouldAllowNewStatementAfterRecoverableError()
+    void shouldAllowNewQueryAfterRecoverableError()
     {
         // Given an error has occurred
         try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}

@@ -31,7 +31,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -89,14 +89,14 @@ class UnmanagedTransactionIT
         return await( session.beginTransactionAsync( TransactionConfig.empty() ) );
     }
 
-    private ResultCursor sessionRun(NetworkSession session, Statement statement )
+    private ResultCursor sessionRun(NetworkSession session, Query query)
     {
-        return await( session.runAsync( statement, TransactionConfig.empty(), true ) );
+        return await( session.runAsync(query, TransactionConfig.empty(), true ) );
     }
 
-    private ResultCursor txRun(UnmanagedTransaction tx, String statement )
+    private ResultCursor txRun(UnmanagedTransaction tx, String query )
     {
-        return await( tx.runAsync( new Statement( statement ), true ) );
+        return await( tx.runAsync( new Query( query ), true ) );
     }
 
     @Test
@@ -175,7 +175,7 @@ class UnmanagedTransactionIT
         tx.markTerminated();
 
         ClientException e = assertThrows( ClientException.class, () -> txRun( tx, "CREATE (:MyOtherLabel)" ) );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
     }
 
     @Test
@@ -189,7 +189,7 @@ class UnmanagedTransactionIT
         assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
 
         await( session.beginTransactionAsync( TransactionConfig.empty() )
-                .thenCompose( tx -> tx.runAsync( new Statement( "CREATE (:Node {id: 42})" ), true )
+                .thenCompose( tx -> tx.runAsync( new Query( "CREATE (:Node {id: 42})" ), true )
                         .thenCompose( ResultCursor::consumeAsync )
                         .thenApply( ignore -> tx )
                 ).thenCompose( UnmanagedTransaction::commitAsync ) );
@@ -211,8 +211,8 @@ class UnmanagedTransactionIT
 
     private int countNodes( Object id )
     {
-        Statement statement = new Statement( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
-        ResultCursor cursor = sessionRun( session, statement );
+        Query query = new Query( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
+        ResultCursor cursor = sessionRun( session, query);
         return await( cursor.singleAsync() ).get( 0 ).asInt();
     }
 

@@ -71,10 +71,10 @@ class ScalarTypeIT
 
     @ParameterizedTest
     @MethodSource( "typesToTest" )
-    void shouldHandleType( String statement, Value expectedValue )
+    void shouldHandleType( String query, Value expectedValue )
     {
         // When
-        Result cursor = session.run( statement );
+        Result cursor = session.run( query );
 
         // Then
         assertThat( cursor.single().get( "v" ), equalTo( expectedValue ) );

@@ -40,7 +40,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -432,9 +432,9 @@ class ConnectionHandlingIT
         return createNodes( nodesToCreate, driver.session() );
     }
 
-    private Result createNodes(int nodesToCreate, StatementRunner statementRunner )
+    private Result createNodes(int nodesToCreate, QueryRunner queryRunner)
     {
-        return statementRunner.run( "UNWIND range(1, $nodesToCreate) AS i CREATE (n {index: i}) RETURN n",
+        return queryRunner.run( "UNWIND range(1, $nodesToCreate) AS i CREATE (n {index: i}) RETURN n",
                 parameters( "nodesToCreate", nodesToCreate ) );
     }
 

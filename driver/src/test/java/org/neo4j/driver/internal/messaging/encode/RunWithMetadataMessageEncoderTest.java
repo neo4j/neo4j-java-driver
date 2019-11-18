@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -65,8 +65,8 @@ class RunWithMetadataMessageEncoderTest
 
         Duration txTimeout = Duration.ofMillis( 42 );
 
-        Statement statement = new Statement( "RETURN $answer", value( params ) );
-        encoder.encode( autoCommitTxRunMessage( statement, txTimeout, txMetadata, defaultDatabase(), mode, bookmark ), packer );
+        Query query = new Query( "RETURN $answer", value( params ) );
+        encoder.encode( autoCommitTxRunMessage(query, txTimeout, txMetadata, defaultDatabase(), mode, bookmark ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );

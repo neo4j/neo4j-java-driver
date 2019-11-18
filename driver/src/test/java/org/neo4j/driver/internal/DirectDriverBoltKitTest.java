@@ -156,7 +156,7 @@ class DirectDriverBoltKitTest
     }
 
     @Test
-    void shouldSendReadAccessModeInStatementMetadata() throws Exception
+    void shouldSendReadAccessModeInQueryMetadata() throws Exception
     {
         StubServer server = StubServer.start( "hello_run_exit_read.script", 9001 );
 
@@ -174,7 +174,7 @@ class DirectDriverBoltKitTest
     }
 
     @Test
-    void shouldNotSendWriteAccessModeInStatementMetadata() throws Exception
+    void shouldNotSendWriteAccessModeInQueryMetadata() throws Exception
     {
         StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
 

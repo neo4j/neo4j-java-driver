@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -48,7 +48,7 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -119,7 +119,7 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndCommit()
+    void shouldBePossibleToRunSingleQueryAndCommit()
     {
         Flux<Integer> ids = Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( "CREATE (n:Node {id: 42}) RETURN n" ).records() )
@@ -131,7 +131,7 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndRollback()
+    void shouldBePossibleToRunSingleQueryAndRollback()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertCanRunCreate( tx );
@@ -143,7 +143,7 @@ class RxTransactionIT
 
     @ParameterizedTest
     @MethodSource( "commit" )
-    void shouldBePossibleToRunMultipleStatements( boolean commit )
+    void shouldBePossibleToRunMultipleQueries(boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
@@ -163,7 +163,7 @@ class RxTransactionIT
 
     @ParameterizedTest
     @MethodSource( "commit" )
-    void shouldBePossibleToRunMultipleStatementsWithoutWaiting( boolean commit )
+    void shouldBePossibleToRunMultipleQueriesWithoutWaiting(boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
@@ -179,7 +179,7 @@ class RxTransactionIT
 
     @ParameterizedTest
     @MethodSource( "commit" )
-    void shouldRunStatementsOnResultPublish( boolean commit )
+    void shouldRunQueriesOnResultPublish(boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
@@ -216,7 +216,7 @@ class RxTransactionIT
 
     @ParameterizedTest
     @MethodSource( "commit" )
-    void shouldBePossibleToRunMultipleStatementsWithoutStreaming( boolean commit )
+    void shouldBePossibleToRunMultipleQueriesWithoutStreaming(boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
@@ -231,53 +231,53 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldFailToCommitAfterSingleWrongStatement()
+    void shouldFailToCommitAfterSingleWrongQuery()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
         assertThrows( ClientException.class, () -> await( tx.commit() ) );
     }
 
     @Test
-    void shouldAllowRollbackAfterSingleWrongStatement()
+    void shouldAllowRollbackAfterSingleWrongQuery()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
         assertCanRollback( tx );
     }
 
     @Test
-    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongQuery()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
         assertCanRunCreate( tx );
         assertCanRunReturnOne( tx );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
 
         assertThrows( ClientException.class, () -> await( tx.commit() ) );
     }
 
     @Test
-    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongQuery()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertCanRunCreate( tx );
         assertCanRunReturnOne( tx );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
 
         assertCanRollback( tx );
     }
 
     @Test
-    void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
+    void shouldNotAllowNewQueriesAfterAnIncorrectQuery()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
 
         RxResult result = tx.run( "CREATE ()" );
         Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
 
         assertCanRollback( tx );
     }
@@ -358,7 +358,7 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithAliases()
+    void shouldExposeQueryKeysForColumnsWithAliases()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         RxResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
@@ -370,7 +370,7 @@ class RxTransactionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithoutAliases()
+    void shouldExposeQueryKeysForColumnsWithoutAliases()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         RxResult result = tx.run( "RETURN 1, 2, 3, 5" );
@@ -393,12 +393,12 @@ class RxTransactionIT
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 2, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().labelsAdded() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 1, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.plan() );
@@ -421,10 +421,10 @@ class RxTransactionIT
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
 
-        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( new Query( query ), summary.query() );
         assertEquals( 0, summary.counters().nodesCreated() );
         assertEquals( 0, summary.counters().propertiesSet() );
-        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertEquals( QueryType.READ_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -453,11 +453,11 @@ class RxTransactionIT
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 1, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 0, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertEquals( QueryType.WRITE_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -660,17 +660,17 @@ class RxTransactionIT
         }
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.run( "CREATE (:MyOtherLabel)" ).records() ) );
-        assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction, it has been " ) );
+        assertThat( e.getMessage(), containsString( "Cannot run more queries in this transaction, it has been " ) );
     }
 
     @Test
     void shouldFailToRunQueryWhenTerminated()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        assertFailToRunWrongStatement( tx );
+        assertFailToRunWrongQuery( tx );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.run( "CREATE (:MyOtherLabel)" ).records() ) );
-        assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
 
         assertCanRollback( tx );
     }
@@ -806,8 +806,8 @@ class RxTransactionIT
                     .then( Mono.from( result.consume() ) )
                     .doOnSuccess( s -> {
                         assertNotNull( s );
-                        assertEquals( query, s.statement().text() );
-                        assertEquals( emptyMap(), s.statement().parameters().asMap() );
+                        assertEquals( query, s.query().text() );
+                        assertEquals( emptyMap(), s.query().parameters().asMap() );
                         assertEquals( expectedSeenRecords, recordsSeen.get() );
                     } );
         }, RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
@@ -895,7 +895,7 @@ class RxTransactionIT
         assertEquals( 4242, node.get( "id" ).asInt() );
     }
 
-    private static void assertFailToRunWrongStatement( RxTransaction tx )
+    private static void assertFailToRunWrongQuery(RxTransaction tx )
     {
         RxResult result = tx.run( "RETURN" );
         Exception e = assertThrows( Exception.class, () -> await( result.records() ) );

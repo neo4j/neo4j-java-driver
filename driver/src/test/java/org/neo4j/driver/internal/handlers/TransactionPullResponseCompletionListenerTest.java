@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -66,7 +66,7 @@ class TransactionPullResponseCompletionListenerTest
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
         TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        PullResponseHandler handler = new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler,
+        PullResponseHandler handler = new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler,
                 connection, METADATA_EXTRACTOR, listener );
         handler.installRecordConsumer( ( record, throwable ) -> {} );
         handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );

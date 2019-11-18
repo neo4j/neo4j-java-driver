@@ -26,7 +26,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -76,19 +76,19 @@ public class NetworkSession
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<ResultCursor> runAsync(Statement statement, TransactionConfig config, boolean waitForRunResponse )
+    public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config, boolean waitForRunResponse )
     {
         CompletionStage<AsyncResultCursor> newResultCursorStage =
-                buildResultCursorFactory( statement, config, waitForRunResponse ).thenCompose( ResultCursorFactory::asyncResult );
+                buildResultCursorFactory(query, config, waitForRunResponse ).thenCompose( ResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
         return newResultCursorStage.thenApply( cursor -> cursor ); // convert the return type
     }
 
-    public CompletionStage<RxResultCursor> runRx(Statement statement, TransactionConfig config )
+    public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config )
     {
         CompletionStage<RxResultCursor> newResultCursorStage =
-                buildResultCursorFactory( statement, config, true ).thenCompose( ResultCursorFactory::rxResult );
+                buildResultCursorFactory(query, config, true ).thenCompose( ResultCursorFactory::rxResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
         return newResultCursorStage;
@@ -223,7 +223,7 @@ public class NetworkSession
                 connection.isOpen() ); // and it's still open
     }
 
-    private CompletionStage<ResultCursorFactory> buildResultCursorFactory(Statement statement, TransactionConfig config, boolean waitForRunResponse )
+    private CompletionStage<ResultCursorFactory> buildResultCursorFactory(Query query, TransactionConfig config, boolean waitForRunResponse )
     {
         ensureSessionIsOpen();
 
@@ -233,7 +233,7 @@ public class NetworkSession
                     try
                     {
                         ResultCursorFactory factory = connection.protocol()
-                                .runInAutoCommitTransaction( connection, statement, bookmarkHolder, config, waitForRunResponse, fetchSize );
+                                .runInAutoCommitTransaction( connection, query, bookmarkHolder, config, waitForRunResponse, fetchSize );
                         return completedFuture( factory );
                     }
                     catch ( Throwable e )
@@ -307,7 +307,7 @@ public class NetworkSession
 
     private CompletionStage<Void> ensureNoOpenTxBeforeRunningQuery()
     {
-        return ensureNoOpenTx( "Statements cannot be run directly on a session with an open transaction; " +
+        return ensureNoOpenTx( "Queries cannot be run directly on a session with an open transaction; " +
                                "either run from within the transaction or use a different session." );
     }
 

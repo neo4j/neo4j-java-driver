@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -160,8 +160,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     @Test
     void shouldReturnSummaryWhenAlreadyFailedAndFailureConsumed()
     {
-        Statement statement = new Statement( "CREATE ()" );
-        PullAllResponseHandler handler = newHandler( statement );
+        Query query = new Query( "CREATE ()" );
+        PullAllResponseHandler handler = newHandler(query);
 
         ServiceUnavailableException failure = new ServiceUnavailableException( "Neo4j unreachable" );
         handler.onFailure( failure );
@@ -170,27 +170,27 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
         ResultSummary summary = await( handler.consumeAsync() );
         assertNotNull( summary );
-        assertEquals( statement, summary.statement() );
+        assertEquals(query, summary.query() );
     }
 
     @Test
     void shouldReturnSummaryWhenAlreadySucceeded()
     {
-        Statement statement = new Statement( "CREATE () RETURN 42" );
-        PullAllResponseHandler handler = newHandler( statement );
+        Query query = new Query( "CREATE () RETURN 42" );
+        PullAllResponseHandler handler = newHandler(query);
         handler.onSuccess( singletonMap( "type", value( "rw" ) ) );
 
         ResultSummary summary = await( handler.consumeAsync() );
 
-        assertEquals( statement, summary.statement() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals(query, summary.query() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
     }
 
     @Test
     void shouldReturnSummaryWhenSucceededAfterSummaryRequested()
     {
-        Statement statement = new Statement( "RETURN 'Hi!" );
-        PullAllResponseHandler handler = newHandler( statement );
+        Query query = new Query( "RETURN 'Hi!" );
+        PullAllResponseHandler handler = newHandler(query);
 
         CompletableFuture<ResultSummary> summaryFuture = handler.consumeAsync().toCompletableFuture();
         assertFalse( summaryFuture.isDone() );
@@ -200,8 +200,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         assertTrue( summaryFuture.isDone() );
         ResultSummary summary = await( summaryFuture );
 
-        assertEquals( statement, summary.statement() );
-        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertEquals(query, summary.query() );
+        assertEquals( QueryType.READ_ONLY, summary.queryType() );
     }
 
     @Test
@@ -258,8 +258,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
     @Test
     void shouldPropagateFailureOnlyOnceFromSummary()
     {
-        Statement statement = new Statement( "CREATE INDEX ON :Person(name)" );
-        PullAllResponseHandler handler = newHandler( statement );
+        Query query = new Query( "CREATE INDEX ON :Person(name)" );
+        PullAllResponseHandler handler = newHandler(query);
 
         IllegalStateException failure = new IllegalStateException( "Some state is illegal :(" );
         handler.onFailure( failure );
@@ -269,7 +269,7 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
         ResultSummary summary = await( handler.consumeAsync() );
         assertNotNull( summary );
-        assertEquals( statement, summary.statement() );
+        assertEquals(query, summary.query() );
     }
 
     @Test
@@ -682,30 +682,30 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
     protected T newHandler()
     {
-        return newHandler( new Statement( "RETURN 1" ) );
+        return newHandler( new Query( "RETURN 1" ) );
     }
 
-    protected T newHandler( Statement statement )
+    protected T newHandler( Query query)
     {
-        return newHandler( statement, emptyList() );
+        return newHandler(query, emptyList() );
     }
 
-    protected T newHandler( List<String> statementKeys )
+    protected T newHandler( List<String> queryKeys )
     {
-        return newHandler( new Statement( "RETURN 1" ), statementKeys, connectionMock() );
+        return newHandler( new Query( "RETURN 1" ), queryKeys, connectionMock() );
     }
 
-    protected T newHandler( Statement statement, List<String> statementKeys )
+    protected T newHandler(Query query, List<String> queryKeys )
     {
-        return newHandler( statement, statementKeys, connectionMock() );
+        return newHandler(query, queryKeys, connectionMock() );
     }
 
-    protected T newHandler( List<String> statementKeys, Connection connection )
+    protected T newHandler( List<String> queryKeys, Connection connection )
     {
-        return newHandler( new Statement( "RETURN 1" ), statementKeys, connection );
+        return newHandler( new Query( "RETURN 1" ), queryKeys, connection );
     }
 
-    protected abstract T newHandler( Statement statement, List<String> statementKeys, Connection connection );
+    protected abstract T newHandler(Query query, List<String> queryKeys, Connection connection );
 
     protected Connection connectionMock()
     {

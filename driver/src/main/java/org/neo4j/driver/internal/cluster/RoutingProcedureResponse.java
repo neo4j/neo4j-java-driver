@@ -20,26 +20,26 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 
 public class RoutingProcedureResponse
 {
-    private final Statement procedure;
+    private final Query procedure;
     private final List<Record> records;
     private final Throwable error;
 
-    public RoutingProcedureResponse( Statement procedure, List<Record> records )
+    public RoutingProcedureResponse(Query procedure, List<Record> records )
     {
         this( procedure, records, null );
     }
 
-    public RoutingProcedureResponse( Statement procedure, Throwable error )
+    public RoutingProcedureResponse(Query procedure, Throwable error )
     {
         this( procedure, null, error );
     }
 
-    private RoutingProcedureResponse( Statement procedure, List<Record> records, Throwable error )
+    private RoutingProcedureResponse(Query procedure, List<Record> records, Throwable error )
     {
         this.procedure = procedure;
         this.records = records;
@@ -51,7 +51,7 @@ public class RoutingProcedureResponse
         return records != null;
     }
 
-    public Statement procedure()
+    public Query procedure()
     {
         return procedure;
     }

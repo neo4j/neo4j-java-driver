@@ -26,7 +26,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -93,7 +93,7 @@ class NetworkSessionTest
     void shouldFlushOnRunAsync( boolean waitForResponse )
     {
         setupSuccessfulRunAndPull( connection );
-        await( session.runAsync( new Statement( "RETURN 1" ), TransactionConfig.empty(), waitForResponse ) );
+        await( session.runAsync( new Query( "RETURN 1" ), TransactionConfig.empty(), waitForResponse ) );
 
         verifyRunAndPull( connection, "RETURN 1" );
     }
@@ -102,7 +102,7 @@ class NetworkSessionTest
     void shouldFlushOnRunRx()
     {
         setupSuccessfulRunRx( connection );
-        await( session.runRx( new Statement( "RETURN 1" ), TransactionConfig.empty() ) );
+        await( session.runRx( new Query( "RETURN 1" ), TransactionConfig.empty() ) );
 
         verifyRunRx( connection, "RETURN 1" );
     }
@@ -254,7 +254,7 @@ class NetworkSessionTest
         setupSuccessfulRunAndPull( connection, query );
 
         UnmanagedTransaction tx = beginTransaction( session );
-        await( tx.runAsync( new Statement( query ), false ) );
+        await( tx.runAsync( new Query( query ), false ) );
 
         verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
         verifyRunAndPull( connection, query );
@@ -453,9 +453,9 @@ class NetworkSessionTest
         verify( connection ).reset();
     }
 
-    private static ResultCursor run(NetworkSession session, String statement )
+    private static ResultCursor run(NetworkSession session, String query )
     {
-        return await( session.runAsync( new Statement( statement ), TransactionConfig.empty(), false ) );
+        return await( session.runAsync( new Query( query ), TransactionConfig.empty(), false ) );
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session )

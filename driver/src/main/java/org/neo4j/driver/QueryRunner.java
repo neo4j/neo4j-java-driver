@@ -21,23 +21,23 @@ package org.neo4j.driver;
 import java.util.Map;
 
 /**
- * Common interface for components that can execute Neo4j statements.
+ * Common interface for components that can execute Neo4j queries.
  *
  * <h2>Important notes on semantics</h2>
  * <p>
- * Statements run in the same {@link StatementRunner} are guaranteed
- * to execute in order, meaning changes made by one statement will be seen
- * by all subsequent statements in the same {@link StatementRunner}.
+ * queries run in the same {@link QueryRunner} are guaranteed
+ * to execute in order, meaning changes made by one query will be seen
+ * by all subsequent queries in the same {@link QueryRunner}.
  * <p>
  * However, to allow handling very large results, and to improve performance,
  * result streams are retrieved lazily from the network.
- * This means that when any of {@link #run(Statement)}
- * methods return a result, the statement has only started executing - it may not
+ * This means that when any of {@link #run(Query)}
+ * methods return a result, the query has only started executing - it may not
  * have completed yet. Most of the time, you will not notice this, because the
- * driver automatically waits for statements to complete at specific points to
+ * driver automatically waits for queries to complete at specific points to
  * fulfill its contracts.
  * <p>
- * Specifically, the driver will ensure all outstanding statements are completed
+ * Specifically, the driver will ensure all outstanding queries are completed
  * whenever you:
  *
  * <ul>
@@ -59,13 +59,13 @@ import java.util.Map;
  * @see Transaction
  * @since 1.0
  */
-public interface StatementRunner
+public interface QueryRunner
 {
     /**
-     * Run a statement and return a result stream.
+     * Run a query and return a result stream.
      * <p>
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      * <p>
@@ -77,7 +77,7 @@ public interface StatementRunner
      * might be more helpful, it converts your map to a {@link Value} for you.
      *
      * <h2>Example</h2>
-     * <pre class="doctest:StatementRunnerDocIT#parameterTest">
+     * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
      *
      * Result result = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
@@ -85,17 +85,17 @@ public interface StatementRunner
      * }
      * </pre>
      *
-     * @param statementTemplate text of a Neo4j statement
+     * @param query text of a Neo4j query
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a stream of result values and associated metadata
      */
-    Result run(String statementTemplate, Value parameters );
+    Result run(String query, Value parameters );
 
     /**
-     * Run a statement and return a result stream.
+     * Run a query and return a result stream.
      * <p>
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      * <p>
@@ -104,7 +104,7 @@ public interface StatementRunner
      * a list of allowed types.
      *
      * <h2>Example</h2>
-     * <pre class="doctest:StatementRunnerDocIT#parameterTest">
+     * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
      *
      * Map<String, Object> parameters = new HashMap<String, Object>();
@@ -115,50 +115,50 @@ public interface StatementRunner
      * }
      * </pre>
      *
-     * @param statementTemplate text of a Neo4j statement
-     * @param statementParameters input data for the statement
+     * @param query text of a Neo4j query
+     * @param parameters input data for the query
      * @return a stream of result values and associated metadata
      */
-    Result run(String statementTemplate, Map<String,Object> statementParameters );
+    Result run(String query, Map<String,Object> parameters );
 
     /**
-     * Run a statement and return a result stream.
+     * Run a query and return a result stream.
      * <p>
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      * <p>
      * This version of run takes a {@link Record} of parameters, which can be useful
-     * if you want to use the output of one statement as input for another.
+     * if you want to use the output of one query as input for another.
      *
-     * @param statementTemplate text of a Neo4j statement
-     * @param statementParameters input data for the statement
+     * @param query text of a Neo4j query
+     * @param parameters input data for the query
      * @return a stream of result values and associated metadata
      */
-    Result run(String statementTemplate, Record statementParameters );
+    Result run(String query, Record parameters );
 
     /**
-     * Run a statement and return a result stream.
+     * Run a query and return a result stream.
      *
-     * @param statementTemplate text of a Neo4j statement
+     * @param query text of a Neo4j query
      * @return a stream of result values and associated metadata
      */
-    Result run(String statementTemplate );
+    Result run(String query );
 
     /**
-     * Run a statement and return a result stream.
+     * Run a query and return a result stream.
      * <h2>Example</h2>
-     * <pre class="doctest:StatementRunnerDocIT#statementObjectTest">
+     * <pre class="doctest:QueryRunnerDocIT#queryObjectTest">
      * {@code
      *
-     * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * Result result = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * Query query = new Query( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
+     * Result result = session.run( query.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
-     * @param statement a Neo4j statement
+     * @param query a Neo4j query
      * @return a stream of result values and associated metadata
      */
-    Result run(Statement statement );
+    Result run(Query query);
 }

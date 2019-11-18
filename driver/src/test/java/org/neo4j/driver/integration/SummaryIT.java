@@ -36,7 +36,7 @@ import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -78,11 +78,11 @@ class SummaryIT
     void shouldContainBasicMetadata()
     {
         // Given
-        Value statementParameters = Values.parameters( "limit", 10 );
-        String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
+        Value parameters = Values.parameters( "limit", 10 );
+        String query = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
 
         // When
-        Result result = session.run( statementText, statementParameters );
+        Result result = session.run( query, parameters );
 
         // Then
         assertTrue( result.hasNext() );
@@ -91,9 +91,9 @@ class SummaryIT
         ResultSummary summary = result.consume();
 
         // Then
-        assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
-        assertThat( summary.statement().text(), equalTo( statementText ) );
-        assertThat( summary.statement().parameters(), equalTo( statementParameters ) );
+        assertThat( summary.queryType(), equalTo( QueryType.READ_ONLY ) );
+        assertThat( summary.query().text(), equalTo( query ) );
+        assertThat( summary.query().parameters(), equalTo( parameters ) );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertThat( summary, equalTo( result.consume() ) );
@@ -147,12 +147,12 @@ class SummaryIT
     }
 
     @Test
-    void shouldContainCorrectStatementType()
+    void shouldContainCorrectQueryType()
     {
-        assertThat( session.run("MATCH (n) RETURN 1").consume().statementType(), equalTo( StatementType.READ_ONLY ));
-        assertThat( session.run("CREATE (n)").consume().statementType(), equalTo( StatementType.WRITE_ONLY ));
-        assertThat( session.run("CREATE (n) RETURN (n)").consume().statementType(), equalTo( StatementType.READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").consume().statementType(), equalTo( StatementType.SCHEMA_WRITE ));
+        assertThat( session.run("MATCH (n) RETURN 1").consume().queryType(), equalTo( QueryType.READ_ONLY ));
+        assertThat( session.run("CREATE (n)").consume().queryType(), equalTo( QueryType.WRITE_ONLY ));
+        assertThat( session.run("CREATE (n) RETURN (n)").consume().queryType(), equalTo( QueryType.READ_WRITE ));
+        assertThat( session.run("CREATE INDEX ON :User(p)").consume().queryType(), equalTo( QueryType.SCHEMA_WRITE ));
     }
 
     @Test

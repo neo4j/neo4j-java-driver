@@ -22,6 +22,7 @@ import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -57,7 +58,6 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
@@ -637,8 +637,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private Publisher<Void> createNodesInTxRx( RxTransaction tx, int batchIndex, int batchSize )
     {
         return Flux.concat( Flux.range( 0, batchSize ).map( index -> batchIndex * batchSize + index ).map( nodeIndex -> {
-            Statement statement = createNodeInTxStatement( nodeIndex );
-            return Flux.from( tx.run( statement ).consume() ).then(); // As long as there is no error
+            Query query = createNodeInTxQuery( nodeIndex );
+            return Flux.from( tx.run(query).consume() ).then(); // As long as there is no error
         } ) );
     }
 
@@ -681,37 +681,37 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static void createNodeInTx( Transaction tx, int nodeIndex )
     {
-        Statement statement = createNodeInTxStatement( nodeIndex );
-        tx.run( statement ).consume();
+        Query query = createNodeInTxQuery( nodeIndex );
+        tx.run(query).consume();
     }
 
     private static CompletionStage<Throwable> createNodesInTxAsync( AsyncTransaction tx, int batchIndex, int batchSize )
     {
         @SuppressWarnings( "unchecked" )
-        CompletableFuture<Void>[] statementFutures = IntStream.range( 0, batchSize )
+        CompletableFuture<Void>[] queryFutures = IntStream.range( 0, batchSize )
                 .map( index -> batchIndex * batchSize + index )
                 .mapToObj( nodeIndex -> createNodeInTxAsync( tx, nodeIndex ) )
                 .toArray( CompletableFuture[]::new );
 
-        return CompletableFuture.allOf( statementFutures )
+        return CompletableFuture.allOf( queryFutures )
                 .thenApply( ignored -> (Throwable) null )
                 .exceptionally( error -> error );
     }
 
     private static CompletableFuture<Void> createNodeInTxAsync( AsyncTransaction tx, int nodeIndex )
     {
-        Statement statement = createNodeInTxStatement( nodeIndex );
-        return tx.runAsync( statement )
+        Query query = createNodeInTxQuery( nodeIndex );
+        return tx.runAsync(query)
                 .thenCompose( ResultCursor::consumeAsync )
                 .thenApply( ignore -> (Void) null )
                 .toCompletableFuture();
     }
 
-    private static Statement createNodeInTxStatement( int nodeIndex )
+    private static Query createNodeInTxQuery(int nodeIndex )
     {
         String query = "CREATE (n:Test:Node) SET n = $props";
         Map<String,Object> params = singletonMap( "props", createNodeProperties( nodeIndex ) );
-        return new Statement( query, params );
+        return new Query( query, params );
     }
 
     private static Map<String,Object> createNodeProperties( int nodeIndex )

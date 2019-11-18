@@ -35,7 +35,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -95,7 +95,7 @@ public class BoltProtocolV3Test
 {
     protected static final String QUERY = "RETURN $x";
     protected static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
-    protected static final Statement STATEMENT = new Statement( QUERY, value( PARAMS ) );
+    protected static final Query QUERY = new Query( QUERY, value( PARAMS ) );
 
     protected final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -342,7 +342,7 @@ public class BoltProtocolV3Test
         if ( autoCommitTx )
         {
             e = assertThrows( ClientException.class,
-                    () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP,
+                    () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ), new Query( "RETURN 1" ), BookmarkHolder.NO_OP,
                             TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
         }
         else
@@ -360,7 +360,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
+                protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, InternalBookmark.empty(), TransactionConfig.empty(), mode ).runHandler;
         assertFalse( cursorFuture.isDone() );
@@ -389,11 +389,11 @@ public class BoltProtocolV3Test
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, false, UNLIMITED_FETCH_SIZE ).asyncResult();
+            cursorStage = protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, false, UNLIMITED_FETCH_SIZE ).asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
+            cursorStage = protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
         }
         CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
@@ -416,7 +416,7 @@ public class BoltProtocolV3Test
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
         assertFalse( cursorFuture.isDone() );
@@ -438,7 +438,7 @@ public class BoltProtocolV3Test
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
+                protocol.runInAutoCommitTransaction( connection, QUERY, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
         assertFalse( cursorFuture.isDone() );
@@ -467,11 +467,11 @@ public class BoltProtocolV3Test
         RunWithMetadataMessage expectedMessage;
         if ( session )
         {
-            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, defaultDatabase(), mode, bookmark );
+            expectedMessage = RunWithMetadataMessage.autoCommitTxRunMessage(QUERY, config, defaultDatabase(), mode, bookmark );
         }
         else
         {
-            expectedMessage = RunWithMetadataMessage.explicitTxRunMessage( STATEMENT );
+            expectedMessage = RunWithMetadataMessage.explicitTxRunMessage(QUERY);
         }
 
         verify( connection ).write( eq( expectedMessage ), runHandlerCaptor.capture() );

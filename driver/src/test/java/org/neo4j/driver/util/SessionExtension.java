@@ -24,9 +24,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.Map;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
@@ -120,50 +120,50 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    public Result run(String statementText, Map<String,Object> statementParameters )
+    public Result run(String query, Map<String,Object> parameters)
     {
-        return realSession.run( statementText, statementParameters );
+        return realSession.run(query, parameters);
     }
 
     @Override
-    public Result run(String statementText, Value parameters )
+    public Result run(String query, Value parameters )
     {
-        return realSession.run( statementText, parameters );
+        return realSession.run(query, parameters );
     }
 
     @Override
-    public Result run(String statementText, Record parameters )
+    public Result run(String query, Record parameters )
     {
-        return realSession.run( statementText, parameters );
+        return realSession.run(query, parameters );
     }
 
     @Override
-    public Result run(String statementTemplate )
+    public Result run(String query)
     {
-        return realSession.run( statementTemplate );
+        return realSession.run(query);
     }
 
     @Override
-    public Result run(Statement statement )
+    public Result run(Query query)
     {
-        return realSession.run( statement.text(), statement.parameters() );
+        return realSession.run( query.text(), query.parameters() );
     }
 
     @Override
-    public Result run(String statement, TransactionConfig config )
+    public Result run(String query, TransactionConfig config )
     {
-        return realSession.run( statement, config );
+        return realSession.run(query, config );
     }
 
     @Override
-    public Result run(String statement, Map<String,Object> parameters, TransactionConfig config )
+    public Result run(String query, Map<String,Object> parameters, TransactionConfig config )
     {
-        return realSession.run( statement, parameters, config );
+        return realSession.run(query, parameters, config );
     }
 
     @Override
-    public Result run(Statement statement, TransactionConfig config )
+    public Result run(Query query, TransactionConfig config )
     {
-        return realSession.run( statement, config );
+        return realSession.run(query, config );
     }
 }

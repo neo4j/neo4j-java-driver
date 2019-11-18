@@ -23,70 +23,66 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 
-class StatementTest
+class QueryTest
 {
     @Test
-    void shouldConstructStatementWithParameters()
+    void shouldConstructQueryWithParameters()
     {
         // given
         String text = "MATCH (n) RETURN n";
 
         // when
-        Statement statement = new Statement( text, Values.EmptyMap );
+        Query query = new Query( text, Values.EmptyMap );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
+        assertThat( query.text(), equalTo( text ) );
+        assertThat( query.parameters(), equalTo( Values.EmptyMap ) );
     }
 
     @Test
-    void shouldConstructStatementWithNoParameters()
+    void shouldConstructQueryWithNoParameters()
     {
         // given
         String text = "MATCH (n) RETURN n";
 
         // when
-        Statement statement = new Statement( text );
+        Query query = new Query( text );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
+        assertThat( query.text(), equalTo( text ) );
+        assertThat( query.parameters(), equalTo( Values.EmptyMap ) );
     }
 
     @Test
-    void shouldUpdateStatementText()
+    void shouldUpdateQueryText()
     {
         // when
-        Statement statement =
-                new Statement( "MATCH (n) RETURN n" )
+        Query query =
+                new Query( "MATCH (n) RETURN n" )
                 .withText( "BOO" );
 
         // then
-        assertThat( statement.text(), equalTo( "BOO" ) );
-        assertThat( statement.parameters(), equalTo( Values.EmptyMap ) );
+        assertThat( query.text(), equalTo( "BOO" ) );
+        assertThat( query.parameters(), equalTo( Values.EmptyMap ) );
     }
 
 
     @Test
-    void shouldReplaceStatementParameters()
+    void shouldReplaceQueryParameters()
     {
         // when
         String text = "MATCH (n) RETURN n";
         Value initialParameters = parameters( "a", 1, "b", 2 );
-        Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( initialParameters );
+        Query query = new Query( "MATCH (n) RETURN n" ).withParameters( initialParameters );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( initialParameters ) );
+        assertThat( query.text(), equalTo( text ) );
+        assertThat( query.parameters(), equalTo( initialParameters ) );
     }
 
     @Test
@@ -96,37 +92,37 @@ class StatementTest
         String text = "MATCH (n) RETURN n";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put( "a", 1 );
-        Statement statement = new Statement( "MATCH (n) RETURN n" ).withParameters( parameters );
+        Query query = new Query( "MATCH (n) RETURN n" ).withParameters( parameters );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( Values.value( parameters ) ) );
+        assertThat( query.text(), equalTo( text ) );
+        assertThat( query.parameters(), equalTo( Values.value( parameters ) ) );
     }
 
     @Test
-    void shouldUpdateStatementParameters()
+    void shouldUpdateQueryParameters()
     {
         // when
         String text = "MATCH (n) RETURN n";
         Value initialParameters = parameters( "a", 1, "b", 2, "c", 3 );
-        Statement statement =
-                new Statement( "MATCH (n) RETURN n", initialParameters )
+        Query query =
+                new Query( "MATCH (n) RETURN n", initialParameters )
                 .withUpdatedParameters( parameters( "a", 0, "b", Values.NULL ) );
 
         // then
-        assertThat( statement.text(), equalTo( text ) );
-        assertThat( statement.parameters(), equalTo( parameters( "a", 0, "c", 3 ) ) );
+        assertThat( query.text(), equalTo( text ) );
+        assertThat( query.parameters(), equalTo( parameters( "a", 0, "c", 3 ) ) );
     }
 
     @Test
     void shouldProhibitNullQuery()
     {
-        assertThrows( IllegalArgumentException.class, () -> new Statement( null ) );
+        assertThrows( IllegalArgumentException.class, () -> new Query( null ) );
     }
 
     @Test
     void shouldProhibitEmptyQuery()
     {
-        assertThrows( IllegalArgumentException.class, () -> new Statement( "" ) );
+        assertThrows( IllegalArgumentException.class, () -> new Query( "" ) );
     }
 }

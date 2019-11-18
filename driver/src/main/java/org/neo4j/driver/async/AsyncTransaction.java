@@ -24,8 +24,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.QueryRunner;
 
 /**
  * Logical container for an atomic unit of work.
@@ -49,13 +49,13 @@ import org.neo4j.driver.StatementRunner;
  * }
  * </pre>
  * Async calls are: {@link #commitAsync()}, {@link #rollbackAsync()} and various overloads of
- * {@link #runAsync(Statement)}.
+ * {@link #runAsync(Query)}.
  *
  * @see Session#run
- * @see StatementRunner
+ * @see QueryRunner
  * @since 2.0
  */
-public interface AsyncTransaction extends AsyncStatementRunner
+public interface AsyncTransaction extends AsyncQueryRunner
 {
     /**
      * Commit this transaction in asynchronous fashion. This operation is typically executed as part of the

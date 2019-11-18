@@ -32,9 +32,9 @@ public class RunResponseHandler implements ResponseHandler
 {
     private final CompletableFuture<Throwable> runCompletedFuture;
     private final MetadataExtractor metadataExtractor;
-    private long statementId = MetadataExtractor.ABSENT_QUERY_ID;
+    private long queryId = MetadataExtractor.ABSENT_QUERY_ID;
 
-    private List<String> statementKeys = emptyList();
+    private List<String> queryKeys = emptyList();
     private long resultAvailableAfter = -1;
 
     public RunResponseHandler( MetadataExtractor metadataExtractor )
@@ -51,9 +51,9 @@ public class RunResponseHandler implements ResponseHandler
     @Override
     public void onSuccess( Map<String,Value> metadata )
     {
-        statementKeys = metadataExtractor.extractStatementKeys( metadata );
+        queryKeys = metadataExtractor.extractQueryKeys( metadata );
         resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
-        statementId = metadataExtractor.extractQueryId( metadata );
+        queryId = metadataExtractor.extractQueryId( metadata );
 
         completeRunFuture( null );
     }
@@ -70,9 +70,9 @@ public class RunResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    public List<String> statementKeys()
+    public List<String> queryKeys()
     {
-        return statementKeys;
+        return queryKeys;
     }
 
     public long resultAvailableAfter()
@@ -80,15 +80,15 @@ public class RunResponseHandler implements ResponseHandler
         return resultAvailableAfter;
     }
 
-    public long statementId()
+    public long queryId()
     {
-        return statementId;
+        return queryId;
     }
 
     /**
      * Complete the given future with error if the future was failed.
      * Future is never completed exceptionally.
-     * Async API needs to wait for RUN because it needs to access statement keys.
+     * Async API needs to wait for RUN because it needs to access query keys.
      * Reactive API needs to know if RUN failed by checking the error.
      */
     private void completeRunFuture( Throwable error )

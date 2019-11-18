@@ -24,7 +24,7 @@ import java.util.Objects;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
@@ -37,37 +37,37 @@ public class RunWithMetadataMessage extends MessageWithMetadata
 {
     public final static byte SIGNATURE = 0x10;
 
-    private final String statement;
+    private final String query;
     private final Map<String,Value> parameters;
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
+    public static RunWithMetadataMessage autoCommitTxRunMessage(Query query, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
             Bookmark bookmark )
     {
-        return autoCommitTxRunMessage( statement, config.timeout(), config.metadata(), databaseName, mode, bookmark );
+        return autoCommitTxRunMessage(query, config.timeout(), config.metadata(), databaseName, mode, bookmark );
     }
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
+    public static RunWithMetadataMessage autoCommitTxRunMessage(Query query, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
             AccessMode mode, Bookmark bookmark )
     {
         Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark );
-        return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), metadata );
+        return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), metadata );
     }
 
-    public static RunWithMetadataMessage explicitTxRunMessage( Statement statement )
+    public static RunWithMetadataMessage explicitTxRunMessage( Query query)
     {
-        return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), emptyMap() );
+        return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), emptyMap() );
     }
 
-    private RunWithMetadataMessage( String statement, Map<String,Value> parameters, Map<String,Value> metadata )
+    private RunWithMetadataMessage(String query, Map<String,Value> parameters, Map<String,Value> metadata )
     {
         super( metadata );
-        this.statement = statement;
+        this.query = query;
         this.parameters = parameters;
     }
 
-    public String statement()
+    public String query()
     {
-        return statement;
+        return query;
     }
 
     public Map<String,Value> parameters()
@@ -93,18 +93,18 @@ public class RunWithMetadataMessage extends MessageWithMetadata
             return false;
         }
         RunWithMetadataMessage that = (RunWithMetadataMessage) o;
-        return Objects.equals( statement, that.statement ) && Objects.equals( parameters, that.parameters ) && Objects.equals( metadata(), that.metadata() );
+        return Objects.equals(query, that.query) && Objects.equals( parameters, that.parameters ) && Objects.equals( metadata(), that.metadata() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( statement, parameters, metadata() );
+        return Objects.hash(query, parameters, metadata() );
     }
 
     @Override
     public String toString()
     {
-        return "RUN \"" + statement + "\" " + parameters + " " + metadata();
+        return "RUN \"" + query + "\" " + parameters + " " + metadata();
     }
 }

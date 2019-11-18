@@ -29,7 +29,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
@@ -229,8 +229,8 @@ class SessionMixIT
 
     private int countNodes( Object id )
     {
-        Statement statement = new Statement( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
-        Record record = session.run( statement ).single();
+        Query query = new Query( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
+        Record record = session.run(query).single();
         return record.get( 0 ).asInt();
     }
 }

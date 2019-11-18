@@ -35,7 +35,7 @@ public class RunWithMetadataMessageEncoder implements MessageEncoder
         checkArgument( message, RunWithMetadataMessage.class );
         RunWithMetadataMessage runMessage = (RunWithMetadataMessage) message;
         packer.packStructHeader( 3, runMessage.signature() );
-        packer.pack( runMessage.statement() );
+        packer.pack( runMessage.query() );
         packer.pack( runMessage.parameters() );
         packer.pack( runMessage.metadata() );
     }

@@ -35,7 +35,7 @@ public class RunMessageEncoder implements MessageEncoder
         checkArgument( message, RunMessage.class );
         RunMessage runMessage = (RunMessage) message;
         packer.packStructHeader( 2, runMessage.signature() );
-        packer.pack( runMessage.statement() );
+        packer.pack( runMessage.query() );
         packer.pack( runMessage.parameters() );
     }
 }

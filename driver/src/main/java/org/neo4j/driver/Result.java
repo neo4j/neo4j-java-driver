@@ -29,22 +29,22 @@ import org.neo4j.driver.util.Resource;
 
 
 /**
- * The result of running a Cypher statement, conceptually a stream of {@link Record records}.
+ * The result of running a Cypher query, conceptually a stream of {@link Record records}.
  *
  * The standard way of navigating through the result returned by the database is to
  * {@link #next() iterate} over it.
  *
- * Results are valid until the next statement is run or until the end of the current transaction,
- * whichever comes first. To keep a result around while further statements are run, or to use a result outside the scope
+ * Results are valid until the next query is run or until the end of the current transaction,
+ * whichever comes first. To keep a result around while further queries are run, or to use a result outside the scope
  * of the current transaction, see {@link #list()}.
  *
  * <h2>Important note on semantics</h2>
  *
  * In order to handle very large results, and to minimize memory overhead and maximize
- * performance, results are retrieved lazily. Please see {@link StatementRunner} for
+ * performance, results are retrieved lazily. Please see {@link QueryRunner} for
  * important details on the effects of this.
  *
- * The short version is that, if you want a hard guarantee that the underlying statement
+ * The short version is that, if you want a hard guarantee that the underlying query
  * has completed, you need to either call {@link Resource#close()} on the {@link Transaction}
  * or {@link Session} that created this result, or you need to use the result.
  *
@@ -109,8 +109,8 @@ public interface Result extends Iterator<Record>
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
-     * Note that this method can only be used if you know that the statement that
-     * yielded this result returns a finite stream. Some statements can yield
+     * Note that this method can only be used if you know that the query that
+     * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
      *
@@ -125,8 +125,8 @@ public interface Result extends Iterator<Record>
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      *
-     * Note that this method can only be used if you know that the statement that
-     * yielded this result returns a finite stream. Some statements can yield
+     * Note that this method can only be used if you know that the query that
+     * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
      *

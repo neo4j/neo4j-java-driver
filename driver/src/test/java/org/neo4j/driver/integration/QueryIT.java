@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 
 @ParallelizableIT
-class StatementIT
+class QueryIT
 {
     @RegisterExtension
     static final SessionExtension session = new SessionExtension();
@@ -48,7 +48,7 @@ class StatementIT
     @Test
     void shouldRunWithResult()
     {
-        // When I execute a statement that yields a result
+        // When I execute a query that yields a result
         List<Record> result = session.run( "UNWIND [1,2,3] AS k RETURN k" ).list();
 
         // Then the result object should contain the returned values
@@ -156,14 +156,14 @@ class StatementIT
         assertThat( result.size(), equalTo( 3 ) );
     }
 
-    @SuppressWarnings({"StatementWithEmptyBody", "ConstantConditions"})
+    @SuppressWarnings({"QueryWithEmptyBody", "ConstantConditions"})
     @Test
-    void shouldRunSimpleStatement()
+    void shouldRunSimpleQuery()
     {
-        // When I run a simple write statement
+        // When I run a simple write query
         session.run( "CREATE (a {name:'Adam'})" );
 
-        // And I run a read statement
+        // And I run a read query
         Result result2 = session.run( "MATCH (a) RETURN a.name" );
 
         // Then I expect to get the name back

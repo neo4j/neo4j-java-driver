@@ -22,8 +22,8 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
 
-public class InternalSession extends AbstractStatementRunner implements Session
+public class InternalSession extends AbstractQueryRunner implements Session
 {
     private final NetworkSession session;
 
@@ -46,27 +46,27 @@ public class InternalSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public Result run(Statement statement )
+    public Result run(Query query)
     {
-        return run( statement, TransactionConfig.empty() );
+        return run(query, TransactionConfig.empty() );
     }
 
     @Override
-    public Result run(String statement, TransactionConfig config )
+    public Result run(String query, TransactionConfig config )
     {
-        return run( statement, emptyMap(), config );
+        return run(query, emptyMap(), config );
     }
 
     @Override
-    public Result run(String statement, Map<String,Object> parameters, TransactionConfig config )
+    public Result run(String query, Map<String,Object> parameters, TransactionConfig config )
     {
-        return run( new Statement( statement, parameters ), config );
+        return run( new Query(query, parameters ), config );
     }
 
     @Override
-    public Result run(Statement statement, TransactionConfig config )
+    public Result run(Query query, TransactionConfig config )
     {
-        ResultCursor cursor = Futures.blockingGet( session.runAsync( statement, config, false ),
+        ResultCursor cursor = Futures.blockingGet( session.runAsync(query, config, false ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
 
         // query executed, it is safe to obtain a connection in a blocking way

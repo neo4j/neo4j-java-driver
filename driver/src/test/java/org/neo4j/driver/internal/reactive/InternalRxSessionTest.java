@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.reactive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -34,7 +35,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
@@ -75,8 +75,8 @@ class InternalRxSessionTest
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ) ),
                 rxSession -> rxSession.run( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                rxSession -> rxSession.run( new Statement( "RETURN $x", parameters( "x", 1 ) ) ),
-                rxSession -> rxSession.run( new Statement( "RETURN $x", parameters( "x", 1 ) ), empty() ),
+                rxSession -> rxSession.run( new Query( "RETURN $x", parameters( "x", 1 ) ) ),
+                rxSession -> rxSession.run( new Query( "RETURN $x", parameters( "x", 1 ) ), empty() ),
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ), empty() ),
                 rxSession -> rxSession.run( "RETURN 1", empty() )
         );
@@ -109,7 +109,7 @@ class InternalRxSessionTest
         RxResultCursor cursor = mock( RxResultCursorImpl.class );
 
         // Run succeeded with a cursor
-        when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( cursor ) );
+        when( session.runRx( any( Query.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( cursor ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When
@@ -118,7 +118,7 @@ class InternalRxSessionTest
         CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
+        verify( session ).runRx( any( Query.class ), any( TransactionConfig.class ) );
         assertThat( Futures.getNow( cursorFuture ), equalTo( cursor ) );
     }
 
@@ -131,7 +131,7 @@ class InternalRxSessionTest
         NetworkSession session = mock( NetworkSession.class );
 
         // Run failed with error
-        when( session.runRx( any( Statement.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
+        when( session.runRx( any( Query.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
         when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxSession rxSession = new InternalRxSession( session );
@@ -142,7 +142,7 @@ class InternalRxSessionTest
         CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify( session ).runRx( any( Statement.class ), any( TransactionConfig.class ) );
+        verify( session ).runRx( any( Query.class ), any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
         verify( session ).releaseConnectionAsync();

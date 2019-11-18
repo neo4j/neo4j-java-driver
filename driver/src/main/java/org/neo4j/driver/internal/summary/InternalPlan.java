@@ -131,7 +131,7 @@ public class InternalPlan<T extends Plan> implements Plan
         }
     };
 
-    /** Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` statement */
+    /** Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query */
     public static final Function<Value, Plan> EXPLAIN_PLAN_FROM_VALUE = new Converter<>(EXPLAIN_PLAN);
 
     /**

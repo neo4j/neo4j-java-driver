@@ -21,8 +21,8 @@ package org.neo4j.driver.internal.handlers.pulln;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
@@ -55,7 +55,7 @@ import static org.neo4j.driver.internal.messaging.request.DiscardMessage.newDisc
  */
 public class BasicPullResponseHandler implements PullResponseHandler
 {
-    private final Statement statement;
+    private final Query query;
     protected final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
@@ -66,10 +66,10 @@ public class BasicPullResponseHandler implements PullResponseHandler
     private BiConsumer<Record,Throwable> recordConsumer = null;
     private BiConsumer<ResultSummary, Throwable> summaryConsumer = null;
 
-    public BasicPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
-            PullResponseCompletionListener completionListener )
+    public BasicPullResponseHandler(Query query, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+                                    PullResponseCompletionListener completionListener )
     {
-        this.statement = requireNonNull( statement );
+        this.query = requireNonNull(query);
         this.runResponseHandler = requireNonNull( runResponseHandler );
         this.metadataExtractor = requireNonNull( metadataExtractor );
         this.connection = requireNonNull( connection );
@@ -106,7 +106,7 @@ public class BasicPullResponseHandler implements PullResponseHandler
         assertRecordAndSummaryConsumerInstalled();
         if ( isStreaming() )
         {
-            Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
+            Record record = new InternalRecord( runResponseHandler.queryKeys(), fields );
             recordConsumer.accept( record, null );
         }
     }
@@ -118,7 +118,7 @@ public class BasicPullResponseHandler implements PullResponseHandler
         if ( isStreamingPaused() )
         {
             status = Status.STREAMING;
-            connection.writeAndFlush( new PullMessage( size, runResponseHandler.statementId() ), this );
+            connection.writeAndFlush( new PullMessage( size, runResponseHandler.queryId() ), this );
         }
         else if ( isStreaming() )
         {
@@ -134,7 +134,7 @@ public class BasicPullResponseHandler implements PullResponseHandler
         {
             status = Status.CANCELED;
             // Reactive API does not provide a way to discard N. Only discard all.
-            connection.writeAndFlush( newDiscardAllMessage( runResponseHandler.statementId() ), this );
+            connection.writeAndFlush( newDiscardAllMessage( runResponseHandler.queryId() ), this );
         }
         else if ( isStreaming() )
         {
@@ -210,7 +210,7 @@ public class BasicPullResponseHandler implements PullResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
+        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata );
     }
 
     private void addToRequest( long toAdd )

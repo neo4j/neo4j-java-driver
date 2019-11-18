@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -36,7 +36,7 @@ import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class InternalAsyncSession extends AsyncAbstractStatementRunner implements AsyncSession
+public class InternalAsyncSession extends AsyncAbstractQueryRunner implements AsyncSession
 {
     private final NetworkSession session;
 
@@ -46,27 +46,27 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync(Statement statement )
+    public CompletionStage<ResultCursor> runAsync(Query query)
     {
-        return runAsync( statement, TransactionConfig.empty() );
+        return runAsync(query, TransactionConfig.empty() );
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync(String statement, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(String query, TransactionConfig config )
     {
-        return runAsync( statement, emptyMap(), config );
+        return runAsync(query, emptyMap(), config );
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync(String statement, Map<String,Object> parameters, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters, TransactionConfig config )
     {
-        return runAsync( new Statement( statement, parameters ), config );
+        return runAsync( new Query(query, parameters ), config );
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync(Statement statement, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config )
     {
-        return session.runAsync( statement, config, true );
+        return session.runAsync(query, config, true );
     }
 
     @Override

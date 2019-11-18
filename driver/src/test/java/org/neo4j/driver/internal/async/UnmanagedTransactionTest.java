@@ -26,7 +26,7 @@ import org.mockito.InOrder;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
-import static org.neo4j.driver.util.TestUtil.runMessageWithStatementMatcher;
+import static org.neo4j.driver.util.TestUtil.runMessageWithQueryMatcher;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
@@ -70,7 +70,7 @@ class UnmanagedTransactionTest
         setupSuccessfulRunAndPull( connection );
 
         // When
-        await( tx.runAsync( new Statement( "RETURN 1" ), waitForResponse ) );
+        await( tx.runAsync( new Query( "RETURN 1" ), waitForResponse ) );
 
         // Then
         verifyRunAndPull( connection, "RETURN 1" );
@@ -85,7 +85,7 @@ class UnmanagedTransactionTest
         setupSuccessfulRunRx( connection );
 
         // When
-        await( tx.runRx( new Statement( "RETURN 1" ) ) );
+        await( tx.runRx( new Query( "RETURN 1" ) ) );
 
         // Then
         verifyRunRx( connection, "RETURN 1" );
@@ -247,7 +247,7 @@ class UnmanagedTransactionTest
             ResponseHandler beginHandler = invocation.getArgument( 3 );
             beginBehaviour.accept( beginHandler );
             return null;
-        } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( "BEGIN" ) ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( "BEGIN" ) ), any(), any(), any() );
 
         return connection;
     }

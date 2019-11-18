@@ -80,7 +80,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldReturnStatementKeys() throws Throwable
+    void shouldReturnQueryKeys() throws Throwable
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -98,7 +98,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldSupportReturnStatementKeysMultipleTimes() throws Throwable
+    void shouldSupportReturnQueryKeysMultipleTimes() throws Throwable
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();

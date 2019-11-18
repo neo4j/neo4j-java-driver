@@ -67,7 +67,7 @@ class PullMessageEncoderTest
     }
 
     @Test
-    void shouldAvoidStatementId() throws Exception
+    void shouldAvoidQueryId() throws Exception
     {
         encoder.encode( new PullMessage( 100, -1 ), packer );
 

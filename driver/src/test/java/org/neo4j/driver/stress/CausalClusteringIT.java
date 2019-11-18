@@ -49,7 +49,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
@@ -577,7 +577,7 @@ public class CausalClusteringIT implements NestedQueries
 
             ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
             driverFactory.setNextRunFailure( error );
-            assertUnableToRunMoreStatementsInTx( tx2, error );
+            assertUnableToRunMoreQueriesInTx( tx2, error );
 
             tx2.close();
             tx1.commit();
@@ -706,7 +706,7 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
+    private static void assertUnableToRunMoreQueriesInTx(Transaction tx, ServiceUnavailableException cause )
     {
         SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
         assertEquals( cause, e.getCause() );
@@ -1006,14 +1006,14 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private static Result runCreateNode(StatementRunner statementRunner, String label, String property, String value )
+    private static Result runCreateNode(QueryRunner queryRunner, String label, String property, String value )
     {
-        return statementRunner.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
+        return queryRunner.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
     }
 
-    private static int runCountNodes( StatementRunner statementRunner, String label, String property, String value )
+    private static int runCountNodes(QueryRunner queryRunner, String label, String property, String value )
     {
-        Result result = statementRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
+        Result result = queryRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
         return result.single().get( 0 ).asInt();
     }
 

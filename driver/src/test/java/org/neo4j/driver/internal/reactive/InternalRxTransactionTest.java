@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.reactive;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 
@@ -29,7 +30,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -88,7 +88,7 @@ class InternalRxTransactionTest
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ) ),
                 rxSession -> rxSession.run( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                rxSession -> rxSession.run( new Statement( "RETURN $x", parameters( "x", 1 ) ) )
+                rxSession -> rxSession.run( new Query( "RETURN $x", parameters( "x", 1 ) ) )
         );
     }
 
@@ -101,7 +101,7 @@ class InternalRxTransactionTest
         RxResultCursor cursor = mock( RxResultCursorImpl.class );
 
         // Run succeeded with a cursor
-        when( tx.runRx( any( Statement.class ) ) ).thenReturn( completedFuture( cursor ) );
+        when( tx.runRx( any( Query.class ) ) ).thenReturn( completedFuture( cursor ) );
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
 
         // When
@@ -110,7 +110,7 @@ class InternalRxTransactionTest
         CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify( tx ).runRx( any( Statement.class ) );
+        verify( tx ).runRx( any( Query.class ) );
         assertThat( Futures.getNow( cursorFuture ), equalTo( cursor ) );
     }
 
@@ -123,7 +123,7 @@ class InternalRxTransactionTest
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
 
         // Run failed with error
-        when( tx.runRx( any( Statement.class ) ) ).thenReturn( Futures.failedFuture( error ) );
+        when( tx.runRx( any( Query.class ) ) ).thenReturn( Futures.failedFuture( error ) );
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
 
         // When
@@ -132,7 +132,7 @@ class InternalRxTransactionTest
         CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
 
         // Then
-        verify( tx ).runRx( any( Statement.class ) );
+        verify( tx ).runRx( any( Query.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
         verify( tx ).markTerminated();

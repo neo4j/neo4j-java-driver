@@ -21,9 +21,9 @@ package org.neo4j.driver.summary;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * Representation for notifications found when executing a statement.
+ * Representation for notifications found when executing a query.
  *
- * A notification can be visualized in a client pinpointing problems or other information about the statement.
+ * A notification can be visualized in a client pinpointing problems or other information about the query.
  * @since 1.0
  */
 @Immutable
@@ -48,10 +48,10 @@ public interface Notification
     String description();
 
     /**
-     * The position in the statement where this notification points to.
+     * The position in the query where this notification points to.
      * Not all notifications have a unique position to point to and in that case the position would be set to null.
      *
-     * @return the position in the statement where the issue was found, or null if no position is associated with this
+     * @return the position in the query where the issue was found, or null if no position is associated with this
      * notification.
      */
     InputPosition position();

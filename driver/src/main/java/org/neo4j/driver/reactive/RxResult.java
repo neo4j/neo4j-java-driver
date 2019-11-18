@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.reactive;
 
+import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -25,14 +26,13 @@ import org.reactivestreams.Subscription;
 import java.util.List;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
  * A reactive result provides a reactive way to execute query on the server and receives records back.
  * This reactive result consists of a result key publisher, a record publisher and a result summary publisher.
- * The reactive result is created via {@link RxSession#run(Statement)} and {@link RxTransaction#run(Statement)} for example.
+ * The reactive result is created via {@link RxSession#run(Query)} and {@link RxTransaction#run(Query)} for example.
  * On the creation of the result, the query submitted to create this result will not be executed until one of the publishers in this class is subscribed.
  * The records or the summary stream has to be consumed and finished (completed or errored) to ensure the resources used by this result to be freed correctly.
  *
@@ -47,11 +47,11 @@ public interface RxResult
      * Returns a cold publisher of keys.
      * This publisher always publishes one item - a list of keys. The list could be empty which indicates no keys in the result.
      * <p>
-     * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the statement is sent to the server and executed.
-     * This method does not start the record streaming nor publish statement execution result.
+     * When this publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed}, the query is sent to the server and executed.
+     * This method does not start the record streaming nor publish query execution result.
      * To retrieve the execution result, either {@link #records()} or {@link #consume()} can be used.
-     * {@link #records()} starts record streaming and reports statement execution result.
-     * {@link #consume()} skips record streaming and directly reports statement execution result.
+     * {@link #records()} starts record streaming and reports query execution result.
+     * {@link #consume()} skips record streaming and directly reports query execution result.
      * <p>
      * Consuming of execution result ensures the resources (such as network connections) used by this result is freed correctly.
      * Consuming the keys without consuming the execution result will result in resource leak.
@@ -69,16 +69,16 @@ public interface RxResult
      * Returns a cold unicast publisher of records.
      * <p>
      * When the record publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed},
-     * the query statement is executed and the result is streamed back as a record stream followed by a result summary.
+     * the query is executed and the result is streamed back as a record stream followed by a result summary.
      * This record publisher publishes all records in the result and signals the completion.
      * However before completion or error reporting if any, a cleanup of result resources such as network connection will be carried out automatically.
      * <p>
      * Therefore the {@link Subscriber} of this record publisher shall wait for the termination signal (complete or error)
      * to ensure that the resources used by this result are released correctly.
-     * Then the session is ready to be used to run more statements.
+     * Then the session is ready to be used to run more queries.
      * <p>
      * Cancelling of the record streaming will immediately terminate the propagation of new records.
-     * But it will not cancel statement execution on the server.
+     * But it will not cancel query execution on the server.
      * When the execution is finished, the {@link Subscriber} will be notified with a termination signal (complete or error).
      * <p>
      * The record publishing event by default runs in an Network IO thread, as a result no blocking operation is allowed in this thread.
@@ -95,12 +95,12 @@ public interface RxResult
     /**
      * Returns a cold publisher of result summary which arrives after all records.
      * <p>
-     * {@linkplain Publisher#subscribe(Subscriber) Subscribing} the summary publisher results in the execution of the statement followed by the result summary being returned.
-     * The summary publisher cancels record publishing if not yet subscribed and directly streams back the summary on statement execution completion.
+     * {@linkplain Publisher#subscribe(Subscriber) Subscribing} the summary publisher results in the execution of the query followed by the result summary being returned.
+     * The summary publisher cancels record publishing if not yet subscribed and directly streams back the summary on query execution completion.
      * As a result, the invocation of {@link #records()} after this method, would receive an {@link ResultConsumedException}.
      * <p>
-     * If subscribed after {@link #keys()}, then the result summary will be published after the statement execution without streaming any record to client.
-     * If subscribed after {@link #records()}, then the result summary will be published after the statement execution and the streaming of records.
+     * If subscribed after {@link #keys()}, then the result summary will be published after the query execution without streaming any record to client.
+     * If subscribed after {@link #records()}, then the result summary will be published after the query execution and the streaming of records.
      * <p>
      * Usually, this method shall be chained after {@link #records()} to ensure that all records are processed before summary.
      * <p>

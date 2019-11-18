@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -234,11 +234,11 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
         assertNotNull( summaryFuture.get() );
     }
 
-    protected LegacyPullAllResponseHandler newHandler( Statement statement, List<String> statementKeys,
-            Connection connection )
+    protected LegacyPullAllResponseHandler newHandler(Query query, List<String> queryKeys,
+                                                      Connection connection )
     {
         RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        runResponseHandler.onSuccess( singletonMap( "fields", value( statementKeys ) ) );
-        return new LegacyPullAllResponseHandler( statement, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+        runResponseHandler.onSuccess( singletonMap( "fields", value( queryKeys ) ) );
+        return new LegacyPullAllResponseHandler(query, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
     }
 }

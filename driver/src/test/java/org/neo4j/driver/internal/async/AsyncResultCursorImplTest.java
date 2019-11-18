@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -41,7 +41,7 @@ import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -68,7 +68,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 class AsyncResultCursorImplTest
 {
     @Test
-    void shouldReturnStatementKeys()
+    void shouldReturnQueryKeys()
     {
         RunResponseHandler runHandler = newRunResponseHandler();
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
@@ -86,8 +86,8 @@ class AsyncResultCursorImplTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
-        ResultSummary summary = new InternalResultSummary( new Statement( "RETURN 42" ),
-                new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() ), DEFAULT_DATABASE_INFO, StatementType.SCHEMA_WRITE,
+        ResultSummary summary = new InternalResultSummary( new Query( "RETURN 42" ),
+                new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() ), DEFAULT_DATABASE_INFO, QueryType.SCHEMA_WRITE,
                 new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0 ),
                 null, null, emptyList(), 42, 42 );
         when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );

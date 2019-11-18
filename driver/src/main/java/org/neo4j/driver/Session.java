@@ -27,15 +27,15 @@ import org.neo4j.driver.util.Resource;
  * Provides a context of work for database interactions.
  * <p>
  * A <em>Session</em> hosts a series of {@linkplain Transaction transactions}
- * carried out against a database. Within the database, all statements are
+ * carried out against a database. Within the database, all queries are
  * carried out within a transaction. Within application code, however, it is
  * not always necessary to explicitly {@link #beginTransaction() begin a
- * transaction}. If a statement is {@link #run} directly against a {@link
+ * transaction}. If a query is {@link #run} directly against a {@link
  * Session}, the server will automatically <code>BEGIN</code> and
- * <code>COMMIT</code> that statement within its own transaction. This type
+ * <code>COMMIT</code> that query within its own transaction. This type
  * of transaction is known as an <em>autocommit transaction</em>.
  * <p>
- * Explicit transactions allow multiple statements to be committed as part of
+ * Explicit transactions allow multiple queries to be committed as part of
  * a single atomic operation and can be rolled back if necessary. They can also
  * be used to ensure <em>causal consistency</em>, meaning that an application
  * can run a series of queries on different members of a cluster, while
@@ -61,7 +61,7 @@ import org.neo4j.driver.util.Resource;
  *
  * @since 1.0 (Removed async API to {@link AsyncSession} in 2.0)
  */
-public interface Session extends Resource, StatementRunner
+public interface Session extends Resource, QueryRunner
 {
     /**
      * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
@@ -135,19 +135,19 @@ public interface Session extends Resource, StatementRunner
     <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
-     * Run a statement in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a result stream.
+     * Run a query in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a result stream.
      *
-     * @param statement text of a Neo4j statement.
+     * @param query text of a Neo4j query.
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String statement, TransactionConfig config );
+    Result run(String query, TransactionConfig config );
 
     /**
-     * Run a statement with parameters in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
+     * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
      * <p>
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      * <p>
@@ -173,15 +173,15 @@ public interface Session extends Resource, StatementRunner
      * }
      * </pre>
      *
-     * @param statement text of a Neo4j statement.
-     * @param parameters input data for the statement.
+     * @param query text of a Neo4j query.
+     * @param parameters input data for the query.
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String statement, Map<String,Object> parameters, TransactionConfig config );
+    Result run(String query, Map<String,Object> parameters, TransactionConfig config );
 
     /**
-     * Run a statement in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
+     * Run a query in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
      * <h2>Example</h2>
      * <pre>
      * {@code
@@ -193,16 +193,16 @@ public interface Session extends Resource, StatementRunner
      *                 .withMetadata(metadata)
      *                 .build();
      *
-     * Statement statement = new Statement("MATCH (n) WHERE n.name=$myNameParam RETURN n.age");
-     * Result result = session.run(statement.withParameters(Values.parameters("myNameParam", "Bob")));
+     * Query query = new Query("MATCH (n) WHERE n.name=$myNameParam RETURN n.age");
+     * Result result = session.run(query.withParameters(Values.parameters("myNameParam", "Bob")));
      * }
      * </pre>
      *
-     * @param statement a Neo4j statement.
+     * @param query a Neo4j query.
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(Statement statement, TransactionConfig config );
+    Result run(Query query, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed
@@ -216,7 +216,7 @@ public interface Session extends Resource, StatementRunner
 
     /**
      * Reset the current session. This sends an immediate RESET signal to the server which both interrupts
-     * any statement that is currently executing and ignores any subsequently queued statements. Following
+     * any query that is currently executing and ignores any subsequently queued queries. Following
      * the reset, the current transaction will have been rolled back and any outstanding failures will
      * have been acknowledged.
      *

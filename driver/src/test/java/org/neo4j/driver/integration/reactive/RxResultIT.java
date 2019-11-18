@@ -32,7 +32,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -228,7 +228,7 @@ class RxResultIT
 
         StepVerifier.create( summaryMono )
                 .assertNext( summary -> {
-                    assertThat( summary.statement().text(), equalTo( "INVALID" ) );
+                    assertThat( summary.query().text(), equalTo( "INVALID" ) );
                     assertNotNull( summary.server().address() );
                     assertNotNull( summary.server().version() );
                 } ).verifyComplete();
@@ -281,7 +281,7 @@ class RxResultIT
                 .assertNext( summary -> {
                     // Then
                     assertThat( summary, notNullValue() );
-                    assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+                    assertThat( summary.queryType(), equalTo( QueryType.READ_ONLY ) );
                 } ).expectComplete().verify();
     }
 
@@ -354,7 +354,7 @@ class RxResultIT
                 Flux.from( session.beginTransaction() ).single()
                         .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
                         .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).records() ) )
-                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more queries" ) ) )
                 .verify();
     }
 
@@ -370,7 +370,7 @@ class RxResultIT
                 Flux.from( session.beginTransaction() ).single()
                         .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
                         .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).keys() ) )
-                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more queries" ) ) )
                 .verify();
     }
 
@@ -386,7 +386,7 @@ class RxResultIT
                 Flux.from( session.beginTransaction() ).single()
                         .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
                         .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).consume() ) )
-                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more queries" ) ) )
                 .verify();
     }
 
@@ -402,7 +402,7 @@ class RxResultIT
                 Flux.from( session.beginTransaction() ).single()
                         .flatMap( tx -> Flux.from( tx.rollback() ).singleOrEmpty().thenReturn( tx ) )
                         .flatMapMany( tx -> tx.run( "UNWIND [1,2] AS a RETURN a" ).consume() ) )
-                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more statements" ) ) )
+                .expectErrorSatisfies( error -> assertThat( error.getMessage(), containsString( "Cannot run more queries" ) ) )
                 .verify();
     }
 
@@ -454,9 +454,9 @@ class RxResultIT
     private void verifyCanAccessSummary( RxResult res )
     {
         StepVerifier.create( res.consume() ).assertNext( summary -> {
-            assertThat( summary.statement().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
+            assertThat( summary.query().text(), equalTo( "UNWIND [1,2,3,4] AS a RETURN a" ) );
             assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
-            assertThat( summary.statementType(), equalTo( StatementType.READ_ONLY ) );
+            assertThat( summary.queryType(), equalTo( QueryType.READ_ONLY ) );
         } ).verifyComplete();
     }
 

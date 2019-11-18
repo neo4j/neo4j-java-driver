@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.messaging.v4;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -48,13 +48,13 @@ public class BoltProtocolV4 extends BoltProtocolV3
     }
 
     @Override
-    protected ResultCursorFactory buildResultCursorFactory(Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+    protected ResultCursorFactory buildResultCursorFactory(Connection connection, Query query, BookmarkHolder bookmarkHolder,
                                                            UnmanagedTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long fetchSize )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
-        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx, fetchSize );
-        PullResponseHandler pullHandler = newBoltV4BasicPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler(query, runHandler, connection, bookmarkHolder, tx, fetchSize );
+        PullResponseHandler pullHandler = newBoltV4BasicPullHandler(query, runHandler, connection, bookmarkHolder, tx );
 
         return new ResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }

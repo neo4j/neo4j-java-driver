@@ -167,7 +167,7 @@ public interface Driver extends AutoCloseable
      * This will return the type system supported by the driver.
      * The types supported on a particular server a session is connected against might not contain all of the types defined here.
      *
-     * @return type system used by this statement runner for classifying values
+     * @return type system used by this query runner for classifying values
      */
     @Experimental
     TypeSystem defaultTypeSystem();

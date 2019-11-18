@@ -21,30 +21,30 @@ package org.neo4j.driver.summary;
 import org.neo4j.driver.exceptions.ClientException;
 
 /**
- * The type of statement executed.
+ * The type of query executed.
  * @since 1.0
  */
-public enum StatementType
+public enum QueryType
 {
     READ_ONLY,
     READ_WRITE,
     WRITE_ONLY,
     SCHEMA_WRITE;
 
-    public static StatementType fromCode( String type )
+    public static QueryType fromCode(String type )
     {
         switch ( type )
         {
         case "r":
-            return StatementType.READ_ONLY;
+            return QueryType.READ_ONLY;
         case "rw":
-            return StatementType.READ_WRITE;
+            return QueryType.READ_WRITE;
         case "w":
-            return StatementType.WRITE_ONLY;
+            return QueryType.WRITE_ONLY;
         case "s":
-            return StatementType.SCHEMA_WRITE;
+            return QueryType.SCHEMA_WRITE;
         default:
-            throw new ClientException( "Unknown statement type: `" + type + "`." );
+            throw new ClientException( "Unknown query type: `" + type + "`." );
         }
     }
 }

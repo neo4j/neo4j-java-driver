@@ -23,8 +23,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -138,20 +138,20 @@ public class UnmanagedTransaction
         }
     }
 
-    public CompletionStage<ResultCursor> runAsync(Statement statement, boolean waitForRunResponse )
+    public CompletionStage<ResultCursor> runAsync(Query query, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
         CompletionStage<AsyncResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse, fetchSize ).asyncResult();
+                protocol.runInExplicitTransaction( connection, query, this, waitForRunResponse, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
         return cursorStage.thenApply( cursor -> cursor );
     }
 
-    public CompletionStage<RxResultCursor> runRx(Statement statement )
+    public CompletionStage<RxResultCursor> runRx(Query query)
     {
         ensureCanRunQueries();
         CompletionStage<RxResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, statement, this, false, fetchSize ).rxResult();
+                protocol.runInExplicitTransaction( connection, query, this, false, fetchSize ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -175,15 +175,15 @@ public class UnmanagedTransaction
     {
         if ( state == State.COMMITTED )
         {
-            throw new ClientException( "Cannot run more statements in this transaction, it has been committed" );
+            throw new ClientException( "Cannot run more queries in this transaction, it has been committed" );
         }
         else if ( state == State.ROLLED_BACK )
         {
-            throw new ClientException( "Cannot run more statements in this transaction, it has been rolled back" );
+            throw new ClientException( "Cannot run more queries in this transaction, it has been rolled back" );
         }
         else if ( state == State.TERMINATED )
         {
-            throw new ClientException( "Cannot run more statements in this transaction, " +
+            throw new ClientException( "Cannot run more queries in this transaction, " +
                     "it has either experienced an fatal error or was explicitly terminated" );
         }
     }

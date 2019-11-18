@@ -36,8 +36,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -55,7 +55,7 @@ import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -264,7 +264,7 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithAliases()
+    void shouldExposeQueryKeysForColumnsWithAliases()
     {
         ResultCursor cursor = await( session.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
 
@@ -272,7 +272,7 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithoutAliases()
+    void shouldExposeQueryKeysForColumnsWithoutAliases()
     {
         ResultCursor cursor = await( session.runAsync( "RETURN 1, 2, 3, 5" ) );
 
@@ -288,12 +288,12 @@ class AsyncSessionIT
         ResultCursor cursor = await( session.runAsync( query, params ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 1, summary.counters().nodesCreated() );
         assertEquals( 1, summary.counters().labelsAdded() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 0, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertEquals( QueryType.WRITE_ONLY, summary.queryType() );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.plan() );
@@ -310,11 +310,11 @@ class AsyncSessionIT
         ResultCursor cursor = await( session.runAsync( query ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( new Query( query ), summary.query() );
         assertEquals( 0, summary.counters().nodesCreated() );
         assertEquals( 0, summary.counters().propertiesSet() );
         assertEquals( 0, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -336,11 +336,11 @@ class AsyncSessionIT
         ResultCursor cursor = await( session.runAsync( query ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( new Query( query ), summary.query() );
         assertEquals( 2, summary.counters().nodesCreated() );
         assertEquals( 0, summary.counters().propertiesSet() );
         assertEquals( 1, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -847,7 +847,7 @@ class AsyncSessionIT
                 .thenCompose( tx -> session.runAsync( "RETURN 1" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( runWithOpenTx ) );
-        assertThat( e.getMessage(), startsWith( "Statements cannot be run directly on a session with an open transaction" ) );
+        assertThat( e.getMessage(), startsWith( "Queries cannot be run directly on a session with an open transaction" ) );
 
         await( session.closeAsync() );
     }
@@ -855,12 +855,12 @@ class AsyncSessionIT
     @Test
     void shouldPropagateFailureFromFirstIllegalQuery()
     {
-        CompletionStage<ResultCursor> allStatements = session.runAsync( "CREATE (:Node1)" )
+        CompletionStage<ResultCursor> allQueries = session.runAsync( "CREATE (:Node1)" )
                 .thenCompose( ignore -> session.runAsync( "CREATE (:Node2)" ) )
                 .thenCompose( ignore -> session.runAsync( "RETURN invalid" ) )
                 .thenCompose( ignore -> session.runAsync( "CREATE (:Node3)" ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( allStatements ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( allQueries ) );
         assertThat( e, is( syntaxError( "Variable `invalid` not defined" ) ) );
 
         assertEquals( 1, countNodesByLabel( "Node1" ) );
@@ -951,8 +951,8 @@ class AsyncSessionIT
         ResultSummary summary = await( forEachDone );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
@@ -974,8 +974,8 @@ class AsyncSessionIT
         ResultSummary summary = await( cursor.consumeAsync() );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
 
         // no records should be available, they should all be consumed
         assertThrows( ResultConsumedException.class, () -> await( cursor.nextAsync() ) );

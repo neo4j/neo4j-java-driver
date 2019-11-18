@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
@@ -54,7 +54,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     static final int RECORD_BUFFER_LOW_WATERMARK = Integer.getInteger( "recordBufferLowWatermark", 300 );
     static final int RECORD_BUFFER_HIGH_WATERMARK = Integer.getInteger( "recordBufferHighWatermark", 1000 );
 
-    private final Statement statement;
+    private final Query query;
     private final RunResponseHandler runResponseHandler;
     protected final MetadataExtractor metadataExtractor;
     protected final Connection connection;
@@ -72,10 +72,10 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<Throwable> failureFuture;
 
-    public LegacyPullAllResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
-            PullResponseCompletionListener completionListener )
+    public LegacyPullAllResponseHandler(Query query, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+                                        PullResponseCompletionListener completionListener )
     {
-        this.statement = requireNonNull( statement );
+        this.query = requireNonNull(query);
         this.runResponseHandler = requireNonNull( runResponseHandler );
         this.metadataExtractor = requireNonNull( metadataExtractor );
         this.connection = requireNonNull( connection );
@@ -134,7 +134,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
         }
         else
         {
-            Record record = new InternalRecord( runResponseHandler.statementKeys(), fields );
+            Record record = new InternalRecord( runResponseHandler.queryKeys(), fields );
             enqueueRecord( record );
             completeRecordFuture( record );
         }
@@ -335,7 +335,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary( statement, connection, resultAvailableAfter, metadata );
+        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata );
     }
 
     private void enableAutoRead()

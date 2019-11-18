@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
-class StatementRunnerCloseIT
+class QueryRunnerCloseIT
 {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();

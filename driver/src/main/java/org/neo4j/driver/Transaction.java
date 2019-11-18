@@ -36,19 +36,19 @@ import org.neo4j.driver.util.Resource;
  * }
  * }
  * Blocking calls are: {@link #commit()}, {@link #rollback()}, {@link #close()}
- * and various overloads of {@link #run(Statement)}.
+ * and various overloads of {@link #run(Query)}.
  *
  * @see Session#run
- * @see StatementRunner
+ * @see QueryRunner
  * @since 1.0
  */
-public interface Transaction extends Resource, StatementRunner
+public interface Transaction extends Resource, QueryRunner
 {
     /**
      * Commit this current transaction.
-     * When this method returns, all outstanding statements in the transaction are guaranteed to
+     * When this method returns, all outstanding queries in the transaction are guaranteed to
      * have completed, meaning any writes you performed are guaranteed to be durably stored.
-     * No more statement can be executed inside this transaction once this transaction is committed.
+     * No more queries can be executed inside this transaction once this transaction is committed.
      * After this method is called, the transaction cannot be committed or rolled back again.
      * You must call this method before calling {@link #close()} to have your transaction committed.
      * If a transaction is not committed or rolled back before close,
@@ -68,7 +68,7 @@ public interface Transaction extends Resource, StatementRunner
 
     /**
      * Roll back this current transaction.
-     * No more statement can be executed inside this transaction once this transaction is committed.
+     * No more queries can be executed inside this transaction once this transaction is committed.
      * After this method has been called, the transaction cannot be committed or rolled back again.
      * If a transaction is not committed or rolled back before close,
      * the transaction will be rolled back by default in {@link #close}.

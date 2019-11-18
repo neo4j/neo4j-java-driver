@@ -21,7 +21,7 @@ package org.neo4j.driver.summary;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * Contains counters for various operations that a statement triggered.
+ * Contains counters for various operations that a query triggered.
  * @since 1.0
  */
 @Immutable
@@ -29,7 +29,7 @@ public interface SummaryCounters
 {
     /**
      * Whether there were any updates at all, eg. any of the counters are greater than 0.
-     * @return true if the statement made any updates
+     * @return true if the query made any updates
      */
     boolean containsUpdates();
 

@@ -22,37 +22,37 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.async.AsyncStatementRunner;
+import org.neo4j.driver.async.AsyncQueryRunner;
 import org.neo4j.driver.async.ResultCursor;
 
-import static org.neo4j.driver.internal.AbstractStatementRunner.parameters;
+import static org.neo4j.driver.internal.AbstractQueryRunner.parameters;
 
-public abstract class AsyncAbstractStatementRunner implements AsyncStatementRunner
+public abstract class AsyncAbstractQueryRunner implements AsyncQueryRunner
 {
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Value parameters )
+    public final CompletionStage<ResultCursor> runAsync(String query, Value parameters )
     {
-        return runAsync( new Statement( statementTemplate, parameters ) );
+        return runAsync( new Query(query, parameters ) );
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Map<String,Object> statementParameters )
+    public final CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters)
     {
-        return runAsync( statementTemplate, parameters( statementParameters ) );
+        return runAsync(query, parameters(parameters) );
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Record statementParameters )
+    public final CompletionStage<ResultCursor> runAsync(String query, Record parameters)
     {
-        return runAsync( statementTemplate, parameters( statementParameters ) );
+        return runAsync(query, parameters(parameters) );
     }
 
     @Override
-    public final CompletionStage<ResultCursor> runAsync(String statementText )
+    public final CompletionStage<ResultCursor> runAsync(String query)
     {
-        return runAsync( statementText, Values.EmptyMap );
+        return runAsync(query, Values.EmptyMap );
     }
 }

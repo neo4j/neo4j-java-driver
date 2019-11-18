@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.pulln.AutoPullResponseHandler;
@@ -30,37 +30,37 @@ import org.neo4j.driver.internal.spi.Connection;
 
 public class PullHandlers
 {
-    public static PullAllResponseHandler newBoltV1PullAllHandler( Statement statement, RunResponseHandler runHandler,
+    public static PullAllResponseHandler newBoltV1PullAllHandler(Query query, RunResponseHandler runHandler,
             Connection connection, UnmanagedTransaction tx )
     {
         PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, BookmarkHolder.NO_OP, tx );
 
-        return new LegacyPullAllResponseHandler( statement, runHandler, connection, BoltProtocolV1.METADATA_EXTRACTOR, completionListener );
+        return new LegacyPullAllResponseHandler(query, runHandler, connection, BoltProtocolV1.METADATA_EXTRACTOR, completionListener );
     }
 
-    public static PullAllResponseHandler newBoltV3PullAllHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
+    public static PullAllResponseHandler newBoltV3PullAllHandler(Query query, RunResponseHandler runHandler, Connection connection,
             BookmarkHolder bookmarkHolder, UnmanagedTransaction tx )
     {
         PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
 
-        return new LegacyPullAllResponseHandler( statement, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
+        return new LegacyPullAllResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
     }
 
-    public static PullAllResponseHandler newBoltV4AutoPullHandler(Statement statement, RunResponseHandler runHandler, Connection connection,
+    public static PullAllResponseHandler newBoltV4AutoPullHandler(Query query, RunResponseHandler runHandler, Connection connection,
                                                                   BookmarkHolder bookmarkHolder, UnmanagedTransaction tx, long fetchSize )
     {
         PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
 
-        return new AutoPullResponseHandler( statement, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize );
+        return new AutoPullResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener, fetchSize );
     }
 
 
-    public static PullResponseHandler newBoltV4BasicPullHandler( Statement statement, RunResponseHandler runHandler, Connection connection,
+    public static PullResponseHandler newBoltV4BasicPullHandler(Query query, RunResponseHandler runHandler, Connection connection,
             BookmarkHolder bookmarkHolder, UnmanagedTransaction tx )
     {
         PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, bookmarkHolder, tx );
 
-        return new BasicPullResponseHandler( statement, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
+        return new BasicPullResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, completionListener );
     }
 
     private static PullResponseCompletionListener createPullResponseCompletionListener( Connection connection, BookmarkHolder bookmarkHolder,

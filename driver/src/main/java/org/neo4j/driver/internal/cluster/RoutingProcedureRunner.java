@@ -24,8 +24,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -56,7 +56,7 @@ public class RoutingProcedureRunner
     public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark )
     {
         DirectConnection delegate = connection( connection );
-        Statement procedure = procedureStatement( connection.serverVersion(), databaseName );
+        Query procedure = procedureQuery( connection.serverVersion(), databaseName );
         BookmarkHolder bookmarkHolder = bookmarkHolder( bookmark );
         return runProcedure( delegate, procedure, bookmarkHolder )
                 .thenCompose( records -> releaseConnection( delegate, records ) )
@@ -68,7 +68,7 @@ public class RoutingProcedureRunner
         return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE );
     }
 
-    Statement procedureStatement( ServerVersion serverVersion, DatabaseName databaseName )
+    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
     {
         if ( databaseName.databaseName().isPresent() )
         {
@@ -76,7 +76,7 @@ public class RoutingProcedureRunner
                     "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
                             "Current server version: %s. Database name: '%s'", serverVersion, databaseName.description() ) );
         }
-        return new Statement( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
+        return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
     }
 
     BookmarkHolder bookmarkHolder( Bookmark ignored )
@@ -84,7 +84,7 @@ public class RoutingProcedureRunner
         return BookmarkHolder.NO_OP;
     }
 
-    CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure, BookmarkHolder bookmarkHolder )
+    CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
     {
         return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
@@ -101,8 +101,8 @@ public class RoutingProcedureRunner
         return connection.release().thenApply( ignore -> records );
     }
 
-    private static RoutingProcedureResponse processProcedureResponse( Statement procedure, List<Record> records,
-            Throwable error )
+    private static RoutingProcedureResponse processProcedureResponse(Query procedure, List<Record> records,
+                                                                     Throwable error )
     {
         Throwable cause = Futures.completionExceptionCause( error );
         if ( cause != null )
@@ -115,7 +115,7 @@ public class RoutingProcedureRunner
         }
     }
 
-    private static RoutingProcedureResponse handleError( Statement procedure, Throwable error )
+    private static RoutingProcedureResponse handleError(Query procedure, Throwable error )
     {
         if ( error instanceof ClientException )
         {

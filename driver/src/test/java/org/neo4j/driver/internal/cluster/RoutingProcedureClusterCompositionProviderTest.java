@@ -25,8 +25,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -293,12 +293,12 @@ class RoutingProcedureClusterCompositionProviderTest
 
     private static RoutingProcedureResponse newRoutingResponse( Record... records )
     {
-        return new RoutingProcedureResponse( new Statement( "procedure" ), asList( records ) );
+        return new RoutingProcedureResponse( new Query( "procedure" ), asList( records ) );
     }
 
     private static RoutingProcedureResponse newRoutingResponse( Throwable error )
     {
-        return new RoutingProcedureResponse( new Statement( "procedure" ), error );
+        return new RoutingProcedureResponse( new Query( "procedure" ), error );
     }
     
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( RoutingProcedureRunner runner, Connection connection )

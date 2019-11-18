@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.SessionPullResponseCompletionListener;
@@ -96,7 +96,7 @@ class SessionPullResponseCompletionListenerTest extends BasicPullResponseHandler
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         SessionPullResponseCompletionListener listener = new SessionPullResponseCompletionListener( conn, bookmarkHolder );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
+                new BasicPullResponseHandler( mock( Query.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
 
         handler.installRecordConsumer( recordConsumer );
         handler.installSummaryConsumer( summaryConsumer );

@@ -33,8 +33,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
@@ -45,7 +45,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -118,7 +118,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndCommit()
+    void shouldBePossibleToRunSingleQueryAndCommit()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -136,7 +136,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndRollback()
+    void shouldBePossibleToRunSingleQueryAndRollback()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -153,7 +153,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndCommit()
+    void shouldBePossibleToRunMultipleQueriesAndCommit()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -172,7 +172,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndCommitWithoutWaiting()
+    void shouldBePossibleToRunMultipleQueriesAndCommitWithoutWaiting()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -186,7 +186,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndRollback()
+    void shouldBePossibleToRunMultipleQueriesAndRollback()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -202,7 +202,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndRollbackWithoutWaiting()
+    void shouldBePossibleToRunMultipleQueriesAndRollbackWithoutWaiting()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -215,7 +215,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitAfterSingleWrongStatement()
+    void shouldFailToCommitAfterSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -228,7 +228,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldAllowRollbackAfterSingleWrongStatement()
+    void shouldAllowRollbackAfterSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -240,7 +240,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -263,7 +263,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -285,7 +285,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
+    void shouldNotAllowNewQueriesAfterAnIncorrectQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -295,7 +295,7 @@ class AsyncTransactionIT
         assertThat( e1, is( syntaxError( "Unexpected end of input" ) ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> tx.runAsync( "CREATE ()" ) );
-        assertThat( e2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e2.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
     }
 
     @Test
@@ -355,7 +355,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithAliases()
+    void shouldExposeQueryKeysForColumnsWithAliases()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         ResultCursor cursor = await( tx.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
@@ -364,7 +364,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithoutAliases()
+    void shouldExposeQueryKeysForColumnsWithoutAliases()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
         ResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
@@ -382,12 +382,12 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( query, params ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 2, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().labelsAdded() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 1, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.plan() );
@@ -405,10 +405,10 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( query ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( new Query( query ), summary.query() );
         assertEquals( 0, summary.counters().nodesCreated() );
         assertEquals( 0, summary.counters().propertiesSet() );
-        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertEquals( QueryType.READ_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -433,11 +433,11 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( query, params ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 1, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 0, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertEquals( QueryType.WRITE_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -634,7 +634,7 @@ class AsyncTransactionIT
         assertEquals( 1, await( cursor.singleAsync() ).get( 0 ).asInt() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
-        assertEquals( "Cannot run more statements in this transaction, it has been committed", e.getMessage() );
+        assertEquals( "Cannot run more queries in this transaction, it has been committed", e.getMessage() );
     }
 
     @Test
@@ -648,7 +648,7 @@ class AsyncTransactionIT
         assertEquals( 0, await( cursor.singleAsync() ).get( 0 ).asInt() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
-        assertEquals( "Cannot run more statements in this transaction, it has been rolled back", e.getMessage() );
+        assertEquals( "Cannot run more queries in this transaction, it has been rolled back", e.getMessage() );
     }
 
     @Test
@@ -845,8 +845,8 @@ class AsyncTransactionIT
         ResultSummary summary = await( forEachDone );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
@@ -870,8 +870,8 @@ class AsyncTransactionIT
         ResultSummary summary = await( cursor.consumeAsync() );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
 
         // no records should be available, they should all be consumed
         assertThrows( ResultConsumedException.class, () -> await( cursor.nextAsync() ) );

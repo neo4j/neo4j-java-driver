@@ -29,8 +29,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
@@ -69,8 +69,8 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
-        Statement statement = generateRoutingStatement( EMPTY_MAP );
-        assertThat( runner.procedure, equalTo( statement ) );
+        Query query = generateRoutingQuery( EMPTY_MAP );
+        assertThat( runner.procedure, equalTo(query) );
     }
 
     @Test
@@ -89,9 +89,9 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
-        Statement statement = generateRoutingStatement( context.asMap() );
-        assertThat( response.procedure(), equalTo( statement ) );
-        assertThat( runner.procedure, equalTo( statement ) );
+        Query query = generateRoutingQuery( context.asMap() );
+        assertThat( response.procedure(), equalTo(query) );
+        assertThat( runner.procedure, equalTo(query) );
     }
 
     @ParameterizedTest
@@ -117,17 +117,17 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         return Stream.of( SYSTEM_DATABASE_NAME, "This is a string", "null" );
     }
 
-    private static Statement generateRoutingStatement( Map context )
+    private static Query generateRoutingQuery(Map context )
     {
         Value parameters = parameters( ROUTING_CONTEXT, context );
-        return new Statement( GET_ROUTING_TABLE, parameters );
+        return new Query( GET_ROUTING_TABLE, parameters );
     }
 
     private static class TestRoutingProcedureRunner extends RoutingProcedureRunner
     {
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
-        private Statement procedure;
+        private Query procedure;
         private BookmarkHolder bookmarkHolder;
 
         TestRoutingProcedureRunner( RoutingContext context )
@@ -142,7 +142,7 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure( Connection connection, Statement procedure, BookmarkHolder bookmarkHolder )
+        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
         {
             this.connection = connection;
             this.procedure = procedure;

@@ -20,26 +20,26 @@ package org.neo4j.driver.reactive;
 
 import java.util.Map;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 
 /**
- * Common interface for components that can execute Neo4j statements using Reactive API.
+ * Common interface for components that can execute Neo4j queries using Reactive API.
  * @see RxSession
  * @see RxTransaction
  * @since 2.0
  */
-public interface RxStatementRunner
+public interface RxQueryRunner
 {
     /**
-     * Register running of a statement and return a reactive result stream.
-     * The statement is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the statement.
+     * Register running of a query and return a reactive result stream.
+     * The query is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the query.
      *
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      *
@@ -50,19 +50,19 @@ public interface RxStatementRunner
      * If you are creating parameters programmatically, {@link #run(String, Map)}
      * might be more helpful, it converts your map to a {@link Value} for you.
      *
-     * @param statementTemplate text of a Neo4j statement
+     * @param query text of a Neo4j query
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a reactive result.
      */
-    RxResult run(String statementTemplate, Value parameters );
+    RxResult run(String query, Value parameters );
 
     /**
-     * Register running of a statement and return a reactive result stream.
-     * The statement is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the statement.
+     * Register running of a query and return a reactive result stream.
+     * The query is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the query.
      *
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      *
@@ -70,48 +70,48 @@ public interface RxStatementRunner
      * must be values that can be converted to Neo4j types. See {@link Values#parameters(Object...)} for
      * a list of allowed types.
      *
-     * @param statementTemplate text of a Neo4j statement
-     * @param statementParameters input data for the statement
+     * @param query text of a Neo4j query
+     * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String statementTemplate, Map<String,Object> statementParameters );
+    RxResult run(String query, Map<String,Object> parameters );
 
     /**
-     * Register running of a statement and return a reactive result stream.
-     * The statement is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the statement.
+     * Register running of a query and return a reactive result stream.
+     * The query is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the query.
      *
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      *
      * This version of run takes a {@link Record} of parameters, which can be useful
-     * if you want to use the output of one statement as input for another.
+     * if you want to use the output of one query as input for another.
      *
-     * @param statementTemplate text of a Neo4j statement
-     * @param statementParameters input data for the statement
+     * @param query text of a Neo4j query
+     * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String statementTemplate, Record statementParameters );
+    RxResult run(String query, Record parameters );
 
     /**
-     * Register running of a statement and return a reactive result stream.
-     * The statement is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the statement.
+     * Register running of a query and return a reactive result stream.
+     * The query is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the query.
      *
-     * @param statementTemplate text of a Neo4j statement
+     * @param query text of a Neo4j query
      * @return a reactive result.
      */
-    RxResult run(String statementTemplate );
+    RxResult run(String query );
 
     /**
-     * Register running of a statement and return a reactive result stream.
-     * The statement is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the statement.
+     * Register running of a query and return a reactive result stream.
+     * The query is not executed when the reactive result is returned.
+     * Instead, the publishers in the result will actually start the execution of the query.
      *
-     * @param statement a Neo4j statement
+     * @param query a Neo4j query
      * @return a reactive result.
      */
-    RxResult run(Statement statement );
+    RxResult run(Query query);
 }

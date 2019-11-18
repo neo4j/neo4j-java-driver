@@ -280,12 +280,12 @@ public final class TestUtil
 
     public static void verifyRunRx( Connection connection, String query )
     {
-        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        verify( connection ).writeAndFlush( argThat( runWithMetaMessageWithQueryMatcher( query ) ), any() );
     }
 
     public static void verifyRunAndPull( Connection connection, String query )
     {
-        verify( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        verify( connection ).write( argThat( runWithMetaMessageWithQueryMatcher( query ) ), any() );
         verify( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
@@ -445,7 +445,7 @@ public final class TestUtil
             ResponseHandler runHandler = invocation.getArgument( 1 );
             runHandler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).write( argThat( runWithMetaMessageWithStatementMatcher( query ) ), any() );
+        } ).when( connection ).write( argThat( runWithMetaMessageWithQueryMatcher( query ) ), any() );
 
         doAnswer( invocation ->
         {
@@ -588,14 +588,14 @@ public final class TestUtil
         return sb.toString();
     }
 
-    public static ArgumentMatcher<Message> runMessageWithStatementMatcher( String statement )
+    public static ArgumentMatcher<Message> runMessageWithQueryMatcher(String query )
     {
-        return message -> message instanceof RunMessage && Objects.equals( statement, ((RunMessage) message).statement() );
+        return message -> message instanceof RunMessage && Objects.equals( query, ((RunMessage) message).query() );
     }
 
-    public static ArgumentMatcher<Message> runWithMetaMessageWithStatementMatcher( String statement )
+    public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher(String query )
     {
-        return message -> message instanceof RunWithMetadataMessage && Objects.equals( statement, ((RunWithMetadataMessage) message).statement() );
+        return message -> message instanceof RunWithMetadataMessage && Objects.equals( query, ((RunWithMetadataMessage) message).query() );
     }
 
     /**
@@ -606,14 +606,14 @@ public final class TestUtil
         return ServerVersion.v4_0_0;
     }
 
-    private static void setupSuccessfulPullAll( Connection connection, String statement )
+    private static void setupSuccessfulPullAll( Connection connection, String query )
     {
         doAnswer( invocation ->
         {
             ResponseHandler handler = invocation.getArgument( 3 );
             handler.onSuccess( emptyMap() );
             return null;
-        } ).when( connection ).writeAndFlush( argThat( runMessageWithStatementMatcher( statement ) ), any(), any(), any() );
+        } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( query ) ), any(), any(), any() );
     }
 
     private static void setupSuccessResponse( Connection connection, Class<? extends Message> messageType )

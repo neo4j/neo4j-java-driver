@@ -45,7 +45,7 @@ public class AsyncResultCursorImpl implements AsyncResultCursor
     @Override
     public List<String> keys()
     {
-        return runHandler.statementKeys();
+        return runHandler.queryKeys();
     }
 
     @Override

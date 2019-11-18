@@ -32,22 +32,22 @@ import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
- * The result of asynchronous execution of a Cypher statement, conceptually an asynchronous stream of
+ * The result of asynchronous execution of a Cypher query, conceptually an asynchronous stream of
  * {@link Record records}.
  * <p>
  * Result can be eagerly fetched in a list using {@link #listAsync()} or navigated lazily using
  * {@link #forEachAsync(Consumer)} or {@link #nextAsync()}.
  * <p>
- * Results are valid until the next statement is run or until the end of the current transaction,
- * whichever comes first. To keep a result around while further statements are run, or to use a result outside the scope
+ * Results are valid until the next query is run or until the end of the current transaction,
+ * whichever comes first. To keep a result around while further queries are run, or to use a result outside the scope
  * of the current transaction, see {@link #listAsync()}.
  * <h2>Important note on semantics</h2>
  * <p>
  * In order to handle very large results, and to minimize memory overhead and maximize
- * performance, results are retrieved lazily. Please see {@link AsyncStatementRunner} for
+ * performance, results are retrieved lazily. Please see {@link AsyncQueryRunner} for
  * important details on the effects of this.
  * <p>
- * The short version is that, if you want a hard guarantee that the underlying statement
+ * The short version is that, if you want a hard guarantee that the underlying query
  * has completed, you need to either call {@link AsyncTransaction#commitAsync()} on the {@link AsyncTransaction transaction}
  * or {@link AsyncSession#closeAsync()} on the {@link AsyncSession session} that created this result, or you need to use
  * the result.
@@ -124,8 +124,8 @@ public interface ResultCursor
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      * <p>
-     * Note that this method can only be used if you know that the statement that
-     * yielded this result returns a finite stream. Some statements can yield
+     * Note that this method can only be used if you know that the query that
+     * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
      * <p>
@@ -141,8 +141,8 @@ public interface ResultCursor
      * This can be used if you want to iterate over the stream multiple times or to store the
      * whole result for later use.
      * <p>
-     * Note that this method can only be used if you know that the statement that
-     * yielded this result returns a finite stream. Some statements can yield
+     * Note that this method can only be used if you know that the query that
+     * yielded this result returns a finite stream. Some queries can yield
      * infinite results, in which case calling this method will lead to running
      * out of memory.
      * <p>

@@ -366,7 +366,7 @@ public abstract class Values
 
     /**
      * Helper function for creating a map of parameters, this can be used when you {@link
-     * StatementRunner#run(String, Value) run} statements.
+     * QueryRunner#run(String, Value) run} queries.
      * <p>
      * Allowed parameter types are:
      * <ul>
@@ -382,7 +382,7 @@ public abstract class Values
      *
      * @param keysAndValues alternating sequence of keys and values
      * @return Map containing all parameters specified
-     * @see StatementRunner#run(String, Value)
+     * @see QueryRunner#run(String, Value)
      */
     public static Value parameters( Object... keysAndValues )
     {

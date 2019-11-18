@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.v3;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -70,21 +70,21 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                 new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, defaultDatabase() ),
                 COMMIT,
                 ROLLBACK,
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
+                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), WRITE,
+                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), WRITE,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                explicitTxRunMessage( new Statement( "RETURN 1" ) ),
+                explicitTxRunMessage( new Query( "RETURN 1" ) ),
                 PULL_ALL,
                 DISCARD_ALL,
                 RESET,
 
                 // Bolt V3 messages with struct values
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                         defaultDatabase(), READ, InternalBookmark.empty() ),
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                         defaultDatabase(), WRITE, InternalBookmark.empty() ),
-                explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
+                explicitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
 

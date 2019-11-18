@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -188,9 +188,9 @@ class SessionResetIT
             assertThat( e1.getMessage(), containsString( "You cannot begin a transaction on a session with an open transaction" ) );
 
             ClientException e2 = assertThrows( ClientException.class, () -> tx1.run( "RETURN 1" ) );
-            assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
+            assertThat( e2.getMessage(), containsString( "Cannot run more queries in this transaction" ) );
 
-            // Make sure failure from the terminated long running statement is propagated
+            // Make sure failure from the terminated long running query is propagated
             Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
             assertThat( e3.getMessage(), containsString( "The transaction has been terminated" ) );
         }
@@ -244,7 +244,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldKillLongRunningStatement() throws Throwable
+    void shouldKillLongRunningQuery() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -264,7 +264,7 @@ class SessionResetIT
 
                 // When
                 startTime.set( System.currentTimeMillis() );
-                result.consume(); // blocking to run the statement
+                result.consume(); // blocking to run the query
             }
         } );
 
@@ -319,7 +319,7 @@ class SessionResetIT
         {
             try
             {
-                Thread.sleep( timeout * 1000 ); // let the statement executing for timeout seconds
+                Thread.sleep( timeout * 1000 ); // let the query execute for timeout seconds
             }
             catch ( InterruptedException ignore )
             {
@@ -332,7 +332,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldAllowMoreStatementAfterSessionReset()
+    void shouldAllowMoreQueriesAfterSessionReset()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
@@ -343,7 +343,7 @@ class SessionResetIT
             // When reset the state of this session
             session.reset();
 
-            // Then can run successfully more statements without any error
+            // Then can run successfully more queries without any error
             session.run( "RETURN 2" ).consume();
         }
     }
@@ -388,7 +388,7 @@ class SessionResetIT
                 tx.run( "RETURN 1" );
                 tx.commit();
             } );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+            assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
         }
     }
 
@@ -485,7 +485,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState()
+    void shouldBeAbleToRunMoreQueriesAfterResetOnNoErrorState()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -497,7 +497,7 @@ class SessionResetIT
             tx.run( "CREATE (n:FirstNode)" );
             tx.commit();
 
-            // Then the outcome of both statements should be visible
+            // Then the outcome of both queries should be visible
             Result result = session.run( "MATCH (n) RETURN count(n)" );
             long nodes = result.single().get( "count(n)" ).asLong();
             assertThat( nodes, equalTo( 1L ) );
@@ -513,7 +513,7 @@ class SessionResetIT
             session.reset();
 
             ClientException e = assertThrows( ClientException.class, () -> tx.run( "CREATE (n:FirstNode)" ) );
-            assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
+            assertThat( e.getMessage(), containsString( "Cannot run more queries in this transaction" ) );
         }
     }
 
@@ -612,9 +612,9 @@ class SessionResetIT
         }
     }
 
-    private static Result updateNodeId(StatementRunner statementRunner, int currentId, int newId )
+    private static Result updateNodeId(QueryRunner queryRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
+        return queryRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 

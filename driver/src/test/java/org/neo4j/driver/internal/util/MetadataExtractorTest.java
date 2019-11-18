@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
@@ -60,10 +60,10 @@ import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_ST
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
-import static org.neo4j.driver.summary.StatementType.READ_ONLY;
-import static org.neo4j.driver.summary.StatementType.READ_WRITE;
-import static org.neo4j.driver.summary.StatementType.SCHEMA_WRITE;
-import static org.neo4j.driver.summary.StatementType.WRITE_ONLY;
+import static org.neo4j.driver.summary.QueryType.READ_ONLY;
+import static org.neo4j.driver.summary.QueryType.READ_WRITE;
+import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
+import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class MetadataExtractorTest
@@ -74,17 +74,17 @@ class MetadataExtractorTest
     private final MetadataExtractor extractor = new MetadataExtractor( RESULT_AVAILABLE_AFTER_KEY, RESULT_CONSUMED_AFTER_KEY );
 
     @Test
-    void shouldExtractStatementKeys()
+    void shouldExtractQueryKeys()
     {
         List<String> keys = asList( "hello", " ", "world", "!" );
-        List<String> extractedKeys = extractor.extractStatementKeys( singletonMap( "fields", value( keys ) ) );
+        List<String> extractedKeys = extractor.extractQueryKeys( singletonMap( "fields", value( keys ) ) );
         assertEquals( keys, extractedKeys );
     }
 
     @Test
-    void shouldExtractEmptyStatementKeysWhenNoneInMetadata()
+    void shouldExtractEmptyQueryKeysWhenNoneInMetadata()
     {
-        List<String> extractedKeys = extractor.extractStatementKeys( emptyMap() );
+        List<String> extractedKeys = extractor.extractQueryKeys( emptyMap() );
         assertEquals( emptyList(), extractedKeys );
     }
 
@@ -104,14 +104,14 @@ class MetadataExtractorTest
     }
 
     @Test
-    void shouldBuildResultSummaryWithStatement()
+    void shouldBuildResultSummaryWithQuery()
     {
-        Statement statement = new Statement( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
+        Query query = new Query( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
                 singletonMap( "name", "Apa" ) );
 
-        ResultSummary summary = extractor.extractSummary( statement, connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap() );
 
-        assertEquals( statement, summary.statement() );
+        assertEquals(query, summary.query() );
     }
 
     @Test
@@ -119,21 +119,21 @@ class MetadataExtractorTest
     {
         Connection connection = connectionMock( new BoltServerAddress( "server:42" ), v4_0_0 );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connection, 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connection, 42, emptyMap() );
 
         assertEquals( "server:42", summary.server().address() );
         assertEquals( "Neo4j/4.0.0", summary.server().version() );
     }
 
     @Test
-    void shouldBuildResultSummaryWithStatementType()
+    void shouldBuildResultSummaryWithQueryType()
     {
-        assertEquals( READ_ONLY, createWithStatementType( value( "r" ) ).statementType() );
-        assertEquals( READ_WRITE, createWithStatementType( value( "rw" ) ).statementType() );
-        assertEquals( WRITE_ONLY, createWithStatementType( value( "w" ) ).statementType() );
-        assertEquals( SCHEMA_WRITE, createWithStatementType( value( "s" ) ).statementType() );
+        assertEquals( READ_ONLY, createWithQueryType( value( "r" ) ).queryType() );
+        assertEquals( READ_WRITE, createWithQueryType( value( "rw" ) ).queryType() );
+        assertEquals( WRITE_ONLY, createWithQueryType( value( "w" ) ).queryType() );
+        assertEquals( SCHEMA_WRITE, createWithQueryType( value( "s" ) ).queryType() );
 
-        assertNull( createWithStatementType( null ).statementType() );
+        assertNull( createWithQueryType( null ).queryType() );
     }
 
     @Test
@@ -155,7 +155,7 @@ class MetadataExtractorTest
 
         Map<String,Value> metadata = singletonMap( "stats", stats );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, metadata );
 
         assertEquals( 42, summary.counters().nodesCreated() );
         assertEquals( 4242, summary.counters().nodesDeleted() );
@@ -173,7 +173,7 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithoutCounters()
     {
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, emptyMap() );
         assertEquals( EMPTY_STATS, summary.counters() );
     }
 
@@ -194,7 +194,7 @@ class MetadataExtractorTest
         ) );
         Map<String,Value> metadata = singletonMap( "plan", plan );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, metadata );
 
         assertTrue( summary.hasPlan() );
         assertEquals( "Projection", summary.plan().operatorType() );
@@ -214,7 +214,7 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithoutPlan()
     {
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasPlan() );
         assertNull( summary.plan() );
     }
@@ -241,7 +241,7 @@ class MetadataExtractorTest
         ) );
         Map<String,Value> metadata = singletonMap( "profile", profile );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, metadata );
 
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
@@ -270,7 +270,7 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithoutProfiledPlan()
     {
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, emptyMap() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.profile() );
     }
@@ -303,7 +303,7 @@ class MetadataExtractorTest
         Value notifications = value( notification1, notification2 );
         Map<String,Value> metadata = singletonMap( "notifications", notifications );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, metadata );
 
         assertEquals( 2, summary.notifications().size() );
         Notification firstNotification = summary.notifications().get( 0 );
@@ -325,7 +325,7 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithoutNotifications()
     {
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, emptyMap() );
         assertEquals( 0, summary.notifications().size() );
     }
 
@@ -334,7 +334,7 @@ class MetadataExtractorTest
     {
         int value = 42_000;
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), value, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), value, emptyMap() );
 
         assertEquals( 42, summary.resultAvailableAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultAvailableAfter( TimeUnit.MILLISECONDS ) );
@@ -346,7 +346,7 @@ class MetadataExtractorTest
         int value = 42_000;
         Map<String,Value> metadata = singletonMap( RESULT_CONSUMED_AFTER_KEY, value( value ) );
 
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, metadata );
 
         assertEquals( 42, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( value, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
@@ -355,7 +355,7 @@ class MetadataExtractorTest
     @Test
     void shouldBuildResultSummaryWithoutResultConsumedAfter()
     {
-        ResultSummary summary = extractor.extractSummary( statement(), connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query(), connectionMock(), 42, emptyMap() );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.SECONDS ) );
         assertEquals( -1, summary.resultConsumedAfter( TimeUnit.MILLISECONDS ) );
     }
@@ -457,15 +457,15 @@ class MetadataExtractorTest
         assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", value( "NotNeo4j/1.2.3" ) ) ) );
     }
 
-    private ResultSummary createWithStatementType( Value typeValue )
+    private ResultSummary createWithQueryType(Value typeValue )
     {
         Map<String,Value> metadata = singletonMap( "type", typeValue );
-        return extractor.extractSummary( statement(), connectionMock(), 42, metadata );
+        return extractor.extractSummary( query(), connectionMock(), 42, metadata );
     }
 
-    private static Statement statement()
+    private static Query query()
     {
-        return new Statement( "RETURN 1" );
+        return new Query( "RETURN 1" );
     }
 
     private static Connection connectionMock()

@@ -31,7 +31,7 @@ import static org.neo4j.driver.Values.ofValue;
 import static org.neo4j.driver.Values.value;
 
 /**
- * An executable statement, i.e. the statements' text and its parameters.
+ * The components of a Cypher query, containing the query text and parameter map.
  *
  * @see Session
  * @see Transaction
@@ -41,19 +41,19 @@ import static org.neo4j.driver.Values.value;
  * @since 1.0
  */
 @Immutable
-public class Statement
+public class Query
 {
     private final String text;
     private final Value parameters;
 
     /**
-     * Create a new statement.
-     * @param text the statement text
-     * @param parameters the statement parameters
+     * Create a new query.
+     * @param text the query text
+     * @param parameters the parameter map
      */
-    public Statement( String text, Value parameters )
+    public Query(String text, Value parameters )
     {
-        this.text = validateQuery( text );
+        this.text = validateQueryText( text );
         if( parameters == null )
         {
             this.parameters = Values.EmptyMap;
@@ -69,26 +69,26 @@ public class Statement
     }
 
     /**
-     * Create a new statement.
-     * @param text the statement text
-     * @param parameters the statement parameters
+     * Create a new query.
+     * @param text the query text
+     * @param parameters the parameter map
      */
-    public Statement( String text, Map<String, Object> parameters )
+    public Query(String text, Map<String, Object> parameters )
     {
         this( text, Values.value( parameters ) );
     }
 
     /**
-     * Create a new statement.
-     * @param text the statement text
+     * Create a new query.
+     * @param text the query text
      */
-    public Statement( String text )
+    public Query(String text )
     {
         this( text, Values.EmptyMap );
     }
 
     /**
-     * @return the statement's text
+     * @return the query text
      */
     public String text()
     {
@@ -96,7 +96,7 @@ public class Statement
     }
 
     /**
-     * @return the statement's parameters
+     * @return the parameter map
      */
     public Value parameters()
     {
@@ -104,44 +104,44 @@ public class Statement
     }
 
     /**
-     * @param newText the new statement's text
-     * @return a new statement with updated text
+     * @param newText the new query text
+     * @return a new Query object with updated text
      */
-    public Statement withText( String newText )
+    public Query withText(String newText )
     {
-        return new Statement( newText, parameters );
+        return new Query( newText, parameters );
     }
 
     /**
-     * @param newParameters the new statement's parameters
-     * @return a new statement with updated parameters
+     * @param newParameters the new parameter map
+     * @return a new Query object with updated parameters
      */
-    public Statement withParameters( Value newParameters )
+    public Query withParameters(Value newParameters )
     {
-        return new Statement( text, newParameters );
+        return new Query( text, newParameters );
     }
 
     /**
-     * @param newParameters the new statement's parameters
-     * @return a new statement with updated parameters
+     * @param newParameters the new parameter map
+     * @return a new Query object with updated parameters
      */
-    public Statement withParameters( Map<String, Object> newParameters )
+    public Query withParameters(Map<String, Object> newParameters )
     {
-        return new Statement( text, newParameters );
+        return new Query( text, newParameters );
     }
 
     /**
-     * Create a new statement with new parameters derived by updating this'
-     * statement's parameters using the given updates.
+     * Create a new query with new parameters derived by updating this'
+     * query's parameters using the given updates.
      *
      * Every update key that points to a null value will be removed from
-     * the new statement's parameters. All other entries will just replace
-     * any existing parameter in the new statement.
+     * the new query's parameters. All other entries will just replace
+     * any existing parameter in the new query.
      *
      * @param updates describing how to update the parameters
-     * @return a new statement with updated parameters
+     * @return a new query with updated parameters
      */
-    public Statement withUpdatedParameters( Value updates )
+    public Query withUpdatedParameters(Value updates )
     {
         if ( updates == null || updates.isEmpty() )
         {
@@ -179,8 +179,8 @@ public class Statement
             return false;
         }
 
-        Statement statement = (Statement) o;
-        return text.equals( statement.text ) && parameters.equals( statement.parameters );
+        Query query = (Query) o;
+        return text.equals( query.text ) && parameters.equals( query.parameters );
 
     }
 
@@ -195,13 +195,13 @@ public class Statement
     @Override
     public String toString()
     {
-        return format( "Statement{text='%s', parameters=%s}", text, parameters );
+        return format( "Query{text='%s', parameters=%s}", text, parameters );
     }
 
-    private static String validateQuery( String query )
+    private static String validateQueryText(String query )
     {
-        checkArgument( query != null, "Cypher query should not be null" );
-        checkArgument( !query.isEmpty(), "Cypher query should not be an empty string" );
+        checkArgument( query != null, "Cypher query text should not be null" );
+        checkArgument( !query.isEmpty(), "Cypher query text should not be an empty string" );
         return query;
     }
 }

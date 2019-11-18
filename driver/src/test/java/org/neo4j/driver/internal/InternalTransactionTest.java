@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
@@ -82,7 +82,7 @@ class InternalTransactionTest
                 tx -> tx.run( "RETURN $x", singletonMap( "x", 1 ) ),
                 tx -> tx.run( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                tx -> tx.run( new Statement( "RETURN $x", parameters( "x", 1 ) ) )
+                tx -> tx.run( new Query( "RETURN $x", parameters( "x", 1 ) ) )
         );
     }
 
@@ -95,7 +95,7 @@ class InternalTransactionTest
         Result result = runReturnOne.apply( tx );
         ResultSummary summary = result.consume();
 
-        verifyRunAndPull( connection, summary.statement().text() );
+        verifyRunAndPull( connection, summary.query().text() );
     }
 
     @Test

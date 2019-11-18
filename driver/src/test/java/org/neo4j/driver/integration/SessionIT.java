@@ -44,7 +44,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -62,7 +62,7 @@ import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.TestUtil;
@@ -919,8 +919,8 @@ class SessionIT
             Result result = session.run( query );
 
             ResultSummary summary = result.consume();
-            assertEquals( query, summary.statement().text() );
-            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+            assertEquals( query, summary.query().text() );
+            assertEquals( QueryType.READ_ONLY, summary.queryType() );
 
             assertThrows( ResultConsumedException.class, result::list );
         }
@@ -1083,7 +1083,7 @@ class SessionIT
             Result result = session.run( "UNWIND [] AS x RETURN x" );
             ResultSummary summary = result.consume();
             assertNotNull( summary );
-            assertEquals( StatementType.READ_ONLY, summary.statementType() );
+            assertEquals( QueryType.READ_ONLY, summary.queryType() );
         }
     }
 
@@ -1109,7 +1109,7 @@ class SessionIT
             assertThat( e, is( arithmeticError() ) );
 
             ResultSummary summary = result.consume();
-            assertEquals( query, summary.statement().text() );
+            assertEquals( query, summary.query().text() );
         }
     }
 
@@ -1451,9 +1451,9 @@ class SessionIT
         }
     }
 
-    private static Result updateNodeId(StatementRunner statementRunner, int currentId, int newId )
+    private static Result updateNodeId(QueryRunner queryRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
+        return queryRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 

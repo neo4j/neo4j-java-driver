@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
@@ -356,12 +356,12 @@ class InternalResultTest
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
 
-        Statement statement = new Statement( "<unknown>" );
+        Query query = new Query( "<unknown>" );
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         PullAllResponseHandler pullAllHandler =
-                new LegacyPullAllResponseHandler( statement, runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+                new LegacyPullAllResponseHandler(query, runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
         {

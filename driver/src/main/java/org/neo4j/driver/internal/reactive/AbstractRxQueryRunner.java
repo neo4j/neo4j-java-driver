@@ -20,37 +20,37 @@ package org.neo4j.driver.internal.reactive;
 
 import java.util.Map;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxStatementRunner;
+import org.neo4j.driver.reactive.RxQueryRunner;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 
-import static org.neo4j.driver.internal.AbstractStatementRunner.parameters;
+import static org.neo4j.driver.internal.AbstractQueryRunner.parameters;
 
-public abstract class AbstractRxStatementRunner implements RxStatementRunner
+public abstract class AbstractRxQueryRunner implements RxQueryRunner
 {
     @Override
-    public final RxResult run(String statementTemplate, Value parameters )
+    public final RxResult run(String query, Value parameters )
     {
-        return run( new Statement( statementTemplate, parameters ) );
+        return run( new Query( query, parameters ) );
     }
 
     @Override
-    public final RxResult run(String statementTemplate, Map<String,Object> statementParameters )
+    public final RxResult run(String query, Map<String,Object> parameters )
     {
-        return run( statementTemplate, parameters( statementParameters ) );
+        return run( query, parameters( parameters ) );
     }
 
     @Override
-    public final RxResult run(String statementTemplate, Record statementParameters )
+    public final RxResult run(String query, Record parameters )
     {
-        return run( statementTemplate, parameters( statementParameters ) );
+        return run( query, parameters( parameters ) );
     }
 
     @Override
-    public final RxResult run(String statementTemplate )
+    public final RxResult run(String query )
     {
-        return run( new Statement( statementTemplate ) );
+        return run( new Query( query ) );
     }
 }

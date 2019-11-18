@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
@@ -94,34 +94,34 @@ public interface BoltProtocol
     CompletionStage<Void> rollbackTransaction( Connection connection );
 
     /**
-     * Execute the given statement in an aut-commit transaction, i.e. {@link Session#run(Statement)}.
+     * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
      *
      * @param connection the network connection to use.
-     * @param statement the cypher to execute.
+     * @param query the cypher to execute.
      * @param bookmarkHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
      * @param config the transaction config for the implicitly started auto-commit transaction.
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
-     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have query
      * keys populated.
      * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInAutoCommitTransaction(Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+    ResultCursorFactory runInAutoCommitTransaction(Connection connection, Query query, BookmarkHolder bookmarkHolder,
                                                    TransactionConfig config, boolean waitForRunResponse, long fetchSize );
 
     /**
-     * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.
+     * Execute the given query in a running explicit transaction, i.e. {@link Transaction#run(Query)}.
      *
      * @param connection the network connection to use.
-     * @param statement the cypher to execute.
+     * @param query the cypher to execute.
      * @param tx the transaction which executes the query.
      * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
-     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have statement
+     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have query
      * keys populated.
      * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInExplicitTransaction(Connection connection, Statement statement, UnmanagedTransaction tx, boolean waitForRunResponse,
+    ResultCursorFactory runInExplicitTransaction(Connection connection, Query query, UnmanagedTransaction tx, boolean waitForRunResponse,
                                                  long fetchSize );
 
     /**
