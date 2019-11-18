@@ -86,9 +86,9 @@ import static org.neo4j.driver.util.TestUtil.connectionMock;
 
 public class BoltProtocolV1Test
 {
-    private static final String QUERY = "RETURN $x";
+    private static final String QUERY_TEXT = "RETURN $x";
     private static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
-    private static final Query QUERY = new Query( QUERY, value( PARAMS ) );
+    private static final Query QUERY = new Query( QUERY_TEXT, value( PARAMS ) );
 
     private final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -370,7 +370,7 @@ public class BoltProtocolV1Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).write( eq( new RunMessage( QUERY, PARAMS ) ), runHandlerCaptor.capture() );
+        verify( connection ).write( eq( new RunMessage( QUERY_TEXT, PARAMS ) ), runHandlerCaptor.capture() );
         verify( connection ).writeAndFlush( eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );

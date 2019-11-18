@@ -93,9 +93,9 @@ import static org.neo4j.driver.util.TestUtil.connectionMock;
 
 public class BoltProtocolV3Test
 {
-    protected static final String QUERY = "RETURN $x";
+    protected static final String QUERY_TEXT = "RETURN $x";
     protected static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
-    protected static final Query QUERY = new Query( QUERY, value( PARAMS ) );
+    protected static final Query QUERY = new Query( QUERY_TEXT, value( PARAMS ) );
 
     protected final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
