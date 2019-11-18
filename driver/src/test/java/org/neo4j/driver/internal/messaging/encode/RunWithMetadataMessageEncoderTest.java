@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -55,7 +56,7 @@ class RunWithMetadataMessageEncoderTest
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx999" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx999" );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "key1", value( "value1" ) );

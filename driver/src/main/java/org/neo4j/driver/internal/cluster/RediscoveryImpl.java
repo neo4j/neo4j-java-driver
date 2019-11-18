@@ -30,12 +30,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
@@ -83,7 +83,7 @@ public class RediscoveryImpl implements Rediscovery
      * @return new cluster composition.
      */
     @Override
-    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
+    public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
         lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark );
@@ -91,7 +91,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool,
-            int failures, long previousDelay, CompletableFuture<ClusterComposition> result, InternalBookmark bookmark )
+            int failures, long previousDelay, CompletableFuture<ClusterComposition> result, Bookmark bookmark )
     {
         lookup( routingTable, pool, bookmark ).whenComplete( ( composition, completionError ) ->
         {
@@ -124,7 +124,7 @@ public class RediscoveryImpl implements Rediscovery
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
+    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
     {
         CompletionStage<ClusterComposition> compositionStage;
 
@@ -141,7 +141,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool, InternalBookmark bookmark )
+            ConnectionPool connectionPool, Bookmark bookmark )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
         return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
@@ -155,7 +155,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool, InternalBookmark bookmark )
+            ConnectionPool connectionPool, Bookmark bookmark )
     {
         Set<BoltServerAddress> seenServers = emptySet();
         return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
@@ -169,7 +169,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, InternalBookmark bookmark )
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark )
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
@@ -193,7 +193,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, InternalBookmark bookmark )
+            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark )
     {
         List<BoltServerAddress> addresses;
         try
@@ -222,7 +222,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
-            RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
+            RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
     {
         CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 

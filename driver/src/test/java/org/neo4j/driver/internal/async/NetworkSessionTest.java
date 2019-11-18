@@ -240,7 +240,7 @@ class NetworkSessionTest
 
         ExplicitTransaction tx = beginTransaction( session );
         assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
-        InternalBookmark bookmark = (InternalBookmark) session.lastBookmark();
+        Bookmark bookmark = (InternalBookmark) session.lastBookmark();
         assertTrue( bookmark.isEmpty() );
 
         await( tx.commitAsync() );
@@ -266,7 +266,7 @@ class NetworkSessionTest
     @Test
     void bookmarkIsPropagatedFromSession()
     {
-        InternalBookmark bookmark = InternalBookmark.parse( "Bookmarks" );
+        Bookmark bookmark = InternalBookmark.parse( "Bookmarks" );
         NetworkSession session = newSession( connectionProvider, bookmark );
 
         ExplicitTransaction tx = beginTransaction( session );
@@ -277,7 +277,7 @@ class NetworkSessionTest
     @Test
     void bookmarkIsPropagatedBetweenTransactions()
     {
-        InternalBookmark bookmark1 = InternalBookmark.parse( "Bookmark1" );
+        Bookmark bookmark1 = InternalBookmark.parse( "Bookmark1" );
         Bookmark bookmark2 = InternalBookmark.parse( "Bookmark2" );
 
         NetworkSession session = newSession( connectionProvider );
@@ -344,7 +344,7 @@ class NetworkSessionTest
     void shouldHaveEmptyLastBookmarkInitially()
     {
         assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
-        InternalBookmark bookmark = (InternalBookmark) session.lastBookmark();
+        Bookmark bookmark = (InternalBookmark) session.lastBookmark();
         assertTrue( bookmark.isEmpty() );
     }
 
@@ -387,7 +387,7 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
         NetworkSession session = newSession( connectionProvider, bookmark );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
@@ -411,7 +411,7 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
         NetworkSession session = newSession( connectionProvider, bookmark );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );

@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
@@ -77,7 +78,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     }
 
     @Override
-    protected void testFailedRunInAutoCommitTxWithWaitingForResponse( InternalBookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
+    protected void testFailedRunInAutoCommitTxWithWaitingForResponse( Bookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
@@ -101,7 +102,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     }
 
     @Override
-    protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( InternalBookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
+    protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Bookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
@@ -158,7 +159,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
-        InternalBookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
+        Bookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
 
         CompletionStage<AsyncStatementResultCursor> cursorStage;
         if ( autoCommitTx )
@@ -213,7 +214,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         return verifyRunInvoked( connection, RunWithMetadataMessage.explicitTxRunMessage( STATEMENT ) );
     }
 
-    private ResponseHandler verifySessionRunInvoked( Connection connection, InternalBookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
+    private ResponseHandler verifySessionRunInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
     {
         RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( STATEMENT, config, databaseName, mode, bookmark );
         return verifyRunInvoked( connection, runMessage );
@@ -233,7 +234,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         return runHandlerCaptor.getValue();
     }
 
-    private void verifyBeginInvoked( Connection connection, InternalBookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
+    private void verifyBeginInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
     {
         ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         BeginMessage beginMessage = new BeginMessage( bookmark, config, databaseName, mode );

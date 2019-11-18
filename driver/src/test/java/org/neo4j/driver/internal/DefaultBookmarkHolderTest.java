@@ -20,6 +20,8 @@ package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.driver.Bookmark;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DefaultBookmarkHolderTest
@@ -36,7 +38,7 @@ class DefaultBookmarkHolderTest
         bookmarkHolder.setBookmark( InternalBookmark.empty() );
         assertEquals( InternalBookmark.empty(), bookmarkHolder.getBookmark() );
 
-        InternalBookmark bookmark1 = InternalBookmark.parse( "neo4j:bookmark:v1:tx1" );
+        Bookmark bookmark1 = InternalBookmark.parse( "neo4j:bookmark:v1:tx1" );
         bookmarkHolder.setBookmark( bookmark1 );
         assertEquals( bookmark1, bookmarkHolder.getBookmark() );
 
@@ -46,11 +48,11 @@ class DefaultBookmarkHolderTest
         bookmarkHolder.setBookmark( InternalBookmark.empty() );
         assertEquals( bookmark1, bookmarkHolder.getBookmark() );
 
-        InternalBookmark bookmark2 = InternalBookmark.parse( "neo4j:bookmark:v1:tx2" );
+        Bookmark bookmark2 = InternalBookmark.parse( "neo4j:bookmark:v1:tx2" );
         bookmarkHolder.setBookmark( bookmark2 );
         assertEquals( bookmark2, bookmarkHolder.getBookmark() );
 
-        InternalBookmark bookmark3 = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        Bookmark bookmark3 = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
         bookmarkHolder.setBookmark( bookmark3 );
         assertEquals( bookmark3, bookmarkHolder.getBookmark() );
     }
@@ -59,7 +61,7 @@ class DefaultBookmarkHolderTest
     void bookmarkCanBeSet()
     {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder();
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx100" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx100" );
 
         bookmarkHolder.setBookmark( bookmark );
 
@@ -69,7 +71,7 @@ class DefaultBookmarkHolderTest
     @Test
     void shouldNotOverwriteBookmarkWithNull()
     {
-        InternalBookmark initBookmark = InternalBookmark.parse( "Cat" );
+        Bookmark initBookmark = InternalBookmark.parse( "Cat" );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initBookmark );
         assertEquals( initBookmark, bookmarkHolder.getBookmark() );
         bookmarkHolder.setBookmark( null );
@@ -79,7 +81,7 @@ class DefaultBookmarkHolderTest
     @Test
     void shouldNotOverwriteBookmarkWithEmptyBookmark()
     {
-        InternalBookmark initBookmark = InternalBookmark.parse( "Cat" );
+        Bookmark initBookmark = InternalBookmark.parse( "Cat" );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initBookmark );
         assertEquals( initBookmark, bookmarkHolder.getBookmark() );
         bookmarkHolder.setBookmark( InternalBookmark.empty() );

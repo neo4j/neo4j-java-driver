@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.async;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
@@ -35,9 +35,9 @@ public class ImmutableConnectionContext implements ConnectionContext
 
     private final DatabaseName databaseName;
     private final AccessMode mode;
-    private final InternalBookmark rediscoveryBookmark;
+    private final Bookmark rediscoveryBookmark;
 
-    public ImmutableConnectionContext( DatabaseName databaseName, InternalBookmark bookmark, AccessMode mode )
+    public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode )
     {
         this.databaseName = databaseName;
         this.rediscoveryBookmark = bookmark;
@@ -57,7 +57,7 @@ public class ImmutableConnectionContext implements ConnectionContext
     }
 
     @Override
-    public InternalBookmark rediscoveryBookmark()
+    public Bookmark rediscoveryBookmark()
     {
         return rediscoveryBookmark;
     }

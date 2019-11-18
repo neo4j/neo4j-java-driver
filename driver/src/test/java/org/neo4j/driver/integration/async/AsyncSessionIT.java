@@ -35,6 +35,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
@@ -45,11 +46,11 @@ import org.neo4j.driver.async.StatementResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
@@ -601,7 +602,7 @@ class AsyncSessionIT
     @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
-        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        Bookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
         session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
 
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
@@ -614,7 +615,7 @@ class AsyncSessionIT
     @Test
     void shouldNotBeginTxAfterBeginTxFailureOnBookmark()
     {
-        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        Bookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
         session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
@@ -624,7 +625,7 @@ class AsyncSessionIT
     @EnabledOnNeo4jWith( BOLT_V3 )
     void shouldNotRunAfterBeginTxFailureOnBookmark()
     {
-        InternalBookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
+        Bookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
         session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         StatementResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );

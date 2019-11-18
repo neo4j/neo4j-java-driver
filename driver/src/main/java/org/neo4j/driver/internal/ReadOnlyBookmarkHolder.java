@@ -18,26 +18,28 @@
  */
 package org.neo4j.driver.internal;
 
+import org.neo4j.driver.Bookmark;
+
 /**
  * @since 2.0
  */
 public class ReadOnlyBookmarkHolder implements BookmarkHolder
 {
-    private final InternalBookmark bookmark;
+    private final Bookmark bookmark;
 
-    public ReadOnlyBookmarkHolder( InternalBookmark bookmark )
+    public ReadOnlyBookmarkHolder( Bookmark bookmark )
     {
         this.bookmark = bookmark;
     }
 
     @Override
-    public InternalBookmark getBookmark()
+    public Bookmark getBookmark()
     {
         return bookmark;
     }
 
     @Override
-    public void setBookmark( InternalBookmark bookmark )
+    public void setBookmark( Bookmark bookmark )
     {
         // NO_OP
     }

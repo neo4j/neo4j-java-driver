@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.Values.ofValue;
@@ -41,13 +41,13 @@ public class RunWithMetadataMessage extends MessageWithMetadata
     private final Map<String,Value> parameters;
 
     public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
-            InternalBookmark bookmark )
+            Bookmark bookmark )
     {
         return autoCommitTxRunMessage( statement, config.timeout(), config.metadata(), databaseName, mode, bookmark );
     }
 
     public static RunWithMetadataMessage autoCommitTxRunMessage( Statement statement, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
-            AccessMode mode, InternalBookmark bookmark )
+            AccessMode mode, Bookmark bookmark )
     {
         Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark );
         return new RunWithMetadataMessage( statement.text(), statement.parameters().asMap( ofValue() ), metadata );

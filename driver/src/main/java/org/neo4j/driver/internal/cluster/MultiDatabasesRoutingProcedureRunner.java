@@ -21,11 +21,11 @@ package org.neo4j.driver.internal.cluster;
 import java.util.HashMap;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
@@ -45,7 +45,7 @@ public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
     }
 
     @Override
-    BookmarkHolder bookmarkHolder( InternalBookmark bookmark )
+    BookmarkHolder bookmarkHolder( Bookmark bookmark )
     {
         return new ReadOnlyBookmarkHolder( bookmark );
     }

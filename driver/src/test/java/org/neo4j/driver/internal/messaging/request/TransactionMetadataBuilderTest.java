@@ -26,9 +26,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalBookmark;
 
@@ -48,7 +50,7 @@ public class TransactionMetadataBuilderTest
     @EnumSource( AccessMode.class )
     void shouldHaveCorrectMetadata( AccessMode mode )
     {
-        InternalBookmark bookmark = InternalBookmark.parse( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
+        Bookmark bookmark = InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );
@@ -75,7 +77,7 @@ public class TransactionMetadataBuilderTest
     @ValueSource( strings = {"", "foo", "data"} )
     void shouldHaveCorrectMetadataForDatabaseName( String databaseName )
     {
-        InternalBookmark bookmark = InternalBookmark.parse( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) );
+        Bookmark bookmark = InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );

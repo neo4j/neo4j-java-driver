@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver;
 
-import java.io.Serializable;
+import java.util.Set;
+
+import org.neo4j.driver.internal.InternalBookmark;
 
 /**
  * Causal chaining is carried out by passing bookmarks between transactions.
@@ -31,6 +33,27 @@ import java.io.Serializable;
  *
  * To opt out of this mechanism for unrelated units of work, applications can use multiple sessions.
  */
-public interface Bookmark extends Serializable
+public interface Bookmark
 {
+    /**
+     * Returns a read-only set of bookmark strings that this bookmark instance identifies.
+     * @return a read-only set of bookmark strings that this bookmark instance identifies.
+     */
+    Set<String> values();
+
+    /**
+     * Reconstruct bookmark from \bookmarks string values.
+     * @param values values obtained from a previous bookmark.
+     * @return A bookmark.
+     */
+    static Bookmark from( Set<String> values )
+    {
+        return InternalBookmark.parse( values );
+    }
+
+    /**
+     * Return true if the bookmark is empty.
+     * @return true if the bookmark is empty.
+     */
+    boolean isEmpty();
 }

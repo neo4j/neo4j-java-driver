@@ -25,12 +25,12 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -94,7 +94,7 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config )
+    public CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config )
     {
         try
         {
@@ -121,9 +121,9 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<InternalBookmark> commitTransaction( Connection connection )
+    public CompletionStage<Bookmark> commitTransaction( Connection connection )
     {
-        CompletableFuture<InternalBookmark> commitFuture = new CompletableFuture<>();
+        CompletableFuture<Bookmark> commitFuture = new CompletableFuture<>();
         connection.writeAndFlush( COMMIT, new CommitTxResponseHandler( commitFuture ) );
         return commitFuture;
     }

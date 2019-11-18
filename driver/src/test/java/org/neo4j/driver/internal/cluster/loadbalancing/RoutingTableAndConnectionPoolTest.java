@@ -38,11 +38,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.pool.NettyChannelTracker;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
@@ -348,7 +348,7 @@ class RoutingTableAndConnectionPoolTest
     private class RandomizedRediscovery implements Rediscovery
     {
         @Override
-        public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, InternalBookmark bookmark )
+        public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
         {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();

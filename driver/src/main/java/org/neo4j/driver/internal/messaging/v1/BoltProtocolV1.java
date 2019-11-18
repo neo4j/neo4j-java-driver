@@ -26,13 +26,13 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ExplicitTransaction;
 import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
@@ -100,7 +100,7 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, InternalBookmark bookmark, TransactionConfig config )
+    public CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config )
     {
         try
         {
@@ -133,9 +133,9 @@ public class BoltProtocolV1 implements BoltProtocol
 
 
     @Override
-    public CompletionStage<InternalBookmark> commitTransaction( Connection connection )
+    public CompletionStage<Bookmark> commitTransaction( Connection connection )
     {
-        CompletableFuture<InternalBookmark> commitFuture = new CompletableFuture<>();
+        CompletableFuture<Bookmark> commitFuture = new CompletableFuture<>();
 
         ResponseHandler pullAllHandler = new CommitTxResponseHandler( commitFuture );
         connection.writeAndFlush(
@@ -213,7 +213,7 @@ public class BoltProtocolV1 implements BoltProtocol
         private static final String BOOKMARK_PREFIX = "neo4j:bookmark:v1:tx";
         private static final long UNKNOWN_BOOKMARK_VALUE = -1;
 
-        static Map<String,Value> asBeginTransactionParameters( InternalBookmark bookmark )
+        static Map<String,Value> asBeginTransactionParameters( Bookmark bookmark )
         {
             if ( bookmark.isEmpty() )
             {

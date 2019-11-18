@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
@@ -165,7 +166,7 @@ public class BoltProtocolV1Test
     void shouldBeginTransactionWithBookmarks()
     {
         Connection connection = connectionMock( protocol );
-        InternalBookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx100" );
+        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx100" );
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark, TransactionConfig.empty() );
 
@@ -190,7 +191,7 @@ public class BoltProtocolV1Test
             return null;
         } ).when( connection ).writeAndFlush( eq( new RunMessage( "COMMIT" ) ), any(), any(), any() );
 
-        CompletionStage<InternalBookmark> stage = protocol.commitTransaction( connection );
+        CompletionStage<Bookmark> stage = protocol.commitTransaction( connection );
 
         verify( connection ).writeAndFlush(
                 eq( new RunMessage( "COMMIT" ) ), eq( NoOpResponseHandler.INSTANCE ),
