@@ -31,6 +31,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -57,7 +58,7 @@ import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.assertEmptyDatabaseName;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
-import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
 public class BoltProtocolV3 implements BoltProtocol
 {
@@ -147,10 +148,10 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public ResultCursorFactory runInExplicitTransaction(Connection connection, Query query, UnmanagedTransaction tx,
-                                                        boolean waitForRunResponse, long fetchSize )
+    public ResultCursorFactory runInUnmanagedTransaction(Connection connection, Query query, UnmanagedTransaction tx,
+                                                         boolean waitForRunResponse, long fetchSize )
     {
-        RunWithMetadataMessage runMessage = explicitTxRunMessage(query);
+        RunWithMetadataMessage runMessage = unmanagedTxRunMessage(query);
         return buildResultCursorFactory( connection, query, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse, fetchSize );
     }
 

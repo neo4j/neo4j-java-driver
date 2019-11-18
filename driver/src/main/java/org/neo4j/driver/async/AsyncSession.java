@@ -43,7 +43,7 @@ import org.neo4j.driver.Bookmark;
  * <code>COMMIT</code> that query within its own transaction. This type
  * of transaction is known as an <em>autocommit transaction</em>.
  * <p>
- * Explicit transactions allow multiple queries to be committed as part of
+ * Unmanaged transactions allow multiple queries to be committed as part of
  * a single atomic operation and can be rolled back if necessary. They can also
  * be used to ensure <em>causal consistency</em>, meaning that an application
  * can run a series of queries on different members of a cluster, while
@@ -72,7 +72,7 @@ import org.neo4j.driver.Bookmark;
 public interface AsyncSession extends AsyncQueryRunner
 {
     /**
-     * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
+     * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
@@ -93,7 +93,7 @@ public interface AsyncSession extends AsyncQueryRunner
     CompletionStage<AsyncTransaction> beginTransactionAsync();
 
     /**
-     * Begin a new <em>explicit {@linkplain AsyncTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
+     * Begin a new <em>unmanaged {@linkplain AsyncTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
      * At most one transaction may exist in a session at any point in time.
      * To maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>

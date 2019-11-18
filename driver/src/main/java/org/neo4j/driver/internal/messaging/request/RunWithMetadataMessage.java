@@ -53,7 +53,7 @@ public class RunWithMetadataMessage extends MessageWithMetadata
         return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), metadata );
     }
 
-    public static RunWithMetadataMessage explicitTxRunMessage( Query query)
+    public static RunWithMetadataMessage unmanagedTxRunMessage(Query query)
     {
         return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), emptyMap() );
     }

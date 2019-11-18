@@ -423,7 +423,7 @@ class ExamplesIT
     @Test
     void testAsyncExplicitTransactionExample() throws Exception
     {
-        try ( AsyncExplicitTransactionExample example = new AsyncExplicitTransactionExample( uri, USER, PASSWORD ) )
+        try ( AsyncUnmanagedTransactionExample example = new AsyncUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {
             // create a 'Product' node
             try ( Session session = neo4j.driver().session() )
@@ -510,7 +510,7 @@ class ExamplesIT
     @EnabledOnNeo4jWith( BOLT_V4 )
     void testRxExplicitTransactionExample() throws Exception
     {
-        try ( RxExplicitTransactionExample example = new RxExplicitTransactionExample( uri, USER, PASSWORD ) )
+        try ( RxUnmanagedTransactionExample example = new RxUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {
             // create a 'Product' node
             try ( Session session = neo4j.driver().session() )

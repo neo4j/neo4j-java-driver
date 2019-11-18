@@ -49,7 +49,7 @@ import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_AL
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
-import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
 class MessageWriterV3Test extends AbstractMessageWriterTestBase
 {
@@ -74,7 +74,7 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), WRITE,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                explicitTxRunMessage( new Query( "RETURN 1" ) ),
+                unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
                 PULL_ALL,
                 DISCARD_ALL,
                 RESET,
@@ -84,7 +84,7 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                         defaultDatabase(), READ, InternalBookmark.empty() ),
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                         defaultDatabase(), WRITE, InternalBookmark.empty() ),
-                explicitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
+                unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
 

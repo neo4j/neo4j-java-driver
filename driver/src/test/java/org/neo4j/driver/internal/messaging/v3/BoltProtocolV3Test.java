@@ -360,7 +360,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
+                protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, InternalBookmark.empty(), TransactionConfig.empty(), mode ).runHandler;
         assertFalse( cursorFuture.isDone() );
@@ -393,7 +393,7 @@ public class BoltProtocolV3Test
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
+            cursorStage = protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
         }
         CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
@@ -471,7 +471,7 @@ public class BoltProtocolV3Test
         }
         else
         {
-            expectedMessage = RunWithMetadataMessage.explicitTxRunMessage(QUERY);
+            expectedMessage = RunWithMetadataMessage.unmanagedTxRunMessage(QUERY);
         }
 
         verify( connection ).write( eq( expectedMessage ), runHandlerCaptor.capture() );

@@ -68,7 +68,7 @@ public interface BoltProtocol
     void prepareToCloseChannel( Channel channel );
 
     /**
-     * Begin an explicit transaction.
+     * Begin an unmanaged transaction.
      *
      * @param connection the connection to use.
      * @param bookmark the bookmarks. Never null, should be {@link InternalBookmark#empty()} when absent.
@@ -78,7 +78,7 @@ public interface BoltProtocol
     CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config );
 
     /**
-     * Commit the explicit transaction.
+     * Commit the unmanaged transaction.
      *
      * @param connection the connection to use.
      * @return a completion stage completed with a bookmark when transaction is committed or completed exceptionally when there was a failure.
@@ -86,7 +86,7 @@ public interface BoltProtocol
     CompletionStage<Bookmark> commitTransaction( Connection connection );
 
     /**
-     * Rollback the explicit transaction.
+     * Rollback the unmanaged transaction.
      *
      * @param connection the connection to use.
      * @return a completion stage completed when transaction is rolled back or completed exceptionally when there was a failure.
@@ -110,7 +110,7 @@ public interface BoltProtocol
                                                    TransactionConfig config, boolean waitForRunResponse, long fetchSize );
 
     /**
-     * Execute the given query in a running explicit transaction, i.e. {@link Transaction#run(Query)}.
+     * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.
      *
      * @param connection the network connection to use.
      * @param query the cypher to execute.
@@ -121,7 +121,7 @@ public interface BoltProtocol
      * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInExplicitTransaction(Connection connection, Query query, UnmanagedTransaction tx, boolean waitForRunResponse,
+    ResultCursorFactory runInUnmanagedTransaction(Connection connection, Query query, UnmanagedTransaction tx, boolean waitForRunResponse,
                                                  long fetchSize );
 
     /**

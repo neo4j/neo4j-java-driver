@@ -33,6 +33,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -168,8 +169,8 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public ResultCursorFactory runInExplicitTransaction(Connection connection, Query query, UnmanagedTransaction tx,
-                                                        boolean waitForRunResponse, long ignored )
+    public ResultCursorFactory runInUnmanagedTransaction(Connection connection, Query query, UnmanagedTransaction tx,
+                                                         boolean waitForRunResponse, long ignored )
     {
         return buildResultCursorFactory( connection, query, tx, waitForRunResponse );
     }

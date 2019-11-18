@@ -132,7 +132,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
 
         CompletableFuture<AsyncResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+                protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
 
@@ -170,7 +170,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
 
@@ -211,7 +211,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
 
     private ResponseHandler verifyTxRunInvoked( Connection connection )
     {
-        return verifyRunInvoked( connection, RunWithMetadataMessage.explicitTxRunMessage(QUERY) );
+        return verifyRunInvoked( connection, RunWithMetadataMessage.unmanagedTxRunMessage(QUERY) );
     }
 
     private ResponseHandler verifySessionRunInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )

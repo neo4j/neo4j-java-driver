@@ -27,16 +27,16 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 
-public class AsyncExplicitTransactionExample extends BaseApplication
+public class AsyncUnmanagedTransactionExample extends BaseApplication
 {
-    public AsyncExplicitTransactionExample( String uri, String user, String password )
+    public AsyncUnmanagedTransactionExample(String uri, String user, String password )
     {
         super( uri, user, password );
     }
 
     public CompletionStage<Void> printSingleProduct()
     {
-        // tag::async-explicit-transaction[]
+        // tag::async-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -69,6 +69,6 @@ public class AsyncExplicitTransactionExample extends BaseApplication
                     return null;
                 } )
                 .thenCompose( ignore -> session.closeAsync() );
-        // end::async-explicit-transaction[]
+        // end::async-unmanaged-transaction[]
     }
 }

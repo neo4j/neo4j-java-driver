@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 /**
- * Configuration object containing settings for explicit and auto-commit transactions.
+ * Configuration object containing settings for transactions.
  * Instances are immutable and can be reused for multiple transactions.
  * <p>
  * Configuration is supported for:
@@ -42,7 +42,7 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
  * <li>transactions started by transaction functions - using {@link Session#readTransaction(TransactionWork, TransactionConfig)},
  * {@link Session#writeTransaction(TransactionWork, TransactionConfig)}, {@link AsyncSession#readTransactionAsync(AsyncTransactionWork, TransactionConfig)} and
  * {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork, TransactionConfig)}</li>
- * <li>explicit transactions - using {@link Session#beginTransaction(TransactionConfig)} and {@link AsyncSession#beginTransactionAsync(TransactionConfig)}</li>
+ * <li>unmanaged transactions - using {@link Session#beginTransaction(TransactionConfig)} and {@link AsyncSession#beginTransactionAsync(TransactionConfig)}</li>
  * </ul>
  * <p>
  * Creation of configuration objects can be done using the builder API:

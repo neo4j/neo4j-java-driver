@@ -321,7 +321,7 @@ public class BoltProtocolV1Test
         else
         {
             cursorStage = protocol
-                    .runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+                    .runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
@@ -344,7 +344,7 @@ public class BoltProtocolV1Test
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();

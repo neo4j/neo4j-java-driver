@@ -27,16 +27,16 @@ import java.util.Map;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 
-public class RxExplicitTransactionExample extends BaseApplication
+public class RxUnmanagedTransactionExample extends BaseApplication
 {
-    public RxExplicitTransactionExample( String uri, String user, String password )
+    public RxUnmanagedTransactionExample(String uri, String user, String password )
     {
         super( uri, user, password );
     }
 
     public Flux<String> readSingleProductReactor()
     {
-        // tag::reactor-explicit-transaction[]
+        // tag::reactor-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -44,12 +44,12 @@ public class RxExplicitTransactionExample extends BaseApplication
         return Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
-        // end::reactor-explicit-transaction[]
+        // end::reactor-unmanaged-transaction[]
     }
 
     public Flowable<String> readSingleProductRxJava()
     {
-        // tag::RxJava-explicit-transaction[]
+        // tag::RxJava-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -63,6 +63,6 @@ public class RxExplicitTransactionExample extends BaseApplication
                                     // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
                                     return Flowable.<String>fromPublisher( tx.rollback() ).concatWith( Flowable.error( error ) );
                                 } ) );
-        // end::RxJava-explicit-transaction[]
+        // end::RxJava-unmanaged-transaction[]
     }
 }

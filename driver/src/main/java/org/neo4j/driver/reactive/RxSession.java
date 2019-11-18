@@ -41,7 +41,7 @@ import org.neo4j.driver.Bookmark;
 public interface RxSession extends RxQueryRunner
 {
     /**
-     * Begin a new <em>explicit {@linkplain RxTransaction transaction}</em>. At
+     * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
@@ -53,7 +53,7 @@ public interface RxSession extends RxQueryRunner
     Publisher<RxTransaction> beginTransaction();
 
     /**
-     * Begin a new <em>explicit {@linkplain RxTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
+     * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
      * At most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>

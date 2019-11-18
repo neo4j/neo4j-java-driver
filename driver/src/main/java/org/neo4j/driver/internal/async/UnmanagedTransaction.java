@@ -142,7 +142,7 @@ public class UnmanagedTransaction
     {
         ensureCanRunQueries();
         CompletionStage<AsyncResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, query, this, waitForRunResponse, fetchSize ).asyncResult();
+                protocol.runInUnmanagedTransaction( connection, query, this, waitForRunResponse, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
         return cursorStage.thenApply( cursor -> cursor );
     }
@@ -151,7 +151,7 @@ public class UnmanagedTransaction
     {
         ensureCanRunQueries();
         CompletionStage<RxResultCursor> cursorStage =
-                protocol.runInExplicitTransaction( connection, query, this, false, fetchSize ).rxResult();
+                protocol.runInUnmanagedTransaction( connection, query, this, false, fetchSize ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;
     }
