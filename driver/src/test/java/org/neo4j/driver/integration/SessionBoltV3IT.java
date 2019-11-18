@@ -220,7 +220,7 @@ class SessionBoltV3IT
     }
 
     @Test
-    void shouldUseBookmarksForAutoCommitAndExplicitTransactions()
+    void shouldUseBookmarksForAutoCommitAndUnmanagedTransactions()
     {
         Session session = driver.session();
         Bookmark initialBookmark = session.lastBookmark();

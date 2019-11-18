@@ -421,7 +421,7 @@ class ExamplesIT
     }
 
     @Test
-    void testAsyncExplicitTransactionExample() throws Exception
+    void testAsyncUnmanagedTransactionExample() throws Exception
     {
         try ( AsyncUnmanagedTransactionExample example = new AsyncUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {
@@ -508,7 +508,7 @@ class ExamplesIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void testRxExplicitTransactionExample() throws Exception
+    void testRxUnmanagedTransactionExample() throws Exception
     {
         try ( RxUnmanagedTransactionExample example = new RxUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {

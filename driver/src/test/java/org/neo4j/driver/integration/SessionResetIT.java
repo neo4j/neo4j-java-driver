@@ -135,7 +135,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldTerminateQueryInExplicitTransaction()
+    void shouldTerminateQueryInUnmanagedTransaction()
     {
         testQueryTermination( LONG_QUERY, false );
     }
@@ -165,7 +165,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldTerminateQueriesInExplicitTransactionsRandomly() throws Exception
+    void shouldTerminateQueriesInUnmanagedTransactionsRandomly() throws Exception
     {
         testRandomQueryTermination( false );
     }

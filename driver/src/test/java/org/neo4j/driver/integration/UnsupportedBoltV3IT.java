@@ -75,13 +75,13 @@ class UnsupportedBoltV3IT
     }
 
     @Test
-    void shouldNotSupportExplicitTransactionsWithTransactionConfig()
+    void shouldNotSupportUnmanagedTransactionsWithTransactionConfig()
     {
         assertTxConfigNotSupported( () -> driver.session().beginTransaction( txConfig ) );
     }
 
     @Test
-    void shouldNotSupportAsyncExplicitTransactionsWithTransactionConfig()
+    void shouldNotSupportAsyncUnmanagedTransactionsWithTransactionConfig()
     {
         assertTxConfigNotSupported( driver.asyncSession().beginTransactionAsync( txConfig ) );
     }

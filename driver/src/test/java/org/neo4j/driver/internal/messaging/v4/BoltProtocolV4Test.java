@@ -126,7 +126,7 @@ class BoltProtocolV4Test extends BoltProtocolV3Test
     }
 
     @Override
-    protected void testRunInExplicitTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
+    protected void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode ) throws Exception
     {
         // Given
         Connection connection = connectionMock( mode, protocol );

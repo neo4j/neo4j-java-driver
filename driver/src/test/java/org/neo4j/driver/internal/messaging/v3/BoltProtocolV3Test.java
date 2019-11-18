@@ -305,23 +305,23 @@ public class BoltProtocolV3Test
 
     @ParameterizedTest
     @EnumSource( AccessMode.class )
-    void shouldRunInExplicitTransactionWithoutWaitingForRunResponse( AccessMode mode ) throws Exception
+    void shouldRunInUnmanagedTransactionWithoutWaitingForRunResponse(AccessMode mode ) throws Exception
     {
         testRunWithoutWaitingForRunResponse( false, TransactionConfig.empty(), mode );
     }
 
     @ParameterizedTest
     @EnumSource( AccessMode.class )
-    void shouldRunInExplicitTransactionAndWaitForSuccessRunResponse( AccessMode mode ) throws Exception
+    void shouldRunInUnmanagedTransactionAndWaitForSuccessRunResponse(AccessMode mode ) throws Exception
     {
-        testRunInExplicitTransactionAndWaitForRunResponse( true, mode );
+        testRunInUnmanagedTransactionAndWaitForRunResponse( true, mode );
     }
 
     @ParameterizedTest
     @EnumSource( AccessMode.class )
-    void shouldRunInExplicitTransactionAndWaitForFailureRunResponse( AccessMode mode ) throws Exception
+    void shouldRunInUnmanagedTransactionAndWaitForFailureRunResponse(AccessMode mode ) throws Exception
     {
-        testRunInExplicitTransactionAndWaitForRunResponse( false, mode );
+        testRunInUnmanagedTransactionAndWaitForRunResponse( false, mode );
     }
 
     @Test
@@ -354,7 +354,7 @@ public class BoltProtocolV3Test
         assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
-    protected void testRunInExplicitTransactionAndWaitForRunResponse( boolean success, AccessMode mode ) throws Exception
+    protected void testRunInUnmanagedTransactionAndWaitForRunResponse(boolean success, AccessMode mode ) throws Exception
     {
         // Given
         Connection connection = connectionMock( mode, protocol );
