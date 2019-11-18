@@ -27,12 +27,12 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursorImpl;
-import org.neo4j.driver.internal.cursor.DisposableAsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
+import org.neo4j.driver.internal.cursor.DisposableAsyncResultCursor;
 import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
@@ -61,13 +61,13 @@ import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
-class InternalStatementResultTest
+class InternalResultTest
 {
     @Test
     void iterationShouldWorksAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // WHEN
         assertTrue( result.hasNext() );
@@ -89,7 +89,7 @@ class InternalStatementResultTest
     void firstOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // THEN
         assertThat( result.next().get( "k1" ), equalTo( value( "v1-1" ) ) );
@@ -100,7 +100,7 @@ class InternalStatementResultTest
     void firstOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // THEN
         assertThat( result.next().get( 0 ), equalTo( value( "v1-1" ) ) );
@@ -111,7 +111,7 @@ class InternalStatementResultTest
     void singlePastFirstShouldFail()
     {
         // GIVEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
         result.next();
         result.next();
 
@@ -123,7 +123,7 @@ class InternalStatementResultTest
     void singleNoneShouldFail()
     {
         // GIVEN
-        StatementResult result = createResult( 0 );
+        Result result = createResult( 0 );
 
         // THEN
         assertThrows( NoSuchRecordException.class, result::single );
@@ -133,7 +133,7 @@ class InternalStatementResultTest
     void singleWhenMoreThanOneShouldFail()
     {
         // GIVEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
 
         // THEN
         assertThrows( NoSuchRecordException.class, result::single );
@@ -143,7 +143,7 @@ class InternalStatementResultTest
     void singleOfFieldNameShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 1 );
+        Result result = createResult( 1 );
 
         // THEN
         assertThat( result.single().get( "k1" ), equalTo( value( "v1-1" ) ) );
@@ -154,7 +154,7 @@ class InternalStatementResultTest
     void singleOfFieldIndexShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 1 );
+        Result result = createResult( 1 );
 
         // THEN
         assertThat( result.single().get( 0 ), equalTo( value( "v1-1" ) ) );
@@ -184,7 +184,7 @@ class InternalStatementResultTest
     {
         assertThrows( ResultConsumedException.class, () ->
         {
-            StatementResult result = createResult( 2 );
+            Result result = createResult( 2 );
             result.consume();
             result.single();
         } );
@@ -194,7 +194,7 @@ class InternalStatementResultTest
     void shouldConsumeTwice()
     {
         // GIVEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
         result.consume();
 
         // WHEN
@@ -208,7 +208,7 @@ class InternalStatementResultTest
     void shouldList()
     {
         // GIVEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
         List<String> records = result.list( column( "k1", ofString() ) );
 
         // THEN
@@ -219,7 +219,7 @@ class InternalStatementResultTest
     void shouldListTwice()
     {
         // GIVEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
         List<Record> firstList = result.list();
         assertThat( firstList.size(), equalTo( 2 ) );
 
@@ -232,7 +232,7 @@ class InternalStatementResultTest
     void singleShouldNotThrowOnPartiallyConsumedResult()
     {
         // Given
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
         result.next();
 
         // When + Then
@@ -242,7 +242,7 @@ class InternalStatementResultTest
     @Test
     void singleShouldConsumeIfFailing()
     {
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
 
         assertThrows( NoSuchRecordException.class, result::single );
         assertFalse( result.hasNext() );
@@ -252,7 +252,7 @@ class InternalStatementResultTest
     void retainShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // WHEN
         List<Record> records = result.list();
@@ -266,7 +266,7 @@ class InternalStatementResultTest
     void retainAndMapByKeyShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( column( "k1" ) );
@@ -280,7 +280,7 @@ class InternalStatementResultTest
     void retainAndMapByIndexShouldWorkAsExpected()
     {
         // GIVEN
-        StatementResult result = createResult( 3 );
+        Result result = createResult( 3 );
 
         // WHEN
         List<Value> records = result.list( column( 0 ) );
@@ -294,7 +294,7 @@ class InternalStatementResultTest
     void accessingOutOfBoundsShouldBeNull()
     {
         // GIVEN
-        StatementResult result = createResult( 1 );
+        Result result = createResult( 1 );
 
         // WHEN
         Record record = result.single();
@@ -310,7 +310,7 @@ class InternalStatementResultTest
     void accessingKeysWithoutCallingNextShouldNotFail()
     {
         // GIVEN
-        StatementResult result = createResult( 11 );
+        Result result = createResult( 11 );
 
         // WHEN
         // not calling next or single
@@ -323,7 +323,7 @@ class InternalStatementResultTest
     void shouldPeekIntoTheFuture()
     {
         // WHEN
-        StatementResult result = createResult( 2 );
+        Result result = createResult( 2 );
 
         // THEN
         assertThat( result.peek().get( "k1" ), equalTo( value( "v1-1" ) ) );
@@ -345,13 +345,13 @@ class InternalStatementResultTest
     void shouldNotPeekIntoTheFutureWhenResultIsEmpty()
     {
         // GIVEN
-        StatementResult result = createResult( 0 );
+        Result result = createResult( 0 );
 
         // THEN
         assertThrows( NoSuchRecordException.class, result::peek );
     }
 
-    private StatementResult createResult( int numberOfRecords )
+    private Result createResult(int numberOfRecords )
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
@@ -369,8 +369,8 @@ class InternalStatementResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        AsyncStatementResultCursor cursor = new AsyncStatementResultCursorImpl( runHandler, pullAllHandler );
-        return new InternalStatementResult( connection, new DisposableAsyncStatementResultCursor( cursor ) );
+        AsyncResultCursor cursor = new AsyncResultCursorImpl( runHandler, pullAllHandler );
+        return new InternalResult( connection, new DisposableAsyncResultCursor( cursor ) );
     }
 
     private List<Value> values( Record record )

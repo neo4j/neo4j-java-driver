@@ -36,7 +36,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -97,7 +97,7 @@ class InternalAsyncSessionTest
         asyncSession = new InternalAsyncSession( session );
     }
 
-    private static Stream<Function<AsyncSession,CompletionStage<StatementResultCursor>>> allSessionRunMethods()
+    private static Stream<Function<AsyncSession,CompletionStage<ResultCursor>>> allSessionRunMethods()
     {
         return Stream.of(
                 session -> session.runAsync( "RETURN 1" ),
@@ -132,11 +132,11 @@ class InternalAsyncSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<StatementResultCursor>> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<ResultCursor>> runReturnOne ) throws Throwable
     {
         setupSuccessfulRunAndPull( connection );
 
-        StatementResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
+        ResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
 
         verifyRunAndPull( connection, await( cursor.consumeAsync() ).statement().text() );
     }

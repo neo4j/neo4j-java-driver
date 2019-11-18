@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -74,7 +74,7 @@ class ScalarTypeIT
     void shouldHandleType( String statement, Value expectedValue )
     {
         // When
-        StatementResult cursor = session.run( statement );
+        Result cursor = session.run( statement );
 
         // Then
         assertThat( cursor.single().get( "v" ), equalTo( expectedValue ) );
@@ -245,7 +245,7 @@ class ScalarTypeIT
     private void verifyCanEncodeAndDecode( Value input )
     {
         // When
-        StatementResult cursor = session.run( "RETURN $x as y", parameters( "x", input ) );
+        Result cursor = session.run( "RETURN $x as y", parameters( "x", input ) );
 
         // Then
         assertThat( cursor.single().get( "y" ), equalTo( input ) );

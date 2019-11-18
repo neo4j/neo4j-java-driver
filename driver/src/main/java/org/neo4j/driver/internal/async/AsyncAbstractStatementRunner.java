@@ -26,32 +26,32 @@ import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncStatementRunner;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 
 import static org.neo4j.driver.internal.AbstractStatementRunner.parameters;
 
 public abstract class AsyncAbstractStatementRunner implements AsyncStatementRunner
 {
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Value parameters )
+    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Value parameters )
     {
         return runAsync( new Statement( statementTemplate, parameters ) );
     }
 
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters )
+    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Map<String,Object> statementParameters )
     {
         return runAsync( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters )
+    public final CompletionStage<ResultCursor> runAsync(String statementTemplate, Record statementParameters )
     {
         return runAsync( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final CompletionStage<StatementResultCursor> runAsync( String statementText )
+    public final CompletionStage<ResultCursor> runAsync(String statementText )
     {
         return runAsync( statementText, Values.EmptyMap );
     }

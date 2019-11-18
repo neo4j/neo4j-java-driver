@@ -32,7 +32,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 /**
  * Bolt V4
  */
-public class StatementResultCursorFactoryImpl implements StatementResultCursorFactory
+public class ResultCursorFactoryImpl implements ResultCursorFactory
 {
     private final RunResponseHandler runHandler;
     private final Connection connection;
@@ -42,8 +42,8 @@ public class StatementResultCursorFactoryImpl implements StatementResultCursorFa
     private final boolean waitForRunResponse;
     private final Message runMessage;
 
-    public StatementResultCursorFactoryImpl( Connection connection, Message runMessage, RunResponseHandler runHandler, PullResponseHandler pullHandler,
-            PullAllResponseHandler pullAllHandler, boolean waitForRunResponse )
+    public ResultCursorFactoryImpl(Connection connection, Message runMessage, RunResponseHandler runHandler, PullResponseHandler pullHandler,
+                                   PullAllResponseHandler pullAllHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
@@ -60,7 +60,7 @@ public class StatementResultCursorFactoryImpl implements StatementResultCursorFa
     }
 
     @Override
-    public CompletionStage<AsyncStatementResultCursor> asyncResult()
+    public CompletionStage<AsyncResultCursor> asyncResult()
     {
         // only write and flush messages when async result is wanted.
         connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
@@ -70,24 +70,24 @@ public class StatementResultCursorFactoryImpl implements StatementResultCursorFa
         {
             // wait for response of RUN before proceeding
             return runHandler.runFuture().thenApply(
-                    ignore -> new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
+                    ignore -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
         else
         {
-            return completedFuture( new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
+            return completedFuture( new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
     }
 
     @Override
-    public CompletionStage<RxStatementResultCursor> rxResult()
+    public CompletionStage<RxResultCursor> rxResult()
     {
         connection.writeAndFlush( runMessage, runHandler );
         // we always wait for run reply
         return runHandler.runFuture().thenApply( this::composeRxCursor );
     }
 
-    private RxStatementResultCursor composeRxCursor( Throwable runError )
+    private RxResultCursor composeRxCursor(Throwable runError )
     {
-        return new RxStatementResultCursorImpl( runError, runHandler, pullHandler );
+        return new RxResultCursorImpl( runError, runHandler, pullHandler );
     }
 }

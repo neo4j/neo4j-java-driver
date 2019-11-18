@@ -23,28 +23,28 @@ import org.reactivestreams.Publisher;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 
 public class InternalRxTransaction extends AbstractRxStatementRunner implements RxTransaction
 {
-    private final ExplicitTransaction tx;
+    private final UnmanagedTransaction tx;
 
-    public InternalRxTransaction( ExplicitTransaction tx )
+    public InternalRxTransaction( UnmanagedTransaction tx )
     {
         this.tx = tx;
     }
 
     @Override
-    public RxStatementResult run( Statement statement )
+    public RxResult run(Statement statement )
     {
-        return new InternalRxStatementResult( () -> {
-            CompletableFuture<RxStatementResultCursor> cursorFuture = new CompletableFuture<>();
+        return new InternalRxResult( () -> {
+            CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
             tx.runRx( statement ).whenComplete( ( cursor, completionError ) -> {
                 if ( cursor != null )
                 {

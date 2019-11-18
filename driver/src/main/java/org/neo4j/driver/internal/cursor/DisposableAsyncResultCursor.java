@@ -31,12 +31,12 @@ import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class DisposableAsyncStatementResultCursor implements AsyncStatementResultCursor
+public class DisposableAsyncResultCursor implements AsyncResultCursor
 {
-    private final AsyncStatementResultCursor delegate;
+    private final AsyncResultCursor delegate;
     private boolean isDisposed;
 
-    public DisposableAsyncStatementResultCursor( AsyncStatementResultCursor delegate )
+    public DisposableAsyncResultCursor(AsyncResultCursor delegate )
     {
         this.delegate = delegate;
     }

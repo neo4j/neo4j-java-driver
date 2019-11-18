@@ -24,7 +24,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 
@@ -56,7 +56,7 @@ public class HelloWorldExample implements AutoCloseable
                 @Override
                 public String execute( Transaction tx )
                 {
-                    StatementResult result = tx.run( "CREATE (a:Greeting) " +
+                    Result result = tx.run( "CREATE (a:Greeting) " +
                                                      "SET a.message = $message " +
                                                      "RETURN a.message + ', from node ' + id(a)",
                             parameters( "message", message ) );

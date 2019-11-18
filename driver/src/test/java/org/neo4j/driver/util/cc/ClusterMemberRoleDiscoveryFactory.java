@@ -28,7 +28,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -76,7 +76,7 @@ public class ClusterMemberRoleDiscoveryFactory
         {
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
-                StatementResult result = session.run( "CALL dbms.cluster.overview()" );
+                Result result = session.run( "CALL dbms.cluster.overview()" );
                 Map<BoltServerAddress,ClusterMemberRole> overview = new HashMap<>();
                 for ( Record record : result.list() )
                 {
@@ -110,7 +110,7 @@ public class ClusterMemberRoleDiscoveryFactory
         {
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
-                StatementResult result = session.run( "CALL dbms.cluster.overview()" );
+                Result result = session.run( "CALL dbms.cluster.overview()" );
                 Map<BoltServerAddress,ClusterMemberRole> overview = new HashMap<>();
                 for ( Record record : result.list() )
                 {

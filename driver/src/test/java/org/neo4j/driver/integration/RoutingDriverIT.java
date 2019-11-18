@@ -27,7 +27,7 @@ import java.net.URI;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -55,7 +55,7 @@ class RoutingDriverIT
         {
             assertThat( driver, is( clusterDriver() ) );
 
-            StatementResult result = session.run( "RETURN 1" );
+            Result result = session.run( "RETURN 1" );
             assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
         }
     }
@@ -69,7 +69,7 @@ class RoutingDriverIT
         {
             assertThat( driver, is( clusterDriver() ) );
 
-            StatementResult result = session.run( "RETURN 1" );
+            Result result = session.run( "RETURN 1" );
             assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );
         }
     }

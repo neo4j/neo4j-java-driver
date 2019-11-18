@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.types.IsoDuration;
 import java.util.function.Function;
@@ -410,7 +410,7 @@ class TemporalTypesIT
 
     private static void testDurationToString( long seconds, int nanoseconds, String expectedValue )
     {
-        StatementResult result = session.run( "RETURN duration({seconds: $s, nanoseconds: $n})", parameters( "s", seconds, "n", nanoseconds ) );
+        Result result = session.run( "RETURN duration({seconds: $s, nanoseconds: $n})", parameters( "s", seconds, "n", nanoseconds ) );
         IsoDuration duration = result.single().get( 0 ).asIsoDuration();
         assertEquals( expectedValue, duration.toString() );
     }

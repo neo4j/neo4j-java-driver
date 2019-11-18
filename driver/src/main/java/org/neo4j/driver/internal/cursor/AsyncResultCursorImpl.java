@@ -31,12 +31,12 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class AsyncStatementResultCursorImpl implements AsyncStatementResultCursor
+public class AsyncResultCursorImpl implements AsyncResultCursor
 {
     private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public AsyncStatementResultCursorImpl( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
+    public AsyncResultCursorImpl(RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
         this.runHandler = runHandler;
         this.pullAllHandler = pullAllHandler;

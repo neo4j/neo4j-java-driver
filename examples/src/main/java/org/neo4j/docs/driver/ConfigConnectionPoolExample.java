@@ -24,7 +24,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 
 public class ConfigConnectionPoolExample  implements AutoCloseable
 {
@@ -51,7 +51,7 @@ public class ConfigConnectionPoolExample  implements AutoCloseable
 
     public boolean canConnect()
     {
-        StatementResult result = driver.session().run( "RETURN 1" );
+        Result result = driver.session().run( "RETURN 1" );
         return result.single().get( 0 ).asInt() == 1;
     }
 }

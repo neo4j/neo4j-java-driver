@@ -27,21 +27,21 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.summary.ResultSummary;
 
-public class InternalStatementResult implements StatementResult
+public class InternalResult implements Result
 {
     private final Connection connection;
-    private final StatementResultCursor cursor;
+    private final ResultCursor cursor;
     private List<String> keys;
 
-    public InternalStatementResult( Connection connection, StatementResultCursor cursor )
+    public InternalResult(Connection connection, ResultCursor cursor )
     {
         this.connection = connection;
         this.cursor = cursor;

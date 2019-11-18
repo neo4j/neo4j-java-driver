@@ -58,7 +58,7 @@ import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
-class ExplicitTransactionTest
+class UnmanagedTransactionTest
 {
     @ParameterizedTest
     @ValueSource( strings = {"true", "false"} )
@@ -66,7 +66,7 @@ class ExplicitTransactionTest
     {
         // Given
         Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
-        ExplicitTransaction tx = beginTx( connection );
+        UnmanagedTransaction tx = beginTx( connection );
         setupSuccessfulRunAndPull( connection );
 
         // When
@@ -81,7 +81,7 @@ class ExplicitTransactionTest
     {
         // Given
         Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
-        ExplicitTransaction tx = beginTx( connection );
+        UnmanagedTransaction tx = beginTx( connection );
         setupSuccessfulRunRx( connection );
 
         // When
@@ -96,7 +96,7 @@ class ExplicitTransactionTest
     {
         // Given
         Connection connection = connectionMock();
-        ExplicitTransaction tx = beginTx( connection );
+        UnmanagedTransaction tx = beginTx( connection );
 
         // When
         await( tx.closeAsync() );
@@ -134,7 +134,7 @@ class ExplicitTransactionTest
     @Test
     void shouldBeOpenAfterConstruction()
     {
-        ExplicitTransaction tx = beginTx( connectionMock() );
+        UnmanagedTransaction tx = beginTx( connectionMock() );
 
         assertTrue( tx.isOpen() );
     }
@@ -142,7 +142,7 @@ class ExplicitTransactionTest
     @Test
     void shouldBeClosedWhenMarkedAsTerminated()
     {
-        ExplicitTransaction tx = beginTx( connectionMock() );
+        UnmanagedTransaction tx = beginTx( connectionMock() );
 
         tx.markTerminated();
 
@@ -152,7 +152,7 @@ class ExplicitTransactionTest
     @Test
     void shouldBeClosedWhenMarkedTerminatedAndClosed()
     {
-        ExplicitTransaction tx = beginTx( connectionMock() );
+        UnmanagedTransaction tx = beginTx( connectionMock() );
 
         tx.markTerminated();
         await( tx.closeAsync() );
@@ -165,7 +165,7 @@ class ExplicitTransactionTest
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -180,7 +180,7 @@ class ExplicitTransactionTest
     void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
@@ -194,7 +194,7 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndCommitted()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated();
 
@@ -208,7 +208,7 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndRolledBack()
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated();
         await( tx.rollbackAsync() );
@@ -220,21 +220,21 @@ class ExplicitTransactionTest
     void shouldReleaseConnectionWhenClose() throws Throwable
     {
         Connection connection = connectionMock();
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         await( tx.closeAsync() );
 
         verify( connection ).release();
     }
 
-    private static ExplicitTransaction beginTx( Connection connection )
+    private static UnmanagedTransaction beginTx(Connection connection )
     {
         return beginTx( connection, InternalBookmark.empty() );
     }
 
-    private static ExplicitTransaction beginTx( Connection connection, Bookmark initialBookmark )
+    private static UnmanagedTransaction beginTx(Connection connection, Bookmark initialBookmark )
     {
-        ExplicitTransaction tx = new ExplicitTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
         return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );
     }
 

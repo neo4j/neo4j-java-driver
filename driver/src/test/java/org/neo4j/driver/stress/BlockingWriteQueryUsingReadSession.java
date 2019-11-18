@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.ClientException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,12 +40,12 @@ public class BlockingWriteQueryUsingReadSession<C extends AbstractContext> exten
     @Override
     public void execute( C context )
     {
-        AtomicReference<StatementResult> resultRef = new AtomicReference<>();
+        AtomicReference<Result> resultRef = new AtomicReference<>();
         assertThrows( ClientException.class, () ->
         {
             try ( Session session = newSession( AccessMode.READ, context ) )
             {
-                StatementResult result = session.run( "CREATE ()" );
+                Result result = session.run( "CREATE ()" );
                 resultRef.set( result );
             }
         } );

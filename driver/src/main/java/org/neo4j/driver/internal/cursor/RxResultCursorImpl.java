@@ -30,12 +30,12 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.summary.ResultSummary;
 
-import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.DISCARD_INSTALLED;
-import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.INSTALLED;
-import static org.neo4j.driver.internal.cursor.RxStatementResultCursorImpl.RecordConsumerStatus.NOT_INSTALLED;
+import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.DISCARD_INSTALLED;
+import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.INSTALLED;
+import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.RecordConsumerStatus.NOT_INSTALLED;
 import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 
-public class RxStatementResultCursorImpl implements RxStatementResultCursor
+public class RxResultCursorImpl implements RxResultCursor
 {
     static final BiConsumer<Record,Throwable> DISCARD_RECORD_CONSUMER = ( record, throwable ) -> {/*do nothing*/};
     private final RunResponseHandler runHandler;
@@ -45,12 +45,12 @@ public class RxStatementResultCursorImpl implements RxStatementResultCursor
     private boolean resultConsumed;
     private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
 
-    public RxStatementResultCursorImpl( RunResponseHandler runHandler, PullResponseHandler pullHandler )
+    public RxResultCursorImpl(RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         this( null, runHandler, pullHandler );
     }
 
-    public RxStatementResultCursorImpl( Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler )
+    public RxResultCursorImpl(Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         Objects.requireNonNull( runHandler );
         Objects.requireNonNull( pullHandler );

@@ -58,11 +58,11 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
@@ -529,7 +529,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         {
             int nodesProcessed = session.readTransaction( tx ->
             {
-                StatementResult result = tx.run( "MATCH (n:Node) RETURN n" );
+                Result result = tx.run( "MATCH (n:Node) RETURN n" );
 
                 int nodesSeen = 0;
                 while ( result.hasNext() )
@@ -702,7 +702,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         Statement statement = createNodeInTxStatement( nodeIndex );
         return tx.runAsync( statement )
-                .thenCompose( StatementResultCursor::consumeAsync )
+                .thenCompose( ResultCursor::consumeAsync )
                 .thenApply( ignore -> (Void) null )
                 .toCompletableFuture();
     }

@@ -21,7 +21,7 @@ package org.neo4j.driver.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
@@ -41,7 +41,7 @@ class EntityTypeIT
     void shouldReturnIdentitiesOfNodes()
     {
         // When
-        StatementResult cursor = session.run( "CREATE (n) RETURN n" );
+        Result cursor = session.run( "CREATE (n) RETURN n" );
         Node node = cursor.single().get( "n" ).asNode();
 
         // Then
@@ -52,7 +52,7 @@ class EntityTypeIT
     void shouldReturnIdentitiesOfRelationships()
     {
         // When
-        StatementResult cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
+        Result cursor = session.run( "CREATE ()-[r:T]->() RETURN r" );
         Relationship rel = cursor.single().get( "r" ).asRelationship();
 
         // Then
@@ -65,7 +65,7 @@ class EntityTypeIT
     void shouldReturnIdentitiesOfPaths()
     {
         // When
-        StatementResult cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
+        Result cursor = session.run( "CREATE p=()-[r:T]->() RETURN p" );
         Path path = cursor.single().get( "p" ).asPath();
 
         // Then

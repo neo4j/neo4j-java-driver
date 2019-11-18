@@ -51,7 +51,7 @@ import org.neo4j.driver.Values;
  *
  * <ul>
  * <li>Read from or discard a result, for instance via
- * {@link StatementResultCursor#nextAsync()}, {@link StatementResultCursor#consumeAsync()}</li>
+ * {@link ResultCursor#nextAsync()}, {@link ResultCursor#consumeAsync()}</li>
  * <li>Explicitly commit/rollback a transaction using {@link AsyncTransaction#commitAsync()}, {@link AsyncTransaction#rollbackAsync()}</li>
  * <li>Close a session using {@link AsyncSession#closeAsync()}</li>
  * </ul>
@@ -67,7 +67,7 @@ import org.neo4j.driver.Values;
  * <h2>Asynchronous API</h2>
  * <p>
  * All overloads of {@link #runAsync(Statement)} execute queries in async fashion and return {@link CompletionStage} of
- * a new {@link StatementResultCursor}. Stage can be completed exceptionally when error happens, e.g. connection can't
+ * a new {@link ResultCursor}. Stage can be completed exceptionally when error happens, e.g. connection can't
  * be acquired from the pool.
  * <p>
  * <b>Note:</b> Returned stage can be completed by an IO thread which should never block. Otherwise IO operations on
@@ -101,7 +101,7 @@ public interface AsyncStatementRunner
      * <pre>
      * {@code
      *
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(
      *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *             Values.parameters("myNameParam", "Bob"));
      * }
@@ -114,7 +114,7 @@ public interface AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Value parameters );
+    CompletionStage<ResultCursor> runAsync(String statementTemplate, Value parameters );
 
     /**
      * Run a statement asynchronously and return a {@link CompletionStage} with a
@@ -135,7 +135,7 @@ public interface AsyncStatementRunner
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
      *
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(
      *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *             parameters);
      * }
@@ -148,7 +148,7 @@ public interface AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Map<String,Object> statementParameters );
+    CompletionStage<ResultCursor> runAsync(String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Run a statement asynchronously and return a {@link CompletionStage} with a
@@ -170,7 +170,7 @@ public interface AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statementTemplate, Record statementParameters );
+    CompletionStage<ResultCursor> runAsync(String statementTemplate, Record statementParameters );
 
     /**
      * Run a statement asynchronously and return a {@link CompletionStage} with a
@@ -183,7 +183,7 @@ public interface AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statementTemplate );
+    CompletionStage<ResultCursor> runAsync(String statementTemplate );
 
     /**
      * Run a statement asynchronously and return a {@link CompletionStage} with a
@@ -192,7 +192,7 @@ public interface AsyncStatementRunner
      * <pre>
      * {@code
      * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement);
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(statement);
      * }
      * </pre>
      * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc for
@@ -202,5 +202,5 @@ public interface AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( Statement statement );
+    CompletionStage<ResultCursor> runAsync(Statement statement );
 }

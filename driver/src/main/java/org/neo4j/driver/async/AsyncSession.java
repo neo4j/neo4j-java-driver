@@ -221,7 +221,7 @@ public interface AsyncSession extends AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String statement, TransactionConfig config );
 
     /**
      * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -249,7 +249,7 @@ public interface AsyncSession extends AsyncStatementRunner
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
      *
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(
      *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *             parameters,
      *             config);
@@ -264,7 +264,7 @@ public interface AsyncSession extends AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String statement, Map<String,Object> parameters, TransactionConfig config );
 
     /**
      * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -281,7 +281,7 @@ public interface AsyncSession extends AsyncStatementRunner
      *                 .build();
      *
      * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement, config);
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(statement, config);
      * }
      * </pre>
      * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncStatementRunner} for
@@ -292,7 +292,7 @@ public interface AsyncSession extends AsyncStatementRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(Statement statement, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed

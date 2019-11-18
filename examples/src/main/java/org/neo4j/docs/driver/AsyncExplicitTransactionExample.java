@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 
 public class AsyncExplicitTransactionExample extends BaseApplication
 {
@@ -44,7 +44,7 @@ public class AsyncExplicitTransactionExample extends BaseApplication
 
         Function<AsyncTransaction,CompletionStage<Void>> printSingleTitle = tx ->
                 tx.runAsync( query, parameters )
-                        .thenCompose( StatementResultCursor::singleAsync )
+                        .thenCompose( ResultCursor::singleAsync )
                         .thenApply( record -> record.get( 0 ).asString() )
                         .thenApply( title ->
                         {

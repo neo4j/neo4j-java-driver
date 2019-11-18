@@ -22,12 +22,12 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 
 public class InternalAsyncTransaction extends AsyncAbstractStatementRunner implements AsyncTransaction
 {
-    private final ExplicitTransaction tx;
-    public InternalAsyncTransaction( ExplicitTransaction tx )
+    private final UnmanagedTransaction tx;
+    public InternalAsyncTransaction( UnmanagedTransaction tx )
     {
         this.tx = tx;
     }
@@ -45,7 +45,7 @@ public class InternalAsyncTransaction extends AsyncAbstractStatementRunner imple
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement )
+    public CompletionStage<ResultCursor> runAsync(Statement statement )
     {
         return tx.runAsync( statement, true );
     }

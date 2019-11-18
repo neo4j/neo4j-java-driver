@@ -34,11 +34,11 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
@@ -87,7 +87,7 @@ class SessionBoltV3IT
                 .build();
 
         // call listTransactions procedure that should list itself with the specified metadata
-        StatementResult result = driver.session().run( "CALL dbms.listTransactions()", config );
+        Result result = driver.session().run( "CALL dbms.listTransactions()", config );
         Map<String,Object> receivedMetadata = result.single().get( "metaData" ).asMap();
 
         assertEquals( metadata, receivedMetadata );
@@ -107,7 +107,7 @@ class SessionBoltV3IT
         // call listTransactions procedure that should list itself with the specified metadata
         CompletionStage<Map<String,Object>> metadataFuture = driver.asyncSession()
                 .runAsync( "CALL dbms.listTransactions()", config )
-                .thenCompose( StatementResultCursor::singleAsync )
+                .thenCompose( ResultCursor::singleAsync )
                 .thenApply( record -> record.get( "metaData" ).asMap() );
 
         assertEquals( metadata, await( metadataFuture ) );
@@ -160,7 +160,7 @@ class SessionBoltV3IT
 
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
                     CompletionStage<ResultSummary> resultFuture = asyncSession.runAsync( "MATCH (n:Node) SET n.prop = 2", config )
-                            .thenCompose( StatementResultCursor::consumeAsync );
+                            .thenCompose( ResultCursor::consumeAsync );
 
                     TransientException error = assertThrows( TransientException.class, () -> await( resultFuture ) );
 
@@ -331,8 +331,8 @@ class SessionBoltV3IT
 
         // call listTransactions procedure that should list itself with the specified metadata
         CompletionStage<Record> singleFuture =
-                read ? asyncSession.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( StatementResultCursor::singleAsync ), config )
-                     : asyncSession.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( StatementResultCursor::singleAsync ), config );
+                read ? asyncSession.readTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( ResultCursor::singleAsync ), config )
+                     : asyncSession.writeTransactionAsync( tx -> tx.runAsync( "CALL dbms.listTransactions()" ).thenCompose( ResultCursor::singleAsync ), config );
 
         CompletionStage<Map<String,Object>> metadataFuture = singleFuture.thenApply( record -> record.get( "metaData" ).asMap() );
 

@@ -39,10 +39,10 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -311,7 +311,7 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<AsyncStatementResultCursor> cursorStage;
+        CompletionStage<AsyncResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             cursorStage = protocol
@@ -321,10 +321,10 @@ public class BoltProtocolV1Test
         else
         {
             cursorStage = protocol
-                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+                    .runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
@@ -336,7 +336,7 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<AsyncStatementResultCursor> cursorStage;
+        CompletionStage<AsyncResultCursor> cursorStage;
         if ( session )
         {
             cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
@@ -344,10 +344,10 @@ public class BoltProtocolV1Test
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertFalse( cursorFuture.isDone() );
         ResponseHandler runResponseHandler = verifyRunInvoked( connection );

@@ -42,7 +42,7 @@ import java.util.Map;
  *
  * <ul>
  * <li>Read from or discard a result, for instance via
- * {@link StatementResult#next()} or {@link StatementResult#consume()} </li>
+ * {@link Result#next()} or {@link Result#consume()} </li>
  * <li>Explicitly commit/rollback a transaction using blocking {@link Transaction#close()} </li>
  * <li>Close a session using blocking {@link Session#close()}</li>
  * </ul>
@@ -80,7 +80,7 @@ public interface StatementRunner
      * <pre class="doctest:StatementRunnerDocIT#parameterTest">
      * {@code
      *
-     * StatementResult cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     * Result result = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *                                       Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
@@ -89,7 +89,7 @@ public interface StatementRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a stream of result values and associated metadata
      */
-    StatementResult run( String statementTemplate, Value parameters );
+    Result run(String statementTemplate, Value parameters );
 
     /**
      * Run a statement and return a result stream.
@@ -110,7 +110,7 @@ public interface StatementRunner
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
      *
-     * StatementResult cursor = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     * Result result = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *                                       parameters );
      * }
      * </pre>
@@ -119,7 +119,7 @@ public interface StatementRunner
      * @param statementParameters input data for the statement
      * @return a stream of result values and associated metadata
      */
-    StatementResult run( String statementTemplate, Map<String,Object> statementParameters );
+    Result run(String statementTemplate, Map<String,Object> statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -136,7 +136,7 @@ public interface StatementRunner
      * @param statementParameters input data for the statement
      * @return a stream of result values and associated metadata
      */
-    StatementResult run( String statementTemplate, Record statementParameters );
+    Result run(String statementTemplate, Record statementParameters );
 
     /**
      * Run a statement and return a result stream.
@@ -144,7 +144,7 @@ public interface StatementRunner
      * @param statementTemplate text of a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    StatementResult run( String statementTemplate );
+    Result run(String statementTemplate );
 
     /**
      * Run a statement and return a result stream.
@@ -153,12 +153,12 @@ public interface StatementRunner
      * {@code
      *
      * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * StatementResult cursor = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
+     * Result result = session.run( statement.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>
      *
      * @param statement a Neo4j statement
      * @return a stream of result values and associated metadata
      */
-    StatementResult run( Statement statement );
+    Result run(Statement statement );
 }

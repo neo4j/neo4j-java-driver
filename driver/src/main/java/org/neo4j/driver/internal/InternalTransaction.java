@@ -19,16 +19,16 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.util.Futures;
 
 public class InternalTransaction extends AbstractStatementRunner implements Transaction
 {
-    private final ExplicitTransaction tx;
-    public InternalTransaction( ExplicitTransaction tx )
+    private final UnmanagedTransaction tx;
+    public InternalTransaction( UnmanagedTransaction tx )
     {
         this.tx = tx;
     }
@@ -55,11 +55,11 @@ public class InternalTransaction extends AbstractStatementRunner implements Tran
     }
 
     @Override
-    public StatementResult run( Statement statement )
+    public Result run(Statement statement )
     {
-        StatementResultCursor cursor = Futures.blockingGet( tx.runAsync( statement, false ),
+        ResultCursor cursor = Futures.blockingGet( tx.runAsync( statement, false ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in transaction" ) );
-        return new InternalStatementResult( tx.connection(), cursor );
+        return new InternalResult( tx.connection(), cursor );
     }
 
     @Override

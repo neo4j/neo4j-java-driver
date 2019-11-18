@@ -45,7 +45,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.StatementType;
@@ -147,13 +147,13 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
         await( cursor1.records() );
 
-        RxStatementResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
         await( cursor2.records() );
 
-        RxStatementResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
         await( cursor3.records() );
 
         assertCanCommitOrRollback( commit, tx );
@@ -167,9 +167,9 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
-        RxStatementResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
-        RxStatementResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
 
         await( Flux.from( cursor1.records() ).concatWith( cursor2.records() ).concatWith( cursor3.records() ) );
         assertCanCommitOrRollback( commit, tx );
@@ -183,8 +183,8 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult cursor1 = tx.run( "CREATE (n:Person {name: 'Alice'}) RETURN n.name" );
-        RxStatementResult cursor2 = tx.run( "CREATE (n:Person {name: 'Bob'}) RETURN n.name" );
+        RxResult cursor1 = tx.run( "CREATE (n:Person {name: 'Alice'}) RETURN n.name" );
+        RxResult cursor2 = tx.run( "CREATE (n:Person {name: 'Bob'}) RETURN n.name" );
 
         // The execution order is the same as the record publishing order.
         List<Record> records = await( Flux.from( cursor2.records() ).concatWith( cursor1.records() ) );
@@ -200,7 +200,7 @@ class RxTransactionIT
     void shouldDiscardOnCommitOrRollback( boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult cursor = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxResult cursor = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // We only perform run without any pull
         await( Flux.from( cursor.keys() ) );
@@ -220,9 +220,9 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
-        RxStatementResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
-        RxStatementResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor1 = tx.run( "CREATE (n:Node {id: 1})" );
+        RxResult cursor2 = tx.run( "CREATE (n:Node {id: 2})" );
+        RxResult cursor3 = tx.run( "CREATE (n:Node {id: 1})" );
 
         await( Flux.from( cursor1.keys() ).concatWith( cursor2.keys() ).concatWith( cursor3.keys() ) );
         assertCanCommitOrRollback( commit, tx );
@@ -275,7 +275,7 @@ class RxTransactionIT
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         assertFailToRunWrongStatement( tx );
 
-        RxStatementResult result = tx.run( "CREATE ()" );
+        RxResult result = tx.run( "CREATE ()" );
         Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
         assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
 
@@ -361,7 +361,7 @@ class RxTransactionIT
     void shouldExposeStatementKeysForColumnsWithAliases()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
+        RxResult result = tx.run( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" );
 
         List<String> keys = await( Mono.from( result.keys() ) );
         assertEquals( Arrays.asList( "one", "two", "three", "five" ), keys );
@@ -373,7 +373,7 @@ class RxTransactionIT
     void shouldExposeStatementKeysForColumnsWithoutAliases()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "RETURN 1, 2, 3, 5" );
+        RxResult result = tx.run( "RETURN 1, 2, 3, 5" );
 
         List<String> keys = await( Mono.from( result.keys() ) );
         assertEquals( Arrays.asList( "1", "2", "3", "5" ), keys );
@@ -388,7 +388,7 @@ class RxTransactionIT
         String query = "CREATE (p1:Person {name: $name1})-[:KNOWS]->(p2:Person {name: $name2}) RETURN p1, p2";
         Value params = parameters( "name1", "Bob", "name2", "John" );
 
-        RxStatementResult result = tx.run( query, params );
+        RxResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
@@ -416,7 +416,7 @@ class RxTransactionIT
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         String query = "EXPLAIN MATCH (n) RETURN n";
 
-        RxStatementResult result = tx.run( query );
+        RxResult result = tx.run( query );
         await( result.records() ); // we run and stream
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
@@ -448,7 +448,7 @@ class RxTransactionIT
 
         Value params = parameters( "name", "Bob" );
 
-        RxStatementResult result = tx.run( query, params );
+        RxResult result = tx.run( query, params );
         await( result.records() ); // we run and stream
 
         ResultSummary summary = await( Mono.from( result.consume() ) );
@@ -476,7 +476,7 @@ class RxTransactionIT
     void shouldCancelRecordStream()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
+        RxResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
 
         Flux<String> abc = Flux.from( result.records() ).limitRate( 1 ).take( 1 ).map( record -> record.get( 0 ).asString() );
         StepVerifier.create( abc ).expectNext( "a" ).verifyComplete();
@@ -525,7 +525,7 @@ class RxTransactionIT
     void shouldConvertToTransformedListWithEmptyCursor()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "CREATE ()" );
+        RxResult result = tx.run( "CREATE ()" );
         List<Map<String,Object>> maps = await( Flux.from( result.records() ).map( record -> record.get( 0 ).asMap() )  );
         assertEquals( 0, maps.size() );
         assertCanRollback( tx );
@@ -535,7 +535,7 @@ class RxTransactionIT
     void shouldConvertToTransformedListWithNonEmptyCursor()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
+        RxResult result = tx.run( "UNWIND ['a', 'b', 'c'] AS x RETURN x" );
         List<String> strings = await( Flux.from( result.records() ).map( record -> record.get( 0 ).asString() + "!" )  );
 
         assertEquals( Arrays.asList( "a!", "b!", "c!" ), strings );
@@ -560,7 +560,7 @@ class RxTransactionIT
     void shouldFailToCommitWhenServerIsRestarted()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "RETURN 1" );
+        RxResult result = tx.run( "RETURN 1" );
 
         assertThrows( ServiceUnavailableException.class, () -> {
             await( Flux.from( result.records() ).doOnSubscribe( subscription -> {
@@ -576,7 +576,7 @@ class RxTransactionIT
     void shouldFailSingleWithEmptyCursor()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "MATCH (n:NoSuchLabel) RETURN n" );
+        RxResult result = tx.run( "MATCH (n:NoSuchLabel) RETURN n" );
 
         NoSuchElementException e = assertThrows( NoSuchElementException.class, () -> await( Flux.from( result.records() ).single() ) );
         assertThat( e.getMessage(), containsString( "Source was empty" ) );
@@ -587,7 +587,7 @@ class RxTransactionIT
     void shouldFailSingleWithMultiRecordCursor()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "UNWIND ['a', 'b'] AS x RETURN x" );
+        RxResult result = tx.run( "UNWIND ['a', 'b'] AS x RETURN x" );
 
         IndexOutOfBoundsException e = assertThrows( IndexOutOfBoundsException.class, () -> await( Flux.from( result.records() ).single() ) );
         assertThat( e.getMessage(), startsWith( "Source emitted more than one item" ) );
@@ -598,7 +598,7 @@ class RxTransactionIT
     void shouldReturnSingleWithSingleRecordCursor()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "RETURN 'Hello!'" );
+        RxResult result = tx.run( "RETURN 'Hello!'" );
 
         Record record = await( Flux.from( result.records() ).single() );
         assertEquals( "Hello!", record.get( 0 ).asString() );
@@ -609,7 +609,7 @@ class RxTransactionIT
     void shouldPropagateFailureFromFirstRecordInSingleAsync()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "UNWIND [0] AS x RETURN 10 / x" );
+        RxResult result = tx.run( "UNWIND [0] AS x RETURN 10 / x" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( Flux.from( result.records() ).single() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
@@ -620,7 +620,7 @@ class RxTransactionIT
     void shouldPropagateFailureFromSecondRecordInSingleAsync()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "UNWIND [1, 0] AS x RETURN 10 / x" );
+        RxResult result = tx.run( "UNWIND [1, 0] AS x RETURN 10 / x" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( Flux.from( result.records() ).single() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
@@ -644,7 +644,7 @@ class RxTransactionIT
     void shouldFailToRunQueryAfterCommit( boolean commit )
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "CREATE (:MyLabel)" );
+        RxResult result = tx.run( "CREATE (:MyLabel)" );
         await( result.records() );
 
         assertCanCommitOrRollback( commit, tx );
@@ -696,10 +696,10 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult result1 = tx.run( "CREATE (:TestNode)" );
-        RxStatementResult result2 = tx.run( "CREATE (:TestNode)" );
-        RxStatementResult result3 = tx.run( "RETURN 10 / 0" );
-        RxStatementResult result4 = tx.run( "CREATE (:TestNode)" );
+        RxResult result1 = tx.run( "CREATE (:TestNode)" );
+        RxResult result2 = tx.run( "CREATE (:TestNode)" );
+        RxResult result3 = tx.run( "RETURN 10 / 0" );
+        RxResult result4 = tx.run( "CREATE (:TestNode)" );
 
         Flux<Record> records =
                 Flux.from( result1.records() ).concatWith( result2.records() ).concatWith( result3.records() ).concatWith( result4.records() );
@@ -713,10 +713,10 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult result1 = tx.run( "RETURN 1" );
-        RxStatementResult result2 = tx.run( "RETURN 2" );
-        RxStatementResult result3 = tx.run( "RETURN 3" );
-        RxStatementResult result4 = tx.run( "RETURN 4" );
+        RxResult result1 = tx.run( "RETURN 1" );
+        RxResult result2 = tx.run( "RETURN 2" );
+        RxResult result3 = tx.run( "RETURN 3" );
+        RxResult result4 = tx.run( "RETURN 4" );
 
         Flux<Record> records =
                 Flux.from( result4.records() ).concatWith( result3.records() ).concatWith( result2.records() ).concatWith( result1.records() );
@@ -744,7 +744,7 @@ class RxTransactionIT
     void shouldPropagateRunFailureOnRecord()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "RETURN 42 / 0" );
+        RxResult result = tx.run( "RETURN 42 / 0" );
         await( result.keys() ); // always returns keys
 
         ClientException e = assertThrows( ClientException.class, () -> await( result.records() ) );
@@ -756,7 +756,7 @@ class RxTransactionIT
     void shouldFailToCommitWhenPullAllFailureIsConsumed()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" );
+        RxResult result = tx.run( "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" );
 
         ClientException e1 = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e1.code(), containsString( "TypeError" ) );
@@ -769,7 +769,7 @@ class RxTransactionIT
     void shouldBeAbleToRollbackWhenPullAllFailureIsConsumed()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
-        RxStatementResult result = tx.run( "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" );
+        RxResult result = tx.run( "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" );
 
         ClientException e1 = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e1.code(), containsString( "TypeError" ) );
@@ -782,7 +782,7 @@ class RxTransactionIT
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
 
-        RxStatementResult result = tx.run( "RETURN Wrong" );
+        RxResult result = tx.run( "RETURN Wrong" );
         ClientException e = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
 
@@ -792,14 +792,14 @@ class RxTransactionIT
 
     private int countNodes( Object id )
     {
-        RxStatementResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
+        RxResult result = session.run( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
         return await( Flux.from( result.records() ).single().map( record -> record.get( 0 ).asInt() ) );
     }
 
     private void testForEach( String query, int expectedSeenRecords )
     {
         Flux<ResultSummary> summary = Flux.usingWhen( session.beginTransaction(), tx -> {
-            RxStatementResult result = tx.run( query );
+            RxResult result = tx.run( query );
             AtomicInteger recordsSeen = new AtomicInteger();
             return Flux.from( result.records() )
                     .doOnNext( record -> recordsSeen.incrementAndGet() )
@@ -886,7 +886,7 @@ class RxTransactionIT
 
     private static void assertCanRunCreate( RxTransaction tx )
     {
-        RxStatementResult result = tx.run( "CREATE (n:Node {id: 4242}) RETURN n" );
+        RxResult result = tx.run( "CREATE (n:Node {id: 4242}) RETURN n" );
 
         Record record = await( Flux.from(result.records()).single() );
 
@@ -897,14 +897,14 @@ class RxTransactionIT
 
     private static void assertFailToRunWrongStatement( RxTransaction tx )
     {
-        RxStatementResult result = tx.run( "RETURN" );
+        RxResult result = tx.run( "RETURN" );
         Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
     }
 
     private void assertCanRunReturnOne( RxTransaction tx )
     {
-        RxStatementResult result = tx.run( "RETURN 42" );
+        RxResult result = tx.run( "RETURN 42" );
         List<Record> records = await( result.records() );
         assertThat( records.size(), equalTo( 1 ) );
         Record record = records.get( 0 );

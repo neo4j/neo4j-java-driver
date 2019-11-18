@@ -23,7 +23,7 @@ import java.util.function.Function;
 /**
  * Static utility methods for retaining records
  *
- * @see StatementResult#list()
+ * @see Result#list()
  * @since 1.0
  */
 public abstract class Records

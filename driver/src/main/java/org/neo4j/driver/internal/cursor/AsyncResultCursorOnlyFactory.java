@@ -33,7 +33,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 /**
  * Used by Bolt V1, V2, V3
  */
-public class AsyncStatementResultCursorOnlyFactory implements StatementResultCursorFactory
+public class AsyncResultCursorOnlyFactory implements ResultCursorFactory
 {
     protected final Connection connection;
     protected final Message runMessage;
@@ -41,8 +41,8 @@ public class AsyncStatementResultCursorOnlyFactory implements StatementResultCur
     protected final PullAllResponseHandler pullAllHandler;
     private final boolean waitForRunResponse;
 
-    public AsyncStatementResultCursorOnlyFactory( Connection connection, Message runMessage, RunResponseHandler runHandler,
-            PullAllResponseHandler pullHandler, boolean waitForRunResponse )
+    public AsyncResultCursorOnlyFactory(Connection connection, Message runMessage, RunResponseHandler runHandler,
+                                        PullAllResponseHandler pullHandler, boolean waitForRunResponse )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
@@ -57,7 +57,7 @@ public class AsyncStatementResultCursorOnlyFactory implements StatementResultCur
         this.waitForRunResponse = waitForRunResponse;
     }
 
-    public CompletionStage<AsyncStatementResultCursor> asyncResult()
+    public CompletionStage<AsyncResultCursor> asyncResult()
     {
         // only write and flush messages when async result is wanted.
         connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
@@ -67,15 +67,15 @@ public class AsyncStatementResultCursorOnlyFactory implements StatementResultCur
         {
             // wait for response of RUN before proceeding
             return runHandler.runFuture().thenApply( ignore ->
-                    new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
+                    new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
         else
         {
-            return completedFuture( new DisposableAsyncStatementResultCursor( new AsyncStatementResultCursorImpl( runHandler, pullAllHandler ) ) );
+            return completedFuture( new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
         }
     }
 
-    public CompletionStage<RxStatementResultCursor> rxResult()
+    public CompletionStage<RxResultCursor> rxResult()
     {
         return Futures.failedFuture( new ClientException( "Driver is connected to the database that does not support driver reactive API. " +
                 "In order to use the driver reactive API, please upgrade to neo4j 4.0.0 or later." ) );

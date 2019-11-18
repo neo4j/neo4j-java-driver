@@ -27,7 +27,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
@@ -56,7 +56,7 @@ public class RxReadQuery<C extends AbstractContext> extends AbstractRxQuery<C>
 
     private Publisher<ResultSummary> processAndGetSummary( RxSession session )
     {
-        RxStatementResult result = session.run( "MATCH (n) RETURN n LIMIT 1" );
+        RxResult result = session.run( "MATCH (n) RETURN n LIMIT 1" );
         Mono<Node> records = Flux.from( result.records() ).singleOrEmpty().map( record -> record.get( 0 ).asNode() );
         Mono<ResultSummary> summaryMono = Mono.from( result.consume() ).single();
         return records.then( summaryMono );

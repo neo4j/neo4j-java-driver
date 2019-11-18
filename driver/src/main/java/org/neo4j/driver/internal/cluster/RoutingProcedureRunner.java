@@ -27,7 +27,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
@@ -88,7 +88,7 @@ public class RoutingProcedureRunner
     {
         return connection.protocol()
                 .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
-                .asyncResult().thenCompose( StatementResultCursor::listAsync );
+                .asyncResult().thenCompose( ResultCursor::listAsync );
     }
 
     private CompletionStage<List<Record>> releaseConnection( Connection connection, List<Record> records )

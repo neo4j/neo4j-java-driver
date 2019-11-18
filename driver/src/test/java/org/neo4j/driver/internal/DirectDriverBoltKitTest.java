@@ -39,7 +39,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -47,7 +47,7 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.util.StubServer;
 
 import static java.util.Arrays.asList;
@@ -231,7 +231,7 @@ class DirectDriverBoltKitTest
                 Session session = driver.session();
 
                 Transaction tx = session.beginTransaction();
-                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                Result result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
                 assertEquals( "Alice", result.single().get( "name" ).asString() );
 
                 TransientException e = assertThrows( TransientException.class, session::close );
@@ -254,7 +254,7 @@ class DirectDriverBoltKitTest
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
             {
                 RxSession session = driver.rxSession();
-                RxStatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                RxResult result = session.run( "MATCH (n) RETURN n.name" );
                 Flux<String> records = Flux.from( result.records() ).limitRate( 2 ).map( record -> record.get( "n.name" ).asString() );
                 StepVerifier.create( records ).expectNext( "Bob", "Alice", "Tina" ).verifyComplete();
             }
@@ -274,7 +274,7 @@ class DirectDriverBoltKitTest
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( 2 ).build() ) )
             {
                 Session session = driver.session();
-                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                Result result = session.run( "MATCH (n) RETURN n.name" );
                 List<String> list = result.list( record -> record.get( "n.name" ).asString() );
                 assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
             }
@@ -294,7 +294,7 @@ class DirectDriverBoltKitTest
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
             {
                 Session session = driver.session( builder().withFetchSize( 2 ).build() );
-                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                Result result = session.run( "MATCH (n) RETURN n.name" );
                 List<String> list = result.list( record -> record.get( "n.name" ).asString() );
                 assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
             }
@@ -314,7 +314,7 @@ class DirectDriverBoltKitTest
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( -1 ).build() ) )
             {
                 Session session = driver.session();
-                StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+                Result result = session.run( "MATCH (n) RETURN n.name" );
                 List<String> list = result.list( record -> record.get( "n.name" ).asString() );
                 assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
             }
@@ -356,7 +356,7 @@ class DirectDriverBoltKitTest
                 Transaction transaction = session.beginTransaction() )
         {
             TransientException error = assertThrows( TransientException.class, () -> {
-                StatementResult result = transaction.run( "RETURN 1" );
+                Result result = transaction.run( "RETURN 1" );
                 result.consume();
             } );
             assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
@@ -376,7 +376,7 @@ class DirectDriverBoltKitTest
                 Session session = driver.session() )
         {
             Transaction transaction = session.beginTransaction();
-            StatementResult result = transaction.run( "CREATE (n {name:'Bob'})" );
+            Result result = transaction.run( "CREATE (n {name:'Bob'})" );
             result.consume();
 
             TransientException error = assertThrows( TransientException.class, transaction::commit );
@@ -396,7 +396,7 @@ class DirectDriverBoltKitTest
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
-            final StatementResult result = session.run( "MATCH (n) RETURN n.name" );
+            final Result result = session.run( "MATCH (n) RETURN n.name" );
             result.consume();
         }
         finally
@@ -450,7 +450,7 @@ class DirectDriverBoltKitTest
                   Session session = driver.session() )
             {
                 Transaction tx = session.beginTransaction();
-                StatementResult result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
+                Result result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
                 assertEquals( "Alice", result.single().get( "name" ).asString() );
 
                 TransientException e = assertThrows( TransientException.class, () -> txAction.accept( tx ) );

@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
@@ -179,7 +179,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
+            Result result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
@@ -221,7 +221,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
+            Result procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
@@ -237,7 +237,7 @@ class SessionResetIT
                 tx2.commit();
             }
 
-            StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+            Result result = session.run( "MATCH (n) RETURN count(n)" );
             long nodes = result.single().get( "count(n)" ).asLong();
             MatcherAssert.assertThat( nodes, equalTo( 1L ) );
         }
@@ -257,7 +257,7 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longRunningStatement({seconds})",
+                Result result = session.run( "CALL test.driver.longRunningStatement({seconds})",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
@@ -289,7 +289,7 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
+                Result result = session.run( "CALL test.driver.longStreamingResult({seconds})",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
@@ -426,7 +426,7 @@ class SessionResetIT
                 {
                     usedSessionRef.set( session );
                     latchToWait.await();
-                    StatementResult result = updateNodeId( session, nodeId, newNodeId );
+                    Result result = updateNodeId( session, nodeId, newNodeId );
                     result.consume();
                 }
             }
@@ -447,7 +447,7 @@ class SessionResetIT
                 {
                     usedSessionRef.set( session );
                     latchToWait.await();
-                    StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                    Result result = updateNodeId( tx, nodeId, newNodeId );
                     result.consume();
                 }
             }
@@ -473,7 +473,7 @@ class SessionResetIT
                     session.writeTransaction( tx ->
                     {
                         invocationsOfWork.incrementAndGet();
-                        StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                        Result result = updateNodeId( tx, nodeId, newNodeId );
                         result.consume();
                         return null;
                     } );
@@ -498,7 +498,7 @@ class SessionResetIT
             tx.commit();
 
             // Then the outcome of both statements should be visible
-            StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+            Result result = session.run( "MATCH (n) RETURN count(n)" );
             long nodes = result.single().get( "count(n)" ).asLong();
             assertThat( nodes, equalTo( 1L ) );
         }
@@ -584,7 +584,7 @@ class SessionResetIT
         {
             Future<Void> txResult = nodeIdUpdater.update( nodeId, newNodeId1, otherSessionRef, nodeLocked );
 
-            StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
+            Result result = updateNodeId( tx, nodeId, newNodeId2 );
             result.consume();
 
             nodeLocked.countDown();
@@ -598,7 +598,7 @@ class SessionResetIT
 
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n) RETURN n.id AS id" );
+            Result result = session.run( "MATCH (n) RETURN n.id AS id" );
             int value = result.single().get( "id" ).asInt();
             assertEquals( newNodeId2, value );
         }
@@ -612,7 +612,7 @@ class SessionResetIT
         }
     }
 
-    private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
+    private static Result updateNodeId(StatementRunner statementRunner, int currentId, int newId )
     {
         return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
@@ -753,7 +753,7 @@ class SessionResetIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result" );
+            Result result = session.run( "MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result" );
             return result.single().get( 0 ).asLong();
         }
     }

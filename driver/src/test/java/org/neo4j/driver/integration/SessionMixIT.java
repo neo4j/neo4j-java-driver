@@ -30,12 +30,12 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.types.Node;
@@ -144,7 +144,7 @@ class SessionMixIT
     @Test
     void shouldFailToExecuteBlockingRunChainedWithAsyncRun()
     {
-        CompletionStage<Void> result = asyncSession.runAsync( "RETURN 1" ).thenCompose( StatementResultCursor::singleAsync ).thenApply( record -> {
+        CompletionStage<Void> result = asyncSession.runAsync( "RETURN 1" ).thenCompose( ResultCursor::singleAsync ).thenApply(record -> {
             if ( EventLoopGroupFactory.isEventLoopThread( Thread.currentThread() ) )
             {
                 IllegalStateException e =
@@ -161,10 +161,10 @@ class SessionMixIT
     @Test
     void shouldAllowBlockingOperationInCommonPoolWhenChaining()
     {
-        CompletionStage<Node> nodeStage = asyncSession.runAsync( "RETURN 42 AS value" ).thenCompose( StatementResultCursor::singleAsync )
+        CompletionStage<Node> nodeStage = asyncSession.runAsync( "RETURN 42 AS value" ).thenCompose( ResultCursor::singleAsync )
                 // move execution to ForkJoinPool.commonPool()
                 .thenApplyAsync( record -> session.run( "CREATE (n:Node {value: $value}) RETURN n", record ) )
-                .thenApply( StatementResult::single )
+                .thenApply( Result::single )
                 .thenApply( record -> record.get( 0 ).asNode() );
 
         Node node = await( nodeStage );
@@ -173,8 +173,8 @@ class SessionMixIT
         assertEquals( 1, countNodesByLabel( "Node" ) );
     }
 
-    private void runNestedQueries( StatementResultCursor inputCursor, List<CompletionStage<Record>> stages,
-            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+    private void runNestedQueries(ResultCursor inputCursor, List<CompletionStage<Record>> stages,
+                                  CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
         stages.add( recordResponse );
@@ -195,14 +195,14 @@ class SessionMixIT
         } );
     }
 
-    private void runNestedQuery( StatementResultCursor inputCursor, Record record, List<CompletionStage<Record>> stages,
-            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+    private void runNestedQuery(ResultCursor inputCursor, Record record, List<CompletionStage<Record>> stages,
+                                CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
         long age = id * 10;
 
-        CompletionStage<StatementResultCursor> response =
+        CompletionStage<ResultCursor> response =
                 asyncSession.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p", parameters( "id", id, "age", age ) );
 
         response.whenComplete( ( cursor, error ) -> {
@@ -221,7 +221,7 @@ class SessionMixIT
     private long countNodesByLabel( String label )
     {
         CompletionStage<Long> countStage =
-                asyncSession.runAsync( "MATCH (n:" + label + ") RETURN count(n)" ).thenCompose( StatementResultCursor::singleAsync ).thenApply(
+                asyncSession.runAsync( "MATCH (n:" + label + ") RETURN count(n)" ).thenCompose( ResultCursor::singleAsync ).thenApply(
                         record -> record.get( 0 ).asLong() );
 
         return await( countStage );

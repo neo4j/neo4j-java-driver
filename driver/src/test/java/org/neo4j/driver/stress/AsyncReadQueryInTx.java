@@ -25,7 +25,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
@@ -54,7 +54,7 @@ public class AsyncReadQueryInTx<C extends AbstractContext> extends AbstractAsync
         return txCommitted;
     }
 
-    private CompletionStage<ResultSummary> processRecordAndGetSummary( Record record, StatementResultCursor cursor )
+    private CompletionStage<ResultSummary> processRecordAndGetSummary( Record record, ResultCursor cursor )
     {
         if ( record != null )
         {

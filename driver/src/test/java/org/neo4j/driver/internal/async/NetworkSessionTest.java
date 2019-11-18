@@ -28,7 +28,7 @@ import org.mockito.InOrder;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -124,7 +124,7 @@ class NetworkSessionTest
         await( beginTransaction( session ).closeAsync() );
 
         // When
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
 
         // Then we should've gotten a transaction object back
         assertNotNull( tx );
@@ -222,7 +222,7 @@ class NetworkSessionTest
     @Test
     void acquiresNewConnectionForBeginTx()
     {
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
 
         assertNotNull( tx );
         verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
@@ -238,7 +238,7 @@ class NetworkSessionTest
 
         when( connection.protocol() ).thenReturn( protocol );
 
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
         assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
         Bookmark bookmark = (InternalBookmark) session.lastBookmark();
         assertTrue( bookmark.isEmpty() );
@@ -253,7 +253,7 @@ class NetworkSessionTest
         String query = "RETURN 42";
         setupSuccessfulRunAndPull( connection, query );
 
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
         await( tx.runAsync( new Statement( query ), false ) );
 
         verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
@@ -269,7 +269,7 @@ class NetworkSessionTest
         Bookmark bookmark = InternalBookmark.parse( "Bookmarks" );
         NetworkSession session = newSession( connectionProvider, bookmark );
 
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
         assertNotNull( tx );
         verifyBeginTx( connection, bookmark );
     }
@@ -287,11 +287,11 @@ class NetworkSessionTest
 
         when( connection.protocol() ).thenReturn( protocol );
 
-        ExplicitTransaction tx1 = beginTransaction( session );
+        UnmanagedTransaction tx1 = beginTransaction( session );
         await( tx1.commitAsync() );
         assertEquals( bookmark1, session.lastBookmark() );
 
-        ExplicitTransaction tx2 = beginTransaction( session );
+        UnmanagedTransaction tx2 = beginTransaction( session );
         verifyBeginTx( connection, bookmark1 );
         await( tx2.commitAsync() );
 
@@ -443,7 +443,7 @@ class NetworkSessionTest
     @Test
     void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset()
     {
-        ExplicitTransaction tx = beginTransaction( session );
+        UnmanagedTransaction tx = beginTransaction( session );
 
         assertTrue( tx.isOpen() );
         verify( connection, never() ).reset();
@@ -453,12 +453,12 @@ class NetworkSessionTest
         verify( connection ).reset();
     }
 
-    private static StatementResultCursor run( NetworkSession session, String statement )
+    private static ResultCursor run(NetworkSession session, String statement )
     {
         return await( session.runAsync( new Statement( statement ), TransactionConfig.empty(), false ) );
     }
 
-    private static ExplicitTransaction beginTransaction( NetworkSession session )
+    private static UnmanagedTransaction beginTransaction(NetworkSession session )
     {
         return await( session.beginTransactionAsync( TransactionConfig.empty() ) );
     }

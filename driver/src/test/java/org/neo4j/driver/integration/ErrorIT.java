@@ -38,7 +38,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -80,7 +80,7 @@ class ErrorIT
     {
         ClientException e = assertThrows( ClientException.class, () ->
         {
-            StatementResult result = session.run( "invalid statement" );
+            Result result = session.run( "invalid statement" );
             result.consume();
         } );
 
@@ -99,7 +99,7 @@ class ErrorIT
         // Expect
         ClientException e = assertThrows( ClientException.class, () ->
         {
-            StatementResult cursor = tx.run( "RETURN 1" );
+            Result cursor = tx.run( "RETURN 1" );
             cursor.single().get( "1" ).asInt();
         } );
         assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
@@ -112,7 +112,7 @@ class ErrorIT
         try { session.run( "invalid" ).consume(); } catch ( ClientException e ) {/*empty*/}
 
         // When
-        StatementResult cursor = session.run( "RETURN 1" );
+        Result cursor = session.run( "RETURN 1" );
         int val = cursor.single().get( "1" ).asInt();
 
         // Then
@@ -132,7 +132,7 @@ class ErrorIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            StatementResult cursor = tx.run( "RETURN 1" );
+            Result cursor = tx.run( "RETURN 1" );
             int val = cursor.single().get( "1" ).asInt();
 
             // Then

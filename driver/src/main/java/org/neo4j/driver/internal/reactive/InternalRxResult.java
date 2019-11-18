@@ -29,20 +29,20 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.summary.ResultSummary;
 
 import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 import static reactor.core.publisher.FluxSink.OverflowStrategy.IGNORE;
 
-public class InternalRxStatementResult implements RxStatementResult
+public class InternalRxResult implements RxResult
 {
-    private Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier;
-    private volatile CompletionStage<RxStatementResultCursor> cursorFuture;
+    private Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier;
+    private volatile CompletionStage<RxResultCursor> cursorFuture;
 
-    public InternalRxStatementResult( Supplier<CompletionStage<RxStatementResultCursor>> cursorFuture )
+    public InternalRxResult(Supplier<CompletionStage<RxResultCursor>> cursorFuture )
     {
         this.cursorFutureSupplier = cursorFuture;
     }
@@ -50,7 +50,7 @@ public class InternalRxStatementResult implements RxStatementResult
     @Override
     public Publisher<List<String>> keys()
     {
-        return Mono.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).map( RxStatementResultCursor::keys )
+        return Mono.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).map( RxResultCursor::keys )
                 .onErrorMap( Futures::completionExceptionCause ) );
     }
 
@@ -105,7 +105,7 @@ public class InternalRxStatementResult implements RxStatementResult
         };
     }
 
-    private CompletionStage<RxStatementResultCursor> getCursorFuture()
+    private CompletionStage<RxResultCursor> getCursorFuture()
     {
         if ( cursorFuture != null )
         {
@@ -114,7 +114,7 @@ public class InternalRxStatementResult implements RxStatementResult
         return initCursorFuture();
     }
 
-    synchronized CompletionStage<RxStatementResultCursor> initCursorFuture()
+    synchronized CompletionStage<RxResultCursor> initCursorFuture()
     {
         // A quick path to return
         if ( cursorFuture != null )
@@ -155,7 +155,7 @@ public class InternalRxStatementResult implements RxStatementResult
     }
 
     // For testing purpose
-    Supplier<CompletionStage<RxStatementResultCursor>> cursorFutureSupplier()
+    Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier()
     {
         return this.cursorFutureSupplier;
     }

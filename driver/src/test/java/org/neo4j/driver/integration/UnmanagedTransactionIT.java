@@ -33,12 +33,12 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -60,7 +60,7 @@ import static org.neo4j.driver.util.TestUtil.await;
 
 
 @ParallelizableIT
-class ExplicitTransactionIT
+class UnmanagedTransactionIT
 {
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
@@ -79,22 +79,22 @@ class ExplicitTransactionIT
         session.closeAsync();
     }
 
-    private ExplicitTransaction beginTransaction()
+    private UnmanagedTransaction beginTransaction()
     {
         return beginTransaction( session );
     }
 
-    private ExplicitTransaction beginTransaction( NetworkSession session )
+    private UnmanagedTransaction beginTransaction(NetworkSession session )
     {
         return await( session.beginTransactionAsync( TransactionConfig.empty() ) );
     }
 
-    private StatementResultCursor sessionRun( NetworkSession session, Statement statement )
+    private ResultCursor sessionRun(NetworkSession session, Statement statement )
     {
         return await( session.runAsync( statement, TransactionConfig.empty(), true ) );
     }
 
-    private StatementResultCursor txRun( ExplicitTransaction tx, String statement )
+    private ResultCursor txRun(UnmanagedTransaction tx, String statement )
     {
         return await( tx.runAsync( new Statement( statement ), true ) );
     }
@@ -102,7 +102,7 @@ class ExplicitTransactionIT
     @Test
     void shouldDoNothingWhenCommittedSecondTime()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         assertNull( await( tx.commitAsync() ) );
 
@@ -113,7 +113,7 @@ class ExplicitTransactionIT
     @Test
     void shouldFailToCommitAfterRollback()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         assertNull( await( tx.rollbackAsync() ) );
 
@@ -125,7 +125,7 @@ class ExplicitTransactionIT
     @Test
     void shouldFailToCommitAfterTermination()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         tx.markTerminated();
 
@@ -136,7 +136,7 @@ class ExplicitTransactionIT
     @Test
     void shouldDoNothingWhenRolledBackSecondTime()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         assertNull( await( tx.rollbackAsync() ) );
 
@@ -147,7 +147,7 @@ class ExplicitTransactionIT
     @Test
     void shouldFailToRollbackAfterCommit()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         assertNull( await( tx.commitAsync() ) );
 
@@ -159,7 +159,7 @@ class ExplicitTransactionIT
     @Test
     void shouldRollbackAfterTermination()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
 
         tx.markTerminated();
 
@@ -170,7 +170,7 @@ class ExplicitTransactionIT
     @Test
     void shouldFailToRunQueryWhenTerminated()
     {
-        ExplicitTransaction tx = beginTransaction();
+        UnmanagedTransaction tx = beginTransaction();
         txRun( tx, "CREATE (:MyLabel)" );
         tx.markTerminated();
 
@@ -181,7 +181,7 @@ class ExplicitTransactionIT
     @Test
     void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated()
     {
-        ExplicitTransaction tx1 = beginTransaction();
+        UnmanagedTransaction tx1 = beginTransaction();
         tx1.markTerminated();
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
@@ -190,9 +190,9 @@ class ExplicitTransactionIT
 
         await( session.beginTransactionAsync( TransactionConfig.empty() )
                 .thenCompose( tx -> tx.runAsync( new Statement( "CREATE (:Node {id: 42})" ), true )
-                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenCompose( ResultCursor::consumeAsync )
                         .thenApply( ignore -> tx )
-                ).thenCompose( ExplicitTransaction::commitAsync ) );
+                ).thenCompose( UnmanagedTransaction::commitAsync ) );
 
         assertEquals( 1, countNodes( 42 ) );
     }
@@ -212,7 +212,7 @@ class ExplicitTransactionIT
     private int countNodes( Object id )
     {
         Statement statement = new Statement( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) );
-        StatementResultCursor cursor = sessionRun( session, statement );
+        ResultCursor cursor = sessionRun( session, statement );
         return await( cursor.singleAsync() ).get( 0 ).asInt();
     }
 
@@ -225,7 +225,7 @@ class ExplicitTransactionIT
         {
             NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.defaultConfig() );
             {
-                ExplicitTransaction tx = beginTransaction( session );
+                UnmanagedTransaction tx = beginTransaction( session );
 
                 // run query but do not consume the result
                 txRun( tx, "UNWIND range(0, 10000) AS x RETURN x + 1" );

@@ -28,7 +28,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -46,25 +46,25 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement )
+    public CompletionStage<ResultCursor> runAsync(Statement statement )
     {
         return runAsync( statement, TransactionConfig.empty() );
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(String statement, TransactionConfig config )
     {
         return runAsync( statement, emptyMap(), config );
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(String statement, Map<String,Object> parameters, TransactionConfig config )
     {
         return runAsync( new Statement( statement, parameters ), config );
     }
 
     @Override
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config )
+    public CompletionStage<ResultCursor> runAsync(Statement statement, TransactionConfig config )
     {
         return session.runAsync( statement, config, true );
     }
@@ -121,7 +121,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
     {
         return session.retryLogic().retryAsync( () -> {
             CompletableFuture<T> resultFuture = new CompletableFuture<>();
-            CompletionStage<ExplicitTransaction> txFuture = session.beginTransactionAsync( mode, config );
+            CompletionStage<UnmanagedTransaction> txFuture = session.beginTransactionAsync( mode, config );
 
             txFuture.whenComplete( ( tx, completionError ) -> {
                 Throwable error = Futures.completionExceptionCause( completionError );
@@ -139,7 +139,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
         } );
     }
 
-    private <T> void executeWork( CompletableFuture<T> resultFuture, ExplicitTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )
+    private <T> void executeWork(CompletableFuture<T> resultFuture, UnmanagedTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )
     {
         CompletionStage<T> workFuture = safeExecuteWork( tx, work );
         workFuture.whenComplete( ( result, completionError ) -> {
@@ -155,7 +155,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
         } );
     }
 
-    private <T> CompletionStage<T> safeExecuteWork( ExplicitTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )
+    private <T> CompletionStage<T> safeExecuteWork(UnmanagedTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )
     {
         // given work might fail in both async and sync way
         // async failure will result in a failed future being returned
@@ -174,7 +174,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
         }
     }
 
-    private <T> void rollbackTxAfterFailedTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture, Throwable error )
+    private <T> void rollbackTxAfterFailedTransactionWork(UnmanagedTransaction tx, CompletableFuture<T> resultFuture, Throwable error )
     {
         if ( tx.isOpen() )
         {
@@ -192,7 +192,7 @@ public class InternalAsyncSession extends AsyncAbstractStatementRunner implement
         }
     }
 
-    private <T> void closeTxAfterSucceededTransactionWork( ExplicitTransaction tx, CompletableFuture<T> resultFuture, T result )
+    private <T> void closeTxAfterSucceededTransactionWork(UnmanagedTransaction tx, CompletableFuture<T> resultFuture, T result )
     {
         if ( tx.isOpen() )
         {

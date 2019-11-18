@@ -21,7 +21,7 @@ package org.neo4j.docs.driver;
 // tag::read-write-transaction-import[]
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 
@@ -67,7 +67,7 @@ public class ReadWriteTransactionExample extends BaseApplication
 
     private static long matchPersonNode( Transaction tx, String name )
     {
-        StatementResult result = tx.run( "MATCH (a:Person {name: $name}) RETURN id(a)", parameters( "name", name ) );
+        Result result = tx.run( "MATCH (a:Person {name: $name}) RETURN id(a)", parameters( "name", name ) );
         return result.single().get( 0 ).asLong();
     }
     // end::read-write-transaction[]

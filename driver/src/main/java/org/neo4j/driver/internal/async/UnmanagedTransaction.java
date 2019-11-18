@@ -26,11 +26,11 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
-import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursor;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
@@ -38,7 +38,7 @@ import org.neo4j.driver.internal.util.Futures;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-public class ExplicitTransaction
+public class UnmanagedTransaction
 {
     private enum State
     {
@@ -66,7 +66,7 @@ public class ExplicitTransaction
 
     private volatile State state = State.ACTIVE;
 
-    public ExplicitTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
+    public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
@@ -75,7 +75,7 @@ public class ExplicitTransaction
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<ExplicitTransaction> beginAsync( Bookmark initialBookmark, TransactionConfig config )
+    public CompletionStage<UnmanagedTransaction> beginAsync(Bookmark initialBookmark, TransactionConfig config )
     {
         return protocol.beginTransaction( connection, initialBookmark, config )
                 .handle( ( ignore, beginError ) ->
@@ -138,19 +138,19 @@ public class ExplicitTransaction
         }
     }
 
-    public CompletionStage<StatementResultCursor> runAsync( Statement statement, boolean waitForRunResponse )
+    public CompletionStage<ResultCursor> runAsync(Statement statement, boolean waitForRunResponse )
     {
         ensureCanRunQueries();
-        CompletionStage<AsyncStatementResultCursor> cursorStage =
+        CompletionStage<AsyncResultCursor> cursorStage =
                 protocol.runInExplicitTransaction( connection, statement, this, waitForRunResponse, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
         return cursorStage.thenApply( cursor -> cursor );
     }
 
-    public CompletionStage<RxStatementResultCursor> runRx( Statement statement )
+    public CompletionStage<RxResultCursor> runRx(Statement statement )
     {
         ensureCanRunQueries();
-        CompletionStage<RxStatementResultCursor> cursorStage =
+        CompletionStage<RxResultCursor> cursorStage =
                 protocol.runInExplicitTransaction( connection, statement, this, false, fetchSize ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;

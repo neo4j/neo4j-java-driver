@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -164,7 +164,7 @@ class StatementIT
         session.run( "CREATE (a {name:'Adam'})" );
 
         // And I run a read statement
-        StatementResult result2 = session.run( "MATCH (a) RETURN a.name" );
+        Result result2 = session.run( "MATCH (a) RETURN a.name" );
 
         // Then I expect to get the name back
         Value name = null;

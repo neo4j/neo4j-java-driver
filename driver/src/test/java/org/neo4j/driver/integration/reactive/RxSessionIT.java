@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -39,7 +39,7 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -65,7 +65,7 @@ class RxSessionIT
     {
         // When
         RxSession session = neo4j.driver().rxSession();
-        RxStatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         StepVerifier.create( Flux.from( res.records() ).map( r -> r.get( "a" ).asInt() ) )
@@ -82,12 +82,12 @@ class RxSessionIT
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
-        RxStatementResult res1 = session.run( "INVALID" );
+        RxResult res1 = session.run( "INVALID" );
 
         StepVerifier.create( res1.records() ).expectError( ClientException.class ).verify();
 
         // When
-        RxStatementResult res2 = session.run( "RETURN 1" );
+        RxResult res2 = session.run( "RETURN 1" );
 
         // Then
         StepVerifier.create( res2.records() ).assertNext( record -> {
@@ -196,7 +196,7 @@ class RxSessionIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n:" + label + ") RETURN count(n)" );
+            Result result = session.run( "MATCH (n:" + label + ") RETURN count(n)" );
             return result.single().get( 0 ).asLong();
         }
     }

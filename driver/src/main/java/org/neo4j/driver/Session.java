@@ -141,7 +141,7 @@ public interface Session extends Resource, StatementRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    StatementResult run( String statement, TransactionConfig config );
+    Result run(String statement, TransactionConfig config );
 
     /**
      * Run a statement with parameters in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
@@ -169,7 +169,7 @@ public interface Session extends Resource, StatementRunner
      * Map<String, Object> parameters = new HashMap<>();
      * parameters.put("myNameParam", "Bob");
      *
-     * StatementResult cursor = session.run("MATCH (n) WHERE n.name = {myNameParam} RETURN (n)", parameters, config);
+     * Result result = session.run("MATCH (n) WHERE n.name = {myNameParam} RETURN (n)", parameters, config);
      * }
      * </pre>
      *
@@ -178,7 +178,7 @@ public interface Session extends Resource, StatementRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config );
+    Result run(String statement, Map<String,Object> parameters, TransactionConfig config );
 
     /**
      * Run a statement in an auto-commit transaction with specified {@link TransactionConfig configuration} and return a result stream.
@@ -194,7 +194,7 @@ public interface Session extends Resource, StatementRunner
      *                 .build();
      *
      * Statement statement = new Statement("MATCH (n) WHERE n.name=$myNameParam RETURN n.age");
-     * StatementResult cursor = session.run(statement.withParameters(Values.parameters("myNameParam", "Bob")));
+     * Result result = session.run(statement.withParameters(Values.parameters("myNameParam", "Bob")));
      * }
      * </pre>
      *
@@ -202,7 +202,7 @@ public interface Session extends Resource, StatementRunner
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    StatementResult run( Statement statement, TransactionConfig config );
+    Result run(Statement statement, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed

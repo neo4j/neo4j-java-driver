@@ -21,7 +21,7 @@ package org.neo4j.driver.stress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 
 import static org.hamcrest.Matchers.is;
@@ -43,7 +43,7 @@ public class BlockingFailingQueryInTx<C extends AbstractContext> extends Abstrac
         {
             try ( Transaction tx = beginTransaction( session, context ) )
             {
-                StatementResult result = tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
+                Result result = tx.run( "UNWIND [10, 5, 0] AS x RETURN 10 / x" );
 
                 Exception e = assertThrows( Exception.class, result::consume );
                 assertThat( e, is( arithmeticError() ) );

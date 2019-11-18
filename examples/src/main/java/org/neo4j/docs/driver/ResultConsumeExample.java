@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 // end::result-consume-import[]
@@ -55,7 +55,7 @@ public class ResultConsumeExample extends BaseApplication
     private static List<String> matchPersonNodes( Transaction tx )
     {
         List<String> names = new ArrayList<>();
-        StatementResult result = tx.run( "MATCH (a:Person) RETURN a.name ORDER BY a.name" );
+        Result result = tx.run( "MATCH (a:Person) RETURN a.name ORDER BY a.name" );
         while ( result.hasNext() )
         {
             names.add( result.next().get( 0 ).asString() );

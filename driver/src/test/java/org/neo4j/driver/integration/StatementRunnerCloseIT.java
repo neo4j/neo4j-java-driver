@@ -27,9 +27,9 @@ import java.util.concurrent.ExecutorService;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -65,7 +65,7 @@ class StatementRunnerCloseIT
     void shouldErrorToAccessRecordsAfterConsume()
     {
         // Given
-        StatementResult result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
+        Result result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
 
         // When
         result.consume();
@@ -86,7 +86,7 @@ class StatementRunnerCloseIT
     {
         // Given
         Session session = neo4j.driver().session();
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
+        Result result = session.run("UNWIND [1,2] AS a RETURN a");
 
         // When
         session.close();
@@ -106,7 +106,7 @@ class StatementRunnerCloseIT
     void shouldAllowConsumeAndKeysAfterConsume()
     {
         // Given
-        StatementResult result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
+        Result result = neo4j.driver().session().run("UNWIND [1,2] AS a RETURN a");
         List<String> keys = result.keys();
 
         // When
@@ -125,7 +125,7 @@ class StatementRunnerCloseIT
     {
         // Given
         Session session = neo4j.driver().session();
-        StatementResult result = session.run("UNWIND [1,2] AS a RETURN a");
+        Result result = session.run("UNWIND [1,2] AS a RETURN a");
         List<String> keys = result.keys();
         ResultSummary summary = result.consume();
 
@@ -145,7 +145,7 @@ class StatementRunnerCloseIT
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
-        StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
+        ResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
 
         // When
         await( result.consumeAsync() );
@@ -164,7 +164,7 @@ class StatementRunnerCloseIT
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
-        StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
+        ResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
 
         // When
         await( session.closeAsync() );
@@ -182,7 +182,7 @@ class StatementRunnerCloseIT
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
-        StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
+        ResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
 
         List<String> keys = result.keys();
 
@@ -202,7 +202,7 @@ class StatementRunnerCloseIT
     {
         // Given
         AsyncSession session = neo4j.driver().asyncSession();
-        StatementResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
+        ResultCursor result = await( session.runAsync( "UNWIND [1,2] AS a RETURN a" ) );
         List<String> keys = result.keys();
         ResultSummary summary = await( result.consumeAsync() );
 

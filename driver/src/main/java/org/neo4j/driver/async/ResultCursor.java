@@ -27,7 +27,7 @@ import java.util.function.Function;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Records;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -61,7 +61,7 @@ import org.neo4j.driver.summary.ResultSummary;
  *
  * @since 1.5
  */
-public interface StatementResultCursor
+public interface ResultCursor
 {
     /**
      * Retrieve the keys of the records this result cursor contains.
@@ -75,7 +75,7 @@ public interface StatementResultCursor
      * <p>
      * If the records in the result is not fully consumed, then calling this method will exhausts the result.
      * <p>
-     * If you want to access unconsumed records after summary, you shall use {@link StatementResult#list()} to buffer all records into memory before summary.
+     * If you want to access unconsumed records after summary, you shall use {@link Result#list()} to buffer all records into memory before summary.
      *
      * @return a {@link CompletionStage} completed with a summary for the whole query result. Stage can also be
      * completed exceptionally if query execution fails.

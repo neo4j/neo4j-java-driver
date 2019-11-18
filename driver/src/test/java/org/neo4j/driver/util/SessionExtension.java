@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
@@ -120,49 +120,49 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
-    public StatementResult run( String statementText, Map<String,Object> statementParameters )
+    public Result run(String statementText, Map<String,Object> statementParameters )
     {
         return realSession.run( statementText, statementParameters );
     }
 
     @Override
-    public StatementResult run( String statementText, Value parameters )
+    public Result run(String statementText, Value parameters )
     {
         return realSession.run( statementText, parameters );
     }
 
     @Override
-    public StatementResult run( String statementText, Record parameters )
+    public Result run(String statementText, Record parameters )
     {
         return realSession.run( statementText, parameters );
     }
 
     @Override
-    public StatementResult run( String statementTemplate )
+    public Result run(String statementTemplate )
     {
         return realSession.run( statementTemplate );
     }
 
     @Override
-    public StatementResult run( Statement statement )
+    public Result run(Statement statement )
     {
         return realSession.run( statement.text(), statement.parameters() );
     }
 
     @Override
-    public StatementResult run( String statement, TransactionConfig config )
+    public Result run(String statement, TransactionConfig config )
     {
         return realSession.run( statement, config );
     }
 
     @Override
-    public StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    public Result run(String statement, Map<String,Object> parameters, TransactionConfig config )
     {
         return realSession.run( statement, parameters, config );
     }
 
     @Override
-    public StatementResult run( Statement statement, TransactionConfig config )
+    public Result run(Statement statement, TransactionConfig config )
     {
         return realSession.run( statement, config );
     }

@@ -41,7 +41,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see Subscription
  * @since 2.0
  */
-public interface RxStatementResult
+public interface RxResult
 {
     /**
      * Returns a cold publisher of keys.
@@ -69,7 +69,7 @@ public interface RxStatementResult
      * Returns a cold unicast publisher of records.
      * <p>
      * When the record publisher is {@linkplain Publisher#subscribe(Subscriber) subscribed},
-     * the query statement is executed and the statement result is streamed back as a record stream followed by a result summary.
+     * the query statement is executed and the result is streamed back as a record stream followed by a result summary.
      * This record publisher publishes all records in the result and signals the completion.
      * However before completion or error reporting if any, a cleanup of result resources such as network connection will be carried out automatically.
      * <p>

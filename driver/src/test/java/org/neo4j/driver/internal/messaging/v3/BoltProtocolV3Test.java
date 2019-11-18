@@ -42,10 +42,10 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -359,8 +359,8 @@ public class BoltProtocolV3Test
         // Given
         Connection connection = connectionMock( mode, protocol );
 
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
-                protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture =
+                protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE ).asyncResult().toCompletableFuture();
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, InternalBookmark.empty(), TransactionConfig.empty(), mode ).runHandler;
         assertFalse( cursorFuture.isDone() );
@@ -385,7 +385,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         Bookmark initialBookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx987" );
 
-        CompletionStage<AsyncStatementResultCursor> cursorStage;
+        CompletionStage<AsyncResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( initialBookmark );
@@ -393,9 +393,9 @@ public class BoltProtocolV3Test
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
+            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE ).asyncResult();
         }
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
@@ -415,7 +415,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();
@@ -437,7 +437,7 @@ public class BoltProtocolV3Test
         Connection connection = connectionMock( mode, protocol );
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( bookmark );
 
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture =
+        CompletableFuture<AsyncResultCursor> cursorFuture =
                 protocol.runInAutoCommitTransaction( connection, STATEMENT, bookmarkHolder, config, true, UNLIMITED_FETCH_SIZE )
                         .asyncResult()
                         .toCompletableFuture();

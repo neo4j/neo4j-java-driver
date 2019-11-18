@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -61,7 +61,7 @@ class ResultStreamIT
     void shouldAllowIteratingOverResultStream()
     {
         // When
-        StatementResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
+        Result res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
 
         // Then I should be able to iterate over the result
         int idx = 1;
@@ -75,7 +75,7 @@ class ResultStreamIT
     void shouldHaveFieldNamesInResult()
     {
         // When
-        StatementResult res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
+        Result res = session.run( "CREATE (n:TestNode {name:'test'}) RETURN n" );
 
         // Then
         assertEquals( "[n]", res.keys().toString() );
@@ -87,7 +87,7 @@ class ResultStreamIT
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingField()
     {
         // Given
-        StatementResult rs =
+        Result rs =
                 session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
@@ -101,7 +101,7 @@ class ResultStreamIT
     void shouldGiveHelpfulFailureMessageWhenAccessNonExistingPropertyOnNode()
     {
         // Given
-        StatementResult rs =
+        Result rs =
                 session.run( "CREATE (n:Person {name:$name}) RETURN n", parameters( "name", "Tom Hanks" ) );
 
         // When
@@ -115,7 +115,7 @@ class ResultStreamIT
     void shouldNotReturnNullKeysOnEmptyResult()
     {
         // Given
-        StatementResult rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
+        Result rs = session.run( "CREATE (n:Person {name:$name})", parameters( "name", "Tom Hanks" ) );
 
         // THEN
         assertNotNull( rs.keys() );
@@ -125,11 +125,11 @@ class ResultStreamIT
     void shouldBeAbleToReuseSessionAfterFailure()
     {
         // Given
-        StatementResult res1 = session.run( "INVALID" );
+        Result res1 = session.run( "INVALID" );
         assertThrows( Exception.class, res1::consume );
 
         // When
-        StatementResult res2 = session.run( "RETURN 1" );
+        Result res2 = session.run( "RETURN 1" );
 
         // Then
         assertTrue( res2.hasNext() );
@@ -140,7 +140,7 @@ class ResultStreamIT
     void shouldBeAbleToAccessSummaryAfterFailure()
     {
         // Given
-        StatementResult res1 = session.run( "INVALID" );
+        Result res1 = session.run( "INVALID" );
         ResultSummary summary;
 
         // When
@@ -157,19 +157,19 @@ class ResultStreamIT
     @Test
     void shouldBeAbleToAccessSummaryAfterTransactionFailure()
     {
-        AtomicReference<StatementResult> resultRef = new AtomicReference<>();
+        AtomicReference<Result> resultRef = new AtomicReference<>();
 
         assertThrows( ClientException.class, () ->
         {
             try ( Transaction tx = session.beginTransaction() )
             {
-                StatementResult result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
+                Result result = tx.run( "UNWIND [1,2,0] AS x RETURN 10/x" );
                 resultRef.set( result );
                 tx.commit();
             }
         } );
 
-        StatementResult result = resultRef.get();
+        Result result = resultRef.get();
         assertNotNull( result );
         assertEquals( 0, result.consume().counters().nodesCreated() );
     }
@@ -177,7 +177,7 @@ class ResultStreamIT
     @Test
     void shouldHasNoElementsAfterFailure()
     {
-        StatementResult result = session.run( "INVALID" );
+        Result result = session.run( "INVALID" );
 
         assertThrows( ClientException.class, result::hasNext );
         assertFalse( result.hasNext() );
@@ -186,14 +186,14 @@ class ResultStreamIT
     @Test
     void shouldBeAnEmptyLitAfterFailure()
     {
-        StatementResult result = session.run( "UNWIND (0, 1) as i RETURN 10 / i" );
+        Result result = session.run( "UNWIND (0, 1) as i RETURN 10 / i" );
 
         assertThrows( ClientException.class, result::list );
         assertTrue( result.list().isEmpty() );
     }
 
     @Test
-    void shouldConvertEmptyStatementResultToStream()
+    void shouldConvertEmptyResultToStream()
     {
         long count = session.run( "MATCH (n:WrongLabel) RETURN n" )
                 .stream()
@@ -209,7 +209,7 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldConvertStatementResultToStream()
+    void shouldConvertResultToStream()
     {
         List<Integer> receivedList = session.run( "UNWIND range(1, 10) AS x RETURN x" )
                 .stream()
@@ -221,7 +221,7 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldConvertImmediatelyFailingStatementResultToStream()
+    void shouldConvertImmediatelyFailingResultToStream()
     {
         List<Integer> seen = new ArrayList<>();
 
@@ -236,7 +236,7 @@ class ResultStreamIT
     }
 
     @Test
-    void shouldConvertEventuallyFailingStatementResultToStream()
+    void shouldConvertEventuallyFailingResultToStream()
     {
         List<Integer> seen = new ArrayList<>();
 
@@ -254,7 +254,7 @@ class ResultStreamIT
     @Test
     void shouldEmptyResultWhenConvertedToStream()
     {
-        StatementResult result = session.run( "UNWIND range(1, 10) AS x RETURN x" );
+        Result result = session.run( "UNWIND range(1, 10) AS x RETURN x" );
 
         assertTrue( result.hasNext() );
         assertEquals( 1, result.next().get( 0 ).asInt() );

@@ -33,7 +33,7 @@ import org.neo4j.driver.util.Pair;
  * Container for Cypher result values.
  * <p>
  * Streams of records are returned from Cypher statement execution, contained
- * within a {@link StatementResult}.
+ * within a {@link Result}.
  * <p>
  * A record is a form of ordered map and, as such, contained values can be
  * accessed by either positional {@link #get(int) index} or textual

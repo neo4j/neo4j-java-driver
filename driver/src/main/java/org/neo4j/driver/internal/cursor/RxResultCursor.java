@@ -28,7 +28,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.summary.ResultSummary;
 
-public interface RxStatementResultCursor extends Subscription, FailableCursor
+public interface RxResultCursor extends Subscription, FailableCursor
 {
     List<String> keys();
 

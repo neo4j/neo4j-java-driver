@@ -28,7 +28,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.ConnectionContext;
@@ -74,7 +74,7 @@ class InternalTransactionTest
         tx = session.beginTransaction();
     }
 
-    private static Stream<Function<Transaction,StatementResult>> allSessionRunMethods()
+    private static Stream<Function<Transaction, Result>> allSessionRunMethods()
     {
         return Stream.of(
                 tx -> tx.run( "RETURN 1" ),
@@ -88,11 +88,11 @@ class InternalTransactionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<Transaction,StatementResult> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<Transaction, Result> runReturnOne ) throws Throwable
     {
         setupSuccessfulRunAndPull( connection );
 
-        StatementResult result = runReturnOne.apply( tx );
+        Result result = runReturnOne.apply( tx );
         ResultSummary summary = result.consume();
 
         verifyRunAndPull( connection, summary.statement().text() );

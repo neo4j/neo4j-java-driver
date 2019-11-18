@@ -21,7 +21,7 @@ package org.neo4j.driver.stress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,7 +39,7 @@ public class BlockingWriteQueryInTx<C extends AbstractContext> extends AbstractB
     @Override
     public void execute( C context )
     {
-        StatementResult result = null;
+        Result result = null;
         Throwable txError = null;
 
         try ( Session session = newSession( AccessMode.WRITE, context ) )

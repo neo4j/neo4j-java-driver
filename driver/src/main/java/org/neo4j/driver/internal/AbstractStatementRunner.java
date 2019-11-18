@@ -22,37 +22,35 @@ import java.util.Map;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.StatementRunner;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.types.TypeSystem;
 
 public abstract class AbstractStatementRunner implements StatementRunner
 {
     @Override
-    public final StatementResult run( String statementTemplate, Value parameters )
+    public final Result run(String statementTemplate, Value parameters )
     {
         return run( new Statement( statementTemplate, parameters ) );
     }
 
     @Override
-    public final StatementResult run( String statementTemplate, Map<String,Object> statementParameters )
+    public final Result run(String statementTemplate, Map<String,Object> statementParameters )
     {
         return run( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final StatementResult run( String statementTemplate, Record statementParameters )
+    public final Result run(String statementTemplate, Record statementParameters )
     {
         return run( statementTemplate, parameters( statementParameters ) );
     }
 
     @Override
-    public final StatementResult run( String statementText )
+    public final Result run(String statementText )
     {
         return run( statementText, Values.EmptyMap );
     }

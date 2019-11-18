@@ -21,9 +21,9 @@ package org.neo4j.driver.internal.messaging.v4;
 import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.StatementResultCursorFactoryImpl;
-import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cursor.ResultCursorFactoryImpl;
+import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
@@ -48,15 +48,15 @@ public class BoltProtocolV4 extends BoltProtocolV3
     }
 
     @Override
-    protected StatementResultCursorFactory buildResultCursorFactory( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            ExplicitTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long fetchSize )
+    protected ResultCursorFactory buildResultCursorFactory(Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+                                                           UnmanagedTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long fetchSize )
     {
         RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
 
         PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( statement, runHandler, connection, bookmarkHolder, tx, fetchSize );
         PullResponseHandler pullHandler = newBoltV4BasicPullHandler( statement, runHandler, connection, bookmarkHolder, tx );
 
-        return new StatementResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
+        return new ResultCursorFactoryImpl( connection, runMessage, runHandler, pullHandler, pullAllHandler, waitForRunResponse );
     }
 
     @Override

@@ -29,13 +29,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class DisposableAsyncStatementResultCursorTest
+class DisposableAsyncResultCursorTest
 {
     @Test
     void summaryShouldDisposeCursor() throws Throwable
     {
         // Given
-        DisposableAsyncStatementResultCursor cursor = newCursor();
+        DisposableAsyncResultCursor cursor = newCursor();
 
         // When
         await( cursor.consumeAsync() );
@@ -48,7 +48,7 @@ class DisposableAsyncStatementResultCursorTest
     void consumeShouldDisposeCursor() throws Throwable
     {
         // Given
-        DisposableAsyncStatementResultCursor cursor = newCursor();
+        DisposableAsyncResultCursor cursor = newCursor();
 
         // When
         await( cursor.discardAllFailureAsync() );
@@ -61,7 +61,7 @@ class DisposableAsyncStatementResultCursorTest
     void shouldNotDisposeCursor() throws Throwable
     {
         // Given
-        DisposableAsyncStatementResultCursor cursor = newCursor();
+        DisposableAsyncResultCursor cursor = newCursor();
 
         // When
         cursor.keys();
@@ -77,9 +77,9 @@ class DisposableAsyncStatementResultCursorTest
         assertFalse( cursor.isDisposed() );
     }
 
-    private static DisposableAsyncStatementResultCursor newCursor()
+    private static DisposableAsyncResultCursor newCursor()
     {
-        AsyncStatementResultCursor delegate = mock( AsyncStatementResultCursor.class );
+        AsyncResultCursor delegate = mock( AsyncResultCursor.class );
         when( delegate.consumeAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.discardAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.peekAsync() ).thenReturn( Futures.completedWithNull() );
@@ -89,6 +89,6 @@ class DisposableAsyncStatementResultCursorTest
         when( delegate.listAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.listAsync( any() ) ).thenReturn( Futures.completedWithNull() );
         when( delegate.pullAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
-        return new DisposableAsyncStatementResultCursor( delegate );
+        return new DisposableAsyncResultCursor( delegate );
     }
 }

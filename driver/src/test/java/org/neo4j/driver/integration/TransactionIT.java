@@ -30,7 +30,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -92,7 +92,7 @@ class TransactionIT
         }
 
         // Then there should be no visible effect of the transaction
-        StatementResult cursor = session.run( "MATCH (n) RETURN count(n)" );
+        Result cursor = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = cursor.single().get( "count(n)" ).asLong();
         assertThat( nodes, equalTo( 0L ) );
     }
@@ -106,7 +106,7 @@ class TransactionIT
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            StatementResult res = tx.run( "MATCH (n) RETURN n.name" );
+            Result res = tx.run( "MATCH (n) RETURN n.name" );
 
             // Then
             assertThat( res.single().get( "n.name" ).asString(), equalTo( "Steve Brook" ) );
@@ -229,7 +229,7 @@ class TransactionIT
     {
         // GIVEN a successful query in a transaction
         Transaction tx = session.beginTransaction();
-        StatementResult result = tx.run( "CREATE (n) RETURN n" );
+        Result result = tx.run( "CREATE (n) RETURN n" );
         result.consume();
         tx.commit();
         tx.close();
@@ -294,7 +294,7 @@ class TransactionIT
 
         try ( Transaction anotherTx = session.beginTransaction() )
         {
-            StatementResult cursor = anotherTx.run( "RETURN 1" );
+            Result cursor = anotherTx.run( "RETURN 1" );
             int val = cursor.single().get( "1" ).asInt();
             assertThat( val, equalTo( 1 ) );
         }
@@ -307,14 +307,14 @@ class TransactionIT
         {
             try ( Transaction tx = session.beginTransaction() )
             {
-                StatementResult result = tx.run( "invalid" );
+                Result result = tx.run( "invalid" );
                 result.consume();
             }
         } );
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            StatementResult cursor = tx.run( "RETURN 1" );
+            Result cursor = tx.run( "RETURN 1" );
             int val = cursor.single().get( "1" ).asInt();
             assertThat( val, equalTo( 1 ) );
         }
@@ -325,7 +325,7 @@ class TransactionIT
     {
         try ( Transaction tx = session.beginTransaction() )
         {
-            StatementResult result = tx.run( "RETURN Wrong" );
+            Result result = tx.run( "RETURN Wrong" );
 
             ClientException e = assertThrows( ClientException.class, result::consume );
             assertThat( e.code(), containsString( "SyntaxError" ) );
@@ -503,7 +503,7 @@ class TransactionIT
         }
 
         // Then the outcome of both statements should be visible
-        StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+        Result result = session.run( "MATCH (n) RETURN count(n)" );
         long nodes = result.single().get( "count(n)" ).asLong();
         if (isCommit)
         {

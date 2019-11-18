@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -82,7 +82,7 @@ class SummaryIT
         String statementText = "UNWIND [1, 2, 3, 4] AS n RETURN n AS number LIMIT $limit";
 
         // When
-        StatementResult result = session.run( statementText, statementParameters );
+        Result result = session.run( statementText, statementParameters );
 
         // Then
         assertTrue( result.hasNext() );
@@ -140,7 +140,7 @@ class SummaryIT
     {
         try ( Session session = neo4j.driver().session( forDatabase( "system" ) ) )
         {
-            StatementResult result = session.run( "CREATE USER foo SET PASSWORD 'bar'" );
+            Result result = session.run( "CREATE USER foo SET PASSWORD 'bar'" );
             assertThat( result.consume().counters().containsUpdates(), equalTo( false ) );
             assertThat( result.consume().counters().containsSystemUpdates(), equalTo( true ) );
         }

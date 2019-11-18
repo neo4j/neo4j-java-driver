@@ -33,8 +33,8 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
-import org.neo4j.driver.internal.cursor.StatementResultCursorFactory;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
@@ -106,8 +106,8 @@ public interface BoltProtocol
      * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    StatementResultCursorFactory runInAutoCommitTransaction( Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
-            TransactionConfig config, boolean waitForRunResponse, long fetchSize );
+    ResultCursorFactory runInAutoCommitTransaction(Connection connection, Statement statement, BookmarkHolder bookmarkHolder,
+                                                   TransactionConfig config, boolean waitForRunResponse, long fetchSize );
 
     /**
      * Execute the given statement in a running explicit transaction, i.e. {@link Transaction#run(Statement)}.
@@ -121,8 +121,8 @@ public interface BoltProtocol
      * @param fetchSize the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    StatementResultCursorFactory runInExplicitTransaction( Connection connection, Statement statement, ExplicitTransaction tx, boolean waitForRunResponse,
-            long fetchSize );
+    ResultCursorFactory runInExplicitTransaction(Connection connection, Statement statement, UnmanagedTransaction tx, boolean waitForRunResponse,
+                                                 long fetchSize );
 
     /**
      * Returns the protocol version. It can be used for version specific error messages.

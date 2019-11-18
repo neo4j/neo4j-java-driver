@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -158,7 +158,7 @@ class SessionPoolingStressIT
         {
             try ( Session session = driver.session() )
             {
-                StatementResult run = session.run( query );
+                Result run = session.run( query );
                 Thread.sleep( random.nextInt( 100 ) );
                 run.consume();
                 Thread.sleep( random.nextInt( 100 ) );

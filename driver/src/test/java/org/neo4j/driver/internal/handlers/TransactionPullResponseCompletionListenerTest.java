@@ -29,7 +29,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
@@ -63,7 +63,7 @@ class TransactionPullResponseCompletionListenerTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
-        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
         TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         PullResponseHandler handler = new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler,
