@@ -26,7 +26,7 @@ import java.io.IOException;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -51,7 +51,7 @@ class LoadCSVIT
             String csvFileUrl = createLocalIrisData( session );
 
             // When
-            StatementResult result = session.run(
+            Result result = session.run(
                     "USING PERIODIC COMMIT 40\n" +
                     "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
                     "MATCH (c:Class {name: l.class_name})\n" +

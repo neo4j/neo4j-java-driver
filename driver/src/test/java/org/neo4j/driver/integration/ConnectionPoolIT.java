@@ -36,7 +36,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -154,7 +154,7 @@ class ConnectionPoolIT
     {
         List<Session> sessions = new ArrayList<>( txCount );
         List<Transaction> transactions = new ArrayList<>( txCount );
-        List<StatementResult> results = new ArrayList<>( txCount );
+        List<Result> results = new ArrayList<>( txCount );
         try
         {
             for ( int i = 0; i < txCount; i++ )
@@ -165,13 +165,13 @@ class ConnectionPoolIT
                 Transaction tx = session.beginTransaction();
                 transactions.add( tx );
 
-                StatementResult result = tx.run( "RETURN 1" );
+                Result result = tx.run( "RETURN 1" );
                 results.add( result );
             }
         }
         finally
         {
-            for ( StatementResult result : results )
+            for ( Result result : results )
             {
                 result.consume();
             }

@@ -25,11 +25,11 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * This describes the plan that the database planner produced and used (or will use) to execute your statement.
- * This can be extremely helpful in understanding what a statement is doing, and how to optimize it. For more
+ * This describes the plan that the database planner produced and used (or will use) to execute your query.
+ * This can be extremely helpful in understanding what a query is doing, and how to optimize it. For more
  * details, see the Neo4j Manual.
  *
- * The plan for the statement is a tree of plans - each sub-tree containing zero or more child plans. The statement
+ * The plan for the query is a tree of plans - each sub-tree containing zero or more child plans. The query
  * starts with the root plan. Each sub-plan is of a specific {@link #operatorType() operator type}, which describes
  * what that part of the plan does - for instance, perform an index lookup or filter results. The Neo4j Manual contains
  * a reference of the available operator types, and these may differ across Neo4j versions.

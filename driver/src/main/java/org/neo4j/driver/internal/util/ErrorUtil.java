@@ -57,7 +57,7 @@ public final class ErrorUtil
     public static ResultConsumedException newResultConsumedError()
     {
         return new ResultConsumedException( "Cannot access records on this result any more as the result has already been consumed " +
-                "or the statement runner where the result is created has already been closed." );
+                "or the query runner where the result is created has already been closed." );
     }
 
     public static Neo4jException newNeo4jError( String code, String message )

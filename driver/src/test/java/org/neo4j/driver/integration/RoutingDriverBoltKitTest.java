@@ -40,7 +40,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -933,7 +933,7 @@ class RoutingDriverBoltKitTest
 
                 assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
-                StatementResult createResult = session.run( "CREATE (n {name:'Bob'})" );
+                Result createResult = session.run( "CREATE (n {name:'Bob'})" );
                 assertFalse( createResult.hasNext() );
             }
         }
@@ -960,11 +960,11 @@ class RoutingDriverBoltKitTest
             // returned routing table contains only one router, this should be fine and we should be able to
             // read multiple times without additional rediscovery
 
-            StatementResult readResult1 = session.run( "MATCH (n) RETURN n.name" );
+            Result readResult1 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult1.list().size() );
             assertEquals( "127.0.0.1:9003", readResult1.consume().server().address() );
 
-            StatementResult readResult2 = session.run( "MATCH (n) RETURN n.name" );
+            Result readResult2 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult2.list().size() );
             assertEquals( "127.0.0.1:9004", readResult2.consume().server().address() );
         }

@@ -27,13 +27,13 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.util.DriverExtension;
@@ -89,7 +89,7 @@ class TransactionBoltV3IT
 
         CompletionStage<AsyncTransaction> txFuture = driver.asyncSession().beginTransactionAsync( config )
                 .thenCompose( tx -> tx.runAsync( "RETURN 1" )
-                        .thenCompose( StatementResultCursor::consumeAsync )
+                        .thenCompose( ResultCursor::consumeAsync )
                         .thenApply( ignore -> tx ) );
 
         AsyncTransaction transaction = await( txFuture );
@@ -175,7 +175,7 @@ class TransactionBoltV3IT
     {
         try ( Session session = driver.driver().session() )
         {
-            StatementResult result = session.run( "CALL dbms.listTransactions()" );
+            Result result = session.run( "CALL dbms.listTransactions()" );
 
             Map<String,Object> receivedMetadata = result.list()
                     .stream()

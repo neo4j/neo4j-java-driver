@@ -102,7 +102,7 @@ public class InternalProfiledPlan extends InternalPlan<ProfiledPlan> implements 
     };
 
     /**
-     * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` statement
+     * Builds a regular plan without profiling information - eg. a plan that came as a result of an `EXPLAIN` query
      */
     public static final Function<Value,ProfiledPlan> PROFILED_PLAN_FROM_VALUE = new Converter<>( PROFILED_PLAN );
 }

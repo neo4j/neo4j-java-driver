@@ -28,7 +28,7 @@ import java.net.URI;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -103,7 +103,7 @@ class DirectDriverIT
               Session session = driver.session() )
         {
             // When
-            StatementResult result = session.run( "RETURN 1" );
+            Result result = session.run( "RETURN 1" );
 
             // Then
             assertThat( result.single().get( 0 ).asInt(), CoreMatchers.equalTo( 1 ) );

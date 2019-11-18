@@ -21,9 +21,9 @@ package org.neo4j.driver.internal.handlers.pulln;
 import java.util.Collections;
 import java.util.function.BiConsumer;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.TransactionPullResponseCompletionListener;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -66,7 +66,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
         Connection conn = mockConnection();
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
-        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
         BasicPullResponseHandler handler = newTxResponseHandler( conn, recordConsumer, summaryConsumer, tx, status );
 
         // When
@@ -84,17 +84,17 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
     protected BasicPullResponseHandler newResponseHandlerWithStatus( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
             BiConsumer<ResultSummary,Throwable> summaryConsumer, PullResponseHandler.Status status )
     {
-        ExplicitTransaction tx = mock( ExplicitTransaction.class );
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
         return newTxResponseHandler( conn, recordConsumer, summaryConsumer, tx, status );
     }
 
-    private static BasicPullResponseHandler newTxResponseHandler( Connection conn, BiConsumer<Record,Throwable> recordConsumer,
-            BiConsumer<ResultSummary,Throwable> summaryConsumer, ExplicitTransaction tx, PullResponseHandler.Status status )
+    private static BasicPullResponseHandler newTxResponseHandler(Connection conn, BiConsumer<Record,Throwable> recordConsumer,
+                                                                 BiConsumer<ResultSummary,Throwable> summaryConsumer, UnmanagedTransaction tx, PullResponseHandler.Status status )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
         TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( mock( Statement.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
+                new BasicPullResponseHandler( mock( Query.class ), runHandler, conn, BoltProtocolV4.METADATA_EXTRACTOR, listener );
 
         handler.installRecordConsumer( recordConsumer );
         handler.installSummaryConsumer( summaryConsumer );

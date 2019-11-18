@@ -24,7 +24,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 
 import static org.hamcrest.Matchers.is;
@@ -46,7 +46,7 @@ public class AsyncFailingQueryInTx<C extends AbstractContext> extends AbstractAs
 
         return session.beginTransactionAsync()
                 .thenCompose( tx -> tx.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
-                        .thenCompose( StatementResultCursor::listAsync )
+                        .thenCompose( ResultCursor::listAsync )
                         .handle( ( records, error ) ->
                         {
                             assertNull( records );

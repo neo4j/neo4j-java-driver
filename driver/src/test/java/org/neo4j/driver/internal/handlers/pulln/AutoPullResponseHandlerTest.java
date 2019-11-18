@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.handlers.pulln;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandlerTestBase;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -36,12 +36,12 @@ import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXT
 class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPullResponseHandler>
 {
     @Override
-    protected AutoPullResponseHandler newHandler( Statement statement, List<String> statementKeys, Connection connection )
+    protected AutoPullResponseHandler newHandler(Query query, List<String> queryKeys, Connection connection )
     {
         RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
-        runResponseHandler.onSuccess( singletonMap( "fields", value( statementKeys ) ) );
+        runResponseHandler.onSuccess( singletonMap( "fields", value(queryKeys) ) );
         AutoPullResponseHandler handler =
-                new AutoPullResponseHandler( statement, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ),
+                new AutoPullResponseHandler(query, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ),
                         DEFAULT_FETCH_SIZE );
         handler.prePopulateRecords();
         return handler;

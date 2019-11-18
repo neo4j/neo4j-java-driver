@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.v4;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -52,7 +52,7 @@ import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_AL
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBACK;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
-import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.explicitTxRunMessage;
+import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
 class MessageWriterV4Test extends AbstractMessageWriterTestBase
 {
@@ -80,18 +80,18 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 ROLLBACK,
 
                 RESET,
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
+                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                autoCommitTxRunMessage( new Statement( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
+                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                explicitTxRunMessage( new Statement( "RETURN 1" ) ),
+                unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                         defaultDatabase(), READ, InternalBookmark.empty() ),
-                autoCommitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), database( "foo" ),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), database( "foo" ),
                         WRITE, InternalBookmark.empty() ),
-                explicitTxRunMessage( new Statement( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
+                unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
 

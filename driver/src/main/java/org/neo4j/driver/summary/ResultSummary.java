@@ -21,11 +21,11 @@ package org.neo4j.driver.summary;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * The result summary of running a statement. The result summary interface can be used to investigate
+ * The result summary of running a query. The result summary interface can be used to investigate
  * details about the result, like the type of query run, how many and which kinds of updates have been executed,
  * and query plan and profiling information if available.
  *
@@ -38,57 +38,57 @@ import org.neo4j.driver.util.Immutable;
 public interface ResultSummary
 {
     /**
-     * @return statement that has been executed
+     * @return query that has been executed
      */
-    Statement statement();
+    Query query();
 
     /**
-     * @return counters for operations the statement triggered
+     * @return counters for operations the query triggered
      */
     SummaryCounters counters();
 
     /**
-     * @return type of statement that has been executed
+     * @return type of query that has been executed
      */
-    StatementType statementType();
+    QueryType queryType();
 
     /**
-     * @return true if the result contained a statement plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" statement
+     * @return true if the result contained a query plan, i.e. is the summary of a Cypher "PROFILE" or "EXPLAIN" query
      */
     boolean hasPlan();
 
     /**
-     * @return true if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" statement
+     * @return true if the result contained profiling information, i.e. is the summary of a Cypher "PROFILE" query
      */
     boolean hasProfile();
 
     /**
-     * This describes how the database will execute your statement.
+     * This describes how the database will execute your query.
      *
-     * @return statement plan for the executed statement if available, otherwise null
+     * @return query plan for the executed query if available, otherwise null
      */
     Plan plan();
 
     /**
-     * This describes how the database did execute your statement.
+     * This describes how the database did execute your query.
      *
-     * If the statement you executed {@link #hasProfile() was profiled}, the statement plan will contain detailed
-     * information about what each step of the plan did. That more in-depth version of the statement plan becomes
+     * If the query you executed {@link #hasProfile() was profiled}, the query plan will contain detailed
+     * information about what each step of the plan did. That more in-depth version of the query plan becomes
      * available here.
      *
-     * @return profiled statement plan for the executed statement if available, otherwise null
+     * @return profiled query plan for the executed query if available, otherwise null
      */
     ProfiledPlan profile();
 
     /**
-     * A list of notifications that might arise when executing the statement.
-     * Notifications can be warnings about problematic statements or other valuable information that can be presented
+     * A list of notifications that might arise when executing the query.
+     * Notifications can be warnings about problematic queries or other valuable information that can be presented
      * in a client.
      *
-     * Unlike failures or errors, notifications do not affect the execution of a statement.
+     * Unlike failures or errors, notifications do not affect the execution of a query.
      *
-     * @return a list of notifications produced while executing the statement. The list will be empty if no
-     * notifications produced while executing the statement.
+     * @return a list of notifications produced while executing the query. The list will be empty if no
+     * notifications produced while executing the query.
      */
     List<Notification> notifications();
 

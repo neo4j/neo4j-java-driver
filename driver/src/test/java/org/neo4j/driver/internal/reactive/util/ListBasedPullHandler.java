@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.reactive.util;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
@@ -28,7 +29,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -63,16 +63,16 @@ public class ListBasedPullHandler extends BasicPullResponseHandler
 
     private ListBasedPullHandler( List<Record> list, Throwable error )
     {
-        super( mock( Statement.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ), mock(
+        super( mock( Query.class ), mock( RunResponseHandler.class ), mock( Connection.class ), mock( MetadataExtractor.class ), mock(
                 PullResponseCompletionListener.class ) );
         this.list = list;
         this.error = error;
-        when( super.metadataExtractor.extractSummary( any( Statement.class ), any( Connection.class ), anyLong(), any( Map.class ) ) ).thenReturn(
+        when( super.metadataExtractor.extractSummary( any( Query.class ), any( Connection.class ), anyLong(), any( Map.class ) ) ).thenReturn(
                 mock( ResultSummary.class ) );
         if ( list.size() > 1 )
         {
             Record record = list.get( 0 );
-            when( super.runResponseHandler.statementKeys() ).thenReturn( record.keys() );
+            when( super.runResponseHandler.queryKeys() ).thenReturn( record.keys() );
         }
     }
 

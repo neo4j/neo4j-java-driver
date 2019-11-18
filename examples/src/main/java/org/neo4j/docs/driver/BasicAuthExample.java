@@ -23,7 +23,7 @@ package org.neo4j.docs.driver;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 // end::basic-auth-import[]
 
 public class BasicAuthExample implements AutoCloseable
@@ -45,7 +45,7 @@ public class BasicAuthExample implements AutoCloseable
 
     public boolean canConnect()
     {
-        StatementResult result = driver.session().run( "RETURN 1" );
+        Result result = driver.session().run( "RETURN 1" );
         return result.single().get( 0 ).asInt() == 1;
     }
 }

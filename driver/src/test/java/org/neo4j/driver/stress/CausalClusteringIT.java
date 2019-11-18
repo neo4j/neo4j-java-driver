@@ -48,12 +48,12 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -408,7 +408,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 int writeResult = session.writeTransaction( tx ->
                 {
-                    StatementResult result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
+                    Result result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
                     return result.single().get( 0 ).asInt();
                 } );
 
@@ -439,7 +439,7 @@ public class CausalClusteringIT implements NestedQueries
             {
                 int count = session.readTransaction( tx ->
                 {
-                    StatementResult result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN COUNT(*)" );
+                    Result result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN COUNT(*)" );
                     return result.single().get( 0 ).asInt();
                 } );
 
@@ -514,7 +514,7 @@ public class CausalClusteringIT implements NestedQueries
 
             CompletionStage<Integer> countStage =
                     session.readTransactionAsync( tx -> tx.runAsync( "MATCH (n:Node1) RETURN count(n)" )
-                            .thenCompose( StatementResultCursor::singleAsync ) )
+                            .thenCompose( ResultCursor::singleAsync ) )
                             .thenApply( record -> record.get( 0 ).asInt() );
 
             assertEquals( 1, await( countStage ).intValue() );
@@ -577,7 +577,7 @@ public class CausalClusteringIT implements NestedQueries
 
             ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
             driverFactory.setNextRunFailure( error );
-            assertUnableToRunMoreStatementsInTx( tx2, error );
+            assertUnableToRunMoreQueriesInTx( tx2, error );
 
             tx2.close();
             tx1.commit();
@@ -706,20 +706,20 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private static void assertUnableToRunMoreStatementsInTx( Transaction tx, ServiceUnavailableException cause )
+    private static void assertUnableToRunMoreQueriesInTx(Transaction tx, ServiceUnavailableException cause )
     {
         SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
         assertEquals( cause, e.getCause() );
     }
 
-    private CompletionStage<List<RecordAndSummary>> combineCursors( StatementResultCursor cursor1,
-            StatementResultCursor cursor2 )
+    private CompletionStage<List<RecordAndSummary>> combineCursors( ResultCursor cursor1,
+            ResultCursor cursor2 )
     {
         return buildRecordAndSummary( cursor1 ).thenCombine( buildRecordAndSummary( cursor2 ),
                 ( rs1, rs2 ) -> Arrays.asList( rs1, rs2 ) );
     }
 
-    private CompletionStage<RecordAndSummary> buildRecordAndSummary( StatementResultCursor cursor )
+    private CompletionStage<RecordAndSummary> buildRecordAndSummary( ResultCursor cursor )
     {
         return cursor.singleAsync().thenCompose( record ->
                 cursor.consumeAsync().thenApply( summary -> new RecordAndSummary( record, summary ) ) );
@@ -800,7 +800,7 @@ public class CausalClusteringIT implements NestedQueries
         {
             return session.readTransaction( tx ->
             {
-                StatementResult result = tx.run( "MATCH (:Person {name: $name}) RETURN count(*)",
+                Result result = tx.run( "MATCH (:Person {name: $name}) RETURN count(*)",
                         parameters( "name", name ) );
                 return result.single().get( 0 ).asInt();
             } );
@@ -956,7 +956,7 @@ public class CausalClusteringIT implements NestedQueries
     {
         return session.readTransaction( tx ->
         {
-            StatementResult result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN n LIMIT 10",
+            Result result = tx.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN n LIMIT 10",
                     parameters( "value", value ) );
 
             return result.list( record -> record.get( 0 ).asNode().id() );
@@ -1006,14 +1006,14 @@ public class CausalClusteringIT implements NestedQueries
         }
     }
 
-    private static StatementResult runCreateNode( StatementRunner statementRunner, String label, String property, String value )
+    private static Result runCreateNode(QueryRunner queryRunner, String label, String property, String value )
     {
-        return statementRunner.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
+        return queryRunner.run( "CREATE (n:" + label + ") SET n." + property + " = $value", parameters( "value", value ) );
     }
 
-    private static int runCountNodes( StatementRunner statementRunner, String label, String property, String value )
+    private static int runCountNodes(QueryRunner queryRunner, String label, String property, String value )
     {
-        StatementResult result = statementRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
+        Result result = queryRunner.run( "MATCH (n:" + label + " {" + property + ": $value}) RETURN count(n)", parameters( "value", value ) );
         return result.single().get( 0 ).asInt();
     }
 

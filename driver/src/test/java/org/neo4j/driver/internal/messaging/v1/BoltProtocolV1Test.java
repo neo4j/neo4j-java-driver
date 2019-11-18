@@ -33,16 +33,16 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.cursor.AsyncStatementResultCursor;
+import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
@@ -86,9 +86,9 @@ import static org.neo4j.driver.util.TestUtil.connectionMock;
 
 public class BoltProtocolV1Test
 {
-    private static final String QUERY = "RETURN $x";
+    private static final String QUERY_TEXT = "RETURN $x";
     private static final Map<String,Value> PARAMS = singletonMap( "x", value( 42 ) );
-    private static final Statement STATEMENT = new Statement( QUERY, value( PARAMS ) );
+    private static final Query QUERY = new Query( QUERY_TEXT, value( PARAMS ) );
 
     private final BoltProtocol protocol = createProtocol();
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -273,7 +273,7 @@ public class BoltProtocolV1Test
                 .build();
 
         ClientException e = assertThrows( ClientException.class,
-                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, config, true,
+                () -> protocol.runInAutoCommitTransaction( connectionMock( protocol ), new Query( "RETURN 1" ), BookmarkHolder.NO_OP, config, true,
                         UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Driver is connected to the database that does not support transaction configuration" ) );
     }
@@ -292,7 +292,7 @@ public class BoltProtocolV1Test
     {
         ClientException e = assertThrows( ClientException.class,
                 () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
-                        new Statement( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
+                        new Query( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
         assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
@@ -311,20 +311,20 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<AsyncStatementResultCursor> cursorStage;
+        CompletionStage<AsyncResultCursor> cursorStage;
         if ( autoCommitTx )
         {
             cursorStage = protocol
-                    .runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE )
+                    .runInAutoCommitTransaction( connection, QUERY, BookmarkHolder.NO_OP, TransactionConfig.empty(), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
             cursorStage = protocol
-                    .runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), false, UNLIMITED_FETCH_SIZE )
+                    .runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), false, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertTrue( cursorFuture.isDone() );
         assertNotNull( cursorFuture.get() );
@@ -336,18 +336,18 @@ public class BoltProtocolV1Test
         Connection connection = mock( Connection.class );
         when( connection.databaseName() ).thenReturn( defaultDatabase() );
 
-        CompletionStage<AsyncStatementResultCursor> cursorStage;
+        CompletionStage<AsyncResultCursor> cursorStage;
         if ( session )
         {
-            cursorStage = protocol.runInAutoCommitTransaction( connection, STATEMENT, BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInAutoCommitTransaction( connection, QUERY, BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
         else
         {
-            cursorStage = protocol.runInExplicitTransaction( connection, STATEMENT, mock( ExplicitTransaction.class ), true, UNLIMITED_FETCH_SIZE )
+            cursorStage = protocol.runInUnmanagedTransaction( connection, QUERY, mock( UnmanagedTransaction.class ), true, UNLIMITED_FETCH_SIZE )
                     .asyncResult();
         }
-        CompletableFuture<AsyncStatementResultCursor> cursorFuture = cursorStage.toCompletableFuture();
+        CompletableFuture<AsyncResultCursor> cursorFuture = cursorStage.toCompletableFuture();
 
         assertFalse( cursorFuture.isDone() );
         ResponseHandler runResponseHandler = verifyRunInvoked( connection );
@@ -370,7 +370,7 @@ public class BoltProtocolV1Test
         ArgumentCaptor<ResponseHandler> runHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         ArgumentCaptor<ResponseHandler> pullAllHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
 
-        verify( connection ).write( eq( new RunMessage( QUERY, PARAMS ) ), runHandlerCaptor.capture() );
+        verify( connection ).write( eq( new RunMessage( QUERY_TEXT, PARAMS ) ), runHandlerCaptor.capture() );
         verify( connection ).writeAndFlush( eq( PullAllMessage.PULL_ALL ), pullAllHandlerCaptor.capture() );
 
         assertThat( runHandlerCaptor.getValue(), instanceOf( RunResponseHandler.class ) );

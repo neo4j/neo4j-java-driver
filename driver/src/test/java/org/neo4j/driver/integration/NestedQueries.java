@@ -25,8 +25,8 @@ import java.util.List;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 
 import static org.junit.Assert.assertEquals;
@@ -97,11 +97,11 @@ public interface NestedQueries
         }
     }
 
-    default void testNestedQueriesConsumedAsIterators( StatementRunner statementRunner ) throws Exception
+    default void testNestedQueriesConsumedAsIterators( QueryRunner queryRunner) throws Exception
     {
         int recordsSeen = 0;
 
-        StatementResult result1 = statementRunner.run( OUTER_QUERY );
+        Result result1 = queryRunner.run( OUTER_QUERY );
         Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
 
         while ( result1.hasNext() )
@@ -110,7 +110,7 @@ public interface NestedQueries
             assertFalse( record1.get( "x" ).isNull() );
             recordsSeen++;
 
-            StatementResult result2 = statementRunner.run( INNER_QUERY );
+            Result result2 = queryRunner.run( INNER_QUERY );
             while ( result2.hasNext() )
             {
                 Record record2 = result2.next();
@@ -122,11 +122,11 @@ public interface NestedQueries
         assertEquals( EXPECTED_RECORDS, recordsSeen );
     }
 
-    default void testNestedQueriesConsumedAsLists( StatementRunner statementRunner ) throws Exception
+    default void testNestedQueriesConsumedAsLists( QueryRunner queryRunner) throws Exception
     {
         int recordsSeen = 0;
 
-        StatementResult result1 = statementRunner.run( OUTER_QUERY );
+        Result result1 = queryRunner.run( OUTER_QUERY );
         Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
 
         List<Record> records1 = result1.list();
@@ -135,7 +135,7 @@ public interface NestedQueries
             assertFalse( record1.get( "x" ).isNull() );
             recordsSeen++;
 
-            StatementResult result2 = statementRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
+            Result result2 = queryRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
             List<Record> records2 = result2.list();
             for ( Record record2 : records2 )
             {
@@ -147,11 +147,11 @@ public interface NestedQueries
         assertEquals( EXPECTED_RECORDS, recordsSeen );
     }
 
-    default void testNestedQueriesConsumedAsIteratorAndList( StatementRunner statementRunner ) throws Exception
+    default void testNestedQueriesConsumedAsIteratorAndList( QueryRunner queryRunner) throws Exception
     {
         int recordsSeen = 0;
 
-        StatementResult result1 = statementRunner.run( OUTER_QUERY );
+        Result result1 = queryRunner.run( OUTER_QUERY );
         Thread.sleep( 1000 ); // allow some result records to arrive and be buffered
 
         while ( result1.hasNext() )
@@ -160,7 +160,7 @@ public interface NestedQueries
             assertFalse( record1.get( "x" ).isNull() );
             recordsSeen++;
 
-            StatementResult result2 = statementRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
+            Result result2 = queryRunner.run( "UNWIND range(1, 10) AS y RETURN y" );
             List<Record> records2 = result2.list();
             for ( Record record2 : records2 )
             {

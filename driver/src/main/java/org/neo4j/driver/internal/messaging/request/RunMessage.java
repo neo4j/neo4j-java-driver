@@ -29,30 +29,30 @@ import static java.lang.String.format;
 /**
  * RUN request message
  * <p>
- * Sent by clients to start a new Tank job for a given statement and
+ * Sent by clients to start a new Tank job for a given query and
  * parameter set.
  */
 public class RunMessage implements Message
 {
     public final static byte SIGNATURE = 0x10;
 
-    private final String statement;
+    private final String query;
     private final Map<String,Value> parameters;
 
-    public RunMessage( String statement )
+    public RunMessage( String query)
     {
-        this( statement, Collections.emptyMap() );
+        this(query, Collections.emptyMap() );
     }
 
-    public RunMessage( String statement, Map<String,Value> parameters )
+    public RunMessage(String query, Map<String,Value> parameters )
     {
-        this.statement = statement;
+        this.query = query;
         this.parameters = parameters;
     }
 
-    public String statement()
+    public String query()
     {
-        return statement;
+        return query;
     }
 
     public Map<String,Value> parameters()
@@ -69,7 +69,7 @@ public class RunMessage implements Message
     @Override
     public String toString()
     {
-        return format( "RUN \"%s\" %s", statement, parameters );
+        return format( "RUN \"%s\" %s", query, parameters );
     }
 
     @Override
@@ -87,14 +87,14 @@ public class RunMessage implements Message
         RunMessage that = (RunMessage) o;
 
         return !(parameters != null ? !parameters.equals( that.parameters ) : that.parameters != null) &&
-               !(statement != null ? !statement.equals( that.statement ) : that.statement != null);
+               !(query != null ? !query.equals( that.query) : that.query != null);
 
     }
 
     @Override
     public int hashCode()
     {
-        int result = statement != null ? statement.hashCode() : 0;
+        int result = query != null ? query.hashCode() : 0;
         result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
         return result;
     }

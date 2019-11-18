@@ -27,10 +27,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -77,7 +77,7 @@ class InternalAsyncTransactionTest
         tx = (InternalAsyncTransaction) await( session.beginTransactionAsync() );
     }
 
-    private static Stream<Function<AsyncTransaction,CompletionStage<StatementResultCursor>>> allSessionRunMethods()
+    private static Stream<Function<AsyncTransaction,CompletionStage<ResultCursor>>> allSessionRunMethods()
     {
         return Stream.of(
                 tx -> tx.runAsync( "RETURN 1" ),
@@ -85,20 +85,20 @@ class InternalAsyncTransactionTest
                 tx -> tx.runAsync( "RETURN $x", singletonMap( "x", 1 ) ),
                 tx -> tx.runAsync( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                tx -> tx.runAsync( new Statement( "RETURN $x", parameters( "x", 1 ) ) )
+                tx -> tx.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ) )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncTransaction,CompletionStage<StatementResultCursor>> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<AsyncTransaction,CompletionStage<ResultCursor>> runReturnOne ) throws Throwable
     {
         setupSuccessfulRunAndPull( connection );
 
-        StatementResultCursor result = await( runReturnOne.apply( tx ) );
+        ResultCursor result = await( runReturnOne.apply( tx ) );
         ResultSummary summary = await( result.consumeAsync() );
 
-        verifyRunAndPull( connection, summary.statement().text() );
+        verifyRunAndPull( connection, summary.query().text() );
     }
 
     @Test

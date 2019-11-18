@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -83,7 +83,7 @@ class SessionPullResponseCompletionListenerTest
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( new Statement( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, listener );
+                new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, listener );
         handler.installRecordConsumer( ( record, throwable ) -> {} );
         handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
         return handler;

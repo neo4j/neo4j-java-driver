@@ -22,21 +22,21 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Statement;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
 
-public class InternalSession extends AbstractStatementRunner implements Session
+public class InternalSession extends AbstractQueryRunner implements Session
 {
     private final NetworkSession session;
 
@@ -46,32 +46,32 @@ public class InternalSession extends AbstractStatementRunner implements Session
     }
 
     @Override
-    public StatementResult run( Statement statement )
+    public Result run(Query query)
     {
-        return run( statement, TransactionConfig.empty() );
+        return run(query, TransactionConfig.empty() );
     }
 
     @Override
-    public StatementResult run( String statement, TransactionConfig config )
+    public Result run(String query, TransactionConfig config )
     {
-        return run( statement, emptyMap(), config );
+        return run(query, emptyMap(), config );
     }
 
     @Override
-    public StatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    public Result run(String query, Map<String,Object> parameters, TransactionConfig config )
     {
-        return run( new Statement( statement, parameters ), config );
+        return run( new Query(query, parameters ), config );
     }
 
     @Override
-    public StatementResult run( Statement statement, TransactionConfig config )
+    public Result run(Query query, TransactionConfig config )
     {
-        StatementResultCursor cursor = Futures.blockingGet( session.runAsync( statement, config, false ),
+        ResultCursor cursor = Futures.blockingGet( session.runAsync(query, config, false ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
 
         // query executed, it is safe to obtain a connection in a blocking way
         Connection connection = Futures.getNow( session.connectionAsync() );
-        return new InternalStatementResult( connection, cursor );
+        return new InternalResult( connection, cursor );
     }
 
     @Override
@@ -95,7 +95,7 @@ public class InternalSession extends AbstractStatementRunner implements Session
     @Override
     public Transaction beginTransaction( TransactionConfig config )
     {
-        ExplicitTransaction tx = Futures.blockingGet( session.beginTransactionAsync( config ),
+        UnmanagedTransaction tx = Futures.blockingGet( session.beginTransactionAsync( config ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while starting a transaction" ) );
         return new InternalTransaction( tx );
     }
@@ -160,7 +160,7 @@ public class InternalSession extends AbstractStatementRunner implements Session
 
     private Transaction beginTransaction( AccessMode mode, TransactionConfig config )
     {
-        ExplicitTransaction tx = Futures.blockingGet( session.beginTransactionAsync( mode, config ),
+        UnmanagedTransaction tx = Futures.blockingGet( session.beginTransactionAsync( mode, config ),
                 () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while starting a transaction" ) );
         return new InternalTransaction( tx );
     }

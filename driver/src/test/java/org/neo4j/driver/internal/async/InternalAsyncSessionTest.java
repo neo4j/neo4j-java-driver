@@ -30,13 +30,13 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -97,7 +97,7 @@ class InternalAsyncSessionTest
         asyncSession = new InternalAsyncSession( session );
     }
 
-    private static Stream<Function<AsyncSession,CompletionStage<StatementResultCursor>>> allSessionRunMethods()
+    private static Stream<Function<AsyncSession,CompletionStage<ResultCursor>>> allSessionRunMethods()
     {
         return Stream.of(
                 session -> session.runAsync( "RETURN 1" ),
@@ -105,8 +105,8 @@ class InternalAsyncSessionTest
                 session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ) ),
                 session -> session.runAsync( "RETURN $x",
                         new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
-                session -> session.runAsync( new Statement( "RETURN $x", parameters( "x", 1 ) ) ),
-                session -> session.runAsync( new Statement( "RETURN $x", parameters( "x", 1 ) ), empty() ),
+                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ) ),
+                session -> session.runAsync( new Query( "RETURN $x", parameters( "x", 1 ) ), empty() ),
                 session -> session.runAsync( "RETURN $x", singletonMap( "x", 1 ), empty() ),
                 session -> session.runAsync( "RETURN 1", empty() )
         );
@@ -132,13 +132,13 @@ class InternalAsyncSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<StatementResultCursor>> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<ResultCursor>> runReturnOne ) throws Throwable
     {
         setupSuccessfulRunAndPull( connection );
 
-        StatementResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
+        ResultCursor cursor = await( runReturnOne.apply( asyncSession ) );
 
-        verifyRunAndPull( connection, await( cursor.consumeAsync() ).statement().text() );
+        verifyRunAndPull( connection, await( cursor.consumeAsync() ).query().text() );
     }
 
     @ParameterizedTest

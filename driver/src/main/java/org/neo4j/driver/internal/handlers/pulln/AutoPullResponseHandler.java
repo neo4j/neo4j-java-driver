@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -59,10 +59,10 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<ResultSummary> summaryFuture;
 
-    public AutoPullResponseHandler( Statement statement, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
-            PullResponseCompletionListener completionListener, long fetchSize )
+    public AutoPullResponseHandler(Query query, RunResponseHandler runResponseHandler, Connection connection, MetadataExtractor metadataExtractor,
+                                   PullResponseCompletionListener completionListener, long fetchSize )
     {
-        super( statement, runResponseHandler, connection, metadataExtractor, completionListener );
+        super(query, runResponseHandler, connection, metadataExtractor, completionListener );
         this.fetchSize = fetchSize;
         installRecordAndSummaryConsumers();
     }

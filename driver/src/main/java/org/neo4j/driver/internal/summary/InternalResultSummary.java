@@ -23,21 +23,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.SummaryCounters;
 
 public class InternalResultSummary implements ResultSummary
 {
-    private final Statement statement;
+    private final Query query;
     private final ServerInfo serverInfo;
-    private final StatementType statementType;
+    private final QueryType queryType;
     private final SummaryCounters counters;
     private final Plan plan;
     private final ProfiledPlan profile;
@@ -46,13 +46,13 @@ public class InternalResultSummary implements ResultSummary
     private final long resultConsumedAfter;
     private final DatabaseInfo databaseInfo;
 
-    public InternalResultSummary( Statement statement, ServerInfo serverInfo, DatabaseInfo databaseInfo, StatementType statementType,
-            SummaryCounters counters, Plan plan, ProfiledPlan profile, List<Notification> notifications, long resultAvailableAfter, long resultConsumedAfter )
+    public InternalResultSummary(Query query, ServerInfo serverInfo, DatabaseInfo databaseInfo, QueryType queryType,
+                                 SummaryCounters counters, Plan plan, ProfiledPlan profile, List<Notification> notifications, long resultAvailableAfter, long resultConsumedAfter )
     {
-        this.statement = statement;
+        this.query = query;
         this.serverInfo = serverInfo;
         this.databaseInfo = databaseInfo;
-        this.statementType = statementType;
+        this.queryType = queryType;
         this.counters = counters;
         this.plan = resolvePlan( plan, profile );
         this.profile = profile;
@@ -62,9 +62,9 @@ public class InternalResultSummary implements ResultSummary
     }
 
     @Override
-    public Statement statement()
+    public Query query()
     {
-        return statement;
+        return query;
     }
 
     @Override
@@ -74,9 +74,9 @@ public class InternalResultSummary implements ResultSummary
     }
 
     @Override
-    public StatementType statementType()
+    public QueryType queryType()
     {
-        return statementType;
+        return queryType;
     }
 
     @Override
@@ -149,9 +149,9 @@ public class InternalResultSummary implements ResultSummary
         InternalResultSummary that = (InternalResultSummary) o;
         return resultAvailableAfter == that.resultAvailableAfter &&
                resultConsumedAfter == that.resultConsumedAfter &&
-               Objects.equals( statement, that.statement ) &&
+               Objects.equals(query, that.query) &&
                Objects.equals( serverInfo, that.serverInfo ) &&
-               statementType == that.statementType &&
+               queryType == that.queryType &&
                Objects.equals( counters, that.counters ) &&
                Objects.equals( plan, that.plan ) &&
                Objects.equals( profile, that.profile ) &&
@@ -161,7 +161,7 @@ public class InternalResultSummary implements ResultSummary
     @Override
     public int hashCode()
     {
-        return Objects.hash( statement, serverInfo, statementType, counters, plan, profile, notifications,
+        return Objects.hash(query, serverInfo, queryType, counters, plan, profile, notifications,
                 resultAvailableAfter, resultConsumedAfter );
     }
 
@@ -169,10 +169,10 @@ public class InternalResultSummary implements ResultSummary
     public String toString()
     {
         return "InternalResultSummary{" +
-               "statement=" + statement +
+               "query=" + query +
                ", serverInfo=" + serverInfo +
                ", databaseInfo=" + databaseInfo +
-               ", statementType=" + statementType +
+               ", queryType=" + queryType +
                ", counters=" + counters +
                ", plan=" + plan +
                ", profile=" + profile +

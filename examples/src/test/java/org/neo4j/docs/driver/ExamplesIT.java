@@ -36,7 +36,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.StdIOCapture;
@@ -69,34 +69,34 @@ class ExamplesIT
 
     private String uri;
 
-    private int readInt( final String statement, final Value parameters )
+    private int readInt( final String query, final Value parameters )
     {
         try ( Session session = neo4j.driver().session() )
         {
-            return session.readTransaction( tx -> tx.run( statement, parameters ).single().get( 0 ).asInt() );
+            return session.readTransaction( tx -> tx.run( query, parameters ).single().get( 0 ).asInt() );
         }
     }
 
-    private int readInt( final String statement )
+    private int readInt( final String query )
     {
-        return readInt( statement, parameters() );
+        return readInt( query, parameters() );
     }
 
-    private void write( final String statement, final Value parameters )
+    private void write( final String query, final Value parameters )
     {
         try ( Session session = neo4j.driver().session() )
         {
             session.writeTransaction( tx ->
             {
-                tx.run( statement, parameters );
+                tx.run( query, parameters );
                 return null;
             } );
         }
     }
 
-    private void write( String statement )
+    private void write( String query )
     {
-        write( statement, parameters() );
+        write( query, parameters() );
     }
 
     private int personCount( String name )
@@ -384,7 +384,7 @@ class ExamplesIT
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
                 ResultSummary summary = await( example.printAllProducts() );
-                assertEquals( StatementType.READ_ONLY, summary.statementType() );
+                assertEquals( QueryType.READ_ONLY, summary.queryType() );
             }
 
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
@@ -421,9 +421,9 @@ class ExamplesIT
     }
 
     @Test
-    void testAsyncExplicitTransactionExample() throws Exception
+    void testAsyncUnmanagedTransactionExample() throws Exception
     {
-        try ( AsyncExplicitTransactionExample example = new AsyncExplicitTransactionExample( uri, USER, PASSWORD ) )
+        try ( AsyncUnmanagedTransactionExample example = new AsyncUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {
             // create a 'Product' node
             try ( Session session = neo4j.driver().session() )
@@ -508,9 +508,9 @@ class ExamplesIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void testRxExplicitTransactionExample() throws Exception
+    void testRxUnmanagedTransactionExample() throws Exception
     {
-        try ( RxExplicitTransactionExample example = new RxExplicitTransactionExample( uri, USER, PASSWORD ) )
+        try ( RxUnmanagedTransactionExample example = new RxUnmanagedTransactionExample( uri, USER, PASSWORD ) )
         {
             // create a 'Product' node
             try ( Session session = neo4j.driver().session() )
@@ -551,7 +551,7 @@ class ExamplesIT
                 final List<ResultSummary> summaryList = await( example.printAllProductsReactor() );
                 assertThat( summaryList.size(), equalTo( 1 ) );
                 ResultSummary summary = summaryList.get( 0 );
-                assertEquals( StatementType.READ_ONLY, summary.statementType() );
+                assertEquals( QueryType.READ_ONLY, summary.queryType() );
             }
 
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
@@ -581,7 +581,7 @@ class ExamplesIT
                 final List<ResultSummary> summaryList = await( example.printAllProductsRxJava() );
                 assertThat( summaryList.size(), equalTo( 1 ) );
                 ResultSummary summary = summaryList.get( 0 );
-                assertEquals( StatementType.READ_ONLY, summary.statementType() );
+                assertEquals( QueryType.READ_ONLY, summary.queryType() );
             }
 
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );

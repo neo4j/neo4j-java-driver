@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -42,7 +42,7 @@ import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
@@ -60,7 +60,7 @@ public class MetadataExtractor
         this.resultConsumedAfterMetadataKey = resultConsumedAfterMetadataKey;
     }
 
-    public List<String> extractStatementKeys( Map<String,Value> metadata )
+    public List<String> extractQueryKeys(Map<String,Value> metadata )
     {
         Value keysValue = metadata.get( "fields" );
         if ( keysValue != null )
@@ -81,10 +81,10 @@ public class MetadataExtractor
 
     public long extractQueryId( Map<String,Value> metadata )
     {
-        Value statementId = metadata.get( "qid" );
-        if ( statementId != null )
+        Value queryId = metadata.get( "qid" );
+        if ( queryId != null )
         {
-            return statementId.asLong();
+            return queryId.asLong();
         }
         return ABSENT_QUERY_ID;
     }
@@ -100,11 +100,11 @@ public class MetadataExtractor
         return -1;
     }
 
-    public ResultSummary extractSummary( Statement statement, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
+    public ResultSummary extractSummary(Query query, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo = new InternalServerInfo( connection.serverAddress(), connection.serverVersion() );
         DatabaseInfo dbInfo = extractDatabaseInfo( metadata );
-        return new InternalResultSummary( statement, serverInfo, dbInfo, extractStatementType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
+        return new InternalResultSummary(query, serverInfo, dbInfo, extractQueryType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
                 extractProfiledPlan( metadata ), extractNotifications( metadata ), resultAvailableAfter,
                 extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
     }
@@ -153,12 +153,12 @@ public class MetadataExtractor
         }
     }
 
-    private static StatementType extractStatementType( Map<String,Value> metadata )
+    private static QueryType extractQueryType(Map<String,Value> metadata )
     {
         Value typeValue = metadata.get( "type" );
         if ( typeValue != null )
         {
-            return StatementType.fromCode( typeValue.asString() );
+            return QueryType.fromCode( typeValue.asString() );
         }
         return null;
     }

@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 
@@ -41,13 +41,13 @@ public class BlockingWriteQueryUsingReadSessionInTx<C extends AbstractContext> e
     @Override
     public void execute( C context )
     {
-        AtomicReference<StatementResult> resultRef = new AtomicReference<>();
+        AtomicReference<Result> resultRef = new AtomicReference<>();
         assertThrows( ClientException.class, () ->
         {
             try ( Session session = newSession( AccessMode.READ, context );
                   Transaction tx = beginTransaction( session, context ) )
             {
-                StatementResult result = tx.run( "CREATE ()" );
+                Result result = tx.run( "CREATE ()" );
                 resultRef.set( result );
                 tx.commit();
             }

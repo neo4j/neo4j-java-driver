@@ -21,7 +21,7 @@ package org.neo4j.driver.stress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,7 +38,7 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
     @Override
     public void execute( C context )
     {
-        StatementResult result = null;
+        Result result = null;
         Throwable queryError = null;
 
         try ( Session session = newSession( AccessMode.WRITE, context ) )

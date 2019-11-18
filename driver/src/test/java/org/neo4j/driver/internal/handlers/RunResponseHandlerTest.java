@@ -83,7 +83,7 @@ class RunResponseHandlerTest
 
         handler.onFailure( new RuntimeException() );
 
-        assertEquals( emptyList(), handler.statementKeys() );
+        assertEquals( emptyList(), handler.queryKeys() );
     }
 
     @Test
@@ -104,7 +104,7 @@ class RunResponseHandlerTest
         List<String> keys = asList( "key1", "key2", "key3" );
         handler.onSuccess( singletonMap( "fields", value( keys ) ) );
 
-        assertEquals( keys, handler.statementKeys() );
+        assertEquals( keys, handler.queryKeys() );
     }
 
     @Test

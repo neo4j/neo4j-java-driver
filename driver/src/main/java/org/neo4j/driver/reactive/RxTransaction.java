@@ -29,7 +29,7 @@ import org.neo4j.driver.Transaction;
  * @see Publisher
  * @since 2.0
  */
-public interface RxTransaction extends RxStatementRunner
+public interface RxTransaction extends RxQueryRunner
 {
     /**
      * Commits the transaction.

@@ -51,8 +51,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -135,7 +135,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldTerminateQueryInExplicitTransaction()
+    void shouldTerminateQueryInUnmanagedTransaction()
     {
         testQueryTermination( LONG_QUERY, false );
     }
@@ -165,7 +165,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldTerminateQueriesInExplicitTransactionsRandomly() throws Exception
+    void shouldTerminateQueriesInUnmanagedTransactionsRandomly() throws Exception
     {
         testRandomQueryTermination( false );
     }
@@ -179,7 +179,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
+            Result result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
@@ -188,9 +188,9 @@ class SessionResetIT
             assertThat( e1.getMessage(), containsString( "You cannot begin a transaction on a session with an open transaction" ) );
 
             ClientException e2 = assertThrows( ClientException.class, () -> tx1.run( "RETURN 1" ) );
-            assertThat( e2.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
+            assertThat( e2.getMessage(), containsString( "Cannot run more queries in this transaction" ) );
 
-            // Make sure failure from the terminated long running statement is propagated
+            // Make sure failure from the terminated long running query is propagated
             Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
             assertThat( e3.getMessage(), containsString( "The transaction has been terminated" ) );
         }
@@ -221,7 +221,7 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            StatementResult procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
+            Result procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
                     parameters( "seconds", 10 ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
@@ -237,14 +237,14 @@ class SessionResetIT
                 tx2.commit();
             }
 
-            StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+            Result result = session.run( "MATCH (n) RETURN count(n)" );
             long nodes = result.single().get( "count(n)" ).asLong();
             MatcherAssert.assertThat( nodes, equalTo( 1L ) );
         }
     }
 
     @Test
-    void shouldKillLongRunningStatement() throws Throwable
+    void shouldKillLongRunningQuery() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -257,14 +257,14 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longRunningStatement({seconds})",
+                Result result = session.run( "CALL test.driver.longRunningStatement({seconds})",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
 
                 // When
                 startTime.set( System.currentTimeMillis() );
-                result.consume(); // blocking to run the statement
+                result.consume(); // blocking to run the query
             }
         } );
 
@@ -289,7 +289,7 @@ class SessionResetIT
         {
             try ( Session session = neo4j.driver().session() )
             {
-                StatementResult result = session.run( "CALL test.driver.longStreamingResult({seconds})",
+                Result result = session.run( "CALL test.driver.longStreamingResult({seconds})",
                         parameters( "seconds", executionTimeout ) );
 
                 resetSessionAfterTimeout( session, killTimeout );
@@ -319,7 +319,7 @@ class SessionResetIT
         {
             try
             {
-                Thread.sleep( timeout * 1000 ); // let the statement executing for timeout seconds
+                Thread.sleep( timeout * 1000 ); // let the query execute for timeout seconds
             }
             catch ( InterruptedException ignore )
             {
@@ -332,7 +332,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldAllowMoreStatementAfterSessionReset()
+    void shouldAllowMoreQueriesAfterSessionReset()
     {
         // Given
         try ( Session session = neo4j.driver().session() )
@@ -343,7 +343,7 @@ class SessionResetIT
             // When reset the state of this session
             session.reset();
 
-            // Then can run successfully more statements without any error
+            // Then can run successfully more queries without any error
             session.run( "RETURN 2" ).consume();
         }
     }
@@ -388,7 +388,7 @@ class SessionResetIT
                 tx.run( "RETURN 1" );
                 tx.commit();
             } );
-            assertThat( e.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+            assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
         }
     }
 
@@ -426,7 +426,7 @@ class SessionResetIT
                 {
                     usedSessionRef.set( session );
                     latchToWait.await();
-                    StatementResult result = updateNodeId( session, nodeId, newNodeId );
+                    Result result = updateNodeId( session, nodeId, newNodeId );
                     result.consume();
                 }
             }
@@ -447,7 +447,7 @@ class SessionResetIT
                 {
                     usedSessionRef.set( session );
                     latchToWait.await();
-                    StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                    Result result = updateNodeId( tx, nodeId, newNodeId );
                     result.consume();
                 }
             }
@@ -473,7 +473,7 @@ class SessionResetIT
                     session.writeTransaction( tx ->
                     {
                         invocationsOfWork.incrementAndGet();
-                        StatementResult result = updateNodeId( tx, nodeId, newNodeId );
+                        Result result = updateNodeId( tx, nodeId, newNodeId );
                         result.consume();
                         return null;
                     } );
@@ -485,7 +485,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldBeAbleToRunMoreStatementsAfterResetOnNoErrorState()
+    void shouldBeAbleToRunMoreQueriesAfterResetOnNoErrorState()
     {
         try ( Session session = neo4j.driver().session() )
         {
@@ -497,8 +497,8 @@ class SessionResetIT
             tx.run( "CREATE (n:FirstNode)" );
             tx.commit();
 
-            // Then the outcome of both statements should be visible
-            StatementResult result = session.run( "MATCH (n) RETURN count(n)" );
+            // Then the outcome of both queries should be visible
+            Result result = session.run( "MATCH (n) RETURN count(n)" );
             long nodes = result.single().get( "count(n)" ).asLong();
             assertThat( nodes, equalTo( 1L ) );
         }
@@ -513,7 +513,7 @@ class SessionResetIT
             session.reset();
 
             ClientException e = assertThrows( ClientException.class, () -> tx.run( "CREATE (n:FirstNode)" ) );
-            assertThat( e.getMessage(), containsString( "Cannot run more statements in this transaction" ) );
+            assertThat( e.getMessage(), containsString( "Cannot run more queries in this transaction" ) );
         }
     }
 
@@ -584,7 +584,7 @@ class SessionResetIT
         {
             Future<Void> txResult = nodeIdUpdater.update( nodeId, newNodeId1, otherSessionRef, nodeLocked );
 
-            StatementResult result = updateNodeId( tx, nodeId, newNodeId2 );
+            Result result = updateNodeId( tx, nodeId, newNodeId2 );
             result.consume();
 
             nodeLocked.countDown();
@@ -598,7 +598,7 @@ class SessionResetIT
 
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n) RETURN n.id AS id" );
+            Result result = session.run( "MATCH (n) RETURN n.id AS id" );
             int value = result.single().get( "id" ).asInt();
             assertEquals( newNodeId2, value );
         }
@@ -612,9 +612,9 @@ class SessionResetIT
         }
     }
 
-    private static StatementResult updateNodeId( StatementRunner statementRunner, int currentId, int newId )
+    private static Result updateNodeId(QueryRunner queryRunner, int currentId, int newId )
     {
-        return statementRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
+        return queryRunner.run( "MATCH (n {id: $currentId}) SET n.id = $newId",
                 parameters( "currentId", currentId, "newId", newId ) );
     }
 
@@ -753,7 +753,7 @@ class SessionResetIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            StatementResult result = session.run( "MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result" );
+            Result result = session.run( "MATCH (n" + (label == null ? "" : ":" + label) + ") RETURN count(n) AS result" );
             return result.single().get( 0 ).asLong();
         }
     }

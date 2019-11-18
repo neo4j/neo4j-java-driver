@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.exceptions;
 
-import org.neo4j.driver.StatementRunner;
+import org.neo4j.driver.QueryRunner;
 
 /**
  * A user is trying to access resources that are no longer valid due to
  * the resources have already been consumed or
- * the {@link StatementRunner} where the resources are created has already been closed.
+ * the {@link QueryRunner} where the resources are created has already been closed.
  */
 public class ResultConsumedException extends ClientException
 {

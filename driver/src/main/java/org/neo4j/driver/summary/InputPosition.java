@@ -21,7 +21,7 @@ package org.neo4j.driver.summary;
 import org.neo4j.driver.util.Immutable;
 
 /**
- * An input position refers to a specific character in a statement.
+ * An input position refers to a specific character in a query.
  * @since 1.0
  */
 @Immutable

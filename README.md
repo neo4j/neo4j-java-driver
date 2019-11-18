@@ -49,7 +49,7 @@ To run a simple query, the following can be used:
 ```java
 Driver driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "PasSW0rd"));
 try (Session session = driver.session()) {
-    StatementResult rs = session.run("CREATE (n) RETURN n");
+    Result result = session.run("CREATE (n) RETURN n");
 }
 driver.close();
 ```

@@ -26,7 +26,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
@@ -93,7 +93,7 @@ class EncryptionIT
 
             try ( Session session = driver.session() )
             {
-                StatementResult result = session.run( "RETURN 1" );
+                Result result = session.run( "RETURN 1" );
 
                 Record record = result.next();
                 int value = record.get( 0 ).asInt();

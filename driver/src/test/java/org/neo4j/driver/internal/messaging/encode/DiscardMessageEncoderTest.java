@@ -68,7 +68,7 @@ class DiscardMessageEncoderTest
     }
 
     @Test
-    void shouldAvoidStatementId() throws Throwable
+    void shouldAvoidQueryId() throws Throwable
     {
         encoder.encode( new DiscardMessage( 100, -1 ), packer );
 

@@ -24,7 +24,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
@@ -120,7 +120,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
 
     private static String invokedProcedureString( RoutingProcedureResponse response )
     {
-        Statement statement = response.procedure();
-        return statement.text() + " " + statement.parameters();
+        Query query = response.procedure();
+        return query.text() + " " + query.parameters();
     }
 }

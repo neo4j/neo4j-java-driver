@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -25,14 +26,13 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.cursor.RxStatementResultCursor;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
@@ -40,7 +40,7 @@ import org.neo4j.driver.reactive.RxTransactionWork;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
 import static org.neo4j.driver.internal.reactive.RxUtils.createMono;
 
-public class InternalRxSession extends AbstractRxStatementRunner implements RxSession
+public class InternalRxSession extends AbstractRxQueryRunner implements RxSession
 {
     private final NetworkSession session;
 
@@ -129,29 +129,29 @@ public class InternalRxSession extends AbstractRxStatementRunner implements RxSe
     }
 
     @Override
-    public RxStatementResult run( String statement, TransactionConfig config )
+    public RxResult run(String query, TransactionConfig config )
     {
-        return run( new Statement( statement ), config );
+        return run( new Query( query ), config );
     }
 
     @Override
-    public RxStatementResult run( String statement, Map<String,Object> parameters, TransactionConfig config )
+    public RxResult run(String query, Map<String,Object> parameters, TransactionConfig config )
     {
-        return run( new Statement( statement, parameters ), config );
+        return run( new Query( query, parameters ), config );
     }
 
     @Override
-    public RxStatementResult run( Statement statement )
+    public RxResult run(Query query)
     {
-        return run( statement, TransactionConfig.empty() );
+        return run(query, TransactionConfig.empty() );
     }
 
     @Override
-    public RxStatementResult run( Statement statement, TransactionConfig config )
+    public RxResult run(Query query, TransactionConfig config )
     {
-        return new InternalRxStatementResult( () -> {
-            CompletableFuture<RxStatementResultCursor> resultCursorFuture = new CompletableFuture<>();
-            session.runRx( statement, config ).whenComplete( ( cursor, completionError ) -> {
+        return new InternalRxResult( () -> {
+            CompletableFuture<RxResultCursor> resultCursorFuture = new CompletableFuture<>();
+            session.runRx(query, config ).whenComplete( (cursor, completionError ) -> {
                 if ( cursor != null )
                 {
                     resultCursorFuture.complete( cursor );

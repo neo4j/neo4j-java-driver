@@ -25,7 +25,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
@@ -35,15 +35,15 @@ import org.neo4j.driver.Bookmark;
  * Provides a context of work for database interactions.
  * <p>
  * A <em>AsyncSession</em> hosts a series of {@linkplain AsyncTransaction transactions}
- * carried out against a database. Within the database, all statements are
+ * carried out against a database. Within the database, all queries are
  * carried out within a transaction. Within application code, however, it is
  * not always necessary to explicitly {@link #beginTransactionAsync() begin a
- * transaction}. If a statement is {@link #runAsync} directly against a {@link
+ * transaction}. If a query is {@link #runAsync} directly against a {@link
  * AsyncSession}, the server will automatically <code>BEGIN</code> and
- * <code>COMMIT</code> that statement within its own transaction. This type
+ * <code>COMMIT</code> that query within its own transaction. This type
  * of transaction is known as an <em>autocommit transaction</em>.
  * <p>
- * Explicit transactions allow multiple statements to be committed as part of
+ * Unmanaged transactions allow multiple queries to be committed as part of
  * a single atomic operation and can be rolled back if necessary. They can also
  * be used to ensure <em>causal consistency</em>, meaning that an application
  * can run a series of queries on different members of a cluster, while
@@ -69,10 +69,10 @@ import org.neo4j.driver.Bookmark;
  *
  * @since 2.0
  */
-public interface AsyncSession extends AsyncStatementRunner
+public interface AsyncSession extends AsyncQueryRunner
 {
     /**
-     * Begin a new <em>explicit {@linkplain Transaction transaction}</em>. At
+     * Begin a new <em>unmanaged {@linkplain Transaction transaction}</em>. At
      * most one transaction may exist in a session at any point in time. To
      * maintain multiple concurrent transactions, use multiple concurrent
      * sessions.
@@ -93,7 +93,7 @@ public interface AsyncSession extends AsyncStatementRunner
     CompletionStage<AsyncTransaction> beginTransactionAsync();
 
     /**
-     * Begin a new <em>explicit {@linkplain AsyncTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
+     * Begin a new <em>unmanaged {@linkplain AsyncTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
      * At most one transaction may exist in a session at any point in time.
      * To maintain multiple concurrent transactions, use multiple concurrent sessions.
      * <p>
@@ -210,25 +210,25 @@ public interface AsyncSession extends AsyncStatementRunner
     <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
 
     /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
+     * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
      * {@link CompletionStage} with a result cursor.
      * <p>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncStatementRunner} for
+     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncQueryRunner} for
      * more information.
      *
-     * @param statement text of a Neo4j statement.
+     * @param query text of a Neo4j query.
      * @param config configuration for the new transaction.
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statement, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String query, TransactionConfig config );
 
     /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
+     * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
      * {@link CompletionStage} with a result cursor.
      * <p>
      * This method takes a set of parameters that will be injected into the
-     * statement by Neo4j. Using parameters is highly encouraged, it helps avoid
+     * query by Neo4j. Using parameters is highly encouraged, it helps avoid
      * dangerous cypher injection attacks and improves database performance as
      * Neo4j can re-use query plans more often.
      * <p>
@@ -249,25 +249,25 @@ public interface AsyncSession extends AsyncStatementRunner
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
      *
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(
      *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
      *             parameters,
      *             config);
      * }
      * </pre>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncStatementRunner} for
+     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncQueryRunner} for
      * more information.
      *
-     * @param statement text of a Neo4j statement.
-     * @param parameters input data for the statement.
+     * @param query text of a Neo4j query.
+     * @param parameters input data for the query.
      * @param config configuration for the new transaction.
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( String statement, Map<String,Object> parameters, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters, TransactionConfig config );
 
     /**
-     * Run a statement asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
+     * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
      * {@link CompletionStage} with a result cursor.
      * <h2>Example</h2>
      * <pre>
@@ -280,19 +280,19 @@ public interface AsyncSession extends AsyncStatementRunner
      *                 .withMetadata(metadata)
      *                 .build();
      *
-     * Statement statement = new Statement( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
-     * CompletionStage<StatementResultCursor> cursorStage = session.runAsync(statement, config);
+     * Query query = new Query( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
+     * CompletionStage<ResultCursor> cursorStage = session.runAsync(query, config);
      * }
      * </pre>
-     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncStatementRunner} for
+     * It is not allowed to chain blocking operations on the returned {@link CompletionStage}. See class javadoc in {@link AsyncQueryRunner} for
      * more information.
      *
-     * @param statement a Neo4j statement.
+     * @param query a Neo4j query.
      * @param config configuration for the new transaction.
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<StatementResultCursor> runAsync( Statement statement, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed
@@ -309,8 +309,8 @@ public interface AsyncSession extends AsyncStatementRunner
      * very low cost.
      * <p>
      * This operation is asynchronous and returns a {@link CompletionStage}. Stage is completed when all outstanding
-     * statements in the session have completed, meaning any writes you performed are guaranteed to be durably stored.
-     * It might be completed exceptionally when there are unconsumed errors from previous statements or transactions.
+     * queries in the session have completed, meaning any writes you performed are guaranteed to be durably stored.
+     * It might be completed exceptionally when there are unconsumed errors from previous queries or transactions.
      *
      * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
      */

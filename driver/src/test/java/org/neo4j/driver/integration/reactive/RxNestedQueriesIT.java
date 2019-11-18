@@ -29,7 +29,7 @@ import java.util.Collections;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -53,7 +53,7 @@ class RxNestedQueriesIT
                 session -> Flux.from( session.run( "UNWIND range(1, $size) AS x RETURN x", Collections.singletonMap( "size", size ) ).records() )
                         .limitRate( 20 ).flatMap( record -> {
                             int x = record.get( "x" ).asInt();
-                            RxStatementResult innerResult = session.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
+                            RxResult innerResult = session.run( "CREATE (n:Node {id: $x}) RETURN n.id", Collections.singletonMap( "x", x ) );
                             return innerResult.records();
                         } ).map( r -> r.get( 0 ).asInt() ),
                 RxSession::close );
@@ -131,11 +131,11 @@ class RxNestedQueriesIT
         Flux<Integer> nodeIds = Flux.usingWhen(
                 session.beginTransaction(),
                 tx -> {
-                    RxStatementResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x",
+                    RxResult result = tx.run( "UNWIND range(1, $size) AS x RETURN x",
                             Collections.singletonMap( "size", size ) );
                     return Flux.from( result.records() ).limitRate( 20 ).flatMap( record -> {
                         int x = record.get( "x" ).asInt();
-                        RxStatementResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
+                        RxResult innerResult = tx.run( "CREATE (n:Node {id: $x}) RETURN n.id",
                                 Collections.singletonMap( "x", x ) );
                         return innerResult.records();
                     } ).map( record -> record.get( 0 ).asInt() );

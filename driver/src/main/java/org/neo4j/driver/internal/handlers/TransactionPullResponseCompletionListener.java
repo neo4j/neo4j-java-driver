@@ -21,15 +21,15 @@ package org.neo4j.driver.internal.handlers;
 import java.util.Map;
 
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.async.ExplicitTransaction;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 
 import static java.util.Objects.requireNonNull;
 
 public class TransactionPullResponseCompletionListener implements PullResponseCompletionListener
 {
-    private final ExplicitTransaction tx;
+    private final UnmanagedTransaction tx;
 
-    public TransactionPullResponseCompletionListener( ExplicitTransaction tx )
+    public TransactionPullResponseCompletionListener( UnmanagedTransaction tx )
     {
         this.tx = requireNonNull( tx );
     }

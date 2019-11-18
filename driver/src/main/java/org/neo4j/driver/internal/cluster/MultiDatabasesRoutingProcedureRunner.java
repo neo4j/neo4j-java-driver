@@ -22,7 +22,7 @@ import java.util.HashMap;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Statement;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
@@ -51,12 +51,12 @@ public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
     }
 
     @Override
-    Statement procedureStatement( ServerVersion serverVersion, DatabaseName databaseName )
+    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
     {
         HashMap<String,Value> map = new HashMap<>();
         map.put( ROUTING_CONTEXT, value( context.asMap() ) );
         map.put( DATABASE_NAME, value( (Object) databaseName.databaseName().orElse( null ) ) );
-        return new Statement( MULTI_DB_GET_ROUTING_TABLE, value( map ) );
+        return new Query( MULTI_DB_GET_ROUTING_TABLE, value( map ) );
     }
 
     @Override

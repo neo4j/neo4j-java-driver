@@ -33,19 +33,19 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Statement;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.StatementType;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -118,11 +118,11 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndCommit()
+    void shouldBePossibleToRunSingleQueryAndCommit()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" ) );
+        ResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 42}) RETURN n" ) );
 
         Record record = await( cursor.nextAsync() );
         assertNotNull( record );
@@ -136,11 +136,11 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunSingleStatementAndRollback()
+    void shouldBePossibleToRunSingleQueryAndRollback()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" ) );
+        ResultCursor cursor = await( tx.runAsync( "CREATE (n:Node {id: 4242}) RETURN n" ) );
         Record record = await( cursor.nextAsync() );
         assertNotNull( record );
         Node node = record.get( 0 ).asNode();
@@ -153,17 +153,17 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndCommit()
+    void shouldBePossibleToRunMultipleQueriesAndCommit()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
+        ResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
         assertNull( await( cursor1.nextAsync() ) );
 
-        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
+        ResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
         assertNull( await( cursor2.nextAsync() ) );
 
-        StatementResultCursor cursor3 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
+        ResultCursor cursor3 = await( tx.runAsync( "CREATE (n:Node {id: 2})" ) );
         assertNull( await( cursor3.nextAsync() ) );
 
         assertNull( await( tx.commitAsync() ) );
@@ -172,7 +172,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndCommitWithoutWaiting()
+    void shouldBePossibleToRunMultipleQueriesAndCommitWithoutWaiting()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -186,14 +186,14 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndRollback()
+    void shouldBePossibleToRunMultipleQueriesAndRollback()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
+        ResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node {id: 1})" ) );
         assertNull( await( cursor1.nextAsync() ) );
 
-        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
+        ResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node {id: 42})" ) );
         assertNull( await( cursor2.nextAsync() ) );
 
         assertNull( await( tx.rollbackAsync() ) );
@@ -202,7 +202,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldBePossibleToRunMultipleStatementsAndRollbackWithoutWaiting()
+    void shouldBePossibleToRunMultipleQueriesAndRollbackWithoutWaiting()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -215,11 +215,11 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitAfterSingleWrongStatement()
+    void shouldFailToCommitAfterSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
@@ -228,11 +228,11 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldAllowRollbackAfterSingleWrongStatement()
+    void shouldAllowRollbackAfterSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
@@ -240,21 +240,21 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldFailToCommitAfterCoupleCorrectAndSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node) RETURN n" ) );
+        ResultCursor cursor1 = await( tx.runAsync( "CREATE (n:Node) RETURN n" ) );
         Record record1 = await( cursor1.nextAsync() );
         assertNotNull( record1 );
         assertTrue( record1.get( 0 ).asNode().hasLabel( "Node" ) );
 
-        StatementResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
+        ResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
         Record record2 = await( cursor2.nextAsync() );
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
+        ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
@@ -263,21 +263,21 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongStatement()
+    void shouldAllowRollbackAfterCoupleCorrectAndSingleWrongQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor1 = await( tx.runAsync( "RETURN 4242" ) );
+        ResultCursor cursor1 = await( tx.runAsync( "RETURN 4242" ) );
         Record record1 = await( cursor1.nextAsync() );
         assertNotNull( record1 );
         assertEquals( 4242, record1.get( 0 ).asInt() );
 
-        StatementResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" ) );
+        ResultCursor cursor2 = await( tx.runAsync( "CREATE (n:Node) DELETE n RETURN 42" ) );
         Record record2 = await( cursor2.nextAsync() );
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
-        StatementResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
+        ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
         assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
@@ -285,17 +285,17 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldNotAllowNewStatementsAfterAnIncorrectStatement()
+    void shouldNotAllowNewQueriesAfterAnIncorrectQuery()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e1 = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
         assertThat( e1, is( syntaxError( "Unexpected end of input" ) ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> tx.runAsync( "CREATE ()" ) );
-        assertThat( e2.getMessage(), startsWith( "Cannot run more statements in this transaction" ) );
+        assertThat( e2.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
     }
 
     @Test
@@ -355,19 +355,19 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithAliases()
+    void shouldExposeQueryKeysForColumnsWithAliases()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN 1 AS one, 2 AS two, 3 AS three, 4 AS five" ) );
 
         assertEquals( Arrays.asList( "one", "two", "three", "five" ), cursor.keys() );
     }
 
     @Test
-    void shouldExposeStatementKeysForColumnsWithoutAliases()
+    void shouldExposeQueryKeysForColumnsWithoutAliases()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN 1, 2, 3, 5" ) );
 
         assertEquals( Arrays.asList( "1", "2", "3", "5" ), cursor.keys() );
     }
@@ -379,15 +379,15 @@ class AsyncTransactionIT
         Value params = parameters( "name1", "Bob", "name2", "John" );
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query, params ) );
+        ResultCursor cursor = await( tx.runAsync( query, params ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 2, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().labelsAdded() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 1, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.READ_WRITE, summary.statementType() );
+        assertEquals( QueryType.READ_WRITE, summary.queryType() );
         assertFalse( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNull( summary.plan() );
@@ -402,13 +402,13 @@ class AsyncTransactionIT
         String query = "EXPLAIN MATCH (n) RETURN n";
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultCursor cursor = await( tx.runAsync( query ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query ), summary.statement() );
+        assertEquals( new Query( query ), summary.query() );
         assertEquals( 0, summary.counters().nodesCreated() );
         assertEquals( 0, summary.counters().propertiesSet() );
-        assertEquals( StatementType.READ_ONLY, summary.statementType() );
+        assertEquals( QueryType.READ_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertFalse( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -430,14 +430,14 @@ class AsyncTransactionIT
         Value params = parameters( "name", "Bob" );
 
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query, params ) );
+        ResultCursor cursor = await( tx.runAsync( query, params ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
-        assertEquals( new Statement( query, params ), summary.statement() );
+        assertEquals( new Query( query, params ), summary.query() );
         assertEquals( 1, summary.counters().nodesCreated() );
         assertEquals( 2, summary.counters().propertiesSet() );
         assertEquals( 0, summary.counters().relationshipsCreated() );
-        assertEquals( StatementType.WRITE_ONLY, summary.statementType() );
+        assertEquals( QueryType.WRITE_ONLY, summary.queryType() );
         assertTrue( summary.hasPlan() );
         assertTrue( summary.hasProfile() );
         assertNotNull( summary.plan() );
@@ -454,7 +454,7 @@ class AsyncTransactionIT
     void shouldPeekRecordFromCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
 
         assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
         assertEquals( "a", await( cursor.peekAsync() ).get( 0 ).asString() );
@@ -490,7 +490,7 @@ class AsyncTransactionIT
     void shouldFailForEachWhenActionFails()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hi!'" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN 'Hi!'" ) );
         RuntimeException error = new RuntimeException();
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
@@ -519,7 +519,7 @@ class AsyncTransactionIT
     void shouldConvertToTransformedListWithEmptyCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "CREATE ()" ) );
+        ResultCursor cursor = await( tx.runAsync( "CREATE ()" ) );
         List<Map<String,Object>> maps = await( cursor.listAsync( record -> record.get( 0 ).asMap() ) );
         assertEquals( 0, maps.size() );
     }
@@ -528,7 +528,7 @@ class AsyncTransactionIT
     void shouldConvertToTransformedListWithNonEmptyCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b', 'c'] AS x RETURN x" ) );
         List<String> strings = await( cursor.listAsync( record -> record.get( 0 ).asString() + "!" ) );
         assertEquals( Arrays.asList( "a!", "b!", "c!" ), strings );
     }
@@ -537,7 +537,7 @@ class AsyncTransactionIT
     void shouldFailWhenListTransformationFunctionFails()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello'" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN 'Hello'" ) );
         IOException error = new IOException( "World" );
 
         Exception e = assertThrows( Exception.class, () ->
@@ -564,7 +564,7 @@ class AsyncTransactionIT
     void shouldFailSingleWithEmptyCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "MATCH (n:NoSuchLabel) RETURN n" ) );
+        ResultCursor cursor = await( tx.runAsync( "MATCH (n:NoSuchLabel) RETURN n" ) );
 
         NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), containsString( "result is empty" ) );
@@ -574,7 +574,7 @@ class AsyncTransactionIT
     void shouldFailSingleWithMultiRecordCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b'] AS x RETURN x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND ['a', 'b'] AS x RETURN x" ) );
 
         NoSuchRecordException e = assertThrows( NoSuchRecordException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), startsWith( "Expected a result with a single record" ) );
@@ -584,7 +584,7 @@ class AsyncTransactionIT
     void shouldReturnSingleWithSingleRecordCursor()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN 'Hello!'" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN 'Hello!'" ) );
 
         Record record = await( cursor.singleAsync() );
 
@@ -595,7 +595,7 @@ class AsyncTransactionIT
     void shouldPropagateFailureFromFirstRecordInSingleAsync()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND [0] AS x RETURN 10 / x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND [0] AS x RETURN 10 / x" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
@@ -605,7 +605,7 @@ class AsyncTransactionIT
     void shouldNotPropagateFailureFromSecondRecordInSingleAsync()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 10 / x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 10 / x" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
@@ -630,11 +630,11 @@ class AsyncTransactionIT
         tx.runAsync( "CREATE (:MyLabel)" );
         assertNull( await( tx.commitAsync() ) );
 
-        StatementResultCursor cursor = await( session.runAsync( "MATCH (n:MyLabel) RETURN count(n)" ) );
+        ResultCursor cursor = await( session.runAsync( "MATCH (n:MyLabel) RETURN count(n)" ) );
         assertEquals( 1, await( cursor.singleAsync() ).get( 0 ).asInt() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
-        assertEquals( "Cannot run more statements in this transaction, it has been committed", e.getMessage() );
+        assertEquals( "Cannot run more queries in this transaction, it has been committed", e.getMessage() );
     }
 
     @Test
@@ -644,11 +644,11 @@ class AsyncTransactionIT
         tx.runAsync( "CREATE (:MyLabel)" );
         assertNull( await( tx.rollbackAsync() ) );
 
-        StatementResultCursor cursor = await( session.runAsync( "MATCH (n:MyLabel) RETURN count(n)" ) );
+        ResultCursor cursor = await( session.runAsync( "MATCH (n:MyLabel) RETURN count(n)" ) );
         assertEquals( 0, await( cursor.singleAsync() ).get( 0 ).asInt() );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.runAsync( "CREATE (:MyOtherLabel)" ) ) );
-        assertEquals( "Cannot run more statements in this transaction, it has been rolled back", e.getMessage() );
+        assertEquals( "Cannot run more queries in this transaction, it has been rolled back", e.getMessage() );
     }
 
     @Test
@@ -772,7 +772,7 @@ class AsyncTransactionIT
     void shouldFailToCommitWhenRunFailureIsConsumed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
         ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e1.code(), containsString( "SyntaxError" ) );
@@ -785,7 +785,7 @@ class AsyncTransactionIT
     void shouldFailToCommitWhenPullAllFailureIsConsumed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync(
+        ResultCursor cursor = await( tx.runAsync(
                 "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" ) );
 
         ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
@@ -799,7 +799,7 @@ class AsyncTransactionIT
     void shouldRollbackWhenRunFailureIsConsumed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
@@ -810,7 +810,7 @@ class AsyncTransactionIT
     void shouldRollbackWhenPullAllFailureIsConsumed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 5 / x" ) );
+        ResultCursor cursor = await( tx.runAsync( "UNWIND [1, 0] AS x RETURN 5 / x" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
@@ -822,7 +822,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        StatementResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
+        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
@@ -831,29 +831,29 @@ class AsyncTransactionIT
 
     private int countNodes( Object id )
     {
-        StatementResultCursor cursor = await( session.runAsync( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) ) );
+        ResultCursor cursor = await( session.runAsync( "MATCH (n:Node {id: $id}) RETURN count(n)", parameters( "id", id ) ) );
         return await( cursor.singleAsync() ).get( 0 ).asInt();
     }
 
     private void testForEach( String query, int expectedSeenRecords )
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultCursor cursor = await( tx.runAsync( query ) );
 
         AtomicInteger recordsSeen = new AtomicInteger();
         CompletionStage<ResultSummary> forEachDone = cursor.forEachAsync( record -> recordsSeen.incrementAndGet() );
         ResultSummary summary = await( forEachDone );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
         assertEquals( expectedSeenRecords, recordsSeen.get() );
     }
 
     private <T> void testList( String query, List<T> expectedList )
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultCursor cursor = await( tx.runAsync( query ) );
         List<Record> records = await( cursor.listAsync() );
         List<Object> actualList = new ArrayList<>();
         for ( Record record : records )
@@ -866,12 +866,12 @@ class AsyncTransactionIT
     private void testConsume( String query )
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
-        StatementResultCursor cursor = await( tx.runAsync( query ) );
+        ResultCursor cursor = await( tx.runAsync( query ) );
         ResultSummary summary = await( cursor.consumeAsync() );
 
         assertNotNull( summary );
-        assertEquals( query, summary.statement().text() );
-        assertEquals( emptyMap(), summary.statement().parameters().asMap() );
+        assertEquals( query, summary.query().text() );
+        assertEquals( emptyMap(), summary.query().parameters().asMap() );
 
         // no records should be available, they should all be consumed
         assertThrows( ResultConsumedException.class, () -> await( cursor.nextAsync() ) );

@@ -28,7 +28,7 @@ public class SmallExample
         // Sessions are lightweight and disposable connection wrappers.
         try (Session session = driver.session())
         {
-            // Wrapping Cypher in an explicit transaction provides atomicity
+            // Wrapping Cypher in an unmanaged transaction provides atomicity
             // and makes handling errors much easier.
             try (Transaction tx = session.beginTransaction())
             {
@@ -43,7 +43,7 @@ public class SmallExample
         try (Session session = driver.session())
         {
             // Auto-commit transactions are a quick and easy way to wrap a read.
-            StatementResult result = session.run(
+            Result result = session.run(
                     "MATCH (a:Person) WHERE a.name STARTS WITH $x RETURN a.name AS name",
                     parameters("x", initial));
             // Each Cypher execution returns a stream of records.
