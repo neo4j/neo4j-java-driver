@@ -28,11 +28,6 @@ public final class BootstrapFactory
     {
     }
 
-    public static Bootstrap newBootstrap()
-    {
-        return newBootstrap( EventLoopGroupFactory.newEventLoopGroup() );
-    }
-
     public static Bootstrap newBootstrap( int threadCount )
     {
         return newBootstrap( EventLoopGroupFactory.newEventLoopGroup( threadCount ) );
