@@ -262,7 +262,7 @@ class DriverFactoryTest
         }
 
         @Override
-        protected Bootstrap createBootstrap()
+        protected Bootstrap createBootstrap( int ignored )
         {
             return BootstrapFactory.newBootstrap( 1 );
         }

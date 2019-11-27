@@ -64,13 +64,6 @@ class EventLoopGroupFactoryTest
     }
 
     @Test
-    void shouldCreateEventLoopGroup()
-    {
-        eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup();
-        assertThat( eventLoopGroup, instanceOf( NioEventLoopGroup.class ) );
-    }
-
-    @Test
     void shouldAssertNotInEventLoopThread() throws Exception
     {
         eventLoopGroup = EventLoopGroupFactory.newEventLoopGroup( 1 );

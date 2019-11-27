@@ -300,4 +300,19 @@ class ConfigTest
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withFetchSize( value ).build() );
     }
+
+    @ParameterizedTest
+    @ValueSource( ints = {100, 1, 1000, Integer.MAX_VALUE} )
+    void shouldChangeEventLoopThreads( int value ) throws Throwable
+    {
+        Config config = Config.builder().withEventLoopThreads( value ).build();
+        assertThat( config.eventLoopThreads(), equalTo( value ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( ints = {0, -100, -2} )
+    void shouldErrorWithIllegalEventLoopThreadsSize( int value ) throws Throwable
+    {
+        assertThrows( IllegalArgumentException.class, () -> Config.builder().withEventLoopThreads( value ).build() );
+    }
 }

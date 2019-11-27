@@ -94,13 +94,14 @@ public class Config
     private final int routingFailureLimit;
     private final long routingRetryDelayMillis;
     private final long fetchSize;
-    private long routingTablePurgeDelayMillis;
+    private final long routingTablePurgeDelayMillis;
 
     private final int connectionTimeoutMillis;
     private final RetrySettings retrySettings;
     private final ServerAddressResolver resolver;
 
     private final boolean isMetricsEnabled;
+    private final int eventLoopThreads;
 
     private Config( ConfigBuilder builder )
     {
@@ -122,6 +123,7 @@ public class Config
         this.resolver = builder.resolver;
         this.fetchSize = builder.fetchSize;
 
+        this.eventLoopThreads = builder.eventLoopThreads;
         this.isMetricsEnabled = builder.isMetricsEnabled;
     }
 
@@ -242,6 +244,11 @@ public class Config
         return fetchSize;
     }
 
+    public int eventLoopThreads()
+    {
+        return eventLoopThreads;
+    }
+
     /**
      * @return if the metrics is enabled or not on this driver.
      */
@@ -271,6 +278,7 @@ public class Config
         private ServerAddressResolver resolver;
         private boolean isMetricsEnabled = false;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
+        private int eventLoopThreads = 0;
 
         private ConfigBuilder() {}
 
@@ -696,6 +704,23 @@ public class Config
         public ConfigBuilder withoutDriverMetrics()
         {
             this.isMetricsEnabled = false;
+            return this;
+        }
+
+        /**
+         * Configure the event loop thread count. This specifies how many threads the driver can use to handle network I/O events
+         * and user's events in driver's I/O threads. By default, 2 * NumberOfProcessors amount of threads will be used instead.
+         * @param size the thread count.
+         * @return this builder.
+         * @throws IllegalArgumentException if the value of the size is set to a number that is less than 1.
+         */
+        public ConfigBuilder withEventLoopThreads( int size )
+        {
+            if ( size < 1 )
+            {
+                throw new IllegalArgumentException( String.format( "The event loop thread may not be smaller than 1, but was %d.", size ) );
+            }
+            this.eventLoopThreads = size;
             return this;
         }
 

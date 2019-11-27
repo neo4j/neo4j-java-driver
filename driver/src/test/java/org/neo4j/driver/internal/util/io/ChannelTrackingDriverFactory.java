@@ -60,9 +60,9 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
     }
 
     @Override
-    protected Bootstrap createBootstrap()
+    protected Bootstrap createBootstrap( int size )
     {
-        return eventLoopThreads == 0 ? super.createBootstrap() : BootstrapFactory.newBootstrap( eventLoopThreads );
+        return BootstrapFactory.newBootstrap( eventLoopThreads );
     }
 
     @Override

@@ -82,7 +82,7 @@ public class DriverFactory
         boolean ownsEventLoopGroup;
         if ( eventLoopGroup == null )
         {
-            bootstrap = createBootstrap();
+            bootstrap = createBootstrap( config.eventLoopThreads() );
             ownsEventLoopGroup = true;
         }
         else
@@ -272,9 +272,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected Bootstrap createBootstrap()
+    protected Bootstrap createBootstrap( int size )
     {
-        return BootstrapFactory.newBootstrap();
+        return BootstrapFactory.newBootstrap( size );
     }
 
     /**

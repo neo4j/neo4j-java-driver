@@ -311,7 +311,7 @@ class RoutingTableAndConnectionPoolTest
     {
         InternalAbstractMetrics metrics = DEV_NULL_METRICS;
         PoolSettings poolSettings = new PoolSettings( 10, 5000, -1, -1 );
-        Bootstrap bootstrap = BootstrapFactory.newBootstrap();
+        Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         NettyChannelTracker channelTracker = new NettyChannelTracker( metrics, bootstrap.config().group().next(), logging );
 
         return new TestConnectionPool( bootstrap, channelTracker, poolSettings, metrics, logging, clock, true );
