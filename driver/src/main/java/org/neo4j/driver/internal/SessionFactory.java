@@ -30,4 +30,6 @@ public interface SessionFactory
     CompletionStage<Void> verifyConnectivity();
 
     CompletionStage<Void> close();
+
+    CompletionStage<Boolean> supportsMultiDbAsync();
 }

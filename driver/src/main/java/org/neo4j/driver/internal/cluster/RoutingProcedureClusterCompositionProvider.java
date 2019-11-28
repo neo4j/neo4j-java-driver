@@ -23,16 +23,16 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 
 public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider
 {
@@ -59,7 +59,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark )
     {
         RoutingProcedureRunner runner;
-        if ( connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) )
+        if ( supportsMultiDatabase( connection ) )
         {
             runner = multiDatabaseRoutingProcedureRunner;
         }

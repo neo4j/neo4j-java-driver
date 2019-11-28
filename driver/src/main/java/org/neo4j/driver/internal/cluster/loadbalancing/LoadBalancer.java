@@ -20,8 +20,10 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
@@ -49,6 +51,10 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
 public class LoadBalancer implements ConnectionProvider
 {
@@ -58,20 +64,29 @@ public class LoadBalancer implements ConnectionProvider
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
+    private final Rediscovery rediscovery;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
             LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
     {
-        this( connectionPool, createRoutingTables( connectionPool, eventExecutorGroup, initialRouter, resolver, settings, clock, logging ),
-                loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
+        this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging ), settings, loadBalancingStrategy,
+                eventExecutorGroup, clock, loadBalancerLogger( logging ) );
     }
 
-    LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
-            EventExecutorGroup eventExecutorGroup )
+    private LoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, LoadBalancingStrategy loadBalancingStrategy,
+            EventExecutorGroup eventExecutorGroup, Clock clock, Logger log )
+    {
+        this( connectionPool, createRoutingTables( connectionPool, rediscovery, settings, clock, log ), rediscovery, loadBalancingStrategy, eventExecutorGroup,
+                log );
+    }
+
+    LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery, LoadBalancingStrategy loadBalancingStrategy,
+            EventExecutorGroup eventExecutorGroup, Logger log )
     {
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
+        this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
         this.log = log;
@@ -107,6 +122,38 @@ public class LoadBalancer implements ConnectionProvider
     public CompletionStage<Void> close()
     {
         return connectionPool.close();
+    }
+
+    @Override
+    public CompletionStage<Boolean> supportsMultiDbAsync()
+    {
+        List<BoltServerAddress> addresses;
+
+        try
+        {
+            addresses = rediscovery.resolve();
+        }
+        catch ( Throwable error )
+        {
+            return failedFuture( error );
+        }
+
+        CompletableFuture<Boolean> result = completedWithNull();
+        Throwable baseError = new ServiceUnavailableException( "Failed to perform multi-databases feature detection with the following servers: " + addresses );
+
+        for ( BoltServerAddress address : addresses )
+        {
+            result = onErrorContinue( result, baseError, () -> supportsMultiDbAsync( address ) );
+        }
+        return onErrorContinue( result, baseError, (Supplier<CompletableFuture<Boolean>>) () -> failedFuture( baseError ) );
+    }
+
+    private CompletionStage<Boolean> supportsMultiDbAsync( BoltServerAddress address )
+    {
+        return connectionPool.acquire( address ).thenCompose( conn -> {
+            boolean supportsMultiDatabase = supportsMultiDatabase( conn );
+            return conn.release().thenApply( ignored -> supportsMultiDatabase );
+        } );
     }
 
     private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )
@@ -181,17 +228,16 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter,
-            ServerAddressResolver resolver, RoutingSettings settings, Clock clock, Logging logging )
+    private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, Clock clock,
+            Logger log )
     {
-        Logger log = loadBalancerLogger( logging );
-        Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
         return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log, settings.routingTablePurgeDelayMs() );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
-            RoutingSettings settings, Clock clock, Logger log )
+            RoutingSettings settings, Clock clock, Logging logging )
     {
+        Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
         return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }

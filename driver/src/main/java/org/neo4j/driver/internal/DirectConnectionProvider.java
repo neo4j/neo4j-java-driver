@@ -26,7 +26,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 
-import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 
 /**
  * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
@@ -46,15 +46,13 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
-        return connectionPool.acquire( address ).thenApply( connection -> new DirectConnection( connection, context.databaseName(), context.mode() ) );
+        return acquireConnection().thenApply( connection -> new DirectConnection( connection, context.databaseName(), context.mode() ) );
     }
 
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        // We verify the connection by establishing a connection with the remote server specified by the address.
-        // Connection context will be ignored as no query is run in this connection and the connection is released immediately.
-        return acquireConnection( simple() ).thenCompose( Connection::release );
+        return acquireConnection().thenCompose( Connection::release );
     }
 
     @Override
@@ -63,8 +61,26 @@ public class DirectConnectionProvider implements ConnectionProvider
         return connectionPool.close();
     }
 
+    @Override
+    public CompletionStage<Boolean> supportsMultiDbAsync()
+    {
+        return acquireConnection().thenCompose( conn -> {
+            boolean supportsMultiDatabase = supportsMultiDatabase( conn );
+            return conn.release().thenApply( ignored -> supportsMultiDatabase );
+        } );
+    }
+
     public BoltServerAddress getAddress()
     {
         return address;
+    }
+
+    /**
+     * Used only for grabbing a connection with the server after hello message.
+     * This connection cannot be directly used for running any queries as it is missing necessary connection context
+     */
+    private CompletionStage<Connection> acquireConnection()
+    {
+        return connectionPool.acquire( address );
     }
 }

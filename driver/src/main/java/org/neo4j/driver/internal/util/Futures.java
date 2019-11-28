@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
@@ -219,6 +220,35 @@ public final class Futures
             return null;
         }
     }
+
+    /**
+     * Given a future, if the future completes successfully then return a new completed future with the completed value.
+     * Otherwise if the future completes with an error, then this method first saves the error in the error recorder, and then continues with the onErrorAction.
+     * @param future the future.
+     * @param errorRecorder saves error if the given future completes with an error.
+     * @param onErrorAction continues the future with this action if the future completes with an error.
+     * @param <T> type
+     * @return a new completed future with the same completed value if the given future completes successfully, otherwise continues with the onErrorAction.
+     */
+    @SuppressWarnings( "ThrowableNotThrown" )
+    public static <T> CompletableFuture<T> onErrorContinue( CompletableFuture<T> future, Throwable errorRecorder,
+            Supplier<? extends CompletionStage<T>> onErrorAction )
+    {
+        return future.exceptionally( error -> {
+            Futures.combineErrors( errorRecorder, error );
+            return null;
+        } ).thenCompose( value -> {
+            if ( value != null )
+            {
+                return completedFuture( value );
+            }
+            else
+            {
+                return onErrorAction.get();
+            }
+        } );
+    }
+
 
     private static void safeRun( Runnable runnable )
     {

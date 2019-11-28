@@ -79,6 +79,12 @@ public class SessionFactoryImpl implements SessionFactory
         return connectionProvider.close();
     }
 
+    @Override
+    public CompletionStage<Boolean> supportsMultiDbAsync()
+    {
+        return connectionProvider.supportsMultiDbAsync();
+    }
+
     /**
      * Get the underlying connection provider.
      * <p>

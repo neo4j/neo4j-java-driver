@@ -142,6 +142,18 @@ public class InternalDriver implements Driver
     }
 
     @Override
+    public boolean supportsMultiDb()
+    {
+        return Futures.blockingGet( supportsMultiDbAsync() );
+    }
+
+    @Override
+    public CompletionStage<Boolean> supportsMultiDbAsync()
+    {
+        return sessionFactory.supportsMultiDbAsync();
+    }
+
+    @Override
     public void verifyConnectivity()
     {
         Futures.blockingGet( verifyConnectivityAsync() );
