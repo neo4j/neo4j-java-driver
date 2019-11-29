@@ -103,14 +103,15 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.refreshRoutingTable( simple() ).handle( ( ignored, error ) -> {
+        return this.supportsMultiDbAsync().thenCompose( supports -> routingTables.refreshRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
             if ( error != null )
             {
                 Throwable cause = Futures.completionExceptionCause( error );
                 if ( cause instanceof ServiceUnavailableException )
                 {
                     throw Futures.asCompletionException( new ServiceUnavailableException(
-                            "Unable to connect to database, ensure the database is running and that there is a working network connection to it.", cause ) );
+                            "Unable to connect to database management service, ensure the database is running and that there is a working network connection to it.",
+                            cause ) );
                 }
                 throw Futures.asCompletionException( cause );
             }

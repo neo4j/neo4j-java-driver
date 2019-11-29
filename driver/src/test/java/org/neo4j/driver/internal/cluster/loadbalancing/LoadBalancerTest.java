@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -161,7 +162,7 @@ class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = await( loadBalancer.acquireConnection( simple() ) );
+            Connection connection = await( loadBalancer.acquireConnection( newBoltV4ConnectionContext() ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -185,7 +186,7 @@ class LoadBalancerTest
         Set<BoltServerAddress> seenAddresses = new HashSet<>();
         for ( int i = 0; i < 10; i++ )
         {
-            Connection connection = await( loadBalancer.acquireConnection( simple() ) );
+            Connection connection = await( loadBalancer.acquireConnection( newBoltV4ConnectionContext() ) );
             seenAddresses.add( connection.serverAddress() );
         }
 
@@ -204,7 +205,7 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        Connection connection = await( loadBalancer.acquireConnection( simple() ) );
+        Connection connection = await( loadBalancer.acquireConnection( newBoltV4ConnectionContext() ) );
 
         assertNotNull( connection );
         assertEquals( B, connection.serverAddress() );
@@ -257,13 +258,85 @@ class LoadBalancerTest
         assertTrue( await( loadBalancer.supportsMultiDbAsync() ) );
     }
 
+    @Test
+    void shouldThrowModifiedErrorWhenSupportMultiDbTestFails() throws Throwable
+    {
+        Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A, B );
+        ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses );
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, rediscovery );
+
+        ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.verifyConnectivity() ) );
+        assertThat( exception.getMessage(), startsWith( "Unable to connect to database management service," ) );
+    }
+
+    @Test
+    void shouldThrowModifiedErrorWhenRefreshRoutingTableFails() throws Throwable
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
+        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new ServiceUnavailableException( "boooo" ) );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
+
+        ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.verifyConnectivity() ) );
+        assertThat( exception.getMessage(), startsWith( "Unable to connect to database management service," ) );
+        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+    }
+
+    @Test
+    void shouldThrowOriginalErrorWhenRefreshRoutingTableFails() throws Throwable
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
+        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new SecurityException( "boo" ) );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
+
+        SecurityException exception = assertThrows( SecurityException.class, () -> await( loadBalancer.verifyConnectivity() ) );
+        assertThat( exception.getMessage(), startsWith( "boo" ) );
+        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+    }
+
+    @Test
+    void shouldReturnSuccessVerifyConnectivity() throws Throwable
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
+        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( Futures.completedWithNull() );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
+
+        await( loadBalancer.verifyConnectivity() );
+        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+    }
+
     private static ConnectionPool newConnectionPoolMock()
     {
         return newConnectionPoolMockWithFailures( emptySet() );
     }
 
-    private static ConnectionPool newConnectionPoolMockWithFailures(
-            Set<BoltServerAddress> unavailableAddresses )
+    private static ConnectionPool newConnectionPoolMockWithFailures( Set<BoltServerAddress> unavailableAddresses )
+    {
+        return newConnectionPoolMockWithFailures( unavailableAddresses, address -> new ServiceUnavailableException( address + " is unavailable!" ) );
+    }
+
+    private static ConnectionPool newConnectionPoolMockWithFailures( Set<BoltServerAddress> unavailableAddresses, Function<BoltServerAddress, Throwable> errorAction )
     {
         ConnectionPool pool = mock( ConnectionPool.class );
         when( pool.acquire( any( BoltServerAddress.class ) ) ).then( invocation ->
@@ -271,7 +344,7 @@ class LoadBalancerTest
             BoltServerAddress requestedAddress = invocation.getArgument( 0 );
             if ( unavailableAddresses.contains( requestedAddress ) )
             {
-                return Futures.failedFuture( new ServiceUnavailableException( requestedAddress + " is unavailable!" ) );
+                return Futures.failedFuture( errorAction.apply( requestedAddress ) );
             }
 
             return completedFuture( newBoltV4Connection( requestedAddress ) );
@@ -287,6 +360,11 @@ class LoadBalancerTest
         when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
         when( connection.release() ).thenReturn( completedWithNull() );
         return connection;
+    }
+
+    private static ConnectionContext newBoltV4ConnectionContext()
+    {
+        return simple( true );
     }
 
     private static LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTable routingTable )
@@ -305,6 +383,12 @@ class LoadBalancerTest
     {
         // Used only in testing
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
+        return newLoadBalancer( connectionPool, routingTables, rediscovery );
+    }
+
+    private static LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery )
+    {
+        // Used only in testing
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
     }
