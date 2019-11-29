@@ -50,8 +50,8 @@ public final class ErrorUtil
     public static ServiceUnavailableException newConnectionTerminatedError()
     {
         return new ServiceUnavailableException( "Connection to the database terminated. " +
-                                                "This can happen due to network instabilities, " +
-                                                "or due to restarts of the database" );
+                "Please ensure that your database is listening on the correct host and port and that you have compatible encryption settings both on Neo4j server and driver. " +
+                "Note that the default encryption setting has changed in Neo4j 4.0." );
     }
 
     public static ResultConsumedException newResultConsumedError()

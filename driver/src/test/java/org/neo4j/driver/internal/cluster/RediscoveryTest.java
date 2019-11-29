@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.cluster;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -44,11 +46,13 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.startsWith;
@@ -178,7 +182,9 @@ class RediscoveryTest
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
 
-        verify( logger ).warn( String.format( "Failed to update routing table with server '%s'.", B ), protocolError );
+        ArgumentCaptor<DiscoveryException> argument = ArgumentCaptor.forClass( DiscoveryException.class );
+        verify( logger ).warn( anyString(), argument.capture() );
+        assertThat( argument.getValue().getCause(), equalTo( protocolError ) );
     }
 
     @Test
@@ -260,12 +266,15 @@ class RediscoveryTest
     }
 
     @Test
-    void shouldFailWhenNoRoutersRespond()
+    void shouldRecordAllErrorsWhenNoRouterRespond()
     {
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( A, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
-        responsesByAddress.put( B, new SessionExpiredException( "Hi!" ) ); // second -> non-fatal failure
-        responsesByAddress.put( C, new IOException( "Hi!" ) ); // third -> non-fatal failure
+        ServiceUnavailableException first = new ServiceUnavailableException( "Hi!" );
+        responsesByAddress.put( A, first ); // first -> non-fatal failure
+        SessionExpiredException second = new SessionExpiredException( "Hi!" );
+        responsesByAddress.put( B, second ); // second -> non-fatal failure
+        IOException third = new IOException( "Hi!" );
+        responsesByAddress.put( C, third ); // third -> non-fatal failure
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
@@ -273,6 +282,10 @@ class RediscoveryTest
 
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
+        assertThat( e.getSuppressed().length, equalTo( 3 ) );
+        assertThat( e.getSuppressed()[0].getCause(), equalTo( first ) );
+        assertThat( e.getSuppressed()[1].getCause(), equalTo( second ) );
+        assertThat( e.getSuppressed()[2].getCause(), equalTo( third ) );
     }
 
     @Test
