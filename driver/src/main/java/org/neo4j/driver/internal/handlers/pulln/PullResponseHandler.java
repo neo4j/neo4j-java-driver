@@ -44,12 +44,4 @@ public interface PullResponseHandler extends ResponseHandler, Subscription
      */
     void installSummaryConsumer( BiConsumer<ResultSummary,Throwable> summaryConsumer );
 
-    enum Status
-    {
-        SUCCEEDED,       // successfully completed
-        FAILED,     // failed
-        CANCELED,   // canceled
-        STREAMING,  // streaming records
-        READY       // steaming is paused. ready to accept request or cancel commands from user
-    }
 }
