@@ -32,6 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -66,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
@@ -79,6 +82,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -222,7 +226,7 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( pool, rediscovery );
 
-        RuntimeException exception = assertThrows( RuntimeException.class, () -> await( loadBalancer.supportsMultiDbAsync() ) );
+        RuntimeException exception = assertThrows( RuntimeException.class, () -> await( loadBalancer.supportsMultiDb() ) );
         assertThat( exception.getMessage(), equalTo( "hi there" ) );
     }
 
@@ -237,11 +241,28 @@ class LoadBalancerTest
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, rediscovery );
 
-        ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.supportsMultiDbAsync() ) );
+        ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.supportsMultiDb() ) );
         Throwable[] suppressed = exception.getSuppressed();
         assertThat( suppressed.length, equalTo( 2 ) ); // one for A, one for B
         assertThat( suppressed[0].getMessage(), containsString( A.toString() ) );
         assertThat( suppressed[1].getMessage(), containsString( B.toString() ) );
+        verify( connectionPool, times( 2 ) ).acquire( any() );
+    }
+
+    @Test
+    void shouldFailEarlyOnSecurityError() throws Throwable
+    {
+        Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A, B );
+        ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses, address -> new SecurityException( "code", "hi there" ) );
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, rediscovery );
+
+        SecurityException exception = assertThrows( SecurityException.class, () -> await( loadBalancer.supportsMultiDb() ) );
+        assertThat( exception.getMessage(), startsWith( "hi there" ) );
+        verify( connectionPool, times( 1 ) ).acquire( any() );
     }
 
     @Test
@@ -251,11 +272,12 @@ class LoadBalancerTest
         ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses );
 
         Rediscovery rediscovery = mock( Rediscovery.class );
-        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B, C ) );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B, C, D ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, rediscovery );
 
-        assertTrue( await( loadBalancer.supportsMultiDbAsync() ) );
+        assertTrue( await( loadBalancer.supportsMultiDb() ) );
+        verify( connectionPool, times( 3 ) ).acquire( any() );
     }
 
     @Test
@@ -271,6 +293,21 @@ class LoadBalancerTest
 
         ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.verifyConnectivity() ) );
         assertThat( exception.getMessage(), startsWith( "Unable to connect to database management service," ) );
+    }
+
+    @Test
+    void shouldFailEarlyOnSecurityErrorWhenSupportMultiDbTestFails() throws Throwable
+    {
+        Set<BoltServerAddress> unavailableAddresses = asOrderedSet( A, B );
+        ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses, address -> new AuthenticationException( "code", "error" ) );
+
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
+
+        LoadBalancer loadBalancer = newLoadBalancer( connectionPool, rediscovery );
+
+        AuthenticationException exception = assertThrows( AuthenticationException.class, () -> await( loadBalancer.verifyConnectivity() ) );
+        assertThat( exception.getMessage(), startsWith( "error" ) );
     }
 
     @Test
@@ -300,11 +337,11 @@ class LoadBalancerTest
         when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
 
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
-        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new SecurityException( "boo" ) );
+        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new RuntimeException( "boo" ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
 
-        SecurityException exception = assertThrows( SecurityException.class, () -> await( loadBalancer.verifyConnectivity() ) );
+        RuntimeException exception = assertThrows( RuntimeException.class, () -> await( loadBalancer.verifyConnectivity() ) );
         assertThat( exception.getMessage(), startsWith( "boo" ) );
         verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
     }

@@ -62,7 +62,7 @@ public class DirectConnectionProvider implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDbAsync()
+    public CompletionStage<Boolean> supportsMultiDb()
     {
         return acquireConnection().thenCompose( conn -> {
             boolean supportsMultiDatabase = supportsMultiDatabase( conn );

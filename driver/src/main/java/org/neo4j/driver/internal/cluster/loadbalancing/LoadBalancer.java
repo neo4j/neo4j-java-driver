@@ -23,11 +23,11 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -53,6 +53,7 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
@@ -103,10 +104,10 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return this.supportsMultiDbAsync().thenCompose( supports -> routingTables.refreshRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
+        return this.supportsMultiDb().thenCompose( supports -> routingTables.refreshRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
             if ( error != null )
             {
-                Throwable cause = Futures.completionExceptionCause( error );
+                Throwable cause = completionExceptionCause( error );
                 if ( cause instanceof ServiceUnavailableException )
                 {
                     throw Futures.asCompletionException( new ServiceUnavailableException(
@@ -126,7 +127,7 @@ public class LoadBalancer implements ConnectionProvider
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDbAsync()
+    public CompletionStage<Boolean> supportsMultiDb()
     {
         List<BoltServerAddress> addresses;
 
@@ -144,12 +145,28 @@ public class LoadBalancer implements ConnectionProvider
 
         for ( BoltServerAddress address : addresses )
         {
-            result = onErrorContinue( result, baseError, () -> supportsMultiDbAsync( address ) );
+            result = onErrorContinue( result, baseError, completionError -> {
+                // We fail fast on security errors
+                Throwable error = completionExceptionCause( completionError );
+                if ( error instanceof SecurityException )
+                {
+                    return failedFuture( error );
+                }
+                return supportsMultiDb( address );
+            } );
         }
-        return onErrorContinue( result, baseError, (Supplier<CompletableFuture<Boolean>>) () -> failedFuture( baseError ) );
+        return onErrorContinue( result, baseError, completionError -> {
+            // If we failed with security errors, then we rethrow the security error out, otherwise we throw the chained errors.
+            Throwable error = completionExceptionCause( completionError );
+            if ( error instanceof SecurityException )
+            {
+                return failedFuture( error );
+            }
+            return failedFuture( baseError );
+        } );
     }
 
-    private CompletionStage<Boolean> supportsMultiDbAsync( BoltServerAddress address )
+    private CompletionStage<Boolean> supportsMultiDb( BoltServerAddress address )
     {
         return connectionPool.acquire( address ).thenCompose( conn -> {
             boolean supportsMultiDatabase = supportsMultiDatabase( conn );
@@ -179,7 +196,7 @@ public class LoadBalancer implements ConnectionProvider
 
         connectionPool.acquire( address ).whenComplete( ( connection, completionError ) ->
         {
-            Throwable error = Futures.completionExceptionCause( completionError );
+            Throwable error = completionExceptionCause( completionError );
             if ( error != null )
             {
                 if ( error instanceof ServiceUnavailableException )

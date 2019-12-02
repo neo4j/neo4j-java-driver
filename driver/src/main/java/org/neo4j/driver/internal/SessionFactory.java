@@ -31,5 +31,5 @@ public interface SessionFactory
 
     CompletionStage<Void> close();
 
-    CompletionStage<Boolean> supportsMultiDbAsync();
+    CompletionStage<Boolean> supportsMultiDb();
 }

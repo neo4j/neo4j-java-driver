@@ -80,9 +80,9 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     @Override
-    public CompletionStage<Boolean> supportsMultiDbAsync()
+    public CompletionStage<Boolean> supportsMultiDb()
     {
-        return connectionProvider.supportsMultiDbAsync();
+        return connectionProvider.supportsMultiDb();
     }
 
     /**

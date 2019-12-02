@@ -150,7 +150,7 @@ public class InternalDriver implements Driver
     @Override
     public CompletionStage<Boolean> supportsMultiDbAsync()
     {
-        return sessionFactory.supportsMultiDbAsync();
+        return sessionFactory.supportsMultiDb();
     }
 
     @Override
