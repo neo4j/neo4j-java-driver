@@ -39,7 +39,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see Publisher
  * @see Subscriber
  * @see Subscription
- * @since 2.0
+ * @since 4.0
  */
 public interface RxResult
 {

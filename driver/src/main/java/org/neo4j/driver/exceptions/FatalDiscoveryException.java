@@ -21,7 +21,7 @@ package org.neo4j.driver.exceptions;
 /**
  * This error indicate a fatal problem to obtain routing tables such as the routing table for a specified database does not exist.
  * This exception should not be retried.
- * @since 2.0
+ * @since 4.0
  */
 public class FatalDiscoveryException extends ClientException
 {

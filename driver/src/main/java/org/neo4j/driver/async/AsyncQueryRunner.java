@@ -58,7 +58,7 @@ import org.neo4j.driver.Values;
  * <p>
  * As noted, most of the time, you will not need to consider this - your writes will
  * always be durably stored as long as you either use the results, explicitly commit
- * {@link AsyncTransaction transactions} or close the session you used using {@link AsyncSession#closeAsync()}}.
+ * {@link AsyncTransaction transactions} or close the session you used using {@link AsyncSession#closeAsync()}.
  * <p>
  * While these semantics introduce some complexity, it gives the driver the ability
  * to handle infinite result streams (like subscribing to events), significantly lowers
@@ -78,7 +78,7 @@ import org.neo4j.driver.Values;
  *
  * @see AsyncSession
  * @see AsyncTransaction
- * @since 2.0
+ * @since 4.0
  */
 public interface AsyncQueryRunner
 {
@@ -102,7 +102,7 @@ public interface AsyncQueryRunner
      * {@code
      *
      * CompletionStage<ResultCursor> cursorStage = session.runAsync(
-     *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *             "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *             Values.parameters("myNameParam", "Bob"));
      * }
      * </pre>
@@ -136,7 +136,7 @@ public interface AsyncQueryRunner
      * parameters.put("myNameParam", "Bob");
      *
      * CompletionStage<ResultCursor> cursorStage = session.runAsync(
-     *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *             "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *             parameters);
      * }
      * </pre>
@@ -191,7 +191,7 @@ public interface AsyncQueryRunner
      * <h2>Example</h2>
      * <pre>
      * {@code
-     * Query query = new Query( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
+     * Query query = new Query( "MATCH (n) WHERE n.name = $myNameParam RETURN n.age" );
      * CompletionStage<ResultCursor> cursorStage = session.runAsync(query);
      * }
      * </pre>

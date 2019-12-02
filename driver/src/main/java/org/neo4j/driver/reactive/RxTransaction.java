@@ -27,7 +27,7 @@ import org.neo4j.driver.Transaction;
  * @see Transaction
  * @see RxSession
  * @see Publisher
- * @since 2.0
+ * @since 4.0
  */
 public interface RxTransaction extends RxQueryRunner
 {

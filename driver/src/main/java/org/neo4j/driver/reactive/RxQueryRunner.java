@@ -29,7 +29,7 @@ import org.neo4j.driver.Values;
  * Common interface for components that can execute Neo4j queries using Reactive API.
  * @see RxSession
  * @see RxTransaction
- * @since 2.0
+ * @since 4.0
  */
 public interface RxQueryRunner
 {
