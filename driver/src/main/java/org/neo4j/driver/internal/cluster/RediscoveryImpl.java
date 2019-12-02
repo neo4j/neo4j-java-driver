@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -55,6 +56,7 @@ import static org.neo4j.driver.internal.util.Futures.failedFuture;
 public class RediscoveryImpl implements Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
+    private static final String RECOVERABLE_ROUTING_ERROR = "Failed to update routing table with server '%s'.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
@@ -86,14 +88,16 @@ public class RediscoveryImpl implements Rediscovery
     public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
     {
         CompletableFuture<ClusterComposition> result = new CompletableFuture<>();
-        lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark );
+        // if we failed discovery, we will chain all errors into this one.
+        ServiceUnavailableException baseError = new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) );
+        lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark, baseError );
         return result;
     }
 
     private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool,
-            int failures, long previousDelay, CompletableFuture<ClusterComposition> result, Bookmark bookmark )
+            int failures, long previousDelay, CompletableFuture<ClusterComposition> result, Bookmark bookmark, Throwable baseError )
     {
-        lookup( routingTable, pool, bookmark ).whenComplete( ( composition, completionError ) ->
+        lookup( routingTable, pool, bookmark, baseError ).whenComplete( ( composition, completionError ) ->
         {
             Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
@@ -109,14 +113,15 @@ public class RediscoveryImpl implements Rediscovery
                 int newFailures = failures + 1;
                 if ( newFailures >= settings.maxRoutingFailures() )
                 {
-                    result.completeExceptionally( new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) ) );
+                    // now we throw our saved error out
+                    result.completeExceptionally( baseError );
                 }
                 else
                 {
                     long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
                     logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
                     eventExecutorGroup.next().schedule(
-                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark ),
+                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark, baseError ),
                             nextDelay, TimeUnit.MILLISECONDS
                     );
                 }
@@ -124,52 +129,52 @@ public class RediscoveryImpl implements Rediscovery
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
+    private CompletionStage<ClusterComposition> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark, Throwable baseError )
     {
         CompletionStage<ClusterComposition> compositionStage;
 
         if ( routingTable.preferInitialRouter() )
         {
-            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmark );
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmark, baseError );
         }
         else
         {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmark );
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmark, baseError );
         }
 
         return compositionStage;
     }
 
-    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool, Bookmark bookmark )
+    private CompletionStage<ClusterComposition> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool,
+            Bookmark bookmark, Throwable baseError )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
+        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark, baseError ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark );
+            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, baseError );
         } );
     }
 
     private CompletionStage<ClusterComposition> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool, Bookmark bookmark )
+            ConnectionPool connectionPool, Bookmark bookmark, Throwable baseError )
     {
         Set<BoltServerAddress> seenServers = emptySet();
-        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark ).thenCompose( composition ->
+        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, baseError ).thenCompose( composition ->
         {
             if ( composition != null )
             {
                 return completedFuture( composition );
             }
-            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmark );
+            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmark, baseError );
         } );
     }
 
-    private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark )
+    private CompletionStage<ClusterComposition> lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark,
+            Throwable baseError )
     {
         BoltServerAddress[] addresses = routingTable.routers().toArray();
 
@@ -184,7 +189,7 @@ public class RediscoveryImpl implements Rediscovery
                 }
                 else
                 {
-                    return lookupOnRouter( address, routingTable, connectionPool, bookmark )
+                    return lookupOnRouter( address, routingTable, connectionPool, bookmark, baseError )
                             .whenComplete( ( ignore, error ) -> seenServers.add( address ) );
                 }
             } );
@@ -192,8 +197,8 @@ public class RediscoveryImpl implements Rediscovery
         return result;
     }
 
-    private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable,
-            ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark )
+    private CompletionStage<ClusterComposition> lookupOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark,
+            Throwable baseError )
     {
         List<BoltServerAddress> addresses;
         try
@@ -215,14 +220,14 @@ public class RediscoveryImpl implements Rediscovery
                 {
                     return completedFuture( composition );
                 }
-                return lookupOnRouter( address, routingTable, connectionPool, bookmark );
+                return lookupOnRouter( address, routingTable, connectionPool, bookmark, baseError );
             } );
         }
         return result;
     }
 
     private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress,
-            RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
+            RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark, Throwable baseError )
     {
         CompletionStage<Connection> connectionStage = connectionPool.acquire( routerAddress );
 
@@ -232,7 +237,7 @@ public class RediscoveryImpl implements Rediscovery
                     Throwable cause = Futures.completionExceptionCause( error );
                     if ( cause != null )
                     {
-                        return handleRoutingProcedureError( cause, routingTable, routerAddress );
+                        return handleRoutingProcedureError( cause, routingTable, routerAddress, baseError );
                     }
                     else
                     {
@@ -242,7 +247,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
-            BoltServerAddress routerAddress )
+            BoltServerAddress routerAddress, Throwable baseError )
     {
         if ( error instanceof SecurityException || error instanceof FatalDiscoveryException )
         {
@@ -251,7 +256,10 @@ public class RediscoveryImpl implements Rediscovery
         }
 
         // Retriable error happened during discovery.
-        logger.warn( format( "Failed to update routing table with server '%s'.", routerAddress ), error );
+        DiscoveryException discoveryError = new DiscoveryException( format( RECOVERABLE_ROUTING_ERROR, routerAddress ), error );
+        Futures.combineErrors( baseError, discoveryError ); // we record each failure here
+        logger.warn( format( "Received a recoverable discovery error with server '%s', will continue discovery with other routing servers if available.",
+                routerAddress ), discoveryError );
         routingTable.forget( routerAddress );
         return null;
     }

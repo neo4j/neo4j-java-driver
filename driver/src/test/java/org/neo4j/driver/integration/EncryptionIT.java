@@ -25,8 +25,8 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
@@ -35,7 +35,6 @@ import org.neo4j.driver.util.ParallelizableIT;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
@@ -107,10 +106,9 @@ class EncryptionIT
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString() ) );
         Config config = newConfig( driverEncrypted );
 
-        RuntimeException e = assertThrows( RuntimeException.class,
+        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
                 () -> GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ).verifyConnectivity() );
 
-        assertThat( e, instanceOf( ServiceUnavailableException.class ) );
         assertThat( e.getMessage(), startsWith( "Connection to the database terminated" ) );
     }
 
