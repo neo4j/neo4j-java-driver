@@ -9,7 +9,7 @@
 
 <h3>Example</h3>
 
-<pre><code>import org.neo4j.driver.v1.*;
+<pre><code>import org.neo4j.driver.*;
 
 import static org.neo4j.driver.Values.parameters;
 
@@ -28,13 +28,11 @@ public class SmallExample
         // Sessions are lightweight and disposable connection wrappers.
         try (Session session = driver.session())
         {
-            // Wrapping Cypher in an unmanaged transaction provides atomicity
+            // Wrapping a Cypher Query in a Managed Transaction provides atomicity
             // and makes handling errors much easier.
-            try (Transaction tx = session.beginTransaction())
-            {
-                tx.run("MERGE (a:Person {name: $x})", parameters("x", name));
-                tx.success();  // Mark this write as successful.
-            }
+            // Use `session.writeTransaction` for writes and `session.readTransaction` for reading data.
+            // These methods are also able to handle connection problems and transient errors using an automatic retry mechanism.
+            session.writeTransaction(tx -> tx.run("MERGE (a:Person {name: $x})", parameters("x", name)));
         }
     }
 
@@ -42,7 +40,9 @@ public class SmallExample
     {
         try (Session session = driver.session())
         {
-            // Auto-commit transactions are a quick and easy way to wrap a read.
+            // A Managed Transaction transactions are a quick and easy way to wrap a Cypher Query.
+            // The `session.run` method will run the specified Query.
+            // This simpler method does not use any automatic retry mechanism.
             Result result = session.run(
                     "MATCH (a:Person) WHERE a.name STARTS WITH $x RETURN a.name AS name",
                     parameters("x", initial));
