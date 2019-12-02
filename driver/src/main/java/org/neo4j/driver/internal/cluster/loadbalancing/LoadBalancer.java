@@ -20,12 +20,14 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -49,6 +51,11 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.completionExceptionCause;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
 public class LoadBalancer implements ConnectionProvider
 {
@@ -58,20 +65,29 @@ public class LoadBalancer implements ConnectionProvider
     private final LoadBalancingStrategy loadBalancingStrategy;
     private final EventExecutorGroup eventExecutorGroup;
     private final Logger log;
+    private final Rediscovery rediscovery;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
             EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
             LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
     {
-        this( connectionPool, createRoutingTables( connectionPool, eventExecutorGroup, initialRouter, resolver, settings, clock, logging ),
-                loadBalancerLogger( logging ), loadBalancingStrategy, eventExecutorGroup );
+        this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging ), settings, loadBalancingStrategy,
+                eventExecutorGroup, clock, loadBalancerLogger( logging ) );
     }
 
-    LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Logger log, LoadBalancingStrategy loadBalancingStrategy,
-            EventExecutorGroup eventExecutorGroup )
+    private LoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, LoadBalancingStrategy loadBalancingStrategy,
+            EventExecutorGroup eventExecutorGroup, Clock clock, Logger log )
+    {
+        this( connectionPool, createRoutingTables( connectionPool, rediscovery, settings, clock, log ), rediscovery, loadBalancingStrategy, eventExecutorGroup,
+                log );
+    }
+
+    LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery, LoadBalancingStrategy loadBalancingStrategy,
+            EventExecutorGroup eventExecutorGroup, Logger log )
     {
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
+        this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
         this.log = log;
@@ -88,14 +104,15 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return routingTables.refreshRoutingTable( simple() ).handle( ( ignored, error ) -> {
+        return this.supportsMultiDb().thenCompose( supports -> routingTables.refreshRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
             if ( error != null )
             {
-                Throwable cause = Futures.completionExceptionCause( error );
+                Throwable cause = completionExceptionCause( error );
                 if ( cause instanceof ServiceUnavailableException )
                 {
                     throw Futures.asCompletionException( new ServiceUnavailableException(
-                            "Unable to connect to database, ensure the database is running and that there is a working network connection to it.", cause ) );
+                            "Unable to connect to database management service, ensure the database is running and that there is a working network connection to it.",
+                            cause ) );
                 }
                 throw Futures.asCompletionException( cause );
             }
@@ -107,6 +124,54 @@ public class LoadBalancer implements ConnectionProvider
     public CompletionStage<Void> close()
     {
         return connectionPool.close();
+    }
+
+    @Override
+    public CompletionStage<Boolean> supportsMultiDb()
+    {
+        List<BoltServerAddress> addresses;
+
+        try
+        {
+            addresses = rediscovery.resolve();
+        }
+        catch ( Throwable error )
+        {
+            return failedFuture( error );
+        }
+
+        CompletableFuture<Boolean> result = completedWithNull();
+        Throwable baseError = new ServiceUnavailableException( "Failed to perform multi-databases feature detection with the following servers: " + addresses );
+
+        for ( BoltServerAddress address : addresses )
+        {
+            result = onErrorContinue( result, baseError, completionError -> {
+                // We fail fast on security errors
+                Throwable error = completionExceptionCause( completionError );
+                if ( error instanceof SecurityException )
+                {
+                    return failedFuture( error );
+                }
+                return supportsMultiDb( address );
+            } );
+        }
+        return onErrorContinue( result, baseError, completionError -> {
+            // If we failed with security errors, then we rethrow the security error out, otherwise we throw the chained errors.
+            Throwable error = completionExceptionCause( completionError );
+            if ( error instanceof SecurityException )
+            {
+                return failedFuture( error );
+            }
+            return failedFuture( baseError );
+        } );
+    }
+
+    private CompletionStage<Boolean> supportsMultiDb( BoltServerAddress address )
+    {
+        return connectionPool.acquire( address ).thenCompose( conn -> {
+            boolean supportsMultiDatabase = supportsMultiDatabase( conn );
+            return conn.release().thenApply( ignored -> supportsMultiDatabase );
+        } );
     }
 
     private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )
@@ -131,7 +196,7 @@ public class LoadBalancer implements ConnectionProvider
 
         connectionPool.acquire( address ).whenComplete( ( connection, completionError ) ->
         {
-            Throwable error = Futures.completionExceptionCause( completionError );
+            Throwable error = completionExceptionCause( completionError );
             if ( error != null )
             {
                 if ( error instanceof ServiceUnavailableException )
@@ -181,17 +246,16 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter,
-            ServerAddressResolver resolver, RoutingSettings settings, Clock clock, Logging logging )
+    private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, Clock clock,
+            Logger log )
     {
-        Logger log = loadBalancerLogger( logging );
-        Rediscovery rediscovery = createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, log );
         return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log, settings.routingTablePurgeDelayMs() );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
-            RoutingSettings settings, Clock clock, Logger log )
+            RoutingSettings settings, Clock clock, Logging logging )
     {
+        Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
         return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
     }

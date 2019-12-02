@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
@@ -217,6 +219,52 @@ public final class Futures
         else
         {
             return null;
+        }
+    }
+
+    /**
+     * Given a future, if the future completes successfully then return a new completed future with the completed value.
+     * Otherwise if the future completes with an error, then this method first saves the error in the error recorder, and then continues with the onErrorAction.
+     * @param future the future.
+     * @param errorRecorder saves error if the given future completes with an error.
+     * @param onErrorAction continues the future with this action if the future completes with an error.
+     * @param <T> type
+     * @return a new completed future with the same completed value if the given future completes successfully, otherwise continues with the onErrorAction.
+     */
+    @SuppressWarnings( "ThrowableNotThrown" )
+    public static <T> CompletableFuture<T> onErrorContinue( CompletableFuture<T> future, Throwable errorRecorder,
+            Function<Throwable,? extends CompletionStage<T>> onErrorAction )
+    {
+        Objects.requireNonNull( future );
+        return future.handle( ( value, error ) -> {
+            if ( error != null )
+            {
+                // record error
+                Futures.combineErrors( errorRecorder, error );
+                return new CompletionResult<T>( null, error );
+            }
+            return new CompletionResult<>( value, null );
+        } ).thenCompose( result -> {
+            if ( result.value != null )
+            {
+                return completedFuture( result.value );
+            }
+            else
+            {
+                return onErrorAction.apply( result.error );
+            }
+        } );
+    }
+
+    private static class CompletionResult<T>
+    {
+        T value;
+        Throwable error;
+
+        CompletionResult( T value, Throwable error )
+        {
+            this.value = value;
+            this.error = error;
         }
     }
 

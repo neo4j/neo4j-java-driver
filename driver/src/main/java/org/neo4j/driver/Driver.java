@@ -194,4 +194,17 @@ public interface Driver extends AutoCloseable
      * @return a {@link CompletionStage completion stage} that represents the asynchronous verification.
      */
     CompletionStage<Void> verifyConnectivityAsync();
+
+    /**
+     * Returns true if the server or cluster the driver connects to supports multi-databases, otherwise false.
+     * @return true if the server or cluster the driver connects to supports multi-databases, otherwise false.
+     */
+    boolean supportsMultiDb();
+
+    /**
+     * Asynchronous check if the server or cluster the driver connects to supports multi-databases.
+     * @return a {@link CompletionStage completion stage} that returns true if the server or cluster
+     * the driver connects to supports multi-databases, otherwise false.
+     */
+    CompletionStage<Boolean> supportsMultiDbAsync();
 }

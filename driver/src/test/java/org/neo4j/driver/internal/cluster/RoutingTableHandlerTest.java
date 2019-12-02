@@ -115,7 +115,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool );
 
-        assertNotNull( await( handler.refreshRoutingTable( simple() ) ) );
+        assertNotNull( await( handler.refreshRoutingTable( simple( false ) ) ) );
 
         verify( rediscovery ).lookupClusterComposition( eq ( routingTable ) , eq ( connectionPool ), any() );
         assertArrayEquals( new BoltServerAddress[]{reader1, reader2}, routingTable.readers().toArray() );
@@ -188,7 +188,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool, registry );
 
-        RoutingTable actual = await( handler.refreshRoutingTable( simple() ) );
+        RoutingTable actual = await( handler.refreshRoutingTable( simple( false ) ) );
         assertEquals( routingTable, actual );
 
         verify( connectionPool ).retainAll( new HashSet<>( asList( A, B, C ) ) );
@@ -208,7 +208,7 @@ class RoutingTableHandlerTest
         // When
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool, registry );
-        assertThrows( RuntimeException.class, () -> await( handler.refreshRoutingTable( simple() ) ) );
+        assertThrows( RuntimeException.class, () -> await( handler.refreshRoutingTable( simple( false ) ) ) );
 
         // Then
         verify( registry ).remove( defaultDatabase() );

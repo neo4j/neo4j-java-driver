@@ -18,12 +18,16 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
 public interface Rediscovery
 {
     CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark );
+
+    List<BoltServerAddress> resolve();
 }

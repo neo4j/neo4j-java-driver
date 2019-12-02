@@ -24,6 +24,7 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
+import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 
 /**
@@ -31,7 +32,8 @@ import static org.neo4j.driver.internal.InternalBookmark.empty;
  */
 public class ImmutableConnectionContext implements ConnectionContext
 {
-    private static final ConnectionContext SIMPLE = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
+    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
+    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ );
 
     private final DatabaseName databaseName;
     private final AccessMode mode;
@@ -65,10 +67,10 @@ public class ImmutableConnectionContext implements ConnectionContext
     /**
      * A simple context is used to test connectivity with a remote server/cluster.
      * As long as there is a read only service, the connection shall be established successfully.
-     * This context should be applicable for both bolt v4 and bolt v3 routing table rediscovery.
+     * Depending on whether multidb is supported or not, this method returns different context for routing table discovery.
      */
-    public static ConnectionContext simple()
+    public static ConnectionContext simple( boolean supportsMultiDb )
     {
-        return SIMPLE;
+        return supportsMultiDb ? MULTI_DB_CONTEXT : SINGLE_DB_CONTEXT;
     }
 }

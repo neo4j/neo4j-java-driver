@@ -56,6 +56,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -433,6 +434,34 @@ class DirectDriverBoltKitTest
                     session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
                     RxSession::close );
             StepVerifier.create( keys ).expectNext( singletonList( "a" ) ).verifyComplete();
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldServerWithBoltV4SupportMultiDb() throws Throwable
+    {
+        StubServer server = StubServer.start( "support_multidb_v4.script", 9001 );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+        {
+            assertTrue( driver.supportsMultiDb() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
+    {
+        StubServer server = StubServer.start( "support_multidb_v3.script", 9001 );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+        {
+            assertFalse( driver.supportsMultiDb() );
         }
         finally
         {

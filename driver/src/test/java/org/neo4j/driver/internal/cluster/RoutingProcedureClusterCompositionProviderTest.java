@@ -34,6 +34,8 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -304,18 +306,21 @@ class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( RoutingProcedureRunner runner, Connection connection )
     {
         when( connection.serverVersion() ).thenReturn( ServerVersion.v3_5_0 );
+        when( connection.protocol() ).thenReturn( BoltProtocolV3.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), runner, newMultiDBProcedureRunnerMock() );
     }
 
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner, Connection connection )
     {
         when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
+        when( connection.protocol() ).thenReturn( BoltProtocolV4.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), newProcedureRunnerMock(), runner );
     }
 
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner, Connection connection, Clock clock )
     {
         when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
+        when( connection.protocol() ).thenReturn( BoltProtocolV4.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( clock, newProcedureRunnerMock(), runner );
     }
 }

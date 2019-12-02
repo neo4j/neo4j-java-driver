@@ -36,4 +36,6 @@ public interface ConnectionProvider
     CompletionStage<Void> verifyConnectivity();
 
     CompletionStage<Void> close();
+
+    CompletionStage<Boolean> supportsMultiDb();
 }

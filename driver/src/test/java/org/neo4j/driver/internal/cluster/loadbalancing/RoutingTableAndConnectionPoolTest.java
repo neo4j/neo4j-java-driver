@@ -324,8 +324,9 @@ class RoutingTableAndConnectionPoolTest
 
     private LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables )
     {
-        return new LoadBalancer( connectionPool, routingTables, logging.getLog( "LB" ), new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
-                GlobalEventExecutor.INSTANCE );
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
+                GlobalEventExecutor.INSTANCE, logging.getLog( "LB" ) );
     }
 
     private CompletableFuture<ClusterComposition> clusterComposition( BoltServerAddress... addresses )
@@ -367,6 +368,12 @@ class RoutingTableAndConnectionPoolTest
             }
             ClusterComposition composition = new ClusterComposition( clock.millis() + 1, servers, servers, servers );
             return CompletableFuture.completedFuture( composition );
+        }
+
+        @Override
+        public List<BoltServerAddress> resolve()
+        {
+            throw new UnsupportedOperationException( "Not implemented" );
         }
     }
 }

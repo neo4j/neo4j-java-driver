@@ -20,6 +20,9 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 public final class MultiDatabaseUtil
 {
@@ -30,5 +33,10 @@ public final class MultiDatabaseUtil
             throw new ClientException( String.format( "Database name parameter for selecting database is not supported in Bolt Protocol Version %s. " +
                     "Database name: '%s'", boltVersion, databaseName.description() ) );
         }
+    }
+
+    public static boolean supportsMultiDatabase( Connection connection )
+    {
+        return connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) && connection.protocol().version() >= BoltProtocolV4.VERSION;
     }
 }

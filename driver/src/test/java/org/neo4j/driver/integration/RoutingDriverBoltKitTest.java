@@ -1155,6 +1155,34 @@ class RoutingDriverBoltKitTest
         }
     }
 
+    @Test
+    void shouldServerWithBoltV4SupportMultiDb() throws Throwable
+    {
+        StubServer server = StubServer.start( "support_multidb_v4.script", 9001 );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
+        {
+            assertTrue( driver.supportsMultiDb() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
+    {
+        StubServer server = StubServer.start( "support_multidb_v3.script", 9001 );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
+        {
+            assertFalse( driver.supportsMultiDb() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
     private static Driver newDriverWithSleeplessClock( String uriString, Config config )
     {
         DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );

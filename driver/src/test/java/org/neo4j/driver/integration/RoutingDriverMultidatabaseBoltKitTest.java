@@ -155,7 +155,7 @@ class RoutingDriverMultidatabaseBoltKitTest
 
 
     @Test
-    void shouldVerifyConnectivityOnDriverCreation() throws Throwable
+    void shouldDriverVerifyConnectivity() throws Throwable
     {
         StubServer router = StubServer.start( "acquire_endpoints_v4_verify_connectivity.script", 9001 );
         StubServer readServer = StubServer.start( "read_server_v4_read.script", 9005 );

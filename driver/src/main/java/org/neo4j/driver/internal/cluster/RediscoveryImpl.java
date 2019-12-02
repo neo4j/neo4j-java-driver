@@ -203,7 +203,7 @@ public class RediscoveryImpl implements Rediscovery
         List<BoltServerAddress> addresses;
         try
         {
-            addresses = resolve( initialRouter );
+            addresses = resolve();
         }
         catch ( Throwable error )
         {
@@ -264,9 +264,10 @@ public class RediscoveryImpl implements Rediscovery
         return null;
     }
 
-    private List<BoltServerAddress> resolve( BoltServerAddress address )
+    @Override
+    public List<BoltServerAddress> resolve()
     {
-        return resolver.resolve( address )
+        return resolver.resolve( initialRouter )
                 .stream()
                 .flatMap( resolved -> resolveAll( BoltServerAddress.from( resolved ) ) )
                 .collect( toList() ); // collect to list to preserve the order
