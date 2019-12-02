@@ -28,13 +28,13 @@ import org.neo4j.driver.util.Resource;
  * which ensures in case of any error in try block, the transaction is
  * automatically rolled back on close. Note that <code>ROLLBACK</code> is the
  * default action unless {@link #commit()} is called before closing.
- * {@code
+ * <pre>{@code
  * try(Transaction tx = session.beginTransaction())
  * {
- *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
+ *     tx.run("CREATE (a:Person {name: $name})", parameters("name", "Alice"));
  *     tx.commit();
  * }
- * }
+ * }</pre>
  * Blocking calls are: {@link #commit()}, {@link #rollback()}, {@link #close()}
  * and various overloads of {@link #run(Query)}.
  *
@@ -53,16 +53,14 @@ public interface Transaction extends Resource, QueryRunner
      * You must call this method before calling {@link #close()} to have your transaction committed.
      * If a transaction is not committed or rolled back before close,
      * the transaction will be rolled back by default in {@link #close}.
-     *
-     Example:
-     *
+     * <pre>Example:
      * {@code
      * try(Transaction tx = session.beginTransaction() )
      * {
-     *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
+     *     tx.run("CREATE (a:Person {name: $name})", parameters("name", "Alice"));
      *     tx.commit();
      * }
-     * }
+     * }</pre>
      */
     void commit();
 
@@ -72,16 +70,14 @@ public interface Transaction extends Resource, QueryRunner
      * After this method has been called, the transaction cannot be committed or rolled back again.
      * If a transaction is not committed or rolled back before close,
      * the transaction will be rolled back by default in {@link #close}.
-     *
-     * Example:
-     *
+     * <pre>Example:
      * {@code
      * try(Transaction tx = session.beginTransaction() )
      * {
-     *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
+     *     tx.run("CREATE (a:Person {name: $name})", parameters("name", "Alice"));
      *     tx.rollback();
      * }
-     * }
+     * }</pre>
      */
     void rollback();
 
@@ -90,15 +86,13 @@ public interface Transaction extends Resource, QueryRunner
      * If the transaction has been {@link #commit() committed} or {@link #rollback() rolled back},
      * the close is optional and no operation is performed inside.
      * Otherwise, the transaction will be rolled back by default by this method.
-     *
-     * Example:
-     *
+     * <pre>Example:
      * {@code
      * try(Transaction tx = session.beginTransaction() )
      * {
-     *     tx.run("CREATE (a:Person {name: {x}})", parameters("x", "Alice"));
+     *     tx.run("CREATE (a:Person {name: $name})", parameters("name", "Alice"));
      * }
-     * }
+     * }</pre>
      */
     @Override
     void close();

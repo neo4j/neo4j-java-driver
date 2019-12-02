@@ -50,7 +50,7 @@ import org.neo4j.driver.util.Resource;
  * sessions should be used when an application requires multiple concurrent
  * threads of database work to be carried out.
  *
- * @since 1.0 (Removed async API to {@link AsyncSession} in 2.0)
+ * @since 1.0 (Removed async API to {@link AsyncSession} in 4.0)
  */
 public interface Session extends Resource, QueryRunner
 {
@@ -176,7 +176,7 @@ public interface Session extends Resource, QueryRunner
      * Map<String, Object> parameters = new HashMap<>();
      * parameters.put("myNameParam", "Bob");
      *
-     * Result result = session.run("MATCH (n) WHERE n.name = {myNameParam} RETURN (n)", parameters, config);
+     * Result result = session.run("MATCH (n) WHERE n.name = $myNameParam RETURN (n)", parameters, config);
      * }
      * </pre>
      *
@@ -201,7 +201,7 @@ public interface Session extends Resource, QueryRunner
      *                 .withMetadata(metadata)
      *                 .build();
      *
-     * Query query = new Query("MATCH (n) WHERE n.name=$myNameParam RETURN n.age");
+     * Query query = new Query("MATCH (n) WHERE n.name = $myNameParam RETURN n.age");
      * Result result = session.run(query.withParameters(Values.parameters("myNameParam", "Bob")));
      * }
      * </pre>

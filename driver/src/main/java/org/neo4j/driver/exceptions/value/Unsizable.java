@@ -19,7 +19,7 @@
 package org.neo4j.driver.exceptions.value;
 
 /**
- * A <em>Unsizable</em> exception indicates that the value does not have a size.
+ * An <em>Unsizable</em> exception indicates that the value does not have a size.
  * @since 1.0
  */
 public class Unsizable extends ValueException

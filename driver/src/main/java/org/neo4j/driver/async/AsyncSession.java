@@ -34,7 +34,7 @@ import org.neo4j.driver.Bookmark;
 /**
  * Provides a context of work for database interactions.
  * <p>
- * A <em>AsyncSession</em> hosts a series of {@linkplain AsyncTransaction transactions}
+ * An <em>AsyncSession</em> hosts a series of {@linkplain AsyncTransaction transactions}
  * carried out against a database. Within the database, all queries are
  * carried out within a transaction. Within application code, however, it is
  * not always necessary to explicitly {@link #beginTransactionAsync() begin a
@@ -67,7 +67,7 @@ import org.neo4j.driver.Bookmark;
  * Similarly, multiple sessions should be used when working with concurrency;
  * session implementations are not thread safe.
  *
- * @since 2.0
+ * @since 4.0
  */
 public interface AsyncSession extends AsyncQueryRunner
 {
@@ -221,7 +221,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync( String query, TransactionConfig config );
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -250,7 +250,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * parameters.put("myNameParam", "Bob");
      *
      * CompletionStage<ResultCursor> cursorStage = session.runAsync(
-     *             "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     *             "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *             parameters,
      *             config);
      * }
@@ -264,7 +264,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(String query, Map<String,Object> parameters, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync( String query, Map<String,Object> parameters, TransactionConfig config );
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a
@@ -280,7 +280,7 @@ public interface AsyncSession extends AsyncQueryRunner
      *                 .withMetadata(metadata)
      *                 .build();
      *
-     * Query query = new Query( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
+     * Query query = new Query( "MATCH (n) WHERE n.name = $myNameParam RETURN n.age" );
      * CompletionStage<ResultCursor> cursorStage = session.runAsync(query, config);
      * }
      * </pre>
@@ -292,7 +292,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with a result cursor when query execution is successful.
      * Stage can be completed exceptionally when error happens, e.g. connection can't be acquired from the pool.
      */
-    CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config );
+    CompletionStage<ResultCursor> runAsync( Query query, TransactionConfig config );
 
     /**
      * Return the bookmark received following the last completed

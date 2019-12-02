@@ -80,7 +80,7 @@ public interface QueryRunner
      * <pre class="doctest:QueryRunnerDocIT#parameterTest">
      * {@code
      *
-     * Result result = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     * Result result = session.run( "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *                                       Values.parameters( "myNameParam", "Bob" ) );
      * }
      * </pre>
@@ -110,7 +110,7 @@ public interface QueryRunner
      * Map<String, Object> parameters = new HashMap<String, Object>();
      * parameters.put("myNameParam", "Bob");
      *
-     * Result result = session.run( "MATCH (n) WHERE n.name = {myNameParam} RETURN (n)",
+     * Result result = session.run( "MATCH (n) WHERE n.name = $myNameParam RETURN (n)",
      *                                       parameters );
      * }
      * </pre>
@@ -152,7 +152,7 @@ public interface QueryRunner
      * <pre class="doctest:QueryRunnerDocIT#queryObjectTest">
      * {@code
      *
-     * Query query = new Query( "MATCH (n) WHERE n.name=$myNameParam RETURN n.age" );
+     * Query query = new Query( "MATCH (n) WHERE n.name = $myNameParam RETURN n.age" );
      * Result result = session.run( query.withParameters( Values.parameters( "myNameParam", "Bob" )  ) );
      * }
      * </pre>

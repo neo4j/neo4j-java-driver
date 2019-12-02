@@ -24,7 +24,7 @@ package org.neo4j.driver.reactive;
  * {@link RxSession#writeTransaction(RxTransactionWork)} methods.
  *
  * @param <T> the return type of this work.
- * @since 2.0
+ * @since 4.0
  */
 public interface RxTransactionWork<T>
 {

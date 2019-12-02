@@ -39,7 +39,7 @@ import org.neo4j.driver.QueryRunner;
  * {@code
  * session.beginTransactionAsync()
  *        .thenCompose(tx ->
- *               tx.runAsync("CREATE (a:Person {name: {x}})", parameters("x", "Alice"))
+ *               tx.runAsync("CREATE (a:Person {name: $name})", parameters("name", "Alice"))
  *                 .exceptionally(e -> {
  *                    e.printStackTrace();
  *                    return null;
@@ -53,7 +53,7 @@ import org.neo4j.driver.QueryRunner;
  *
  * @see Session#run
  * @see QueryRunner
- * @since 2.0
+ * @since 4.0
  */
 public interface AsyncTransaction extends AsyncQueryRunner
 {

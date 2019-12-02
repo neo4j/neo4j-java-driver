@@ -36,7 +36,7 @@ import org.neo4j.driver.Bookmark;
  * @see RxResult
  * @see RxTransaction
  * @see Publisher
- * @since 2.0
+ * @since 4.0
  */
 public interface RxSession extends RxQueryRunner
 {
@@ -190,7 +190,7 @@ public interface RxSession extends RxQueryRunner
      * Map<String, Object> parameters = new HashMap<>();
      * parameters.put("myNameParam", "Bob");
      *
-     * RxResult result = rxSession.run("MATCH (n) WHERE n.name = {myNameParam} RETURN (n)", parameters, config);
+     * RxResult result = rxSession.run("MATCH (n) WHERE n.name = $myNameParam RETURN (n)", parameters, config);
      * }
      * </pre>
      *
@@ -216,7 +216,7 @@ public interface RxSession extends RxQueryRunner
      *                 .withMetadata(metadata)
      *                 .build();
      *
-     * Query query = new Query("MATCH (n) WHERE n.name=$myNameParam RETURN n.age");
+     * Query query = new Query("MATCH (n) WHERE n.name = $myNameParam RETURN n.age");
      * RxResult result = rxSession.run(query.withParameters(Values.parameters("myNameParam", "Bob")));
      * }
      * </pre>
