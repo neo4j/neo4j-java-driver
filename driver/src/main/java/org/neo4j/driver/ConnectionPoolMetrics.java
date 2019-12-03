@@ -24,7 +24,7 @@ import org.neo4j.driver.util.Experimental;
 
 /**
  * Provides connection pool metrics such as connection created, current in use etc.
- * The pool metrics is uniquely identified using {@link this#id()}.
+ * The pool metrics is uniquely identified using {@link ConnectionPoolMetrics#id()}.
  */
 @Experimental
 public interface ConnectionPoolMetrics
