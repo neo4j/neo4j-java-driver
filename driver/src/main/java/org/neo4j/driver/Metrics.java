@@ -22,6 +22,10 @@ import java.util.Collection;
 
 import org.neo4j.driver.util.Experimental;
 
+/**
+ * Provides driver internal metrics.
+ */
+@Experimental
 public interface Metrics
 {
     /**
@@ -29,6 +33,5 @@ public interface Metrics
      * As the connection pools are dynamically added and removed while the server topology changes, the metrics collection changes over time.
      * @return Connection pool metrics for all current active pools.
      */
-    @Experimental
     Collection<ConnectionPoolMetrics> connectionPoolMetrics();
 }

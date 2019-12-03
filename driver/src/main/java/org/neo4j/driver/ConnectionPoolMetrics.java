@@ -20,9 +20,15 @@ package org.neo4j.driver;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.util.Experimental;
+
+/**
+ * Provides connection pool metrics such as connection created, current in use etc.
+ * The pool metrics is uniquely identified using {@link this#id()}.
+ */
+@Experimental
 public interface ConnectionPoolMetrics
 {
-
     /**
      * An unique id that identifies this pool metrics.
      * @return An unique name
