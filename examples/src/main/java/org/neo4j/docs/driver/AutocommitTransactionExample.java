@@ -41,5 +41,4 @@ public class AutocommitTransactionExample extends BaseApplication
         }
     }
     // end::autocommit-transaction[]
-
 }

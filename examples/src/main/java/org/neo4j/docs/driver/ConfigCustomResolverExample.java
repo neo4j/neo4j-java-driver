@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
-
+// tag::config-custom-resolver-import[]
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -32,7 +32,7 @@ import org.neo4j.driver.net.ServerAddress;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
-
+// end::config-custom-resolver-import[]
 public class ConfigCustomResolverExample implements AutoCloseable
 {
     private final Driver driver;

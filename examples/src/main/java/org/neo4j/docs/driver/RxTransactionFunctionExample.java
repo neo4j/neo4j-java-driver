@@ -19,6 +19,7 @@
 package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
+// tag::rx-transaction-function-import[]
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,6 +29,7 @@ import java.util.Map;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.ResultSummary;
+// end::rx-transaction-function-import[]
 
 public class RxTransactionFunctionExample extends BaseApplication
 {
@@ -36,9 +38,9 @@ public class RxTransactionFunctionExample extends BaseApplication
         super( uri, user, password );
     }
 
-    public Flux<ResultSummary> printAllProductsReactor()
+    // tag::rx-transaction-function[]
+    public Flux<ResultSummary> printAllProducts()
     {
-        // tag::reactor-transaction-function[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -49,12 +51,12 @@ public class RxTransactionFunctionExample extends BaseApplication
                             .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).then( Mono.from( result.consume() ) );
                 }
              ), RxSession::close );
-        // end::reactor-transaction-function[]
     }
+    // end::rx-transaction-function[]
 
+    // tag::RxJava-transaction-function[]
     public Flowable<ResultSummary> printAllProductsRxJava()
     {
-        // tag::RxJava-transaction-function[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -67,6 +69,6 @@ public class RxTransactionFunctionExample extends BaseApplication
                     // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
                     return Flowable.<ResultSummary>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
                 } );
-        // end::RxJava-transaction-function[]
     }
+    // end::RxJava-transaction-function[]
 }
