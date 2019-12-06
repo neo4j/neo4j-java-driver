@@ -41,5 +41,4 @@ public class SessionExample extends BaseApplication
         }
     }
     // end::session[]
-
 }

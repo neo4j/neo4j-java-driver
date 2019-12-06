@@ -17,35 +17,33 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
-// tag::async-transaction-function-import[]
-import java.util.Collections;
-import java.util.Map;
+
+// tag::async-result-consume-import[]
+
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.summary.ResultSummary;
-// end::async-transaction-function-import[]
-public class AsyncTransactionFunctionExample extends BaseApplication
+// end::async-result-consume-import[]
+
+public class AsyncResultConsumeExample extends BaseApplication
 {
-    public AsyncTransactionFunctionExample( String uri, String user, String password )
+    public AsyncResultConsumeExample( String uri, String user, String password )
     {
         super( uri, user, password );
     }
 
-    // tag::async-transaction-function[]
-    public CompletionStage<ResultSummary> printAllProducts()
+    // tag::async-result-consume[]
+    public CompletionStage<List<String>> getPeople()
     {
-        String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
-        Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
+        String query = "MATCH (a:Person) RETURN a.name ORDER BY a.name";
         AsyncSession session = driver.asyncSession();
-
         return session.readTransactionAsync( tx ->
-                tx.runAsync( query, parameters )
-                        .thenCompose( cursor -> cursor.forEachAsync( record ->
-                                // asynchronously print every record
-                                System.out.println( record.get( 0 ).asString() ) ) )
+                tx.runAsync( query )
+                        .thenCompose( cursor -> cursor.listAsync( record ->
+                                record.get( 0 ).asString() ) )
         );
     }
-    // end::async-transaction-function[]
+    // end::async-result-consume[]
 }

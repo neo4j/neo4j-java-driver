@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
-
 import io.reactivex.Flowable;
+// tag::reactor-unmanaged-transaction-import[]
 import reactor.core.publisher.Flux;
 
 import java.util.Collections;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
-
+// tag::reactor-unmanaged-transaction-import[]
 public class RxUnmanagedTransactionExample extends BaseApplication
 {
     public RxUnmanagedTransactionExample(String uri, String user, String password )
@@ -34,9 +34,9 @@ public class RxUnmanagedTransactionExample extends BaseApplication
         super( uri, user, password );
     }
 
-    public Flux<String> readSingleProductReactor()
+    // tag::reactor-unmanaged-transaction[]
+    public Flux<String> readSingleProduct()
     {
-        // tag::reactor-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -44,12 +44,12 @@ public class RxUnmanagedTransactionExample extends BaseApplication
         return Flux.usingWhen( session.beginTransaction(),
                 tx -> Flux.from( tx.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
-        // end::reactor-unmanaged-transaction[]
     }
+    // end::reactor-unmanaged-transaction[]
 
+    // tag::RxJava-unmanaged-transaction[]
     public Flowable<String> readSingleProductRxJava()
     {
-        // tag::RxJava-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -63,6 +63,6 @@ public class RxUnmanagedTransactionExample extends BaseApplication
                                     // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
                                     return Flowable.<String>fromPublisher( tx.rollback() ).concatWith( Flowable.error( error ) );
                                 } ) );
-        // end::RxJava-unmanaged-transaction[]
     }
+    // end::RxJava-unmanaged-transaction[]
 }

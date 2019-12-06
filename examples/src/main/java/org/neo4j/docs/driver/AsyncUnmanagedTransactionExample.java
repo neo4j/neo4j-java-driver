@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
-
+// tag::async-unmanaged-transaction-import[]
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
+// end::async-unmanaged-transaction-import[]
 
 public class AsyncUnmanagedTransactionExample extends BaseApplication
 {
@@ -34,9 +35,9 @@ public class AsyncUnmanagedTransactionExample extends BaseApplication
         super( uri, user, password );
     }
 
+    // tag::async-unmanaged-transaction[]
     public CompletionStage<Void> printSingleProduct()
     {
-        // tag::async-unmanaged-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -69,6 +70,6 @@ public class AsyncUnmanagedTransactionExample extends BaseApplication
                     return null;
                 } )
                 .thenCompose( ignore -> session.closeAsync() );
-        // end::async-unmanaged-transaction[]
     }
+    // end::async-unmanaged-transaction[]
 }

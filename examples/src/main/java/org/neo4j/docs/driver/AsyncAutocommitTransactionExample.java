@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 package org.neo4j.docs.driver;
-
+// tag::async-autocommit-transaction-import[]
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.async.AsyncSession;
-
+// end::async-autocommit-transaction-import[]
 public class AsyncAutocommitTransactionExample extends BaseApplication
 {
     public AsyncAutocommitTransactionExample( String uri, String user, String password )
@@ -32,9 +32,9 @@ public class AsyncAutocommitTransactionExample extends BaseApplication
         super( uri, user, password );
     }
 
+    // tag::async-autocommit-transaction[]
     public CompletionStage<List<String>> readProductTitles()
     {
-        // tag::async-autocommit-transaction[]
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
@@ -49,6 +49,6 @@ public class AsyncAutocommitTransactionExample extends BaseApplication
                     return Collections.emptyList();
                 } )
                 .thenCompose( titles -> session.closeAsync().thenApply( ignore -> titles ) );
-        // end::async-autocommit-transaction[]
     }
+    // end::async-autocommit-transaction[]
 }

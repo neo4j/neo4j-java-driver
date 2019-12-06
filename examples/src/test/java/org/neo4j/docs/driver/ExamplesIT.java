@@ -150,6 +150,22 @@ class ExamplesIT
     }
 
     @Test
+    void testShouldAsyncRunResultConsumeExample() throws Exception
+    {
+        // Given
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        try ( AsyncResultConsumeExample example = new AsyncResultConsumeExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            List<String> names = await( example.getPeople() );
+
+            // Then
+            assertThat( names, equalTo( asList( "Alice", "Bob" ) ) );
+        }
+    }
+
+    @Test
     void testShouldRunConfigConnectionPoolExample() throws Exception
     {
         // Given
@@ -498,7 +514,7 @@ class ExamplesIT
             }
 
             // read all 'Product' nodes
-            List<String> titles = await( example.readProductTitlesReactor() );
+            List<String> titles = await( example.readProductTitles() );
             assertEquals( new HashSet<>( asList( "Tesseract", "Orb", "Eye of Agamotto" ) ), new HashSet<>( titles ) );
 
             titles = await( example.readProductTitlesRxJava() );
@@ -518,7 +534,7 @@ class ExamplesIT
                 session.run( "CREATE (:Product {id: 0, title: 'Mind Gem'})" );
             }
 
-            List<String> products = await( example.readSingleProductReactor() );
+            List<String> products = await( example.readSingleProduct() );
             assertEquals( 1, products.size() );
             assertEquals( "Mind Gem", products.get( 0 ) );
 
@@ -548,7 +564,7 @@ class ExamplesIT
             // print all 'Product' nodes to fake stdout
             try ( AutoCloseable ignore = stdIOCapture.capture() )
             {
-                final List<ResultSummary> summaryList = await( example.printAllProductsReactor() );
+                final List<ResultSummary> summaryList = await( example.printAllProducts() );
                 assertThat( summaryList.size(), equalTo( 1 ) );
                 ResultSummary summary = summaryList.get( 0 );
                 assertEquals( QueryType.READ_ONLY, summary.queryType() );
@@ -586,6 +602,40 @@ class ExamplesIT
 
             Set<String> capturedOutput = new HashSet<>( stdIOCapture.stdout() );
             assertEquals( new HashSet<>( asList( "Infinity Gauntlet", "Mjölnir" ) ), capturedOutput );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testShouldRunRxResultConsumeExampleReactor() throws Exception
+    {
+        // Given
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        try ( RxResultConsumeExample example = new RxResultConsumeExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            List<String> names = await( example.getPeople() );
+
+            // Then
+            assertThat( names, equalTo( asList( "Alice", "Bob" ) ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( BOLT_V4 )
+    void testShouldRunRxResultConsumeExampleRxJava() throws Exception
+    {
+        // Given
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        try ( RxResultConsumeExample example = new RxResultConsumeExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            List<String> names = await( example.getPeopleRxJava() );
+
+            // Then
+            assertThat( names, equalTo( asList( "Alice", "Bob" ) ) );
         }
     }
 }
