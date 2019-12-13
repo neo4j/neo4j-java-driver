@@ -49,12 +49,15 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 {
     private static final Queue<Record> UNINITIALIZED_RECORDS = Iterables.emptyQueue();
     private final long fetchSize;
+    private final long lowRecordWatermark;
+    private final long highRecordWatermark;
 
     // initialized lazily when first record arrives
     private Queue<Record> records = UNINITIALIZED_RECORDS;
 
     private ResultSummary summary;
     private Throwable failure;
+    private boolean isAutoPullEnabled = true;
 
     private CompletableFuture<Record> recordFuture;
     private CompletableFuture<ResultSummary> summaryFuture;
@@ -64,6 +67,19 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
     {
         super(query, runResponseHandler, connection, metadataExtractor, completionListener );
         this.fetchSize = fetchSize;
+
+        //For pull everything ensure conditions for disabling auto pull are never met
+        if ( fetchSize == UNLIMITED_FETCH_SIZE )
+        {
+            this.highRecordWatermark = Long.MAX_VALUE;
+            this.lowRecordWatermark = Long.MAX_VALUE;
+        }
+        else
+        {
+            this.highRecordWatermark = (long) (fetchSize * 0.7);
+            this.lowRecordWatermark = (long) (fetchSize * 0.3);
+        }
+
         installRecordAndSummaryConsumers();
     }
 
@@ -96,7 +112,10 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
 
             if ( error == null && summary == null ) // has_more
             {
-                request( fetchSize );
+                if ( isAutoPullEnabled )
+                {
+                    request( fetchSize );
+                }
             }
         } );
     }
@@ -199,11 +218,29 @@ public class AutoPullResponseHandler extends BasicPullResponseHandler implements
         }
 
         records.add( record );
+
+        // too many records in the queue, pause auto request gathering
+        if ( records.size() > highRecordWatermark )
+        {
+            isAutoPullEnabled = false;
+        }
     }
 
     private Record dequeueRecord()
     {
-        return records.poll();
+        Record record = records.poll();
+
+        if ( records.size() <= lowRecordWatermark )
+        {
+            //if not in streaming state we need to restart streaming
+            if ( state() != State.STREAMING_STATE )
+            {
+                request( fetchSize );
+            }
+            isAutoPullEnabled = true;
+        }
+
+        return record;
     }
 
     private <T> List<T> recordsAsList( Function<Record,T> mapFunction )

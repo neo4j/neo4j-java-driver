@@ -26,6 +26,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -38,16 +39,18 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
 
 import static java.util.Arrays.asList;
@@ -72,6 +75,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectDriverBoltKitTest
 {
@@ -298,6 +302,75 @@ class DirectDriverBoltKitTest
                 Result result = session.run( "MATCH (n) RETURN n.name" );
                 List<String> list = result.list( record -> record.get( "n.name" ).asString() );
                 assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldOnlyPullRecordsWhenNeededSimpleSession() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4_buffering.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                Session session = driver.session( builder().withFetchSize( 2 ).build() );
+                Result result = session.run( "MATCH (n) RETURN n.name" );
+                ArrayList<String> resultList = new ArrayList<>();
+                result.forEachRemaining( ( rec ) -> resultList.add( rec.get( 0 ).asString() ) );
+
+                assertEquals( resultList, asList( "Bob", "Alice", "Tina", "Frank", "Daisy", "Clive" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldOnlyPullRecordsWhenNeededAsyncSession() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4_buffering.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                AsyncSession session = driver.asyncSession( builder().withFetchSize( 2 ).build() );
+
+                ArrayList<String> resultList = new ArrayList<>();
+
+                await( session.runAsync( "MATCH (n) RETURN n.name" )
+                              .thenCompose( resultCursor ->
+                                                    resultCursor.forEachAsync( record -> resultList.add( record.get( 0 ).asString() ) ) ) );
+
+                assertEquals( resultList, asList( "Bob", "Alice", "Tina", "Frank", "Daisy", "Clive" ) );
+            }
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldPullAllRecordsOnListAsyncWhenOverWatermark() throws Exception
+    {
+        StubServer server = StubServer.start( "streaming_records_v4_list_async.script", 9001 );
+        try
+        {
+            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
+            {
+                AsyncSession session = driver.asyncSession( builder().withFetchSize( 10 ).build() );
+
+                ResultCursor cursor = await( session.runAsync( "MATCH (n) RETURN n.name" ) );
+                List<String> records = await( cursor.listAsync( record -> record.get( 0 ).asString() ) );
+
+                assertEquals( records, asList( "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ) );
             }
         }
         finally
