@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -35,6 +37,7 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
 
@@ -679,7 +682,6 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
 
         assertEquals( expectedRecords, list );
     }
-
     protected T newHandler()
     {
         return newHandler( new Query( "RETURN 1" ) );
