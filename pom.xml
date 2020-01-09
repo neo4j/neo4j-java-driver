@@ -265,7 +265,7 @@
             <java>SLASHSTAR_STYLE</java>
           </mapping>
           <properties>
-            <thisYear>2019</thisYear>
+            <thisYear>2020</thisYear>
           </properties>
           <includes>
             <include>**/*.java</include>
