@@ -10,7 +10,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
-    <junit.version>5.4.0</junit.version>
+    <junit.version>5.4.2</junit.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
@@ -59,30 +59,30 @@
       <dependency>
         <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.41.Final</version>
+        <version>4.1.44.Final</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.3.0.RELEASE</version>
+        <version>3.3.1.RELEASE</version>
       </dependency>
       <!--Compile dependencies only used by Examples-->
       <dependency>
         <groupId>io.reactivex.rxjava2</groupId>
         <artifactId>rxjava</artifactId>
-        <version>2.2.8</version>
+        <version>2.2.16</version>
       </dependency>
 
       <!-- Optional dependencies -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.25</version>
+        <version>1.7.30</version>
       </dependency>
 
       <!-- Test dependencies -->
@@ -113,13 +113,13 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.59</version>
+        <version>1.64</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.59</version>
+        <version>1.64</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -131,7 +131,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-test</artifactId>
-        <version>3.3.0.RELEASE</version>
+        <version>3.3.1.RELEASE</version>
         <scope>test</scope>
       </dependency>
       <dependency>
