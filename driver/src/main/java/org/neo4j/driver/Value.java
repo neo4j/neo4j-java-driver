@@ -174,17 +174,24 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * for common types is as follows:
      *
      * <ul>
+     *     <li>{@link TypeSystem#NULL()} - {@code null}</li>
+     *     <li>{@link TypeSystem#LIST()} - {@link List}</li>
+     *     <li>{@link TypeSystem#MAP()} - {@link Map}</li>
+     *     <li>{@link TypeSystem#BOOLEAN()} - {@link Boolean}</li>
      *     <li>{@link TypeSystem#INTEGER()} - {@link Long}</li>
      *     <li>{@link TypeSystem#FLOAT()} - {@link Double}</li>
-     *     <li>{@link TypeSystem#NUMBER()} - {@link Number}</li>
      *     <li>{@link TypeSystem#STRING()} - {@link String}</li>
-     *     <li>{@link TypeSystem#BOOLEAN()} - {@link Boolean}</li>
-     *     <li>{@link TypeSystem#NULL()} - {@code null}</li>
+     *     <li>{@link TypeSystem#BYTES()} - {@literal byte[]}</li>
+     *     <li>{@link TypeSystem#DATE()} - {@link LocalDate}</li>
+     *     <li>{@link TypeSystem#TIME()} - {@link OffsetTime}</li>
+     *     <li>{@link TypeSystem#LOCAL_TIME()} - {@link LocalTime}</li>
+     *     <li>{@link TypeSystem#DATE_TIME()} - {@link ZonedDateTime}</li>
+     *     <li>{@link TypeSystem#LOCAL_DATE_TIME()} - {@link LocalDateTime}</li>
+     *     <li>{@link TypeSystem#DURATION()} - {@link IsoDuration}</li>
+     *     <li>{@link TypeSystem#POINT()} - {@link Point}</li>
      *     <li>{@link TypeSystem#NODE()} - {@link Node}</li>
      *     <li>{@link TypeSystem#RELATIONSHIP()} - {@link Relationship}</li>
      *     <li>{@link TypeSystem#PATH()} - {@link Path}</li>
-     *     <li>{@link TypeSystem#MAP()} - {@link Map}</li>
-     *     <li>{@link TypeSystem#LIST()} - {@link List}</li>
      * </ul>
      *
      * Note that the types in {@link TypeSystem} refers to the Neo4j type system
