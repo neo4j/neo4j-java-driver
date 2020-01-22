@@ -141,7 +141,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
         else if ( routingTable.isStaleFor( mode ) )
         {
             // existing routing table is not fresh and should be updated
-            log.info( "Routing table is stale. %s", routingTable );
+            log.debug( "Routing table is stale. %s", routingTable );
 
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
@@ -176,7 +176,7 @@ public class LoadBalancer implements ConnectionProvider, RoutingErrorHandler
             routingTable.update( composition );
             connectionPool.retainAll( routingTable.servers() );
 
-            log.info( "Updated routing table. %s", routingTable );
+            log.debug( "Updated routing table. %s", routingTable );
 
             CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
             refreshRoutingTableFuture = null;
