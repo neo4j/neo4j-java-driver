@@ -78,7 +78,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
         else if ( routingTable.isStaleFor( context.mode() ) )
         {
             // existing routing table is not fresh and should be updated
-            log.info( "Routing table for database '%s' is stale. %s", databaseName.description(), routingTable );
+            log.debug( "Routing table for database '%s' is stale. %s", databaseName.description(), routingTable );
 
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
@@ -114,7 +114,7 @@ public class RoutingTableHandler implements RoutingErrorHandler
             routingTableRegistry.removeAged();
             connectionPool.retainAll( routingTableRegistry.allServers() );
 
-            log.info( "Updated routing table for database '%s'. %s", databaseName.description(), routingTable );
+            log.debug( "Updated routing table for database '%s'. %s", databaseName.description(), routingTable );
 
             CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
             refreshRoutingTableFuture = null;
