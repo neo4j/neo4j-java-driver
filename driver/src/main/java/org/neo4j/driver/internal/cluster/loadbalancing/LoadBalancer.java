@@ -139,7 +139,6 @@ public class LoadBalancer implements ConnectionProvider
         {
             return failedFuture( error );
         }
-
         CompletableFuture<Boolean> result = completedWithNull();
         Throwable baseError = new ServiceUnavailableException( "Failed to perform multi-databases feature detection with the following servers: " + addresses );
 

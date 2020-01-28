@@ -378,7 +378,7 @@ public class CausalClusteringIT implements NestedQueries
             Set<ClusterMember> cores = cluster.cores();
             for ( ClusterMember follower : cluster.followers() )
             {
-                cluster.kill( follower );
+                cluster.stop( follower );
             }
             awaitLeaderToStepDown( cores );
 
@@ -423,7 +423,7 @@ public class CausalClusteringIT implements NestedQueries
             Set<ClusterMember> cores = cluster.cores();
             for ( ClusterMember follower : cluster.followers() )
             {
-                cluster.kill( follower );
+                cluster.stop( follower );
             }
             awaitLeaderToStepDown( cores );
 

@@ -40,7 +40,6 @@ import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
-
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;

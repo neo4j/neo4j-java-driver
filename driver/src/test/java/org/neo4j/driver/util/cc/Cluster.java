@@ -278,11 +278,7 @@ public class Cluster implements AutoCloseable
             try
             {
                 final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
-                // we will wait until the leader is online
-                if ( clusterOverview.containsValue( ClusterMemberRole.LEADER ) )
-                {
-                    actualOnlineAddresses = clusterOverview.keySet();
-                }
+                actualOnlineAddresses = clusterOverview.keySet();
             }
             catch ( Throwable t )
             {
