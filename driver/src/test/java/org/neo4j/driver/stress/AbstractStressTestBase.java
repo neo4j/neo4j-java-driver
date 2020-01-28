@@ -98,7 +98,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static final int BIG_DATA_TEST_NODE_COUNT = Integer.getInteger( "bigDataTestNodeCount", 30_000 );
     private static final int BIG_DATA_TEST_BATCH_SIZE = Integer.getInteger( "bigDataTestBatchSize", 10_000 );
-    private static final Duration DEFAULT_BLOCKING_TIME_OUT = Duration.ofMinutes( 5 );
+    private static final Duration DEFAULT_BLOCKING_TIME_OUT = Duration.ofMinutes( 10 );
 
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
