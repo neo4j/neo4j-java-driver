@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.async;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +31,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class ResultCursorsHolder
 {
-    private final List<CompletionStage<? extends FailableCursor>> cursorStages = new ArrayList<>();
+    private final List<CompletionStage<? extends FailableCursor>> cursorStages = Collections.synchronizedList( new ArrayList<>() );
 
     public void add( CompletionStage<? extends FailableCursor> cursorStage )
     {
