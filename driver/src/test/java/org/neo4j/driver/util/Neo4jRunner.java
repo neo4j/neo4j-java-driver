@@ -177,15 +177,13 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
+            executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
-
-        updateServerSettingsFile();
     }
 
     public void startNeo4j()
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         executeCommand( "neoctrl-start", HOME_DIR );
         debug( "Server started." );
     }

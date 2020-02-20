@@ -169,11 +169,6 @@ public class DatabaseExtension implements BeforeEachCallback
         runner.stopNeo4j();
     }
 
-    public void killDb()
-    {
-        runner.killNeo4j();
-    }
-
     public ServerVersion version()
     {
         return ServerVersion.version( driver() );
