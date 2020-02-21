@@ -22,7 +22,6 @@ import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -51,25 +50,24 @@ import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.logging.DevNullLogger;
-import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.Iterables;
-import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.types.Node;
@@ -87,6 +85,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 
 abstract class AbstractStressTestBase<C extends AbstractContext>
@@ -146,9 +145,9 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     }
 
     @Test
-    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
     void rxApiStressTest() throws Throwable
     {
+        assertRxIsAvailable();
         runStressTest( this::launchRxWorkerThreads );
     }
 
@@ -167,11 +166,16 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     }
 
     @Test
-    @EnabledOnNeo4jWith( Neo4jFeature.BOLT_V4 )
     void rxApiBigDataTest() throws Throwable
     {
+        assertRxIsAvailable();
         Bookmark bookmark = createNodesRx( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
         readNodesRx( driver, bookmark, BIG_DATA_TEST_NODE_COUNT );
+    }
+
+    private void assertRxIsAvailable()
+    {
+        assumeTrue( driver.supportsMultiDb() );
     }
 
     private void runStressTest( Function<C,List<Future<?>>> threadLauncher ) throws Throwable
