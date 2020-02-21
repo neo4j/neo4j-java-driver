@@ -46,10 +46,10 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
@@ -62,7 +62,6 @@ import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -89,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
@@ -96,7 +96,6 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
@@ -147,9 +146,10 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldExecuteReadAndWritesWhenRouterIsDiscovered() throws Exception
     {
+        assertRoutingNotAvailableOnReadReplica();
+
         Cluster cluster = clusterRule.getCluster();
 
         int count = executeWriteAndReadThroughBoltOnFirstAvailableAddress( cluster.anyReadReplica(), cluster.leader() );
@@ -168,9 +168,9 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    @DisabledOnNeo4jWith( BOLT_V4 )
     void sessionCreationShouldFailIfCallingDiscoveryProcedureOnEdgeServer()
     {
+        assertRoutingNotAvailableOnReadReplica();
         Cluster cluster = clusterRule.getCluster();
 
         ClusterMember readReplica = cluster.anyReadReplica();
@@ -367,7 +367,6 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldNotServeWritesWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
@@ -397,7 +396,6 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    @DisabledOnNeo4jWith( BOLT_V4 )
     void shouldServeReadsWhenMajorityOfCoresAreDead()
     {
         Cluster cluster = clusterRule.getCluster();
@@ -706,6 +704,12 @@ public class CausalClusteringIT implements NestedQueries
             awaitAllFutures( results ); // readers and writers should stop
             assertThat( countNodes( driver.session(), label, property, value ), greaterThan( 0 ) ); // some nodes should be created
         }
+    }
+
+    private void assertRoutingNotAvailableOnReadReplica()
+    {
+        driver = createDriver( clusterRule.getCluster().leader().getRoutingUri() );
+        assumeFalse( driver.supportsMultiDb() );
     }
 
     private static void assertUnableToRunMoreQueriesInTx(Transaction tx, ServiceUnavailableException cause )
