@@ -52,7 +52,6 @@ public class RxFailingQueryInTx<C extends AbstractContext> extends AbstractRxQue
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null )
                 .subscribe( record -> {
                     assertThat( record.get( 0 ).asInt(), either( equalTo( 1 ) ).or( equalTo( 2 ) ) );
-                    queryFinished.complete( null );
                 }, error -> {
                     Throwable cause = Futures.completionExceptionCause( error );
                     assertThat( cause, is( arithmeticError() ) );
