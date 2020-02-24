@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.net;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -28,6 +29,9 @@ public interface ServerAddressResolver
 {
     /**
      * Resolve the given address to a set of other addresses.
+     * It is highly recommended to shuffle the addresses returned to prevent the driver from
+     * always retrying servers in a specific order.
+     * Considering returning a {@link LinkedHashSet} to reserve the iteration order of a set.
      * Exceptions thrown by this method will be logged and driver will continue using the original address.
      *
      * @param address the address to resolve.
