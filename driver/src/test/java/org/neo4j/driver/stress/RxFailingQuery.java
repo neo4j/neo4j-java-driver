@@ -23,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
@@ -51,8 +52,7 @@ public class RxFailingQuery<C extends AbstractContext> extends AbstractRxQuery<C
                 RxSession::close )
                 .subscribe( record -> {
                     assertThat( record.get( 0 ).asInt(), either( equalTo( 1 ) ).or( equalTo( 2 ) ) );
-                    queryFinished.complete( null );
-                }, error -> {
+                    }, error -> {
                     Throwable cause = Futures.completionExceptionCause( error );
                     assertThat( cause, is( arithmeticError() ) );
                     queryFinished.complete( null );

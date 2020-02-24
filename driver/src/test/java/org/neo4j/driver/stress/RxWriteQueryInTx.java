@@ -53,18 +53,21 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
                     context.nodeCreated();
                     queryFinished.complete( null );
                 }, error -> {
-                    handleError( Futures.completionExceptionCause( error ), context );
-                    queryFinished.complete( null );
+                    handleError( Futures.completionExceptionCause( error ), context, queryFinished );
                 } );
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context )
+    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
     {
         if ( !stressTest.handleWriteFailure( error, context ) )
         {
-            throw new RuntimeException( error );
+            queryFinished.completeExceptionally( error );
+        }
+        else
+        {
+            queryFinished.complete( null );
         }
     }
 }
