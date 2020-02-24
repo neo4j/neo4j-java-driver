@@ -128,6 +128,12 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         System.out.println( "Bookmark failures: " + context.getBookmarkFailures() );
     }
 
+    @Override
+    void dumpLogs()
+    {
+        clusterRule.dumpClusterLogs();
+    }
+
     private static ClusterAddresses fetchClusterAddresses( Driver driver )
     {
         Set<String> followers = new HashSet<>();

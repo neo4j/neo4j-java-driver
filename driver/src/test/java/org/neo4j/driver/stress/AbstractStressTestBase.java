@@ -22,6 +22,7 @@ import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -88,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 
+@ExtendWith( DumpLogsOnFailureWatcher.class )
 abstract class AbstractStressTestBase<C extends AbstractContext>
 {
     private static final int THREAD_COUNT = Integer.getInteger( "threadCount", 8 );
@@ -208,6 +210,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
         verifyResults( context, resourcesInfo );
     }
+
+    abstract void dumpLogs();
 
     abstract URI databaseUri();
 

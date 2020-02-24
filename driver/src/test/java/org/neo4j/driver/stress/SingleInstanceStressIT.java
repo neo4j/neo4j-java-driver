@@ -114,4 +114,10 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
             return readQueries.get();
         }
     }
+
+    @Override
+    void dumpLogs()
+    {
+        neo4j.dumpLogs();
+    }
 }

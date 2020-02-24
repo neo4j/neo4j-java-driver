@@ -19,6 +19,7 @@
 package org.neo4j.driver.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.net.URI;
@@ -26,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
@@ -238,6 +240,29 @@ public class Neo4jRunner
         {
             forceToRestart();
         }
+    }
+
+    /**
+     * prints the debug log contents to stdOut
+     */
+    public void dumpDebugLog()
+    {
+        try
+        {
+            System.out.println( "Debug log for: " + HOME_DIR );
+            Scanner input = new Scanner( new File( HOME_DIR + "/logs/debug.log" ));
+
+            while (input.hasNextLine())
+            {
+                System.out.println(input.nextLine());
+            }
+        }
+        catch ( FileNotFoundException e )
+        {
+            System.out.println("Unable to find debug log file for: " + HOME_DIR);
+            e.printStackTrace();
+        }
+
     }
 
     private enum ServerStatus

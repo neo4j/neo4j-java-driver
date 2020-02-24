@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver.util.cc;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Scanner;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 
@@ -61,6 +64,16 @@ public class ClusterMember
     public Path getPath()
     {
         return path;
+    }
+
+    public void dumpDebugLog() throws FileNotFoundException
+    {
+        Scanner input = new Scanner( new File( path.toAbsolutePath().toString() + "/logs/debug.log" ));
+
+        while (input.hasNextLine())
+        {
+            System.out.println(input.nextLine());
+        }
     }
 
     @Override
