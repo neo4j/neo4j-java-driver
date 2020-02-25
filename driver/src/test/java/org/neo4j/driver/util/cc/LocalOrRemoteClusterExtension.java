@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.io.FileNotFoundException;
 import java.net.URI;
 
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
@@ -96,6 +97,14 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         if ( !remoteClusterExists() )
         {
             localClusterExtension.afterAll( context );
+        }
+    }
+
+    public void dumpClusterLogs()
+    {
+        if ( localClusterExtension != null )
+        {
+            localClusterExtension.getCluster().dumpClusterDebugLog();
         }
     }
 

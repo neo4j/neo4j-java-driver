@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.util.cc;
 
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -173,6 +174,24 @@ public class Cluster implements AutoCloseable
     public Driver getDirectDriver( ClusterMember member )
     {
         return clusterDrivers.getDriver( member );
+    }
+
+    public void dumpClusterDebugLog()
+    {
+        for ( ClusterMember member : members )
+        {
+
+            System.out.println( "Debug log for: " + member.getPath().toString() );
+            try
+            {
+                member.dumpDebugLog();
+            }
+            catch ( FileNotFoundException e )
+            {
+                System.out.println("Unable to find debug log file for: " + member.getPath().toString());
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override

@@ -173,4 +173,9 @@ public class DatabaseExtension implements BeforeEachCallback
     {
         return ServerVersion.version( driver() );
     }
+
+    public void dumpLogs()
+    {
+        runner.dumpDebugLog();
+    }
 }

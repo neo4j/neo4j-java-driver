@@ -30,6 +30,8 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RxWriteQueryWithRetries<C extends AbstractContext> extends AbstractRxQuery<C>
 {
@@ -45,7 +47,7 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.READ, context ) ),
+        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.WRITE, context ) ),
                 session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ), RxSession::close )
                 .subscribe( summary -> {
                     queryFinished.complete( null );
