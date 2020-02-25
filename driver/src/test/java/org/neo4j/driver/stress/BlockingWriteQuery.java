@@ -21,7 +21,7 @@ package org.neo4j.driver.stress;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,12 +38,13 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
     @Override
     public void execute( C context )
     {
-        Result result = null;
+        ResultSummary summary = null;
         Throwable queryError = null;
 
         try ( Session session = newSession( AccessMode.WRITE, context ) )
         {
-            result = session.run( "CREATE ()" );
+            summary = session.run( "CREATE ()" ).consume();
+            context.setBookmark( session.lastBookmark() );
         }
         catch ( Throwable error )
         {
@@ -54,9 +55,9 @@ public class BlockingWriteQuery<C extends AbstractContext> extends AbstractBlock
             }
         }
 
-        if ( queryError == null && result != null )
+        if ( queryError == null && summary != null )
         {
-            assertEquals( 1, result.consume().counters().nodesCreated() );
+            assertEquals( 1, summary.counters().nodesCreated() );
             context.nodeCreated();
         }
     }

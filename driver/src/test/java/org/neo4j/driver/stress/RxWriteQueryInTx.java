@@ -49,6 +49,7 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
         Flux.usingWhen( session.beginTransaction(), tx -> tx.run( "CREATE ()" ).consume(),
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null ).subscribe(
                 summary -> {
+                    context.setBookmark( session.lastBookmark() );
                     assertEquals( 1, summary.counters().nodesCreated() );
                     context.nodeCreated();
                     queryFinished.complete( null );
