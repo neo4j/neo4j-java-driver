@@ -92,6 +92,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
@@ -243,6 +244,28 @@ public final class TestUtil
         {
             cleanDb( session );
             return session.lastBookmark();
+        }
+    }
+
+    public static void dropDatabase( Driver driver, String database )
+    {
+        try ( Session session = driver.session( forDatabase( "system" ) ) )
+        {
+            // No procedure equivalent and `call dbms.database.state("db")` also throws an exception when db doesn't exist
+            boolean databaseExists = databaseExists( driver, database );
+            if ( databaseExists )
+            {
+                session.run( "DROP DATABASE " + database ).consume();
+            }
+        }
+    }
+
+    public static boolean databaseExists( Driver driver, String database )
+    {
+        try ( Session session = driver.session( forDatabase( "system" ) ) )
+        {
+            // No procedure equivalent and `call dbms.database.state("db")` also throws an exception when db doesn't exist
+            return session.run( "SHOW DATABASES" ).stream().anyMatch( r -> r.get( "name" ).asString().equals( database ) );
         }
     }
 
