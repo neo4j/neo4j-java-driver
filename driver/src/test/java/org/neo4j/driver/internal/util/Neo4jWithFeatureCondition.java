@@ -86,7 +86,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
         {
             try ( Session session = driver.session() )
             {
-                String value = session.run( "call dbms.components() yield edition" ).single().get( "edition" ).asString();
+                String value = session.run( "CALL dbms.components() YIELD edition" ).single().get( "edition" ).asString();
                 boolean editionMatches = edition.matches( value );
                 return editionMatches
                        ? enabled( previousResult.getReason().map( v -> v + " and enabled" ).orElse( "Enabled" ) + " on " + value + "-edition" )

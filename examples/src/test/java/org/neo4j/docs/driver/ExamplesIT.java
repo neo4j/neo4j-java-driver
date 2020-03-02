@@ -63,6 +63,7 @@ import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
 import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.createDatabase;
 import static org.neo4j.driver.util.TestUtil.databaseExists;
 import static org.neo4j.driver.util.TestUtil.dropDatabase;
 
@@ -661,36 +662,19 @@ class ExamplesIT
 
     @Test
     @EnabledOnNeo4jWith( value = BOLT_V4, edition = ENTERPRISE)
-    void testShouldTestThings() throws Exception
+    void testUseAnotherDatabaseExample() throws Exception
     {
         Driver driver = neo4j.driver();
         dropDatabase( driver, "examples" );
+        createDatabase( driver, "examples" );
 
-        // Given
-        try ( DatabaseSelectionExample example = new DatabaseSelectionExample( uri, USER, PASSWORD ) )
-        {
-            // When
-            example.createExampleDatabase();
-
-            // Then
-            assertTrue( databaseExists( driver, "examples" ) );
-        }
-    }
-
-    @Test
-    @EnabledOnNeo4jWith( value = BOLT_V4, edition = ENTERPRISE)
-    void morethingstotest() throws Exception
-    {
-        dropDatabase( neo4j.driver(), "examples" );
-
-        // Given
         try ( DatabaseSelectionExample example = new DatabaseSelectionExample( uri, USER, PASSWORD ) )
         {
             // When
             example.useAnotherDatabaseExample();
 
             // Then
-            int greetingCount = readInt( "examples",  "MATCH (a:Greeting) RETURN count(a)", Values.parameters() );
+            int greetingCount = readInt( "examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters() );
             assertThat( greetingCount, is( 1 ) );
         }
     }
