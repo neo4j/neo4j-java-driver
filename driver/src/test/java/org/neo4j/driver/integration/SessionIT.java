@@ -55,6 +55,7 @@ import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
@@ -1413,7 +1414,7 @@ class SessionIT
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( maxRetriesCount );
         AuthToken auth = DEFAULT_AUTH_TOKEN;
-        return driverFactory.newInstance( neo4j.uri(), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, noLoggingConfig() );
+        return driverFactory.newInstance( neo4j.uri(), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, noLoggingConfig(), SecurityPlanImpl.insecure() );
     }
 
     private Driver newDriverWithLimitedRetries( int maxTxRetryTime, TimeUnit unit )

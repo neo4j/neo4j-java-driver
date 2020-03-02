@@ -53,6 +53,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -98,7 +99,7 @@ class ConnectionHandlingIT
         AuthToken auth = neo4j.authToken();
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig() );
+        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig(), SecurityPlanImpl.insecure() );
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }

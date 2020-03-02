@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -101,7 +102,7 @@ class ConnectionPoolIT
 
         int maxConnLifetimeHours = 3;
         Config config = Config.builder().withMaxConnectionLifetime( maxConnLifetimeHours, TimeUnit.HOURS ).build();
-        driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, DEFAULT, config );
+        driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, DEFAULT, config, SecurityPlanImpl.insecure() );
 
         // force driver create channel and return it to the pool
         startAndCloseTransactions( driver, 1 );

@@ -23,17 +23,16 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import java.io.FileNotFoundException;
 import java.net.URI;
 
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.util.TestUtil;
 
-import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
 import static org.neo4j.driver.Config.defaultConfig;
+import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
 
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
@@ -127,7 +126,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
                     "Both cluster uri and 'neo4j' user password system properties should be set. " +
                     "Uri: '" + uri + "', Password: '" + password + "'" );
         }
-        if ( uri != null && !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+        if ( uri != null && !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
         {
             throw new IllegalStateException( "Cluster uri should have neo4j scheme: '" + uri + "'" );
         }

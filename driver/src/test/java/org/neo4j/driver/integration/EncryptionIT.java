@@ -21,6 +21,8 @@ package org.neo4j.driver.integration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.URI;
+
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -28,6 +30,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.Scheme;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.Neo4jSettings.BoltTlsLevel;
@@ -48,13 +51,13 @@ class EncryptionIT
     @Test
     void shouldOperateWithNoEncryptionWhenItIsOptionalInTheDatabase()
     {
-        testMatchingEncryption( BoltTlsLevel.OPTIONAL, false );
+        testMatchingEncryption( BoltTlsLevel.OPTIONAL, false, neo4j.uri().getScheme() );
     }
 
     @Test
     void shouldOperateWithEncryptionWhenItIsOptionalInTheDatabase()
     {
-        testMatchingEncryption( BoltTlsLevel.OPTIONAL, true );
+        testMatchingEncryption( BoltTlsLevel.OPTIONAL, true, neo4j.uri().getScheme() );
     }
 
     @Test
@@ -66,7 +69,13 @@ class EncryptionIT
     @Test
     void shouldOperateWithEncryptionWhenItIsAlsoRequiredInTheDatabase()
     {
-        testMatchingEncryption( BoltTlsLevel.REQUIRED, true );
+        testMatchingEncryption( BoltTlsLevel.REQUIRED, true, neo4j.uri().getScheme() );
+    }
+
+    @Test
+    void shouldOperateWithEncryptionWhenConfiguredUsingBoltSscURI()
+    {
+        testMatchingEncryption( BoltTlsLevel.REQUIRED, true, "bolt+ssc" );
     }
 
     @Test
@@ -78,15 +87,24 @@ class EncryptionIT
     @Test
     void shouldOperateWithoutEncryptionWhenItIsAlsoDisabledInTheDatabase()
     {
-        testMatchingEncryption( BoltTlsLevel.DISABLED, false );
+        testMatchingEncryption( BoltTlsLevel.DISABLED, false, neo4j.uri().getScheme() );
     }
 
-    private void testMatchingEncryption( BoltTlsLevel tlsLevel, boolean driverEncrypted )
+    private void testMatchingEncryption( BoltTlsLevel tlsLevel, boolean driverEncrypted, String scheme )
     {
         neo4j.restartDb( Neo4jSettings.TEST_SETTINGS.updateWith( Neo4jSettings.BOLT_TLS_LEVEL, tlsLevel.toString() ) );
-        Config config = newConfig( driverEncrypted );
+        Config config;
 
-        try ( Driver driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config ) )
+        if ( scheme.equals( Scheme.BOLT_LOW_TRUST_URI_SCHEME ) )
+        {
+            config = Config.builder().build();
+        } else {
+            config = newConfig( driverEncrypted );
+        }
+
+        URI uri = URI.create( String.format( "%s://%s:%s", scheme, neo4j.uri().getHost(), neo4j.uri().getPort()) );
+
+        try ( Driver driver = GraphDatabase.driver( uri, neo4j.authToken(), config ) )
         {
             assertThat( driver.isEncrypted(), equalTo( driverEncrypted ) );
 

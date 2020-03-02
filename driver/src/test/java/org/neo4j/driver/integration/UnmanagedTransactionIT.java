@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -221,7 +222,8 @@ class UnmanagedTransactionIT
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
 
-        try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+        try ( Driver driver = driverFactory.newInstance( neo4j.uri(), neo4j.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config,
+                                                         SecurityPlanImpl.insecure() ) )
         {
             NetworkSession session = ((InternalDriver) driver).newSession( SessionConfig.defaultConfig() );
             {

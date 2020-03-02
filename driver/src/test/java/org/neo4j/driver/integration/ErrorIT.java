@@ -45,6 +45,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -264,7 +265,7 @@ class ErrorIT
         Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).build();
         Throwable queryError = null;
 
-        try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config ) )
+        try ( Driver driver = driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config, SecurityPlanImpl.insecure() ) )
         {
             driver.verifyConnectivity();
             try(Session session = driver.session() )

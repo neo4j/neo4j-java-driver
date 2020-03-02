@@ -80,7 +80,7 @@ class DirectDriverIT
 
         // When & Then
         IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> GraphDatabase.driver( uri, neo4j.authToken() ) );
-        assertThat( e.getMessage(), equalTo( "Invalid address format `*`" ) );
+        assertThat( e.getMessage(), equalTo( "Scheme must not be null" ) );
     }
 
     @Test

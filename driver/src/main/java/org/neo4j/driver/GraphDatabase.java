@@ -22,10 +22,13 @@ import java.net.URI;
 
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.Scheme;
+import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
+import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
@@ -132,8 +135,10 @@ public class GraphDatabase
         config = getOrDefault( config );
         RoutingSettings routingSettings = config.routingSettings();
         RetrySettings retrySettings = config.retrySettings();
-
-        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config );
+        SecuritySettings securitySettings = config.securitySettings();
+        Scheme.validateScheme( uri.getScheme() );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
+        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
     }
 
     /**
@@ -192,10 +197,10 @@ public class GraphDatabase
     {
         for ( URI uri : uris )
         {
-            if ( !BOLT_ROUTING_URI_SCHEME.equals( uri.getScheme() ) )
+            if ( !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
             {
                 throw new IllegalArgumentException(
-                        "Illegal URI scheme, expected '" + BOLT_ROUTING_URI_SCHEME + "' in '" + uri + "'" );
+                        "Illegal URI scheme, expected '" + NEO4J_URI_SCHEME + "' in '" + uri + "'" );
             }
         }
     }

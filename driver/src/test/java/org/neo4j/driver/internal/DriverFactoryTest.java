@@ -43,6 +43,7 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -174,7 +175,7 @@ class DriverFactoryTest
     private Driver createDriver( String uri, DriverFactory driverFactory, Config config )
     {
         AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( URI.create( uri ), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config );
+        return driverFactory.newInstance( URI.create( uri ), auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() );
     }
 
     private static ConnectionPool connectionPoolMock()
