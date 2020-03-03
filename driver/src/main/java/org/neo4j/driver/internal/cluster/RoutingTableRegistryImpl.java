@@ -50,10 +50,10 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     }
 
     @Override
-    public CompletionStage<RoutingTableHandler> refreshRoutingTable( ConnectionContext context )
+    public CompletionStage<RoutingTableHandler> ensureRoutingTable( ConnectionContext context )
     {
         RoutingTableHandler handler = getOrCreate( context.databaseName() );
-        return handler.refreshRoutingTable( context ).thenApply( ignored -> handler );
+        return handler.ensureRoutingTable( context ).thenApply( ignored -> handler );
     }
 
     @Override
@@ -124,7 +124,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
         RoutingTableHandler newInstance( DatabaseName databaseName, RoutingTableRegistry allTables )
         {
             ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
-            return new RoutingTableHandler( routingTable, rediscovery, connectionPool, allTables, log, routingTablePurgeDelayMs );
+            return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, allTables, log, routingTablePurgeDelayMs );
         }
     }
 }

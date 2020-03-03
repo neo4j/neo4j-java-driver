@@ -32,11 +32,11 @@ import org.neo4j.driver.internal.async.ConnectionContext;
 public interface RoutingTableRegistry
 {
     /**
-     * Fresh the routing table for the database with given access mode.
+     * Ensures the routing table for the database with given access mode.
      * For server version lower than 4.0, the database name will be ignored while refreshing routing table.
      * @return The future of a new routing table handler.
      */
-    CompletionStage<RoutingTableHandler> refreshRoutingTable( ConnectionContext context );
+    CompletionStage<RoutingTableHandler> ensureRoutingTable( ConnectionContext context );
 
     /**
      * @return all servers in the registry

@@ -96,7 +96,7 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
-        return routingTables.refreshRoutingTable( context )
+        return routingTables.ensureRoutingTable( context )
                 .thenCompose( handler -> acquire( context.mode(), handler.routingTable() )
                         .thenApply( connection -> new RoutingConnection( connection, context.databaseName(), context.mode(), handler ) ) );
     }
@@ -104,7 +104,7 @@ public class LoadBalancer implements ConnectionProvider
     @Override
     public CompletionStage<Void> verifyConnectivity()
     {
-        return this.supportsMultiDb().thenCompose( supports -> routingTables.refreshRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
+        return this.supportsMultiDb().thenCompose( supports -> routingTables.ensureRoutingTable( simple( supports ) ) ).handle( ( ignored, error ) -> {
             if ( error != null )
             {
                 Throwable cause = completionExceptionCause( error );

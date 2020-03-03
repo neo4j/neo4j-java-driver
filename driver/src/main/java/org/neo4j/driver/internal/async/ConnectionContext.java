@@ -21,7 +21,11 @@ package org.neo4j.driver.internal.async;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.spi.ConnectionProvider;
 
+/**
+ * Describes what kind of connection to return by {@link ConnectionProvider}
+ */
 public interface ConnectionContext
 {
     DatabaseName databaseName();
