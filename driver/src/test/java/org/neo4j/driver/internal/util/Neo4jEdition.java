@@ -18,21 +18,28 @@
  */
 package org.neo4j.driver.internal.util;
 
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Target( {ElementType.TYPE, ElementType.METHOD} )
-@Retention( RetentionPolicy.RUNTIME )
-@Documented
-@ExtendWith( Neo4jWithFeatureCondition.class )
-public @interface EnabledOnNeo4jWith
+public enum Neo4jEdition
 {
-    Neo4jFeature value();
+    UNDEFINED( "n/a" ),
+    COMMUNITY( "community" ),
+    ENTERPRISE( "enterprise" );
 
-    Neo4jEdition edition() default Neo4jEdition.UNDEFINED;
+    private final String value;
+
+    Neo4jEdition( String value )
+    {
+        this.value = value;
+    }
+
+    public boolean matches( String otherValue )
+    {
+        if ( this == UNDEFINED )
+        {
+            return true;
+        }
+        else
+        {
+            return this.value.equals( otherValue );
+        }
+    }
 }

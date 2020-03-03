@@ -32,11 +32,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.StdIOCapture;
@@ -55,10 +58,14 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.internal.util.Neo4jEdition.ENTERPRISE;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
 import static org.neo4j.driver.util.TestUtil.await;
+import static org.neo4j.driver.util.TestUtil.createDatabase;
+import static org.neo4j.driver.util.TestUtil.databaseExists;
+import static org.neo4j.driver.util.TestUtil.dropDatabase;
 
 @ParallelizableIT
 @Execution( ExecutionMode.CONCURRENT )
@@ -69,12 +76,26 @@ class ExamplesIT
 
     private String uri;
 
-    private int readInt( final String query, final Value parameters )
+    private int readInt( String database, final String query, final Value parameters )
     {
-        try ( Session session = neo4j.driver().session() )
+        SessionConfig sessionConfig;
+        if ( database == null )
+        {
+            sessionConfig = SessionConfig.defaultConfig();
+        }
+        else
+        {
+            sessionConfig = SessionConfig.forDatabase( database );
+        }
+        try ( Session session = neo4j.driver().session( sessionConfig ) )
         {
             return session.readTransaction( tx -> tx.run( query, parameters ).single().get( 0 ).asInt() );
         }
+    }
+
+    private int readInt( final String query, final Value parameters )
+    {
+        return readInt( null, query, parameters );
     }
 
     private int readInt( final String query )
@@ -636,6 +657,25 @@ class ExamplesIT
 
             // Then
             assertThat( names, equalTo( asList( "Alice", "Bob" ) ) );
+        }
+    }
+
+    @Test
+    @EnabledOnNeo4jWith( value = BOLT_V4, edition = ENTERPRISE)
+    void testUseAnotherDatabaseExample() throws Exception
+    {
+        Driver driver = neo4j.driver();
+        dropDatabase( driver, "examples" );
+        createDatabase( driver, "examples" );
+
+        try ( DatabaseSelectionExample example = new DatabaseSelectionExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            example.useAnotherDatabaseExample();
+
+            // Then
+            int greetingCount = readInt( "examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters() );
+            assertThat( greetingCount, is( 1 ) );
         }
     }
 }

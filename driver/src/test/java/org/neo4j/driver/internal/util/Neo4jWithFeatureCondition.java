@@ -26,6 +26,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
 
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.util.Neo4jRunner;
 import org.neo4j.driver.util.Neo4jSettings;
 
@@ -48,7 +49,11 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
             EnabledOnNeo4jWith enabledAnnotation = element.getAnnotation( EnabledOnNeo4jWith.class );
             if ( enabledAnnotation != null )
             {
-                return checkFeatureAvailability( enabledAnnotation.value(), false );
+                ConditionEvaluationResult result = checkFeatureAvailability( enabledAnnotation.value(), false );
+                if ( enabledAnnotation.edition() != Neo4jEdition.UNDEFINED )
+                {
+                    result = checkEditionAvailability( result, enabledAnnotation.edition() );
+                } return result;
             }
 
             DisabledOnNeo4jWith disabledAnnotation = element.getAnnotation( DisabledOnNeo4jWith.class );
@@ -67,6 +72,26 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
         {
             ServerVersion version = ServerVersion.version( driver );
             return createResult( version, feature, negated );
+        }
+        return ENABLED_UNKNOWN_DB_VERSION;
+    }
+
+    private static ConditionEvaluationResult checkEditionAvailability( ConditionEvaluationResult previousResult, Neo4jEdition edition )
+    {
+        if(previousResult.isDisabled()) {
+            return previousResult;
+        }
+        Driver driver = getSharedNeo4jDriver();
+        if ( driver != null )
+        {
+            try ( Session session = driver.session() )
+            {
+                String value = session.run( "CALL dbms.components() YIELD edition" ).single().get( "edition" ).asString();
+                boolean editionMatches = edition.matches( value );
+                return editionMatches
+                       ? enabled( previousResult.getReason().map( v -> v + " and enabled" ).orElse( "Enabled" ) + " on " + value + "-edition" )
+                       : disabled( previousResult.getReason().map( v -> v + " but disabled" ).orElse( "Disabled" ) + " on " + value + "-edition" );
+            }
         }
         return ENABLED_UNKNOWN_DB_VERSION;
     }

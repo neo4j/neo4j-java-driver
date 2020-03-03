@@ -47,8 +47,9 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
@@ -92,6 +93,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
@@ -243,6 +245,43 @@ public final class TestUtil
         {
             cleanDb( session );
             return session.lastBookmark();
+        }
+    }
+
+    public static void dropDatabase( Driver driver, String database )
+    {
+        boolean databaseExists = databaseExists( driver, database );
+        if ( !databaseExists )
+        {
+            return;
+        }
+
+        try ( Session session = driver.session( forDatabase( "system" ) ) )
+        {
+            session.run( "DROP DATABASE " + database ).consume();
+        }
+    }
+
+    public static void createDatabase( Driver driver, String database )
+    {
+        boolean databaseExists = databaseExists( driver, database );
+        if ( databaseExists )
+        {
+            return;
+        }
+
+        try ( Session session = driver.session( SessionConfig.forDatabase( "system" ) ) )
+        {
+            session.run( "CREATE DATABASE " + database ).consume();
+        }
+    }
+
+    public static boolean databaseExists( Driver driver, String database )
+    {
+        try ( Session session = driver.session( forDatabase( "system" ) ) )
+        {
+            // No procedure equivalent and `call dbms.database.state("db")` also throws an exception when db doesn't exist
+            return session.run( "SHOW DATABASES" ).stream().anyMatch( r -> r.get( "name" ).asString().equals( database ) );
         }
     }
 

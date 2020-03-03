@@ -99,7 +99,7 @@ To use the driver in a project, please use the released driver via Maven Central
 
 #### Running Tests and Creating a Package
 
-The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-contrib/boltkit) installed on your local machine. 
+The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-drivers/boltkit) installed on your local machine. 
 If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and will not be executed.
 
 The following Maven command shows how to run all tests and build the source code:
