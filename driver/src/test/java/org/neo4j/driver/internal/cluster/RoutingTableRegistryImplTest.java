@@ -98,7 +98,7 @@ class RoutingTableRegistryImplTest
 
         // When
         DatabaseName database = database( databaseName );
-        routingTables.refreshRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ ) );
+        routingTables.ensureRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ ) );
 
         // Then
         assertTrue( map.containsKey( database ) );
@@ -120,10 +120,10 @@ class RoutingTableRegistryImplTest
         ImmutableConnectionContext context = new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ );
 
         // When
-        RoutingTableHandler actual = await( routingTables.refreshRoutingTable( context ) );
+        RoutingTableHandler actual = await( routingTables.ensureRoutingTable( context ) );
 
         // Then it is the one we put in map that is picked up.
-        verify( handler ).refreshRoutingTable( context );
+        verify( handler ).ensureRoutingTable( context );
         // Then it is the one we put in map that is picked up.
         assertEquals( handler, actual );
     }
@@ -140,10 +140,10 @@ class RoutingTableRegistryImplTest
 
         ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
         // When
-        routingTables.refreshRoutingTable( context );
+        routingTables.ensureRoutingTable( context );
 
         // Then
-        verify( handler ).refreshRoutingTable( context );
+        verify( handler ).ensureRoutingTable( context );
     }
 
     @Test
@@ -228,7 +228,7 @@ class RoutingTableRegistryImplTest
     private RoutingTableHandler mockedRoutingTableHandler()
     {
         RoutingTableHandler handler = mock( RoutingTableHandler.class );
-        when( handler.refreshRoutingTable( any() ) ).thenReturn( completedFuture( mock( RoutingTable.class ) ) );
+        when( handler.ensureRoutingTable( any() ) ).thenReturn( completedFuture( mock( RoutingTable.class ) ) );
         return handler;
     }
 }

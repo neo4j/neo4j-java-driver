@@ -115,7 +115,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool );
 
-        assertNotNull( await( handler.refreshRoutingTable( simple( false ) ) ) );
+        assertNotNull( await( handler.ensureRoutingTable( simple( false ) ) ) );
 
         verify( rediscovery ).lookupClusterComposition( eq ( routingTable ) , eq ( connectionPool ), any() );
         assertArrayEquals( new BoltServerAddress[]{reader1, reader2}, routingTable.readers().toArray() );
@@ -163,7 +163,7 @@ class RoutingTableHandlerTest
         RoutingTableRegistry registry = new RoutingTableRegistry()
         {
             @Override
-            public CompletionStage<RoutingTableHandler> refreshRoutingTable( ConnectionContext context )
+            public CompletionStage<RoutingTableHandler> ensureRoutingTable( ConnectionContext context )
             {
                 throw new UnsupportedOperationException();
             }
@@ -188,7 +188,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool, registry );
 
-        RoutingTable actual = await( handler.refreshRoutingTable( simple( false ) ) );
+        RoutingTable actual = await( handler.ensureRoutingTable( simple( false ) ) );
         assertEquals( routingTable, actual );
 
         verify( connectionPool ).retainAll( new HashSet<>( asList( A, B, C ) ) );
@@ -208,7 +208,7 @@ class RoutingTableHandlerTest
         // When
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool, registry );
-        assertThrows( RuntimeException.class, () -> await( handler.refreshRoutingTable( simple( false ) ) ) );
+        assertThrows( RuntimeException.class, () -> await( handler.ensureRoutingTable( simple( false ) ) ) );
 
         // Then
         verify( registry ).remove( defaultDatabase() );
@@ -224,7 +224,7 @@ class RoutingTableHandlerTest
         Rediscovery rediscovery = newRediscoveryMock();
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool );
-        RoutingTable actual = await( handler.refreshRoutingTable( contextWithMode( mode ) ) );
+        RoutingTable actual = await( handler.ensureRoutingTable( contextWithMode( mode ) ) );
         assertEquals( routingTable, actual );
 
         verify( routingTable ).isStaleFor( mode );
@@ -242,7 +242,7 @@ class RoutingTableHandlerTest
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool );
 
-        assertNotNull( await( handler.refreshRoutingTable( contextWithMode( notStaleMode ) ) ) );
+        assertNotNull( await( handler.ensureRoutingTable( contextWithMode( notStaleMode ) ) ) );
         verify( routingTable ).isStaleFor( notStaleMode );
         verify( rediscovery, never() ).lookupClusterComposition( eq( routingTable ), eq( connectionPool ), any() );
     }
@@ -301,13 +301,13 @@ class RoutingTableHandlerTest
 
     private static RoutingTableHandler newRoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool )
     {
-        return new RoutingTableHandler( routingTable, rediscovery, connectionPool, newRoutingTableRegistryMock(), DEV_NULL_LOGGER,
+        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, newRoutingTableRegistryMock(), DEV_NULL_LOGGER,
                 STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 
     private static RoutingTableHandler newRoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool,
             RoutingTableRegistry routingTableRegistry )
     {
-        return new RoutingTableHandler( routingTable, rediscovery, connectionPool, routingTableRegistry, DEV_NULL_LOGGER, STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, routingTableRegistry, DEV_NULL_LOGGER, STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 }

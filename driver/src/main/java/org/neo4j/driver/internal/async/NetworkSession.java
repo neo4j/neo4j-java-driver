@@ -345,7 +345,7 @@ public class NetworkSession
     }
 
     /**
-     * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
+     * The {@link NetworkSessionConnectionContext#mode} can be mutable for a session connection context
      */
     private static class NetworkSessionConnectionContext implements ConnectionContext
     {

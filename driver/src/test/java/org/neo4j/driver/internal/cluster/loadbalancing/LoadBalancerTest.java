@@ -319,13 +319,13 @@ class LoadBalancerTest
         when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
 
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
-        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new ServiceUnavailableException( "boooo" ) );
+        when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new ServiceUnavailableException( "boooo" ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
 
         ServiceUnavailableException exception = assertThrows( ServiceUnavailableException.class, () -> await( loadBalancer.verifyConnectivity() ) );
         assertThat( exception.getMessage(), startsWith( "Unable to connect to database management service," ) );
-        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+        verify( routingTables ).ensureRoutingTable( any( ConnectionContext.class ) );
     }
 
     @Test
@@ -337,13 +337,13 @@ class LoadBalancerTest
         when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
 
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
-        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new RuntimeException( "boo" ) );
+        when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenThrow( new RuntimeException( "boo" ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
 
         RuntimeException exception = assertThrows( RuntimeException.class, () -> await( loadBalancer.verifyConnectivity() ) );
         assertThat( exception.getMessage(), startsWith( "boo" ) );
-        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+        verify( routingTables ).ensureRoutingTable( any( ConnectionContext.class ) );
     }
 
     @Test
@@ -355,12 +355,12 @@ class LoadBalancerTest
         when( rediscovery.resolve() ).thenReturn( Arrays.asList( A, B ) );
 
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
-        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( Futures.completedWithNull() );
+        when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( Futures.completedWithNull() );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTables, rediscovery );
 
         await( loadBalancer.verifyConnectivity() );
-        verify( routingTables ).refreshRoutingTable( any( ConnectionContext.class ) );
+        verify( routingTables ).ensureRoutingTable( any( ConnectionContext.class ) );
     }
 
     private static ConnectionPool newConnectionPoolMock()
@@ -410,7 +410,7 @@ class LoadBalancerTest
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
         RoutingTableHandler handler = mock( RoutingTableHandler.class );
         when( handler.routingTable() ).thenReturn( routingTable );
-        when( routingTables.refreshRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
+        when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
         Rediscovery rediscovery = mock( Rediscovery.class );
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
