@@ -23,9 +23,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
-import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -50,7 +48,6 @@ import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -59,24 +56,22 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
-import static org.neo4j.driver.internal.security.SecurityPlanImpl.insecure;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
 {
-    public static final String BOLT_URI_SCHEME = "bolt";
-    public static final String BOLT_ROUTING_URI_SCHEME = "neo4j";
 
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-            RetrySettings retrySettings, Config config )
+                                     RetrySettings retrySettings, Config config, SecurityPlan securityPlan )
     {
-        return newInstance( uri, authToken, routingSettings, retrySettings, config, null, null );
+        return newInstance( uri, authToken, routingSettings, retrySettings, config, null, securityPlan );
     }
 
     public final Driver newInstance ( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup, SecurityPlan customSecurityPlan )
+            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup, SecurityPlan securityPlan )
     {
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
@@ -95,16 +90,6 @@ public class DriverFactory
 
         BoltServerAddress address = new BoltServerAddress( uri );
         RoutingSettings newRoutingSettings = routingSettings.withRoutingContext( new RoutingContext( uri ) );
-
-        SecurityPlan securityPlan;
-        if ( customSecurityPlan != null )
-        {
-            securityPlan = customSecurityPlan;
-        }
-        else
-        {
-            securityPlan = createSecurityPlan( address, config );
-        }
 
         InternalLoggerFactory.setDefaultFactory( new NettyLogging( config.logging() ) );
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
@@ -148,20 +133,21 @@ public class DriverFactory
     }
 
     private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
+                                         EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
+                                         MetricsProvider metricsProvider, Config config )
     {
         try
         {
             String scheme = uri.getScheme().toLowerCase();
-            switch ( scheme )
+
+            if ( isRoutingScheme( scheme ) )
             {
-            case BOLT_URI_SCHEME:
+                return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metricsProvider, config );
+            }
+            else
+            {
                 assertNoRoutingContext( uri, routingSettings );
                 return createDirectDriver( securityPlan, address, connectionPool, retryLogic, metricsProvider, config );
-            case BOLT_ROUTING_URI_SCHEME:
-                return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metricsProvider, config );
-            default:
-                throw new ClientException( format( "Unsupported URI scheme: %s", scheme ) );
             }
         }
         catch ( Throwable driverError )
@@ -287,47 +273,6 @@ public class DriverFactory
         return BootstrapFactory.newBootstrap( eventLoopGroup );
     }
 
-    private static SecurityPlan createSecurityPlan( BoltServerAddress address, Config config )
-    {
-        try
-        {
-            return createSecurityPlanImpl( config );
-        }
-        catch ( GeneralSecurityException | IOException ex )
-        {
-            throw new ClientException( "Unable to establish SSL parameters", ex );
-        }
-    }
-
-    /*
-     * Establish a complete SecurityPlan based on the details provided for
-     * driver construction.
-     */
-    private static SecurityPlan createSecurityPlanImpl( Config config )
-            throws GeneralSecurityException, IOException
-    {
-        if ( config.encrypted() )
-        {
-            Config.TrustStrategy trustStrategy = config.trustStrategy();
-            boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
-            switch ( trustStrategy.strategy() )
-            {
-            case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
-            case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled );
-            case TRUST_ALL_CERTIFICATES:
-                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled );
-            default:
-                throw new ClientException(
-                        "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );
-            }
-        }
-        else
-        {
-            return insecure();
-        }
-    }
 
     private static void assertNoRoutingContext( URI uri, RoutingSettings routingSettings )
     {

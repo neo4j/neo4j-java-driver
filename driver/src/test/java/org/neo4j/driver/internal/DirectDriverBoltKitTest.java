@@ -47,6 +47,7 @@ import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.reactive.RxResult;
@@ -205,7 +206,8 @@ class DirectDriverBoltKitTest
             Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withoutEncryption().build();
             ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
 
-            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config,
+                                                             SecurityPlanImpl.insecure() ) )
             {
                 try ( Session session = driver.session() )
                 {

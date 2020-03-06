@@ -29,12 +29,13 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 
 public class DriverFactoryWithOneEventLoopThread extends DriverFactory
 {
     public Driver newInstance( URI uri, AuthToken authToken, Config config )
     {
-        return newInstance( uri, authToken, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config );
+        return newInstance( uri, authToken, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() );
     }
 
     @Override

@@ -45,6 +45,7 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.MessageRecordingDriverFactory;
 import org.neo4j.driver.summary.ResultSummary;
@@ -283,7 +284,8 @@ class SessionBoltV3IT
         int txCount = 13;
         MessageRecordingDriverFactory driverFactory = new MessageRecordingDriverFactory();
 
-        try ( Driver otherDriver = driverFactory.newInstance( driver.uri(), driver.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, defaultConfig() ) )
+        try ( Driver otherDriver = driverFactory.newInstance( driver.uri(), driver.authToken(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, defaultConfig(),
+                                                              SecurityPlanImpl.insecure() ) )
         {
             List<Session> sessions = new ArrayList<>();
             List<Transaction> txs = new ArrayList<>();

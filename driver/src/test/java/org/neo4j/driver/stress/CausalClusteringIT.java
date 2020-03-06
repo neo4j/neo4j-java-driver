@@ -62,6 +62,7 @@ import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
@@ -277,7 +278,7 @@ public class CausalClusteringIT implements NestedQueries
         URI routingUri = cluster.leader().getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
 
-        try ( Driver driver = driverFactory.newInstance( routingUri, auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+        try ( Driver driver = driverFactory.newInstance( routingUri, auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() ) )
         {
             // create nodes in different threads using different sessions and connections
             createNodesInDifferentThreads( concurrentSessionsCount, driver );
@@ -565,7 +566,7 @@ public class CausalClusteringIT implements NestedQueries
         FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
 
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging() ) )
+                                                         RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
@@ -607,7 +608,7 @@ public class CausalClusteringIT implements NestedQueries
 
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging() ) )
+                                                         RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
         {
             try ( Session session = driver.session() )
             {
@@ -673,7 +674,7 @@ public class CausalClusteringIT implements NestedQueries
                 .build();
 
         try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config ) )
+                                                         RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() ) )
         {
             List<Future<?>> results = new ArrayList<>();
 
