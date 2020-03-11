@@ -87,7 +87,7 @@ class ConnectionPoolIT
         sessionGrabber.start();
 
         // When
-        neo4j.restartDb();
+        neo4j.forceRestartDb();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
         sessionGrabber.assertSessionsAvailableWithin( 60 );

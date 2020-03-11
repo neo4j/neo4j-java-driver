@@ -183,6 +183,13 @@ public class Neo4jRunner
         }
     }
 
+    private void uninstallNeo4j()
+    {
+        debug( "Uninstalling server..." );
+        executeCommand( "neoctrl-uninstall", HOME_DIR );
+        debug( "Uninstalled server." );
+    }
+
     public void startNeo4j()
     {
         debug( "Starting server..." );
@@ -220,14 +227,6 @@ public class Neo4jRunner
     {
         stopNeo4j();
         startNeo4j();
-    }
-
-    /**
-     * Restart the server with default testing server configuration
-     */
-    public void restartNeo4j()
-    {
-        restartNeo4j( Neo4jSettings.TEST_SETTINGS );
     }
 
     /**
@@ -344,6 +343,7 @@ public class Neo4jRunner
                     driver.close();
                 }
                 stopNeo4j();
+                uninstallNeo4j();
                 debug( "Finished shutdown hook" );
             }
             catch ( Exception e )

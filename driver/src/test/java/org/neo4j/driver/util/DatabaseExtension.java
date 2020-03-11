@@ -76,11 +76,6 @@ public class DatabaseExtension implements BeforeEachCallback
         return driver().defaultTypeSystem();
     }
 
-    public void restartDb()
-    {
-        runner.restartNeo4j();
-    }
-
     public void forceRestartDb()
     {
         runner.forceToRestart();
