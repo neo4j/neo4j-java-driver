@@ -293,16 +293,15 @@ public class Neo4jRunner
         }
     }
 
-    private boolean updateServerSettings( Neo4jSettings settingsUpdate )
+    private boolean updateServerSettings( Neo4jSettings newSetting )
     {
-        Neo4jSettings updatedSettings = currentSettings.updateWith( settingsUpdate );
-        if ( currentSettings.equals( updatedSettings ) )
+        if ( currentSettings.equals( newSetting ) )
         {
             return false;
         }
         else
         {
-            currentSettings = updatedSettings;
+            currentSettings = newSetting;
         }
         updateServerSettingsFile();
         return true;
