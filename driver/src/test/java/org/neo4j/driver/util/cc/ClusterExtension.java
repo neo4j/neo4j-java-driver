@@ -143,6 +143,7 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
                 if ( SharedCluster.exists() )
                 {
                     SharedCluster.kill();
+                    SharedCluster.remove();
                 }
             }
             catch ( Throwable t )

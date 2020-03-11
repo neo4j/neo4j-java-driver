@@ -27,6 +27,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 
 import org.neo4j.driver.AuthToken;
@@ -35,16 +36,17 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.BoltServerAddress;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.Logging.console;
-import static org.neo4j.driver.util.FileTools.moveFile;
 import static org.neo4j.driver.util.FileTools.updateProperties;
 import static org.neo4j.driver.util.Neo4jSettings.CURRENT_BOLT_PORT;
 import static org.neo4j.driver.util.Neo4jSettings.CURRENT_HTTP_PORT;
 import static org.neo4j.driver.util.Neo4jSettings.TEST_JVM_ID;
+import static org.neo4j.driver.util.Neo4jSettings.WINDOWS_SERVICE_NAME;
 import static org.neo4j.driver.util.cc.CommandLineUtil.boltKitAvailable;
 import static org.neo4j.driver.util.cc.CommandLineUtil.executeCommand;
 
@@ -69,7 +71,8 @@ public class Neo4jRunner
 
     public static final String TARGET_DIR = new File( "../target" ).getAbsolutePath();
     private static final String NEO4J_DIR = new File( TARGET_DIR, "test-server-" + TEST_JVM_ID ).getAbsolutePath();
-    public static final String HOME_DIR = new File( NEO4J_DIR, "neo4jHome" ).getAbsolutePath();
+    private static final String NEO4J_HOME = "neo4jHome";
+    public static final String HOME_DIR = new File( NEO4J_DIR, NEO4J_HOME ).getAbsolutePath();
 
     private Driver driver;
     private boolean restartDriver;
@@ -164,6 +167,7 @@ public class Neo4jRunner
         File targetHomeFile = new File( HOME_DIR );
         if( targetHomeFile.exists() )
         {
+            executeCommand( "neoctrl-install-service", HOME_DIR );
             debug( "Found and using server installed at `%s`. ", HOME_DIR );
         }
         else
@@ -173,11 +177,15 @@ public class Neo4jRunner
             String[] split = NEOCTRL_ARGS.trim().split( "\\s+" );
             commands.addAll( asList( split ) );
             commands.add( NEO4J_DIR );
+            commands.add( WINDOWS_SERVICE_NAME );
 
             String tempHomeDir = executeCommand( commands ).trim();
-            debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
 
-            moveFile( new File( tempHomeDir ), targetHomeFile );
+            if ( !Objects.equals( NEO4J_HOME, new File( tempHomeDir ).getName() ) )
+            {
+                throw new IOException( format( "Expecting server installed at %s, but installed at %s", HOME_DIR, tempHomeDir ) );
+            }
+
             debug( "Installed server at `%s`.", HOME_DIR );
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
@@ -355,7 +363,7 @@ public class Neo4jRunner
 
     public static void debug( String text, Object... args )
     {
-        System.out.println( String.format( text, args ) );
+        System.out.println( format( text, args ) );
     }
 }
 

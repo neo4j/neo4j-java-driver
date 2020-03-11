@@ -199,6 +199,7 @@ class AsyncSessionIT
                 assertEquals( 100, records.size() );
             }
         } );
+        neo4j.startDb();
     }
 
     @Test

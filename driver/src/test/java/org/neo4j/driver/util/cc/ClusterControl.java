@@ -37,6 +37,16 @@ final class ClusterControl
                 neo4jVersion, path.toString() );
     }
 
+    static void installClusterService( Path path )
+    {
+        executeCommand( "neoctrl-cluster", "install-service", path.toString() );
+    }
+
+    static void uninstallCluster( Path path )
+    {
+        executeCommand( "neoctrl-cluster", "uninstall", path.toString() );
+    }
+
     static String startCluster( Path path )
     {
         return executeCommand( "neoctrl-cluster", "start", path.toString() );

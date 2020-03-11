@@ -52,7 +52,7 @@ public class Neo4jSettings
     private static final int CURRENT_HTTPS_PORT = DEFAULT_HTTPS_PORT + TEST_JVM_ID;
     static final int CURRENT_BOLT_PORT = DEFAULT_BOLT_PORT + TEST_JVM_ID;
 
-    private static final String WINDOWS_SERVICE_NAME = "neo4j-" + TEST_JVM_ID;
+    public static final String WINDOWS_SERVICE_NAME = "neo4j-" + TEST_JVM_ID;
 
     private final Map<String, String> settings;
     private final Set<String> excludes;
@@ -61,7 +61,6 @@ public class Neo4jSettings
             "dbms.connector.http.listen_address", ":" + CURRENT_HTTP_PORT,
             "dbms.connector.https.listen_address", ":" + CURRENT_HTTPS_PORT,
             "dbms.connector.bolt.listen_address", ":" + CURRENT_BOLT_PORT,
-            "dbms.windows_service_name", WINDOWS_SERVICE_NAME,
 
             DATA_DIR, DEFAULT_DATA_DIR,
             IMPORT_DIR, DEFAULT_IMPORT_DIR,

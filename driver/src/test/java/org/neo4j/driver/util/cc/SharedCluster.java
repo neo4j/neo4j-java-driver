@@ -45,8 +45,16 @@ final class SharedCluster
     static void remove()
     {
         assertClusterExists();
-        clusterInstance.close();
-        clusterInstance = null;
+        try
+        {
+            ClusterControl.uninstallCluster( clusterInstance.getPath() );
+            debug( "Cluster at `%s` uninstalled.", clusterInstance.getPath() );
+        }
+        finally
+        {
+            clusterInstance.close();
+            clusterInstance = null;
+        }
     }
 
     static boolean exists()
@@ -59,6 +67,7 @@ final class SharedCluster
         assertClusterDoesNotExist();
         if ( Files.isDirectory( path ) )
         {
+            ClusterControl.installClusterService( path );
             debug( "Found and using cluster installed at `%s`.", path );
         }
         else
