@@ -54,8 +54,8 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -172,33 +172,6 @@ class AsyncSessionIT
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
         assertThat( e, is( arithmeticError() ) );
-    }
-
-    @Test
-    void shouldFailWhenServerIsRestarted()
-    {
-        int queryCount = 10_000;
-
-        String query = "UNWIND range(1, 100) AS x " +
-                       "CREATE (n1:Node {value: x})-[r:LINKED {value: x}]->(n2:Node {value: x}) " +
-                       "DETACH DELETE n1, n2 " +
-                       "RETURN x";
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            for ( int i = 0; i < queryCount; i++ )
-            {
-                ResultCursor cursor = await( session.runAsync( query ) );
-
-                if ( i == 0 )
-                {
-                    neo4j.stopDb();
-                }
-
-                List<Record> records = await( cursor.listAsync() );
-                assertEquals( 100, records.size() );
-            }
-        } );
     }
 
     @Test
@@ -581,24 +554,6 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldRunAfterRunFailureToAcquireConnection()
-    {
-        neo4j.stopDb();
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            ResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.nextAsync() );
-        } );
-
-        neo4j.startDb();
-
-        ResultCursor cursor2 = await( session.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
-    }
-
-    @Test
     @DisabledOnNeo4jWith( BOLT_V3 )
     void shouldRunAfterBeginTxFailureOnBookmark()
     {
@@ -630,26 +585,6 @@ class AsyncSessionIT
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
         ResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
         assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
-    }
-
-    @Test
-    void shouldBeginTxAfterRunFailureToAcquireConnection()
-    {
-        neo4j.stopDb();
-
-        assertThrows( ServiceUnavailableException.class, () ->
-        {
-            ResultCursor cursor = await( session.runAsync( "RETURN 42" ) );
-            await( cursor.consumeAsync() );
-        } );
-
-        neo4j.startDb();
-
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-        ResultCursor cursor2 = await( tx.runAsync( "RETURN 42" ) );
-        Record record = await( cursor2.singleAsync() );
-        assertEquals( 42, record.get( 0 ).asInt() );
-        assertNull( await( tx.rollbackAsync() ) );
     }
 
     @Test
@@ -886,7 +821,7 @@ class AsyncSessionIT
     }
 
     private void runNestedQueries(ResultCursor inputCursor, List<CompletionStage<Record>> stages,
-                                  CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
         stages.add( recordResponse );
@@ -909,7 +844,7 @@ class AsyncSessionIT
     }
 
     private void runNestedQuery(ResultCursor inputCursor, Record record,
-                                List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+            List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
@@ -1031,7 +966,7 @@ class AsyncSessionIT
         }
 
         private void processQueryResult(ResultCursor cursor, Throwable error,
-                                        CompletableFuture<Record> resultFuture )
+                CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {

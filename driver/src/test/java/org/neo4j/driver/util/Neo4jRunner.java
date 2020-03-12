@@ -34,6 +34,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
@@ -116,7 +117,16 @@ public class Neo4jRunner
         {
             installNeo4j();
             updateServerSettingsFile();
-            startNeo4j();
+            try
+            {
+                startNeo4j();
+            }
+            catch ( Exception e )
+            {
+                debug( "Failed to start server first time due to error: " + ErrorUtil.getRootCause( e ).getMessage() );
+                debug( "Retry to start server again." );
+                startNeo4j();
+            }
         }
         finally
         {
@@ -186,7 +196,7 @@ public class Neo4jRunner
     public void startNeo4j()
     {
         debug( "Starting server..." );
-        executeCommand( "neoctrl-start", HOME_DIR );
+        executeCommand( "neoctrl-start", HOME_DIR, "-v" );
         debug( "Server started." );
     }
 
@@ -286,16 +296,15 @@ public class Neo4jRunner
         }
     }
 
-    private boolean updateServerSettings( Neo4jSettings settingsUpdate )
+    private boolean updateServerSettings( Neo4jSettings newSetting )
     {
-        Neo4jSettings updatedSettings = currentSettings.updateWith( settingsUpdate );
-        if ( currentSettings.equals( updatedSettings ) )
+        if ( currentSettings.equals( newSetting ) )
         {
             return false;
         }
         else
         {
-            currentSettings = updatedSettings;
+            currentSettings = newSetting;
         }
         updateServerSettingsFile();
         return true;
