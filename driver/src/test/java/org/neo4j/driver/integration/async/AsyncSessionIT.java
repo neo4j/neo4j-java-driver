@@ -174,6 +174,7 @@ class AsyncSessionIT
         assertThat( e, is( arithmeticError() ) );
     }
 
+    @Test
     void shouldAllowNestedQueries()
     {
         ResultCursor cursor =
