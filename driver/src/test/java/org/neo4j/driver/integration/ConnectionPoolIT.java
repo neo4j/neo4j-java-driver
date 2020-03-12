@@ -91,7 +91,7 @@ class ConnectionPoolIT
         neo4j.forceRestartDb();
 
         // Then we accept a hump with failing sessions, but demand that failures stop as soon as the server is back up.
-        sessionGrabber.assertSessionsAvailableWithin( 60 );
+        sessionGrabber.assertSessionsAvailableWithin( 120 );
     }
 
     @Test
@@ -220,6 +220,7 @@ class ConnectionPoolIT
         private volatile boolean sessionsAreAvailable = false;
         private volatile boolean run = true;
         private volatile Throwable lastExceptionFromDriver;
+        private final int sleepTimeout = 100;
 
         SessionGrabber( Driver driver )
         {
@@ -228,7 +229,7 @@ class ConnectionPoolIT
 
         public void start()
         {
-            new Thread(this).start();
+            new Thread( this ).start();
         }
 
         @Override
@@ -251,6 +252,14 @@ class ConnectionPoolIT
                         lastExceptionFromDriver = e;
                         sessionsAreAvailable = false;
                     }
+                    try
+                    {
+                        Thread.sleep( sleepTimeout );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
                 }
             } finally
             {
@@ -268,7 +277,7 @@ class ConnectionPoolIT
                     // Success!
                     return;
                 }
-                Thread.sleep( 100 );
+                Thread.sleep( sleepTimeout );
             }
 
             // Failure - timeout :(
