@@ -575,7 +575,7 @@ class TransactionAsyncIT
 
         await( tx.runAsync( "CREATE ()" ) );
 
-        neo4j.killDb();
+        neo4j.stopDb();
 
         assertThrows( ServiceUnavailableException.class, () -> await( tx.commitAsync() ) );
     }
