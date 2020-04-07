@@ -99,14 +99,12 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
 
-        Config config = Config.builder()
-                .withoutEncryption()
+        Config.ConfigBuilder builder = Config.builder()
                 .withLogging( logging )
                 .withMaxConnectionPoolSize( 100 )
-                .withConnectionAcquisitionTimeout( 1, MINUTES )
-                .build();
+                .withConnectionAcquisitionTimeout( 1, MINUTES );
 
-        driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config );
+        driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config( builder ) );
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "false" );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
@@ -185,6 +183,8 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     abstract URI databaseUri();
 
     abstract AuthToken authToken();
+
+    abstract Config config( Config.ConfigBuilder builder );
 
     abstract C createContext();
 
