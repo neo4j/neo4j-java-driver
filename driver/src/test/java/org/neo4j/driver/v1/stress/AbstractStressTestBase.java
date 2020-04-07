@@ -99,12 +99,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "true" );
         logging = new LoggerNameTrackingLogging();
 
-        Config.ConfigBuilder builder = Config.builder()
-                .withLogging( logging )
-                .withMaxConnectionPoolSize( 100 )
-                .withConnectionAcquisitionTimeout( 1, MINUTES );
-
-        driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config( builder ) );
+        driver = (InternalDriver) GraphDatabase.driver( databaseUri(), authToken(), config() );
         System.setProperty( DRIVER_METRICS_ENABLED_KEY, "false" );
 
         ThreadFactory threadFactory = new DaemonThreadFactory( getClass().getSimpleName() + "-worker-" );
@@ -184,7 +179,16 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     abstract AuthToken authToken();
 
-    abstract Config config( Config.ConfigBuilder builder );
+    abstract Config.ConfigBuilder config( Config.ConfigBuilder builder );
+
+    Config config()
+    {
+        Config.ConfigBuilder builder = Config.builder()
+                .withLogging( logging )
+                .withMaxConnectionPoolSize( 100 )
+                .withConnectionAcquisitionTimeout( 1, MINUTES );
+        return config( builder ).build();
+    }
 
     abstract C createContext();
 
@@ -232,7 +236,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         commands.add( new BlockingFailingQuery<>( driver ) );
         commands.add( new BlockingFailingQueryInTx<>( driver ) );
 
-        commands.add( new FailedAuth<>( databaseUri(), logging ) );
+        commands.add( new FailedAuth<>( databaseUri(), config() ) );
 
         commands.addAll( createTestSpecificBlockingCommands() );
 

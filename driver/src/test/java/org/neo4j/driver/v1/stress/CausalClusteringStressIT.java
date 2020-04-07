@@ -68,9 +68,9 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    Config config( Config.ConfigBuilder builder )
+    Config.ConfigBuilder config( Config.ConfigBuilder builder )
     {
-        return clusterRule.getDriverConfig( builder );
+        return clusterRule.config( builder );
     }
 
     @Override

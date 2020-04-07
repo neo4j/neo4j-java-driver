@@ -54,9 +54,9 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     }
 
     @Override
-    Config config( Config.ConfigBuilder builder )
+    Config.ConfigBuilder config( Config.ConfigBuilder builder )
     {
-        return builder.build();
+        return builder.withoutEncryption();
     }
 
     @Override

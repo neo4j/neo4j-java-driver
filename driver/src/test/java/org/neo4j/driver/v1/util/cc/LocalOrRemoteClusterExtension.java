@@ -63,7 +63,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         return localClusterExtension.getDefaultAuthToken();
     }
 
-    public Config getDriverConfig( Config.ConfigBuilder builder )
+    public Config.ConfigBuilder config( Config.ConfigBuilder builder )
     {
         if ( remoteClusterExists() )
         {
@@ -74,7 +74,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             builder.withoutEncryption();
         }
 
-        return builder.build();
+        return builder;
     }
 
     @Override
