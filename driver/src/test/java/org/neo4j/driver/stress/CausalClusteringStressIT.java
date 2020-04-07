@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -63,6 +64,12 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     AuthToken authToken()
     {
         return clusterRule.getAuthToken();
+    }
+
+    @Override
+    Config config( Config.ConfigBuilder builder )
+    {
+        return clusterRule.getDriverConfig( builder );
     }
 
     @Override

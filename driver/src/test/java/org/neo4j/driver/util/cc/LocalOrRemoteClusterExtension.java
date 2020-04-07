@@ -27,6 +27,7 @@ import java.net.URI;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.util.TestUtil;
@@ -59,6 +60,20 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             return AuthTokens.basic( "neo4j", neo4jUserPasswordFromSystemProperty() );
         }
         return localClusterExtension.getDefaultAuthToken();
+    }
+
+    public Config getDriverConfig( Config.ConfigBuilder builder )
+    {
+        if ( remoteClusterExists() )
+        {
+            builder.withEncryption();
+        }
+        else
+        {
+            builder.withoutEncryption();
+        }
+
+        return builder.build();
     }
 
     @Override
