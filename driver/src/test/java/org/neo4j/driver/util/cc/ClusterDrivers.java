@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
+import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -71,8 +71,7 @@ public class ClusterDrivers implements AutoCloseable
 
     private Driver createDriver( ClusterMember member )
     {
-        DriverFactoryWithOneEventLoopThread factory = new DriverFactoryWithOneEventLoopThread();
-        return factory.newInstance( member.getBoltUri(), AuthTokens.basic( user, password ), driverConfig() );
+        return GraphDatabase.driver( member.getBoltUri(), AuthTokens.basic( user, password ), driverConfig() );
     }
 
     private static Config driverConfig()
@@ -82,6 +81,7 @@ public class ClusterDrivers implements AutoCloseable
                 .withoutEncryption()
                 .withMaxConnectionPoolSize( 1 )
                 .withConnectionLivenessCheckTimeout( 0, TimeUnit.MILLISECONDS )
+                .withEventLoopThreads( 1 )
                 .build();
     }
 }

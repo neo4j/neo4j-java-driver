@@ -29,10 +29,9 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
+import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.util.TestUtil;
 
-import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
 
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
@@ -124,8 +123,10 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
 
     private void deleteDataInRemoteCluster()
     {
-        DriverFactoryWithOneEventLoopThread driverFactory = new DriverFactoryWithOneEventLoopThread();
-        try ( Driver driver = driverFactory.newInstance( getClusterUri(), getAuthToken(), defaultConfig() ) )
+        Config.ConfigBuilder builder = Config.builder();
+        builder.withEventLoopThreads( 1 );
+
+        try ( Driver driver = GraphDatabase.driver( getClusterUri(), getAuthToken(), config( builder ).build() ) )
         {
             TestUtil.cleanDb( driver );
         }

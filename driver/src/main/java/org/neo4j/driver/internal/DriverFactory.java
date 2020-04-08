@@ -31,7 +31,6 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -55,7 +54,6 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
-import static java.lang.String.format;
 import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
@@ -63,7 +61,6 @@ import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
 {
-
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
                                      RetrySettings retrySettings, Config config, SecurityPlan securityPlan )
     {
