@@ -23,7 +23,6 @@ import java.net.URI;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.SecurityException;
 
 import static org.hamcrest.Matchers.containsString;
@@ -34,19 +33,17 @@ import static org.neo4j.driver.AuthTokens.basic;
 public class FailedAuth<C extends AbstractContext> implements BlockingCommand<C>
 {
     private final URI clusterUri;
-    private final Logging logging;
+    private final Config config;
 
-    public FailedAuth( URI clusterUri, Logging logging )
+    public FailedAuth( URI clusterUri, Config config )
     {
         this.clusterUri = clusterUri;
-        this.logging = logging;
+        this.config = config;
     }
 
     @Override
     public void execute( C context )
     {
-        Config config = Config.builder().withLogging( logging ).build();
-
         final Driver driver = GraphDatabase.driver( clusterUri, basic( "wrongUsername", "wrongPassword" ), config );
         SecurityException e = assertThrows( SecurityException.class, driver::verifyConnectivity );
         assertThat( e.getMessage(), containsString( "authentication failure" ) );
