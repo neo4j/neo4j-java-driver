@@ -61,6 +61,7 @@ public class SecuritySettings
 
     public SecurityPlan createSecurityPlan( String uriScheme )
     {
+        Scheme.validateScheme( uriScheme );
         try
         {
             if ( isSecurityScheme( uriScheme ) )

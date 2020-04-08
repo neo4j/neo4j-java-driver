@@ -58,7 +58,6 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
-import org.neo4j.driver.internal.util.DriverFactoryWithOneEventLoopThread;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
@@ -880,9 +879,10 @@ class SessionIT
                 .withMaxConnectionPoolSize( maxPoolSize )
                 .withConnectionAcquisitionTimeout( 0, TimeUnit.SECONDS )
                 .withMaxTransactionRetryTime( 42, TimeUnit.DAYS ) // retry for a really long time
+                .withEventLoopThreads( 1 )
                 .build();
 
-        driver = new DriverFactoryWithOneEventLoopThread().newInstance( neo4j.uri(), neo4j.authToken(), config );
+        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), config );
 
         for ( int i = 0; i < maxPoolSize; i++ )
         {
