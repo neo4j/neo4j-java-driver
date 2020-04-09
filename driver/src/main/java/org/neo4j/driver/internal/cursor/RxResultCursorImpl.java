@@ -65,7 +65,7 @@ public class RxResultCursorImpl implements RxResultCursor
     @Override
     public List<String> keys()
     {
-        return runHandler.queryKeys();
+        return runHandler.queryKeys().keys();
     }
 
     @Override
