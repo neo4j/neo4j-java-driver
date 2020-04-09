@@ -49,22 +49,26 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
         Flux.usingWhen( session.beginTransaction(), tx -> tx.run( "CREATE ()" ).consume(),
                 RxTransaction::commit, ( tx, error ) -> tx.rollback(), null ).subscribe(
                 summary -> {
+                    context.setBookmark( session.lastBookmark() );
                     assertEquals( 1, summary.counters().nodesCreated() );
                     context.nodeCreated();
                     queryFinished.complete( null );
                 }, error -> {
-                    handleError( Futures.completionExceptionCause( error ), context );
-                    queryFinished.complete( null );
+                    handleError( Futures.completionExceptionCause( error ), context, queryFinished );
                 } );
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context )
+    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
     {
         if ( !stressTest.handleWriteFailure( error, context ) )
         {
-            throw new RuntimeException( error );
+            queryFinished.completeExceptionally( error );
+        }
+        else
+        {
+            queryFinished.complete( null );
         }
     }
 }

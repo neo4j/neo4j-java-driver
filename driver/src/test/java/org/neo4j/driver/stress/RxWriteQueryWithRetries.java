@@ -50,22 +50,23 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
         Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.WRITE, context ) ),
                 session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ), RxSession::close )
                 .subscribe( summary -> {
-                    queryFinished.complete( null );
                     assertEquals( 1, summary.counters().nodesCreated() );
                     context.nodeCreated();
-                }, error -> {
                     queryFinished.complete( null );
-                    handleError( Futures.completionExceptionCause( error ), context );
-                } );
+                }, error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ) );
 
         return queryFinished;
     }
 
-    private void handleError( Throwable error, C context )
+    private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
     {
         if ( !stressTest.handleWriteFailure( error, context ) )
         {
-            throw new RuntimeException( error );
+            queryFinished.completeExceptionally( error );
+        }
+        else
+        {
+            queryFinished.complete( null );
         }
     }
 }

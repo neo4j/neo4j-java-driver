@@ -55,6 +55,7 @@ public class AsyncWriteQuery<C extends AbstractContext> extends AbstractAsyncQue
                     }
                     else
                     {
+                        context.setBookmark( session.lastBookmark() );
                         assertEquals( 1, summary.counters().nodesCreated() );
                         context.nodeCreated();
                     }

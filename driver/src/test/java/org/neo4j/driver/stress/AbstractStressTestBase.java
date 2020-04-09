@@ -30,7 +30,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,7 +98,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private static final int BIG_DATA_TEST_NODE_COUNT = Integer.getInteger( "bigDataTestNodeCount", 30_000 );
     private static final int BIG_DATA_TEST_BATCH_SIZE = Integer.getInteger( "bigDataTestBatchSize", 10_000 );
-    private static final Duration DEFAULT_BLOCKING_TIME_OUT = Duration.ofMinutes( 10 );
 
     private LoggerNameTrackingLogging logging;
     private ExecutorService executor;
@@ -638,7 +636,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
         Flux.concat( Flux.range( 0, batchCount ).map( batchIndex ->
             session.writeTransaction( tx -> createNodesInTxRx( tx, batchIndex, batchSize ) )
-        ) ).blockLast( DEFAULT_BLOCKING_TIME_OUT ); // throw any error if happened
+        ) ).blockLast(); // throw any error if happened
 
         long end = System.nanoTime();
         System.out.println( "Node creation with reactive API took: " + NANOSECONDS.toMillis( end - start ) + "ms" );
@@ -673,7 +671,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
             verifyNodeProperties( node );
         } ).then() );
 
-        Flux.from( readQuery ).blockLast( DEFAULT_BLOCKING_TIME_OUT );
+        Flux.from( readQuery ).blockLast();
 
         assertEquals( expectedNodeCount, nodesSeen.get() );
 
