@@ -20,7 +20,9 @@ package org.neo4j.driver.internal.handlers;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
@@ -83,7 +85,8 @@ class RunResponseHandlerTest
 
         handler.onFailure( new RuntimeException() );
 
-        assertEquals( emptyList(), handler.queryKeys() );
+        assertEquals( emptyList(), handler.queryKeys().keys() );
+        assertEquals( emptyMap(), handler.queryKeys().keyIndex() );
     }
 
     @Test
@@ -102,9 +105,14 @@ class RunResponseHandlerTest
         RunResponseHandler handler = newHandler();
 
         List<String> keys = asList( "key1", "key2", "key3" );
+        Map<String, Integer> keyIndex = new HashMap<>();
+        keyIndex.put( "key1", 0 );
+        keyIndex.put( "key2", 1 );
+        keyIndex.put( "key3", 2 );
         handler.onSuccess( singletonMap( "fields", value( keys ) ) );
 
-        assertEquals( keys, handler.queryKeys() );
+        assertEquals( keys, handler.queryKeys().keys() );
+        assertEquals( keyIndex, handler.queryKeys().keyIndex() );
     }
 
     @Test

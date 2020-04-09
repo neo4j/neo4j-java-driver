@@ -153,7 +153,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
             {
                 return false;
             }
-            if ( ! queryKeys.equals( otherRecord.keys() ) )
+            if ( !queryKeys.keys().equals( otherRecord.keys() ) )
             {
                 return false;
             }
