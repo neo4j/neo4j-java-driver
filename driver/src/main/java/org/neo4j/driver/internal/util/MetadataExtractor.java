@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.util;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +39,10 @@ import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
+import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
-import org.neo4j.driver.summary.QueryType;
 
-import static java.util.Collections.emptyList;
 import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
 import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
@@ -60,14 +58,14 @@ public class MetadataExtractor
         this.resultConsumedAfterMetadataKey = resultConsumedAfterMetadataKey;
     }
 
-    public List<String> extractQueryKeys(Map<String,Value> metadata )
+    public QueryKeys extractQueryKeys( Map<String,Value> metadata )
     {
         Value keysValue = metadata.get( "fields" );
         if ( keysValue != null )
         {
             if ( !keysValue.isEmpty() )
             {
-                List<String> keys = new ArrayList<>( keysValue.size() );
+                QueryKeys keys = new QueryKeys( keysValue.size() );
                 for ( Value value : keysValue.values() )
                 {
                     keys.add( value.asString() );
@@ -76,7 +74,7 @@ public class MetadataExtractor
                 return keys;
             }
         }
-        return emptyList();
+        return QueryKeys.empty();
     }
 
     public long extractQueryId( Map<String,Value> metadata )

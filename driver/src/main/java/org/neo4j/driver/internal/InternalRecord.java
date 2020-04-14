@@ -22,36 +22,43 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 
-import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
-import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
-import java.util.function.Function;
+import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
+import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.internal.util.QueryKeys;
 import org.neo4j.driver.util.Pair;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.internal.util.Format.formatPairs;
 import static org.neo4j.driver.Values.ofObject;
 import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.internal.util.Format.formatPairs;
 
 public class InternalRecord extends InternalMapAccessorWithDefaultValue implements Record
 {
-    private final List<String> keys;
+    private final QueryKeys queryKeys;
     private final Value[] values;
     private int hashCode = 0;
 
     public InternalRecord( List<String> keys, Value[] values )
     {
-        this.keys = keys;
+        this.queryKeys = new QueryKeys( keys );
+        this.values = values;
+    }
+
+    public InternalRecord( QueryKeys queryKeys, Value[] values )
+    {
+        this.queryKeys = queryKeys;
         this.values = values;
     }
 
     @Override
     public List<String> keys()
     {
-        return keys;
+        return queryKeys.keys();
     }
 
     @Override
@@ -69,7 +76,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     @Override
     public int index( String key )
     {
-        int result = keys.indexOf( key );
+        int result = queryKeys.indexOf( key );
         if ( result == -1 )
         {
             throw new NoSuchElementException( "Unknown key: " + key );
@@ -83,13 +90,13 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     @Override
     public boolean containsKey( String key )
     {
-        return keys.contains( key );
+        return queryKeys.contains( key );
     }
 
     @Override
     public Value get( String key )
     {
-        int fieldIndex = keys.indexOf( key );
+        int fieldIndex = queryKeys.indexOf( key );
 
         if ( fieldIndex == -1 )
         {
@@ -146,7 +153,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
             {
                 return false;
             }
-            if ( ! keys.equals( otherRecord.keys() ) )
+            if ( !queryKeys.keys().equals( otherRecord.keys() ) )
             {
                 return false;
             }
@@ -172,7 +179,7 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     {
         if ( hashCode == 0 )
         {
-            hashCode = 31 * keys.hashCode() + Arrays.hashCode( values );
+            hashCode = 31 * queryKeys.hashCode() + Arrays.hashCode( values );
         }
         return hashCode;
     }

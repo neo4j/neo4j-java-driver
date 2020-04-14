@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -77,15 +78,23 @@ class MetadataExtractorTest
     void shouldExtractQueryKeys()
     {
         List<String> keys = asList( "hello", " ", "world", "!" );
-        List<String> extractedKeys = extractor.extractQueryKeys( singletonMap( "fields", value( keys ) ) );
-        assertEquals( keys, extractedKeys );
+        Map<String, Integer> keyIndex = new HashMap<>();
+        keyIndex.put( "hello", 0 );
+        keyIndex.put( " ", 1 );
+        keyIndex.put( "world", 2 );
+        keyIndex.put( "!", 3 );
+
+        QueryKeys extracted = extractor.extractQueryKeys( singletonMap( "fields", value( keys ) ) );
+        assertEquals( keys, extracted.keys() );
+        assertEquals( keyIndex, extracted.keyIndex() );
     }
 
     @Test
     void shouldExtractEmptyQueryKeysWhenNoneInMetadata()
     {
-        List<String> extractedKeys = extractor.extractQueryKeys( emptyMap() );
-        assertEquals( emptyList(), extractedKeys );
+        QueryKeys extracted = extractor.extractQueryKeys( emptyMap() );
+        assertEquals( emptyList(), extracted.keys() );
+        assertEquals( emptyMap(), extracted.keyIndex() );
     }
 
     @Test

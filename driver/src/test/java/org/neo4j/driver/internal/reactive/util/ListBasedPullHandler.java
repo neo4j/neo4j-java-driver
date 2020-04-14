@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
+import org.neo4j.driver.internal.util.QueryKeys;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -72,7 +73,7 @@ public class ListBasedPullHandler extends BasicPullResponseHandler
         if ( list.size() > 1 )
         {
             Record record = list.get( 0 );
-            when( super.runResponseHandler.queryKeys() ).thenReturn( record.keys() );
+            when( super.runResponseHandler.queryKeys() ).thenReturn( new QueryKeys( record.keys() ) );
         }
     }
 

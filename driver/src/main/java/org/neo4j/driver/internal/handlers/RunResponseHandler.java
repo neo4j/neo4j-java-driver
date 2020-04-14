@@ -18,15 +18,13 @@
  */
 package org.neo4j.driver.internal.handlers;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.MetadataExtractor;
-import org.neo4j.driver.Value;
-
-import static java.util.Collections.emptyList;
+import org.neo4j.driver.internal.util.QueryKeys;
 
 public class RunResponseHandler implements ResponseHandler
 {
@@ -34,7 +32,7 @@ public class RunResponseHandler implements ResponseHandler
     private final MetadataExtractor metadataExtractor;
     private long queryId = MetadataExtractor.ABSENT_QUERY_ID;
 
-    private List<String> queryKeys = emptyList();
+    private QueryKeys queryKeys = QueryKeys.empty();
     private long resultAvailableAfter = -1;
 
     public RunResponseHandler( MetadataExtractor metadataExtractor )
@@ -70,7 +68,7 @@ public class RunResponseHandler implements ResponseHandler
         throw new UnsupportedOperationException();
     }
 
-    public List<String> queryKeys()
+    public QueryKeys queryKeys()
     {
         return queryKeys;
     }
