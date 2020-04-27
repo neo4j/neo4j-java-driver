@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
 import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
@@ -214,7 +215,7 @@ class HandshakeHandlerTest
     @Test
     void shouldFailGivenPromiseWhenServerSuggestsUnknownProtocol()
     {
-        testFailure( 42, "Protocol error" );
+        testFailure( new BoltProtocolVersion( 42, 0 ), "Protocol error" );
     }
 
     @Test
@@ -234,13 +235,13 @@ class HandshakeHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    private void testFailure( int serverSuggestedVersion, String expectedMessagePrefix )
+    private void testFailure( BoltProtocolVersion serverSuggestedVersion, String expectedMessagePrefix )
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         HandshakeHandler handler = newHandler( handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
-        channel.pipeline().fireChannelRead( copyInt( serverSuggestedVersion ) );
+        channel.pipeline().fireChannelRead( copyInt( serverSuggestedVersion.toInt() ) );
 
         // handshake handler itself should be removed
         assertNull( channel.pipeline().get( HandshakeHandler.class ) );
@@ -254,14 +255,14 @@ class HandshakeHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    private void testProtocolSelection( int protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )
+    private void testProtocolSelection( BoltProtocolVersion protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )
     {
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         MemorizingChannelPipelineBuilder pipelineBuilder = new MemorizingChannelPipelineBuilder();
         HandshakeHandler handler = newHandler( pipelineBuilder, handshakeCompletedPromise );
         channel.pipeline().addLast( handler );
 
-        channel.pipeline().fireChannelRead( copyInt( protocolVersion ) );
+        channel.pipeline().fireChannelRead( copyInt( protocolVersion.toInt() ) );
 
         // expected message format should've been used
         assertThat( pipelineBuilder.usedMessageFormat, instanceOf( expectedMessageFormatClass ) );

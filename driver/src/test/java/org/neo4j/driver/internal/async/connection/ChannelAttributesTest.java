@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,16 +70,16 @@ class ChannelAttributesTest
     @Test
     void shouldSetAndGetProtocolVersion()
     {
-        setProtocolVersion( channel, 42 );
-        assertEquals( 42, protocolVersion( channel ) );
+        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
+        assertEquals( new BoltProtocolVersion( 42, 0 ), protocolVersion( channel ) );
     }
 
     @Test
     void shouldFailToSetProtocolVersionTwice()
     {
-        setProtocolVersion( channel, 42 );
+        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
 
-        assertThrows( IllegalStateException.class, () -> setProtocolVersion( channel, -42 ) );
+        assertThrows( IllegalStateException.class, () -> setProtocolVersion( channel, new BoltProtocolVersion( 43, 0 ) ) );
     }
 
     @Test

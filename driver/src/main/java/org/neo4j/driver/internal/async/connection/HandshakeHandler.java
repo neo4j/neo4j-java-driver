@@ -29,6 +29,7 @@ import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.Logger;
@@ -101,8 +102,8 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
-        int serverSuggestedVersion = in.readInt();
-        log.debug( "S: [Bolt Handshake] %d", serverSuggestedVersion );
+        BoltProtocolVersion serverSuggestedVersion = BoltProtocolVersion.fromRawBytes( in.readInt() );
+        log.debug( "S: [Bolt Handshake] %s", serverSuggestedVersion );
 
         // this is a one-time handler, remove it when protocol version has been read
         ctx.pipeline().remove( this );
@@ -118,7 +119,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         }
     }
 
-    private BoltProtocol protocolForVersion( int version )
+    private BoltProtocol protocolForVersion( BoltProtocolVersion version )
     {
         try
         {
@@ -130,26 +131,26 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         }
     }
 
-    private void protocolSelected( int version, MessageFormat messageFormat, ChannelHandlerContext ctx )
+    private void protocolSelected( BoltProtocolVersion version, MessageFormat messageFormat, ChannelHandlerContext ctx )
     {
         ChannelAttributes.setProtocolVersion( ctx.channel(), version );
         pipelineBuilder.build( messageFormat, ctx.pipeline(), logging );
         handshakeCompletedPromise.setSuccess();
     }
 
-    private void handleUnknownSuggestedProtocolVersion( int version, ChannelHandlerContext ctx )
+    private void handleUnknownSuggestedProtocolVersion( BoltProtocolVersion version, ChannelHandlerContext ctx )
     {
-        switch ( version )
+        if ( NO_PROTOCOL_VERSION.equals( version ) )
         {
-        case NO_PROTOCOL_VERSION:
             fail( ctx, protocolNoSupportedByServerError() );
-            break;
-        case HTTP:
+        }
+        else if ( HTTP.equals( version ) )
+        {
             fail( ctx, httpEndpointError() );
-            break;
-        default:
+        }
+        else
+        {
             fail( ctx, protocolNoSupportedByDriverError( version ) );
-            break;
         }
     }
 
@@ -172,7 +173,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
                 "(HTTP defaults to port 7474 whereas BOLT defaults to port 7687)" );
     }
 
-    private static Throwable protocolNoSupportedByDriverError( int suggestedProtocolVersion )
+    private static Throwable protocolNoSupportedByDriverError( BoltProtocolVersion suggestedProtocolVersion )
     {
         return new ClientException(
                 "Protocol error, server suggested unexpected protocol version: " + suggestedProtocolVersion );

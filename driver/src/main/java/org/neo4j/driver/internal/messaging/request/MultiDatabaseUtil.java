@@ -20,13 +20,14 @@ package org.neo4j.driver.internal.messaging.request;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 public final class MultiDatabaseUtil
 {
-    public static void assertEmptyDatabaseName( DatabaseName databaseName, int boltVersion )
+    public static void assertEmptyDatabaseName( DatabaseName databaseName, BoltProtocolVersion boltVersion )
     {
         if ( databaseName.databaseName().isPresent() )
         {
@@ -37,6 +38,7 @@ public final class MultiDatabaseUtil
 
     public static boolean supportsMultiDatabase( Connection connection )
     {
-        return connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) && connection.protocol().version() >= BoltProtocolV4.VERSION;
+        return connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) &&
+               connection.protocol().version().compareTo( BoltProtocolV4.VERSION ) >= 0;
     }
 }

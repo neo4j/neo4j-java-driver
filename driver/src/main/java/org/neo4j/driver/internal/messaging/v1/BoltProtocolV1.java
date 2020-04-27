@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.handlers.PullHandlers;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
@@ -65,7 +66,7 @@ import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 public class BoltProtocolV1 implements BoltProtocol
 {
-    public static final int VERSION = 1;
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 1, 0 );
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV1();
 
@@ -176,7 +177,7 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public int version()
+    public BoltProtocolVersion version()
     {
         return VERSION;
     }

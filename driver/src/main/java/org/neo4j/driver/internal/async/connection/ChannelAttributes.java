@@ -23,6 +23,7 @@ import io.netty.util.AttributeKey;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
 
 import static io.netty.util.AttributeKey.newInstance;
@@ -31,7 +32,7 @@ public final class ChannelAttributes
 {
     private static final AttributeKey<String> CONNECTION_ID = newInstance( "connectionId" );
     private static final AttributeKey<String> POOL_ID = newInstance( "poolId" );
-    private static final AttributeKey<Integer> PROTOCOL_VERSION = newInstance( "protocolVersion" );
+    private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance( "protocolVersion" );
     private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
     private static final AttributeKey<ServerVersion> SERVER_VERSION = newInstance( "serverVersion" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
@@ -63,12 +64,12 @@ public final class ChannelAttributes
         setOnce( channel, POOL_ID, id );
     }
 
-    public static int protocolVersion( Channel channel )
+    public static BoltProtocolVersion protocolVersion( Channel channel )
     {
         return get( channel, PROTOCOL_VERSION );
     }
 
-    public static void setProtocolVersion( Channel channel, int version )
+    public static void setProtocolVersion( Channel channel, BoltProtocolVersion version )
     {
         setOnce( channel, PROTOCOL_VERSION, version );
     }

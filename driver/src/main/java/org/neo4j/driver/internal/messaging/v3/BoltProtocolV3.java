@@ -43,6 +43,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
@@ -62,7 +63,7 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 
 public class BoltProtocolV3 implements BoltProtocol
 {
-    public static final int VERSION = 3;
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 3, 0 );
 
     public static final BoltProtocol INSTANCE = new BoltProtocolV3();
 
@@ -170,7 +171,7 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public int version()
+    public BoltProtocolVersion version()
     {
         return VERSION;
     }

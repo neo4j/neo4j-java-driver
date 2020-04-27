@@ -16,14 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v4;
+package org.neo4j.driver.internal.messaging.v41;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
-import org.neo4j.driver.internal.cursor.ResultCursorFactoryImpl;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
+import org.neo4j.driver.internal.cursor.ResultCursorFactoryImpl;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
@@ -31,16 +31,17 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v4.MessageFormatV4;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4AutoPullHandler;
 import static org.neo4j.driver.internal.handlers.PullHandlers.newBoltV4BasicPullHandler;
 
-public class BoltProtocolV4 extends BoltProtocolV3
+public class BoltProtocolV41 extends BoltProtocolV4
 {
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 0 );
-    public static final BoltProtocol INSTANCE = new BoltProtocolV4();
+    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 1 );
+    public static final BoltProtocol INSTANCE = new BoltProtocolV41();
 
     @Override
     public MessageFormat createMessageFormat()
@@ -63,7 +64,7 @@ public class BoltProtocolV4 extends BoltProtocolV3
     @Override
     protected void verifyDatabaseNameBeforeTransaction( DatabaseName databaseName )
     {
-        // Bolt V4 accepts database name
+        // Bolt V4.1 accepts database name
     }
 
     @Override

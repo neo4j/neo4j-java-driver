@@ -48,9 +48,9 @@ class BoltProtocolTest
     void shouldThrowForUnknownVersion()
     {
         assertAll(
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( 42 ) ),
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( 142 ) ),
-                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( -1 ) )
+                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion(  42, 0 ) ) ),
+                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion( 142, 0 ) ) ),
+                () -> assertThrows( ClientException.class, () -> BoltProtocol.forVersion( new BoltProtocolVersion( -1, 0 ) ) )
         );
     }
 
@@ -58,7 +58,7 @@ class BoltProtocolTest
     void shouldThrowForChannelWithUnknownProtocolVersion()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
-        setProtocolVersion( channel, 42 );
+        setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
 
         assertThrows( ClientException.class, () -> BoltProtocol.forChannel( channel ) );
     }

@@ -20,10 +20,12 @@ package org.neo4j.driver.internal.async.connection;
 
 import io.netty.buffer.ByteBuf;
 
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 
 import static io.netty.buffer.Unpooled.copyInt;
 import static io.netty.buffer.Unpooled.unreleasableBuffer;
@@ -31,10 +33,11 @@ import static java.lang.Integer.toHexString;
 
 public final class BoltProtocolUtil
 {
-    public static final int HTTP = 1213486160; //== 0x48545450 == "HTTP"
+    // Represents the `TP` part of `HTTP` (0x48545450) which can be returned if connected to HTTP port
+    public static final BoltProtocolVersion HTTP = new BoltProtocolVersion(80, 84 );
 
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
-    public static final int NO_PROTOCOL_VERSION = 0;
+    public static final BoltProtocolVersion NO_PROTOCOL_VERSION = new BoltProtocolVersion( 0 , 0 );
 
     public static final int CHUNK_HEADER_SIZE_BYTES = 2;
 
@@ -42,10 +45,10 @@ public final class BoltProtocolUtil
 
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
-            BoltProtocolV4.VERSION,
-            BoltProtocolV3.VERSION,
-            BoltProtocolV2.VERSION,
-            BoltProtocolV1.VERSION ) ).asReadOnly();
+            BoltProtocolV41.VERSION.toInt(),
+            BoltProtocolV4.VERSION.toInt(),
+            BoltProtocolV3.VERSION.toInt(),
+            BoltProtocolV2.VERSION.toInt() ) ).asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();
 
