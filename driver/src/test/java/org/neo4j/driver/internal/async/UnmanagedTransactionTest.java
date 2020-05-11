@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
+import java.time.Duration;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.Bookmark;
@@ -31,8 +32,11 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -103,8 +107,8 @@ class UnmanagedTransactionTest
 
         // Then
         InOrder order = inOrder( connection );
-        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).writeAndFlush( eq( new RunMessage( "ROLLBACK" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        order.verify( connection ).write( any ( BeginMessage.class ), any() );
+        order.verify( connection ).writeAndFlush( any( RollbackMessage.class ), any() );
         order.verify( connection ).release();
     }
 
@@ -115,7 +119,7 @@ class UnmanagedTransactionTest
 
         beginTx( connection, InternalBookmark.empty() );
 
-        verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verify( connection ).write( any ( BeginMessage.class ), any() );
         verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
     }
 
@@ -127,7 +131,7 @@ class UnmanagedTransactionTest
 
         beginTx( connection, bookmark );
 
-        verify( connection ).writeAndFlush( any(), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verify( connection ).writeAndFlush( any( BeginMessage.class ), any() );
         verify( connection, never() ).write( any(), any(), any(), any() );
     }
 
@@ -163,23 +167,23 @@ class UnmanagedTransactionTest
     @Test
     void shouldReleaseConnectionWhenBeginFails()
     {
-        RuntimeException error = new RuntimeException( "Wrong bookmark!" );
-        Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
+        RuntimeException error = new ClientException( "" );
+
+        Connection connection = connectionWithBegin( handler -> handler.onFailure( error ), "invalid!" );
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+        assertThrows( ClientException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
 
-        assertEquals( error, e );
         verify( connection ).release();
     }
 
     @Test
     void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
-        Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
+        Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ), null );
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
@@ -238,9 +242,18 @@ class UnmanagedTransactionTest
         return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );
     }
 
-    private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
+    private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour, String databaseName )
     {
-        Connection connection = connectionMock();
+        Connection connection;
+
+        if ( databaseName != null )
+        {
+            connection = connectionMock( databaseName, BoltProtocolV3.INSTANCE );
+        }
+        else
+        {
+            connection = connectionMock();
+        }
 
         doAnswer( invocation ->
         {

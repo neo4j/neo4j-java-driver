@@ -21,8 +21,6 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.buffer.ByteBuf;
 
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -45,7 +43,7 @@ public final class BoltProtocolUtil
             BoltProtocolV41.VERSION.toInt(),
             BoltProtocolV4.VERSION.toInt(),
             BoltProtocolV3.VERSION.toInt(),
-            BoltProtocolV2.VERSION.toInt() ) ).asReadOnly();
+            0 ) ).asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();
 

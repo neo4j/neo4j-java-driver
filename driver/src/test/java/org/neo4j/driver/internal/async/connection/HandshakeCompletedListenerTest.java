@@ -30,13 +30,9 @@ import java.util.Map;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
-import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -78,18 +74,6 @@ class HandshakeCompletedListenerTest
 
         Exception error = assertThrows( Exception.class, () -> await( channelInitializedPromise ) );
         assertEquals( cause, error );
-    }
-
-    @Test
-    void shouldWriteInitializationMessageInBoltV1WhenHandshakeCompleted()
-    {
-        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
-    }
-
-    @Test
-    void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
-    {
-        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
     }
 
     @Test

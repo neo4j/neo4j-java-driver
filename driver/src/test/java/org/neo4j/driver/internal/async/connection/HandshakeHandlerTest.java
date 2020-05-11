@@ -40,10 +40,13 @@ import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v4.MessageFormatV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static io.netty.buffer.Unpooled.copyInt;
@@ -188,18 +191,6 @@ class HandshakeHandlerTest
     }
 
     @Test
-    void shouldSelectProtocolV1WhenServerSuggests()
-    {
-        testProtocolSelection( BoltProtocolV1.VERSION, MessageFormatV1.class );
-    }
-
-    @Test
-    void shouldSelectProtocolV2WhenServerSuggests()
-    {
-        testProtocolSelection( BoltProtocolV2.VERSION, MessageFormatV2.class );
-    }
-
-    @Test
     void shouldFailGivenPromiseWhenServerSuggestsNoProtocol()
     {
         testFailure( NO_PROTOCOL_VERSION, "The server does not support any of the protocol versions" );
@@ -252,6 +243,24 @@ class HandshakeHandlerTest
 
         // channel should be closed
         assertNull( await( channel.closeFuture() ) );
+    }
+
+    @Test
+    void shouldSelectProtocolV3WhenServerSuggests()
+    {
+        testProtocolSelection( BoltProtocolV3.VERSION, MessageFormatV3.class );
+    }
+
+    @Test
+    void shouldSelectProtocolV4WhenServerSuggests()
+    {
+        testProtocolSelection( BoltProtocolV4.VERSION, MessageFormatV4.class );
+    }
+
+    @Test
+    void shouldSelectProtocolV41WhenServerSuggests()
+    {
+        testProtocolSelection( BoltProtocolV41.VERSION, MessageFormatV4.class );
     }
 
     private void testProtocolSelection( BoltProtocolVersion protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )

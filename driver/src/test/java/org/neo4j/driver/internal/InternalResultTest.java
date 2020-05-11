@@ -58,7 +58,7 @@ import static org.neo4j.driver.Records.column;
 import static org.neo4j.driver.Values.ofString;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
+import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class InternalResultTest

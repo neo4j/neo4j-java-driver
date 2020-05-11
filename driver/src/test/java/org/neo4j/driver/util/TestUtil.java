@@ -66,8 +66,6 @@ import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -498,7 +496,7 @@ public final class TestUtil
 
     public static Connection connectionMock()
     {
-        return connectionMock( BoltProtocolV2.INSTANCE );
+        return connectionMock( BoltProtocolV3.INSTANCE );
     }
 
     public static Connection connectionMock( BoltProtocol protocol )
@@ -525,13 +523,8 @@ public final class TestUtil
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( database( databaseName ) );
         BoltProtocolVersion version = protocol.version();
-        if ( version.equals( BoltProtocolV1.VERSION ) || version.equals( BoltProtocolV2.VERSION ) )
-        {
-            setupSuccessfulPullAll( connection, "COMMIT" );
-            setupSuccessfulPullAll( connection, "ROLLBACK" );
-            setupSuccessfulPullAll( connection, "BEGIN" );
-        }
-        else if ( version.equals( BoltProtocolV3.VERSION ) || version.equals( BoltProtocolV4.VERSION ) ||
+
+        if ( version.equals( BoltProtocolV3.VERSION ) || version.equals( BoltProtocolV4.VERSION ) ||
                   version.equals( BoltProtocolV41.VERSION ))
         {
             setupSuccessResponse( connection, CommitMessage.class );

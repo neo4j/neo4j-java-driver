@@ -21,10 +21,10 @@ package org.neo4j.driver.internal.messaging;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -38,10 +38,9 @@ class BoltProtocolTest
     void shouldCreateProtocolForKnownVersions()
     {
         assertAll(
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV1.VERSION ), instanceOf( BoltProtocolV1.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV2.VERSION ), instanceOf( BoltProtocolV2.class ) ),
-                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV3.VERSION ), instanceOf( BoltProtocolV3.class ) )
-        );
+                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV3.VERSION ), instanceOf( BoltProtocolV3.class ) ),
+                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV4.VERSION ), instanceOf( BoltProtocolV4.class ) ),
+                () -> assertThat( BoltProtocol.forVersion( BoltProtocolV41.VERSION ), instanceOf( BoltProtocolV41.class ) ));
     }
 
     @Test
