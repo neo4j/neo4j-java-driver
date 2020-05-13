@@ -24,6 +24,7 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.Value;
 
@@ -33,13 +34,15 @@ public class HandshakeCompletedListener implements ChannelFutureListener
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
+    private final RoutingContext routingContext;
     private final ChannelPromise connectionInitializedPromise;
 
     public HandshakeCompletedListener( String userAgent, Map<String,Value> authToken,
-            ChannelPromise connectionInitializedPromise )
+                                       RoutingContext routingContext, ChannelPromise connectionInitializedPromise )
     {
         this.userAgent = requireNonNull( userAgent );
         this.authToken = requireNonNull( authToken );
+        this.routingContext = routingContext;
         this.connectionInitializedPromise = requireNonNull( connectionInitializedPromise );
     }
 
@@ -49,7 +52,7 @@ public class HandshakeCompletedListener implements ChannelFutureListener
         if ( future.isSuccess() )
         {
             BoltProtocol protocol = BoltProtocol.forChannel( future.channel() );
-            protocol.initializeChannel( userAgent, authToken, connectionInitializedPromise );
+            protocol.initializeChannel( userAgent, authToken, routingContext, connectionInitializedPromise );
         }
         else
         {

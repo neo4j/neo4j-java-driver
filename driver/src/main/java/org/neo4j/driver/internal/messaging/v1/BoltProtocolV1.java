@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -84,7 +85,8 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public void initializeChannel( String userAgent, Map<String,Value> authToken, ChannelPromise channelInitializedPromise )
+    public void initializeChannel( String userAgent, Map<String,Value> authToken, RoutingContext routingContext,
+                                   ChannelPromise channelInitializedPromise )
     {
         Channel channel = channelInitializedPromise.channel();
 

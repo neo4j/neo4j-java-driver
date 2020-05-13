@@ -33,14 +33,17 @@ public class RoutingContext
     private static final String ROUTING_ADDRESS_KEY = "address";
 
     private final Map<String,String> context;
+    private final boolean isServerRoutingEnabled;
 
     private RoutingContext()
     {
+        this.isServerRoutingEnabled = true;
         this.context = emptyMap();
     }
 
     public RoutingContext( URI uri )
     {
+        this.isServerRoutingEnabled = uri.getScheme().startsWith( "neo4j" );
         this.context = unmodifiableMap( parseParameters( uri ) );
     }
 
@@ -54,10 +57,15 @@ public class RoutingContext
         return context;
     }
 
+    public boolean isServerRoutingEnabled()
+    {
+        return isServerRoutingEnabled;
+    }
+
     @Override
     public String toString()
     {
-        return "RoutingContext" + context;
+        return "RoutingContext" + context + " isServerRoutingEnabled=" + isServerRoutingEnabled;
     }
 
     private static Map<String,String> parseParameters( URI uri )

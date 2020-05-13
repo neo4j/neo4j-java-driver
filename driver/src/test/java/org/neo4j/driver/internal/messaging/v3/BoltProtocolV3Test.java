@@ -45,6 +45,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -139,7 +140,7 @@ public class BoltProtocolV3Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/0.0.1", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );
@@ -171,7 +172,7 @@ public class BoltProtocolV3Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/2.2.1", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );

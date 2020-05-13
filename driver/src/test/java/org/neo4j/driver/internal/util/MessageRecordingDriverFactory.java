@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilder;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -51,10 +52,11 @@ public class MessageRecordingDriverFactory extends DriverFactory
     }
 
     @Override
-    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config, Clock clock )
+    protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan, Config config, Clock clock,
+                                                RoutingContext routingContext )
     {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock );
+        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext );
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl

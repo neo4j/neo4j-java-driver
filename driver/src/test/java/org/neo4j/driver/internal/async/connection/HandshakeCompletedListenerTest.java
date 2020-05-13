@@ -24,11 +24,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -67,7 +69,7 @@ class HandshakeCompletedListenerTest
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails()
     {
         ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener( "user-agent", authToken(),
+        HandshakeCompletedListener listener = new HandshakeCompletedListener( "user-agent", authToken(), RoutingContext.EMPTY,
                 channelInitializedPromise );
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
@@ -95,7 +97,7 @@ class HandshakeCompletedListenerTest
     @Test
     void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken() ), HelloResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken(), Collections.emptyMap() ), HelloResponseHandler.class );
     }
 
     private void testWritingOfInitializationMessage( BoltProtocolVersion protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
@@ -105,8 +107,8 @@ class HandshakeCompletedListenerTest
         setMessageDispatcher( channel, messageDispatcher );
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener( USER_AGENT, authToken(),
-                channelInitializedPromise );
+        HandshakeCompletedListener listener = new HandshakeCompletedListener( USER_AGENT, authToken(), RoutingContext.EMPTY,
+                                                                              channelInitializedPromise );
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();

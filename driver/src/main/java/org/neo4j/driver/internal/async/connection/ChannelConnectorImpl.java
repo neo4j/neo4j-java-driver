@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
@@ -45,6 +46,7 @@ public class ChannelConnectorImpl implements ChannelConnector
 {
     private final String userAgent;
     private final Map<String,Value> authToken;
+    private final RoutingContext routingContext;
     private final SecurityPlan securityPlan;
     private final ChannelPipelineBuilder pipelineBuilder;
     private final int connectTimeoutMillis;
@@ -52,16 +54,17 @@ public class ChannelConnectorImpl implements ChannelConnector
     private final Clock clock;
 
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
-            Clock clock )
+            Clock clock, RoutingContext routingContext )
     {
-        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock );
+        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock, routingContext );
     }
 
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock )
+            ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock, RoutingContext routingContext )
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = tokenAsMap( connectionSettings.authToken() );
+        this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull( securityPlan );
         this.pipelineBuilder = pipelineBuilder;
@@ -113,7 +116,7 @@ public class ChannelConnectorImpl implements ChannelConnector
 
         // add listener that sends an INIT message. connection is now fully established. channel pipeline if fully
         // set to send/receive messages for a selected protocol version
-        handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, connectionInitialized ) );
+        handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, routingContext, connectionInitialized ) );
     }
 
     private static Map<String,Value> tokenAsMap( AuthToken token )

@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -146,7 +147,7 @@ class ConnectionPoolImplIT
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
         ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlanImpl.insecure(),
-                DEV_NULL_LOGGING, clock );
+                                                               DEV_NULL_LOGGING, clock, RoutingContext.EMPTY );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock, true );

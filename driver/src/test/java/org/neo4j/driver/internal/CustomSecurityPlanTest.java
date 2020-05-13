@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -74,10 +75,11 @@ class CustomSecurityPlanTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
+                                                       RoutingContext routingContext )
         {
             capturedSecurityPlans.add( securityPlan );
-            return super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
+            return super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext );
         }
     }
 }

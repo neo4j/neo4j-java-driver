@@ -126,6 +126,24 @@ class DirectDriverBoltKitTest
     }
 
     @Test
+    void shouldSendNullRoutingContextForBoltUri() throws Exception
+    {
+        StubServer server = StubServer.start( "hello_with_routing_context_bolt.script", 9001 );
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
+              Session session = driver.session() )
+        {
+            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            assertEquals( asList( "Foo", "Bar" ), names );
+
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
     void shouldLogConnectionIdInDebugMode() throws Exception
     {
         StubServer server = StubServer.start( "hello_run_exit.script", 9001 );

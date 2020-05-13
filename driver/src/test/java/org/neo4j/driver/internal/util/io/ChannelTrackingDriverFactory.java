@@ -29,6 +29,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -67,23 +68,23 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 
     @Override
     protected final ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-            Config config, Clock clock )
+                                                      Config config, Clock clock, RoutingContext routingContext )
     {
-        return createChannelTrackingConnector( createRealConnector( settings, securityPlan, config, clock ) );
+        return createChannelTrackingConnector( createRealConnector( settings, securityPlan, config, clock, routingContext ) );
     }
 
     @Override
     protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
     {
-        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
+        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext );
         return pool;
     }
 
     protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-            Config config, Clock clock )
+            Config config, Clock clock, RoutingContext routingContext )
     {
-        return super.createConnector( settings, securityPlan, config, clock );
+        return super.createConnector( settings, securityPlan, config, clock, routingContext );
     }
 
     private ChannelTrackingConnector createChannelTrackingConnector( ChannelConnector connector )

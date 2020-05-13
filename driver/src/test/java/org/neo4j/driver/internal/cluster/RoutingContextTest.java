@@ -73,6 +73,24 @@ class RoutingContextTest
     }
 
     @Test
+    void boltUriDisablesServerSideRouting()
+    {
+        URI uri = URI.create( "bolt://localhost:7687/?key1=value1&key2=value2&key3=value3" );
+        RoutingContext context = new RoutingContext( uri );
+
+        assertEquals( false, context.isServerRoutingEnabled() );
+    }
+
+    @Test
+    void neo4jUriEnablesServerSideRouting()
+    {
+        URI uri = URI.create( "neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3" );
+        RoutingContext context = new RoutingContext( uri );
+
+        assertEquals( true, context.isServerRoutingEnabled() );
+    }
+
+    @Test
     void throwsForInvalidUriQuery()
     {
         testIllegalUri( URI.create( "neo4j://localhost:7687/?justKey" ) );

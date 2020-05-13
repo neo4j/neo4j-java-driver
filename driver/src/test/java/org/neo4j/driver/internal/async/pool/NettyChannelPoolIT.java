@@ -37,6 +37,7 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -183,7 +184,7 @@ class NettyChannelPoolIT
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, 5_000 );
         ChannelConnectorImpl connector = new ChannelConnectorImpl( settings, SecurityPlanImpl.insecure(), DEV_NULL_LOGGING,
-                new FakeClock() );
+                                                                   new FakeClock(), RoutingContext.EMPTY );
         return new NettyChannelPool( neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE,
                 1_000, maxConnections );
     }
