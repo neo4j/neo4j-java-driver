@@ -38,8 +38,8 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
-import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.NO_PROTOCOL_VERSION;
+import static org.neo4j.driver.internal.messaging.BoltProtocolVersion.isHttp;
 
 public class HandshakeHandler extends ReplayingDecoder<Void>
 {
@@ -144,7 +144,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
         {
             fail( ctx, protocolNoSupportedByServerError() );
         }
-        else if ( HTTP.equals( version ) )
+        else if ( isHttp( version ) )
         {
             fail( ctx, httpEndpointError() );
         }

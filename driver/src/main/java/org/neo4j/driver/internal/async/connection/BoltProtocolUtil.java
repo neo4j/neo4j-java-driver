@@ -33,9 +33,6 @@ import static java.lang.Integer.toHexString;
 
 public final class BoltProtocolUtil
 {
-    // Represents the `TP` part of `HTTP` (0x48545450) which can be returned if connected to HTTP port
-    public static final BoltProtocolVersion HTTP = new BoltProtocolVersion(80, 84 );
-
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
     public static final BoltProtocolVersion NO_PROTOCOL_VERSION = new BoltProtocolVersion( 0 , 0 );
 

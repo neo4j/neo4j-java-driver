@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.HTTP;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -209,7 +208,7 @@ class HandshakeHandlerTest
     @Test
     void shouldFailGivenPromiseWhenServerSuggestsHttp()
     {
-        testFailure( HTTP, "Server responded HTTP" );
+        testFailure( new BoltProtocolVersion( 80, 84 ), "Server responded HTTP" );
     }
 
     @Test

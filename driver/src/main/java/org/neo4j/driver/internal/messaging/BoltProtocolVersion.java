@@ -100,4 +100,11 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion>
 
         return result;
     }
+
+    public static boolean isHttp( BoltProtocolVersion protocolVersion )
+    {
+        // server would respond with `HTTP..` We read 4 bytes to figure out the version. The first two are not used
+        // and therefore parse the `P` (80) for major and `T` (84) for minor.
+        return protocolVersion.getMajorVersion() == 80 && protocolVersion.getMinorVersion() == 84;
+    }
 }
