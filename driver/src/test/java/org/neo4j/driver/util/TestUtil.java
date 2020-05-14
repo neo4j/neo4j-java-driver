@@ -58,6 +58,7 @@ import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
@@ -69,6 +70,7 @@ import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
@@ -103,7 +105,7 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public final class TestUtil
 {
-    public static final int DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV4.VERSION;
+    public static final BoltProtocolVersion DEFAULT_TEST_PROTOCOL_VERSION = BoltProtocolV4.VERSION;
     public static final BoltProtocol DEFAULT_TEST_PROTOCOL = BoltProtocol.forVersion( DEFAULT_TEST_PROTOCOL_VERSION );
 
     private static final long DEFAULT_WAIT_TIME_MS = MINUTES.toMillis( 2 );
@@ -522,14 +524,15 @@ public final class TestUtil
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( database( databaseName ) );
-        int version = protocol.version();
-        if ( version == BoltProtocolV1.VERSION || version == BoltProtocolV2.VERSION )
+        BoltProtocolVersion version = protocol.version();
+        if ( version.equals( BoltProtocolV1.VERSION ) || version.equals( BoltProtocolV2.VERSION ) )
         {
             setupSuccessfulPullAll( connection, "COMMIT" );
             setupSuccessfulPullAll( connection, "ROLLBACK" );
             setupSuccessfulPullAll( connection, "BEGIN" );
         }
-        else if ( version == BoltProtocolV3.VERSION || version == BoltProtocolV4.VERSION )
+        else if ( version.equals( BoltProtocolV3.VERSION ) || version.equals( BoltProtocolV4.VERSION ) ||
+                  version.equals( BoltProtocolV41.VERSION ))
         {
             setupSuccessResponse( connection, CommitMessage.class );
             setupSuccessResponse( connection, RollbackMessage.class );

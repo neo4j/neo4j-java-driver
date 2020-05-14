@@ -16,28 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v2;
+package org.neo4j.driver.internal.messaging.v41;
 
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4Test;
 
-public class BoltProtocolV2 extends BoltProtocolV1
+public class BoltProtocolV41Test extends BoltProtocolV4Test
 {
-    public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 2, 0 );
-
-    public static final BoltProtocol INSTANCE = new BoltProtocolV2();
-
     @Override
-    public MessageFormat createMessageFormat()
+    protected BoltProtocol createProtocol()
     {
-        return new MessageFormatV2();
-    }
-
-    @Override
-    public BoltProtocolVersion version()
-    {
-        return VERSION;
+        return BoltProtocolV41.INSTANCE;
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
@@ -97,7 +98,7 @@ class HandshakeCompletedListenerTest
         testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken() ), HelloResponseHandler.class );
     }
 
-    private void testWritingOfInitializationMessage( int protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
+    private void testWritingOfInitializationMessage( BoltProtocolVersion protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
     {
         InboundMessageDispatcher messageDispatcher = mock( InboundMessageDispatcher.class );
         setProtocolVersion( channel, protocolVersion );

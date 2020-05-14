@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
@@ -128,7 +129,7 @@ public interface BoltProtocol
      * Returns the protocol version. It can be used for version specific error messages.
      * @return the protocol version.
      */
-    int version();
+    BoltProtocolVersion version();
 
     /**
      * Obtain an instance of the protocol for the given channel.
@@ -149,20 +150,27 @@ public interface BoltProtocol
      * @return the protocol.
      * @throws ClientException when unable to find protocol with the given version.
      */
-    static BoltProtocol forVersion( int version )
+    static BoltProtocol forVersion( BoltProtocolVersion version )
     {
-        switch ( version )
+        if ( BoltProtocolV1.VERSION.equals( version ) )
         {
-        case BoltProtocolV1.VERSION:
             return BoltProtocolV1.INSTANCE;
-        case BoltProtocolV2.VERSION:
-            return BoltProtocolV2.INSTANCE;
-        case BoltProtocolV3.VERSION:
-            return BoltProtocolV3.INSTANCE;
-        case BoltProtocolV4.VERSION:
-            return BoltProtocolV4.INSTANCE;
-        default:
-            throw new ClientException( "Unknown protocol version: " + version );
         }
+        else if ( BoltProtocolV2.VERSION.equals( version ) )
+        {
+            return BoltProtocolV2.INSTANCE;
+        }
+        else if ( BoltProtocolV3.VERSION.equals( version ) )
+        {
+            return BoltProtocolV3.INSTANCE;
+        }
+        else if ( BoltProtocolV4.VERSION.equals( version ) )
+        {
+            return BoltProtocolV4.INSTANCE;
+        } else if ( BoltProtocolV41.VERSION.equals( version ) )
+        {
+            return BoltProtocolV41.INSTANCE;
+        }
+        throw new ClientException( "Unknown protocol version: " + version );
     }
 }

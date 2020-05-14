@@ -63,7 +63,7 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_F
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 
-class BoltProtocolV4Test extends BoltProtocolV3Test
+public class BoltProtocolV4Test extends BoltProtocolV3Test
 {
     @Override
     protected BoltProtocol createProtocol()
