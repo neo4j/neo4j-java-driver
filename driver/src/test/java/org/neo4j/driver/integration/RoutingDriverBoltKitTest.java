@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.integration;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -57,6 +59,7 @@ import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.StubServer;
+import org.neo4j.driver.util.StubServerController;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -82,14 +85,28 @@ import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 
 class RoutingDriverBoltKitTest
 {
+    private static StubServerController stubController;
+
+    @BeforeAll
+    public static void setup()
+    {
+        stubController = new StubServerController();
+    }
+
+    @AfterEach
+    public void killServers()
+    {
+        stubController.reset();
+    }
+
     @Test
     void shouldHandleAcquireReadSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( "read_server_v3_read.script", 9005 );
+        StubServer readServer = stubController.startStub( "read_server_v3_read.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
@@ -107,10 +124,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireReadTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( "read_server_v3_read_tx.script", 9005 );
+        StubServer readServer = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
@@ -130,10 +147,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireReadSessionAndTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
-        StubServer readServer = StubServer.start( "read_server_v3_read_tx.script", 9005 );
+        StubServer readServer = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
@@ -153,11 +170,11 @@ class RoutingDriverBoltKitTest
     void shouldRoundRobinReadServers() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START two read servers
-        StubServer readServer1 = StubServer.start( "read_server_v3_read.script", 9005 );
-        StubServer readServer2 = StubServer.start( "read_server_v3_read.script", 9006 );
+        StubServer readServer1 = stubController.startStub( "read_server_v3_read.script", 9005 );
+        StubServer readServer2 = stubController.startStub( "read_server_v3_read.script", 9006 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
@@ -181,11 +198,11 @@ class RoutingDriverBoltKitTest
     void shouldRoundRobinReadServersWhenUsingTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START two read servers
-        StubServer readServer1 = StubServer.start( "read_server_v3_read_tx.script", 9005 );
-        StubServer readServer2 = StubServer.start( "read_server_v3_read_tx.script", 9006 );
+        StubServer readServer1 = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
+        StubServer readServer2 = stubController.startStub( "read_server_v3_read_tx.script", 9006 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
@@ -210,10 +227,10 @@ class RoutingDriverBoltKitTest
     void shouldThrowSessionExpiredIfReadServerDisappears() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
-        final StubServer readServer = StubServer.start( "dead_read_server.script", 9005 );
+        final StubServer readServer = stubController.startStub( "dead_read_server.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
@@ -232,10 +249,10 @@ class RoutingDriverBoltKitTest
     void shouldThrowSessionExpiredIfReadServerDisappearsWhenUsingTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a read server
-        final StubServer readServer = StubServer.start( "dead_read_server_tx.script", 9005 );
+        final StubServer readServer = stubController.startStub( "dead_read_server_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
@@ -257,10 +274,10 @@ class RoutingDriverBoltKitTest
     void shouldThrowSessionExpiredIfWriteServerDisappears() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a dead write server
-        final StubServer writeServer = StubServer.start( "dead_write_server.script", 9007 );
+        final StubServer writeServer = stubController.startStub( "dead_write_server.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
@@ -280,10 +297,10 @@ class RoutingDriverBoltKitTest
     void shouldThrowSessionExpiredIfWriteServerDisappearsWhenUsingTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a dead write servers
-        final StubServer writeServer = StubServer.start( "dead_read_server_tx.script", 9007 );
+        final StubServer writeServer = stubController.startStub( "dead_read_server_tx.script", 9007 );
 
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         //Expect
@@ -304,10 +321,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireWriteSession() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server
-        StubServer writeServer = StubServer.start( "write_server_v3_write.script", 9007 );
+        StubServer writeServer = stubController.startStub( "write_server_v3_write.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
@@ -323,10 +340,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireWriteTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server
-        StubServer writeServer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
+        StubServer writeServer = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
         {
@@ -341,10 +358,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleAcquireWriteSessionAndTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server
-        StubServer writeServer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
+        StubServer writeServer = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
@@ -362,11 +379,11 @@ class RoutingDriverBoltKitTest
     void shouldRoundRobinWriteSessions() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server
-        StubServer writeServer1 = StubServer.start( "write_server_v3_write.script", 9007 );
-        StubServer writeServer2 = StubServer.start( "write_server_v3_write.script", 9008 );
+        StubServer writeServer1 = stubController.startStub( "write_server_v3_write.script", 9007 );
+        StubServer writeServer2 = stubController.startStub( "write_server_v3_write.script", 9008 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
@@ -388,11 +405,11 @@ class RoutingDriverBoltKitTest
     void shouldRoundRobinWriteSessionsInTransaction() throws Exception
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server
-        StubServer writeServer1 = StubServer.start( "write_server_v3_write_tx.script", 9007 );
-        StubServer writeServer2 = StubServer.start( "write_server_v3_write_tx.script", 9008 );
+        StubServer writeServer1 = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
+        StubServer writeServer2 = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {
@@ -415,7 +432,8 @@ class RoutingDriverBoltKitTest
     void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException
     {
         // Given
-        StubServer.start( "discover_not_supported_9001.script", 9001 );
+        stubController.startStub( "discover_not_supported_9001.script", 9001 );
+
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         final Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
@@ -427,7 +445,7 @@ class RoutingDriverBoltKitTest
     void shouldFailRandomFailureInGetServers() throws IOException, InterruptedException
     {
         // Given
-        StubServer.start( "discover_failed.script", 9001 );
+        stubController.startStub( "discover_failed.script", 9001 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         final Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
@@ -439,10 +457,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleLeaderSwitchWhenWriting() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server that doesn't accept writes
-        StubServer.start( "not_able_to_write_server.script", 9007 );
+        stubController.startStub( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
         boolean failed = false;
@@ -466,10 +484,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleLeaderSwitchWhenWritingWithoutConsuming() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server that doesn't accept writes
-        StubServer.start( "not_able_to_write_server.script", 9007 );
+        stubController.startStub( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
         boolean failed = false;
@@ -493,10 +511,10 @@ class RoutingDriverBoltKitTest
     void shouldHandleLeaderSwitchWhenWritingInTransaction() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
-        StubServer server = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         //START a write server that doesn't accept writes
-        StubServer.start( "not_able_to_write_server.script", 9007 );
+        stubController.startStub( "not_able_to_write_server.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
         boolean failed = false;
@@ -519,8 +537,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldSendInitialBookmark() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9007 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer writer = stubController.startStub( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withBookmarks( parse( "OldBookmark" ) ).build() ) )
@@ -541,8 +559,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldUseWriteSessionModeAndInitialBookmark() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = StubServer.start( "write_tx_with_bookmarks.script", 9008 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer writer = stubController.startStub( "write_tx_with_bookmarks.script", 9008 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
@@ -563,8 +581,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldUseReadSessionModeAndInitialBookmark() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = StubServer.start( "read_tx_with_bookmarks.script", 9005 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer writer = stubController.startStub( "read_tx_with_bookmarks.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
@@ -588,8 +606,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldPassBookmarkFromTransactionToTransaction() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = StubServer.start( "write_read_tx_with_bookmarks.script", 9007 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer writer = stubController.startStub( "write_read_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withBookmarks( parse( "BookmarkA" ) ).build() ) )
@@ -620,9 +638,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryReadTransactionUntilSuccess() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenReader = StubServer.start( "dead_read_server_tx.script", 9005 );
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9006 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenReader = stubController.startStub( "dead_read_server_tx.script", 9005 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9006 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001" ); Session session = driver.session() )
         {
@@ -643,9 +661,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryWriteTransactionUntilSuccess() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9007 );
-        StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9008 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenWriter = stubController.startStub( "dead_write_server.script", 9007 );
+        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001" ); Session session = driver.session() )
         {
@@ -672,9 +690,9 @@ class RoutingDriverBoltKitTest
         // Then at the second time the router returns the same RT with the killed writer inside.
         // At the third round, the router removes the the writer server from RT reply.
         // Finally, the router returns a RT with a reachable writer.
-        StubServer router = StubServer.start( "acquire_endpoints_v3_leader_killed.script", 9001 );
-        StubServer brokenWriter = StubServer.start( "dead_write_server.script", 9004 );
-        StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9008 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3_leader_killed.script", 9001 );
+        StubServer brokenWriter = stubController.startStub( "dead_write_server.script", 9004 );
+        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
 
         Logger logger = mock( Logger.class );
         Config config = insecureBuilder().withLogging( ignored -> logger ).build();
@@ -706,9 +724,9 @@ class RoutingDriverBoltKitTest
         // Then at the second time the router returns the same RT with the killed writer inside.
         // At the third round, the router removes the the writer server from RT reply.
         // Finally, the router returns a RT with a reachable writer.
-        StubServer router = StubServer.start( "acquire_endpoints_v3_leader_killed.script", 9001 );
-        StubServer brokenWriter = StubServer.start( "database_shutdown_at_commit.script", 9004 );
-        StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9008 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3_leader_killed.script", 9001 );
+        StubServer brokenWriter = stubController.startStub( "database_shutdown_at_commit.script", 9004 );
+        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
 
         Logger logger = mock( Logger.class );
         Config config = insecureBuilder().withLogging( ignored -> logger ).build();
@@ -735,9 +753,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryReadTransactionUntilFailure() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenReader1 = StubServer.start( "dead_read_server_tx.script", 9005 );
-        StubServer brokenReader2 = StubServer.start( "dead_read_server_tx.script", 9006 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenReader1 = stubController.startStub( "dead_read_server_tx.script", 9005 );
+        StubServer brokenReader2 = stubController.startStub( "dead_read_server_tx.script", 9006 );
 
         try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 );
               Session session = driver.session() )
@@ -757,9 +775,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryWriteTransactionUntilFailure() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9007 );
-        StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer brokenWriter1 = stubController.startStub( "dead_write_server.script", 9007 );
+        StubServer brokenWriter2 = stubController.startStub( "dead_write_server.script", 9008 );
 
         try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 ); Session session = driver.session() )
         {
@@ -778,11 +796,11 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryReadTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
-        StubServer router1 = StubServer.start( "acquire_endpoints_v3_9010.script", 9010 );
-        StubServer brokenReader1 = StubServer.start( "dead_read_server_tx.script", 9005 );
-        StubServer brokenReader2 = StubServer.start( "dead_read_server_tx.script", 9006 );
-        StubServer router2 = StubServer.start( "discover_servers_9010.script", 9003 );
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9004 );
+        StubServer router1 = stubController.startStub( "acquire_endpoints_v3_9010.script", 9010 );
+        StubServer brokenReader1 = stubController.startStub( "dead_read_server_tx.script", 9005 );
+        StubServer brokenReader2 = stubController.startStub( "dead_read_server_tx.script", 9006 );
+        StubServer router2 = stubController.startStub( "discover_servers_9010.script", 9003 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9004 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" ); Session session = driver.session() )
         {
@@ -805,11 +823,11 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
-        StubServer router1 = StubServer.start( "discover_servers_9010.script", 9010 );
-        StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9001 );
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9002 );
-        StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
-        StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
+        StubServer router1 = stubController.startStub( "discover_servers_9010.script", 9010 );
+        StubServer brokenWriter1 = stubController.startStub( "dead_write_server.script", 9001 );
+        StubServer router2 = stubController.startStub( "acquire_endpoints_v3_9010.script", 9002 );
+        StubServer brokenWriter2 = stubController.startStub( "dead_write_server.script", 9008 );
+        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" ); Session session = driver.session() )
         {
@@ -833,7 +851,7 @@ class RoutingDriverBoltKitTest
     void shouldUseInitialRouterForRediscoveryWhenAllOtherRoutersAreDead() throws Exception
     {
         // initial router does not have itself in the returned set of routers
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ) )
         {
@@ -842,7 +860,8 @@ class RoutingDriverBoltKitTest
             {
                 // restart router on the same port with different script that contains itself as reader
                 assertEquals( 0, router.exitStatus() );
-                router = StubServer.start( "rediscover_using_initial_router.script", 9001 );
+
+                router = stubController.startStub( "rediscover_using_initial_router.script", 9001 );
 
                 List<String> names = readStrings( "MATCH (n) RETURN n.name AS name", session );
                 assertEquals( asList( "Bob", "Alice" ), names );
@@ -856,7 +875,7 @@ class RoutingDriverBoltKitTest
     void shouldInvokeProcedureGetRoutingTableWhenServerVersionPermits() throws Exception
     {
         // stub server is both a router and reader
-        StubServer server = StubServer.start( "get_routing_table.script", 9001 );
+        StubServer server = stubController.startStub( "get_routing_table.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ); Session session = driver.session() )
         {
@@ -876,7 +895,7 @@ class RoutingDriverBoltKitTest
     void shouldSendRoutingContextToServer() throws Exception
     {
         // stub server is both a router and reader
-        StubServer server = StubServer.start( "get_routing_table_with_context.script", 9001 );
+        StubServer server = stubController.startStub( "get_routing_table_with_context.script", 9001 );
 
         URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy&region=china" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
@@ -895,9 +914,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
     {
-        StubServer router1 = StubServer.start( "discover_no_writers_9010.script", 9010 );
-        StubServer router2 = StubServer.start( "discover_no_writers_9010.script", 9004 );
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9003 );
+        StubServer router1 = stubController.startStub( "discover_no_writers_9010.script", 9010 );
+        StubServer router2 = stubController.startStub( "discover_no_writers_9010.script", 9004 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9003 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG );
                 Session session = driver.session() )
@@ -919,10 +938,10 @@ class RoutingDriverBoltKitTest
     {
         // first router does not have itself in the resulting routing table so connection
         // towards it will be closed after rediscovery
-        StubServer router1 = StubServer.start( "discover_no_writers_9010.script", 9010 );
+        StubServer router1 = stubController.startStub( "discover_no_writers_9010.script", 9010 );
         StubServer router2 = null;
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9003 );
-        StubServer writer = StubServer.start( "write_with_bookmarks.script", 9007 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9003 );
+        StubServer writer = stubController.startStub( "write_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG ) )
         {
@@ -930,7 +949,7 @@ class RoutingDriverBoltKitTest
             try ( Session session = driver.session() )
             {
                 // start another router which knows about writes, use same address as the initial router
-                router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9010 );
+                router2 = stubController.startStub( "acquire_endpoints_v3_9010.script", 9010 );
 
                 assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
@@ -951,9 +970,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldTreatRoutingTableWithSingleRouterAsValid() throws Exception
     {
-        StubServer router = StubServer.start( "discover_one_router.script", 9010 );
-        StubServer reader1 = StubServer.start( "read_server_v3_read.script", 9003 );
-        StubServer reader2 = StubServer.start( "read_server_v3_read.script", 9004 );
+        StubServer router = stubController.startStub( "discover_one_router.script", 9010 );
+        StubServer reader1 = stubController.startStub( "read_server_v3_read.script", 9003 );
+        StubServer reader2 = stubController.startStub( "read_server_v3_read.script", 9004 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
@@ -980,8 +999,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldSendMultipleBookmarks() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer writer = stubController.startStub( "multiple_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withBookmarks( InternalBookmark.parse(
@@ -1007,14 +1026,17 @@ class RoutingDriverBoltKitTest
     void shouldForgetAddressOnDatabaseUnavailableError() throws Exception
     {
         // perform initial discovery using router1
-        StubServer router1 = StubServer.start( "discover_servers_9010.script", 9010 );
+        StubServer router1 = stubController.startStub( "discover_servers_9010.script", 9010 );
+
         // attempt to write using writer1 which fails with 'Neo.TransientError.General.DatabaseUnavailable'
         // it should then be forgotten and trigger new rediscovery
-        StubServer writer1 = StubServer.start( "writer_unavailable.script", 9001 );
+        StubServer writer1 = stubController.startStub( "writer_unavailable.script", 9001 );
+
         // perform rediscovery using router2, it should return a valid writer2
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9002 );
+        StubServer router2 = stubController.startStub( "acquire_endpoints_v3_9010.script", 9002 );
+
         // write on writer2 should be successful
-        StubServer writer2 = StubServer.start( "write_server_v3_write_tx.script", 9007 );
+        StubServer writer2 = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" ); Session session = driver.session() )
         {
@@ -1050,9 +1072,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldUseResolverDuringRediscoveryWhenExistingRoutersFail() throws Exception
     {
-        StubServer router1 = StubServer.start( "get_routing_table.script", 9001 );
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3.script", 9042 );
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9005 );
+        StubServer router1 = stubController.startStub( "get_routing_table.script", 9001 );
+        StubServer router2 = stubController.startStub( "acquire_endpoints_v3.script", 9042 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
 
         AtomicBoolean resolverInvoked = new AtomicBoolean();
         ServerAddressResolver resolver = address -> {
@@ -1098,8 +1120,8 @@ class RoutingDriverBoltKitTest
     @Test
     void useSessionAfterDriverIsClosed() throws Exception
     {
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
-        StubServer readServer = StubServer.start( "read_server_v3_read.script", 9005 );
+        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+        StubServer readServer = stubController.startStub( "read_server_v3_read.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ) )
         {
@@ -1134,10 +1156,10 @@ class RoutingDriverBoltKitTest
 
         Config config = insecureBuilder().withResolver( resolver ).build();
 
-        StubServer router1 = StubServer.start( "acquire_endpoints_v3_point_to_empty_router_and_exit.script", 9001 );
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3_empty.script", 9004 );
-        StubServer router3 = StubServer.start( "acquire_endpoints_v3_three_servers_and_exit.script", 9003 );
-        StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9002 );
+        StubServer router1 = stubController.startStub( "acquire_endpoints_v3_point_to_empty_router_and_exit.script", 9001 );
+        StubServer router2 = stubController.startStub( "acquire_endpoints_v3_empty.script", 9004 );
+        StubServer router3 = stubController.startStub( "acquire_endpoints_v3_three_servers_and_exit.script", 9003 );
+        StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9002 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://my.virtual.host:8080", config ) )
         {
@@ -1159,7 +1181,7 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldServerWithBoltV4SupportMultiDb() throws Throwable
     {
-        StubServer server = StubServer.start( "support_multidb_v4.script", 9001 );
+        StubServer server = stubController.startStub( "support_multidb_v4.script", 9001 );
         try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
         {
             assertTrue( driver.supportsMultiDb() );
@@ -1173,7 +1195,7 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
     {
-        StubServer server = StubServer.start( "support_multidb_v3.script", 9001 );
+        StubServer server = stubController.startStub( "support_multidb_v3.script", 9001 );
         try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
         {
             assertFalse( driver.supportsMultiDb() );
