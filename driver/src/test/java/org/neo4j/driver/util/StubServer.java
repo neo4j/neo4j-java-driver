@@ -122,7 +122,7 @@ public class StubServer
         try
         {
             // run 'help' command to see if boltstub is available
-            Process process = new ProcessBuilder( "bolt").start();
+            Process process = new ProcessBuilder( "bolt" ).start();
             int exitCode = process.waitFor();
             return exitCode == 0;
         }
