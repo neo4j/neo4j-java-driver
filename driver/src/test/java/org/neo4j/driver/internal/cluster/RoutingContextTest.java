@@ -68,6 +68,7 @@ class RoutingContextTest
         expectedMap.put( "key1", "value1" );
         expectedMap.put( "key2", "value2" );
         expectedMap.put( "key3", "value3" );
+        expectedMap.put( "address", "localhost:7687" );
         assertEquals( expectedMap, context.asMap() );
     }
 
@@ -101,10 +102,32 @@ class RoutingContextTest
         URI uri = URI.create( "neo4j://localhost:7687/?key1=value1" );
         RoutingContext context = new RoutingContext( uri );
 
-        assertEquals( singletonMap( "key1", "value1" ), context.asMap() );
+        Map<String,String> expectedMap = new HashMap<>();
+        expectedMap.put( "key1", "value1" );
+        expectedMap.put( "address", "localhost:7687" );
+
+        assertEquals( expectedMap, context.asMap() );
 
         assertThrows( UnsupportedOperationException.class, () -> context.asMap().put( "key2", "value2" ) );
-        assertEquals( singletonMap( "key1", "value1" ), context.asMap() );
+        assertEquals( expectedMap, context.asMap() );
+    }
+
+    @Test
+    void populateAddressWithDefaultPort()
+    {
+        URI uri = URI.create( "neo4j://localhost/" );
+        RoutingContext context = new RoutingContext( uri );
+
+        assertEquals( singletonMap( "address", "localhost:7687" ), context.asMap() );
+    }
+
+    @Test
+    void throwsExceptionIfAddressIsUsedInContext()
+    {
+        URI uri = URI.create( "neo4j://localhost:7687/?key1=value1&address=someaddress:9010" );
+
+        IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> new RoutingContext( uri ) );
+        assertEquals( "The key 'address' is reserved for routing context.", e.getMessage() );
     }
 
     private static void testIllegalUri( URI uri )
@@ -116,7 +139,10 @@ class RoutingContextTest
     {
         RoutingContext context = new RoutingContext( uri );
 
+        Map<String,String> expectedMap = new HashMap<>();
+        expectedMap.put( "address", "localhost:7687" );
+
         assertFalse( context.isDefined() );
-        assertTrue( context.asMap().isEmpty() );
+        assertEquals( singletonMap( "address", "localhost:7687" ), context.asMap() );
     }
 }

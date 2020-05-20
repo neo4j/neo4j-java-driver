@@ -415,7 +415,7 @@ class RoutingDriverBoltKitTest
     void shouldFailOnNonDiscoverableServer() throws IOException, InterruptedException
     {
         // Given
-        StubServer.start( "discover_not_supported.script", 9001 );
+        StubServer.start( "discover_not_supported_9001.script", 9001 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         final Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
 
@@ -778,10 +778,10 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryReadTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
-        StubServer router1 = StubServer.start( "acquire_endpoints_v3.script", 9010 );
+        StubServer router1 = StubServer.start( "acquire_endpoints_v3_9010.script", 9010 );
         StubServer brokenReader1 = StubServer.start( "dead_read_server_tx.script", 9005 );
         StubServer brokenReader2 = StubServer.start( "dead_read_server_tx.script", 9006 );
-        StubServer router2 = StubServer.start( "discover_servers.script", 9003 );
+        StubServer router2 = StubServer.start( "discover_servers_9010.script", 9003 );
         StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9004 );
 
         try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" ); Session session = driver.session() )
@@ -805,9 +805,9 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRetryWriteTransactionAndPerformRediscoveryUntilSuccess() throws Exception
     {
-        StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
+        StubServer router1 = StubServer.start( "discover_servers_9010.script", 9010 );
         StubServer brokenWriter1 = StubServer.start( "dead_write_server.script", 9001 );
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3.script", 9002 );
+        StubServer router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9002 );
         StubServer brokenWriter2 = StubServer.start( "dead_write_server.script", 9008 );
         StubServer writer = StubServer.start( "write_server_v3_write_tx.script", 9007 );
 
@@ -833,16 +833,16 @@ class RoutingDriverBoltKitTest
     void shouldUseInitialRouterForRediscoveryWhenAllOtherRoutersAreDead() throws Exception
     {
         // initial router does not have itself in the returned set of routers
-        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9010 );
+        StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
 
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ) )
         {
             driver.verifyConnectivity();
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 // restart router on the same port with different script that contains itself as reader
                 assertEquals( 0, router.exitStatus() );
-                router = StubServer.start( "rediscover_using_initial_router.script", 9010 );
+                router = StubServer.start( "rediscover_using_initial_router.script", 9001 );
 
                 List<String> names = readStrings( "MATCH (n) RETURN n.name AS name", session );
                 assertEquals( asList( "Bob", "Alice" ), names );
@@ -895,8 +895,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
     {
-        StubServer router1 = StubServer.start( "discover_no_writers.script", 9010 );
-        StubServer router2 = StubServer.start( "discover_no_writers.script", 9004 );
+        StubServer router1 = StubServer.start( "discover_no_writers_9010.script", 9010 );
+        StubServer router2 = StubServer.start( "discover_no_writers_9010.script", 9004 );
         StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9003 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG );
@@ -919,7 +919,7 @@ class RoutingDriverBoltKitTest
     {
         // first router does not have itself in the resulting routing table so connection
         // towards it will be closed after rediscovery
-        StubServer router1 = StubServer.start( "discover_no_writers.script", 9010 );
+        StubServer router1 = StubServer.start( "discover_no_writers_9010.script", 9010 );
         StubServer router2 = null;
         StubServer reader = StubServer.start( "read_server_v3_read_tx.script", 9003 );
         StubServer writer = StubServer.start( "write_with_bookmarks.script", 9007 );
@@ -930,7 +930,7 @@ class RoutingDriverBoltKitTest
             try ( Session session = driver.session() )
             {
                 // start another router which knows about writes, use same address as the initial router
-                router2 = StubServer.start( "acquire_endpoints_v3.script", 9010 );
+                router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9010 );
 
                 assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
@@ -983,7 +983,7 @@ class RoutingDriverBoltKitTest
         StubServer router = StubServer.start( "acquire_endpoints_v3.script", 9001 );
         StubServer writer = StubServer.start( "multiple_bookmarks.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG );
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withBookmarks( InternalBookmark.parse(
                         asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
                                 "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
@@ -1007,16 +1007,16 @@ class RoutingDriverBoltKitTest
     void shouldForgetAddressOnDatabaseUnavailableError() throws Exception
     {
         // perform initial discovery using router1
-        StubServer router1 = StubServer.start( "discover_servers.script", 9010 );
+        StubServer router1 = StubServer.start( "discover_servers_9010.script", 9010 );
         // attempt to write using writer1 which fails with 'Neo.TransientError.General.DatabaseUnavailable'
         // it should then be forgotten and trigger new rediscovery
         StubServer writer1 = StubServer.start( "writer_unavailable.script", 9001 );
         // perform rediscovery using router2, it should return a valid writer2
-        StubServer router2 = StubServer.start( "acquire_endpoints_v3.script", 9002 );
+        StubServer router2 = StubServer.start( "acquire_endpoints_v3_9010.script", 9002 );
         // write on writer2 should be successful
         StubServer writer2 = StubServer.start( "write_server_v3_write_tx.script", 9007 );
 
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://localhost:9010" ); Session session = driver.session() )
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9010" ); Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
