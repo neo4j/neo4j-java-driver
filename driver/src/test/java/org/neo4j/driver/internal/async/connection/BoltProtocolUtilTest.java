@@ -45,14 +45,14 @@ class BoltProtocolUtilTest
         assertByteBufContains(
                 handshakeBuf(),
                 BOLT_MAGIC_PREAMBLE, BoltProtocolV41.VERSION.toInt(), BoltProtocolV4.VERSION.toInt(),
-                BoltProtocolV3.VERSION.toInt(), BoltProtocolV2.VERSION.toInt()
+                BoltProtocolV3.VERSION.toInt(), 0
         );
     }
 
     @Test
     void shouldReturnHandshakeString()
     {
-        assertEquals( "[0x6060b017, 260, 4, 3, 2]", handshakeString() );
+        assertEquals( "[0x6060b017, 260, 4, 3, 0]", handshakeString() );
     }
 
     @Test

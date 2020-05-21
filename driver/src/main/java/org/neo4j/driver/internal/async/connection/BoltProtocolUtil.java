@@ -45,7 +45,7 @@ public final class BoltProtocolUtil
             BoltProtocolV41.VERSION.toInt(),
             BoltProtocolV4.VERSION.toInt(),
             BoltProtocolV3.VERSION.toInt(),
-            BoltProtocolV2.VERSION.toInt() ) ).asReadOnly();
+            0 ) ).asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();
 
