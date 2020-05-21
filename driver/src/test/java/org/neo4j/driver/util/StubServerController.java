@@ -43,7 +43,6 @@ public class StubServerController
             }
             catch ( InterruptedException e )
             {
-                Thread.currentThread().interrupt();
                 throw new RuntimeException( "Interrupted whilst waiting for stub shutdown", e);
             }
             currentStubServers.remove( server );

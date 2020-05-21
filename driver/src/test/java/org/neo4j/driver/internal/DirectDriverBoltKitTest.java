@@ -549,7 +549,6 @@ class DirectDriverBoltKitTest
     {
         StubServer server = StubServer.start( "noop.script", 9001 );
         URI uri = URI.create( "bolt://127.0.0.1:9001" );
-        int x;
 
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
         {

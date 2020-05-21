@@ -102,7 +102,6 @@ public class StubServer
         }
         catch ( InterruptedException ex )
         {
-            Thread.currentThread().interrupt();
             throw new RuntimeException( "Interrupted whilst waiting for forced stub shutdown", ex);
         }
     }
