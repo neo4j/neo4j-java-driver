@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,7 +74,7 @@ class HelloResponseHandlerTest
     void shouldSetServerVersionOnChannel()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-1" );
         handler.onSuccess( metadata );
@@ -86,7 +87,7 @@ class HelloResponseHandlerTest
     void shouldThrowWhenServerVersionNotReturned()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( null, "bolt-1" );
         assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
@@ -99,7 +100,7 @@ class HelloResponseHandlerTest
     void shouldThrowWhenServerVersionIsNull()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( Values.NULL, "bolt-x" );
         assertThrows( UntrustedServerException.class, () -> handler.onSuccess( metadata ) );
@@ -112,7 +113,7 @@ class HelloResponseHandlerTest
     void shouldThrowWhenServerVersionCantBeParsed()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( "WrongServerVersion", "bolt-x" );
         assertThrows( IllegalArgumentException.class, () -> handler.onSuccess( metadata ) );
@@ -122,10 +123,24 @@ class HelloResponseHandlerTest
     }
 
     @Test
+    void shouldUseProtocolVersionForServerVersionWhenConnectedWithBoltV4()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 4 );
+
+        // server used in metadata should be ignored
+        Map<String,Value> metadata = metadata( ServerVersion.vInDev, "bolt-1" );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertEquals( ServerVersion.v4_0_0, serverVersion( channel ) );
+    }
+
+    @Test
     void shouldSetConnectionIdOnChannel()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-42" );
         handler.onSuccess( metadata );
@@ -138,7 +153,7 @@ class HelloResponseHandlerTest
     void shouldThrowWhenConnectionIdNotReturned()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( anyServerVersion(), null );
         assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
@@ -151,7 +166,7 @@ class HelloResponseHandlerTest
     void shouldThrowWhenConnectionIdIsNull()
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         Map<String,Value> metadata = metadata( anyServerVersion(), Values.NULL );
         assertThrows( IllegalStateException.class, () -> handler.onSuccess( metadata ) );
@@ -164,7 +179,7 @@ class HelloResponseHandlerTest
     void shouldCloseChannelOnFailure() throws Exception
     {
         ChannelPromise channelPromise = channel.newPromise();
-        HelloResponseHandler handler = new HelloResponseHandler( channelPromise );
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, 3 );
 
         RuntimeException error = new RuntimeException( "Hi!" );
         handler.onFailure( error );
