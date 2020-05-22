@@ -80,7 +80,7 @@ class SharedEventLoopIT
         eventLoopGroup.shutdownGracefully( 100, 100, TimeUnit.MILLISECONDS );
 
         // the driver should fail if it really uses the provided event loop
-        // if the call succeeds, it meas that the driver created its own event loop
+        // if the call succeeds, it means that the driver created its own event loop
         try
         {
             testConnection( driver );
