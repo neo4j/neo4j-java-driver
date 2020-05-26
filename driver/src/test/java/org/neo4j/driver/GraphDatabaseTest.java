@@ -97,8 +97,8 @@ class GraphDatabaseTest
     @Test
     void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
     {
-        StubServer server1 = StubServer.start( "discover_not_supported.script", 9001 );
-        StubServer server2 = StubServer.start( "discover_not_supported.script", 9002 );
+        StubServer server1 = StubServer.start( "discover_not_supported_9001.script", 9001 );
+        StubServer server2 = StubServer.start( "discover_not_supported_9002.script", 9002 );
 
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
