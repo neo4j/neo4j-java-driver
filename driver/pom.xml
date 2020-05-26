@@ -120,7 +120,17 @@
           <sourceFileIncludes>
             <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
           </sourceFileIncludes>
-	  <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
+          <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
+          <bottom>
+            <![CDATA[
+                    <script>
+                    if (typeof useModuleDirectories !== 'undefined') {
+                      useModuleDirectories = false;
+                    }
+                    </script>
+                ]]>
+          </bottom>
+          <additionalJOption>--allow-script-in-comments</additionalJOption>
         </configuration>
       </plugin>
       <plugin>
