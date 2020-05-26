@@ -92,14 +92,12 @@ public class RoutingContext
                         "Invalid parameters: '" + pair + "' in URI '" + uri + "'" );
             }
 
-            String key = trimAndVerifyKey( keyValue[0], "key", uri );
-            String value = trimAndVerify( keyValue[1], "value", uri );
-
-            String previousValue = parameters.put( key, value );
+            String previousValue = parameters.put( trimAndVerifyKey( keyValue[0], "key", uri ),
+                                                   trimAndVerify( keyValue[1], "value", uri ) );
             if ( previousValue != null )
             {
                 throw new IllegalArgumentException(
-                        "Duplicated query parameters with key '" + key + "' in URI '" + uri + "'" );
+                        "Duplicated query parameters with key '" + previousValue + "' in URI '" + uri + "'" );
             }
         }
         return parameters;
