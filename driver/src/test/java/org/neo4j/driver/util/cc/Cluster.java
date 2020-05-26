@@ -255,7 +255,8 @@ public class Cluster implements AutoCloseable
 
         if ( membersWithRole.isEmpty() )
         {
-            throw new IllegalStateException( "No cluster members with role '" + role + "' found.\n" + this );
+            throw new IllegalStateException( "No cluster members with role '" + role + "' found.\n" +
+                                             "ClusterOverview: " + clusterOverview + "\n" + this );
         }
 
         return membersWithRole;
