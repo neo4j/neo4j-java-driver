@@ -23,13 +23,15 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Value;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
+import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersion;
 
 public class HelloResponseHandler implements ResponseHandler
 {
@@ -37,11 +39,13 @@ public class HelloResponseHandler implements ResponseHandler
 
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
+    private final BoltProtocolVersion protocolVersion;
 
-    public HelloResponseHandler( ChannelPromise connectionInitializedPromise )
+    public HelloResponseHandler( ChannelPromise connectionInitializedPromise, BoltProtocolVersion protocolVersion )
     {
         this.connectionInitializedPromise = connectionInitializedPromise;
         this.channel = connectionInitializedPromise.channel();
+        this.protocolVersion = protocolVersion;
     }
 
     @Override
@@ -49,8 +53,16 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
-            ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
-            setServerVersion( channel, serverVersion );
+            // From Server V4 extracting server from metadata in the success message is unreliable
+            // so we fix the Server version against the Bolt Protocol version for Server V4 and above.
+            if ( BoltProtocolV3.VERSION.equals( protocolVersion ) )
+            {
+                setServerVersion( channel, extractNeo4jServerVersion( metadata ) );
+            }
+            else
+            {
+                setServerVersion( channel, fromBoltProtocolVersion( protocolVersion ) );
+            }
 
             String connectionId = extractConnectionId( metadata );
             setConnectionId( channel, connectionId );

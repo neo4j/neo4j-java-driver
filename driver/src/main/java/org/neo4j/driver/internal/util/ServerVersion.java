@@ -24,6 +24,9 @@ import java.util.regex.Pattern;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 
 import static java.lang.Integer.compare;
 
@@ -173,5 +176,20 @@ public class ServerVersion
             return NEO4J_IN_DEV_VERSION_STRING;
         }
         return String.format( "%s/%s.%s.%s", product, major, minor, patch );
+    }
+
+    public static ServerVersion fromBoltProtocolVersion( BoltProtocolVersion protocolVersion )
+    {
+
+        if ( BoltProtocolV4.VERSION.equals( protocolVersion ) )
+        {
+            return ServerVersion.v4_0_0;
+        }
+        else if ( BoltProtocolV41.VERSION.equals( protocolVersion ) )
+        {
+            return ServerVersion.v4_1_0;
+        }
+
+        return ServerVersion.vInDev;
     }
 }
