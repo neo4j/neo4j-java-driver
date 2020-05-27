@@ -31,6 +31,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
@@ -39,6 +40,7 @@ import org.neo4j.driver.util.SessionExtension;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
@@ -81,32 +83,15 @@ class BookmarkIT
     void shouldReceiveNewBookmarkOnSuccessfulCommit() throws Throwable
     {
         // Given
-        assertBookmarkIsEmpty( session.lastBookmark() );
+        Bookmark initialBookmark = session.lastBookmark();
+        assertBookmarkIsEmpty( initialBookmark );
 
         // When
         createNodeInTx( session );
 
         // Then
-        assertBookmarkContainsSingleValue( session.lastBookmark(), new BaseMatcher<String>()
-        {
-            @Override
-            public boolean matches( Object item )
-            {
-                if ( item instanceof String )
-                {
-                    String bookmark = (String) item;
-                    String[] split = bookmark.split( ":" );
-                    return split.length == 2 && isUuid( split[0] ) && isNumeric( split[1] );
-                }
-                return false;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "Expecting a bookmark with format 'database_uuid:tx_id'" );
-            }
-        } );
+        assertBookmarkContainsSingleValue( session.lastBookmark() );
+        assertNotEquals( initialBookmark, session.lastBookmark() );
     }
 
     @Test
