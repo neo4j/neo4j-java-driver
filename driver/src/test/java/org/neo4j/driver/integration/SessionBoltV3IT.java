@@ -39,6 +39,7 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.messaging.Message;
@@ -63,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.util.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
@@ -132,9 +134,9 @@ class SessionBoltV3IT
                     TransactionConfig config = TransactionConfig.builder().withTimeout( ofMillis( 1 ) ).build();
 
                     // run a query in an auto-commit transaction with timeout and try to update the locked dummy node
-                    TransientException error = assertThrows( TransientException.class,
+                    Exception error = assertThrows( Exception.class,
                             () -> session.run( "MATCH (n:Node) SET n.prop = 2", config ).consume() );
-                    assertThat( error.getMessage(), containsString( "terminated" ) );
+                    verifyValidException( error );
                 } );
             }
         }
@@ -163,9 +165,8 @@ class SessionBoltV3IT
                     CompletionStage<ResultSummary> resultFuture = asyncSession.runAsync( "MATCH (n:Node) SET n.prop = 2", config )
                             .thenCompose( ResultCursor::consumeAsync );
 
-                    TransientException error = assertThrows( TransientException.class, () -> await( resultFuture ) );
-
-                    MatcherAssert.assertThat( error.getMessage(), containsString( "terminated" ) );
+                    Exception error = assertThrows( Exception.class, () -> await( resultFuture ) );
+                    verifyValidException( error );
                 } );
             }
         }
@@ -362,4 +363,16 @@ class SessionBoltV3IT
         assertEquals( metadata, receivedMetadata );
     }
 
+    private static void verifyValidException( Exception error )
+    {
+        // Server 4.1 corrected this exception to ClientException. Testing either here for compatibility
+        if ( error instanceof TransientException || error instanceof ClientException )
+        {
+            assertThat( error.getMessage(), containsString( "terminated" ) );
+        }
+        else
+        {
+            fail( "Expected either a TransientException or ClientException", error );
+        }
+    }
 }

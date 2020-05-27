@@ -34,6 +34,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.util.DriverExtension;
@@ -45,6 +46,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.util.TestUtil.TX_TIMEOUT_TEST_TIMEOUT;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -123,7 +125,7 @@ class TransactionBoltV3IT
                             .build();
 
                     // start a new transaction with timeout and try to update the locked dummy node
-                    TransientException error = assertThrows( TransientException.class, () ->
+                    Exception error = assertThrows( Exception.class, () ->
                     {
                         try ( Transaction tx = session.beginTransaction( config ) )
                         {
@@ -132,7 +134,7 @@ class TransactionBoltV3IT
                         }
                     } );
 
-                    assertThat( error.getMessage(), containsString( "terminated" ) );
+                    verifyValidException( error );
                 } );
             }
         }
@@ -164,10 +166,25 @@ class TransactionBoltV3IT
                             .thenCompose( tx -> tx.runAsync( "MATCH (n:Node) SET n.prop = 2" )
                                     .thenCompose( ignore -> tx.commitAsync() ) );
 
-                    TransientException error = assertThrows( TransientException.class, () -> await( txCommitFuture ) );
-                    assertThat( error.getMessage(), containsString( "terminated" ) );
+                    Exception error = assertThrows( Exception.class, () -> await( txCommitFuture ) );
+
+                    verifyValidException( error );
                 } );
             }
+        }
+    }
+
+
+    private static void verifyValidException( Exception error )
+    {
+        // Server 4.1 corrected this exception to ClientException. Testing either here for compatibility
+        if ( error instanceof TransientException || error instanceof ClientException )
+        {
+            assertThat( error.getMessage(), containsString( "terminated" ) );
+        }
+        else
+        {
+            fail( "Expected either a TransientException or ClientException", error );
         }
     }
 
