@@ -22,12 +22,15 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.internal.BoltServerAddress;
+
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 
 public class RoutingContext
 {
     public static final RoutingContext EMPTY = new RoutingContext();
+    private static final String ROUTING_ADDRESS_KEY = "address";
 
     private final Map<String,String> context;
 
@@ -43,7 +46,7 @@ public class RoutingContext
 
     public boolean isDefined()
     {
-        return !context.isEmpty();
+        return context.size() > 1;
     }
 
     public Map<String,String> asMap()
@@ -60,13 +63,25 @@ public class RoutingContext
     private static Map<String,String> parseParameters( URI uri )
     {
         String query = uri.getQuery();
+        String address;
 
-        if ( query == null || query.isEmpty() )
+        if ( uri.getPort() == -1 )
         {
-            return emptyMap();
+             address = String.format( "%s:%s", uri.getHost(), BoltServerAddress.DEFAULT_PORT );
+        }
+        else
+        {
+            address = String.format( "%s:%s", uri.getHost(), uri.getPort() );
         }
 
         Map<String,String> parameters = new HashMap<>();
+        parameters.put( ROUTING_ADDRESS_KEY, address );
+
+        if ( query == null || query.isEmpty() )
+        {
+            return parameters;
+        }
+
         String[] pairs = query.split( "&" );
         for ( String pair : pairs )
         {
@@ -77,17 +92,27 @@ public class RoutingContext
                         "Invalid parameters: '" + pair + "' in URI '" + uri + "'" );
             }
 
-            String key = trimAndVerify( keyValue[0], "key", uri );
-            String value = trimAndVerify( keyValue[1], "value", uri );
-
-            String previousValue = parameters.put( key, value );
+            String previousValue = parameters.put( trimAndVerifyKey( keyValue[0], "key", uri ),
+                                                   trimAndVerify( keyValue[1], "value", uri ) );
             if ( previousValue != null )
             {
                 throw new IllegalArgumentException(
-                        "Duplicated query parameters with key '" + key + "' in URI '" + uri + "'" );
+                        "Duplicated query parameters with key '" + previousValue + "' in URI '" + uri + "'" );
             }
         }
         return parameters;
+    }
+
+    private static String trimAndVerifyKey( String s, String key, URI uri )
+    {
+        String trimmed = trimAndVerify( s, key, uri );
+
+        if (trimmed.equals( ROUTING_ADDRESS_KEY ))
+        {
+            throw new IllegalArgumentException( "The key 'address' is reserved for routing context.");
+        }
+
+        return trimmed;
     }
 
     private static String trimAndVerify( String string, String name, URI uri )

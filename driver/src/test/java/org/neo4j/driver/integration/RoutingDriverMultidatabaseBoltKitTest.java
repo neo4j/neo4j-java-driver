@@ -84,7 +84,7 @@ class RoutingDriverMultidatabaseBoltKitTest
         };
 
         StubServer emptyRouter = StubServer.start( "acquire_endpoints_v4_empty.script", 9001 );
-        StubServer realRouter = StubServer.start( "acquire_endpoints_v4.script", 9002 );
+        StubServer realRouter = StubServer.start( "acquire_endpoints_v4_virtual_host.script", 9002 );
         StubServer reader = StubServer.start( "read_server_v4_read.script", 9005 );
 
         Config config = insecureBuilder().withResolver( resolver ).build();
