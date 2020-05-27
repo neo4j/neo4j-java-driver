@@ -805,7 +805,8 @@ class SessionResetIT
     private static boolean isTransactionTerminatedException( Throwable error )
     {
         return error instanceof TransientException &&
-               error.getMessage().startsWith( "The transaction has been terminated" );
+               error.getMessage().startsWith( "The transaction has been terminated" ) ||
+               error.getMessage().startsWith( "Trying to execute query in a terminated transaction" );
     }
 
     private static String longPeriodicCommitQuery()
