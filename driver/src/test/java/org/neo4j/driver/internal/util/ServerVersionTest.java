@@ -20,6 +20,11 @@ package org.neo4j.driver.internal.util;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+
+import static java.lang.Integer.MAX_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,5 +64,13 @@ class ServerVersionTest
         ServerVersion version2 = ServerVersion.version( "OtherNeo4j/1.2.4" );
 
         assertThrows( IllegalArgumentException.class, () -> version1.greaterThanOrEqual( version2 ) );
+    }
+
+    @Test
+    void shouldReturnCorrectServerVersionFromBoltProtocolVersion()
+    {
+        assertEquals( ServerVersion.v4_0_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV4.VERSION ) );
+        assertEquals( ServerVersion.v4_1_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV41.VERSION ) );
+        assertEquals( ServerVersion.vInDev, ServerVersion.fromBoltProtocolVersion( new BoltProtocolVersion( MAX_VALUE, MAX_VALUE ) ) );
     }
 }
