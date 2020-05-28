@@ -53,7 +53,7 @@ public class RoutingContext
         return !context.isEmpty();
     }
 
-    public Map<String,String> asMap()
+    public Map<String,String> toMap()
     {
         return context;
     }

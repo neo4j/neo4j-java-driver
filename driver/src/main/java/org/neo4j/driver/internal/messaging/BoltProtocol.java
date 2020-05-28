@@ -24,6 +24,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
@@ -62,7 +63,7 @@ public interface BoltProtocol
      * @param routingContext the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
      */
-    void initializeChannel( String userAgent, Map<String,Value> authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise );
+    void initializeChannel( String userAgent, AuthToken authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise );
 
     /**
      * Prepare to close channel before it is closed.

@@ -33,6 +33,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
@@ -62,6 +64,7 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -452,12 +455,9 @@ public class BoltProtocolV3Test
         assertNotNull( cursorFuture.get() );
     }
 
-    private static Map<String,Value> dummyAuthToken()
+    private static InternalAuthToken dummyAuthToken()
     {
-        Map<String,Value> authToken = new HashMap<>();
-        authToken.put( "username", value( "hello" ) );
-        authToken.put( "password", value( "world" ) );
-        return authToken;
+        return (InternalAuthToken) AuthTokens.basic( "hello", "world");
     }
 
     private static ResponseHandlers verifyRunInvoked( Connection connection, boolean session, Bookmark bookmark, TransactionConfig config, AccessMode mode )

@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
 public class ChannelConnectorImpl implements ChannelConnector
 {
     private final String userAgent;
-    private final Map<String,Value> authToken;
+    private final AuthToken authToken;
     private final RoutingContext routingContext;
     private final SecurityPlan securityPlan;
     private final ChannelPipelineBuilder pipelineBuilder;
@@ -63,7 +63,7 @@ public class ChannelConnectorImpl implements ChannelConnector
             ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock, RoutingContext routingContext )
     {
         this.userAgent = connectionSettings.userAgent();
-        this.authToken = tokenAsMap( connectionSettings.authToken() );
+        this.authToken = requireValidAuthToken( connectionSettings.authToken() );
         this.routingContext = routingContext;
         this.connectTimeoutMillis = connectionSettings.connectTimeoutMillis();
         this.securityPlan = requireNonNull( securityPlan );
@@ -119,11 +119,11 @@ public class ChannelConnectorImpl implements ChannelConnector
         handshakeCompleted.addListener( new HandshakeCompletedListener( userAgent, authToken, routingContext, connectionInitialized ) );
     }
 
-    private static Map<String,Value> tokenAsMap( AuthToken token )
+    private static AuthToken requireValidAuthToken( AuthToken token )
     {
         if ( token instanceof InternalAuthToken )
         {
-            return ((InternalAuthToken) token).toMap();
+            return token;
         }
         else
         {

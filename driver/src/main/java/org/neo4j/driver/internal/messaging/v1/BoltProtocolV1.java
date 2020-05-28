@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
@@ -53,6 +54,7 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
@@ -85,12 +87,12 @@ public class BoltProtocolV1 implements BoltProtocol
     }
 
     @Override
-    public void initializeChannel( String userAgent, Map<String,Value> authToken, RoutingContext routingContext,
+    public void initializeChannel( String userAgent, AuthToken authToken, RoutingContext routingContext,
                                    ChannelPromise channelInitializedPromise )
     {
         Channel channel = channelInitializedPromise.channel();
 
-        InitMessage message = new InitMessage( userAgent, authToken );
+        InitMessage message = new InitMessage( userAgent, ((InternalAuthToken) authToken).toMap() );
         InitResponseHandler handler = new InitResponseHandler( channelInitializedPromise );
 
         messageDispatcher( channel ).enqueue( handler );

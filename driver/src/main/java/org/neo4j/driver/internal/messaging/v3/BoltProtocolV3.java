@@ -21,18 +21,17 @@ package org.neo4j.driver.internal.messaging.v3;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
@@ -51,6 +50,7 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -78,18 +78,18 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public void initializeChannel( String userAgent, Map<String,Value> authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise )
+    public void initializeChannel( String userAgent, AuthToken authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise )
     {
         Channel channel = channelInitializedPromise.channel();
         HelloMessage message;
 
         if ( routingContext.isServerRoutingEnabled() )
         {
-            message = new HelloMessage( userAgent, authToken, routingContext.asMap() );
+            message = new HelloMessage( userAgent, ( ( InternalAuthToken ) authToken ).toMap(), routingContext.toMap() );
         }
         else
         {
-            message = new HelloMessage( userAgent, authToken, null );
+            message = new HelloMessage( userAgent, ( ( InternalAuthToken ) authToken ).toMap(), null );
         }
 
         HelloResponseHandler handler = new HelloResponseHandler( channelInitializedPromise, version() );

@@ -76,7 +76,7 @@ public class RoutingProcedureRunner
                     "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
                             "Current server version: %s. Database name: '%s'", serverVersion, databaseName.description() ) );
         }
-        return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.asMap() ) );
+        return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.toMap() ) );
     }
 
     BookmarkHolder bookmarkHolder( Bookmark ignored )

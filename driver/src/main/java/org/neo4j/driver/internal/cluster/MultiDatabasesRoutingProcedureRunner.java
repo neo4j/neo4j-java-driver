@@ -54,7 +54,7 @@ public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
     Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
     {
         HashMap<String,Value> map = new HashMap<>();
-        map.put( ROUTING_CONTEXT, value( context.asMap() ) );
+        map.put( ROUTING_CONTEXT, value( context.toMap() ) );
         map.put( DATABASE_NAME, value( (Object) databaseName.databaseName().orElse( null ) ) );
         return new Query( MULTI_DB_GET_ROUTING_TABLE, value( map ) );
     }

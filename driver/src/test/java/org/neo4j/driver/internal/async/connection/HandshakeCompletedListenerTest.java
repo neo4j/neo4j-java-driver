@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -40,6 +42,7 @@ import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,19 +88,19 @@ class HandshakeCompletedListenerTest
     @Test
     void shouldWriteInitializationMessageInBoltV1WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
     }
 
     @Test
     void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
     }
 
     @Test
     void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken(), Collections.emptyMap() ), HelloResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken().toMap(), Collections.emptyMap() ), HelloResponseHandler.class );
     }
 
     private void testWritingOfInitializationMessage( BoltProtocolVersion protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
@@ -121,11 +124,8 @@ class HandshakeCompletedListenerTest
         assertEquals( expectedMessage, outboundMessage );
     }
 
-    private static Map<String,Value> authToken()
+    private static InternalAuthToken authToken()
     {
-        Map<String,Value> authToken = new HashMap<>();
-        authToken.put( "username", value( "neo4j" ) );
-        authToken.put( "password", value( "secret" ) );
-        return authToken;
+        return (InternalAuthToken) AuthTokens.basic( "neo4j", "secret" );
     }
 }
