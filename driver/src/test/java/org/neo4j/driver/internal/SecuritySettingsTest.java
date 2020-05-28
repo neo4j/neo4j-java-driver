@@ -75,7 +75,20 @@ class SecuritySettingsTest
         SSLContext defaultContext = SSLContext.getDefault();
 
         assertTrue( securityPlan.requiresEncryption() );
+        assertTrue( securityPlan.requiresHostnameVerification() );
         assertEquals( defaultContext, securityPlan.sslContext() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "selfSignedSchemes" )
+    void testSelfSignedCertConfigDisablesHostnameVerification( String scheme ) throws Exception
+    {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
+
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+
+        assertTrue( securityPlan.requiresEncryption() );
+        assertFalse( securityPlan.requiresHostnameVerification() );
     }
 
     @ParameterizedTest
@@ -156,7 +169,7 @@ class SecuritySettingsTest
     }
 
     @Test
-    void testConfiguredAllCertificates() throws NoSuchAlgorithmException
+    void testConfiguredAllCertificates()
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withEncryption()
