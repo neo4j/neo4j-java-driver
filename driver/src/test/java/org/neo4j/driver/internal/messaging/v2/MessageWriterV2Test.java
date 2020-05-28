@@ -67,7 +67,7 @@ class MessageWriterV2Test extends AbstractMessageWriterTestBase
     protected Stream<Message> unsupportedMessages()
     {
         return Stream.of(
-                new HelloMessage( "JavaDriver/1.1.0", emptyMap(), Collections.emptyMap() ),
+                new HelloMessage( "JavaDriver/1.1.0", emptyMap(), emptyMap() ),
                 GOODBYE,
                 COMMIT,
                 ROLLBACK

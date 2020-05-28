@@ -70,7 +70,7 @@ class MessageWriterV1Test extends AbstractMessageWriterTestBase
                 new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) ),
 
                 // Bolt V3 messages
-                new HelloMessage( "Driver/2.3.4", emptyMap(), Collections.emptyMap() ),
+                new HelloMessage( "Driver/2.3.4", emptyMap(), emptyMap() ),
                 GOODBYE,
                 COMMIT,
                 ROLLBACK

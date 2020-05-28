@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Scheme;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -43,13 +44,13 @@ public class RoutingContext
 
     public RoutingContext( URI uri )
     {
-        this.isServerRoutingEnabled = uri.getScheme().startsWith( "neo4j" );
+        this.isServerRoutingEnabled = Scheme.isRoutingScheme( uri.getScheme() );
         this.context = unmodifiableMap( parseParameters( uri ) );
     }
 
     public boolean isDefined()
     {
-        return context.size() > 1;
+        return !context.isEmpty();
     }
 
     public Map<String,String> asMap()
