@@ -50,7 +50,7 @@ public class RoutingContext
 
     public boolean isDefined()
     {
-        return !context.isEmpty();
+        return context.size() > 1;
     }
 
     public Map<String,String> toMap()
