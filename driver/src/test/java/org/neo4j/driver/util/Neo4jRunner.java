@@ -366,5 +366,10 @@ public class Neo4jRunner
     {
         System.out.println( String.format( text, args ) );
     }
+
+    public static void debug( String text )
+    {
+        System.out.println( text );
+    }
 }
 
