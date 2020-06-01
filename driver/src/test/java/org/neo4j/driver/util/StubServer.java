@@ -33,7 +33,6 @@ import org.neo4j.driver.Config;
 
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -51,15 +50,16 @@ public class StubServer
     // This may be thrown if the driver has not been closed properly
     public static class ForceKilled extends Exception {}
 
-    private static final String BOLT_STUB_COMMAND = "boltstub";
+    private static final String BOLT_COMMAND = "bolt";
+    private static final String BOLT_STUB_COMMAND = "stub";
 
     private Process process;
 
     private StubServer( String script, int port ) throws IOException, InterruptedException
     {
         List<String> command = new ArrayList<>();
-        command.addAll( singletonList( BOLT_STUB_COMMAND ) );
-        command.addAll( asList( Integer.toString( port ), script ) );
+        command.addAll( asList( BOLT_COMMAND, BOLT_STUB_COMMAND ) );
+        command.addAll( asList( "-l", "localhost:" + port, script ) );
         ProcessBuilder server = new ProcessBuilder().command( command );
         process = server.start();
         startReadingOutput( process );
@@ -72,7 +72,7 @@ public class StubServer
         return new StubServer( resource(resource), port );
     }
 
-    public int exitStatus() throws InterruptedException, ForceKilled
+    public int exitStatus() throws InterruptedException
     {
         sleep( 500 );  // wait for a moment to allow disconnection to occur
         try
@@ -83,8 +83,8 @@ public class StubServer
         {
             // not exited yet
             exit();
-            throw new ForceKilled();
         }
+        return -1;
     }
 
     public static Config.ConfigBuilder insecureBuilder()
@@ -92,10 +92,17 @@ public class StubServer
         return Config.builder().withoutEncryption().withLogging( none() );
     }
 
-    private void exit() throws InterruptedException
+    private void exit()
     {
         process.destroy();
-        process.waitFor();
+        try
+        {
+            process.waitFor();
+        }
+        catch ( InterruptedException ex )
+        {
+            throw new RuntimeException( "Interrupted whilst waiting for forced stub shutdown", ex);
+        }
     }
 
     private static String resource( String fileName )
@@ -113,7 +120,7 @@ public class StubServer
         try
         {
             // run 'help' command to see if boltstub is available
-            Process process = new ProcessBuilder( BOLT_STUB_COMMAND, "-h" ).start();
+            Process process = new ProcessBuilder( "bolt" ).start();
             int exitCode = process.waitFor();
             return exitCode == 0;
         }
