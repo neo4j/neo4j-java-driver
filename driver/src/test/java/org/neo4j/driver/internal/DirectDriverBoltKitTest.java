@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal;
 
 import io.netty.channel.Channel;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
@@ -53,6 +55,7 @@ import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
+import org.neo4j.driver.util.StubServerController;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -75,15 +78,30 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
+import static org.neo4j.driver.util.StubServer.start;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectDriverBoltKitTest
 {
+    private static StubServerController stubController;
+
+    @BeforeAll
+    public static void setup()
+    {
+        stubController = new StubServerController();
+    }
+
+    @AfterEach
+    public void killServers()
+    {
+        stubController.reset();
+    }
+
     @Test
     void shouldBeAbleRunCypher() throws Exception
     {
-        StubServer server = StubServer.start( "return_x.script", 9001 );
+        StubServer server = stubController.startStub( "return_x.script", 9001 );
         URI uri = URI.create( "bolt://127.0.0.1:9001" );
         int x;
 
@@ -103,7 +121,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldSendMultipleBookmarks() throws Exception
     {
-        StubServer server = StubServer.start( "multiple_bookmarks.script", 9001 );
+        StubServer server = stubController.startStub( "multiple_bookmarks.script", 9001 );
 
         Bookmark bookmarks = InternalBookmark.parse( asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
                 "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) );
@@ -128,7 +146,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldLogConnectionIdInDebugMode() throws Exception
     {
-        StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
+        StubServer server = stubController.startStub( "hello_run_exit.script", 9001 );
 
         Logger logger = mock( Logger.class );
         when( logger.isDebugEnabled() ).thenReturn( true );
@@ -164,7 +182,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldSendReadAccessModeInQueryMetadata() throws Exception
     {
-        StubServer server = StubServer.start( "hello_run_exit_read.script", 9001 );
+        StubServer server = stubController.startStub( "hello_run_exit_read.script", 9001 );
 
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
@@ -182,7 +200,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldNotSendWriteAccessModeInQueryMetadata() throws Exception
     {
-        StubServer server = StubServer.start( "hello_run_exit.script", 9001 );
+        StubServer server = stubController.startStub( "hello_run_exit.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
@@ -199,7 +217,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldCloseChannelWhenResetFails() throws Exception
     {
-        StubServer server = StubServer.start( "reset_error.script", 9001 );
+        StubServer server = stubController.startStub( "reset_error.script", 9001 );
         try
         {
             URI uri = URI.create( "bolt://localhost:9001" );
@@ -230,7 +248,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldPropagateTransactionRollbackErrorWhenSessionClosed() throws Exception
     {
-        StubServer server = StubServer.start( "rollback_error.script", 9001 );
+        StubServer server = stubController.startStub( "rollback_error.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -255,7 +273,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldStreamingRecordsInBatchesRx() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4_rx.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4_rx.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -275,7 +293,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldStreamingRecordsInBatches() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( 2 ).build() ) )
@@ -295,7 +313,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldChangeFetchSize() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -315,7 +333,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldOnlyPullRecordsWhenNeededSimpleSession() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4_buffering.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4_buffering.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -337,7 +355,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldOnlyPullRecordsWhenNeededAsyncSession() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4_buffering.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4_buffering.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -362,7 +380,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldPullAllRecordsOnListAsyncWhenOverWatermark() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4_list_async.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4_list_async.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
@@ -384,7 +402,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldAllowPullAll() throws Exception
     {
-        StubServer server = StubServer.start( "streaming_records_v4_all.script", 9001 );
+        StubServer server = stubController.startStub( "streaming_records_v4_all.script", 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( -1 ).build() ) )
@@ -423,7 +441,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldThrowCorrectErrorOnRunFailure() throws Throwable
     {
-        StubServer server = StubServer.start( "database_shutdown.script", 9001 );
+        StubServer server = stubController.startStub( "database_shutdown.script", 9001 );
 
         Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx0" );
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
@@ -446,7 +464,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldThrowCorrectErrorOnCommitFailure() throws Throwable
     {
-        StubServer server = StubServer.start( "database_shutdown_at_commit.script", 9001 );
+        StubServer server = stubController.startStub( "database_shutdown_at_commit.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session() )
@@ -467,7 +485,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldAllowDatabaseNameInSessionRun() throws Throwable
     {
-        StubServer server = StubServer.start( "read_server_v4_read.script", 9001 );
+        StubServer server = stubController.startStub( "read_server_v4_read.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
@@ -484,7 +502,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldAllowDatabaseNameInBeginTransaction() throws Throwable
     {
-        StubServer server = StubServer.start( "read_server_v4_read_tx.script", 9001 );
+        StubServer server = stubController.startStub( "read_server_v4_read_tx.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
                 Session session = driver.session( forDatabase( "mydatabase" ) ) )
@@ -500,7 +518,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldDiscardIfPullNotFinished() throws Throwable
     {
-        StubServer server = StubServer.start( "read_tx_v4_discard.script", 9001 );
+        StubServer server = stubController.startStub( "read_tx_v4_discard.script", 9001 );
 
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
@@ -519,7 +537,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldServerWithBoltV4SupportMultiDb() throws Throwable
     {
-        StubServer server = StubServer.start( "support_multidb_v4.script", 9001 );
+        StubServer server = stubController.startStub( "support_multidb_v4.script", 9001 );
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
             assertTrue( driver.supportsMultiDb() );
@@ -533,7 +551,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
     {
-        StubServer server = StubServer.start( "support_multidb_v3.script", 9001 );
+        StubServer server = stubController.startStub( "support_multidb_v3.script", 9001 );
         try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
         {
             assertFalse( driver.supportsMultiDb() );
@@ -547,7 +565,7 @@ class DirectDriverBoltKitTest
     @Test
     void shouldBeAbleHandleNOOPsDuringRunCypher() throws Exception
     {
-        StubServer server = StubServer.start( "noop.script", 9001 );
+        StubServer server = stubController.startStub( "noop.script", 9001 );
         URI uri = URI.create( "bolt://127.0.0.1:9001" );
 
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
@@ -565,7 +583,7 @@ class DirectDriverBoltKitTest
     private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
             throws Exception
     {
-        StubServer server = StubServer.start( script, 9001 );
+        StubServer server = stubController.startStub( script, 9001 );
         try
         {
             try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
