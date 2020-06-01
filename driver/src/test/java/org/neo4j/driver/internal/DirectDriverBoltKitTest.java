@@ -78,7 +78,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
-import static org.neo4j.driver.util.StubServer.start;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -560,24 +559,6 @@ class DirectDriverBoltKitTest
         {
             assertEquals( 0, server.exitStatus() );
         }
-    }
-
-    @Test
-    void shouldBeAbleHandleNOOPsDuringRunCypher() throws Exception
-    {
-        StubServer server = stubController.startStub( "noop.script", 9001 );
-        URI uri = URI.create( "bolt://127.0.0.1:9001" );
-
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
-        {
-            try ( Session session = driver.session() )
-            {
-                List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( rec -> rec.get( 0 ).asString() );
-                assertEquals( asList( "Foo", "Bar", "Baz" ), names );
-            }
-        }
-
-        assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
     private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
