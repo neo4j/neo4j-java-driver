@@ -1,5 +1,4 @@
 !: BOLT 3
-!: AUTO RESET
 !: AUTO HELLO
 !: AUTO GOODBYE
 
@@ -12,5 +11,7 @@ S: SUCCESS {"fields": ["name"]}
    SUCCESS {}
 C: COMMIT
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Unable to commit"}
+C: RESET
+S: SUCCESS {}
 C: RESET
 S: SUCCESS {}
