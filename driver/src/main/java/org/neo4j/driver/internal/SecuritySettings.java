@@ -92,11 +92,11 @@ public class SecuritySettings
     {
         if ( isHighTrustScheme(scheme) )
         {
-            return SecurityPlanImpl.forSystemCASignedCertificates( trustStrategy.isHostnameVerificationEnabled() );
+            return SecurityPlanImpl.forSystemCASignedCertificates( true );
         }
         else
         {
-            return SecurityPlanImpl.forAllCertificates( trustStrategy.isHostnameVerificationEnabled() );
+            return SecurityPlanImpl.forAllCertificates( false );
         }
     }
 
