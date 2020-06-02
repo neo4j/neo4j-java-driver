@@ -315,4 +315,18 @@ class ConfigTest
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withEventLoopThreads( value ).build() );
     }
+
+    @Test
+    void shouldChangeUserAgent()
+    {
+        Config config = Config.builder().withUserAgent( "AwesomeDriver" ).build();
+        assertThat( config.userAgent(), equalTo( "AwesomeDriver" ) );
+    }
+
+    @Test
+    void shouldErrorWithInvalidUserAgent()
+    {
+        assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( null ).build() );
+        assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( "" ).build() );
+    }
 }

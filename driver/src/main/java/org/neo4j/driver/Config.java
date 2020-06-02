@@ -30,6 +30,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -98,6 +99,7 @@ public class Config
 
     private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
+    private final String userAgent;
 
     private Config( ConfigBuilder builder )
     {
@@ -108,6 +110,7 @@ public class Config
         this.maxConnectionLifetimeMillis = builder.maxConnectionLifetimeMillis;
         this.maxConnectionPoolSize = builder.maxConnectionPoolSize;
         this.connectionAcquisitionTimeoutMillis = builder.connectionAcquisitionTimeoutMillis;
+        this.userAgent = builder.userAgent;
 
         this.securitySettings = builder.securitySettingsBuilder.build();
 
@@ -262,6 +265,14 @@ public class Config
     }
 
     /**
+     * @return the user_agent configured for this driver
+     */
+    public String userAgent()
+    {
+        return userAgent;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static class ConfigBuilder
@@ -272,6 +283,7 @@ public class Config
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
+        private String userAgent = ConnectionSettings.DEFAULT_USER_AGENT;
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
@@ -724,6 +736,21 @@ public class Config
                 throw new IllegalArgumentException( String.format( "The event loop thread may not be smaller than 1, but was %d.", size ) );
             }
             this.eventLoopThreads = size;
+            return this;
+        }
+
+        /**
+         * Configure the user_agent field sent to the server to identify the connected client.
+         * @param userAgent the string to configure user_agent.
+         * @return this builder.
+         */
+        public ConfigBuilder withUserAgent( String userAgent )
+        {
+            if ( userAgent == null || userAgent.isEmpty() )
+            {
+                throw new IllegalArgumentException( "The user_agent string must not be empty" );
+            }
+            this.userAgent = userAgent;
             return this;
         }
 

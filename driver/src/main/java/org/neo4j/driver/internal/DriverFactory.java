@@ -103,7 +103,7 @@ public class DriverFactory
             MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
     {
         Clock clock = createClock();
-        ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
+        ConnectionSettings settings = new ConnectionSettings( authToken, config.userAgent(), config.connectionTimeoutMillis() );
         ChannelConnector connector = createConnector( settings, securityPlan, config, clock, routingContext );
         PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),

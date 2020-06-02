@@ -598,6 +598,25 @@ class DirectDriverBoltKitTest
         assertThat( server.exitStatus(), equalTo( 0 ) );
     }
 
+    @Test
+    void shouldSendCustomerUserAgentInHelloMessage() throws Exception
+    {
+        StubServer server = stubController.startStub( "hello_with_custom_user_agent.script", 9001 );
+
+        Config config = Config.builder().withUserAgent( "AwesomeClient" ).build();
+
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
+        {
+            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            assertEquals( asList( "Foo", "Bar" ), names );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
     private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
             throws Exception
     {
