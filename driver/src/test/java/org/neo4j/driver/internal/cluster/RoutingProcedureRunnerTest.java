@@ -89,7 +89,7 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
-        Query query = generateRoutingQuery( context.asMap() );
+        Query query = generateRoutingQuery( context.toMap() );
         assertThat( response.procedure(), equalTo(query) );
         assertThat( runner.procedure, equalTo(query) );
     }

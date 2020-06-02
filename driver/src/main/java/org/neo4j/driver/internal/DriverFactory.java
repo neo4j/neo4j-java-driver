@@ -93,17 +93,18 @@ public class DriverFactory
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
         MetricsProvider metricsProvider = createDriverMetrics( config, createClock() );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config,
+                                                              ownsEventLoopGroup, newRoutingSettings.routingContext() );
 
         return createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.connectionTimeoutMillis() );
-        ChannelConnector connector = createConnector( settings, securityPlan, config, clock );
+        ChannelConnector connector = createConnector( settings, securityPlan, config, clock, routingContext );
         PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest()
@@ -124,9 +125,9 @@ public class DriverFactory
     }
 
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
-            Config config, Clock clock )
+            Config config, Clock clock, RoutingContext routingContext )
     {
-        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock );
+        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock, routingContext );
     }
 
     private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,

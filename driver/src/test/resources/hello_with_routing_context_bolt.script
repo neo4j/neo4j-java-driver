@@ -10,4 +10,3 @@ S: SUCCESS {"fields": ["n.name"]}
    RECORD ["Foo"]
    RECORD ["Bar"]
    SUCCESS {}
-S: <EXIT>

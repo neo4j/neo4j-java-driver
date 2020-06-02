@@ -49,6 +49,7 @@ import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -445,14 +446,15 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider ignored, Config config, boolean ownsEventLoopGroup )
+                                                       MetricsProvider ignored, Config config, boolean ownsEventLoopGroup,
+                                                       RoutingContext routingContext )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
                     config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest() );
             Clock clock = createClock();
-            ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock );
+            ChannelConnector connector = super.createConnector( connectionSettings, securityPlan, config, clock, routingContext );
             connectionPool = new MemorizingConnectionPool( connector, bootstrap, poolSettings, config.logging(), clock, ownsEventLoopGroup );
             return connectionPool;
         }

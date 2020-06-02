@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.messaging.v2;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
@@ -66,7 +67,7 @@ class MessageWriterV2Test extends AbstractMessageWriterTestBase
     protected Stream<Message> unsupportedMessages()
     {
         return Stream.of(
-                new HelloMessage( "JavaDriver/1.1.0", emptyMap() ),
+                new HelloMessage( "JavaDriver/1.1.0", emptyMap(), emptyMap() ),
                 GOODBYE,
                 COMMIT,
                 ROLLBACK

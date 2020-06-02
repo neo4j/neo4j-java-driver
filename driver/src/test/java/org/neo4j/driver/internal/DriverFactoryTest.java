@@ -36,6 +36,7 @@ import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
@@ -211,7 +212,8 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
+                                                       RoutingContext routingContext )
         {
             return connectionPool;
         }
@@ -247,7 +249,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
         {
             return connectionPoolMock();
         }
@@ -270,7 +272,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
         {
             return connectionPoolMock();
         }

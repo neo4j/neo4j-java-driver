@@ -33,6 +33,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
@@ -45,6 +47,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -61,6 +64,7 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -139,7 +143,7 @@ public class BoltProtocolV3Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/0.0.1", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/0.0.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );
@@ -171,7 +175,7 @@ public class BoltProtocolV3Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/2.2.1", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/2.2.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( HelloMessage.class ) );
@@ -451,12 +455,9 @@ public class BoltProtocolV3Test
         assertNotNull( cursorFuture.get() );
     }
 
-    private static Map<String,Value> dummyAuthToken()
+    private static InternalAuthToken dummyAuthToken()
     {
-        Map<String,Value> authToken = new HashMap<>();
-        authToken.put( "username", value( "hello" ) );
-        authToken.put( "password", value( "world" ) );
-        return authToken;
+        return (InternalAuthToken) AuthTokens.basic( "hello", "world");
     }
 
     private static ResponseHandlers verifyRunInvoked( Connection connection, boolean session, Bookmark bookmark, TransactionConfig config, AccessMode mode )

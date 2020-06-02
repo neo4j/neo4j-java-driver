@@ -24,11 +24,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
 import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -38,6 +42,7 @@ import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,7 +72,7 @@ class HandshakeCompletedListenerTest
     void shouldFailConnectionInitializedPromiseWhenHandshakeFails()
     {
         ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener( "user-agent", authToken(),
+        HandshakeCompletedListener listener = new HandshakeCompletedListener( "user-agent", authToken(), RoutingContext.EMPTY,
                 channelInitializedPromise );
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
@@ -83,19 +88,19 @@ class HandshakeCompletedListenerTest
     @Test
     void shouldWriteInitializationMessageInBoltV1WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
     }
 
     @Test
     void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken() ), InitResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
     }
 
     @Test
     void shouldWriteInitializationMessageInBoltV3WhenHandshakeCompleted()
     {
-        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken() ), HelloResponseHandler.class );
+        testWritingOfInitializationMessage( BoltProtocolV3.VERSION, new HelloMessage( USER_AGENT, authToken().toMap(), Collections.emptyMap() ), HelloResponseHandler.class );
     }
 
     private void testWritingOfInitializationMessage( BoltProtocolVersion protocolVersion, Message expectedMessage, Class<? extends ResponseHandler> handlerType )
@@ -105,8 +110,8 @@ class HandshakeCompletedListenerTest
         setMessageDispatcher( channel, messageDispatcher );
 
         ChannelPromise channelInitializedPromise = channel.newPromise();
-        HandshakeCompletedListener listener = new HandshakeCompletedListener( USER_AGENT, authToken(),
-                channelInitializedPromise );
+        HandshakeCompletedListener listener = new HandshakeCompletedListener( USER_AGENT, authToken(), RoutingContext.EMPTY,
+                                                                              channelInitializedPromise );
 
         ChannelPromise handshakeCompletedPromise = channel.newPromise();
         handshakeCompletedPromise.setSuccess();
@@ -119,11 +124,8 @@ class HandshakeCompletedListenerTest
         assertEquals( expectedMessage, outboundMessage );
     }
 
-    private static Map<String,Value> authToken()
+    private static InternalAuthToken authToken()
     {
-        Map<String,Value> authToken = new HashMap<>();
-        authToken.put( "username", value( "neo4j" ) );
-        authToken.put( "password", value( "secret" ) );
-        return authToken;
+        return (InternalAuthToken) AuthTokens.basic( "neo4j", "secret" );
     }
 }

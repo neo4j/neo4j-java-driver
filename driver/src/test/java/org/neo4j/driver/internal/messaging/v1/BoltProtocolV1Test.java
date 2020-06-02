@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
@@ -42,6 +43,7 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
@@ -54,6 +56,7 @@ import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Futures;
@@ -117,7 +120,7 @@ public class BoltProtocolV1Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/5.3", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/5.3", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( InitMessage.class ) );
@@ -135,7 +138,7 @@ public class BoltProtocolV1Test
     {
         ChannelPromise promise = channel.newPromise();
 
-        protocol.initializeChannel( "MyDriver/3.1", dummyAuthToken(), promise );
+        protocol.initializeChannel( "MyDriver/3.1", dummyAuthToken(), RoutingContext.EMPTY, promise );
 
         assertThat( channel.outboundMessages(), hasSize( 1 ) );
         assertThat( channel.outboundMessages().poll(), instanceOf( InitMessage.class ) );
@@ -379,11 +382,8 @@ public class BoltProtocolV1Test
         return runHandlerCaptor.getValue();
     }
 
-    private static Map<String,Value> dummyAuthToken()
+    private static InternalAuthToken dummyAuthToken()
     {
-        Map<String,Value> authToken = new HashMap<>();
-        authToken.put( "username", value( "hello" ) );
-        authToken.put( "password", value( "world" ) );
-        return authToken;
+        return (InternalAuthToken) AuthTokens.basic( "hello", "world" );
     }
 }

@@ -90,7 +90,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         assertThat( runner.connection.databaseName(), equalTo( systemDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.READ ) );
 
-        Query query = generateMultiDatabaseRoutingQuery( context.asMap(), db );
+        Query query = generateMultiDatabaseRoutingQuery( context.toMap(), db );
         assertThat( response.procedure(), equalTo(query) );
         assertThat( runner.procedure, equalTo(query) );
     }

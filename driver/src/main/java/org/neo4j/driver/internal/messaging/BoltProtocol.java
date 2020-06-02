@@ -24,6 +24,7 @@ import io.netty.channel.ChannelPromise;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
@@ -34,6 +35,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
@@ -58,9 +60,10 @@ public interface BoltProtocol
      *
      * @param userAgent the user agent string.
      * @param authToken the authentication token.
+     * @param routingContext the configured routing context
      * @param channelInitializedPromise the promise to be notified when initialization is completed.
      */
-    void initializeChannel( String userAgent, Map<String,Value> authToken, ChannelPromise channelInitializedPromise );
+    void initializeChannel( String userAgent, AuthToken authToken, RoutingContext routingContext, ChannelPromise channelInitializedPromise );
 
     /**
      * Prepare to close channel before it is closed.

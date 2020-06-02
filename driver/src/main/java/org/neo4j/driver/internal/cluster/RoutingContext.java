@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.Scheme;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -33,14 +34,17 @@ public class RoutingContext
     private static final String ROUTING_ADDRESS_KEY = "address";
 
     private final Map<String,String> context;
+    private final boolean isServerRoutingEnabled;
 
     private RoutingContext()
     {
+        this.isServerRoutingEnabled = true;
         this.context = emptyMap();
     }
 
     public RoutingContext( URI uri )
     {
+        this.isServerRoutingEnabled = Scheme.isRoutingScheme( uri.getScheme() );
         this.context = unmodifiableMap( parseParameters( uri ) );
     }
 
@@ -49,15 +53,20 @@ public class RoutingContext
         return context.size() > 1;
     }
 
-    public Map<String,String> asMap()
+    public Map<String,String> toMap()
     {
         return context;
+    }
+
+    public boolean isServerRoutingEnabled()
+    {
+        return isServerRoutingEnabled;
     }
 
     @Override
     public String toString()
     {
-        return "RoutingContext" + context;
+        return "RoutingContext" + context + " isServerRoutingEnabled=" + isServerRoutingEnabled;
     }
 
     private static Map<String,String> parseParameters( URI uri )

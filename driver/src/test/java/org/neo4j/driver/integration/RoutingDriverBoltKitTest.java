@@ -912,6 +912,46 @@ class RoutingDriverBoltKitTest
     }
 
     @Test
+    void shouldSendRoutingContextInHelloMessage() throws Exception
+    {
+        // stub server is both a router and reader
+        StubServer server = StubServer.start( "routing_context_in_hello_neo4j.script", 9001 );
+
+        URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy&region=china" );
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
+            assertEquals( 2, records.size() );
+            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
+            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
+    void shouldSendEmptyRoutingContextInHelloMessage() throws Exception
+    {
+        // stub server is both a router and reader
+        StubServer server = StubServer.start( "empty_routing_context_in_hello_neo4j.script", 9001 );
+
+        URI uri = URI.create( "neo4j://127.0.0.1:9001/" );
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
+        {
+            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
+            assertEquals( 2, records.size() );
+            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
+            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
+        }
+        finally
+        {
+            assertEquals( 0, server.exitStatus() );
+        }
+    }
+
+    @Test
     void shouldServeReadsButFailWritesWhenNoWritersAvailable() throws Exception
     {
         StubServer router1 = stubController.startStub( "discover_no_writers_9010.script", 9010 );

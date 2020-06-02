@@ -41,7 +41,7 @@ class RoutingContextTest
     @Test
     void emptyContextInEmptyMap()
     {
-        assertTrue( RoutingContext.EMPTY.asMap().isEmpty() );
+        assertTrue( RoutingContext.EMPTY.toMap().isEmpty() );
     }
 
     @Test
@@ -69,7 +69,25 @@ class RoutingContextTest
         expectedMap.put( "key2", "value2" );
         expectedMap.put( "key3", "value3" );
         expectedMap.put( "address", "localhost:7687" );
-        assertEquals( expectedMap, context.asMap() );
+        assertEquals( expectedMap, context.toMap() );
+    }
+
+    @Test
+    void boltUriDisablesServerSideRouting()
+    {
+        URI uri = URI.create( "bolt://localhost:7687/?key1=value1&key2=value2&key3=value3" );
+        RoutingContext context = new RoutingContext( uri );
+
+        assertEquals( false, context.isServerRoutingEnabled() );
+    }
+
+    @Test
+    void neo4jUriEnablesServerSideRouting()
+    {
+        URI uri = URI.create( "neo4j://localhost:7687/?key1=value1&key2=value2&key3=value3" );
+        RoutingContext context = new RoutingContext( uri );
+
+        assertEquals( true, context.isServerRoutingEnabled() );
     }
 
     @Test
@@ -106,10 +124,10 @@ class RoutingContextTest
         expectedMap.put( "key1", "value1" );
         expectedMap.put( "address", "localhost:7687" );
 
-        assertEquals( expectedMap, context.asMap() );
+        assertEquals( expectedMap, context.toMap() );
 
-        assertThrows( UnsupportedOperationException.class, () -> context.asMap().put( "key2", "value2" ) );
-        assertEquals( expectedMap, context.asMap() );
+        assertThrows( UnsupportedOperationException.class, () -> context.toMap().put( "key2", "value2" ) );
+        assertEquals( expectedMap, context.toMap() );
     }
 
     @Test
@@ -118,7 +136,7 @@ class RoutingContextTest
         URI uri = URI.create( "neo4j://localhost/" );
         RoutingContext context = new RoutingContext( uri );
 
-        assertEquals( singletonMap( "address", "localhost:7687" ), context.asMap() );
+        assertEquals( singletonMap( "address", "localhost:7687" ), context.toMap() );
     }
 
     @Test
@@ -143,6 +161,6 @@ class RoutingContextTest
         expectedMap.put( "address", "localhost:7687" );
 
         assertFalse( context.isDefined() );
-        assertEquals( singletonMap( "address", "localhost:7687" ), context.asMap() );
+        assertEquals( singletonMap( "address", "localhost:7687" ), context.toMap() );
     }
 }

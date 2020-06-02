@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.messaging.v3;
 
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Query;
@@ -64,7 +65,7 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
     {
         return Stream.of(
                 // Bolt V3 messages
-                new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap() ),
+                new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap(), Collections.emptyMap() ),
                 GOODBYE,
                 new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, defaultDatabase() ),
                 new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, defaultDatabase() ),

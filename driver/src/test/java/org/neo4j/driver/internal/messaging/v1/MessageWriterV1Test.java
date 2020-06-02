@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.messaging.v1;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
@@ -69,7 +70,7 @@ class MessageWriterV1Test extends AbstractMessageWriterTestBase
                 new RunMessage( "RETURN $here", singletonMap( "now", point( 42, 1, 1 ) ) ),
 
                 // Bolt V3 messages
-                new HelloMessage( "Driver/2.3.4", emptyMap() ),
+                new HelloMessage( "Driver/2.3.4", emptyMap(), emptyMap() ),
                 GOODBYE,
                 COMMIT,
                 ROLLBACK
