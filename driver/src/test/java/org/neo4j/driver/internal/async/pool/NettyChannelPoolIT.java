@@ -182,7 +182,7 @@ class NettyChannelPoolIT
 
     private NettyChannelPool newPool( AuthToken authToken, int maxConnections )
     {
-        ConnectionSettings settings = new ConnectionSettings( authToken, 5_000 );
+        ConnectionSettings settings = new ConnectionSettings( authToken, "test", 5_000 );
         ChannelConnectorImpl connector = new ChannelConnectorImpl( settings, SecurityPlanImpl.insecure(), DEV_NULL_LOGGING,
                                                                    new FakeClock(), RoutingContext.EMPTY );
         return new NettyChannelPool( neo4j.address(), connector, bootstrap, poolHandler, ChannelHealthChecker.ACTIVE,

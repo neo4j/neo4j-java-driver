@@ -30,6 +30,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -40,6 +41,7 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Resource;
 
+import static java.lang.String.format;
 import static org.neo4j.driver.Logging.javaUtilLogging;
 
 /**
@@ -98,6 +100,7 @@ public class Config
 
     private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
+    private final String userAgent;
 
     private Config( ConfigBuilder builder )
     {
@@ -108,6 +111,7 @@ public class Config
         this.maxConnectionLifetimeMillis = builder.maxConnectionLifetimeMillis;
         this.maxConnectionPoolSize = builder.maxConnectionPoolSize;
         this.connectionAcquisitionTimeoutMillis = builder.connectionAcquisitionTimeoutMillis;
+        this.userAgent = builder.userAgent;
 
         this.securitySettings = builder.securitySettingsBuilder.build();
 
@@ -262,6 +266,14 @@ public class Config
     }
 
     /**
+     * @return the user_agent configured for this driver
+     */
+    public String userAgent()
+    {
+        return userAgent;
+    }
+
+    /**
      * Used to build new config instances
      */
     public static class ConfigBuilder
@@ -272,6 +284,7 @@ public class Config
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
         private long maxConnectionLifetimeMillis = PoolSettings.DEFAULT_MAX_CONNECTION_LIFETIME;
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
+        private String userAgent = format( "neo4j-java/%s", driverVersion() );
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
         private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
@@ -725,6 +738,40 @@ public class Config
             }
             this.eventLoopThreads = size;
             return this;
+        }
+
+        /**
+         * Configure the user_agent field sent to the server to identify the connected client.
+         * @param userAgent the string to configure user_agent.
+         * @return this builder.
+         */
+        public ConfigBuilder withUserAgent( String userAgent )
+        {
+            if ( userAgent == null || userAgent.isEmpty() )
+            {
+                throw new IllegalArgumentException( "The user_agent string must not be empty" );
+            }
+            this.userAgent = userAgent;
+            return this;
+        }
+
+        /**
+         * Extracts the driver version from the driver jar MANIFEST.MF file.
+         */
+        private static String driverVersion()
+        {
+            // "Session" is arbitrary - the only thing that matters is that the class we use here is in the
+            // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
+            // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
+            Package pkg = Session.class.getPackage();
+            if ( pkg != null && pkg.getImplementationVersion() != null )
+            {
+                return pkg.getImplementationVersion();
+            }
+
+            // If there is no version, we're not running from a jar file, but from raw compiled class files.
+            // This should only happen during development, so call the version 'dev'.
+            return "dev";
         }
 
         /**

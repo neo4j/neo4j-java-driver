@@ -145,7 +145,7 @@ class ConnectionPoolImplIT
     private ConnectionPoolImpl newPool() throws Exception
     {
         FakeClock clock = new FakeClock();
-        ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), 5000 );
+        ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), "test", 5000 );
         ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlanImpl.insecure(),
                                                                DEV_NULL_LOGGING, clock, RoutingContext.EMPTY );
         PoolSettings poolSettings = newSettings();
