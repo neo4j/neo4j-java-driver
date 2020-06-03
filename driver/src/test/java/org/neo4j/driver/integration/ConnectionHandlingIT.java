@@ -449,7 +449,7 @@ class ConnectionHandlingIT
                                                        MetricsProvider ignored, Config config, boolean ownsEventLoopGroup,
                                                        RoutingContext routingContext )
         {
-            ConnectionSettings connectionSettings = new ConnectionSettings( authToken, 1000 );
+            ConnectionSettings connectionSettings = new ConnectionSettings( authToken, "test", 1000 );
             PoolSettings poolSettings = new PoolSettings( config.maxConnectionPoolSize(),
                     config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                     config.idleTimeBeforeConnectionTest() );

@@ -19,9 +19,6 @@
 package org.neo4j.driver.internal;
 
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.Session;
-
-import static java.lang.String.format;
 
 /**
  * The connection settings are used whenever a new connection is
@@ -29,27 +26,6 @@ import static java.lang.String.format;
  */
 public class ConnectionSettings
 {
-    public static final String DEFAULT_USER_AGENT = format( "neo4j-java/%s", driverVersion() );
-
-    /**
-     * Extracts the driver version from the driver jar MANIFEST.MF file.
-     */
-    private static String driverVersion()
-    {
-        // "Session" is arbitrary - the only thing that matters is that the class we use here is in the
-        // 'org.neo4j.driver' package, because that is where the jar manifest specifies the version.
-        // This is done as part of the build, adding a MANIFEST.MF file to the generated jarfile.
-        Package pkg = Session.class.getPackage();
-        if ( pkg != null && pkg.getImplementationVersion() != null )
-        {
-            return pkg.getImplementationVersion();
-        }
-
-        // If there is no version, we're not running from a jar file, but from raw compiled class files.
-        // This should only happen during development, so call the version 'dev'.
-        return "dev";
-    }
-
     private final AuthToken authToken;
     private final String userAgent;
     private final int connectTimeoutMillis;
@@ -59,11 +35,6 @@ public class ConnectionSettings
         this.authToken = authToken;
         this.userAgent = userAgent;
         this.connectTimeoutMillis = connectTimeoutMillis;
-    }
-
-    public ConnectionSettings( AuthToken authToken, int connectTimeoutMillis )
-    {
-        this( authToken, DEFAULT_USER_AGENT, connectTimeoutMillis );
     }
 
     public AuthToken authToken()

@@ -231,7 +231,7 @@ class ChannelConnectorImplIT
     private ChannelConnectorImpl newConnector( AuthToken authToken, SecurityPlan securityPlan,
             int connectTimeoutMillis )
     {
-        ConnectionSettings settings = new ConnectionSettings( authToken, connectTimeoutMillis );
+        ConnectionSettings settings = new ConnectionSettings( authToken, "test", connectTimeoutMillis );
         return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock(), RoutingContext.EMPTY );
     }
 
