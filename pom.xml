@@ -68,9 +68,12 @@
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
-        <version>3.3.5.RELEASE</version>
+        <artifactId>reactor-bom</artifactId>
+        <version>Dysprosium-SR7</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
+
       <!--Compile dependencies only used by Examples-->
       <dependency>
         <groupId>io.reactivex.rxjava2</groupId>
@@ -129,15 +132,9 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-test</artifactId>
-        <version>3.3.5.RELEASE</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.oracle.substratevm</groupId>
+        <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>19.2.1</version>
+        <version>20.1.0</version>
         <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
         <scope>provided</scope>
       </dependency>
