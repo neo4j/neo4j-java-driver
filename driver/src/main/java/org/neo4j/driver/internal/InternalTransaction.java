@@ -65,7 +65,7 @@ public class InternalTransaction extends AbstractQueryRunner implements Transact
     @Override
     public boolean isOpen()
     {
-        return tx.isOpen();
+        return tx.isActive();
     }
 
     private void terminateConnectionOnThreadInterrupt( String reason )

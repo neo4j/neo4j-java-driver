@@ -31,6 +31,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
@@ -146,6 +147,16 @@ class InternalTransactionTest
         assertThrows( Exception.class, () -> tx.commit() );
 
         verify( connection ).release();
+        assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    void shouldNotCommitOnTerminatedTransaction() throws Throwable
+    {
+
+        setupFailingRun( connection, new SessionExpiredException( "" ) );
+        tx.run("RETURN 1");
+
         assertFalse( tx.isOpen() );
     }
 

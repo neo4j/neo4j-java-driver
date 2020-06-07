@@ -1,0 +1,14 @@
+!: BOLT 4
+!: AUTO RESET
+!: AUTO HELLO
+!: AUTO GOODBYE
+!: AUTO BEGIN
+
+C: RUN "CREATE ()" {} {}
+C: PULL { "n": 1000 }
+S: SUCCESS {}
+S: FAILURE {"code": "Neo.ClientError.Cluster.NotALeader", "message": "No write operations are allowed directly on this database. Writes must pass through the leader. The role of this server is: FOLLOWER"}
+C: RESET
+S: SUCCESS {}
+C: RESET
+S: SUCCESS {}

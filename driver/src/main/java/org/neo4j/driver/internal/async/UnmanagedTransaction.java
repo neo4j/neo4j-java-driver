@@ -92,7 +92,7 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> closeAsync()
     {
-        if ( isOpen() )
+        if ( isOpen() || state.equals( State.TERMINATED ))
         {
             return rollbackAsync();
         }
@@ -158,7 +158,13 @@ public class UnmanagedTransaction
 
     public boolean isOpen()
     {
-        return state != State.COMMITTED && state != State.ROLLED_BACK;
+        // TERMINATED is still considered open w.r.t to resources available
+        return state == State.ACTIVE || state == State.TERMINATED;
+    }
+
+    public boolean isActive()
+    {
+        return state == State.ACTIVE;
     }
 
     public void markTerminated()

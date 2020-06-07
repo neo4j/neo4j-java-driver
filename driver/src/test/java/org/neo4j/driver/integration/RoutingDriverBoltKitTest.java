@@ -481,6 +481,38 @@ class RoutingDriverBoltKitTest
     }
 
     @Test
+    void shouldNotCommitWhenLeaderSwitchWithWritingTxFunction() throws IOException, InterruptedException
+    {
+        // Given
+        StubServer server = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
+
+        //START a write server that doesn't accept writes
+        stubController.startStub( "not_a_leader_v4.script", 9007 );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+
+        try ( Session session = driver.session() )
+        {
+            session.writeTransaction( tx -> {
+                try
+                {
+                    tx.run( "CREATE ()" ).consume();
+                } catch ( Exception e )
+                {
+                    // Catching the transaction's SessionExpiredException will swallow the exception meaning the
+                    // retry logic won't be aware of a failure but shouldn't attempt a commit since the tx state is TERMINATED.
+                    assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+                }
+                return null;
+            } );
+        }
+
+        driver.close();
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
     void shouldHandleLeaderSwitchWhenWritingWithoutConsuming() throws IOException, InterruptedException, StubServer.ForceKilled
     {
         // Given
