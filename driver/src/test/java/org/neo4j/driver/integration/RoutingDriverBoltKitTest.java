@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -532,6 +533,41 @@ class RoutingDriverBoltKitTest
         driver.close();
         // Finally
         assertThat( server.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunction() throws IOException, InterruptedException
+    {
+        // Given
+        StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
+
+        //START a write server that fails on the first write attempt but then succeeds on the second
+        StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+
+        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
+        List<String> names;
+
+        try ( Session session = driver.session( builder().withDatabase( "mydatabase" ).build() ) )
+        {
+            names = session.writeTransaction( tx -> {
+                tx.run( "RETURN 1");
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException ignored )
+                {
+                }
+                return tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+            } );
+        }
+
+        assertEquals( asList( "Foo", "Bar" ), names );
+
+        // Finally
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
     @Test
