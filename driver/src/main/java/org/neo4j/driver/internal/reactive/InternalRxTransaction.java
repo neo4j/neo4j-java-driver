@@ -56,7 +56,7 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
                     // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
                     // This is optional as tx still holds a reference to all cursor futures and they will be clean up properly in commit
                     Throwable error = Futures.completionExceptionCause( completionError );
-                    tx.markTerminated();
+                    tx.markTerminated( error );
                     cursorFuture.completeExceptionally( error );
                 }
             } );

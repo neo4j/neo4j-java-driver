@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.EnumSet;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -55,7 +56,43 @@ public class UnmanagedTransaction
         COMMITTED,
 
         /** This transaction has been rolled back */
-        ROLLED_BACK
+        ROLLED_BACK;
+
+        private final StateHolder defaultStateHolder;
+
+        State()
+        {
+            this.defaultStateHolder = new StateHolder(this, null);
+        }
+    }
+
+    private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
+
+    /**
+     * This is a holder so that we can have ony the state volatile in the tx without having to synchronize the whole block.
+     */
+    private static final class StateHolder {
+
+        /**
+         * The actual state.
+         */
+        final State value;
+
+        /**
+         * If this holder contains a state of {@link State#TERMINATED}, this represents the cause if any.
+         */
+        final Throwable causeOfTermination;
+
+        StateHolder(State value, Throwable causeOfTermination) {
+
+            this.value = value;
+            this.causeOfTermination = causeOfTermination;
+        }
+
+        boolean isOpen()
+        {
+            return OPEN_STATES.contains( this.value );
+        }
     }
 
     private final Connection connection;
@@ -64,7 +101,7 @@ public class UnmanagedTransaction
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
 
-    private volatile State state = State.ACTIVE;
+    private volatile StateHolder state = new StateHolder(State.ACTIVE, null);
 
     public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
@@ -104,11 +141,11 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> commitAsync()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been committed" ) );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been rolled back" ) );
         }
@@ -122,11 +159,11 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> rollbackAsync()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             return failedFuture( new ClientException( "Can't rollback, transaction has been committed" ) );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             return failedFuture( new ClientException( "Can't rollback, transaction has been rolled back" ) );
         }
@@ -158,12 +195,12 @@ public class UnmanagedTransaction
 
     public boolean isOpen()
     {
-        return state != State.COMMITTED && state != State.ROLLED_BACK;
+        return state.isOpen();
     }
 
-    public void markTerminated()
+    public void markTerminated( Throwable cause )
     {
-        state = State.TERMINATED;
+        state = new StateHolder(State.TERMINATED, cause);
     }
 
     public Connection connection()
@@ -173,34 +210,34 @@ public class UnmanagedTransaction
 
     private void ensureCanRunQueries()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             throw new ClientException( "Cannot run more queries in this transaction, it has been committed" );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             throw new ClientException( "Cannot run more queries in this transaction, it has been rolled back" );
         }
-        else if ( state == State.TERMINATED )
+        else if ( state.value == State.TERMINATED )
         {
             throw new ClientException( "Cannot run more queries in this transaction, " +
-                    "it has either experienced an fatal error or was explicitly terminated" );
+                    "it has either experienced an fatal error or was explicitly terminated", state.causeOfTermination );
         }
     }
 
     private CompletionStage<Void> doCommitAsync()
     {
-        if ( state == State.TERMINATED )
+        if ( state.value == State.TERMINATED )
         {
             return failedFuture( new ClientException( "Transaction can't be committed. " +
-                                                      "It has been rolled back either because of an error or explicit termination" ) );
+                                                      "It has been rolled back either because of an error or explicit termination", state.causeOfTermination ) );
         }
         return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }
 
     private CompletionStage<Void> doRollbackAsync()
     {
-        if ( state == State.TERMINATED )
+        if ( state.value == State.TERMINATED )
         {
             return completedWithNull();
         }
@@ -224,11 +261,11 @@ public class UnmanagedTransaction
     {
         if ( isCommitted )
         {
-            state = State.COMMITTED;
+            state = State.COMMITTED.defaultStateHolder;
         }
         else
         {
-            state = State.ROLLED_BACK;
+            state = State.ROLLED_BACK.defaultStateHolder;
         }
         connection.release(); // release in background
     }
