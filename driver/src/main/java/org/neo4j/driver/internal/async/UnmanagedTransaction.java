@@ -56,22 +56,18 @@ public class UnmanagedTransaction
         COMMITTED,
 
         /** This transaction has been rolled back */
-        ROLLED_BACK;
-
-        private final StateHolder defaultStateHolder;
-
-        State()
-        {
-            this.defaultStateHolder = new StateHolder(this, null);
-        }
+        ROLLED_BACK
     }
-
-    private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
 
     /**
      * This is a holder so that we can have ony the state volatile in the tx without having to synchronize the whole block.
      */
-    private static final class StateHolder {
+    private static final class StateHolder
+    {
+        private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
+        private static final StateHolder ACTIVE_HOLDER = new StateHolder( State.ACTIVE, null );
+        private static final StateHolder COMMITTED_HOLDER = new StateHolder( State.COMMITTED, null );
+        private static final StateHolder ROLLED_BACK_HOLDER = new StateHolder( State.ROLLED_BACK, null );
 
         /**
          * The actual state.
@@ -83,8 +79,29 @@ public class UnmanagedTransaction
          */
         final Throwable causeOfTermination;
 
-        StateHolder(State value, Throwable causeOfTermination) {
+        static StateHolder of( State value )
+        {
+            switch ( value )
+            {
+            case ACTIVE:
+                return ACTIVE_HOLDER;
+            case COMMITTED:
+                return COMMITTED_HOLDER;
+            case ROLLED_BACK:
+                return ROLLED_BACK_HOLDER;
+            case TERMINATED:
+            default:
+                throw new IllegalArgumentException( "Cannot provide a default state holder for state " + value );
+            }
+        }
 
+        static StateHolder terminatedWith( Throwable cause )
+        {
+            return new StateHolder( State.TERMINATED, cause );
+        }
+
+        private StateHolder( State value, Throwable causeOfTermination )
+        {
             this.value = value;
             this.causeOfTermination = causeOfTermination;
         }
@@ -101,7 +118,7 @@ public class UnmanagedTransaction
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
 
-    private volatile StateHolder state = new StateHolder(State.ACTIVE, null);
+    private volatile StateHolder state = StateHolder.of( State.ACTIVE );
 
     public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
@@ -200,7 +217,7 @@ public class UnmanagedTransaction
 
     public void markTerminated( Throwable cause )
     {
-        state = new StateHolder(State.TERMINATED, cause);
+        state = StateHolder.terminatedWith( cause );
     }
 
     public Connection connection()
@@ -261,11 +278,11 @@ public class UnmanagedTransaction
     {
         if ( isCommitted )
         {
-            state = State.COMMITTED.defaultStateHolder;
+            state = StateHolder.of( State.COMMITTED );
         }
         else
         {
-            state = State.ROLLED_BACK.defaultStateHolder;
+            state = StateHolder.of( State.ROLLED_BACK );
         }
         connection.release(); // release in background
     }
