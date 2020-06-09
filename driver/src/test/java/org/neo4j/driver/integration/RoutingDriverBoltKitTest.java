@@ -21,6 +21,9 @@ package org.neo4j.driver.integration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +36,7 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -42,10 +46,11 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
+import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -56,9 +61,12 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
 import org.neo4j.driver.util.StubServerController;
 
@@ -110,7 +118,8 @@ class RoutingDriverBoltKitTest
         StubServer readServer = stubController.startStub( "read_server_v3_read.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -134,8 +143,7 @@ class RoutingDriverBoltKitTest
                 Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
 
         {
-            List<String> result = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" )
-                    .list( record -> record.get( "n.name" ).asString() ) );
+            List<String> result = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ) );
 
             assertThat( result, equalTo( asList( "Bob", "Alice", "Tina" ) ) );
         }
@@ -154,8 +162,7 @@ class RoutingDriverBoltKitTest
         StubServer readServer = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-                Transaction tx = session.beginTransaction() )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ); Transaction tx = session.beginTransaction() )
         {
             List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -210,7 +217,8 @@ class RoutingDriverBoltKitTest
             // Run twice, one on each read server
             for ( int i = 0; i < 2; i++ )
             {
-                try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ); Transaction tx = session.beginTransaction() )
+                try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
+                        Transaction tx = session.beginTransaction() )
                 {
                     assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
                             equalTo( asList( "Bob", "Alice", "Tina" ) ) );
@@ -235,7 +243,8 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
-        assertThrows( SessionExpiredException.class, () -> {
+        assertThrows( SessionExpiredException.class, () ->
+        {
             try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                     Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
@@ -257,7 +266,8 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         //Expect
-        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> {
+        SessionExpiredException e = assertThrows( SessionExpiredException.class, () ->
+        {
             try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
                     Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
                     Transaction tx = session.beginTransaction() )
@@ -306,8 +316,7 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
-                Transaction tx = session.beginTransaction() )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
             assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
         }
@@ -365,8 +374,7 @@ class RoutingDriverBoltKitTest
         StubServer writeServer = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
-                Transaction tx = session.beginTransaction() )
+                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n {name:'Bob'})" );
             tx.commit();
@@ -541,7 +549,7 @@ class RoutingDriverBoltKitTest
         // Given
         StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
 
-        //START a write server that fails on the first write attempt but then succeeds on the second
+        // START a write server that fails on the first write attempt but then succeeds on the second
         StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
@@ -550,22 +558,93 @@ class RoutingDriverBoltKitTest
 
         try ( Session session = driver.session( builder().withDatabase( "mydatabase" ).build() ) )
         {
-            names = session.writeTransaction( tx -> {
-                tx.run( "RETURN 1");
+            names = session.writeTransaction( tx ->
+            {
+                tx.run( "RETURN 1" );
                 try
                 {
                     Thread.sleep( 100 );
                 }
-                catch ( InterruptedException ignored )
+                catch ( InterruptedException ex )
                 {
                 }
-                return tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
+                return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField );
             } );
         }
 
         assertEquals( asList( "Foo", "Bar" ), names );
 
         // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    @Test
+    void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunctionAsync() throws IOException, InterruptedException
+    {
+        // Given
+        StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
+
+        // START a write server that fails on the first write attempt but then succeeds on the second
+        StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+
+        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
+        AsyncSession session = driver.asyncSession( builder().withDatabase( "mydatabase" ).build() );
+        List<String> names = Futures.blockingGet( session.writeTransactionAsync(
+                tx -> tx.runAsync( "RETURN 1" )
+                        .thenComposeAsync( ignored -> {
+                            try
+                            {
+                                Thread.sleep( 100 );
+                            }
+                            catch ( InterruptedException ex )
+                            {
+                            }
+                            return tx.runAsync( "MATCH (n) RETURN n.name" );
+                        } )
+                        .thenComposeAsync( cursor -> cursor.listAsync( RoutingDriverBoltKitTest::extractNameField ) ) ) );
+
+        assertEquals( asList( "Foo", "Bar" ), names );
+
+        // Finally
+        driver.close();
+        assertThat( server.exitStatus(), equalTo( 0 ) );
+        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
+    }
+
+    private static String extractNameField(Record record)
+    {
+        return record.get( 0 ).asString();
+    }
+
+    // This does not exactly reproduce the async and blocking versions above, as we don't have any means of ignoring
+    // the flux of the RETURN 1 query (not pulling the result) like we do in above, so
+    @Test
+    void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunctionRX() throws IOException, InterruptedException
+    {
+        // Given
+        StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
+
+        // START a write server that fails on the first write attempt but then succeeds on the second
+        StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries_rx.script", 9007 );
+        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
+
+        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
+
+        Flux<String> fluxOfNames = Flux.usingWhen( Mono.fromSupplier( () -> driver.rxSession( builder().withDatabase( "mydatabase" ).build() ) ),
+                session -> session.writeTransaction( tx ->
+                {
+                    RxResult result = tx.run( "RETURN 1" );
+                    return Flux.from( result.records() ).limitRate( 100 ).thenMany( tx.run( "MATCH (n) RETURN n.name" ).records() ).limitRate( 100 ).map(
+                            RoutingDriverBoltKitTest::extractNameField );
+                } ), RxSession::close );
+
+        StepVerifier.create( fluxOfNames ).expectNext( "Foo", "Bar" ).verifyComplete();
+
+        // Finally
+        driver.close();
         assertThat( server.exitStatus(), equalTo( 0 ) );
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
@@ -732,8 +811,7 @@ class RoutingDriverBoltKitTest
 
         Logger logger = mock( Logger.class );
         Config config = insecureBuilder().withLogging( ignored -> logger ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
-                Session session = driver.session() )
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -766,8 +844,7 @@ class RoutingDriverBoltKitTest
 
         Logger logger = mock( Logger.class );
         Config config = insecureBuilder().withLogging( ignored -> logger ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config );
-                Session session = driver.session() )
+        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
@@ -793,8 +870,7 @@ class RoutingDriverBoltKitTest
         StubServer brokenReader1 = stubController.startStub( "dead_read_server_tx.script", 9005 );
         StubServer brokenReader2 = stubController.startStub( "dead_read_server_tx.script", 9006 );
 
-        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 );
-              Session session = driver.session() )
+        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 ); Session session = driver.session() )
         {
             AtomicInteger invocations = new AtomicInteger();
             assertThrows( SessionExpiredException.class, () -> session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) ) );
@@ -954,8 +1030,7 @@ class RoutingDriverBoltKitTest
         StubServer router2 = stubController.startStub( "discover_no_writers_9010.script", 9004 );
         StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9003 );
 
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG );
-                Session session = driver.session() )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG ); Session session = driver.session() )
         {
             assertEquals( asList( "Bob", "Alice", "Tina" ), readStrings( "MATCH (n) RETURN n.name", session ) );
 
@@ -1038,10 +1113,9 @@ class RoutingDriverBoltKitTest
         StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
         StubServer writer = stubController.startStub( "multiple_bookmarks.script", 9007 );
 
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( InternalBookmark.parse(
-                        asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
-                                "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ); Session session = driver.session( builder().withBookmarks(
+                InternalBookmark.parse( asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
+                        "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -1113,7 +1187,8 @@ class RoutingDriverBoltKitTest
         StubServer reader = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
 
         AtomicBoolean resolverInvoked = new AtomicBoolean();
-        ServerAddressResolver resolver = address -> {
+        ServerAddressResolver resolver = address ->
+        {
             if ( resolverInvoked.compareAndSet( false, true ) )
             {
                 // return the address first time
@@ -1135,13 +1210,11 @@ class RoutingDriverBoltKitTest
             try ( Session session = driver.session() )
             {
                 // run first query against 9001, which should return result and exit
-                List<String> names1 = session.run( "MATCH (n) RETURN n.name AS name" )
-                        .list( record -> record.get( "name" ).asString() );
+                List<String> names1 = session.run( "MATCH (n) RETURN n.name AS name" ).list( record -> record.get( "name" ).asString() );
                 assertEquals( asList( "Alice", "Bob", "Eve" ), names1 );
 
                 // run second query with retries, it should rediscover using 9042 returned by the resolver and read from 9005
-                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" )
-                        .list( record -> record.get( 0 ).asString() ) );
+                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField ) );
                 assertEquals( asList( "Bob", "Alice", "Tina" ), names2 );
             }
         }
@@ -1183,7 +1256,8 @@ class RoutingDriverBoltKitTest
     @Test
     void shouldRevertToInitialRouterIfKnownRouterThrowsProtocolErrors() throws Exception
     {
-        ServerAddressResolver resolver = a -> {
+        ServerAddressResolver resolver = a ->
+        {
             SortedSet<ServerAddress> addresses = new TreeSet<>( new PortBasedServerAddressComparator() );
             addresses.add( ServerAddress.of( "127.0.0.1", 9001 ) );
             addresses.add( ServerAddress.of( "127.0.0.1", 9003 ) );
@@ -1269,7 +1343,8 @@ class RoutingDriverBoltKitTest
 
     private static TransactionWork<List<Record>> queryWork( final String query, final AtomicInteger invocations )
     {
-        return tx -> {
+        return tx ->
+        {
             invocations.incrementAndGet();
             return tx.run( query ).list();
         };
@@ -1277,7 +1352,8 @@ class RoutingDriverBoltKitTest
 
     private static List<String> readStrings( final String query, Session session )
     {
-        return session.readTransaction( tx -> {
+        return session.readTransaction( tx ->
+        {
             List<Record> records = tx.run( query ).list();
             List<String> names = new ArrayList<>( records.size() );
             for ( Record record : records )
