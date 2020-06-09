@@ -620,7 +620,8 @@ class RoutingDriverBoltKitTest
     }
 
     // This does not exactly reproduce the async and blocking versions above, as we don't have any means of ignoring
-    // the flux of the RETURN 1 query (not pulling the result) like we do in above, so
+    // the flux of the RETURN 1 query (not pulling the result) like we do in above, so this is "just" a test for
+    // a leader going away during the execution of a flux.
     @Test
     void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunctionRX() throws IOException, InterruptedException
     {
