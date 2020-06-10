@@ -50,23 +50,22 @@ import static org.neo4j.driver.Logging.javaUtilLogging;
  * To build a simple config with custom logging implementation:
  * <pre>
  * {@code
- * Config config = Config
- *                  .build()
- *                  .withLogging(new MyLogging())
- *                  .toConfig();
+ * Config config = Config.builder()
+ *                       .withLogging(new MyLogging())
+ *                       .build();
  * }
  * </pre>
  * <p>
  * To build a more complicated config with tuned connection pool options:
  * <pre>
  * {@code
- * Config config = Config.build()
- *                          .withEncryption()
- *                          .withConnectionTimeout(10, TimeUnit.SECONDS)
- *                          .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
- *                          .withMaxConnectionPoolSize(10)
- *                          .withConnectionAcquisitionTimeout(20, TimeUnit.SECONDS)
- *                          .toConfig();
+ * Config config = Config.builder()
+ *                       .withEncryption()
+ *                       .withConnectionTimeout( 10, TimeUnit.SECONDS)
+ *                       .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
+ *                       .withMaxConnectionPoolSize(10)
+ *                       .withConnectionAcquisitionTimeout(20, TimeUnit.SECONDS)
+ *                       .build();
  * }
  * </pre>
  *
