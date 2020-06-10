@@ -62,8 +62,8 @@ public class ConfigCustomResolverExample implements AutoCloseable
         String username = "neo4j";
         String password = "some password";
 
-        try ( Driver driver = createDriver( "neo4j://x.acme.com", username, password, ServerAddress.of( "a.acme.com", 7676 ),
-                ServerAddress.of( "b.acme.com", 8787 ), ServerAddress.of( "c.acme.com", 9898 ) ) )
+        try ( Driver driver = createDriver( "neo4j://x.example.com", username, password, ServerAddress.of( "a.example.com", 7676 ),
+                ServerAddress.of( "b.example.com", 8787 ), ServerAddress.of( "c.example.com", 9898 ) ) )
         {
             try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
