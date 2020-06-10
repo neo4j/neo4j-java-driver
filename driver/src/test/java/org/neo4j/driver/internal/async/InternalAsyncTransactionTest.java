@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -64,6 +65,7 @@ import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 class InternalAsyncTransactionTest
 {
     private Connection connection;
+    private NetworkSession networkSession;
     private InternalAsyncTransaction tx;
 
     @BeforeEach
@@ -73,7 +75,8 @@ class InternalAsyncTransactionTest
         ConnectionProvider connectionProvider = mock( ConnectionProvider.class );
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection ) );
-        InternalAsyncSession session = new InternalAsyncSession( newSession( connectionProvider ) );
+        networkSession = newSession(connectionProvider);
+        InternalAsyncSession session = new InternalAsyncSession(networkSession);
         tx = (InternalAsyncTransaction) await( session.beginTransactionAsync() );
     }
 
@@ -91,7 +94,7 @@ class InternalAsyncTransactionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncTransaction,CompletionStage<ResultCursor>> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<AsyncTransaction,CompletionStage<ResultCursor>> runReturnOne )
     {
         setupSuccessfulRunAndPull( connection );
 
@@ -102,7 +105,7 @@ class InternalAsyncTransactionTest
     }
 
     @Test
-    void shouldCommit() throws Throwable
+    void shouldCommit()
     {
         await( tx.commitAsync() );
 
@@ -112,7 +115,7 @@ class InternalAsyncTransactionTest
     }
 
     @Test
-    void shouldRollback() throws Throwable
+    void shouldRollback()
     {
         await( tx.rollbackAsync() );
 
@@ -122,9 +125,9 @@ class InternalAsyncTransactionTest
     }
 
     @Test
-    void shouldRollbackWhenFailedRun() throws Throwable
+    void shouldRollbackWhenFailedRun()
     {
-        tx.markTerminated();
+        Futures.blockingGet( networkSession.resetAsync() );
         ClientException clientException = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
 
         assertThat( clientException.getMessage(), containsString( "It has been rolled back either because of an error or explicit termination" ) );
@@ -133,7 +136,7 @@ class InternalAsyncTransactionTest
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToCommit() throws Throwable
+    void shouldReleaseConnectionWhenFailedToCommit()
     {
         setupFailingCommit( connection );
         assertThrows( Exception.class, () -> await( tx.commitAsync() ) );
@@ -143,7 +146,7 @@ class InternalAsyncTransactionTest
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToRollback() throws Throwable
+    void shouldReleaseConnectionWhenFailedToRollback()
     {
         setupFailingRollback( connection );
         assertThrows( Exception.class, () -> await( tx.rollbackAsync() ) );

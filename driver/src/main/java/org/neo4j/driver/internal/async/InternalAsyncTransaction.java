@@ -50,11 +50,6 @@ public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implement
         return tx.runAsync(query, true );
     }
 
-    public void markTerminated()
-    {
-        tx.markTerminated();
-    }
-
     public boolean isOpen()
     {
         return tx.isOpen();
