@@ -1,0 +1,25 @@
+!: BOLT 4
+!: AUTO RESET
+!: AUTO BEGIN
+!: AUTO HELLO
+!: AUTO GOODBYE
+!: AUTO ROLLBACK
+
+C: RUN "RETURN 1" {} {}
+S: SUCCESS {"fields": ["1"]}
+C: PULL {"n": 100}
+S: FAILURE {"code": "Neo.ClientError.Cluster.NotALeader", "message": "blabla"}
+C: RUN "RETURN 1" {} {}
+S: SUCCESS {"fields": ["1"]}
+C: PULL {"n": 100}
+S: RECORD [1]
+   SUCCESS {"has_more": false}
+C: RUN "MATCH (n) RETURN n.name" {} {}
+S: SUCCESS {"fields": ["n.name"]}
+C: PULL {"n": 100}
+S: RECORD ["Foo"]
+   RECORD ["Bar"]
+   SUCCESS {"has_more": false}
+C: COMMIT
+S: SUCCESS {"bookmark": "NewBookmark"}
+   <EXIT>

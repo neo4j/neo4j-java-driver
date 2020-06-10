@@ -73,6 +73,6 @@ class TransactionPullResponseCompletionListenerTest
 
         handler.onFailure( error );
 
-        verify( tx ).markTerminated();
+        verify( tx ).markTerminated( error );
     }
 }
