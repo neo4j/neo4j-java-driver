@@ -86,7 +86,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
         throw new IllegalStateException( "Untraceable channel created." );
     }
 
-    public void channelCreated( Channel channel, ListenerEvent creatingEvent )
+    public synchronized void channelCreated( Channel channel, ListenerEvent creatingEvent )
     {
         log.debug( "Channel [0x%s] created. Local address: %s, remote address: %s",
                 channel.id(), channel.localAddress(), channel.remoteAddress() );
