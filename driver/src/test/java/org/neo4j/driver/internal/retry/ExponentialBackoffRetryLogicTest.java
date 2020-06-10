@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.retry;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +43,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -763,6 +766,50 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void doesRetryOnClientExceptionWithRetryableCause()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = logic.retry( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw clientExceptionWithValidTerminationCause();
+            }
+            return "Done";
+        } );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
+    void doesNotRetryOnRandomClientException()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        ClientException exception = Assertions.assertThrows( ClientException.class, () -> logic.retry( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw randomClientException();
+            }
+            return "Done";
+        } ) );
+
+        assertEquals( "Meeh", exception.getMessage() );
+    }
+
+    @Test
     void eachRetryIsLogged()
     {
         int retries = 9;
@@ -779,6 +826,52 @@ class ExponentialBackoffRetryLogicTest
                 startsWith( "Transaction failed and will be retried" ),
                 any( ServiceUnavailableException.class )
         );
+    }
+
+    @Test
+    void doesRetryOnClientExceptionWithRetryableCauseAsync()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = await( logic.retryAsync( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw clientExceptionWithValidTerminationCause();
+            }
+            return CompletableFuture.completedFuture( "Done" );
+        } ) );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
+    void doesNotRetryOnRandomClientExceptionAsync()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        ClientException exception = Assertions.assertThrows( ClientException.class, () -> await( logic.retryAsync( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw randomClientException();
+            }
+            return CompletableFuture.completedFuture( "Done" );
+        } ) ) );
+
+        assertEquals( "Meeh", exception.getMessage() );
     }
 
     @Test
@@ -800,6 +893,52 @@ class ExponentialBackoffRetryLogicTest
                 startsWith( "Async transaction failed and is scheduled to retry" ),
                 any( ServiceUnavailableException.class )
         );
+    }
+
+    @Test
+    void doesRetryOnClientExceptionWithRetryableCauseRx()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = await( Mono.from( logic.retryRx( Mono.fromSupplier( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw clientExceptionWithValidTerminationCause();
+            }
+            return "Done";
+        } ) ) ) );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
+    void doesNotRetryOnRandomClientExceptionRx()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        ClientException exception = Assertions.assertThrows( ClientException.class, () -> await( Mono.from( logic.retryRx( Mono.fromSupplier( () ->
+        {
+            if ( exceptionThrown.compareAndSet( false, true ) )
+            {
+                throw randomClientException();
+            }
+            return "Done";
+        } ) ) ) ) );
+
+        assertEquals( "Meeh", exception.getMessage() );
     }
 
     @Test
@@ -1109,6 +1248,16 @@ class ExponentialBackoffRetryLogicTest
     private static ServiceUnavailableException serviceUnavailable()
     {
         return new ServiceUnavailableException( "" );
+    }
+
+    private static RuntimeException clientExceptionWithValidTerminationCause()
+    {
+        return new ClientException( "¯\\_(ツ)_/¯", serviceUnavailable() );
+    }
+
+    private static RuntimeException randomClientException()
+    {
+        return new ClientException( "Meeh" );
     }
 
     private static SessionExpiredException sessionExpired()

@@ -128,7 +128,7 @@ class UnmanagedTransactionIT
     {
         UnmanagedTransaction tx = beginTransaction();
 
-        tx.markTerminated();
+        tx.markTerminated( null );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
         assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
@@ -162,7 +162,7 @@ class UnmanagedTransactionIT
     {
         UnmanagedTransaction tx = beginTransaction();
 
-        tx.markTerminated();
+        tx.markTerminated( null );
 
         assertNull( await( tx.rollbackAsync() ) );
         assertFalse( tx.isOpen() );
@@ -173,7 +173,7 @@ class UnmanagedTransactionIT
     {
         UnmanagedTransaction tx = beginTransaction();
         txRun( tx, "CREATE (:MyLabel)" );
-        tx.markTerminated();
+        tx.markTerminated( null );
 
         ClientException e = assertThrows( ClientException.class, () -> txRun( tx, "CREATE (:MyOtherLabel)" ) );
         assertThat( e.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
@@ -183,7 +183,7 @@ class UnmanagedTransactionIT
     void shouldBePossibleToRunMoreTransactionsAfterOneIsTerminated()
     {
         UnmanagedTransaction tx1 = beginTransaction();
-        tx1.markTerminated();
+        tx1.markTerminated( null );
 
         // commit should fail, make session forget about this transaction and release the connection to the pool
         ClientException e = assertThrows( ClientException.class, () -> await( tx1.commitAsync() ) );

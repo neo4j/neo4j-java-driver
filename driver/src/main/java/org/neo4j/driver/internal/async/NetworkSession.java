@@ -138,7 +138,7 @@ public class NetworkSession
                 {
                     if ( tx != null )
                     {
-                        tx.markTerminated();
+                        tx.markTerminated( null );
                     }
                 } )
                 .thenCompose( ignore -> connectionStage )

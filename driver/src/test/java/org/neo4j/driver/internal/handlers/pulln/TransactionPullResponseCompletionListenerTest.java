@@ -73,7 +73,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
 
         // Then
         assertThat( handler.state(), equalTo( BasicPullResponseHandler.State.FAILURE_STATE ) );
-        verify( tx ).markTerminated();
+        verify( tx ).markTerminated( error );
         verify( recordConsumer ).accept( null, error );
         verify( summaryConsumer ).accept( any( ResultSummary.class ), eq( error ) );
     }

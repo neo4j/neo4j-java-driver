@@ -135,6 +135,6 @@ class InternalRxTransactionTest
         verify( tx ).runRx( any( Query.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
-        verify( tx ).markTerminated();
+        verify( tx ).markTerminated( error );
     }
 }

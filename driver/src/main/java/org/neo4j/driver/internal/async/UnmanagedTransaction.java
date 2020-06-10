@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.EnumSet;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -58,13 +59,66 @@ public class UnmanagedTransaction
         ROLLED_BACK
     }
 
+    /**
+     * This is a holder so that we can have ony the state volatile in the tx without having to synchronize the whole block.
+     */
+    private static final class StateHolder
+    {
+        private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
+        private static final StateHolder ACTIVE_HOLDER = new StateHolder( State.ACTIVE, null );
+        private static final StateHolder COMMITTED_HOLDER = new StateHolder( State.COMMITTED, null );
+        private static final StateHolder ROLLED_BACK_HOLDER = new StateHolder( State.ROLLED_BACK, null );
+
+        /**
+         * The actual state.
+         */
+        final State value;
+
+        /**
+         * If this holder contains a state of {@link State#TERMINATED}, this represents the cause if any.
+         */
+        final Throwable causeOfTermination;
+
+        static StateHolder of( State value )
+        {
+            switch ( value )
+            {
+            case ACTIVE:
+                return ACTIVE_HOLDER;
+            case COMMITTED:
+                return COMMITTED_HOLDER;
+            case ROLLED_BACK:
+                return ROLLED_BACK_HOLDER;
+            case TERMINATED:
+            default:
+                throw new IllegalArgumentException( "Cannot provide a default state holder for state " + value );
+            }
+        }
+
+        static StateHolder terminatedWith( Throwable cause )
+        {
+            return new StateHolder( State.TERMINATED, cause );
+        }
+
+        private StateHolder( State value, Throwable causeOfTermination )
+        {
+            this.value = value;
+            this.causeOfTermination = causeOfTermination;
+        }
+
+        boolean isOpen()
+        {
+            return OPEN_STATES.contains( this.value );
+        }
+    }
+
     private final Connection connection;
     private final BoltProtocol protocol;
     private final BookmarkHolder bookmarkHolder;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
 
-    private volatile State state = State.ACTIVE;
+    private volatile StateHolder state = StateHolder.of( State.ACTIVE );
 
     public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
@@ -104,11 +158,11 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> commitAsync()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been committed" ) );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             return failedFuture( new ClientException( "Can't commit, transaction has been rolled back" ) );
         }
@@ -122,11 +176,11 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> rollbackAsync()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             return failedFuture( new ClientException( "Can't rollback, transaction has been committed" ) );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             return failedFuture( new ClientException( "Can't rollback, transaction has been rolled back" ) );
         }
@@ -158,12 +212,12 @@ public class UnmanagedTransaction
 
     public boolean isOpen()
     {
-        return state != State.COMMITTED && state != State.ROLLED_BACK;
+        return state.isOpen();
     }
 
-    public void markTerminated()
+    public void markTerminated( Throwable cause )
     {
-        state = State.TERMINATED;
+        state = StateHolder.terminatedWith( cause );
     }
 
     public Connection connection()
@@ -173,34 +227,34 @@ public class UnmanagedTransaction
 
     private void ensureCanRunQueries()
     {
-        if ( state == State.COMMITTED )
+        if ( state.value == State.COMMITTED )
         {
             throw new ClientException( "Cannot run more queries in this transaction, it has been committed" );
         }
-        else if ( state == State.ROLLED_BACK )
+        else if ( state.value == State.ROLLED_BACK )
         {
             throw new ClientException( "Cannot run more queries in this transaction, it has been rolled back" );
         }
-        else if ( state == State.TERMINATED )
+        else if ( state.value == State.TERMINATED )
         {
             throw new ClientException( "Cannot run more queries in this transaction, " +
-                    "it has either experienced an fatal error or was explicitly terminated" );
+                    "it has either experienced an fatal error or was explicitly terminated", state.causeOfTermination );
         }
     }
 
     private CompletionStage<Void> doCommitAsync()
     {
-        if ( state == State.TERMINATED )
+        if ( state.value == State.TERMINATED )
         {
             return failedFuture( new ClientException( "Transaction can't be committed. " +
-                                                      "It has been rolled back either because of an error or explicit termination" ) );
+                                                      "It has been rolled back either because of an error or explicit termination", state.causeOfTermination ) );
         }
         return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }
 
     private CompletionStage<Void> doRollbackAsync()
     {
-        if ( state == State.TERMINATED )
+        if ( state.value == State.TERMINATED )
         {
             return completedWithNull();
         }
@@ -224,11 +278,11 @@ public class UnmanagedTransaction
     {
         if ( isCommitted )
         {
-            state = State.COMMITTED;
+            state = StateHolder.of( State.COMMITTED );
         }
         else
         {
-            state = State.ROLLED_BACK;
+            state = StateHolder.of( State.ROLLED_BACK );
         }
         connection.release(); // release in background
     }

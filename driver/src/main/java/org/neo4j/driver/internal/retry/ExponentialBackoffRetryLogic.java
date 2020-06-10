@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -100,8 +101,9 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             {
                 return work.get();
             }
-            catch ( Throwable error )
+            catch ( Throwable throwable )
             {
+                Throwable error = extractPossibleTerminationCause( throwable );
                 if ( canRetryOn( error ) )
                 {
                     long currentTime = clock.millis();
@@ -122,8 +124,10 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                         continue;
                     }
                 }
-                addSuppressed( error, errors );
-                throw error;
+
+                // Add the original error in case we didn't continue the loop from within the if above.
+                addSuppressed( throwable, errors );
+                throw throwable;
             }
         }
     }
@@ -144,54 +148,67 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
 
     protected boolean canRetryOn( Throwable error )
     {
-        return error instanceof SessionExpiredException ||
-               error instanceof ServiceUnavailableException ||
-               isTransientError( error );
+        return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || isTransientError( error );
+    }
+
+    /**
+     * Extracts the possible cause of a transaction that has been marked terminated.
+     *
+     * @param error
+     * @return
+     */
+    private static Throwable extractPossibleTerminationCause( Throwable error )
+    {
+
+        // Having a dedicated "TerminatedException" inheriting from ClientException might be a good idea.
+        if ( error instanceof ClientException && error.getCause() != null )
+        {
+            return error.getCause();
+        }
+        return error;
     }
 
     private Function<Flux<Throwable>,Publisher<Context>> retryRxCondition()
     {
-        return errorCurrentAttempt -> errorCurrentAttempt.flatMap( e -> Mono.subscriberContext().map( ctx -> Tuples.of( e, ctx ) ) ).flatMap( t2 -> {
-            Throwable lastError = t2.getT1();
+        return errorCurrentAttempt -> errorCurrentAttempt.flatMap( e -> Mono.subscriberContext().map( ctx -> Tuples.of( e, ctx ) ) ).flatMap( t2 ->
+        {
+
+            Throwable throwable = t2.getT1();
+            Throwable error = extractPossibleTerminationCause( throwable );
+
             Context ctx = t2.getT2();
 
             List<Throwable> errors = ctx.getOrDefault( "errors", null );
 
-            long startTime  = ctx.getOrDefault( "startTime", -1L );
+            long startTime = ctx.getOrDefault( "startTime", -1L );
             long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
-            if( !canRetryOn( lastError ) )
+            if ( canRetryOn( error ) )
             {
-                addSuppressed( lastError, errors );
-                return Mono.error( lastError );
+                long currentTime = clock.millis();
+                if ( startTime == -1 )
+                {
+                    startTime = currentTime;
+                }
+
+                long elapsedTime = currentTime - startTime;
+                if ( elapsedTime < maxRetryTimeMs )
+                {
+                    long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                    log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
+
+                    nextDelayMs = (long) (nextDelayMs * multiplier);
+                    errors = recordError( error, errors );
+
+                    // retry on netty event loop thread
+                    EventExecutor eventExecutor = eventExecutorGroup.next();
+                    return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) ).delayElement(
+                            Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
+                }
             }
+            addSuppressed( throwable, errors );
 
-            long currentTime = clock.millis();
-            if ( startTime == -1 )
-            {
-                startTime = currentTime;
-            }
-
-            long elapsedTime = currentTime - startTime;
-            if ( elapsedTime < maxRetryTimeMs )
-            {
-                long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
-                log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", lastError );
-
-                nextDelayMs = (long) (nextDelayMs * multiplier);
-                errors = recordError( lastError, errors );
-
-                // retry on netty event loop thread
-                EventExecutor eventExecutor = eventExecutorGroup.next();
-                return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) )
-                        .delayElement( Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
-            }
-            else
-            {
-                addSuppressed( lastError, errors );
-
-                return Mono.error( lastError );
-            }
+            return Mono.error( throwable );
         } );
     }
 
@@ -249,9 +266,10 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         } );
     }
 
-    private <T> void retryOnError( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
-            long startTime, long retryDelayMs, Throwable error, List<Throwable> errors )
+    private <T> void retryOnError( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work, long startTime, long retryDelayMs, Throwable throwable,
+            List<Throwable> errors )
     {
+        Throwable error = extractPossibleTerminationCause( throwable );
         if ( canRetryOn( error ) )
         {
             long currentTime = clock.millis();
@@ -269,8 +287,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             }
         }
 
-        addSuppressed( error, errors );
-        resultFuture.completeExceptionally( error );
+        addSuppressed( throwable, errors );
+        resultFuture.completeExceptionally( throwable );
     }
 
     private long computeDelayWithJitter( long delayMs )

@@ -144,7 +144,7 @@ class UnmanagedTransactionTest
     {
         UnmanagedTransaction tx = beginTx( connectionMock() );
 
-        tx.markTerminated();
+        tx.markTerminated( null );
 
         assertTrue( tx.isOpen() );
     }
@@ -154,7 +154,7 @@ class UnmanagedTransactionTest
     {
         UnmanagedTransaction tx = beginTx( connectionMock() );
 
-        tx.markTerminated();
+        tx.markTerminated( null );
         await( tx.closeAsync() );
 
         assertFalse( tx.isOpen() );
@@ -196,7 +196,7 @@ class UnmanagedTransactionTest
         Connection connection = connectionMock();
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
-        tx.markTerminated();
+        tx.markTerminated(  null  );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
 
@@ -210,7 +210,7 @@ class UnmanagedTransactionTest
         Connection connection = connectionMock();
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
-        tx.markTerminated();
+        tx.markTerminated( null );
         await( tx.rollbackAsync() );
 
         verify( connection ).release();
