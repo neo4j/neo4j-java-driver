@@ -22,6 +22,7 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.jdk.JDK11OrLater;
+import com.oracle.svm.core.jdk.JDK8OrEarlier;
 
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -113,20 +114,58 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
 @TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK11OrLater.class)
 final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapper {
     @Substitute
-    @SuppressWarnings( "deprecation" )
-    public SSLEngine wrapSslEngine( SSLEngine engine, ByteBufAllocator alloc,
+    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
             JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
-        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_Java9SslEngine(
-                engine, applicationNegotiator, isServer);
+        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
     }
 
 }
 
-@TargetClass(className = "io.netty.handler.ssl.Java9SslEngine", onlyWith = JDK11OrLater.class)
-final class Target_io_netty_handler_ssl_Java9SslEngine {
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK8OrEarlier.class)
+final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapperJava8 {
+    @Substitute
+    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
+            JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
+        if (Target_io_netty_handler_ssl_JettyAlpnSslEngine.isAvailable()) {
+            return isServer
+                   ? (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newServerEngine(engine,
+                    applicationNegotiator)
+                   : (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newClientEngine(engine,
+                           applicationNegotiator);
+        }
+        throw new RuntimeException("Unable to wrap SSLEngine of type " + engine.getClass().getName());
+    }
+
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JettyAlpnSslEngine", onlyWith = JDK8OrEarlier.class)
+final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
+    @Substitute
+    static boolean isAvailable() {
+        return false;
+    }
+
+    @Substitute
+    @SuppressWarnings( "deprecation" )
+    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(SSLEngine engine,
+            JdkApplicationProtocolNegotiator applicationNegotiator) {
+        return null;
+    }
+
+    @Substitute
+    @SuppressWarnings( "deprecation" )
+    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(SSLEngine engine,
+            JdkApplicationProtocolNegotiator applicationNegotiator) {
+        return null;
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnSslEngine", onlyWith = JDK11OrLater.class)
+final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
+
     @Alias
     @SuppressWarnings( "deprecation" )
-    Target_io_netty_handler_ssl_Java9SslEngine(final SSLEngine engine,
+    Target_io_netty_handler_ssl_JdkAlpnSslEngine(final SSLEngine engine,
             final JdkApplicationProtocolNegotiator applicationNegotiator, final boolean isServer) {
 
     }
