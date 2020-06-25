@@ -27,8 +27,6 @@ import com.oracle.svm.core.jdk.JDK8OrEarlier;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -337,15 +335,5 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
     }
 }
 
-@TargetClass(className = "io.netty.channel.nio.NioEventLoop")
-final class Target_io_netty_channel_nio_NioEventLoop {
-
-    @Substitute
-    private static Queue<Runnable> newTaskQueue0(int maxPendingTasks) {
-        return new LinkedBlockingDeque<>();
-    }
-}
-
 class NettySubstitutions {
-
 }
