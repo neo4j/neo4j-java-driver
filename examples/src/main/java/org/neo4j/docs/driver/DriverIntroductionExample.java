@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 // end::driver-introduction-example-import[]
 
 // tag::driver-introduction-example[]
@@ -35,12 +37,7 @@ public class DriverIntroductionExample implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(DriverIntroductionExample.class.getName());
     private final Driver driver;
 
-    public DriverIntroductionExample(String uri, String user, String password) {
-        // Aura queries use an encrypted connection
-        Config config = Config.builder()
-                .withEncryption()
-                .build();
-
+    public DriverIntroductionExample(String uri, String user, String password, Config config) {
         // The driver is a long living object and should be opened during the start of your application
         driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
@@ -64,6 +61,7 @@ public class DriverIntroductionExample implements AutoCloseable {
         params.put("person2_name", person2Name);
 
         try (Session session = driver.session()) {
+            // Write transactions allow the driver to handle retries and transient errors
             Record record = session.writeTransaction(tx -> {
                 Result result = tx.run(createFriendshipQuery, params);
                 return result.single();
@@ -90,7 +88,7 @@ public class DriverIntroductionExample implements AutoCloseable {
                 Result result = tx.run(readPersonByNameQuery, params);
                 return result.single();
             });
-            System.out.println(String.format("Found person:: %s", record.get("name").asString()));
+            System.out.println(String.format("Found person: %s", record.get("name").asString()));
         // You should capture any errors along with the query and data for traceability
         } catch (Neo4jException ex) {
             LOGGER.log(Level.SEVERE, readPersonByNameQuery + " raised an exception", ex);
@@ -99,10 +97,16 @@ public class DriverIntroductionExample implements AutoCloseable {
     }
 
     public static void main(String... args) throws Exception {
+        // Aura uses the "neo4j" protocol
         String boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
+
         String user = "<Username for Neo4j Aura database>";
         String password = "<Password for Neo4j Aura database>";
-        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password)) {
+
+        // Aura queries use an encrypted connection
+        Config config = Config.builder().withEncryption().build();
+
+        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, config)) {
             app.createFriendship("Alice", "David");
             app.findPerson("Alice");
         }
