@@ -71,7 +71,7 @@ public class DriverIntroductionExample implements AutoCloseable {
             System.out.println(String.format("Created friendship between: %s, %s",
                     record.get("p1").get("name").asString(),
                     record.get("p2").get("name").asString()));
-            // You should capture any errors along with the query and data for traceability
+        // You should capture any errors along with the query and data for traceability
         } catch (Neo4jException ex) {
             LOGGER.log(Level.SEVERE, createFriendshipQuery + " raised an exception", ex);
             throw ex;
