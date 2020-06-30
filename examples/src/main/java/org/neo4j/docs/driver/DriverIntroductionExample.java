@@ -109,7 +109,3 @@ public class DriverIntroductionExample implements AutoCloseable {
     }
 }
 // end::driver-introduction-example[]
-
-// tag::hello-world-output[]
-// hello, world, from node 1234
-// end::hello-world-output[]
