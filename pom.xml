@@ -28,6 +28,7 @@
   <modules>
     <module>driver</module>
     <module>examples</module>
+    <module>nutkit-backend</module>
   </modules>
 
   <licenses>
