@@ -21,51 +21,90 @@ package org.neo4j.docs.driver;
 // tag::driver-introduction-example-import[]
 
 import org.neo4j.driver.*;
+import org.neo4j.driver.exceptions.Neo4jException;
 
-import static org.neo4j.driver.Values.parameters;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 // end::driver-introduction-example-import[]
 
 // tag::driver-introduction-example[]
-public class DriverIntroductionExample implements AutoCloseable
-{
+public class DriverIntroductionExample implements AutoCloseable {
+    private static final Logger LOGGER = Logger.getLogger(DriverIntroductionExample.class.getName());
     private final Driver driver;
 
-    public DriverIntroductionExample(String uri, String user, String password )
-    {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+    public DriverIntroductionExample(String uri, String user, String password) {
+        // Aura queries use an encrypted connection
+        Config config = Config.builder()
+                .withEncryption()
+                .build();
+
+        // The driver is a long living object and should be opened during the start of your application
+        driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
     @Override
-    public void close() throws Exception
-    {
+    public void close() throws Exception {
+        // The driver object should be closed before the application ends.
         driver.close();
     }
 
-    public void printGreeting( final String message )
-    {
-        try ( Session session = driver.session() )
-        {
-            String greeting = session.writeTransaction( new TransactionWork<String>()
-            {
-                @Override
-                public String execute( Transaction tx )
-                {
-                    Result result = tx.run( "CREATE (a:Greeting) " +
-                                                     "SET a.message = $message " +
-                                                     "RETURN a.message + ', from node ' + id(a)",
-                            parameters( "message", message ) );
-                    return result.single().get( 0 ).asString();
-                }
-            } );
-            System.out.println( greeting );
+    public void createFriendship(final String person1Name, final String person2Name) {
+        // To learn more about the Cypher syntax, see https://neo4j.com/docs/cypher-manual/current/
+        // The Reference Card is also a good resource for keywords https://neo4j.com/docs/cypher-refcard/current/
+        String createFriendshipQuery = "CREATE (p1:Person { name: $person1_name })\n" +
+                "CREATE (p2:Person { name: $person2_name })\n" +
+                "CREATE (p1)-[:KNOWS]->(p2)\n" +
+                "RETURN p1, p2";
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("person1_name", person1Name);
+        params.put("person2_name", person2Name);
+
+        try (Session session = driver.session()) {
+            Record record = session.writeTransaction(tx -> {
+                Result result = tx.run(createFriendshipQuery, params);
+                return result.single();
+            });
+            System.out.println(String.format("Created friendship between: %s, %s",
+                    record.get("p1").get("name").asString(),
+                    record.get("p2").get("name").asString()));
+            // You should capture any errors along with the query and data for traceability
+        } catch (Neo4jException ex) {
+            LOGGER.log(Level.SEVERE, createFriendshipQuery + " raised an exception", ex);
+            throw ex;
         }
     }
 
-    public static void main( String... args ) throws Exception
-    {
-        try ( DriverIntroductionExample greeter = new DriverIntroductionExample( "bolt://localhost:7687", "neo4j", "password" ) )
-        {
-            greeter.printGreeting( "hello, world" );
+    public void findPerson(final String personName) {
+        String readPersonByNameQuery = "MATCH (p:Person)\n" +
+                "WHERE p.name = $person_name\n" +
+                "RETURN p.name AS name";
+
+        Map<String, Object> params = Collections.singletonMap("person_name", personName);
+
+        try (Session session = driver.session()) {
+            Record record = session.readTransaction(tx -> {
+                Result result = tx.run(readPersonByNameQuery, params);
+                return result.single();
+            });
+            System.out.println(String.format("Found person:: %s", record.get("name").asString()));
+        // You should capture any errors along with the query and data for traceability
+        } catch (Neo4jException ex) {
+            LOGGER.log(Level.SEVERE, readPersonByNameQuery + " raised an exception", ex);
+            throw ex;
+        }
+    }
+
+    public static void main(String... args) throws Exception {
+        String boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
+        String user = "<Username for Neo4j Aura database>";
+        String password = "<Password for Neo4j Aura database>";
+        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password)) {
+            app.createFriendship("Alice", "David");
+            app.findPerson("Alice");
         }
     }
 }

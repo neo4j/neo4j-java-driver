@@ -305,6 +305,28 @@ class ExamplesIT
     }
 
     @Test
+    void testShouldRunDriverIntroduction() throws Exception
+    {
+        // Given
+        try ( DriverIntroductionExample intro = new DriverIntroductionExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            StdIOCapture stdIO = new StdIOCapture();
+
+            try ( AutoCloseable ignored = stdIO.capture() )
+            {
+                intro.createFriendship( "Alice", "David" );
+                intro.findPerson( "Alice" );
+            }
+
+            // Then
+            assertThat( stdIO.stdout().size(), equalTo( 2 ) );
+            assertThat( stdIO.stdout().get( 0 ), containsString( "Create friendship between: Alice, David" ) );
+            assertThat( stdIO.stdout().get( 1 ), containsString( "Found person: Alice" ) );
+        }
+    }
+
+    @Test
     void testShouldRunReadWriteTransactionExample() throws Exception
     {
         // Given
