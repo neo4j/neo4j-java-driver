@@ -32,11 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.*;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -57,6 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Neo4jEdition.ENTERPRISE;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -64,7 +61,6 @@ import static org.neo4j.driver.util.Neo4jRunner.PASSWORD;
 import static org.neo4j.driver.util.Neo4jRunner.USER;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.createDatabase;
-import static org.neo4j.driver.util.TestUtil.databaseExists;
 import static org.neo4j.driver.util.TestUtil.dropDatabase;
 
 @ParallelizableIT
@@ -301,6 +297,29 @@ class ExamplesIT
             // Then
             assertThat( stdIO.stdout().size(), equalTo( 1 ) );
             assertThat( stdIO.stdout().get( 0 ), containsString( "hello, world" ) );
+        }
+    }
+
+    @Test
+    void testShouldRunDriverIntroduction() throws Exception
+    {
+        // Given
+        Config config = Config.builder().withEncryption().withTrustStrategy(trustAllCertificates()).build();
+        try (DriverIntroductionExample intro = new DriverIntroductionExample( uri, USER, PASSWORD, config) )
+        {
+            // When
+            StdIOCapture stdIO = new StdIOCapture();
+
+            try ( AutoCloseable ignored = stdIO.capture() )
+            {
+                intro.createFriendship( "Alice", "David" );
+                intro.findPerson( "Alice" );
+            }
+
+            // Then
+            assertThat( stdIO.stdout().size(), equalTo( 2 ) );
+            assertThat( stdIO.stdout().get( 0 ), containsString( "Created friendship between: Alice, David" ) );
+            assertThat( stdIO.stdout().get( 1 ), containsString( "Found person: Alice" ) );
         }
     }
 
