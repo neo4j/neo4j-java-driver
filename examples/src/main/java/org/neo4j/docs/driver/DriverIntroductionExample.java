@@ -97,7 +97,7 @@ public class DriverIntroductionExample implements AutoCloseable {
     }
 
     public static void main(String... args) throws Exception {
-        // Aura uses the "neo4j" protocol
+        // Aura queries use an encrypted connection using the "neo4j+s" protocol
         String boltUrl = "%%BOLT_URL_PLACEHOLDER%%";
 
         String user = "<Username for Neo4j Aura database>";
@@ -106,7 +106,7 @@ public class DriverIntroductionExample implements AutoCloseable {
         // Aura queries use an encrypted connection
         Config config = Config.builder().withEncryption().build();
 
-        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, config)) {
+        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, Config.defaultConfig())) {
             app.createFriendship("Alice", "David");
             app.findPerson("Alice");
         }
