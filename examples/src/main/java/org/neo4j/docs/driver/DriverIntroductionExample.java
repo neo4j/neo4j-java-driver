@@ -102,10 +102,7 @@ public class DriverIntroductionExample implements AutoCloseable {
 
         String user = "<Username for Neo4j Aura database>";
         String password = "<Password for Neo4j Aura database>";
-
-        // Aura queries use an encrypted connection
-        Config config = Config.builder().withEncryption().build();
-
+        
         try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, Config.defaultConfig())) {
             app.createFriendship("Alice", "David");
             app.findPerson("Alice");
