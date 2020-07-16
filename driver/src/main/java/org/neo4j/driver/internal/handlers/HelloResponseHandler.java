@@ -37,13 +37,11 @@ public class HelloResponseHandler implements ResponseHandler
 
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
-    private final int protocolVersion;
 
-    public HelloResponseHandler( ChannelPromise connectionInitializedPromise, int protocolVersion )
+    public HelloResponseHandler( ChannelPromise connectionInitializedPromise )
     {
         this.connectionInitializedPromise = connectionInitializedPromise;
         this.channel = connectionInitializedPromise.channel();
-        this.protocolVersion = protocolVersion;
     }
 
     @Override
@@ -51,16 +49,8 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
-            // From Server V4 extracting server from metadata in the success message is unreliable
-            // so we fix the Server version against the Bolt Protocol version for Server V4 and above.
-            if ( protocolVersion == 4 )
-            {
-                setServerVersion( channel, ServerVersion.v4_0_0 );
-            }
-            else
-            {
-                setServerVersion( channel, extractNeo4jServerVersion( metadata ) );
-            }
+            ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
+            setServerVersion( channel, serverVersion );
 
             String connectionId = extractConnectionId( metadata );
             setConnectionId( channel, connectionId );
