@@ -236,27 +236,47 @@ public class Cluster implements AutoCloseable
     private Set<ClusterMember> membersWithRole( ClusterMemberRole role )
     {
         Set<ClusterMember> membersWithRole = new HashSet<>();
+        int retryCount = 0;
 
-        Driver driver = driverToAnyCore( members, clusterDrivers );
-        final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
-        final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
-        for ( BoltServerAddress boltAddress : clusterOverview.keySet() )
+        while ( membersWithRole.isEmpty() && retryCount < 10 )
         {
-            if ( role == clusterOverview.get( boltAddress ) )
+            Driver driver = driverToAnyCore( members, clusterDrivers );
+            final ClusterMemberRoleDiscovery discovery = clusterDrivers.getDiscovery();
+            final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
+            for ( BoltServerAddress boltAddress : clusterOverview.keySet() )
             {
-                ClusterMember member = findByBoltAddress( boltAddress, members );
-                if ( member == null )
+                if ( role == clusterOverview.get( boltAddress ) )
                 {
-                    throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
+                    ClusterMember member = findByBoltAddress( boltAddress, members );
+                    if ( member == null )
+                    {
+                        throw new IllegalStateException( "Unknown cluster member: '" + boltAddress + "'\n" + this );
+                    }
+                    membersWithRole.add( member );
                 }
-                membersWithRole.add( member );
+            }
+            retryCount++;
+
+            if ( !membersWithRole.isEmpty() )
+            {
+                break;
+            }
+            else
+            {
+                try
+                {
+                    // give some time for cluster to stabilise
+                    Thread.sleep( 2000 );
+                }
+                catch ( InterruptedException ignored )
+                {
+                }
             }
         }
 
         if ( membersWithRole.isEmpty() )
         {
-            throw new IllegalStateException( "No cluster members with role '" + role + "' found.\n" +
-                                             "ClusterOverview: " + clusterOverview + "\n" + this );
+            throw new IllegalStateException( "No cluster members with role '" + role + " " + this );
         }
 
         return membersWithRole;
