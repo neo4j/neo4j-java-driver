@@ -87,7 +87,7 @@
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <comparisonVersion>4.0.0</comparisonVersion>
-          <excludes>org/neo4j/driver/**/internal/**</excludes>
+          <excludes>org/neo4j/driver/internal/**</excludes>
           <ignoredDifferencesFile>clirr-ignored-differences.xml</ignoredDifferencesFile>
         </configuration>
       </plugin>
