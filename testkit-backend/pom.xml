@@ -13,7 +13,7 @@
         <rootDir>${project.basedir}/..</rootDir>
     </properties>
 
-    <artifactId>nutkit-backend</artifactId>
+    <artifactId>testkit-backend</artifactId>
 
     <dependencies>
         <dependency>
@@ -48,7 +48,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>NutRunner</mainClass>
+                                    <mainClass>Runner</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

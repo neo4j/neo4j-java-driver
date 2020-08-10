@@ -28,7 +28,7 @@
   <modules>
     <module>driver</module>
     <module>examples</module>
-    <module>nutkit-backend</module>
+    <module>testkit-backend</module>
   </modules>
 
   <licenses>
