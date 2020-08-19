@@ -237,6 +237,6 @@ class ChannelConnectorImplIT
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
     {
-        return SecurityPlanImpl.forAllCertificates( false );
+        return SecurityPlanImpl.forAllCertificates( false, false );
     }
 }

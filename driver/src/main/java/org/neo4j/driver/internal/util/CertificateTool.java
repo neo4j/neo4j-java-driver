@@ -30,6 +30,7 @@ import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 
 /**
@@ -136,6 +137,14 @@ public class CertificateTool
                     throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(), e );
                 }
             }
+        }
+    }
+
+    public static void loadX509Cert( X509Certificate[] certificates, KeyStore keyStore ) throws GeneralSecurityException, IOException
+    {
+        for ( int i = 0; i < certificates.length; i++ )
+        {
+            loadX509Cert( certificates[i], "neo4j.javadriver.trustedcert." + i, keyStore );
         }
     }
 

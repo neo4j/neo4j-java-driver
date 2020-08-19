@@ -265,6 +265,19 @@ class ConfigTest
     }
 
     @Test
+    void shouldEnableAndDisableCertificateRevocationChecksOnTestStrategy()
+    {
+        Config.TrustStrategy trustStrategy = Config.TrustStrategy.trustSystemCertificates();
+        assertFalse( trustStrategy.isCertificateRevocationCheckEnabled() );
+
+        assertSame( trustStrategy, trustStrategy.withoutCertificateRevocationCheck() );
+        assertFalse( trustStrategy.isCertificateRevocationCheckEnabled() );
+
+        assertSame( trustStrategy, trustStrategy.withCertificateRevocationCheck() );
+        assertTrue( trustStrategy.isCertificateRevocationCheckEnabled() );
+    }
+
+    @Test
     void shouldAllowToConfigureResolver()
     {
         ServerAddressResolver resolver = mock( ServerAddressResolver.class );

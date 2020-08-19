@@ -92,11 +92,11 @@ public class SecuritySettings
     {
         if ( isHighTrustScheme(scheme) )
         {
-            return SecurityPlanImpl.forSystemCASignedCertificates( true );
+            return SecurityPlanImpl.forSystemCASignedCertificates( true, false );
         }
         else
         {
-            return SecurityPlanImpl.forAllCertificates( false );
+            return SecurityPlanImpl.forAllCertificates( false, false );
         }
     }
 
@@ -110,14 +110,15 @@ public class SecuritySettings
         if ( encrypted )
         {
             boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
+            boolean revocationCheckingEnabled = trustStrategy.isCertificateRevocationCheckEnabled();
             switch ( trustStrategy.strategy() )
             {
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled );
+                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled, revocationCheckingEnabled );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled );
+                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled, revocationCheckingEnabled );
             case TRUST_ALL_CERTIFICATES:
-                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled );
+                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled, revocationCheckingEnabled );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );

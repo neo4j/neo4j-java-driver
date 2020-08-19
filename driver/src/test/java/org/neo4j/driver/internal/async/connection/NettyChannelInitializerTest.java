@@ -143,7 +143,7 @@ class NettyChannelInitializerTest
 
     private void testHostnameVerificationSetting( boolean enabled, String expectedValue ) throws Exception
     {
-        NettyChannelInitializer initializer = newInitializer( SecurityPlanImpl.forAllCertificates( enabled ) );
+        NettyChannelInitializer initializer = newInitializer( SecurityPlanImpl.forAllCertificates( enabled, false ) );
 
         initializer.initChannel( channel );
 
@@ -172,6 +172,6 @@ class NettyChannelInitializerTest
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException
     {
-        return SecurityPlanImpl.forAllCertificates( false );
+        return SecurityPlanImpl.forAllCertificates( false, false );
     }
 }

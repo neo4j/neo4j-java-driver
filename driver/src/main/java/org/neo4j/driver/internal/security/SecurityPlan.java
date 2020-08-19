@@ -30,4 +30,6 @@ public interface SecurityPlan
     SSLContext sslContext();
 
     boolean requiresHostnameVerification();
+
+    boolean requiresRevocationChecking();
 }

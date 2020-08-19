@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -38,54 +40,112 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SecurityPlanImpl implements SecurityPlan
 {
-    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification ) throws GeneralSecurityException
+    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification, boolean requiresRevocationChecking ) throws GeneralSecurityException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
 
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
     }
 
-    public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification )
+    public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification,
+                                                              boolean requiresRevocationChecking )
             throws GeneralSecurityException, IOException
     {
-        // A certificate file is specified so we will load the certificates in the file
-        // Init a in memory TrustedKeyStore
-        KeyStore trustedKeyStore = KeyStore.getInstance( "JKS" );
-        trustedKeyStore.load( null, null );
-
-        // Load the certs from the file
-        loadX509Cert( certFile, trustedKeyStore );
-
-        // Create TrustManager from TrustedKeyStore
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( "SunX509" );
-        trustManagerFactory.init( trustedKeyStore );
-
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
-
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification );
+        SSLContext sslContext = configureSSLContext( certFile, requiresRevocationChecking );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
     }
 
-    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification ) throws NoSuchAlgorithmException
+    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification, boolean requiresRevocationChecking )
+            throws GeneralSecurityException, IOException
     {
-        return new SecurityPlanImpl( true, SSLContext.getDefault(), requiresHostnameVerification );
+        SSLContext sslContext = configureSSLContext( null, requiresRevocationChecking );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
+    }
+
+    public static SSLContext configureSSLContext( File customCertFile, boolean requiresRevocationChecking )
+            throws GeneralSecurityException, IOException
+    {
+        KeyStore trustedKeyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+        trustedKeyStore.load( null, null );
+
+        if ( customCertFile != null )
+        {
+            // A certificate file is specified so we will load the certificates in the file
+            loadX509Cert( customCertFile, trustedKeyStore );
+        }
+        else
+        {
+            loadSystemCertificates( trustedKeyStore );
+        }
+
+        // Configure certificate revocation checking (X509CertSelector() selects all certificates)
+        PKIXBuilderParameters pkixBuilderParameters = new PKIXBuilderParameters( trustedKeyStore, new X509CertSelector() );
+
+        // sets checking of stapled ocsp response
+        pkixBuilderParameters.setRevocationEnabled( requiresRevocationChecking );
+
+        // enables status_request exentension in client hello
+        if ( requiresRevocationChecking )
+        {
+            System.setProperty( "jdk.tls.client.enableStatusRequestExtension", "true" );
+        }
+
+        // Create TrustManager from TrustedKeyStore
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
+
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+
+        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
+
+        return sslContext;
+    }
+
+    private static void loadSystemCertificates( KeyStore trustedKeyStore ) throws GeneralSecurityException, IOException
+    {
+        // To customize the PKIXParameters we need to get hold of the default KeyStore, no other elegant way available
+        TrustManagerFactory tempFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        tempFactory.init( (KeyStore) null );
+
+        // Get hold of the default trust manager
+        X509TrustManager x509TrustManager = null;
+        for ( TrustManager trustManager : tempFactory.getTrustManagers() )
+        {
+            if ( trustManager instanceof X509TrustManager )
+            {
+                x509TrustManager = (X509TrustManager) trustManager;
+                break;
+            }
+        }
+
+        if ( x509TrustManager == null )
+        {
+            throw new CertificateException( "No system certificates found" );
+        }
+        else
+        {
+            // load system default certificates into KeyStore
+            loadX509Cert( x509TrustManager.getAcceptedIssuers(), trustedKeyStore );
+        }
     }
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlanImpl( false, null, false );
+        return new SecurityPlanImpl( false, null, false, false );
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
     private final boolean requiresHostnameVerification;
+    private final boolean requiresRevocationChecking;
 
-    private SecurityPlanImpl( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification )
+    private SecurityPlanImpl( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification, boolean requiresRevocationChecking )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
         this.requiresHostnameVerification = requiresHostnameVerification;
+        this.requiresRevocationChecking = requiresRevocationChecking;
     }
 
     @Override
@@ -104,6 +164,12 @@ public class SecurityPlanImpl implements SecurityPlan
     public boolean requiresHostnameVerification()
     {
         return requiresHostnameVerification;
+    }
+
+    @Override
+    public boolean requiresRevocationChecking()
+    {
+        return requiresRevocationChecking;
     }
 
     private static class TrustAllTrustManager implements X509TrustManager

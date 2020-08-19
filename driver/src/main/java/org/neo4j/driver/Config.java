@@ -30,7 +30,6 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -802,6 +801,7 @@ public class Config
         private final Strategy strategy;
         private final File certFile;
         private boolean hostnameVerificationEnabled = true;
+        private boolean ocspRevocationCheckEnabled = false;
 
         private TrustStrategy( Strategy strategy )
         {
@@ -863,6 +863,38 @@ public class Config
         public TrustStrategy withoutHostnameVerification()
         {
             hostnameVerificationEnabled = false;
+            return this;
+        }
+
+        /**
+         * Check if certificate revocation checking has been enabled for this trust strategy.
+         * @return {@code true} if certificate revocation checking  has been enabled via {@link #withCertificateRevocationCheck()} , {@code false} otherwise.
+         */
+        public boolean isCertificateRevocationCheckEnabled()
+        {
+            return ocspRevocationCheckEnabled;
+        }
+
+        /**
+         * Enables checking of certificate revocation status via OCSP response(s) stapled to the returned certificate.
+         * Note: This requires enabling OCSP stapling on the server.
+         *
+         * @return the current test strategy.
+         */
+        public TrustStrategy withCertificateRevocationCheck()
+        {
+            ocspRevocationCheckEnabled = true;
+            return this;
+        }
+
+        /**
+         * Disables checking of certificate revocation status via OCSP response(s) stapled to the returned certificate.
+         *
+         * @return the current test strategy.
+         */
+        public TrustStrategy withoutCertificateRevocationCheck()
+        {
+            ocspRevocationCheckEnabled = false;
             return this;
         }
 
