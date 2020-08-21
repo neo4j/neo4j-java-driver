@@ -87,8 +87,8 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
-          <comparisonVersion>2.0.0</comparisonVersion>
-          <excludes>org/neo4j/driver/**/internal/**</excludes>
+          <comparisonVersion>4.0.0</comparisonVersion>
+          <excludes>org/neo4j/driver/internal/**</excludes>
           <ignoredDifferencesFile>clirr-ignored-differences.xml</ignoredDifferencesFile>
         </configuration>
       </plugin>
