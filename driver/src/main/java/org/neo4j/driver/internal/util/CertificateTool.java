@@ -36,7 +36,7 @@ import java.util.Base64;
 /**
  * A tool used to save, load certs, etc.
  */
-public class CertificateTool
+public final class CertificateTool
 {
     private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
     private static final String END_CERT = "-----END CERTIFICATE-----";
@@ -169,6 +169,10 @@ public class CertificateTool
     {
         String cert64CharPerLine = cert.replaceAll( "(.{64})", "$1\n" );
         return BEGIN_CERT + "\n" + cert64CharPerLine + "\n"+ END_CERT + "\n";
+    }
+
+    private CertificateTool()
+    {
     }
 }
 

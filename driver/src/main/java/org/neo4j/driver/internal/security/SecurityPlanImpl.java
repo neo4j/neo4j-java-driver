@@ -63,7 +63,7 @@ public class SecurityPlanImpl implements SecurityPlan
         return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
     }
 
-    public static SSLContext configureSSLContext( File customCertFile, boolean requiresRevocationChecking )
+    private static SSLContext configureSSLContext( File customCertFile, boolean requiresRevocationChecking )
             throws GeneralSecurityException, IOException
     {
         KeyStore trustedKeyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
@@ -85,18 +85,16 @@ public class SecurityPlanImpl implements SecurityPlan
         // sets checking of stapled ocsp response
         pkixBuilderParameters.setRevocationEnabled( requiresRevocationChecking );
 
-        // enables status_request exentension in client hello
+        // enables status_request extension in client hello
         if ( requiresRevocationChecking )
         {
             System.setProperty( "jdk.tls.client.enableStatusRequestExtension", "true" );
         }
 
-        // Create TrustManager from TrustedKeyStore
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
-
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
 
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
         sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
 
         return sslContext;

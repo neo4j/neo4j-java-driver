@@ -23,13 +23,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-import javax.net.ssl.SSLContext;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,11 +73,9 @@ class SecuritySettingsTest
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
-        SSLContext defaultContext = SSLContext.getDefault();
-
         assertTrue( securityPlan.requiresEncryption() );
         assertTrue( securityPlan.requiresHostnameVerification() );
-        assertEquals( defaultContext, securityPlan.sslContext() );
+        assertFalse( securityPlan.requiresRevocationChecking() );
     }
 
     @ParameterizedTest
@@ -140,7 +136,7 @@ class SecuritySettingsTest
         assertTrue( ex.getMessage().contains( String.format( "Scheme %s is not configurable with manual encryption and trust settings", scheme ) ));
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
     void testNoEncryption( String scheme )
     {
@@ -151,7 +147,7 @@ class SecuritySettingsTest
         assertFalse( securityPlan.requiresEncryption() );
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
     void testConfiguredEncryption( String scheme )
     {
@@ -163,7 +159,7 @@ class SecuritySettingsTest
         assertTrue( securityPlan.requiresEncryption() );
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
     void testConfiguredAllCertificates( String scheme)
     {
@@ -177,7 +173,7 @@ class SecuritySettingsTest
         assertTrue( securityPlan.requiresEncryption() );
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
     void testConfigureRevocationChecking( String scheme )
     {
@@ -191,7 +187,7 @@ class SecuritySettingsTest
         assertTrue( securityPlan.requiresRevocationChecking() );
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
     void testRevocationCheckingDisabledByDefault( String scheme )
     {
