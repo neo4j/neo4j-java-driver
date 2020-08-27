@@ -92,11 +92,11 @@ public class SecuritySettings
     {
         if ( isHighTrustScheme(scheme) )
         {
-            return SecurityPlanImpl.forSystemCASignedCertificates( true, false );
+            return SecurityPlanImpl.forSystemCASignedCertificates( true, RevocationStrategy.NO_CHECKS );
         }
         else
         {
-            return SecurityPlanImpl.forAllCertificates( false, false );
+            return SecurityPlanImpl.forAllCertificates( false, RevocationStrategy.NO_CHECKS );
         }
     }
 
@@ -110,15 +110,15 @@ public class SecuritySettings
         if ( encrypted )
         {
             boolean hostnameVerificationEnabled = trustStrategy.isHostnameVerificationEnabled();
-            boolean revocationCheckingEnabled = trustStrategy.isCertificateRevocationCheckEnabled();
+            RevocationStrategy revocationStrategy = trustStrategy.revocationStrategy();
             switch ( trustStrategy.strategy() )
             {
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled, revocationCheckingEnabled );
+                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled, revocationStrategy );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled, revocationCheckingEnabled );
+                return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled, revocationStrategy );
             case TRUST_ALL_CERTIFICATES:
-                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled, revocationCheckingEnabled );
+                return SecurityPlanImpl.forAllCertificates( hostnameVerificationEnabled, revocationStrategy );
             default:
                 throw new ClientException(
                         "Unknown TLS authentication strategy: " + trustStrategy.strategy().name() );

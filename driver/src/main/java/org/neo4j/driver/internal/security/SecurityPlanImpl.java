@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
@@ -33,6 +34,10 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.neo4j.driver.internal.RevocationStrategy;
+
+import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
+import static org.neo4j.driver.internal.RevocationStrategy.requiresRevocationChecking;
 import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
 
 /**
@@ -40,30 +45,30 @@ import static org.neo4j.driver.internal.util.CertificateTool.loadX509Cert;
  */
 public class SecurityPlanImpl implements SecurityPlan
 {
-    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification, boolean requiresRevocationChecking ) throws GeneralSecurityException
+    public static SecurityPlan forAllCertificates( boolean requiresHostnameVerification, RevocationStrategy revocationStrategy ) throws GeneralSecurityException
     {
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( new KeyManager[0], new TrustManager[]{new TrustAllTrustManager()}, null );
 
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
     public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification,
-                                                              boolean requiresRevocationChecking )
+                                                              RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
-        SSLContext sslContext = configureSSLContext( certFile, requiresRevocationChecking );
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
+        SSLContext sslContext = configureSSLContext( certFile, revocationStrategy );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
-    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification, boolean requiresRevocationChecking )
+    public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification, RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
-        SSLContext sslContext = configureSSLContext( null, requiresRevocationChecking );
-        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, requiresRevocationChecking );
+        SSLContext sslContext = configureSSLContext( null, revocationStrategy );
+        return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
-    private static SSLContext configureSSLContext( File customCertFile, boolean requiresRevocationChecking )
+    private static SSLContext configureSSLContext( File customCertFile, RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
         KeyStore trustedKeyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
@@ -83,12 +88,18 @@ public class SecurityPlanImpl implements SecurityPlan
         PKIXBuilderParameters pkixBuilderParameters = new PKIXBuilderParameters( trustedKeyStore, new X509CertSelector() );
 
         // sets checking of stapled ocsp response
-        pkixBuilderParameters.setRevocationEnabled( requiresRevocationChecking );
+        pkixBuilderParameters.setRevocationEnabled( requiresRevocationChecking( revocationStrategy ) );
 
-        // enables status_request extension in client hello
-        if ( requiresRevocationChecking )
+        if ( requiresRevocationChecking( revocationStrategy ) )
         {
+            // enables status_request extension in client hello
             System.setProperty( "jdk.tls.client.enableStatusRequestExtension", "true" );
+
+            if ( revocationStrategy.equals( VERIFY_IF_PRESENT ) )
+            {
+                // enables soft-fail behaviour if no stapled response found.
+                Security.setProperty( "ocsp.enable", "true" );
+            }
         }
 
         SSLContext sslContext = SSLContext.getInstance( "TLS" );
@@ -130,20 +141,21 @@ public class SecurityPlanImpl implements SecurityPlan
 
     public static SecurityPlan insecure()
     {
-        return new SecurityPlanImpl( false, null, false, false );
+        return new SecurityPlanImpl( false, null, false,
+                                     RevocationStrategy.NO_CHECKS );
     }
 
     private final boolean requiresEncryption;
     private final SSLContext sslContext;
     private final boolean requiresHostnameVerification;
-    private final boolean requiresRevocationChecking;
+    private final RevocationStrategy revocationStrategy;
 
-    private SecurityPlanImpl( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification, boolean requiresRevocationChecking )
+    private SecurityPlanImpl( boolean requiresEncryption, SSLContext sslContext, boolean requiresHostnameVerification, RevocationStrategy revocationStrategy )
     {
         this.requiresEncryption = requiresEncryption;
         this.sslContext = sslContext;
         this.requiresHostnameVerification = requiresHostnameVerification;
-        this.requiresRevocationChecking = requiresRevocationChecking;
+        this.revocationStrategy = revocationStrategy;
     }
 
     @Override
@@ -165,9 +177,9 @@ public class SecurityPlanImpl implements SecurityPlan
     }
 
     @Override
-    public boolean requiresRevocationChecking()
+    public RevocationStrategy revocationStrategy()
     {
-        return requiresRevocationChecking;
+        return revocationStrategy;
     }
 
     private static class TrustAllTrustManager implements X509TrustManager

@@ -28,9 +28,13 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
+import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 
 class SecuritySettingsTest
 {
@@ -75,7 +79,7 @@ class SecuritySettingsTest
 
         assertTrue( securityPlan.requiresEncryption() );
         assertTrue( securityPlan.requiresHostnameVerification() );
-        assertFalse( securityPlan.requiresRevocationChecking() );
+        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
     }
 
     @ParameterizedTest
@@ -175,16 +179,30 @@ class SecuritySettingsTest
 
     @ParameterizedTest
     @MethodSource( "unencryptedSchemes" )
-    void testConfigureRevocationChecking( String scheme )
+    void testConfigureStrictRevocationChecking( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withCertificateRevocationCheck() )
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks() )
                 .withEncryption()
                 .build();
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
-        assertTrue( securityPlan.requiresRevocationChecking() );
+        assertEquals( STRICT, securityPlan.revocationStrategy() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testConfigureVerifyIfPresentRevocationChecking( String scheme )
+    {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks() )
+                .withEncryption()
+                .build();
+
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+
+        assertEquals( VERIFY_IF_PRESENT, securityPlan.revocationStrategy() );
     }
 
     @ParameterizedTest
@@ -198,7 +216,7 @@ class SecuritySettingsTest
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
-        assertFalse( securityPlan.requiresRevocationChecking() );
+        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
     }
 
 }

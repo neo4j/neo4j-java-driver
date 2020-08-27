@@ -16,22 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.security;
 
-import javax.net.ssl.SSLContext;
+package org.neo4j.driver.internal;
 
-import org.neo4j.driver.internal.RevocationStrategy;
-
-/**
- * A SecurityPlan consists of encryption and trust details.
- */
-public interface SecurityPlan
+public enum RevocationStrategy
 {
-    boolean requiresEncryption();
+    NO_CHECKS,
+    VERIFY_IF_PRESENT,
+    STRICT;
 
-    SSLContext sslContext();
-
-    boolean requiresHostnameVerification();
-
-    RevocationStrategy revocationStrategy();
+    public static boolean requiresRevocationChecking( RevocationStrategy revocationStrategy )
+    {
+        return revocationStrategy.equals( STRICT ) || revocationStrategy.equals( VERIFY_IF_PRESENT );
+    }
 }
