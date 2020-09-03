@@ -123,10 +123,7 @@ public class CommandProcessor
                 {
                     processRequest( request.toString());
                 } catch ( Exception e ){
-                    if (e instanceof ClientException) {
-                        // Client error, no need to track
-                        writeResponse(Testkit.wrap("ClientError", Testkit.msg(e.toString())));
-                    } else if (e instanceof Neo4jException) {
+                    if (e instanceof Neo4jException) {
                         // Error to track
                         String id = newId();
                         errors.put(id, (Neo4jException)e);
