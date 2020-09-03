@@ -16,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -107,5 +109,15 @@ public class TestkitTypes
         }
 
         throw new RuntimeException("Can not convert to testkit type:"+obj.getClass());
+    }
+
+    public static Object toDriver(JsonNode node)
+    {
+        String name = node.get("name").asText();
+        JsonNode data = node.get("data");
+        if (name.equals("CypherInt")) {
+            return data.get("value").asInt();
+        }
+        throw new RuntimeException("Can not convert from " + node + " to driver type");
     }
 }

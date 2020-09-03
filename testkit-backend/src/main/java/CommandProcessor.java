@@ -24,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
@@ -31,6 +32,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
@@ -152,7 +154,7 @@ public class CommandProcessor
         }
     }
 
-    public void processRequest( String request) 
+    public void processRequest( String request)
     {
         System.out.println( "request = " + request + ", in = " + in + ", out = " + out );
 
@@ -190,7 +192,15 @@ public class CommandProcessor
         {
             String id = requestData.get( "sessionId" ).asText();
             Session session = sessionStates.get( id ).session;
-            Result result = session.run( requestData.get("cypher").asText() );
+            JsonNode jsonParams = (JsonNode)requestData.get("params");
+            Map<String, Object> params = new HashMap<String, Object>();
+            Iterator<Map.Entry<String, JsonNode>> iter = jsonParams.fields();
+            while (iter.hasNext()) {
+                Map.Entry<String, JsonNode> entry = iter.next();
+                params.put(entry.getKey(), TestkitTypes.toDriver(entry.getValue()));
+            }
+            Query query = new Query(requestData.get("cypher").asText(), params);
+            Result result = session.run(query);
             String newId = newId();
 
             results.put( newId, result );
@@ -261,6 +271,13 @@ public class CommandProcessor
         {
             String id = requestData.get( "resultId" ).asText();
             Result result = results.get( id );
+
+            // TODO: Should we call next here and catch the exception instead?
+            if (!result.hasNext()) {
+                writeResponse(Testkit.wrap("NullRecord", "{}"));
+                return;
+            }
+
             Record record = result.next();
             String newId = newId();
 
