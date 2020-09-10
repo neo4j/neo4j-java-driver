@@ -36,7 +36,6 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -92,7 +91,7 @@ import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 
-class RoutingDriverBoltKitTest
+class RoutingDriverBoltKitIT
 {
     private static StubServerController stubController;
 
@@ -568,7 +567,7 @@ class RoutingDriverBoltKitTest
                 catch ( InterruptedException ex )
                 {
                 }
-                return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField );
+                return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitIT::extractNameField );
             } );
         }
 
@@ -604,7 +603,7 @@ class RoutingDriverBoltKitTest
                             }
                             return tx.runAsync( "MATCH (n) RETURN n.name" );
                         } )
-                        .thenComposeAsync( cursor -> cursor.listAsync( RoutingDriverBoltKitTest::extractNameField ) ) ) );
+                        .thenComposeAsync( cursor -> cursor.listAsync( RoutingDriverBoltKitIT::extractNameField ) ) ) );
 
         assertEquals( asList( "Foo", "Bar" ), names );
 
@@ -639,7 +638,7 @@ class RoutingDriverBoltKitTest
                 {
                     RxResult result = tx.run( "RETURN 1" );
                     return Flux.from( result.records() ).limitRate( 100 ).thenMany( tx.run( "MATCH (n) RETURN n.name" ).records() ).limitRate( 100 ).map(
-                            RoutingDriverBoltKitTest::extractNameField );
+                            RoutingDriverBoltKitIT::extractNameField );
                 } ), RxSession::close );
 
         StepVerifier.create( fluxOfNames ).expectNext( "Foo", "Bar" ).verifyComplete();
@@ -1255,7 +1254,7 @@ class RoutingDriverBoltKitTest
                 assertEquals( asList( "Alice", "Bob", "Eve" ), names1 );
 
                 // run second query with retries, it should rediscover using 9042 returned by the resolver and read from 9005
-                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField ) );
+                List<String> names2 = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitIT::extractNameField ) );
                 assertEquals( asList( "Bob", "Alice", "Tina" ), names2 );
             }
         }

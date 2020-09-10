@@ -82,7 +82,7 @@ import static org.neo4j.driver.util.StubServer.start;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class DirectDriverBoltKitTest
+class DirectDriverBoltKitIT
 {
     private static StubServerController stubController;
 
