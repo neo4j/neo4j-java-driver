@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -170,7 +171,20 @@ public class CommandProcessor
         {
             String id = newId();
             String response = Testkit.wrap("Driver", Testkit.id(id));
-            drivers.putIfAbsent( id, GraphDatabase.driver( requestData.get( "uri" ).asText(), AuthTokens.basic( "neo4j", "pass" ) ) );
+
+            String uri = requestData.get("uri").asText();
+            JsonNode requestAuth = requestData.get("authorizationToken").get("data");
+            AuthToken authToken;
+            switch (requestAuth.get("scheme").asText()) {
+            case "basic":
+                authToken = AuthTokens.basic(requestAuth.get("principal").asText(), requestAuth.get("credentials").asText(), requestAuth.get("realm").asText());
+                break;
+            default:
+                writeResponse(Testkit.wrap("BackendError", Testkit.msg("Unsupported auth scheme")));
+                return;
+            }
+
+            drivers.putIfAbsent( id, GraphDatabase.driver(uri, authToken));
             writeResponse( response);
         } else if ( requestType.equals( "NewSession" ))
         {
