@@ -34,7 +34,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.integration.RoutingDriverBoltKitTest.PortBasedServerAddressComparator;
+import org.neo4j.driver.integration.RoutingDriverBoltKitIT.PortBasedServerAddressComparator;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -51,7 +51,7 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
-class RoutingDriverMultidatabaseBoltKitTest
+class RoutingDriverMultidatabaseBoltKitIT
 {
     @Test
     void shouldDiscoverForDatabase() throws IOException, InterruptedException, StubServer.ForceKilled
