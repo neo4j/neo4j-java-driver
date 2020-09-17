@@ -5,6 +5,7 @@ Export-Package: \
 
 Import-Package: \
  !io.netty.*, \
+ !reactor.core.*, \
  !com.oracle.svm.*, \
  javax.security.cert, \
  *
