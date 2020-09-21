@@ -25,8 +25,12 @@ import io.netty.handler.codec.DecoderException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.neo4j.driver.Logging;
@@ -40,10 +44,12 @@ import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
-import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
+import org.neo4j.driver.internal.messaging.v4.MessageFormatV4;
+import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static io.netty.buffer.Unpooled.copyInt;
@@ -54,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -187,16 +194,33 @@ class HandshakeHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    @Test
-    void shouldSelectProtocolV1WhenServerSuggests()
+    @ParameterizedTest
+    @MethodSource( "protocolVersions" )
+    public void testProtocolSelection( BoltProtocolVersion protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )
     {
-        testProtocolSelection( BoltProtocolV1.VERSION, MessageFormatV1.class );
-    }
+        ChannelPromise handshakeCompletedPromise = channel.newPromise();
+        MemorizingChannelPipelineBuilder pipelineBuilder = new MemorizingChannelPipelineBuilder();
+        HandshakeHandler handler = newHandler( pipelineBuilder, handshakeCompletedPromise );
+        channel.pipeline().addLast( handler );
 
-    @Test
-    void shouldSelectProtocolV2WhenServerSuggests()
-    {
-        testProtocolSelection( BoltProtocolV2.VERSION, MessageFormatV2.class );
+        channel.pipeline().fireChannelRead( copyInt( protocolVersion.toInt() ) );
+
+        // expected message format should've been used
+        assertThat( pipelineBuilder.usedMessageFormat, instanceOf( expectedMessageFormatClass ) );
+
+        // handshake handler itself should be removed
+        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
+
+        // all inbound handlers should be set
+        assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
+        assertNotNull( channel.pipeline().get( MessageDecoder.class ) );
+        assertNotNull( channel.pipeline().get( InboundMessageHandler.class ) );
+
+        // all outbound handlers should be set
+        assertNotNull( channel.pipeline().get( OutboundMessageHandler.class ) );
+
+        // promise should be successful
+        assertNull( await( handshakeCompletedPromise ) );
     }
 
     @Test
@@ -254,31 +278,12 @@ class HandshakeHandlerTest
         assertNull( await( channel.closeFuture() ) );
     }
 
-    private void testProtocolSelection( BoltProtocolVersion protocolVersion, Class<? extends MessageFormat> expectedMessageFormatClass )
+    private static Stream<Arguments> protocolVersions()
     {
-        ChannelPromise handshakeCompletedPromise = channel.newPromise();
-        MemorizingChannelPipelineBuilder pipelineBuilder = new MemorizingChannelPipelineBuilder();
-        HandshakeHandler handler = newHandler( pipelineBuilder, handshakeCompletedPromise );
-        channel.pipeline().addLast( handler );
-
-        channel.pipeline().fireChannelRead( copyInt( protocolVersion.toInt() ) );
-
-        // expected message format should've been used
-        assertThat( pipelineBuilder.usedMessageFormat, instanceOf( expectedMessageFormatClass ) );
-
-        // handshake handler itself should be removed
-        assertNull( channel.pipeline().get( HandshakeHandler.class ) );
-
-        // all inbound handlers should be set
-        assertNotNull( channel.pipeline().get( ChunkDecoder.class ) );
-        assertNotNull( channel.pipeline().get( MessageDecoder.class ) );
-        assertNotNull( channel.pipeline().get( InboundMessageHandler.class ) );
-
-        // all outbound handlers should be set
-        assertNotNull( channel.pipeline().get( OutboundMessageHandler.class ) );
-
-        // promise should be successful
-        assertNull( await( handshakeCompletedPromise ) );
+        return Stream.of( arguments( BoltProtocolV3.VERSION, MessageFormatV3.class ),
+                          arguments( BoltProtocolV4.VERSION, MessageFormatV4.class ),
+                          arguments( BoltProtocolV41.VERSION, MessageFormatV4.class ),
+                          arguments( BoltProtocolV42.VERSION, MessageFormatV4.class ) );
     }
 
     private static HandshakeHandler newHandler( ChannelPromise handshakeCompletedPromise )
