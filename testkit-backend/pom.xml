@@ -15,6 +15,9 @@
 
     <artifactId>testkit-backend</artifactId>
 
+    <name>Neo4j Java Driver Testkit Backend</name>
+    <description>Integration component for use with Testkit</description>
+
     <dependencies>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
@@ -51,6 +54,7 @@
                                     <mainClass>Runner</mainClass>
                                 </transformer>
                             </transformers>
+                            <finalName>testkit-backend</finalName>
                         </configuration>
                     </execution>
                 </executions>
