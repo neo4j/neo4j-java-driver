@@ -16,7 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v2;
+
+package org.neo4j.driver.internal.messaging.common;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -27,72 +28,175 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
+
+import java.io.IOException;
+import java.util.Map;
+
+import org.neo4j.driver.internal.messaging.ValuePacker;
+import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.packstream.PackStream;
+import org.neo4j.driver.internal.value.InternalValue;
+import org.neo4j.driver.Value;
+
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.InternalPoint3D;
-import org.neo4j.driver.internal.messaging.v1.ValuePackerV1;
+import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.packstream.PackOutput;
+import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.value.InternalValue;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Point;
 
 import static java.time.ZoneOffset.UTC;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE_TIME_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE_TIME_WITH_ZONE_ID;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DATE_TIME_WITH_ZONE_OFFSET;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DURATION;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.DURATION_TIME_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.LOCAL_DATE_TIME;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.LOCAL_DATE_TIME_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.LOCAL_TIME;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.LOCAL_TIME_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_2D_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_2D_STRUCT_TYPE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_3D_STRUCT_SIZE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.POINT_3D_STRUCT_TYPE;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.TIME;
-import static org.neo4j.driver.internal.messaging.v2.MessageFormatV2.TIME_STRUCT_SIZE;
 
-public class ValuePackerV2 extends ValuePackerV1
-{
-    public ValuePackerV2( PackOutput output )
+public class CommonValuePacker implements ValuePacker {
+
+    public static final byte DATE = 'D';
+    public static final int DATE_STRUCT_SIZE = 1;
+
+    public static final byte TIME = 'T';
+    public static final int TIME_STRUCT_SIZE = 2;
+
+    public static final byte LOCAL_TIME = 't';
+    public static final int LOCAL_TIME_STRUCT_SIZE = 1;
+
+    public static final byte LOCAL_DATE_TIME = 'd';
+    public static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
+
+    public static final byte DATE_TIME_WITH_ZONE_OFFSET = 'F';
+    public static final byte DATE_TIME_WITH_ZONE_ID = 'f';
+    public static final int DATE_TIME_STRUCT_SIZE = 3;
+
+    public static final byte DURATION = 'E';
+    public static final int DURATION_TIME_STRUCT_SIZE = 4;
+
+    public static final byte POINT_2D_STRUCT_TYPE = 'X';
+    public static final int POINT_2D_STRUCT_SIZE = 3;
+
+    public static final byte POINT_3D_STRUCT_TYPE = 'Y';
+    public static final int POINT_3D_STRUCT_SIZE = 4;
+
+    protected final PackStream.Packer packer;
+
+    public CommonValuePacker( PackOutput output )
     {
-        super( output );
+        this.packer = new PackStream.Packer( output );
     }
 
     @Override
-    protected void packInternalValue( InternalValue value ) throws IOException
+    public final void packStructHeader( int size, byte signature ) throws IOException
     {
-        TypeConstructor typeConstructor = value.typeConstructor();
-        switch ( typeConstructor )
+        packer.packStructHeader( size, signature );
+    }
+
+    @Override
+    public final void pack( String string ) throws IOException
+    {
+        packer.pack( string );
+    }
+
+    @Override
+    public final void pack( Value value ) throws IOException
+    {
+        if ( value instanceof InternalValue )
         {
-        case DATE:
-            packDate( value.asLocalDate() );
-            break;
-        case TIME:
-            packTime( value.asOffsetTime() );
-            break;
-        case LOCAL_TIME:
-            packLocalTime( value.asLocalTime() );
-            break;
-        case LOCAL_DATE_TIME:
-            packLocalDateTime( value.asLocalDateTime() );
-            break;
-        case DATE_TIME:
-            packZonedDateTime( value.asZonedDateTime() );
-            break;
-        case DURATION:
-            packDuration( value.asIsoDuration() );
-            break;
-        case POINT:
-            packPoint( value.asPoint() );
-            break;
-        default:
-            super.packInternalValue( value );
+            packInternalValue( ((InternalValue) value) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unable to pack: " + value );
         }
     }
+
+    @Override
+    public final void pack( Map<String,Value> map ) throws IOException
+    {
+        if ( map == null || map.size() == 0 )
+        {
+            packer.packMapHeader( 0 );
+            return;
+        }
+        packer.packMapHeader( map.size() );
+        for ( Map.Entry<String,Value> entry : map.entrySet() )
+        {
+            packer.pack( entry.getKey() );
+            pack( entry.getValue() );
+        }
+    }
+
+    protected void packInternalValue( InternalValue value ) throws IOException
+    {
+        switch ( value.typeConstructor() )
+        {
+            case DATE:
+                packDate( value.asLocalDate() );
+                break;
+            case TIME:
+                packTime( value.asOffsetTime() );
+                break;
+            case LOCAL_TIME:
+                packLocalTime( value.asLocalTime() );
+                break;
+            case LOCAL_DATE_TIME:
+                packLocalDateTime( value.asLocalDateTime() );
+                break;
+            case DATE_TIME:
+                packZonedDateTime( value.asZonedDateTime() );
+                break;
+            case DURATION:
+                packDuration( value.asIsoDuration() );
+                break;
+            case POINT:
+                packPoint( value.asPoint() );
+                break;
+            case NULL:
+                packer.packNull();
+                break;
+
+            case BYTES:
+                packer.pack( value.asByteArray() );
+                break;
+
+            case STRING:
+                packer.pack( value.asString() );
+                break;
+
+            case BOOLEAN:
+                packer.pack( value.asBoolean() );
+                break;
+
+            case INTEGER:
+                packer.pack( value.asLong() );
+                break;
+
+            case FLOAT:
+                packer.pack( value.asDouble() );
+                break;
+
+            case MAP:
+                packer.packMapHeader( value.size() );
+                for ( String s : value.keys() )
+                {
+                    packer.pack( s );
+                    pack( value.get( s ) );
+                }
+                break;
+
+            case LIST:
+                packer.packListHeader( value.size() );
+                for ( Value item : value.values() )
+                {
+                    pack( item );
+                }
+                break;
+
+            default:
+                throw new IOException( "Unknown type: " + value.type().name() );
+        }
+    }
+
 
     private void packDate( LocalDate localDate ) throws IOException
     {

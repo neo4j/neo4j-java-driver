@@ -16,7 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v1;
+package org.neo4j.driver.internal.messaging.common;
+
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,16 +32,16 @@ import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.Value;
 
-public class MessageReaderV1 implements MessageFormat.Reader
+public class CommonMessageReader implements MessageFormat.Reader
 {
     private final ValueUnpacker unpacker;
 
-    public MessageReaderV1( PackInput input )
+    public CommonMessageReader( PackInput input )
     {
-        this( new ValueUnpackerV1( input ) );
+        this( new CommonValueUnpacker( input ) );
     }
 
-    protected MessageReaderV1( ValueUnpacker unpacker )
+    protected CommonMessageReader( ValueUnpacker unpacker )
     {
         this.unpacker = unpacker;
     }
@@ -52,20 +53,20 @@ public class MessageReaderV1 implements MessageFormat.Reader
         int type = unpacker.unpackStructSignature();
         switch ( type )
         {
-        case SuccessMessage.SIGNATURE:
-            unpackSuccessMessage( handler );
-            break;
-        case FailureMessage.SIGNATURE:
-            unpackFailureMessage( handler );
-            break;
-        case IgnoredMessage.SIGNATURE:
-            unpackIgnoredMessage( handler );
-            break;
-        case RecordMessage.SIGNATURE:
-            unpackRecordMessage( handler );
-            break;
-        default:
-            throw new IOException( "Unknown message type: " + type );
+            case SuccessMessage.SIGNATURE:
+                unpackSuccessMessage( handler );
+                break;
+            case FailureMessage.SIGNATURE:
+                unpackFailureMessage( handler );
+                break;
+            case IgnoredMessage.SIGNATURE:
+                unpackIgnoredMessage( handler );
+                break;
+            case RecordMessage.SIGNATURE:
+                unpackRecordMessage( handler );
+                break;
+            default:
+                throw new IOException( "Unknown message type: " + type );
         }
     }
 

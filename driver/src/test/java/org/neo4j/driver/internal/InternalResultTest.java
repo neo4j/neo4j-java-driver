@@ -19,28 +19,28 @@
 package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
 import org.neo4j.driver.internal.cursor.DisposableAsyncResultCursor;
 import org.neo4j.driver.internal.handlers.LegacyPullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
-import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.util.Pair;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -48,17 +48,13 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Records.column;
 import static org.neo4j.driver.Values.ofString;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class InternalResultTest
@@ -353,7 +349,7 @@ class InternalResultTest
 
     private Result createResult(int numberOfRecords )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );
 
         Query query = new Query( "<unknown>" );
@@ -361,7 +357,7 @@ class InternalResultTest
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         PullAllResponseHandler pullAllHandler =
-                new LegacyPullAllResponseHandler(query, runHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+                new LegacyPullAllResponseHandler(query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
 
         for ( int i = 1; i <= numberOfRecords; i++ )
         {

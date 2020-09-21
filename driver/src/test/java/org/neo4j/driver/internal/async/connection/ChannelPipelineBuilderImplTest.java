@@ -21,17 +21,12 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.async.inbound.*;
+import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 
 import java.util.Iterator;
 import java.util.Map;
-
-import org.neo4j.driver.internal.async.inbound.ChannelErrorHandler;
-import org.neo4j.driver.internal.async.inbound.ChunkDecoder;
-import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
-import org.neo4j.driver.internal.async.inbound.InboundMessageHandler;
-import org.neo4j.driver.internal.async.inbound.MessageDecoder;
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -46,7 +41,7 @@ class ChannelPipelineBuilderImplTest
         EmbeddedChannel channel = new EmbeddedChannel();
         ChannelAttributes.setMessageDispatcher( channel, new InboundMessageDispatcher( channel, DEV_NULL_LOGGING ) );
 
-        new ChannelPipelineBuilderImpl().build( new MessageFormatV1(), channel.pipeline(), DEV_NULL_LOGGING );
+        new ChannelPipelineBuilderImpl().build( new MessageFormatV3(), channel.pipeline(), DEV_NULL_LOGGING );
 
         Iterator<Map.Entry<String,ChannelHandler>> iterator = channel.pipeline().iterator();
         assertThat( iterator.next().getValue(), instanceOf( ChunkDecoder.class ) );

@@ -22,36 +22,24 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.handlers.HelloResponseHandler;
-import org.neo4j.driver.internal.handlers.InitResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.IOException;
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -83,18 +71,6 @@ class HandshakeCompletedListenerTest
 
         Exception error = assertThrows( Exception.class, () -> await( channelInitializedPromise ) );
         assertEquals( cause, error );
-    }
-
-    @Test
-    void shouldWriteInitializationMessageInBoltV1WhenHandshakeCompleted()
-    {
-        testWritingOfInitializationMessage( BoltProtocolV1.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
-    }
-
-    @Test
-    void shouldWriteInitializationMessageInBoltV2WhenHandshakeCompleted()
-    {
-        testWritingOfInitializationMessage( BoltProtocolV2.VERSION, new InitMessage( USER_AGENT, authToken().toMap() ), InitResponseHandler.class );
     }
 
     @Test

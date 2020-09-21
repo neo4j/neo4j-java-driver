@@ -23,27 +23,27 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.async.connection.BoltProtocolUtil;
 import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
+import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
+import org.neo4j.driver.internal.packstream.PackStream;
 import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.packstream.PackStream;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -51,24 +51,17 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
-import static org.neo4j.driver.internal.util.ValueFactory.emptyPathValue;
-import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
-import static org.neo4j.driver.internal.util.ValueFactory.filledNodeValue;
-import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
-import static org.neo4j.driver.internal.util.ValueFactory.filledRelationshipValue;
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.util.ValueFactory.*;
 
 class MessageFormatTest
 {
-    public MessageFormat format = new MessageFormatV1();
+    public MessageFormat format = new MessageFormatV3();
 
     @Test
     void shouldUnpackAllResponses() throws Throwable
@@ -101,31 +94,6 @@ class MessageFormatTest
 
 
     @Test
-    void shouldErrorPackingNode() throws Throwable
-    {
-        // Given
-        Value value = filledNodeValue();
-        expectIOExceptionWithMessage( value, "Unknown type: NODE" );
-    }
-
-    @Test
-    void shouldErrorPackingRelationship() throws Throwable
-    {
-        // Given
-        Value value = filledRelationshipValue();
-        expectIOExceptionWithMessage( value, "Unknown type: RELATIONSHIP" );
-    }
-
-    @Test
-    void shouldErrorPackingPath() throws Throwable
-    {
-        // Given
-        Value value = filledPathValue();
-        expectIOExceptionWithMessage( value, "Unknown type: PATH" );
-    }
-
-
-    @Test
     void shouldGiveHelpfulErrorOnMalformedNodeStruct() throws Throwable
     {
         // Given
@@ -136,7 +104,7 @@ class MessageFormatTest
 
         packer.packStructHeader( 1, RecordMessage.SIGNATURE );
         packer.packListHeader( 1 );
-        packer.packStructHeader( 0, MessageFormatV1.NODE );
+        packer.packStructHeader( 0, CommonValueUnpacker.NODE );
 
         output.stop();
         BoltProtocolUtil.writeMessageBoundary( buf );

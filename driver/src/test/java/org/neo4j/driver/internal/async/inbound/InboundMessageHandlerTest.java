@@ -24,37 +24,33 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
-import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.MessageFormat.Reader;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.io.MessageToByteBufWriter;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.Values.value;
 
 class InboundMessageHandlerTest
 {
@@ -70,7 +66,7 @@ class InboundMessageHandlerTest
         writer = new MessageToByteBufWriter( new KnowledgeableMessageFormat() );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
-        InboundMessageHandler handler = new InboundMessageHandler( new MessageFormatV1(), DEV_NULL_LOGGING );
+        InboundMessageHandler handler = new InboundMessageHandler( new MessageFormatV3(), DEV_NULL_LOGGING );
         channel.pipeline().addFirst( handler );
     }
 

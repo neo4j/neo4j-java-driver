@@ -35,8 +35,6 @@ import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -154,15 +152,7 @@ public interface BoltProtocol
      */
     static BoltProtocol forVersion( BoltProtocolVersion version )
     {
-        if ( BoltProtocolV1.VERSION.equals( version ) )
-        {
-            return BoltProtocolV1.INSTANCE;
-        }
-        else if ( BoltProtocolV2.VERSION.equals( version ) )
-        {
-            return BoltProtocolV2.INSTANCE;
-        }
-        else if ( BoltProtocolV3.VERSION.equals( version ) )
+        if ( BoltProtocolV3.VERSION.equals( version ) )
         {
             return BoltProtocolV3.INSTANCE;
         }

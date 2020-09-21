@@ -19,6 +19,21 @@
 package org.neo4j.driver.internal.async;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
+import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
+import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.summary.InternalResultSummary;
+import org.neo4j.driver.internal.summary.InternalServerInfo;
+import org.neo4j.driver.internal.summary.InternalSummaryCounters;
+import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,36 +42,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.summary.InternalResultSummary;
-import org.neo4j.driver.internal.summary.InternalServerInfo;
-import org.neo4j.driver.internal.summary.InternalSummaryCounters;
-import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.summary.QueryType;
-
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
+import static java.util.Collections.*;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
@@ -409,6 +401,6 @@ class AsyncResultCursorImplTest
 
     private static RunResponseHandler newRunResponseHandler()
     {
-        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV1.METADATA_EXTRACTOR );
+        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
     }
 }

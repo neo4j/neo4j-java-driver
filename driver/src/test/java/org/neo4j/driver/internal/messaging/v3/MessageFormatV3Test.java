@@ -19,9 +19,8 @@
 package org.neo4j.driver.internal.messaging.v3;
 
 import org.junit.jupiter.api.Test;
-
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v2.MessageReaderV2;
+import org.neo4j.driver.internal.messaging.common.CommonMessageReader;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
@@ -48,6 +47,6 @@ class MessageFormatV3Test
 
         MessageFormat.Reader reader = format.newReader( mock( PackInput.class ) );
 
-        assertThat( reader, instanceOf( MessageReaderV2.class ) );
+        assertThat( reader, instanceOf( CommonMessageReader.class ) );
     }
 }
