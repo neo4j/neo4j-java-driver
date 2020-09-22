@@ -26,20 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
+import org.neo4j.driver.*;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
@@ -49,51 +36,34 @@ import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
-import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
-import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
-import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
-import org.neo4j.driver.internal.handlers.RunResponseHandler;
+import org.neo4j.driver.internal.handlers.*;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.CommitMessage;
-import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
+import org.neo4j.driver.internal.messaging.request.*;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
-import static org.neo4j.driver.util.TestUtil.await;
-import static org.neo4j.driver.util.TestUtil.connectionMock;
+import static org.neo4j.driver.util.TestUtil.*;
 
 public class BoltProtocolV3Test
 {
@@ -338,6 +308,24 @@ public class BoltProtocolV3Test
     void databaseNameForAutoCommitTransactions()
     {
         testDatabaseNameSupport( true );
+    }
+
+    @Test
+    void shouldNotSupportDatabaseNameInBeginTransaction()
+    {
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), InternalBookmark.empty(), TransactionConfig.empty() );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    void shouldNotSupportDatabaseNameForAutoCommitTransactions()
+    {
+        ClientException e = assertThrows( ClientException.class,
+                () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
+                        new Query( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
     }
 
     protected void testDatabaseNameSupport( boolean autoCommitTx )

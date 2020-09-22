@@ -19,8 +19,10 @@
 package org.neo4j.driver.internal.messaging.v4;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.common.CommonMessageReader;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.packstream.PackOutput;
 
@@ -28,13 +30,20 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 
+
+/**
+ * The MessageFormat under tests is the one provided by the {@link BoltProtocolV4} and not an specific class implementation.
+ *
+ * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
+ *
+ */
 class MessageFormatV4Test
 {
+    private static final MessageFormat format = BoltProtocolV4.INSTANCE.createMessageFormat();
+
     @Test
     void shouldCreateCorrectWriter()
     {
-        MessageFormatV4 format = new MessageFormatV4();
-
         MessageFormat.Writer writer = format.newWriter( mock( PackOutput.class ) );
 
         assertThat( writer, instanceOf( MessageWriterV4.class ) );
@@ -43,8 +52,6 @@ class MessageFormatV4Test
     @Test
     void shouldCreateCorrectReader()
     {
-        MessageFormatV4 format = new MessageFormatV4();
-
         MessageFormat.Reader reader = format.newReader( mock( PackInput.class ) );
 
         assertThat( reader, instanceOf( CommonMessageReader.class ) );

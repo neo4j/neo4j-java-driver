@@ -20,11 +20,10 @@ package org.neo4j.driver.internal.util.messaging;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.junit.jupiter.api.DynamicNode;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Map;
-
+import org.junit.jupiter.api.TestFactory;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.async.inbound.ByteBufInput;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
@@ -37,58 +36,74 @@ import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
 import org.neo4j.driver.internal.packstream.PackInput;
 import org.neo4j.driver.internal.util.io.ByteBufOutput;
-import org.neo4j.driver.Value;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.value;
 
 public abstract class AbstractMessageReaderTestBase
 {
-    @Test
-    void shouldReadSuccessMessage() throws Exception
+    @TestFactory
+    Stream<DynamicNode> shouldReadSupportedMessages()
     {
-        Map<String,Value> metadata = singletonMap( "hello", value( "world" ) );
-
-        ResponseMessageHandler handler = testMessageReading( new SuccessMessage( metadata ) );
-
-        verify( handler ).handleSuccessMessage( metadata );
+        return supportedMessages().map( message ->
+                dynamicTest( message.toString(), () -> testSupportedMessageReading( message ) ) );
     }
 
-    @Test
-    void shouldReadFailureMessage() throws Exception
+    private void testSupportedMessageReading(Message message) throws IOException
     {
-        ResponseMessageHandler handler = testMessageReading( new FailureMessage( "Hello", "World" ) );
+        ResponseMessageHandler handler = testMessageReading( message );
 
-        verify( handler ).handleFailureMessage( "Hello", "World" );
+
+        if( message instanceof SuccessMessage )
+        {
+            SuccessMessage successMessage = (SuccessMessage) message;
+            verify(handler).handleSuccessMessage(successMessage.metadata());
+        }
+        else if ( message instanceof  FailureMessage )
+        {
+            FailureMessage failureMessage = (FailureMessage) message;
+            verify(handler).handleFailureMessage(failureMessage.code(), failureMessage.message());
+        }
+        else if ( message instanceof IgnoredMessage )
+        {
+            verify(handler).handleIgnoredMessage();
+        }
+        else if ( message instanceof  RecordMessage )
+        {
+            RecordMessage recordMessage = (RecordMessage) message;
+            verify(handler).handleRecordMessage(recordMessage.fields());
+        }
+        else
+        {
+            fail( "Unsupported message type " + message.getClass().getSimpleName() );
+        }
     }
 
-    @Test
-    void shouldReadIgnoredMessage() throws Exception
+    @TestFactory
+    Stream<DynamicNode> shouldFailToReadUnsupportedMessages()
     {
-        ResponseMessageHandler handler = testMessageReading( IgnoredMessage.IGNORED );
-
-        verify( handler ).handleIgnoredMessage();
+        return unsupportedMessages().map( message ->
+                dynamicTest( message.toString(), () -> testUnsupportedMessageReading( message ) ) );
     }
 
-    @Test
-    void shouldReadRecordMessage() throws Exception
+    private void testUnsupportedMessageReading(Message message) throws IOException
     {
-        Value[] fields = {value( 1 ), value( 2 ), value( "42" )};
-
-        ResponseMessageHandler handler = testMessageReading( new RecordMessage( fields ) );
-
-        verify( handler ).handleRecordMessage( fields );
+        assertThrows(IOException.class, () -> testMessageReading(message));
     }
 
-    @Test
-    void shouldFailToReadUnknownMessage()
-    {
-        assertThrows( IOException.class, () -> testMessageReading( DiscardAllMessage.DISCARD_ALL ) );
-        assertThrows( IOException.class, () -> testMessageReading( new RunMessage( "RETURN 42" ) ) );
-    }
+
+    protected abstract Stream<Message> supportedMessages();
+
+    protected abstract Stream<Message> unsupportedMessages();
 
     protected abstract MessageFormat.Reader newReader( PackInput input );
 

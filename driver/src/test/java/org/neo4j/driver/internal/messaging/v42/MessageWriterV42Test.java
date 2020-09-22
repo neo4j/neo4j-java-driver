@@ -16,16 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v3;
+package org.neo4j.driver.internal.messaging.v42;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.request.BeginMessage;
-import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.*;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v4.MessageWriterV4;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
@@ -43,6 +42,7 @@ import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.messaging.request.CommitMessage.COMMIT;
 import static org.neo4j.driver.internal.messaging.request.DiscardAllMessage.DISCARD_ALL;
@@ -53,19 +53,18 @@ import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBA
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
-
 /**
- * The MessageWriter under tests is the one provided by the {@link BoltProtocolV3} and not an specific class implementation.
+ * The MessageWriter under tests is the one provided by the {@link BoltProtocolV42} and not an specific class implementation.
  *
  * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
  *
  */
-class MessageWriterV3Test extends AbstractMessageWriterTestBase
+class MessageWriterV42Test extends AbstractMessageWriterTestBase
 {
     @Override
     protected MessageFormat.Writer newWriter( PackOutput output )
     {
-        return BoltProtocolV3.INSTANCE.createMessageFormat().newWriter(output);
+        return BoltProtocolV42.INSTANCE.createMessageFormat().newWriter(output);
     }
 
     @Override
@@ -82,28 +81,30 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
                 unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300,  ZoneOffset.ofHoursMinutes( 9, 30 ) ) ) ) ) ),
                 unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneId.of( "Europe/Stockholm" ) ) ) ) ) ),
 
+                // New Bolt V4 messages
+                new PullMessage( 100, 200 ),
+                new DiscardMessage( 300, 400 ),
 
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap(), Collections.emptyMap() ),
                 GOODBYE,
                 new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, defaultDatabase() ),
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, defaultDatabase() ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, database( "foo" ) ),
                 COMMIT,
                 ROLLBACK,
+
+                RESET,
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
-                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), WRITE,
+                autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
                         InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
-                PULL_ALL,
-                DISCARD_ALL,
-                RESET,
 
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                         defaultDatabase(), READ, InternalBookmark.empty() ),
-                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                        defaultDatabase(), WRITE, InternalBookmark.empty() ),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), database( "foo" ),
+                        WRITE, InternalBookmark.empty() ),
                 unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
@@ -112,9 +113,11 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
     protected Stream<Message> unsupportedMessages()
     {
         return Stream.of(
-                // Bolt V1 and V2 messages
+                // Bolt V1, V2 and V3 messages
                 new InitMessage( "Apa", emptyMap() ),
-                new RunMessage( "RETURN 1" )
+                new RunMessage( "RETURN 1" ),
+                PULL_ALL,
+                DISCARD_ALL
         );
     }
 }
