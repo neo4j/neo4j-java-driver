@@ -202,7 +202,7 @@ public class TransactionConfig
         public Builder withMetadata( Map<String,Object> metadata )
         {
             requireNonNull( metadata, "Transaction metadata should not be null" );
-
+            String hello = "hello";
             this.metadata = Extract.mapOfValues( metadata );
             return this;
         }

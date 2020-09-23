@@ -24,7 +24,32 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
-import org.neo4j.driver.*;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
+
+import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
@@ -35,7 +60,12 @@ import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.messaging.request.*;
+import org.neo4j.driver.internal.messaging.request.BeginMessage;
+import org.neo4j.driver.internal.messaging.request.CommitMessage;
+import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.request.RollbackMessage;
+import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -46,22 +76,22 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.BooleanSupplier;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.WRITE;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
@@ -282,10 +312,10 @@ public final class TestUtil
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, Bookmark bookmark )
+                                             RetryLogic retryLogic, Bookmark bookmark )
     {
         return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING );
+                                   DEV_NULL_LOGGING );
     }
 
     public static void verifyRunRx( Connection connection, String query )
@@ -339,30 +369,29 @@ public final class TestUtil
     public static void setupFailingRun( Connection connection, Throwable error )
     {
         doAnswer( invocation ->
-        {
-            ResponseHandler runHandler = invocation.getArgument( 1 );
-            runHandler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+                  {
+                      ResponseHandler runHandler = invocation.getArgument( 1 );
+                      runHandler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
 
         doAnswer( invocation ->
-        {
-            ResponseHandler pullHandler = invocation.getArgument( 1 );
-            pullHandler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
-
+                  {
+                      ResponseHandler pullHandler = invocation.getArgument( 1 );
+                      pullHandler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static void setupFailingBegin( Connection connection, Throwable error )
     {
         // with bookmarks
         doAnswer( invocation ->
-        {
-            ResponseHandler handler = invocation.getArgument( 1 );
-            handler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
+                  {
+                      ResponseHandler handler = invocation.getArgument( 1 );
+                      handler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
     }
 
     public static void setupFailingCommit( Connection connection )

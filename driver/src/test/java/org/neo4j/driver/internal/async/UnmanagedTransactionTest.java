@@ -32,8 +32,6 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
-import org.neo4j.driver.internal.messaging.request.PullAllMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -45,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -56,6 +53,8 @@ import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.runMessageWithQueryMatcher;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
+import static org.neo4j.driver.util.TestUtil.verifyBeginTx;
+import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
 import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
@@ -93,7 +92,6 @@ class UnmanagedTransactionTest
     }
 
     @Test
-    @Disabled("It's expecting an old behaviour")
     void shouldRollbackOnImplicitFailure()
     {
         // Given
@@ -105,25 +103,23 @@ class UnmanagedTransactionTest
 
         // Then
         InOrder order = inOrder( connection );
-        order.verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
-        order.verify( connection ).writeAndFlush( eq( new RunMessage( "ROLLBACK" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verifyBeginTx( connection );
+        verifyRollbackTx( connection );
         order.verify( connection ).release();
     }
 
     @Test
-    @Disabled("It's expecting an old behaviour")
     void shouldOnlyQueueMessagesWhenNoBookmarkGiven()
     {
         Connection connection = connectionMock();
 
         beginTx( connection, InternalBookmark.empty() );
 
-        verify( connection ).write( eq( new RunMessage( "BEGIN" ) ), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verifyBeginTx( connection );
         verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
     }
 
     @Test
-    @Disabled("It's expecting an old behaviour")
     void shouldFlushWhenBookmarkGiven()
     {
         Bookmark bookmark = InternalBookmark.parse( "hi, I'm bookmark" );
@@ -131,7 +127,7 @@ class UnmanagedTransactionTest
 
         beginTx( connection, bookmark );
 
-        verify( connection ).writeAndFlush( any(), any(), eq( PullAllMessage.PULL_ALL ), any() );
+        verifyBeginTx( connection, bookmark );
         verify( connection, never() ).write( any(), any(), any(), any() );
     }
 
