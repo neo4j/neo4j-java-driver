@@ -24,7 +24,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
@@ -85,7 +88,6 @@ class OutboundMessageHandlerTest
     }
 
     @Test
-    @Disabled("Take a look why it's faling")
     void shouldSupportByteArraysByDefault()
     {
         OutboundMessageHandler handler = newHandler( new MessageFormatV3() );
@@ -94,7 +96,7 @@ class OutboundMessageHandlerTest
         Map<String,Value> params = new HashMap<>();
         params.put( "array", value( new byte[]{1, 2, 3} ) );
 
-        assertTrue( channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertTrue( channel.writeOutbound( new Query( "RETURN 1", Values.value(params) ) ) );
         assertTrue( channel.finish() );
     }
 

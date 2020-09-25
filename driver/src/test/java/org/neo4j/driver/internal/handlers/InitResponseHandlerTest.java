@@ -26,6 +26,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
@@ -90,7 +92,6 @@ class InitResponseHandlerTest
     }
 
     @Test
-    @Disabled("take a look why it's failing")
     void shouldAllowByteArrays()
     {
         InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
@@ -99,7 +100,7 @@ class InitResponseHandlerTest
         handler.onSuccess( metadata );
 
         Map<String,Value> params = singletonMap( "array", value( new byte[]{1, 2, 3} ) );
-        assertTrue( channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertTrue( channel.writeOutbound( new Query( "RETURN 1", Values.value( params ) ) ) );
         assertTrue( channel.finish() );
     }
 
