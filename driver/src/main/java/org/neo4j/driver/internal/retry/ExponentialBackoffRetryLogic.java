@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.retry;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
+
+import org.neo4j.driver.util.Experimental;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -104,7 +106,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             catch ( Throwable throwable )
             {
                 Throwable error = extractPossibleTerminationCause( throwable );
-                if ( canRetryOn( error ) )
+                if ( isRetryable( error ) )
                 {
                     long currentTime = clock.millis();
                     if ( startTime == -1 )
@@ -146,7 +148,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         return Flux.from( work ).retryWhen( retryRxCondition() );
     }
 
-    protected boolean canRetryOn( Throwable error )
+    @Experimental
+    public static boolean isRetryable( Throwable error )
     {
         return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || isTransientError( error );
     }
@@ -183,7 +186,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             long startTime = ctx.getOrDefault( "startTime", -1L );
             long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
-            if ( canRetryOn( error ) )
+            if ( isRetryable( error ) )
             {
                 long currentTime = clock.millis();
                 if ( startTime == -1 )
@@ -270,7 +273,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             List<Throwable> errors )
     {
         Throwable error = extractPossibleTerminationCause( throwable );
-        if ( canRetryOn( error ) )
+        if ( isRetryable( error ) )
         {
             long currentTime = clock.millis();
             if ( startTime == -1 )
