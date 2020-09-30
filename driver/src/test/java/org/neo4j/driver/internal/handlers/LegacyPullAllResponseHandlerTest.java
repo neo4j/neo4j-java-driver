@@ -24,8 +24,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -43,7 +44,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<LegacyPullAllResponseHandler>
@@ -237,8 +237,9 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
     protected LegacyPullAllResponseHandler newHandler(Query query, List<String> queryKeys,
                                                       Connection connection )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
         runResponseHandler.onSuccess( singletonMap( "fields", value( queryKeys ) ) );
-        return new LegacyPullAllResponseHandler(query, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ) );
+        return new LegacyPullAllResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
+                                                 mock( PullResponseCompletionListener.class ) );
     }
 }

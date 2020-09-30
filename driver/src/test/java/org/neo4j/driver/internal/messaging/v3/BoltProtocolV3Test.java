@@ -33,7 +33,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
@@ -340,14 +339,33 @@ public class BoltProtocolV3Test
         testDatabaseNameSupport( true );
     }
 
+    @Test
+    void shouldNotSupportDatabaseNameInBeginTransaction()
+    {
+        CompletionStage<Void> txStage = protocol.beginTransaction( connectionMock( "foo", protocol ), InternalBookmark.empty(), TransactionConfig.empty() );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
+    @Test
+    void shouldNotSupportDatabaseNameForAutoCommitTransactions()
+    {
+        ClientException e = assertThrows( ClientException.class,
+                                          () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ),
+                                                                                     new Query( "RETURN 1" ), BookmarkHolder.NO_OP, TransactionConfig.empty(),
+                                                                                     true, UNLIMITED_FETCH_SIZE ) );
+        assertThat( e.getMessage(), startsWith( "Database name parameter for selecting database is not supported" ) );
+    }
+
     protected void testDatabaseNameSupport( boolean autoCommitTx )
     {
         ClientException e;
         if ( autoCommitTx )
         {
             e = assertThrows( ClientException.class,
-                    () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ), new Query( "RETURN 1" ), BookmarkHolder.NO_OP,
-                            TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
+                              () -> protocol.runInAutoCommitTransaction( connectionMock( "foo", protocol ), new Query( "RETURN 1" ), BookmarkHolder.NO_OP,
+                                                                         TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE ) );
         }
         else
         {

@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.messaging;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AuthToken;
@@ -30,15 +29,12 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -155,22 +151,15 @@ public interface BoltProtocol
      */
     static BoltProtocol forVersion( BoltProtocolVersion version )
     {
-        if ( BoltProtocolV1.VERSION.equals( version ) )
-        {
-            return BoltProtocolV1.INSTANCE;
-        }
-        else if ( BoltProtocolV2.VERSION.equals( version ) )
-        {
-            return BoltProtocolV2.INSTANCE;
-        }
-        else if ( BoltProtocolV3.VERSION.equals( version ) )
+        if ( BoltProtocolV3.VERSION.equals( version ) )
         {
             return BoltProtocolV3.INSTANCE;
         }
         else if ( BoltProtocolV4.VERSION.equals( version ) )
         {
             return BoltProtocolV4.INSTANCE;
-        } else if ( BoltProtocolV41.VERSION.equals( version ) )
+        }
+        else if ( BoltProtocolV41.VERSION.equals( version ) )
         {
             return BoltProtocolV41.INSTANCE;
         }

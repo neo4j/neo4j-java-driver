@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
@@ -115,11 +114,6 @@ class RunResponseHandlerTest
         assertEquals( keyIndex, handler.queryKeys().keyIndex() );
     }
 
-    @Test
-    void shouldReturnResultAvailableAfterWhenSucceededV1()
-    {
-        testResultAvailableAfterOnSuccess( "result_available_after", BoltProtocolV1.METADATA_EXTRACTOR );
-    }
 
     @Test
     void shouldReturnResultAvailableAfterWhenSucceededV3()
@@ -138,12 +132,12 @@ class RunResponseHandlerTest
 
     private static RunResponseHandler newHandler()
     {
-        return newHandler( BoltProtocolV1.METADATA_EXTRACTOR );
+        return newHandler( BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
     private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture )
     {
-        return newHandler( runCompletedFuture, BoltProtocolV1.METADATA_EXTRACTOR );
+        return newHandler( runCompletedFuture, BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
     private static RunResponseHandler newHandler( MetadataExtractor metadataExtractor )

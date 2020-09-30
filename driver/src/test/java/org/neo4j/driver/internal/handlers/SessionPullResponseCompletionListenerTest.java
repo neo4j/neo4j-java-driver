@@ -27,6 +27,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -36,7 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class SessionPullResponseCompletionListenerTest
@@ -81,9 +81,9 @@ class SessionPullResponseCompletionListenerTest
 
     private static ResponseHandler newHandler( Connection connection, PullResponseCompletionListener listener )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
         BasicPullResponseHandler handler =
-                new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler, connection, METADATA_EXTRACTOR, listener );
+                new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, listener );
         handler.installRecordConsumer( ( record, throwable ) -> {} );
         handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
         return handler;
