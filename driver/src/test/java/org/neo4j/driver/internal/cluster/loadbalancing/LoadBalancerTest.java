@@ -47,8 +47,7 @@ import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableHandler;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
-import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
+import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -395,7 +394,7 @@ class LoadBalancerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( address );
-        when( connection.protocol() ).thenReturn( BoltProtocol.forVersion( BoltProtocolV41.VERSION ) );
+        when( connection.protocol() ).thenReturn( BoltProtocol.forVersion( BoltProtocolV42.VERSION ) );
         when( connection.serverVersion() ).thenReturn( ServerVersion.v4_1_0 );
         when( connection.release() ).thenReturn( completedWithNull() );
         return connection;
