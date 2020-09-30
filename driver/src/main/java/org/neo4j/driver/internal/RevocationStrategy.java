@@ -21,8 +21,11 @@ package org.neo4j.driver.internal;
 
 public enum RevocationStrategy
 {
+    /** Don't do any OCSP revocation checks, regardless whether there are stapled revocation statuses or not. */
     NO_CHECKS,
+    /** Verify OCSP revocation checks when the revocation status is stapled to the certificate, continue if not. */
     VERIFY_IF_PRESENT,
+    /** Require stapled revocation status and verify OCSP revocation checks, fail if no revocation status is stapled to the certificate. */
     STRICT;
 
     public static boolean requiresRevocationChecking( RevocationStrategy revocationStrategy )
