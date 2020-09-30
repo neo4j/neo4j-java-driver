@@ -24,19 +24,11 @@ import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.pulln.AutoPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 
 public class PullHandlers
 {
-    public static PullAllResponseHandler newBoltV1PullAllHandler(Query query, RunResponseHandler runHandler,
-            Connection connection, UnmanagedTransaction tx )
-    {
-        PullResponseCompletionListener completionListener = createPullResponseCompletionListener( connection, BookmarkHolder.NO_OP, tx );
-
-        return new LegacyPullAllResponseHandler(query, runHandler, connection, BoltProtocolV1.METADATA_EXTRACTOR, completionListener );
-    }
 
     public static PullAllResponseHandler newBoltV3PullAllHandler(Query query, RunResponseHandler runHandler, Connection connection,
             BookmarkHolder bookmarkHolder, UnmanagedTransaction tx )

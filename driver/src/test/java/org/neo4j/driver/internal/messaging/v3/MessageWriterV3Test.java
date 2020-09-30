@@ -18,6 +18,12 @@
  */
 package org.neo4j.driver.internal.messaging.v3;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -35,6 +41,7 @@ import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.Calendar.DECEMBER;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.neo4j.driver.AccessMode.READ;
@@ -52,29 +59,49 @@ import static org.neo4j.driver.internal.messaging.request.RollbackMessage.ROLLBA
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.autoCommitTxRunMessage;
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
+/**
+ * The MessageWriter under tests is the one provided by the {@link BoltProtocolV3} and not an specific class implementation.
+ * <p>
+ * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
+ */
 class MessageWriterV3Test extends AbstractMessageWriterTestBase
 {
     @Override
     protected MessageFormat.Writer newWriter( PackOutput output )
     {
-        return new MessageWriterV3( output );
+        return BoltProtocolV3.INSTANCE.createMessageFormat().newWriter( output );
     }
 
     @Override
     protected Stream<Message> supportedMessages()
     {
         return Stream.of(
+                // Bolt V2 Data Types
+                unmanagedTxRunMessage( new Query( "RETURN $point", singletonMap( "point", point( 42, 12.99, -180.0 ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $point", singletonMap( "point", point( 42, 0.51, 2.99, 100.123 ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $date", singletonMap( "date", value( LocalDate.ofEpochDay( 2147483650L ) ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $time", singletonMap( "time", value( OffsetTime.of( 4, 16, 20, 999, ZoneOffset.MIN ) ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $time", singletonMap( "time", value( LocalTime.of( 12, 9, 18, 999_888 ) ) ) ) ),
+                unmanagedTxRunMessage(
+                        new Query( "RETURN $dateTime", singletonMap( "dateTime", value( LocalDateTime.of( 2049, DECEMBER, 12, 17, 25, 49, 199 ) ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneOffset
+                        .ofHoursMinutes( 9, 30 ) ) ) ) ) ),
+                unmanagedTxRunMessage( new Query( "RETURN $dateTime", singletonMap( "dateTime", value( ZonedDateTime.of( 2000, 1, 10, 12, 2, 49, 300, ZoneId.of(
+                        "Europe/Stockholm" ) ) ) ) ) ),
+
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap(), Collections.emptyMap() ),
                 GOODBYE,
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ, defaultDatabase() ),
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE, defaultDatabase() ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ,
+                                  defaultDatabase() ),
+                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE,
+                                  defaultDatabase() ),
                 COMMIT,
                 ROLLBACK,
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
-                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
+                                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), WRITE,
-                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
+                                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ),
                 unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
                 PULL_ALL,
                 DISCARD_ALL,
@@ -82,9 +109,9 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
 
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                        defaultDatabase(), READ, InternalBookmark.empty() ),
+                                        defaultDatabase(), READ, InternalBookmark.empty() ),
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                        defaultDatabase(), WRITE, InternalBookmark.empty() ),
+                                        defaultDatabase(), WRITE, InternalBookmark.empty() ),
                 unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
         );
     }
