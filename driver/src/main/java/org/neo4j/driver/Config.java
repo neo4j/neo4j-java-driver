@@ -30,7 +30,7 @@ import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
@@ -802,6 +802,7 @@ public class Config
         private final Strategy strategy;
         private final File certFile;
         private boolean hostnameVerificationEnabled = true;
+        private RevocationStrategy revocationStrategy = RevocationStrategy.NO_CHECKS;
 
         private TrustStrategy( Strategy strategy )
         {
@@ -900,6 +901,54 @@ public class Config
         public static TrustStrategy trustAllCertificates()
         {
             return new TrustStrategy( Strategy.TRUST_ALL_CERTIFICATES );
+        }
+
+        /**
+         * The revocation strategy used for verifying certificates.
+         * @return this {@link TrustStrategy}'s revocation strategy
+         */
+        public RevocationStrategy revocationStrategy()
+        {
+            return revocationStrategy;
+        }
+
+        /**
+         * Configures the {@link TrustStrategy} to not carry out OCSP revocation checks on certificates. This is the
+         * option that is configured by default.
+         * @return the current trust strategy
+         */
+        public TrustStrategy withoutCertificateRevocationChecks()
+        {
+            this.revocationStrategy = RevocationStrategy.NO_CHECKS;
+            return this;
+        }
+
+        /**
+         * Configures the {@link TrustStrategy} to carry out OCSP revocation checks when the revocation status is
+         * stapled to the certificate. If no stapled response is found, then certificate verification continues
+         * (and does not fail verification). This setting also requires the server to be configured to enable
+         * OCSP stapling.
+         * @return the current trust strategy
+         */
+        public TrustStrategy withVerifyIfPresentRevocationChecks()
+        {
+            this.revocationStrategy = RevocationStrategy.VERIFY_IF_PRESENT;
+            return this;
+        }
+
+        /**
+         * Configures the {@link TrustStrategy} to carry out strict OCSP revocation checks for revocation status that
+         * are stapled to the certificate. If no stapled response is found, then the driver will fail certificate verification
+         * and not connect to the server. This setting also requires the server to be configured to enable OCSP stapling.
+         *
+         * Note: enabling this setting will prevent the driver connecting to the server when the server is unable to reach
+         * the certificate's configured OCSP responder URL.
+         * @return the current trust strategy
+         */
+        public TrustStrategy withStrictRevocationChecks()
+        {
+            this.revocationStrategy = RevocationStrategy.STRICT;
+            return this;
         }
     }
 }

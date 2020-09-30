@@ -30,12 +30,13 @@ import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 
 /**
  * A tool used to save, load certs, etc.
  */
-public class CertificateTool
+public final class CertificateTool
 {
     private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
     private static final String END_CERT = "-----END CERTIFICATE-----";
@@ -139,6 +140,14 @@ public class CertificateTool
         }
     }
 
+    public static void loadX509Cert( X509Certificate[] certificates, KeyStore keyStore ) throws GeneralSecurityException, IOException
+    {
+        for ( int i = 0; i < certificates.length; i++ )
+        {
+            loadX509Cert( certificates[i], "neo4j.javadriver.trustedcert." + i, keyStore );
+        }
+    }
+
     /**
      * Load a certificate to a key store with a name
      *
@@ -160,6 +169,10 @@ public class CertificateTool
     {
         String cert64CharPerLine = cert.replaceAll( "(.{64})", "$1\n" );
         return BEGIN_CERT + "\n" + cert64CharPerLine + "\n"+ END_CERT + "\n";
+    }
+
+    private CertificateTool()
+    {
     }
 }
 

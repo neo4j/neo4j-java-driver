@@ -19,6 +19,7 @@
 package org.neo4j.driver.util;
 
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
@@ -93,6 +94,7 @@ public class CertificateUtil
         // Subject alternative name (part of SNI extension, used for hostname verification)
         GeneralNames subjectAlternativeName = new GeneralNames( new GeneralName( GeneralName.dNSName, DEFAULT_HOST_NAME ) );
         certBuilder.addExtension( Extension.subjectAlternativeName, false, subjectAlternativeName );
+        certBuilder.addExtension( Extension.basicConstraints, false, new BasicConstraints( true ) );
 
         // Get the certificate back
         ContentSigner signer = new JcaContentSignerBuilder( "SHA512WithRSAEncryption" ).build( issuerKeys.getPrivate() );

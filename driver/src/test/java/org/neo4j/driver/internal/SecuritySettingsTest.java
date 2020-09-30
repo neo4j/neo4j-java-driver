@@ -19,22 +19,22 @@
 
 package org.neo4j.driver.internal;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.stream.Stream;
-import javax.net.ssl.SSLContext;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.security.SecurityPlan;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
+import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 
 class SecuritySettingsTest
 {
@@ -48,13 +48,18 @@ class SecuritySettingsTest
         return Stream.of( "neo4j+s", "bolt+s" );
     }
 
-    private static Stream<String> allSchemes()
+    private static Stream<String> unencryptedSchemes()
+    {
+        return Stream.of( "neo4j", "bolt" );
+    }
+
+    private static Stream<String> allSecureSchemes()
     {
         return Stream.concat( selfSignedSchemes(), systemCertSchemes() );
     }
 
     @ParameterizedTest
-    @MethodSource( "allSchemes" )
+    @MethodSource( "allSecureSchemes" )
     void testEncryptionSchemeEnablesEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
@@ -72,11 +77,9 @@ class SecuritySettingsTest
 
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
-        SSLContext defaultContext = SSLContext.getDefault();
-
         assertTrue( securityPlan.requiresEncryption() );
         assertTrue( securityPlan.requiresHostnameVerification() );
-        assertEquals( defaultContext, securityPlan.sslContext() );
+        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
     }
 
     @ParameterizedTest
@@ -92,7 +95,7 @@ class SecuritySettingsTest
     }
 
     @ParameterizedTest
-    @MethodSource( "allSchemes" )
+    @MethodSource( "allSecureSchemes" )
     void testThrowsOnUserCustomizedEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
@@ -107,7 +110,7 @@ class SecuritySettingsTest
     }
 
     @ParameterizedTest
-    @MethodSource( "allSchemes" )
+    @MethodSource( "allSecureSchemes" )
     void testThrowsOnUserCustomizedTrustConfiguration( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
@@ -122,7 +125,7 @@ class SecuritySettingsTest
     }
 
     @ParameterizedTest
-    @MethodSource( "allSchemes" )
+    @MethodSource( "allSecureSchemes" )
     void testThrowsOnUserCustomizedTrustConfigurationAndEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
@@ -137,48 +140,83 @@ class SecuritySettingsTest
         assertTrue( ex.getMessage().contains( String.format( "Scheme %s is not configurable with manual encryption and trust settings", scheme ) ));
     }
 
-    @Test
-    void testNeo4jSchemeNoEncryption()
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testNoEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( "neo4j" );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
         assertFalse( securityPlan.requiresEncryption() );
     }
 
-    @Test
-    void testBoltSchemeNoEncryption()
-    {
-        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder().build();
-
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( "bolt" );
-
-        assertFalse( securityPlan.requiresEncryption() );
-    }
-
-    @Test
-    void testConfiguredEncryption()
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testConfiguredEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withEncryption().build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( "neo4j" );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
         assertTrue( securityPlan.requiresEncryption() );
     }
 
-    @Test
-    void testConfiguredAllCertificates()
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testConfiguredAllCertificates( String scheme)
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
                 .withEncryption()
                 .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
                 .build();
 
-        SecurityPlan securityPlan = securitySettings.createSecurityPlan( "neo4j" );
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
 
         assertTrue( securityPlan.requiresEncryption() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testConfigureStrictRevocationChecking( String scheme )
+    {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withStrictRevocationChecks() )
+                .withEncryption()
+                .build();
+
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+
+        assertEquals( STRICT, securityPlan.revocationStrategy() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testConfigureVerifyIfPresentRevocationChecking( String scheme )
+    {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates().withVerifyIfPresentRevocationChecks() )
+                .withEncryption()
+                .build();
+
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+
+        assertEquals( VERIFY_IF_PRESENT, securityPlan.revocationStrategy() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "unencryptedSchemes" )
+    void testRevocationCheckingDisabledByDefault( String scheme )
+    {
+        SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
+                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
+                .withEncryption()
+                .build();
+
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( scheme );
+
+        assertEquals( NO_CHECKS, securityPlan.revocationStrategy() );
     }
 
 }
