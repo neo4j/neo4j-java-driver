@@ -32,7 +32,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.neo4j.driver.*;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -262,10 +267,7 @@ class ExamplesIT
 
                 assertThat( employeeNumber, equalTo( -1 ) );
             }
-            assertThat( stdIO.stderr(), equalTo( asList(
-                    "Invalid input 'L': expected 't/T' (line 1, column 3 (offset: 2))",
-                    "\"SELECT * FROM Employees WHERE name = $name\"",
-                    "   ^" ) ) );
+            assertThat( stdIO.stderr().toString(), containsString( "Invalid input" ) );
         }
     }
 
