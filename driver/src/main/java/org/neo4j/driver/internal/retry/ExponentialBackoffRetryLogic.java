@@ -20,8 +20,6 @@ package org.neo4j.driver.internal.retry;
 
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
-
-import org.neo4j.driver.util.Experimental;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -47,6 +45,7 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.util.Experimental;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -106,7 +105,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             catch ( Throwable throwable )
             {
                 Throwable error = extractPossibleTerminationCause( throwable );
-                if ( isRetryable( error ) )
+                if ( canRetryOn( error ) )
                 {
                     long currentTime = clock.millis();
                     if ( startTime == -1 )
@@ -148,6 +147,11 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         return Flux.from( work ).retryWhen( retryRxCondition() );
     }
 
+    protected boolean canRetryOn( Throwable error )
+    {
+        return isRetryable( error );
+    }
+
     @Experimental
     public static boolean isRetryable( Throwable error )
     {
@@ -186,7 +190,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             long startTime = ctx.getOrDefault( "startTime", -1L );
             long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
-            if ( isRetryable( error ) )
+            if ( canRetryOn( error ) )
             {
                 long currentTime = clock.millis();
                 if ( startTime == -1 )
@@ -273,7 +277,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
             List<Throwable> errors )
     {
         Throwable error = extractPossibleTerminationCause( throwable );
-        if ( isRetryable( error ) )
+        if ( canRetryOn( error ) )
         {
             long currentTime = clock.millis();
             if ( startTime == -1 )
