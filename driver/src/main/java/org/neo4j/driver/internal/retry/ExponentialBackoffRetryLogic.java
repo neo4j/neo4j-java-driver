@@ -45,6 +45,7 @@ import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.util.Experimental;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -147,6 +148,12 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     }
 
     protected boolean canRetryOn( Throwable error )
+    {
+        return isRetryable( error );
+    }
+
+    @Experimental
+    public static boolean isRetryable( Throwable error )
     {
         return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || isTransientError( error );
     }
