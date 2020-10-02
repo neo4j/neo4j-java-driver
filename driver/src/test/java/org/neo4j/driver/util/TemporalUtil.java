@@ -136,7 +136,9 @@ public final class TemporalUtil
         {
             if ( index == randomIndex )
             {
-                return ZoneId.of( id );
+                ZoneId zoneId = ZoneId.of( id );
+                System.out.println( zoneId );
+                return zoneId;
             }
             else
             {

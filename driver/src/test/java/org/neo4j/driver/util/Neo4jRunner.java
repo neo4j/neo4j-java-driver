@@ -37,7 +37,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static java.util.Arrays.asList;
-import static java.util.logging.Level.INFO;
+import static java.util.logging.Level.FINE;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.driver.AuthTokens.basic;
 import static org.neo4j.driver.Logging.console;
@@ -60,7 +60,7 @@ public class Neo4jRunner
     private static final String DEFAULT_NEOCTRL_ARGS = "-e 3.5.11";
     private static final String ENV_NEOCTRL_ARGS = System.getenv( "JAVA_DRIVER_NEOCTRL_ARGS" );
     public static final String NEOCTRL_ARGS = System.getProperty( "neoctrl.args", ENV_NEOCTRL_ARGS == null ? DEFAULT_NEOCTRL_ARGS : ENV_NEOCTRL_ARGS );
-    public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( INFO ) ).withoutEncryption().build();
+    public static final Config DEFAULT_CONFIG = Config.builder().withLogging( console( FINE ) ).withoutEncryption().build();
 
     public static final String USER = "neo4j";
     public static final String PASSWORD = "password";
