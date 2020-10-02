@@ -28,27 +28,26 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.Query;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 import org.neo4j.driver.internal.packstream.PackOutput;
-import org.neo4j.driver.Value;
 
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.MessageFormat.Writer;
 import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
-import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.util.TestUtil.assertByteBufContains;
 
 class OutboundMessageHandlerTest
@@ -91,13 +90,13 @@ class OutboundMessageHandlerTest
     @Test
     void shouldSupportByteArraysByDefault()
     {
-        OutboundMessageHandler handler = newHandler( new MessageFormatV1() );
+        OutboundMessageHandler handler = newHandler( new MessageFormatV3() );
         channel.pipeline().addLast( handler );
 
         Map<String,Value> params = new HashMap<>();
         params.put( "array", value( new byte[]{1, 2, 3} ) );
 
-        assertTrue( channel.writeOutbound( new RunMessage( "RETURN 1", params ) ) );
+        assertTrue( channel.writeOutbound( new Query( "RETURN 1", Values.value( params ) ) ) );
         assertTrue( channel.finish() );
     }
 

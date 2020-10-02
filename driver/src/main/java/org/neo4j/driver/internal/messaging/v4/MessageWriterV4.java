@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
+import org.neo4j.driver.internal.messaging.common.CommonValuePacker;
 import org.neo4j.driver.internal.messaging.encode.BeginMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.CommitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.DiscardMessageEncoder;
@@ -40,7 +41,6 @@ import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v2.ValuePackerV2;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.util.Iterables;
 
@@ -48,7 +48,7 @@ public class MessageWriterV4 extends AbstractMessageWriter
 {
     public MessageWriterV4( PackOutput output )
     {
-        super( new ValuePackerV2( output ), buildEncoders() );
+        super( new CommonValuePacker( output ), buildEncoders() );
     }
 
     private static Map<Byte,MessageEncoder> buildEncoders()

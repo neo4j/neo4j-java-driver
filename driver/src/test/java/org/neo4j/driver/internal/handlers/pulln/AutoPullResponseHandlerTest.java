@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandlerTestBase;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
+import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.BooleanValue;
 
@@ -46,17 +47,17 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
-import static org.neo4j.driver.internal.messaging.v1.BoltProtocolV1.METADATA_EXTRACTOR;
 
 class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPullResponseHandler>
 {
     @Override
     protected AutoPullResponseHandler newHandler( Query query, List<String> queryKeys, Connection connection )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
         runResponseHandler.onSuccess( singletonMap( "fields", value( queryKeys ) ) );
         AutoPullResponseHandler handler =
-                new AutoPullResponseHandler( query, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ),
+                new AutoPullResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
+                                             mock( PullResponseCompletionListener.class ),
                                              DEFAULT_FETCH_SIZE );
         handler.prePopulateRecords();
         return handler;
@@ -64,10 +65,11 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     protected AutoPullResponseHandler newHandler( Query query, Connection connection, long fetchSize )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
         runResponseHandler.onSuccess( emptyMap() );
         AutoPullResponseHandler handler =
-                new AutoPullResponseHandler( query, runResponseHandler, connection, METADATA_EXTRACTOR, mock( PullResponseCompletionListener.class ),
+                new AutoPullResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
+                                             mock( PullResponseCompletionListener.class ),
                                              fetchSize );
         handler.prePopulateRecords();
         return handler;
