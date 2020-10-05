@@ -10,7 +10,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
-    <junit.version>5.6.2</junit.version>
+    <junit.version>5.7.0</junit.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
@@ -65,12 +65,12 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.51.Final</version>
+        <version>4.1.52.Final</version>
       </dependency>
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>Dysprosium-SR7</version>
+        <version>Dysprosium-SR12</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -111,19 +111,19 @@
       <dependency>
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
-        <version>0.7.1</version>
+        <version>1.1.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.65.01</version>
+        <version>1.66</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.65</version>
+        <version>1.66</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -132,10 +132,24 @@
         <version>1.2.3</version>
         <scope>test</scope>
       </dependency>
+
+      <!-- Testkit Dependencies -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>2.11.3</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.11.3</version>
+      </dependency>
+
+      <!-- Graal VM -->
       <dependency>
         <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>20.1.0</version>
+        <version>20.2.0</version>
         <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
         <scope>provided</scope>
       </dependency>
