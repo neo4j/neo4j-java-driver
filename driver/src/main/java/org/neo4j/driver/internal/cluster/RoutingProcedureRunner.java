@@ -18,112 +18,24 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import java.util.List;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Query;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.FatalDiscoveryException;
-import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.ServerVersion;
 
-import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-
-public class RoutingProcedureRunner
+/**
+ * Interface which defines the standard way to get the routing table
+ */
+public interface RoutingProcedureRunner
 {
-    static final String ROUTING_CONTEXT = "context";
-    static final String GET_ROUTING_TABLE = "CALL dbms.cluster.routing.getRoutingTable($" + ROUTING_CONTEXT + ")";
-
-    final RoutingContext context;
-
-    public RoutingProcedureRunner( RoutingContext context )
-    {
-        this.context = context;
-    }
-
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark )
-    {
-        DirectConnection delegate = connection( connection );
-        Query procedure = procedureQuery( connection.serverVersion(), databaseName );
-        BookmarkHolder bookmarkHolder = bookmarkHolder( bookmark );
-        return runProcedure( delegate, procedure, bookmarkHolder )
-                .thenCompose( records -> releaseConnection( delegate, records ) )
-                .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
-    }
-
-    DirectConnection connection( Connection connection )
-    {
-        return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE );
-    }
-
-    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
-    {
-        if ( databaseName.databaseName().isPresent() )
-        {
-            throw new FatalDiscoveryException( String.format(
-                    "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
-                            "Current server version: %s. Database name: '%s'", serverVersion, databaseName.description() ) );
-        }
-        return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.toMap() ) );
-    }
-
-    BookmarkHolder bookmarkHolder( Bookmark ignored )
-    {
-        return BookmarkHolder.NO_OP;
-    }
-
-    CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
-    {
-        return connection.protocol()
-                .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
-                .asyncResult().thenCompose( ResultCursor::listAsync );
-    }
-
-    private CompletionStage<List<Record>> releaseConnection( Connection connection, List<Record> records )
-    {
-        // It is not strictly required to release connection after routing procedure invocation because it'll
-        // be released by the PULL_ALL response handler after result is fully fetched. Such release will happen
-        // in background. However, releasing it early as part of whole chain makes it easier to reason about
-        // rediscovery in stub server tests. Some of them assume connections to instances not present in new
-        // routing table will be closed immediately.
-        return connection.release().thenApply( ignore -> records );
-    }
-
-    private static RoutingProcedureResponse processProcedureResponse(Query procedure, List<Record> records,
-                                                                     Throwable error )
-    {
-        Throwable cause = Futures.completionExceptionCause( error );
-        if ( cause != null )
-        {
-            return handleError( procedure, cause );
-        }
-        else
-        {
-            return new RoutingProcedureResponse( procedure, records );
-        }
-    }
-
-    private static RoutingProcedureResponse handleError(Query procedure, Throwable error )
-    {
-        if ( error instanceof ClientException )
-        {
-            return new RoutingProcedureResponse( procedure, error );
-        }
-        else
-        {
-            throw new CompletionException( error );
-        }
-    }
+    /**
+     * Run the calls to the server
+     *
+     * @param connection The connection which will be used to call the server
+     * @param databaseName The database name
+     * @param bookmark The bookmark used to query the routing information
+     * @return The routing table
+     */
+    CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark );
 }

@@ -50,11 +50,11 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
-import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.GET_ROUTING_TABLE;
-import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.ROUTING_CONTEXT;
+import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.GET_ROUTING_TABLE;
+import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.ROUTING_CONTEXT;
 import static org.neo4j.driver.util.TestUtil.await;
 
-class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
+class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
 {
     @Test
     void shouldCallGetRoutingTableWithEmptyMap()
@@ -102,12 +102,12 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), empty() ) ) );
     }
 
-    RoutingProcedureRunner routingProcedureRunner( RoutingContext context )
+    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context )
     {
         return new TestRoutingProcedureRunner( context );
     }
 
-    RoutingProcedureRunner routingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult )
+    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult )
     {
         return new TestRoutingProcedureRunner( context, runProcedureResult );
     }
@@ -123,7 +123,7 @@ class RoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
         return new Query( GET_ROUTING_TABLE, parameters );
     }
 
-    private static class TestRoutingProcedureRunner extends RoutingProcedureRunner
+    private static class TestRoutingProcedureRunner extends SingleDatabaseRoutingProcedureRunner
     {
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;

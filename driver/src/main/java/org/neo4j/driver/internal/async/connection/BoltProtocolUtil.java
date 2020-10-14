@@ -25,6 +25,7 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 
 import static io.netty.buffer.Unpooled.copyInt;
 import static io.netty.buffer.Unpooled.unreleasableBuffer;
@@ -41,9 +42,9 @@ public final class BoltProtocolUtil
 
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
+            BoltProtocolV43.VERSION.toInt(),
             BoltProtocolV42.VERSION.toInt(),
             BoltProtocolV41.VERSION.toInt(),
-            BoltProtocolV4.VERSION.toInt(),
             BoltProtocolV3.VERSION.toInt() ) ).asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();

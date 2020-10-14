@@ -50,7 +50,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.cluster.MultiDatabasesRoutingProcedureRunner.DATABASE_NAME;
 import static org.neo4j.driver.internal.cluster.MultiDatabasesRoutingProcedureRunner.MULTI_DB_GET_ROUTING_TABLE;
-import static org.neo4j.driver.internal.cluster.RoutingProcedureRunner.ROUTING_CONTEXT;
+import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.ROUTING_CONTEXT;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureRunnerTest
@@ -96,13 +96,13 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     }
 
     @Override
-    RoutingProcedureRunner routingProcedureRunner( RoutingContext context )
+    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context )
     {
         return new TestRoutingProcedureRunner( context );
     }
 
     @Override
-    RoutingProcedureRunner routingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult )
+    SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult )
     {
         return new TestRoutingProcedureRunner( context, runProcedureResult );
     }
