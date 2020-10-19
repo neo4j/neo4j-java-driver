@@ -194,41 +194,69 @@ public class InternalIsoDuration implements IsoDuration
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append( 'P' );
-        sb.append( months ).append( 'M' );
-        sb.append( days ).append( 'D' );
-        sb.append( 'T' );
-        if ( seconds < 0 && nanoseconds > 0 )
+        StringBuilder str = new StringBuilder().append( 'P' );
+        append( str, months / 12, 'Y' );
+        append( str, months % 12, 'M' );
+        append( str, days, 'D' );
+        if ( seconds != 0 || nanoseconds != 0 )
         {
-            if ( seconds == -1 )
+            boolean negative = seconds < 0;
+            long s = seconds;
+            int n = nanoseconds;
+            if ( negative && nanoseconds != 0 )
             {
-                sb.append( "-0" );
+                s++;
+                n -= NANOS_PER_SECOND;
             }
-            else
+            str.append( 'T' );
+            append( str, s / 3600, 'H' );
+            s %= 3600;
+            append( str, s / 60, 'M' );
+            s %= 60;
+            if ( s != 0 )
             {
-                sb.append( seconds + 1 );
+                str.append( s );
+                if ( n != 0 )
+                {
+                    nanos( str, n );
+                }
+                str.append( 'S' );
+            }
+            else if ( n != 0 )
+            {
+                if ( negative )
+                {
+                    str.append( '-' );
+                }
+                str.append( '0' );
+                nanos( str, n );
+                str.append( 'S' );
             }
         }
-        else
+        if ( str.length() == 1 )
         {
-            sb.append( seconds );
+            str.append( "T0S" );
         }
-        if ( nanoseconds > 0 )
-        {
-            int pos = sb.length();
-            // append nanoseconds as a 10-digit string with leading '1' that is later replaced by a '.'
-            if ( seconds < 0 )
-            {
-                sb.append( 2 * NANOS_PER_SECOND - nanoseconds );
-            }
-            else
-            {
-                sb.append( NANOS_PER_SECOND + nanoseconds );
-            }
-            sb.setCharAt( pos, '.' ); // replace '1' with '.'
-        }
-        sb.append( 'S' );
-        return sb.toString();
+        return str.toString();
     }
+
+    private static void nanos( StringBuilder str, int nanos )
+    {
+        str.append( '.' );
+        int n = nanos < 0 ? -nanos : nanos;
+        for ( int mod = (int)NANOS_PER_SECOND; mod > 1 && n > 0; n %= mod )
+        {
+            mod /= 10;
+            str.append( n / mod );
+        }
+    }
+
+    private static void append( StringBuilder str, long quantity, char unit )
+    {
+        if ( quantity != 0 )
+        {
+            str.append( quantity ).append( unit );
+        }
+    }
+
 }

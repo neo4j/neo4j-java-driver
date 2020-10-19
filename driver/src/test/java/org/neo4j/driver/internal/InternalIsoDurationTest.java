@@ -149,34 +149,34 @@ class InternalIsoDurationTest
     @Test
     void toStringShouldPrintInIsoStandardFormat()
     {
-        assertThat( newDuration( 0, 0, 0, 0 ).toString(), equalTo( "P0M0DT0S" ) );
+        assertThat( newDuration( 0, 0, 0, 0 ).toString(), equalTo( "PT0S" ) );
         assertThat( newDuration( 2, 45, 59, 11 ).toString(), equalTo( "P2M45DT59.000000011S" ) );
         assertThat( newDuration( 4, -101, 1, 999 ).toString(), equalTo( "P4M-101DT1.000000999S" ) );
         assertThat( newDuration( -1, 12, -19, 1 ).toString(), equalTo( "P-1M12DT-18.999999999S" ) );
-        assertThat( newDuration( 0, 0, -1, 1 ).toString(), equalTo( "P0M0DT-0.999999999S" ) );
+        assertThat( newDuration( 0, 0, -1, 1 ).toString(), equalTo( "PT-0.999999999S" ) );
 
-        assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P0M356DT0S" ) );
-        assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "P0M0DT45S" ) );
+        assertThat( new InternalIsoDuration( Period.parse( "P356D" ) ).toString(), equalTo( "P356D" ) );
+        assertThat( new InternalIsoDuration( Duration.parse( "PT45S" ) ).toString(), equalTo( "PT45S" ) );
 
-        assertThat( new InternalIsoDuration( 0, 14, Duration.parse( "PT16H12M" ) ).toString(), equalTo( "P0M14DT58320S" ) );
-        assertThat( new InternalIsoDuration( 5, 1, Duration.parse( "PT12H" ) ).toString(), equalTo( "P5M1DT43200S" ) );
-        assertThat( new InternalIsoDuration( 0, 17, Duration.parse( "PT2H0.111222333S" ) ).toString(), equalTo( "P0M17DT7200.111222333S" ) );
+        assertThat( new InternalIsoDuration( 0, 14, Duration.parse( "PT16H12M" ) ).toString(), equalTo( "P14DT16H12M" ) );
+        assertThat( new InternalIsoDuration( 5, 1, Duration.parse( "PT12H" ) ).toString(), equalTo( "P5M1DT12H" ) );
+        assertThat( new InternalIsoDuration( 0, 17, Duration.parse( "PT2H0.111222333S" ) ).toString(), equalTo( "P17DT2H0.111222333S" ) );
 
-        assertThat( newDuration( 42, 42, 42, 0 ).toString(), equalTo( "P42M42DT42S" ) );
-        assertThat( newDuration( 42, 42, -42, 0 ).toString(), equalTo( "P42M42DT-42S" ) );
+        assertThat( newDuration( 42, 42, 42, 0 ).toString(), equalTo( "P3Y6M42DT42S" ) );
+        assertThat( newDuration( 42, 42, -42, 0 ).toString(), equalTo( "P3Y6M42DT-42S" ) );
 
-        assertThat( newDuration( 42, 42, 0, 5 ).toString(), equalTo( "P42M42DT0.000000005S" ) );
-        assertThat( newDuration( 42, 42, 0, -5 ).toString(), equalTo( "P42M42DT-0.000000005S" ) );
+        assertThat( newDuration( 42, 42, 0, 5 ).toString(), equalTo( "P3Y6M42DT0.000000005S" ) );
+        assertThat( newDuration( 42, 42, 0, -5 ).toString(), equalTo( "P3Y6M42DT-0.000000005S" ) );
 
-        assertThat( newDuration( 42, 42, 1, 5 ).toString(), equalTo( "P42M42DT1.000000005S" ) );
-        assertThat( newDuration( 42, 42, -1, 5 ).toString(), equalTo( "P42M42DT-0.999999995S" ) );
-        assertThat( newDuration( 42, 42, 1, -5 ).toString(), equalTo( "P42M42DT0.999999995S" ) );
-        assertThat( newDuration( 42, 42, -1, -5 ).toString(), equalTo( "P42M42DT-1.000000005S" ) );
+        assertThat( newDuration( 42, 42, 1, 5 ).toString(), equalTo( "P3Y6M42DT1.000000005S" ) );
+        assertThat( newDuration( 42, 42, -1, 5 ).toString(), equalTo( "P3Y6M42DT-0.999999995S" ) );
+        assertThat( newDuration( 42, 42, 1, -5 ).toString(), equalTo( "P3Y6M42DT0.999999995S" ) );
+        assertThat( newDuration( 42, 42, -1, -5 ).toString(), equalTo( "P3Y6M42DT-1.000000005S" ) );
 
-        assertThat( newDuration( 42, 42, 28, 9 ).toString(), equalTo( "P42M42DT28.000000009S" ) );
-        assertThat( newDuration( 42, 42, -28, 9 ).toString(), equalTo( "P42M42DT-27.999999991S" ) );
-        assertThat( newDuration( 42, 42, 28, -9 ).toString(), equalTo( "P42M42DT27.999999991S" ) );
-        assertThat( newDuration( 42, 42, -28, -9 ).toString(), equalTo( "P42M42DT-28.000000009S" ) );
+        assertThat( newDuration( 42, 42, 28, 9 ).toString(), equalTo( "P3Y6M42DT28.000000009S" ) );
+        assertThat( newDuration( 42, 42, -28, 9 ).toString(), equalTo( "P3Y6M42DT-27.999999991S" ) );
+        assertThat( newDuration( 42, 42, 28, -9 ).toString(), equalTo( "P3Y6M42DT27.999999991S" ) );
+        assertThat( newDuration( 42, 42, -28, -9 ).toString(), equalTo( "P3Y6M42DT-28.000000009S" ) );
     }
 
     private static IsoDuration newDuration( long months, long days, long seconds, int nanoseconds )

@@ -331,34 +331,42 @@ class TemporalTypesIT
     @Test
     void shouldFormatDurationToString()
     {
-        testDurationToString( 1, 0, "P0M0DT1S" );
-        testDurationToString( -1, 0, "P0M0DT-1S" );
+        testDurationToString( 1, 0, "PT1S" );
+        testDurationToString( -1, 0, "PT-1S" );
 
-        testDurationToString( 0, 5, "P0M0DT0.000000005S" );
-        testDurationToString( 0, -5, "P0M0DT-0.000000005S" );
-        testDurationToString( 0, 999_999_999, "P0M0DT0.999999999S" );
-        testDurationToString( 0, -999_999_999, "P0M0DT-0.999999999S" );
+        testDurationToString( 0, 5, "PT0.000000005S" );
+        testDurationToString( 0, -5, "PT-0.000000005S" );
+        testDurationToString( 0, 999_999_999, "PT0.999999999S" );
+        testDurationToString( 0, -999_999_999, "PT-0.999999999S" );
 
-        testDurationToString( 1, 5, "P0M0DT1.000000005S" );
-        testDurationToString( -1, -5, "P0M0DT-1.000000005S" );
-        testDurationToString( 1, -5, "P0M0DT0.999999995S" );
-        testDurationToString( -1, 5, "P0M0DT-0.999999995S" );
-        testDurationToString( 1, 999999999, "P0M0DT1.999999999S" );
-        testDurationToString( -1, -999999999, "P0M0DT-1.999999999S" );
-        testDurationToString( 1, -999999999, "P0M0DT0.000000001S" );
-        testDurationToString( -1, 999999999, "P0M0DT-0.000000001S" );
+        testDurationToString( 1, 5, "PT1.000000005S" );
+        testDurationToString( -1, -5, "PT-1.000000005S" );
+        testDurationToString( 1, -5, "PT0.999999995S" );
+        testDurationToString( -1, 5, "PT-0.999999995S" );
+        testDurationToString( 1, 999999999, "PT1.999999999S" );
+        testDurationToString( -1, -999999999, "PT-1.999999999S" );
+        testDurationToString( 1, -999999999, "PT0.000000001S" );
+        testDurationToString( -1, 999999999, "PT-0.000000001S" );
 
-        testDurationToString( -78036, -143000000, "P0M0DT-78036.143000000S" );
+        testDurationToString( -78036, -143000000, "PT-21H-40M-36.143S" );
 
-        testDurationToString( 0, 1_000_000_000, "P0M0DT1S" );
-        testDurationToString( 0, -1_000_000_000, "P0M0DT-1S" );
-        testDurationToString( 0, 1_000_000_007, "P0M0DT1.000000007S" );
-        testDurationToString( 0, -1_000_000_007, "P0M0DT-1.000000007S" );
+        testDurationToString( 0, 1_000_000_000, "PT1S" );
+        testDurationToString( 0, -1_000_000_000, "PT-1S" );
+        testDurationToString( 0, 1_000_000_007, "PT1.000000007S" );
+        testDurationToString( 0, -1_000_000_007, "PT-1.000000007S" );
 
-        testDurationToString( 40, 2_123_456_789, "P0M0DT42.123456789S" );
-        testDurationToString( -40, 2_123_456_789, "P0M0DT-37.876543211S" );
-        testDurationToString( 40, -2_123_456_789, "P0M0DT37.876543211S" );
-        testDurationToString( -40, -2_123_456_789, "P0M0DT-42.123456789S" );
+        testDurationToString( 40, 2_123_456_789, "PT42.123456789S" );
+        testDurationToString( -40, 2_123_456_789, "PT-37.876543211S" );
+        testDurationToString( 40, -2_123_456_789, "PT37.876543211S" );
+        testDurationToString( -40, -2_123_456_789, "PT-42.123456789S" );
+    }
+
+    @Test
+    void shouldFormatDurationSensibly()
+    {
+        Result result = session.run( "RETURN duration({months: 0.75})" );
+        IsoDuration duration = result.single().get( 0 ).asIsoDuration();
+        assertEquals( "P22DT19H51M49.5S", duration.toString() );
     }
 
     private static <T> void testSendAndReceiveRandomValues( Supplier<T> valueSupplier, Function<Value,T> converter )
