@@ -1,4 +1,4 @@
-/*
+package neo4j.org.testkit.backend;/*
  * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.UncheckedIOException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -29,23 +29,27 @@ public class Runner
 {
     public static void main( String[] args ) throws IOException
     {
-        ServerSocket serverSocket = new ServerSocket(9876);
-        System.out.println("Starting Java Testkit Backend Started");
+        ServerSocket serverSocket = new ServerSocket( 9876 );
+        System.out.println( "Java TestKit Backend Started on port: " + serverSocket.getLocalPort() );
 
-        while (true) {
-            System.out.println("Listening on socket");
+        while ( true )
+        {
             Socket clientSocket = serverSocket.accept();
 
             System.out.println( "Handling connection from: " + clientSocket.getRemoteSocketAddress() );
             BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
             BufferedWriter out = new BufferedWriter( new OutputStreamWriter( clientSocket.getOutputStream() ) );
-            CommandProcessor commandProcessor = new CommandProcessor(in, out);
+            CommandProcessor commandProcessor = new CommandProcessor( in, out );
 
             boolean cont = true;
-            while (cont) {
-                try {
+            while ( cont )
+            {
+                try
+                {
                     cont = commandProcessor.process();
-                } catch (Exception e) {
+                }
+                catch ( Exception e )
+                {
                     e.printStackTrace();
                     clientSocket.close();
                     cont = false;
