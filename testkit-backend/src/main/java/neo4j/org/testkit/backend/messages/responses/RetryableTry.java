@@ -16,18 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package neo4j.org.testkit.backend.messages.responses;
 
-import org.neo4j.driver.Session;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-public class SessionState
+@Setter
+@Getter
+@Builder
+public class RetryableTry implements TestkitResponse
 {
-    public Session session;
-    public int     retryableState;
-    public String  retryableErrorId;
+    private RetryableTryBody data;
 
-    public SessionState(Session session) {
-        this.session = session;
-        this.retryableState = 0;
-        this.retryableErrorId = "";
+    @Override
+    public String testkitName()
+    {
+        return "RetryableTry";
+    }
+
+    @Setter
+    @Getter
+    @Builder
+    public static class RetryableTryBody
+    {
+        private String id;
     }
 }
