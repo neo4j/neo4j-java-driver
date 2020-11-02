@@ -2,4 +2,4 @@ Neo4j
 Copyright © 2002-2020 Neo4j Sweden AB (referred to in this notice as "Neo4j")
    [http://neo4j.com]
 
-This product includes software ("Software") developed by Neo4j.
+This product includes software ("Software") developed by Neo4j. 
