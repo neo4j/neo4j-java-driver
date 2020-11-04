@@ -16,29 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package neo4j.org.testkit.backend.messages.responses;
 
-public class Testkit
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@Builder
+public class TeskitBackendErrorResponse implements TestkitResponse
 {
-    public static String wrap(String name, String data)
+    @Override
+    public String testkitName()
     {
-        return String.format("{\"name\": \"%s\", \"data\":%s}", name, data);
-    }
-
-    public static String value(String v) {
-        return "{\"value\":"+v+"}";
-    }
-
-    public static String values(String v) {
-        return "{\"values\":["+v+"]}";
-    }
-
-    public static String id(String v) {
-        return "{\"id\":"+v+"}";
-    }
-
-    public static String msg(String msg) {
-        return "{\"msg\":\""+msg+"\"}";
+        return "BackendError";
     }
 }
-
-
