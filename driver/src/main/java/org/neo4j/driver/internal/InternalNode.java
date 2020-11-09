@@ -33,10 +33,12 @@ public class InternalNode extends InternalEntity implements Node
 {
     private final Collection<String> labels;
 
+
     public InternalNode( long id )
     {
         this( id, Collections.<String>emptyList(), Collections.<String,Value>emptyMap() );
     }
+
 
     public InternalNode( long id, Collection<String> labels, Map<String, Value> properties )
     {
