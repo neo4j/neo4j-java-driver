@@ -31,7 +31,9 @@ import org.neo4j.driver.Value;
  */
 public class InternalNode extends InternalEntity implements Node
 {
+
     private final Collection<String> labels;
+
 
     public InternalNode( long id )
     {
