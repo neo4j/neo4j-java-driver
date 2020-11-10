@@ -27,7 +27,7 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.Value;
 
 /**
- * {@link Node} implementation that directly contains labels and properties.
+ * {@link Node} implementation that directly contains labels and properties. Hi Bye Hi Again
  */
 public class InternalNode extends InternalEntity implements Node
 {
