@@ -23,15 +23,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.TestkitCypherTypeDeserializer;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.TransactionConfig;
 
 @Setter
 @Getter
@@ -47,7 +49,10 @@ public class SessionRun implements TestkitRequest
         Query query = Optional.ofNullable( data.params )
                               .map( params -> new Query( data.cypher, data.params ) )
                               .orElseGet( () -> new Query( data.cypher ) );
-        org.neo4j.driver.Result result = session.run( query );
+        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+        org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
         String newId = testkitState.newId();
         testkitState.getResults().put( newId, result );
 
@@ -59,12 +64,13 @@ public class SessionRun implements TestkitRequest
     @NoArgsConstructor
     public static class SessionRunBody
     {
+        @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
+        private Map<String,Object> params;
+
         private String sessionId;
         private String cypher;
+        private Map<String,Object> txMeta;
+        private Integer timeout;
 
-        @JsonDeserialize( using = TestkitCypherTypeDeserializer.class )
-        private Map<String,Object> params;
-        private String txMeta;
-        private int timeout;
     }
 }
