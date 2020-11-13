@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor( access = AccessLevel.PRIVATE )
 public final class GenUtils
@@ -58,6 +59,29 @@ public final class GenUtils
             gen.writeFieldName( "data" );
             object( gen, runnable );
         } );
+    }
+
+    public static Class<?> cypherTypeToJavaType( String typeString )
+    {
+        switch ( typeString )
+        {
+        case "CypherBool":
+            return Boolean.class;
+        case "CypherInt":
+            return Integer.class;
+        case "CypherFloat":
+            return Double.class;
+        case "CypherString":
+            return String.class;
+        case "CypherList":
+            return List.class;
+        case "CypherMap":
+            return Map.class;
+        case "CypherNull":
+            return null;
+        default:
+            return null;
+        }
     }
 
     interface RunnableWithIOException

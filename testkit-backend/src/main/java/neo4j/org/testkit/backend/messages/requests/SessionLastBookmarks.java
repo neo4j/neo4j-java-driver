@@ -23,21 +23,19 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import neo4j.org.testkit.backend.messages.responses.Transaction;
 
-import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.Bookmark;
 
 @Setter
 @Getter
 @NoArgsConstructor
-public class SessionBeginTransaction implements TestkitRequest
+public class SessionLastBookmarks implements TestkitRequest
 {
-    private SessionBeginTransactionBody data;
+    private SessionLastBookmarksBody data;
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
@@ -46,34 +44,17 @@ public class SessionBeginTransaction implements TestkitRequest
                        .map( SessionState::getSession )
                        .map( session ->
                              {
-                                 TransactionConfig.Builder builder = TransactionConfig.builder();
-                                 Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
-
-                                 if ( data.getTimeout() != null )
-                                 {
-                                     builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-                                 }
-
-                                 String txId = testkitState.newId();
-                                 org.neo4j.driver.Transaction tx = session.beginTransaction( builder.build() );
-                                 testkitState.getTransactions().put( txId, tx );
-                                 return transaction( txId );
+                                 Bookmark bookmark = testkitState.getSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
+                                 return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
     }
 
-    private Transaction transaction( String txId )
-    {
-        return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
-    }
-
+    @Setter
     @Getter
     @NoArgsConstructor
-    @Setter
-    public static class SessionBeginTransactionBody
+    public static class SessionLastBookmarksBody
     {
         private String sessionId;
-        private Map<String,Object> txMeta;
-        private Integer timeout;
     }
 }
