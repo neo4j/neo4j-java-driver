@@ -38,6 +38,7 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>>
         super( List.class );
     }
 
+
     @Override
     public List<?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JsonProcessingException
     {
