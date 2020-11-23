@@ -34,7 +34,12 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
 
-public class MultiDatabasesRoutingProcedureRunner extends RoutingProcedureRunner
+
+/**
+ * This implementation of the {@link RoutingProcedureRunner} works with multi database versions of Neo4j calling
+ * the procedure `dbms.routing.getRoutingTable`
+ */
+public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingProcedureRunner
 {
     static final String DATABASE_NAME = "database";
     static final String MULTI_DB_GET_ROUTING_TABLE = String.format( "CALL dbms.routing.getRoutingTable($%s, $%s)", ROUTING_CONTEXT, DATABASE_NAME );

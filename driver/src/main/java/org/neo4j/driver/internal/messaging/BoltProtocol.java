@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
@@ -167,6 +168,10 @@ public interface BoltProtocol
         else if ( BoltProtocolV42.VERSION.equals( version ) )
         {
             return BoltProtocolV42.INSTANCE;
+        }
+        else if ( BoltProtocolV43.VERSION.equals( version ) )
+        {
+            return BoltProtocolV43.INSTANCE;
         }
         throw new ClientException( "Unknown protocol version: " + version );
     }

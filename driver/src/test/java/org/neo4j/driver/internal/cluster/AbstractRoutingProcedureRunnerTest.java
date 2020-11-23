@@ -46,7 +46,7 @@ abstract class AbstractRoutingProcedureRunnerTest
     void shouldReturnFailedResponseOnClientException()
     {
         ClientException error = new ClientException( "Hi" );
-        RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
+        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
         RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
 
@@ -58,7 +58,7 @@ abstract class AbstractRoutingProcedureRunnerTest
     void shouldReturnFailedStageOnError()
     {
         Exception error = new Exception( "Hi" );
-        RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
+        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
         Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), empty() ) ) );
         assertEquals( error, e );
@@ -67,7 +67,7 @@ abstract class AbstractRoutingProcedureRunnerTest
     @Test
     void shouldReleaseConnectionOnSuccess()
     {
-        RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY );
+        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY );
 
         Connection connection = connection();
         RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), empty() ) );
@@ -79,7 +79,7 @@ abstract class AbstractRoutingProcedureRunnerTest
     @Test
     void shouldPropagateReleaseError()
     {
-        RoutingProcedureRunner runner = routingProcedureRunner( RoutingContext.EMPTY );
+        SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY );
 
         RuntimeException releaseError = new RuntimeException( "Release failed" );
         Connection connection = connection( failedFuture( releaseError ) );
@@ -89,9 +89,9 @@ abstract class AbstractRoutingProcedureRunnerTest
         verify( connection ).release();
     }
 
-    abstract RoutingProcedureRunner routingProcedureRunner( RoutingContext context );
+    abstract SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context );
 
-    abstract RoutingProcedureRunner routingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult );
+    abstract SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context, CompletionStage<List<Record>> runProcedureResult );
 
     static Connection connection()
     {

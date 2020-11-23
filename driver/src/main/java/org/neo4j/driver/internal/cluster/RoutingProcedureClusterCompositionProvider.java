@@ -33,43 +33,53 @@ import org.neo4j.driver.internal.util.Clock;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
+import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsRouteMessage;
 
 public class RoutingProcedureClusterCompositionProvider implements ClusterCompositionProvider
 {
     private static final String PROTOCOL_ERROR_MESSAGE = "Failed to parse '%s' result received from server due to ";
 
     private final Clock clock;
-    private final RoutingProcedureRunner routingProcedureRunner;
+    private final RoutingProcedureRunner singleDatabaseRoutingProcedureRunner;
     private final RoutingProcedureRunner multiDatabaseRoutingProcedureRunner;
+    private final RoutingProcedureRunner routeMessageRoutingProcedureRunner;
 
     public RoutingProcedureClusterCompositionProvider( Clock clock, RoutingContext routingContext )
     {
-        this( clock, new RoutingProcedureRunner( routingContext ), new MultiDatabasesRoutingProcedureRunner( routingContext ) );
+        this( clock, new SingleDatabaseRoutingProcedureRunner( routingContext ), new MultiDatabasesRoutingProcedureRunner( routingContext ),
+              new RouteMessageRoutingProcedureRunner( routingContext ) );
     }
 
-    RoutingProcedureClusterCompositionProvider( Clock clock, RoutingProcedureRunner routingProcedureRunner,
-            MultiDatabasesRoutingProcedureRunner multiDatabaseRoutingProcedureRunner )
+    RoutingProcedureClusterCompositionProvider( Clock clock, SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner,
+                                                MultiDatabasesRoutingProcedureRunner multiDatabaseRoutingProcedureRunner,
+                                                RouteMessageRoutingProcedureRunner routeMessageRoutingProcedureRunner )
     {
         this.clock = clock;
-        this.routingProcedureRunner = routingProcedureRunner;
+        this.singleDatabaseRoutingProcedureRunner = singleDatabaseRoutingProcedureRunner;
         this.multiDatabaseRoutingProcedureRunner = multiDatabaseRoutingProcedureRunner;
+        this.routeMessageRoutingProcedureRunner = routeMessageRoutingProcedureRunner;
     }
 
     @Override
     public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark )
     {
         RoutingProcedureRunner runner;
-        if ( supportsMultiDatabase( connection ) )
+
+        if ( supportsRouteMessage( connection ) )
+        {
+            runner = routeMessageRoutingProcedureRunner;
+        }
+        else if ( supportsMultiDatabase( connection ) )
         {
             runner = multiDatabaseRoutingProcedureRunner;
         }
         else
         {
-            runner = routingProcedureRunner;
+            runner = singleDatabaseRoutingProcedureRunner;
         }
 
         return runner.run( connection, databaseName, bookmark )
-                .thenApply( this::processRoutingResponse );
+                     .thenApply( this::processRoutingResponse );
     }
 
     private ClusterComposition processRoutingResponse( RoutingProcedureResponse response )
