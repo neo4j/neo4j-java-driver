@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages;
+package neo4j.org.testkit.backend.messages.requests.deserializer;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,17 +27,18 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class TestkitCypherTypeDeserializer extends StdDeserializer<Map<String,Object>>
+import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherTypeToJavaType;
+
+public class TestkitCypherParamDeserializer extends StdDeserializer<Map<String,Object>>
 {
-    public TestkitCypherTypeDeserializer()
+    public TestkitCypherParamDeserializer()
     {
         super( Map.class );
     }
 
-    public TestkitCypherTypeDeserializer( Class<Map> typeClass )
+    public TestkitCypherParamDeserializer( Class<Map> typeClass )
     {
         super( typeClass );
     }
@@ -86,37 +87,23 @@ public class TestkitCypherTypeDeserializer extends StdDeserializer<Map<String,Ob
                         result.put( key, null );
                     } else
                     {
-                        result.put( key, p.readValueAs( mapValueType ) );
+                        if ( paramType.equals( "CypherMap" ) ) // special recursive case for maps
+                        {
+                            result.put( key, deserialize( p, ctxt ) );
+                        }
+                        else
+                        {
+                            result.put( key, p.readValueAs( mapValueType ) );
+                        }
                     }
 
                 }
             }
-
+            p.nextToken(); //close value
+            p.nextToken(); // close map
         }
+
         return result;
-    }
-
-    private Class<?> cypherTypeToJavaType( String typeString )
-    {
-        switch ( typeString )
-        {
-        case "CypherBool":
-            return Boolean.class;
-        case "CypherInt":
-            return Integer.class;
-        case "CypherFloat":
-            return Double.class;
-        case "CypherString":
-            return String.class;
-        case "CypherList":
-            return List.class;
-        case "CypherMap":
-            return Map.class;
-        case "CypherNull":
-            return null;
-        default:
-            return null;
-        }
     }
 }
 

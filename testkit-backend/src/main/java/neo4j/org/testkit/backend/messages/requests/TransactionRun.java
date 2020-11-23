@@ -18,13 +18,17 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 @Setter
@@ -38,7 +42,8 @@ public class TransactionRun implements TestkitRequest
     public TestkitResponse process( TestkitState testkitState )
     {
         return Optional.ofNullable( testkitState.getTransactions().get( data.txId ) )
-                       .map( tx -> tx.run( data.cypher ) )
+                       .map( tx ->
+                                     tx.run( data.cypher, data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
                        .map( result ->
                              {
                                  String resultId = testkitState.newId();
@@ -60,5 +65,7 @@ public class TransactionRun implements TestkitRequest
     {
         private String txId;
         private String cypher;
+        @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
+        private Map<String,Object> params;
     }
 }

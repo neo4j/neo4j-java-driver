@@ -22,14 +22,26 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import org.neo4j.driver.Bookmark;
+
 @Setter
 @Getter
 @Builder
-public class TeskitBackendErrorResponse implements TestkitResponse
+public class Bookmarks implements TestkitResponse
 {
+    BookmarksBody data;
+
     @Override
     public String testkitName()
     {
-        return "BackendError";
+        return "Bookmarks";
+    }
+
+    @Setter
+    @Getter
+    @Builder
+    public static class BookmarksBody
+    {
+        private Bookmark bookmarks;
     }
 }

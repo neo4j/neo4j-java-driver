@@ -56,6 +56,11 @@ public class NewSession implements TestkitRequest
         
         Optional.ofNullable( data.database ).ifPresent( builder::withDatabase );
 
+        if ( data.getFetchSize() != 0 )
+        {
+            builder.withFetchSize( data.getFetchSize() );
+        }
+
         org.neo4j.driver.Session session = driver.session( builder.build() );
         String newId = testkitState.newId();
         testkitState.getSessionStates().put( newId, new SessionState( session ) );
