@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
@@ -16,15 +17,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v1;
+package org.neo4j.driver.internal.messaging.common;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -39,19 +50,53 @@ import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
+import static java.time.ZoneOffset.UTC;
+import static org.neo4j.driver.Values.isoDuration;
+import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
 
-public class ValueUnpackerV1 implements ValueUnpacker
+public class CommonValueUnpacker implements ValueUnpacker
 {
+
+    public static final byte DATE = 'D';
+    public static final int DATE_STRUCT_SIZE = 1;
+
+    public static final byte TIME = 'T';
+    public static final int TIME_STRUCT_SIZE = 2;
+
+    public static final byte LOCAL_TIME = 't';
+    public static final int LOCAL_TIME_STRUCT_SIZE = 1;
+
+    public static final byte LOCAL_DATE_TIME = 'd';
+    public static final int LOCAL_DATE_TIME_STRUCT_SIZE = 2;
+
+    public static final byte DATE_TIME_WITH_ZONE_OFFSET = 'F';
+    public static final byte DATE_TIME_WITH_ZONE_ID = 'f';
+    public static final int DATE_TIME_STRUCT_SIZE = 3;
+
+    public static final byte DURATION = 'E';
+    public static final int DURATION_TIME_STRUCT_SIZE = 4;
+
+    public static final byte POINT_2D_STRUCT_TYPE = 'X';
+    public static final int POINT_2D_STRUCT_SIZE = 3;
+
+    public static final byte POINT_3D_STRUCT_TYPE = 'Y';
+    public static final int POINT_3D_STRUCT_SIZE = 4;
+
+    public static final byte NODE = 'N';
+    public static final byte RELATIONSHIP = 'R';
+    public static final byte UNBOUND_RELATIONSHIP = 'r';
+    public static final byte PATH = 'P';
+
+    public static final int NODE_FIELDS = 3;
+
     protected final PackStream.Unpacker unpacker;
 
-    public ValueUnpackerV1( PackInput input )
+    public CommonValueUnpacker( PackInput input )
     {
         this.unpacker = new PackStream.Unpacker( input );
     }
@@ -142,14 +187,41 @@ public class ValueUnpackerV1 implements ValueUnpacker
     {
         switch ( type )
         {
-        case MessageFormatV1.NODE:
-            ensureCorrectStructSize( TypeConstructor.NODE, MessageFormatV1.NODE_FIELDS, size );
+        case DATE:
+            ensureCorrectStructSize( TypeConstructor.DATE, DATE_STRUCT_SIZE, size );
+            return unpackDate();
+        case TIME:
+            ensureCorrectStructSize( TypeConstructor.TIME, TIME_STRUCT_SIZE, size );
+            return unpackTime();
+        case LOCAL_TIME:
+            ensureCorrectStructSize( TypeConstructor.LOCAL_TIME, LOCAL_TIME_STRUCT_SIZE, size );
+            return unpackLocalTime();
+        case LOCAL_DATE_TIME:
+            ensureCorrectStructSize( TypeConstructor.LOCAL_DATE_TIME, LOCAL_DATE_TIME_STRUCT_SIZE, size );
+            return unpackLocalDateTime();
+        case DATE_TIME_WITH_ZONE_OFFSET:
+            ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
+            return unpackDateTimeWithZoneOffset();
+        case DATE_TIME_WITH_ZONE_ID:
+            ensureCorrectStructSize( TypeConstructor.DATE_TIME, DATE_TIME_STRUCT_SIZE, size );
+            return unpackDateTimeWithZoneId();
+        case DURATION:
+            ensureCorrectStructSize( TypeConstructor.DURATION, DURATION_TIME_STRUCT_SIZE, size );
+            return unpackDuration();
+        case POINT_2D_STRUCT_TYPE:
+            ensureCorrectStructSize( TypeConstructor.POINT, POINT_2D_STRUCT_SIZE, size );
+            return unpackPoint2D();
+        case POINT_3D_STRUCT_TYPE:
+            ensureCorrectStructSize( TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size );
+            return unpackPoint3D();
+        case NODE:
+            ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, size );
             InternalNode adapted = unpackNode();
             return new NodeValue( adapted );
-        case MessageFormatV1.RELATIONSHIP:
+        case RELATIONSHIP:
             ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 5, size );
             return unpackRelationship();
-        case MessageFormatV1.PATH:
+        case PATH:
             ensureCorrectStructSize( TypeConstructor.PATH, 3, size );
             return unpackPath();
         default:
@@ -196,8 +268,8 @@ public class ValueUnpackerV1 implements ValueUnpacker
         Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
         for ( int i = 0; i < uniqNodes.length; i++ )
         {
-            ensureCorrectStructSize( TypeConstructor.NODE, MessageFormatV1.NODE_FIELDS, unpacker.unpackStructHeader() );
-            ensureCorrectStructSignature( "NODE", MessageFormatV1.NODE, unpacker.unpackStructSignature() );
+            ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, unpacker.unpackStructHeader() );
+            ensureCorrectStructSignature( "NODE", NODE, unpacker.unpackStructSignature() );
             uniqNodes[i] = unpackNode();
         }
 
@@ -206,7 +278,7 @@ public class ValueUnpackerV1 implements ValueUnpacker
         for ( int i = 0; i < uniqRels.length; i++ )
         {
             ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 3, unpacker.unpackStructHeader() );
-            ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", MessageFormatV1.UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
+            ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
             long id = unpacker.unpackLong();
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
@@ -268,4 +340,84 @@ public class ValueUnpackerV1 implements ValueUnpacker
                     structName, Integer.toHexString( expected ), Integer.toHexString( actual ) ) );
         }
     }
+
+    private Value unpackDate() throws IOException
+    {
+        long epochDay = unpacker.unpackLong();
+        return value( LocalDate.ofEpochDay( epochDay ) );
+    }
+
+    private Value unpackTime() throws IOException
+    {
+        long nanoOfDayLocal = unpacker.unpackLong();
+        int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
+
+        LocalTime localTime = LocalTime.ofNanoOfDay( nanoOfDayLocal );
+        ZoneOffset offset = ZoneOffset.ofTotalSeconds( offsetSeconds );
+        return value( OffsetTime.of( localTime, offset ) );
+    }
+
+    private Value unpackLocalTime() throws IOException
+    {
+        long nanoOfDayLocal = unpacker.unpackLong();
+        return value( LocalTime.ofNanoOfDay( nanoOfDayLocal ) );
+    }
+
+    private Value unpackLocalDateTime() throws IOException
+    {
+        long epochSecondUtc = unpacker.unpackLong();
+        int nano = Math.toIntExact( unpacker.unpackLong() );
+        return value( LocalDateTime.ofEpochSecond( epochSecondUtc, nano, UTC ) );
+    }
+
+    private Value unpackDateTimeWithZoneOffset() throws IOException
+    {
+        long epochSecondLocal = unpacker.unpackLong();
+        int nano = Math.toIntExact( unpacker.unpackLong() );
+        int offsetSeconds = Math.toIntExact( unpacker.unpackLong() );
+        return value( newZonedDateTime( epochSecondLocal, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+    }
+
+    private Value unpackDateTimeWithZoneId() throws IOException
+    {
+        long epochSecondLocal = unpacker.unpackLong();
+        int nano = Math.toIntExact( unpacker.unpackLong() );
+        String zoneIdString = unpacker.unpackString();
+        return value( newZonedDateTime( epochSecondLocal, nano, ZoneId.of( zoneIdString ) ) );
+    }
+
+    private Value unpackDuration() throws IOException
+    {
+        long months = unpacker.unpackLong();
+        long days = unpacker.unpackLong();
+        long seconds = unpacker.unpackLong();
+        int nanoseconds = Math.toIntExact( unpacker.unpackLong() );
+        return isoDuration( months, days, seconds, nanoseconds );
+    }
+
+    private Value unpackPoint2D() throws IOException
+    {
+        int srid = Math.toIntExact( unpacker.unpackLong() );
+        double x = unpacker.unpackDouble();
+        double y = unpacker.unpackDouble();
+        return point( srid, x, y );
+    }
+
+    private Value unpackPoint3D() throws IOException
+    {
+        int srid = Math.toIntExact( unpacker.unpackLong() );
+        double x = unpacker.unpackDouble();
+        double y = unpacker.unpackDouble();
+        double z = unpacker.unpackDouble();
+        return point( srid, x, y, z );
+    }
+
+    private static ZonedDateTime newZonedDateTime( long epochSecondLocal, long nano, ZoneId zoneId )
+    {
+        Instant instant = Instant.ofEpochSecond( epochSecondLocal, nano );
+        LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
+        return ZonedDateTime.of( localDateTime, zoneId );
+    }
 }
+
+

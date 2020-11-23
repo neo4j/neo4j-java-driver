@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.neo4j.driver.internal.messaging.AbstractMessageWriter;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
+import org.neo4j.driver.internal.messaging.common.CommonValuePacker;
+import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
 import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
@@ -37,8 +39,7 @@ import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
 import org.neo4j.driver.internal.messaging.response.SuccessMessage;
-import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
-import org.neo4j.driver.internal.messaging.v2.ValuePackerV2;
+import org.neo4j.driver.internal.messaging.v3.MessageFormatV3;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.types.TypeConstructor;
 import org.neo4j.driver.internal.util.Iterables;
@@ -49,10 +50,10 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 
 /**
- * This class provides the missing server side packing methods to serialize Node, Relationship and Path.
- * It also allows writing of server side messages like SUCCESS, FAILURE, IGNORED and RECORD.
+ * This class provides the missing server side packing methods to serialize Node, Relationship and Path. It also allows writing of server side messages like
+ * SUCCESS, FAILURE, IGNORED and RECORD.
  */
-public class KnowledgeableMessageFormat extends MessageFormatV2
+public class KnowledgeableMessageFormat extends MessageFormatV3
 {
     @Override
     public Writer newWriter( PackOutput output )
@@ -85,7 +86,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV2
         }
     }
 
-    private static class KnowledgeableValuePacker extends ValuePackerV2
+    private static class KnowledgeableValuePacker extends CommonValuePacker
     {
         KnowledgeableValuePacker( PackOutput output )
         {
@@ -119,7 +120,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV2
 
         private void packPath( Path path ) throws IOException
         {
-            packer.packStructHeader( 3, PATH );
+            packer.packStructHeader( 3, CommonValueUnpacker.PATH );
 
             // Unique nodes
             Map<Node,Integer> nodeIdx = Iterables.newLinkedHashMapWithSize( path.length() + 1 );
@@ -148,7 +149,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV2
             packer.packListHeader( relIdx.size() );
             for ( Relationship rel : relIdx.keySet() )
             {
-                packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
+                packer.packStructHeader( 3, CommonValueUnpacker.UNBOUND_RELATIONSHIP );
                 packer.pack( rel.id() );
                 packer.pack( rel.type() );
                 packProperties( rel );
@@ -169,7 +170,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV2
 
         private void packRelationship( Relationship rel ) throws IOException
         {
-            packer.packStructHeader( 5, RELATIONSHIP );
+            packer.packStructHeader( 5, CommonValueUnpacker.RELATIONSHIP );
             packer.pack( rel.id() );
             packer.pack( rel.startNodeId() );
             packer.pack( rel.endNodeId() );
@@ -181,7 +182,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV2
 
         private void packNode( Node node ) throws IOException
         {
-            packer.packStructHeader( NODE_FIELDS, NODE );
+            packer.packStructHeader( CommonValueUnpacker.NODE_FIELDS, CommonValueUnpacker.NODE );
             packer.pack( node.id() );
 
             Iterable<String> labels = node.labels();

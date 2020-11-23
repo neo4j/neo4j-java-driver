@@ -43,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -66,8 +67,6 @@ import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
@@ -313,10 +312,10 @@ public final class TestUtil
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-            RetryLogic retryLogic, Bookmark bookmark )
+                                             RetryLogic retryLogic, Bookmark bookmark )
     {
         return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), UNLIMITED_FETCH_SIZE,
-                DEV_NULL_LOGGING );
+                                   DEV_NULL_LOGGING );
     }
 
     public static void verifyRunRx( Connection connection, String query )
@@ -370,30 +369,29 @@ public final class TestUtil
     public static void setupFailingRun( Connection connection, Throwable error )
     {
         doAnswer( invocation ->
-        {
-            ResponseHandler runHandler = invocation.getArgument( 1 );
-            runHandler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+                  {
+                      ResponseHandler runHandler = invocation.getArgument( 1 );
+                      runHandler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
 
         doAnswer( invocation ->
-        {
-            ResponseHandler pullHandler = invocation.getArgument( 1 );
-            pullHandler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
-
+                  {
+                      ResponseHandler pullHandler = invocation.getArgument( 1 );
+                      pullHandler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
     public static void setupFailingBegin( Connection connection, Throwable error )
     {
         // with bookmarks
         doAnswer( invocation ->
-        {
-            ResponseHandler handler = invocation.getArgument( 1 );
-            handler.onFailure( error );
-            return null;
-        } ).when( connection ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
+                  {
+                      ResponseHandler handler = invocation.getArgument( 1 );
+                      handler.onFailure( error );
+                      return null;
+                  } ).when( connection ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
     }
 
     public static void setupFailingCommit( Connection connection )
@@ -496,9 +494,8 @@ public final class TestUtil
         } ).when( connection ).writeAndFlush( any( PullMessage.class ), any() );
     }
 
-    public static Connection connectionMock()
-    {
-        return connectionMock( BoltProtocolV2.INSTANCE );
+    public static Connection connectionMock( ) {
+        return connectionMock( BoltProtocol.forVersion( new BoltProtocolVersion( 4, 1 ) ) );
     }
 
     public static Connection connectionMock( BoltProtocol protocol )
@@ -525,14 +522,9 @@ public final class TestUtil
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( database( databaseName ) );
         BoltProtocolVersion version = protocol.version();
-        if ( version.equals( BoltProtocolV1.VERSION ) || version.equals( BoltProtocolV2.VERSION ) )
-        {
-            setupSuccessfulPullAll( connection, "COMMIT" );
-            setupSuccessfulPullAll( connection, "ROLLBACK" );
-            setupSuccessfulPullAll( connection, "BEGIN" );
-        }
-        else if ( version.equals( BoltProtocolV3.VERSION ) || version.equals( BoltProtocolV4.VERSION ) ||
-                  version.equals( BoltProtocolV41.VERSION ))
+
+        if ( version.equals( BoltProtocolV3.VERSION ) || version.equals( BoltProtocolV4.VERSION ) ||
+             version.equals( BoltProtocolV41.VERSION ) )
         {
             setupSuccessResponse( connection, CommitMessage.class );
             setupSuccessResponse( connection, RollbackMessage.class );
@@ -630,14 +622,24 @@ public final class TestUtil
         return sb.toString();
     }
 
-    public static ArgumentMatcher<Message> runMessageWithQueryMatcher(String query )
+    public static ArgumentMatcher<Message> runMessageWithQueryMatcher( String query )
     {
         return message -> message instanceof RunMessage && Objects.equals( query, ((RunMessage) message).query() );
     }
 
-    public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher(String query )
+    public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher( String query )
     {
         return message -> message instanceof RunWithMetadataMessage && Objects.equals( query, ((RunWithMetadataMessage) message).query() );
+    }
+
+    public static ArgumentMatcher<Message> beginMessage()
+    {
+        return beginMessageWithPredicate( ignored -> true );
+    }
+
+    public static ArgumentMatcher<Message> beginMessageWithPredicate( Predicate<BeginMessage> predicate )
+    {
+        return message -> message instanceof BeginMessage && predicate.test( (BeginMessage) message );
     }
 
     /**

@@ -40,10 +40,6 @@ import org.neo4j.driver.internal.async.inbound.MessageDecoder;
 import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.messaging.v1.BoltProtocolV1;
-import org.neo4j.driver.internal.messaging.v1.MessageFormatV1;
-import org.neo4j.driver.internal.messaging.v2.BoltProtocolV2;
-import org.neo4j.driver.internal.messaging.v2.MessageFormatV2;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static io.netty.buffer.Unpooled.copyInt;
@@ -185,18 +181,6 @@ class HandshakeHandlerTest
 
         // channel should be closed
         assertNull( await( channel.closeFuture() ) );
-    }
-
-    @Test
-    void shouldSelectProtocolV1WhenServerSuggests()
-    {
-        testProtocolSelection( BoltProtocolV1.VERSION, MessageFormatV1.class );
-    }
-
-    @Test
-    void shouldSelectProtocolV2WhenServerSuggests()
-    {
-        testProtocolSelection( BoltProtocolV2.VERSION, MessageFormatV2.class );
     }
 
     @Test

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.messaging.v4;
+package org.neo4j.driver.internal.messaging.v41;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,7 +38,6 @@ import org.neo4j.driver.internal.messaging.request.HelloMessage;
 import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
@@ -64,16 +63,16 @@ import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage
 import static org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage.unmanagedTxRunMessage;
 
 /**
- * The MessageWriter under tests is the one provided by the {@link BoltProtocolV3} and not an specific class implementation.
+ * The MessageWriter under tests is the one provided by the {@link BoltProtocolV41} and not an specific class implementation.
  * <p>
  * It's done on this way to make easy to replace the implementation and still getting the same behaviour.
  */
-class MessageWriterV4Test extends AbstractMessageWriterTestBase
+class MessageWriterV41Test extends AbstractMessageWriterTestBase
 {
     @Override
     protected MessageFormat.Writer newWriter( PackOutput output )
     {
-        return BoltProtocolV4.INSTANCE.createMessageFormat().newWriter( output );
+        return BoltProtocolV41.INSTANCE.createMessageFormat().newWriter( output );
     }
 
     @Override
@@ -117,9 +116,10 @@ class MessageWriterV4Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                                         defaultDatabase(), READ, InternalBookmark.empty() ),
-                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(), database( "foo" ),
+                autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
+                                        database( "foo" ),
                                         WRITE, InternalBookmark.empty() ),
-                unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) )  ) )
+                unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ) ) )
         );
     }
 
