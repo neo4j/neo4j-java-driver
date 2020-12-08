@@ -55,6 +55,21 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion>
         return shiftedMinor | majorVersion;
     }
 
+    public int toIntRange(BoltProtocolVersion minVersion)
+    {
+        if(majorVersion != minVersion.majorVersion)
+        {
+            throw new IllegalArgumentException( "Versions should be from the same version" );
+        }
+        else if (minorVersion < minVersion.minorVersion)
+        {
+            throw new IllegalArgumentException("Max version should be newest than min version");
+        }
+        int range = minorVersion - minVersion.minorVersion;
+        int shiftedRange = range << 16;
+        return shiftedRange | toInt();
+    }
+
     /**
      * @return the version in format X.Y where X is the major version and Y is the minor version
      */

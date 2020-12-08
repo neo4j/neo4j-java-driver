@@ -42,9 +42,9 @@ public final class BoltProtocolUtil
 
     private static final ByteBuf HANDSHAKE_BUF = unreleasableBuffer( copyInt(
             BOLT_MAGIC_PREAMBLE,
-            BoltProtocolV43.VERSION.toInt(),
-            BoltProtocolV42.VERSION.toInt(),
+            BoltProtocolV43.VERSION.toIntRange( BoltProtocolV42.VERSION ),
             BoltProtocolV41.VERSION.toInt(),
+            BoltProtocolV4.VERSION.toInt(),
             BoltProtocolV3.VERSION.toInt() ) ).asReadOnly();
 
     private static final String HANDSHAKE_STRING = createHandshakeString();
