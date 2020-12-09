@@ -34,7 +34,7 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion>
     public static BoltProtocolVersion fromRawBytes( int rawVersion )
     {
         int major = rawVersion & 0x000000FF;
-        int minor = ( rawVersion >> 8 ) & 0x000000FF;
+        int minor = (rawVersion >> 8) & 0x000000FF;
 
         return new BoltProtocolVersion( major, minor );
     }
@@ -53,6 +53,21 @@ public class BoltProtocolVersion implements Comparable<BoltProtocolVersion>
     {
         int shiftedMinor = minorVersion << 8;
         return shiftedMinor | majorVersion;
+    }
+
+    public int toIntRange( BoltProtocolVersion minVersion )
+    {
+        if ( majorVersion != minVersion.majorVersion )
+        {
+            throw new IllegalArgumentException( "Versions should be from the same major version" );
+        }
+        else if ( minorVersion < minVersion.minorVersion )
+        {
+            throw new IllegalArgumentException( "Max version should be newer than min version" );
+        }
+        int range = minorVersion - minVersion.minorVersion;
+        int shiftedRange = range << 16;
+        return shiftedRange | toInt();
     }
 
     /**

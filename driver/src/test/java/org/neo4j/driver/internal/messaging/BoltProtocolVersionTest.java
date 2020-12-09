@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BoltProtocolVersionTest
 {
@@ -48,6 +49,40 @@ class BoltProtocolVersionTest
 
         assertEquals( expectedResult, versionA.compareTo( versionB ) );
 
+    }
+
+    @ParameterizedTest( name = "V{0}.{1} toIntRange V{2}.{3}")
+    @CsvSource({
+      "1, 0, 1, 0, 0x000001",
+      "4, 3, 4, 2, 0x010304",
+      "4, 3, 4, 1, 0x020304",
+      "4, 3, 4, 0, 0x030304",
+      "100, 100, 100, 0, 0x646464",
+      "255, 255, 255, 0, 0xFFFFFF"
+    } )
+    void shouldOutputCorrectIntRange(int majorA, int minorA, int majorB, int minorB, int expectedResult)
+    {
+        BoltProtocolVersion versionA = new BoltProtocolVersion( majorA, minorA );
+        BoltProtocolVersion versionB = new BoltProtocolVersion( majorB, minorB );
+
+        assertEquals( expectedResult, versionA.toIntRange( versionB ) );
+    }
+
+    @ParameterizedTest( name = "V{0}.{1} toIntRange V{2}.{3}")
+    @CsvSource({
+            "1, 0, 2, 0",
+            "2, 0, 1, 0",
+            "4, 3, 4, 5",
+            "4, 6, 3, 7",
+            "3, 7, 4, 6",
+            "255, 255, 100, 0"
+    } )
+    void shouldThrowsIllegalArgumentExceptionForIncorrectIntRange(int majorA, int minorA, int majorB, int minorB)
+    {
+        BoltProtocolVersion versionA = new BoltProtocolVersion( majorA, minorA );
+        BoltProtocolVersion versionB = new BoltProtocolVersion( majorB, minorB );
+
+        assertThrows( IllegalArgumentException.class, () -> versionA.toIntRange( versionB ));
     }
 
     @Test
