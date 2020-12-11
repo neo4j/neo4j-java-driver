@@ -227,6 +227,13 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
 
             String serverAddress = summary.server().address();
 
+            //remove resolved address if present
+            if ( serverAddress.contains( "(" ) )
+            {
+                String host = serverAddress.substring( 0, serverAddress.indexOf( "(" ) );
+                serverAddress = serverAddress.replace( "(" + host + ")", "" );
+            }
+
             AtomicLong count = readQueriesByServer.get( serverAddress );
             if ( count == null )
             {
