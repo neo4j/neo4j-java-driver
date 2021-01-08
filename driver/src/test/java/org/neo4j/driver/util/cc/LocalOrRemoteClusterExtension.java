@@ -63,7 +63,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
 
     public Config.ConfigBuilder config( Config.ConfigBuilder builder )
     {
-        if ( remoteClusterExists() )
+        if ( useEncryption() )
         {
             builder.withEncryption();
         }
@@ -151,6 +151,20 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     private static boolean remoteClusterExists()
     {
         return remoteClusterUriFromSystemProperty() != null;
+    }
+
+    private static boolean useEncryption()
+    {
+        URI uri = remoteClusterUriFromSystemProperty();
+        if (uri == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        return
+            scheme == "neo4j+ssc" ||
+            scheme == "neo4j+s" ||
+            scheme == "bolt+ssc" ||
+            scheme == "bolt+s";
     }
 
     private static URI remoteClusterUriFromSystemProperty()
