@@ -28,3 +28,4 @@ integrationtests/data
 dependency-reduced-pom.xml
 venv
 testkit-backend/bin/
+testkit/CAs/
