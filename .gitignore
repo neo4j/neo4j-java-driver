@@ -27,3 +27,4 @@ enterprise/server-enterprise/neo4j-home
 integrationtests/data
 dependency-reduced-pom.xml
 venv
+testkit-backend/bin/
