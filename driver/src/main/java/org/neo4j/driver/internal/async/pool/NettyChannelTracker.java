@@ -98,9 +98,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
         {
             decrementInUse( channel );
             incrementIdle( channel );
+            channel.closeFuture().addListener( closeListener );
         } );
 
-        channel.closeFuture().addListener( closeListener );
         log.debug( "Channel [0x%s] released back to the pool", channel.id() );
     }
 
@@ -111,9 +111,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
         {
             incrementInUse( channel );
             decrementIdle( channel );
+            channel.closeFuture().removeListener( closeListener );
         } );
 
-        channel.closeFuture().removeListener( closeListener );
         log.debug( "Channel [0x%s] acquired from the pool. Local address: %s, remote address: %s", channel.id(), channel.localAddress(),
                 channel.remoteAddress() );
     }
@@ -188,7 +188,13 @@ public class NettyChannelTracker implements ChannelPoolHandler
 
     private void decrementInUse( Channel channel )
     {
-        decrement( channel, addressToInUseChannelCount );
+        BoltServerAddress address = serverAddress( channel );
+        if ( !addressToInUseChannelCount.containsKey( address ) )
+        {
+            throw new IllegalStateException( "No count exists for address '" + address + "' in the 'in use' count" );
+        }
+        Integer count = addressToInUseChannelCount.get( address );
+        addressToInUseChannelCount.put( address, count - 1 );
     }
 
     private void incrementIdle( Channel channel )
@@ -198,7 +204,13 @@ public class NettyChannelTracker implements ChannelPoolHandler
 
     private void decrementIdle( Channel channel )
     {
-        decrement( channel, addressToIdleChannelCount );
+        BoltServerAddress address = serverAddress( channel );
+        if ( !addressToIdleChannelCount.containsKey( address ) )
+        {
+            throw new IllegalStateException( "No count exists for address '" + address + "' in the 'idle' count" );
+        }
+        Integer count = addressToIdleChannelCount.get( address );
+        addressToIdleChannelCount.put( address, count - 1 );
     }
 
     private void increment( Channel channel, Map<BoltServerAddress,Integer> countMap )
@@ -206,16 +218,5 @@ public class NettyChannelTracker implements ChannelPoolHandler
         BoltServerAddress address = serverAddress( channel );
         Integer count = countMap.computeIfAbsent( address, k -> 0 );
         countMap.put( address, count + 1 );
-    }
-
-    private void decrement( Channel channel, Map<BoltServerAddress,Integer> countMap )
-    {
-        BoltServerAddress address = serverAddress( channel );
-        if ( !countMap.containsKey( address ) )
-        {
-            throw new IllegalStateException( "No count exist for address '" + address + "'" );
-        }
-        Integer count = countMap.get( address );
-        countMap.put( address, count - 1 );
     }
 }
