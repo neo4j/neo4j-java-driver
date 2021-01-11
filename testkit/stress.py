@@ -14,9 +14,15 @@ if __name__ == "__main__":
             os.environ["TEST_NEO4J_HOST"],
             os.environ["TEST_NEO4J_PORT"])
     password = os.environ["TEST_NEO4J_PASS"]
+    is_cluster = os.environ.get("TEST_NEO4J_IS_CLUSTER", False)
+    if is_cluster:
+        suite = "CausalClusteringStressIT"
+    else:
+        suite = "SingeInstanceStressIT"
+
     cmd = [
             "mvn", "surefire:test",
-            "-Dtest=CausalClusteringStressIT,AbstractStressTestBase",
+            "-Dtest=%s,AbstractStressTestBase" % suite,
             "-DexternalClusterUri=%s" % uri,
             "-Dneo4jUserPassword=%s" % password,
             "-DthreadCount=10",
