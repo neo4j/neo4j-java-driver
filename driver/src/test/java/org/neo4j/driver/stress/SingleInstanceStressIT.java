@@ -23,17 +23,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ParallelizableIT
 class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStressIT.Context>
@@ -62,7 +56,7 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     @Override
     Context createContext()
     {
-        return new Context( neo4j.address().toString() );
+        return new Context();
     }
 
     @Override
@@ -79,12 +73,6 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     }
 
     @Override
-    void assertExpectedReadQueryDistribution( Context context )
-    {
-        assertThat( context.getReadQueryCount(), greaterThan( 0L ) );
-    }
-
-    @Override
     <A extends Context> void printStats( A context )
     {
         System.out.println( "Nodes read: " + context.getReadNodesCount() );
@@ -95,31 +83,6 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
 
     static class Context extends AbstractContext
     {
-        final String expectedAddress;
-        final AtomicLong readQueries = new AtomicLong();
-
-        Context( String expectedAddress )
-        {
-            this.expectedAddress = expectedAddress;
-        }
-
-        @Override
-        public void processSummary( ResultSummary summary )
-        {
-            if ( summary == null )
-            {
-                return;
-            }
-
-            String address = summary.server().address();
-            assertEquals( expectedAddress, address );
-            readQueries.incrementAndGet();
-        }
-
-        long getReadQueryCount()
-        {
-            return readQueries.get();
-        }
     }
 
     @Override
