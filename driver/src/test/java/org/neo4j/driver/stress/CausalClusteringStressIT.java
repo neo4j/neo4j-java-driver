@@ -22,32 +22,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.summary.ResultSummary;
-import org.neo4j.driver.util.cc.ClusterMemberRole;
-import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
-
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
@@ -105,27 +86,6 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    void assertExpectedReadQueryDistribution( Context context )
-    {
-        Map<String,Long> readQueriesByServer = context.getReadQueriesByServer();
-        ClusterAddresses clusterAddresses = fetchClusterAddresses( driver );
-
-        // expect all followers to serve more than zero read queries
-        assertAllAddressesServedReadQueries( "Follower", clusterAddresses.followers, readQueriesByServer );
-
-        // expect all read replicas to serve more than zero read queries
-        assertAllAddressesServedReadQueries( "Read replica", clusterAddresses.readReplicas, readQueriesByServer );
-
-        // expect all followers to serve same order of magnitude read queries
-        assertAllAddressesServedSimilarAmountOfReadQueries( "Followers", clusterAddresses.followers,
-                readQueriesByServer, clusterAddresses );
-
-        // expect all read replicas to serve same order of magnitude read queries
-        assertAllAddressesServedSimilarAmountOfReadQueries( "Read replicas", clusterAddresses.readReplicas,
-                readQueriesByServer, clusterAddresses );
-    }
-
-    @Override
     void printStats( Context context )
     {
         System.out.println( "Nodes read: " + context.getReadNodesCount() );
@@ -141,114 +101,9 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         clusterRule.dumpClusterLogs();
     }
 
-    private static ClusterAddresses fetchClusterAddresses( Driver driver )
-    {
-        Set<String> followers = new HashSet<>();
-        Set<String> readReplicas = new HashSet<>();
-
-        final ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery discovery =
-                ClusterMemberRoleDiscoveryFactory.newInstance( ServerVersion.version( driver ) );
-        final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
-
-        for ( BoltServerAddress address : clusterOverview.keySet() )
-        {
-            String boltAddress = String.format( "%s:%s", address.host(), address.port() );
-            ClusterMemberRole role = clusterOverview.get( address );
-            if ( role == ClusterMemberRole.FOLLOWER )
-            {
-                followers.add( boltAddress );
-            }
-            else if ( role == ClusterMemberRole.READ_REPLICA )
-            {
-                readReplicas.add( boltAddress );
-            }
-        }
-
-        return new ClusterAddresses( followers, readReplicas );
-    }
-
-    private static void assertAllAddressesServedReadQueries( String addressType, Set<String> addresses,
-            Map<String,Long> readQueriesByServer )
-    {
-        for ( String address : addresses )
-        {
-            Long queries = readQueriesByServer.get( address );
-            assertThat( addressType + " did not serve any read queries", queries, greaterThan( 0L ) );
-        }
-    }
-
-    private static void assertAllAddressesServedSimilarAmountOfReadQueries( String addressesType, Set<String> addresses,
-            Map<String,Long> readQueriesByServer, ClusterAddresses allAddresses )
-    {
-        long expectedOrderOfMagnitude = -1;
-        for ( String address : addresses )
-        {
-            long queries = readQueriesByServer.get( address );
-            long orderOfMagnitude = orderOfMagnitude( queries );
-            if ( expectedOrderOfMagnitude == -1 )
-            {
-                expectedOrderOfMagnitude = orderOfMagnitude;
-            }
-            else
-            {
-                assertThat( addressesType + " are expected to serve similar amount of queries. " +
-                            "Addresses: " + allAddresses + ", " +
-                            "read queries served: " + readQueriesByServer,
-                        orderOfMagnitude,
-                        both( greaterThanOrEqualTo( expectedOrderOfMagnitude - 1 ) )
-                                .and( lessThanOrEqualTo( expectedOrderOfMagnitude + 1 ) ) );
-            }
-        }
-    }
-
-    private static long orderOfMagnitude( long number )
-    {
-        long result = 1;
-        while ( number >= 10 )
-        {
-            number /= 10;
-            result++;
-        }
-        return result;
-    }
-
     static class Context extends AbstractContext
     {
-        final ConcurrentMap<String,AtomicLong> readQueriesByServer = new ConcurrentHashMap<>();
         final AtomicInteger leaderSwitches = new AtomicInteger();
-
-        @Override
-        public void processSummary( ResultSummary summary )
-        {
-            if ( summary == null )
-            {
-                return;
-            }
-
-            String serverAddress = summary.server().address();
-
-            AtomicLong count = readQueriesByServer.get( serverAddress );
-            if ( count == null )
-            {
-                count = new AtomicLong();
-                AtomicLong existingCounter = readQueriesByServer.putIfAbsent( serverAddress, count );
-                if ( existingCounter != null )
-                {
-                    count = existingCounter;
-                }
-            }
-            count.incrementAndGet();
-        }
-
-        Map<String,Long> getReadQueriesByServer()
-        {
-            Map<String,Long> result = new HashMap<>();
-            for ( Map.Entry<String,AtomicLong> entry : readQueriesByServer.entrySet() )
-            {
-                result.put( entry.getKey(), entry.getValue().get() );
-            }
-            return result;
-        }
 
         void leaderSwitch()
         {
@@ -261,24 +116,4 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
         }
     }
 
-    private static class ClusterAddresses
-    {
-        final Set<String> followers;
-        final Set<String> readReplicas;
-
-        ClusterAddresses( Set<String> followers, Set<String> readReplicas )
-        {
-            this.followers = followers;
-            this.readReplicas = readReplicas;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ClusterAddresses{" +
-                   "followers=" + followers +
-                   ", readReplicas=" + readReplicas +
-                   '}';
-        }
-    }
 }

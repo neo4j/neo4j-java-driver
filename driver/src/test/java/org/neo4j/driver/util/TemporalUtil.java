@@ -60,8 +60,9 @@ public final class TemporalUtil
             "Africa/Casablanca",
             "tzid",
             "Asia/Qostanay",
-            "America/Santiago" // Can cause flakyness on windows, see https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
-            );
+            "America/Santiago",// Can cause flakyness on windows, see https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
+            "Pacific/Easter"
+    );
 
     private TemporalUtil()
     {

@@ -65,10 +65,7 @@ public abstract class AbstractContext
     public final void readCompleted( ResultSummary summary )
     {
         readNodesCount.incrementAndGet();
-        processSummary( summary );
     }
-
-    public abstract void processSummary( ResultSummary summary );
 
     public long getReadNodesCount()
     {

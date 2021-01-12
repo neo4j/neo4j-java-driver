@@ -225,8 +225,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     abstract boolean handleWriteFailure( Throwable error, C context );
 
-    abstract void assertExpectedReadQueryDistribution( C context );
-
     abstract <A extends C> void printStats( A context );
 
     private List<Future<?>> launchBlockingWorkerThreads( C context )
@@ -437,7 +435,6 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
         assertNoFileDescriptorLeak( resourcesInfo.openFileDescriptorCount );
         assertNoLoggersLeak( resourcesInfo.acquiredLoggerNames );
         assertExpectedNumberOfNodesCreated( context.getCreatedNodesCount() );
-        assertExpectedReadQueryDistribution( context );
     }
 
     private void assertNoFileDescriptorLeak( long previousOpenFileDescriptors )
