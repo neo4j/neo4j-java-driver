@@ -18,10 +18,11 @@ if __name__ == "__main__":
     if is_cluster:
         suite = "CausalClusteringStressIT"
     else:
-        suite = "SingeInstanceStressIT"
+        suite = "SingleInstanceStressIT"
 
     cmd = [
             "mvn", "surefire:test",
+            "--file", "./driver/pom.xml",
             "-Dtest=%s,AbstractStressTestBase" % suite,
             "-DexternalClusterUri=%s" % uri,
             "-Dneo4jUserPassword=%s" % password,
@@ -30,4 +31,4 @@ if __name__ == "__main__":
             "-Dmaven.gitcommitid.skip=true",
     ]
     subprocess.run(cmd, universal_newlines=True,
-                   stderr=subprocess.STDOUT, check=True, cwd="driver")
+                   stderr=subprocess.STDOUT, check=True)
