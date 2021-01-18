@@ -18,16 +18,20 @@
  */
 package org.neo4j.driver.stress;
 
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -45,17 +49,32 @@ public class RxWriteQueryInTx<C extends AbstractContext> extends AbstractRxQuery
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        RxSession session = newSession( AccessMode.WRITE, context );
-        Flux.usingWhen( session.beginTransaction(), tx -> tx.run( "CREATE ()" ).consume(),
-                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null ).subscribe(
-                summary -> {
-                    context.setBookmark( session.lastBookmark() );
-                    assertEquals( 1, summary.counters().nodesCreated() );
+
+        Function<RxSession,Publisher<ResultSummary>> sessionToResultSummaryPublisher = ( RxSession session ) -> Flux.usingWhen(
+                Mono.from( session.beginTransaction() ),
+                tx -> tx.run( "CREATE ()" ).consume(),
+                RxTransaction::commit,
+                ( tx, error ) -> tx.rollback(),
+                RxTransaction::rollback
+        );
+
+        AtomicInteger createdNodesNum = new AtomicInteger();
+        Flux.usingWhen(
+                Mono.fromSupplier( driver::rxSession ),
+                sessionToResultSummaryPublisher,
+                session -> Mono.empty(),
+                ( session, error ) -> session.close(),
+                RxSession::close
+        ).subscribe(
+                resultSummary -> createdNodesNum.addAndGet( resultSummary.counters().nodesCreated() ),
+                error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ),
+                () ->
+                {
+                    assertEquals( 1, createdNodesNum.get() );
                     context.nodeCreated();
                     queryFinished.complete( null );
-                }, error -> {
-                    handleError( Futures.completionExceptionCause( error ), context, queryFinished );
-                } );
+                }
+        );
 
         return queryFinished;
     }
