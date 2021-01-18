@@ -23,15 +23,13 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxSession;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RxWriteQueryWithRetries<C extends AbstractContext> extends AbstractRxQuery<C>
 {
@@ -47,13 +45,24 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
     public CompletionStage<Void> execute( C context )
     {
         CompletableFuture<Void> queryFinished = new CompletableFuture<>();
-        Flux.usingWhen( Mono.fromSupplier( () -> newSession( AccessMode.WRITE, context ) ),
-                session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ), RxSession::close )
-                .subscribe( summary -> {
-                    assertEquals( 1, summary.counters().nodesCreated() );
+
+        AtomicInteger createdNodesNum = new AtomicInteger();
+        Flux.usingWhen(
+                Mono.fromSupplier( driver::rxSession ),
+                session -> session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() ),
+                session -> Mono.empty(),
+                ( session, error ) -> session.close(),
+                RxSession::close
+        ).subscribe(
+                resultSummary -> createdNodesNum.addAndGet( resultSummary.counters().nodesCreated() ),
+                error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ),
+                () ->
+                {
+                    assertEquals( 1, createdNodesNum.get() );
                     context.nodeCreated();
                     queryFinished.complete( null );
-                }, error -> handleError( Futures.completionExceptionCause( error ), context, queryFinished ) );
+                }
+        );
 
         return queryFinished;
     }
