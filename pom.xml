@@ -18,7 +18,7 @@
 
   <groupId>org.neo4j.driver</groupId>
   <artifactId>neo4j-java-driver-parent</artifactId>
-  <version>4.2-SNAPSHOT</version>
+  <version>4.3-SNAPSHOT</version>
 
   <packaging>pom</packaging>
   <name>Neo4j Java Driver Project</name>
