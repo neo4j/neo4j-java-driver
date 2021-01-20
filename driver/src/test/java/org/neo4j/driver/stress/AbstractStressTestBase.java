@@ -31,7 +31,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -159,7 +159,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     }
 
     @Test
-    void rxApiBigDataTest() throws Throwable
+    void rxApiBigDataTest()
     {
         assertRxIsAvailable();
         Bookmark bookmark = createNodesRx( bigDataTestBatchCount(), BIG_DATA_TEST_BATCH_SIZE, driver );
@@ -221,7 +221,17 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     abstract C createContext();
 
-    abstract List<BlockingCommand<C>> createTestSpecificBlockingCommands();
+    List<BlockingCommand<C>> createTestSpecificBlockingCommands() {
+        return Collections.emptyList();
+    }
+
+    List<AsyncCommand<C>> createTestSpecificAsyncCommands() {
+        return Collections.emptyList();
+    }
+
+    List<RxCommand<C>> createTestSpecificRxCommands() {
+        return Collections.emptyList();
+    }
 
     abstract boolean handleWriteFailure( Throwable error, C context );
 
@@ -245,23 +255,15 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         List<BlockingCommand<C>> commands = new ArrayList<>();
 
-        commands.add( new BlockingReadQuery<>( driver, false ) );
-        commands.add( new BlockingReadQuery<>( driver, true ) );
+        commands.add( new BlockingReadQueryWithRetries<>( driver, false ) );
+        commands.add( new BlockingReadQueryWithRetries<>( driver, true ) );
 
-        commands.add( new BlockingReadQueryInTx<>( driver, false ) );
-        commands.add( new BlockingReadQueryInTx<>( driver, true ) );
+        commands.add( new BlockingWriteQueryWithRetries<>( this, driver, false ) );
+        commands.add( new BlockingWriteQueryWithRetries<>( this, driver, true ) );
 
-        commands.add( new BlockingWriteQuery<>( this, driver, false ) );
-        commands.add( new BlockingWriteQuery<>( this, driver, true ) );
+        commands.add( new BlockingWrongQueryWithRetries<>( driver ) );
 
-        commands.add( new BlockingWriteQueryInTx<>( this, driver, false ) );
-        commands.add( new BlockingWriteQueryInTx<>( this, driver, true ) );
-
-        commands.add( new BlockingWrongQuery<>( driver ) );
-        commands.add( new BlockingWrongQueryInTx<>( driver ) );
-
-        commands.add( new BlockingFailingQuery<>( driver ) );
-        commands.add( new BlockingFailingQueryInTx<>( driver ) );
+        commands.add( new BlockingFailingQueryWithRetries<>( driver ) );
 
         commands.add( new FailedAuth<>( databaseUri(), config() ) );
 
@@ -299,29 +301,19 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     private List<RxCommand<C>> createRxCommands()
     {
-        return Arrays.asList(
-                new RxReadQuery<>( driver, false ),
-                new RxReadQuery<>( driver, true ),
+        List<RxCommand<C>> commands = new ArrayList<>();
 
-                new RxWriteQuery<>( this, driver, false ),
-                new RxWriteQuery<>( this, driver, true ),
+        commands.add( new RxReadQueryWithRetries<>( driver, false ) );
+        commands.add( new RxReadQueryWithRetries<>( driver, true ) );
 
-                new RxReadQueryInTx<>( driver, false ),
-                new RxReadQueryInTx<>( driver, true ),
+        commands.add( new RxWriteQueryWithRetries<>( this, driver, false ) );
+        commands.add( new RxWriteQueryWithRetries<>( this, driver, true ) );
 
-                new RxWriteQueryInTx<>( this, driver, false ),
-                new RxWriteQueryInTx<>( this, driver, true ),
+        commands.add( new RxFailingQueryWithRetries<>( driver ) );
 
-                new RxReadQueryWithRetries<>( driver, false ),
-                new RxReadQueryWithRetries<>( driver, false ),
+        commands.addAll( createTestSpecificRxCommands() );
 
-                new RxWriteQueryWithRetries<>( this, driver, false ),
-                new RxWriteQueryWithRetries<>( this, driver, true ),
-
-                new RxFailingQuery<>( driver ),
-                new RxFailingQueryInTx<>( driver ),
-                new RxFailingQueryWithRetries<>( driver )
-        );
+        return commands;
     }
 
     private Future<Void> launchRxWorkerThread( ExecutorService executor, List<RxCommand<C>> commands, C context )
@@ -367,23 +359,15 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     {
         List<AsyncCommand<C>> commands = new ArrayList<>();
 
-        commands.add( new AsyncReadQuery<>( driver, false ) );
-        commands.add( new AsyncReadQuery<>( driver, true ) );
+        commands.add( new AsyncReadQueryWithRetries<>( driver, false ) );
+        commands.add( new AsyncReadQueryWithRetries<>( driver, true ) );
 
-        commands.add( new AsyncReadQueryInTx<>( driver, false ) );
-        commands.add( new AsyncReadQueryInTx<>( driver, true ) );
+        commands.add( new AsyncWriteQueryWithRetries<>( this, driver, false ) );
+        commands.add( new AsyncWriteQueryWithRetries<>( this, driver, true ) );
 
-        commands.add( new AsyncWriteQuery<>( this, driver, false ) );
-        commands.add( new AsyncWriteQuery<>( this, driver, true ) );
+        commands.add( new AsyncWrongQueryWithRetries<>( driver ) );
 
-        commands.add( new AsyncWriteQueryInTx<>( this, driver, false ) );
-        commands.add( new AsyncWriteQueryInTx<>( this, driver, true ) );
-
-        commands.add( new AsyncWrongQuery<>( driver ) );
-        commands.add( new AsyncWrongQueryInTx<>( driver ) );
-
-        commands.add( new AsyncFailingQuery<>( driver ) );
-        commands.add( new AsyncFailingQueryInTx<>( driver ) );
+        commands.add( new AsyncFailingQueryWithRetries<>( driver ) );
 
         return commands;
     }
