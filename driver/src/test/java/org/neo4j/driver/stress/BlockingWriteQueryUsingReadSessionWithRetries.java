@@ -22,18 +22,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class BlockingWriteQueryUsingReadSessionInTx<C extends AbstractContext> extends AbstractBlockingQuery<C>
+public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
 {
-    public BlockingWriteQueryUsingReadSessionInTx( Driver driver, boolean useBookmark )
+    public BlockingWriteQueryUsingReadSessionWithRetries( Driver driver, boolean useBookmark )
     {
         super( driver, useBookmark );
     }
@@ -44,12 +43,12 @@ public class BlockingWriteQueryUsingReadSessionInTx<C extends AbstractContext> e
         AtomicReference<Result> resultRef = new AtomicReference<>();
         assertThrows( ClientException.class, () ->
         {
-            try ( Session session = newSession( AccessMode.READ, context );
-                  Transaction tx = beginTransaction( session, context ) )
+            try ( Session session = newSession( AccessMode.READ, context ) )
             {
-                Result result = tx.run( "CREATE ()" );
-                resultRef.set( result );
-                tx.commit();
+                session.readTransaction( tx -> {
+                    resultRef.set( tx.run( "CREATE ()" ));
+                    return 1;
+                });
             }
         } );
         assertNotNull( resultRef.get() );
