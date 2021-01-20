@@ -20,6 +20,7 @@ package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
 // tag::rx-autocommit-transaction-import[]
+import io.reactivex.Observable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -54,13 +55,11 @@ public class RxAutocommitTransactionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        RxSession session = driver.rxSession();
-        return Flowable.fromPublisher( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() )
-                // It is okay to skip session.close() when publisher is completed successfully or cancelled
-                .onErrorResumeNext( error -> {
-                    // We still rethrows the original error here. In a real application, you may want to handle the error directly here.
-                    return Flowable.<String>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
-                } );
+        return Flowable.using(
+                driver::rxSession,
+                session -> Flowable.fromPublisher( session.run( query, parameters ).records() ).map( record -> record.get( 0 ).asString() ),
+                session -> Observable.fromPublisher(session.close()).subscribe()
+        );
     }
     // end::RxJava-autocommit-transaction[]
 }
