@@ -18,10 +18,12 @@
  */
 package org.neo4j.driver.stress;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
@@ -43,17 +45,19 @@ public class AsyncFailingQueryWithRetries<C extends AbstractContext> extends Abs
     {
         AsyncSession session = newSession( AccessMode.READ, context );
 
-        return session.readTransactionAsync( tx -> tx.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
-                      .thenCompose( ResultCursor::listAsync )
-                      .handle( ( records, error ) ->
-                               {
-                                   session.closeAsync();
+        CompletionStage<List<Record>> txStage = session.readTransactionAsync( tx -> tx.runAsync( "UNWIND [10, 5, 0] AS x RETURN 10 / x" )
+                                                                                      .thenCompose( ResultCursor::listAsync ) );
 
-                                   assertNull( records );
-                                   Throwable cause = Futures.completionExceptionCause( error );
-                                   assertThat( cause, is( arithmeticError() ) );
+        CompletionStage<Void> resultsProcessingStage = txStage
+                .handle( ( records, error ) ->
+                         {
+                             assertNull( records );
+                             Throwable cause = Futures.completionExceptionCause( error );
+                             assertThat( cause, is( arithmeticError() ) );
 
-                                   return null;
-                               } ));
+                             return null;
+                         } );
+
+        return resultsProcessingStage.whenComplete( ( nothing, throwable ) -> session.closeAsync() );
     }
 }

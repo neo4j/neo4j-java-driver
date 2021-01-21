@@ -24,7 +24,7 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,33 +43,34 @@ public class AsyncWriteQueryWithRetries<C extends AbstractContext> extends Abstr
     {
         AsyncSession session = newSession( AccessMode.WRITE, context );
 
-        return session.writeTransactionAsync(
-                tx -> tx.runAsync( "CREATE ()" )
-                        .thenCompose( ResultCursor::consumeAsync ) )
-                      .handle( ( summary, error ) ->
-                               {
-                                   session.closeAsync();
+        CompletionStage<ResultSummary> txStage = session.writeTransactionAsync(
+                tx -> tx.runAsync( "CREATE ()" ).thenCompose( ResultCursor::consumeAsync ) );
 
-                                   if ( error != null )
-                                   {
-                                       handleError( Futures.completionExceptionCause( error ), context );
-                                   }
-                                   else
-                                   {
-                                       context.setBookmark( session.lastBookmark() );
-                                       assertEquals( 1, summary.counters().nodesCreated() );
-                                       context.nodeCreated();
-                                   }
-
-                                   return null;
-                               } );
+        return txStage.thenApply( resultSummary -> processResultSummary( resultSummary, context ) )
+                      .handle( ( nothing, throwable ) -> recordAndRethrowThrowable( throwable, context ) )
+                      .whenComplete( ( nothing, throwable ) -> finalizeSession( session, context ) );
     }
 
-    private void handleError( Throwable error, C context )
+    private Void processResultSummary( ResultSummary resultSummary, C context )
     {
-        if ( !stressTest.handleWriteFailure( error, context ) )
+        assertEquals( 1, resultSummary.counters().nodesCreated() );
+        context.nodeCreated();
+        return null;
+    }
+
+    private Void recordAndRethrowThrowable( Throwable throwable, C context )
+    {
+        if ( throwable != null )
         {
-            throw new RuntimeException( error );
+            stressTest.handleWriteFailure( throwable, context );
+            throw new RuntimeException( throwable );
         }
+        return null;
+    }
+
+    private void finalizeSession( AsyncSession session, C context )
+    {
+        context.setBookmark( session.lastBookmark() );
+        session.closeAsync();
     }
 }

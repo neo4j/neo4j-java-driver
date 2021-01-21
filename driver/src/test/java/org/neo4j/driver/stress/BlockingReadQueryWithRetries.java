@@ -25,6 +25,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,7 +43,7 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
     {
         try ( Session session = newSession( AccessMode.READ, context ) )
         {
-            session.readTransaction(
+            ResultSummary resultSummary = session.readTransaction(
                     tx ->
                     {
                         Result result = tx.run( "MATCH (n) RETURN n LIMIT 1" );
@@ -54,9 +55,9 @@ public class BlockingReadQueryWithRetries<C extends AbstractContext> extends Abs
                             assertNotNull( node );
                         }
 
-                        context.readCompleted( result.consume() );
-                        return 1;
+                        return result.consume();
                     } );
+            context.readCompleted( resultSummary );
         }
     }
 }
