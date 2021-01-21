@@ -42,25 +42,19 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
     {
         AsyncSession session = newSession( AccessMode.READ, context );
 
-        CompletionStage<ResultSummary> queryFinished = session.readTransactionAsync(
+        CompletionStage<ResultSummary> txStage = session.readTransactionAsync(
                 tx -> tx.runAsync( "MATCH (n) RETURN n LIMIT 1" )
                         .thenCompose(
                                 cursor -> cursor.nextAsync()
-                                                .thenCompose( record -> processAndGetSummary( record, cursor ) ) ) );
+                                                .thenCompose(
+                                                        record -> processRecordAndGetSummary( record, cursor ) ) ) );
 
-        queryFinished.whenComplete( ( summary, error ) ->
-                                    {
-                                        if ( summary != null )
-                                        {
-                                            context.readCompleted( summary );
-                                        }
-                                        session.closeAsync();
-                                    } );
+        CompletionStage<Void> resultsProcessingStage = txStage.thenApply( resultSummary -> processResultSummary( resultSummary, context ) );
 
-        return queryFinished.thenApply( summary -> null );
+        return resultsProcessingStage.whenComplete( ( nothing, throwable ) -> session.closeAsync() );
     }
 
-    private CompletionStage<ResultSummary> processAndGetSummary( Record record, ResultCursor cursor )
+    private CompletionStage<ResultSummary> processRecordAndGetSummary( Record record, ResultCursor cursor )
     {
         if ( record != null )
         {
@@ -68,5 +62,14 @@ public class AsyncReadQueryWithRetries<C extends AbstractContext> extends Abstra
             assertNotNull( node );
         }
         return cursor.consumeAsync();
+    }
+
+    private Void processResultSummary( ResultSummary resultSummary, C context )
+    {
+        if ( resultSummary != null )
+        {
+            context.readCompleted( resultSummary );
+        }
+        return null;
     }
 }

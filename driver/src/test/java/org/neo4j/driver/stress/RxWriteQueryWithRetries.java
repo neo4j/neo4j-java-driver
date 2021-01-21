@@ -69,13 +69,7 @@ public class RxWriteQueryWithRetries<C extends AbstractContext> extends Abstract
 
     private void handleError( Throwable error, C context, CompletableFuture<Void> queryFinished )
     {
-        if ( !stressTest.handleWriteFailure( error, context ) )
-        {
-            queryFinished.completeExceptionally( error );
-        }
-        else
-        {
-            queryFinished.complete( null );
-        }
+        stressTest.handleWriteFailure( error, context );
+        queryFinished.completeExceptionally( error );
     }
 }

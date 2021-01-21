@@ -38,27 +38,17 @@ public class BlockingWriteQueryWithRetries<C extends AbstractContext> extends Ab
     @Override
     public void execute( C context )
     {
-        ResultSummary resultSummary = null;
-        Throwable queryError = null;
-
         try ( Session session = newSession( AccessMode.WRITE, context ) )
         {
-            resultSummary = session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() );
-            context.setBookmark( session.lastBookmark() );
-        }
-        catch ( Throwable error )
-        {
-            queryError = error;
-            if ( !stressTest.handleWriteFailure( error, context ) )
-            {
-                throw error;
-            }
-        }
-
-        if ( queryError == null && resultSummary != null )
-        {
+            ResultSummary resultSummary = session.writeTransaction( tx -> tx.run( "CREATE ()" ).consume() );
             assertEquals( 1, resultSummary.counters().nodesCreated() );
             context.nodeCreated();
+            context.setBookmark( session.lastBookmark() );
+        }
+        catch ( RuntimeException error )
+        {
+            stressTest.handleWriteFailure( error, context );
+            throw error;
         }
     }
 }
