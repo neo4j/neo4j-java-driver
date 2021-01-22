@@ -60,17 +60,6 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    List<BlockingCommand<Context>> createTestSpecificBlockingCommands()
-    {
-        return Arrays.asList(
-                new BlockingWriteQueryUsingReadSession<>( driver, false ),
-                new BlockingWriteQueryUsingReadSession<>( driver, true ),
-                new BlockingWriteQueryUsingReadSessionInTx<>( driver, false ),
-                new BlockingWriteQueryUsingReadSessionInTx<>( driver, true )
-        );
-    }
-
-    @Override
     boolean handleWriteFailure( Throwable error, Context context )
     {
         if ( error instanceof SessionExpiredException )
@@ -99,6 +88,14 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     void dumpLogs()
     {
         clusterRule.dumpClusterLogs();
+    }
+
+    @Override
+    List<BlockingCommand<Context>> createTestSpecificBlockingCommands()
+    {
+        return Arrays.asList(
+                new BlockingWriteQueryUsingReadSessionWithRetries<>( driver, false ),
+                new BlockingWriteQueryUsingReadSessionWithRetries<>( driver, true ) );
     }
 
     static class Context extends AbstractContext

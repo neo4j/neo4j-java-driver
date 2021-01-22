@@ -18,38 +18,29 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.exceptions.ClientException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 
-public class BlockingWriteQueryUsingReadSession<C extends AbstractContext> extends AbstractBlockingQuery<C>
+public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
 {
-    public BlockingWriteQueryUsingReadSession( Driver driver, boolean useBookmark )
+    public BlockingWrongQueryWithRetries( Driver driver )
     {
-        super( driver, useBookmark );
+        super( driver, false );
     }
 
     @Override
     public void execute( C context )
     {
-        AtomicReference<Result> resultRef = new AtomicReference<>();
-        assertThrows( ClientException.class, () ->
+        try ( Session session = newSession( AccessMode.READ, context ) )
         {
-            try ( Session session = newSession( AccessMode.READ, context ) )
-            {
-                Result result = session.run( "CREATE ()" );
-                resultRef.set( result );
-            }
-        } );
-        assertNotNull( resultRef.get() );
-        assertEquals( 0, resultRef.get().consume().counters().nodesCreated() );
+            Exception e = assertThrows( Exception.class, () -> session.readTransaction( tx -> tx.run( "RETURN" ).consume() ) );
+            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        }
     }
 }
