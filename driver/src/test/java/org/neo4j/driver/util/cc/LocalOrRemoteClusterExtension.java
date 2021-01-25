@@ -32,8 +32,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.util.TestUtil;
 
-import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
-
 public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
     private static final String CLUSTER_URI_SYSTEM_PROPERTY_NAME = "externalClusterUri";
@@ -59,20 +57,6 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
             return AuthTokens.basic( "neo4j", neo4jUserPasswordFromSystemProperty() );
         }
         return localClusterExtension.getDefaultAuthToken();
-    }
-
-    public Config.ConfigBuilder config( Config.ConfigBuilder builder )
-    {
-        if ( useEncryption() )
-        {
-            builder.withEncryption();
-        }
-        else
-        {
-            builder.withoutEncryption();
-        }
-
-        return builder;
     }
 
     @Override
@@ -126,7 +110,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         Config.ConfigBuilder builder = Config.builder();
         builder.withEventLoopThreads( 1 );
 
-        try ( Driver driver = GraphDatabase.driver( getClusterUri(), getAuthToken(), config( builder ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( getClusterUri(), getAuthToken(), builder.build() ) )
         {
             TestUtil.cleanDb( driver );
         }
@@ -142,29 +126,11 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
                     "Both cluster uri and 'neo4j' user password system properties should be set. " +
                     "Uri: '" + uri + "', Password: '" + password + "'" );
         }
-        if ( uri != null && !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
-        {
-            throw new IllegalStateException( "Cluster uri should have neo4j scheme: '" + uri + "'" );
-        }
     }
 
     private static boolean remoteClusterExists()
     {
         return remoteClusterUriFromSystemProperty() != null;
-    }
-
-    private static boolean useEncryption()
-    {
-        URI uri = remoteClusterUriFromSystemProperty();
-        if (uri == null) {
-            return false;
-        }
-        String scheme = uri.getScheme();
-        return
-            scheme == "neo4j+ssc" ||
-            scheme == "neo4j+s" ||
-            scheme == "bolt+ssc" ||
-            scheme == "bolt+s";
     }
 
     private static URI remoteClusterUriFromSystemProperty()

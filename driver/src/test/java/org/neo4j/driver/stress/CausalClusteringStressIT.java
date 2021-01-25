@@ -50,7 +50,7 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     @Override
     Config.ConfigBuilder config( Config.ConfigBuilder builder )
     {
-        return clusterRule.config( builder );
+        return builder;
     }
 
     @Override
