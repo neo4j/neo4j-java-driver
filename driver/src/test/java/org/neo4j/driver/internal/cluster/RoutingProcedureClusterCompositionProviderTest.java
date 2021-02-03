@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -131,8 +132,8 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "READ", "one:1337", "two:1337" ),
-                serverInfo( "WRITE", "one:1337" ) ) )
+                serverInfo( "READ", "192.168.99.1:1337", "192.168.99.2:1337" ),
+                serverInfo( "WRITE", "192.168.99.1:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
@@ -156,8 +157,8 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "READ", "one:1337", "two:1337" ),
-                serverInfo( "WRITE", "one:1337" ) ) )
+                serverInfo( "READ", "192.168.99.1:1337", "192.168.99.2:1337" ),
+                serverInfo( "WRITE", "192.168.99.1:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
@@ -181,8 +182,8 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+                serverInfo( "WRITE", "192.168.99.1:1337" ),
+                serverInfo( "ROUTE", "192.168.99.1:1337", "192.168.99.2:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
@@ -206,8 +207,8 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+                serverInfo( "WRITE", "192.168.99.1:1337" ),
+                serverInfo( "ROUTE", "192.168.99.1:1337", "192.168.99.2:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
@@ -238,7 +239,7 @@ class RoutingProcedureClusterCompositionProviderTest
     }
 
     @Test
-    void shouldReturnSuccessResultWhenNoError()
+    void shouldReturnSuccessResultWhenNoError() throws UnknownHostException
     {
         // Given
         Clock mockedClock = mock( Clock.class );
@@ -249,9 +250,9 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "READ", "one:1337", "two:1337" ),
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+                serverInfo( "READ", "192.168.99.1:1337", "192.168.99.2:1337" ),
+                serverInfo( "WRITE", "192.168.99.1:1337" ),
+                serverInfo( "ROUTE", "192.168.99.1:1337", "192.168.99.2:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
@@ -263,13 +264,13 @@ class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
-        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.readers() );
-        assertEquals( serverSet( "one:1337" ), cluster.writers() );
-        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.routers() );
+        assertEquals( serverSet( "192.168.99.1:1337", "192.168.99.2:1337" ), cluster.readers() );
+        assertEquals( serverSet( "192.168.99.1:1337" ), cluster.writers() );
+        assertEquals( serverSet( "192.168.99.1:1337", "192.168.99.2:1337" ), cluster.routers() );
     }
 
     @Test
-    void routeMessageRoutingProcedureShouldReturnSuccessResultWhenNoError()
+    void routeMessageRoutingProcedureShouldReturnSuccessResultWhenNoError() throws UnknownHostException
     {
         // Given
         Clock mockedClock = mock( Clock.class );
@@ -280,9 +281,9 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record record = new InternalRecord( asList( "ttl", "servers" ), new Value[]{
                 value( 100 ), value( asList(
-                serverInfo( "READ", "one:1337", "two:1337" ),
-                serverInfo( "WRITE", "one:1337" ),
-                serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
+                serverInfo( "READ", "192.168.99.1:1337", "192.168.99.2:1337" ),
+                serverInfo( "WRITE", "192.168.99.1:1337" ),
+                serverInfo( "ROUTE", "192.168.99.1:1337", "192.168.99.2:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
         when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
@@ -294,9 +295,9 @@ class RoutingProcedureClusterCompositionProviderTest
 
         // Then
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
-        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.readers() );
-        assertEquals( serverSet( "one:1337" ), cluster.writers() );
-        assertEquals( serverSet( "one:1337", "two:1337" ), cluster.routers() );
+        assertEquals( serverSet( "192.168.99.1:1337", "192.168.99.2:1337" ), cluster.readers() );
+        assertEquals( serverSet( "192.168.99.1:1337" ), cluster.writers() );
+        assertEquals( serverSet( "192.168.99.1:1337", "192.168.99.2:1337" ), cluster.routers() );
     }
 
     @Test
@@ -370,12 +371,12 @@ class RoutingProcedureClusterCompositionProviderTest
         return map;
     }
 
-    private static Set<BoltServerAddress> serverSet( String... addresses )
+    private static Set<BoltServerAddress> serverSet( String... addresses ) throws UnknownHostException
     {
         Set<BoltServerAddress> result = new HashSet<>();
         for ( String address : addresses )
         {
-            result.add( new BoltServerAddress( address ) );
+            result.add( new BoltServerAddress( address ).resolve() );
         }
         return result;
     }

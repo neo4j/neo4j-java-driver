@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.net.ServerAddress;
@@ -62,7 +61,16 @@ public class BoltServerAddress implements ServerAddress
         this( host, null, port );
     }
 
-    private BoltServerAddress( String host, InetAddress resolved, int port )
+    /**
+     * Create a new instance with the provided {@link InetAddress}.
+     * <p>
+     * This is not meant to be used externally to this class and is open for testing purposes only.
+     *
+     * @param host     the host name
+     * @param resolved the resolved {@link InetAddress}
+     * @param port     the port number
+     */
+    public BoltServerAddress( String host, InetAddress resolved, int port )
     {
         this.host = requireNonNull( host, "host" );
         this.resolved = resolved;
@@ -89,13 +97,14 @@ public class BoltServerAddress implements ServerAddress
             return false;
         }
         BoltServerAddress that = (BoltServerAddress) o;
-        return port == that.port && host.equals( that.host );
+        return port == that.port && host.equals( that.host ) &&
+               ((resolved == null && that.resolved == null) || (resolved != null && resolved.equals( that.resolved )));
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( host, port );
+        return Objects.hash( host, port, resolved );
     }
 
     @Override
@@ -152,6 +161,11 @@ public class BoltServerAddress implements ServerAddress
     public int port()
     {
         return port;
+    }
+
+    public boolean isResolved()
+    {
+        return resolved != null;
     }
 
     private static String hostFrom( URI uri )

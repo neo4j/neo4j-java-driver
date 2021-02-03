@@ -63,10 +63,15 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A_RESOLVED;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B_RESOLVED;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C_RESOLVED;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D_RESOLVED;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E_RESOLVED;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -142,23 +147,23 @@ class RediscoveryTest
     {
         BoltServerAddress initialRouter = A;
         ClusterComposition expectedComposition = new ClusterComposition( 42,
-                asOrderedSet( C, B, A ), asOrderedSet( A, B ), asOrderedSet( D, E ) );
+                                                                         asOrderedSet( C, B, A ), asOrderedSet( A, B ), asOrderedSet( D, E ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
-        responsesByAddress.put( C, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
-        responsesByAddress.put( initialRouter, expectedComposition ); // initial -> valid response
+        responsesByAddress.put( B_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
+        responsesByAddress.put( C_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
+        responsesByAddress.put( A_RESOLVED, expectedComposition ); // initial -> valid response
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
-        RoutingTable table = routingTableMock( B, C );
+        RoutingTable table = routingTableMock( B_RESOLVED, C_RESOLVED );
 
         ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
-        verify( table ).forget( B );
-        verify( table ).forget( C );
+        verify( table ).forget( B_RESOLVED );
+        verify( table ).forget( C_RESOLVED );
     }
 
     @Test
@@ -192,33 +197,33 @@ class RediscoveryTest
     {
         BoltServerAddress initialRouter = A;
         ClusterComposition expectedComposition = new ClusterComposition( 42,
-                asOrderedSet( A, B ), asOrderedSet( A, B ), asOrderedSet( A, B ) );
+                                                                         asOrderedSet( A, B ), asOrderedSet( A, B ), asOrderedSet( A, B ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
-        responsesByAddress.put( C, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
-        responsesByAddress.put( D, new IOException( "Hi!" ) ); // resolved first -> non-fatal failure
-        responsesByAddress.put( E, expectedComposition ); // resolved second -> valid response
+        responsesByAddress.put( B_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
+        responsesByAddress.put( C_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
+        responsesByAddress.put( D_RESOLVED, new IOException( "Hi!" ) ); // resolved first -> non-fatal failure
+        responsesByAddress.put( E_RESOLVED, expectedComposition ); // resolved second -> valid response
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         // initial router resolved to two other addresses
         ServerAddressResolver resolver = resolverMock( initialRouter, D, E );
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
-        RoutingTable table = routingTableMock( B, C );
+        RoutingTable table = routingTableMock( B_RESOLVED, C_RESOLVED );
 
         ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
-        verify( table ).forget( B );
-        verify( table ).forget( C );
-        verify( table ).forget( D );
+        verify( table ).forget( B_RESOLVED );
+        verify( table ).forget( C_RESOLVED );
+        verify( table ).forget( D_RESOLVED );
     }
 
     @Test
     void shouldResolveInitialRouterAddressUsingCustomResolver()
     {
         ClusterComposition expectedComposition = new ClusterComposition( 42,
-                asOrderedSet( A, B, C ), asOrderedSet( A, B, C ), asOrderedSet( B, E ) );
+                                                                         asOrderedSet( A, B, C ), asOrderedSet( A, B, C ), asOrderedSet( B, E ) );
 
         ServerAddressResolver resolver = address ->
         {
@@ -227,9 +232,9 @@ class RediscoveryTest
         };
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
-        responsesByAddress.put( C, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
-        responsesByAddress.put( E, expectedComposition ); // resolved second -> valid response
+        responsesByAddress.put( B_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
+        responsesByAddress.put( C_RESOLVED, new ServiceUnavailableException( "Hi!" ) ); // second -> non-fatal failure
+        responsesByAddress.put( E_RESOLVED, expectedComposition ); // resolved second -> valid response
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         Rediscovery rediscovery = newRediscovery( A, compositionProvider, resolver );
@@ -238,8 +243,8 @@ class RediscoveryTest
         ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
 
         assertEquals( expectedComposition, actualComposition );
-        verify( table ).forget( B );
-        verify( table ).forget( C );
+        verify( table ).forget( B_RESOLVED );
+        verify( table ).forget( C_RESOLVED );
     }
 
     @Test
@@ -298,7 +303,7 @@ class RediscoveryTest
                 asOrderedSet( B, A ), asOrderedSet( B, A ), asOrderedSet( B, A ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( initialRouter, validComposition ); // initial -> valid composition
+        responsesByAddress.put( A_RESOLVED, validComposition ); // initial -> valid composition
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
@@ -318,7 +323,7 @@ class RediscoveryTest
                 asOrderedSet( A ), asOrderedSet( A ), asOrderedSet( A ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( initialRouter, validComposition ); // initial -> valid composition
+        responsesByAddress.put( A_RESOLVED, validComposition ); // initial -> valid composition
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
@@ -334,22 +339,22 @@ class RediscoveryTest
     {
         BoltServerAddress initialRouter = A;
         ClusterComposition validComposition = new ClusterComposition( 42,
-                asOrderedSet( D, E ), asOrderedSet( E, D ), asOrderedSet( A, B ) );
+                                                                      asOrderedSet( D, E ), asOrderedSet( E, D ), asOrderedSet( A, B ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( initialRouter, new ServiceUnavailableException( "Hi" ) ); // initial -> non-fatal error
-        responsesByAddress.put( D, new IOException( "Hi" ) ); // first known -> non-fatal failure
-        responsesByAddress.put( E, validComposition ); // second known -> valid composition
+        responsesByAddress.put( A_RESOLVED, new ServiceUnavailableException( "Hi" ) ); // initial -> non-fatal error
+        responsesByAddress.put( D_RESOLVED, new IOException( "Hi" ) ); // first known -> non-fatal failure
+        responsesByAddress.put( E_RESOLVED, validComposition ); // second known -> valid composition
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( initialRouter, initialRouter );
         Rediscovery rediscovery = newRediscovery( initialRouter, compositionProvider, resolver );
-        RoutingTable table = routingTableMock( true, D, E );
+        RoutingTable table = routingTableMock( true, D_RESOLVED, E_RESOLVED );
 
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
-        verify( table ).forget( initialRouter );
-        verify( table ).forget( D );
+        verify( table ).forget( A_RESOLVED );
+        verify( table ).forget( D_RESOLVED );
     }
 
     @Test
@@ -358,18 +363,18 @@ class RediscoveryTest
         int maxRoutingFailures = 3;
         long retryTimeoutDelay = 15;
         ClusterComposition expectedComposition = new ClusterComposition( 42,
-                asOrderedSet( A, C ), asOrderedSet( B, D ), asOrderedSet( A, E ) );
+                                                                         asOrderedSet( A, C ), asOrderedSet( B, D ), asOrderedSet( A, E ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( A, new ServiceUnavailableException( "Hi!" ) );
-        responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) );
-        responsesByAddress.put( E, expectedComposition );
+        responsesByAddress.put( A_RESOLVED, new ServiceUnavailableException( "Hi!" ) );
+        responsesByAddress.put( B_RESOLVED, new ServiceUnavailableException( "Hi!" ) );
+        responsesByAddress.put( E_RESOLVED, expectedComposition );
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = mock( ServerAddressResolver.class );
         when( resolver.resolve( A ) ).thenReturn( asOrderedSet( A ) )
-                .thenReturn( asOrderedSet( A ) )
-                .thenReturn( asOrderedSet( E ) );
+                                     .thenReturn( asOrderedSet( A ) )
+                                     .thenReturn( asOrderedSet( E ) );
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );

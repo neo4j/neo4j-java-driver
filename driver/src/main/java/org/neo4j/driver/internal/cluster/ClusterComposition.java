@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.net.UnknownHostException;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -30,7 +30,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 public final class ClusterComposition
 {
     private static final long MAX_TTL = Long.MAX_VALUE / 1000L;
-    private static final Function<Value,BoltServerAddress> OF_BoltServerAddress = value -> new BoltServerAddress( value.asString() );
 
     private final Set<BoltServerAddress> readers;
     private final Set<BoltServerAddress> writers;
@@ -122,7 +121,7 @@ public final class ClusterComposition
                '}';
     }
 
-    public static ClusterComposition parse( Record record, long now )
+    public static ClusterComposition parse( Record record, long now ) throws UnknownHostException
     {
         if ( record == null )
         {
@@ -130,16 +129,16 @@ public final class ClusterComposition
         }
 
         final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ) );
-        record.get( "servers" ).asList( new Function<Value,Void>()
+        Iterable<Value> servers = record.get( "servers" ).values();
+        for ( Value server : servers )
         {
-            @Override
-            public Void apply( Value value )
+            Set<BoltServerAddress> roleServers = result.servers( server.get( "role" ).asString() );
+            Iterable<Value> serverAddresses = server.get( "addresses" ).values();
+            for ( Value serverAddress : serverAddresses )
             {
-                result.servers( value.get( "role" ).asString() )
-                        .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
-                return null;
+                roleServers.add( (new BoltServerAddress( serverAddress.asString() )).resolve() );
             }
-        } );
+        }
         return result;
     }
 

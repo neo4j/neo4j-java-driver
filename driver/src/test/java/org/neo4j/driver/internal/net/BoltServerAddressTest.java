@@ -20,8 +20,10 @@ package org.neo4j.driver.internal.net;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -31,16 +33,17 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.DEFAULT_PORT;
@@ -152,7 +155,7 @@ class BoltServerAddressTest
         BoltServerAddress address = new BoltServerAddress( "google.com", 80 );
         List<BoltServerAddress> resolved = address.resolveAll();
         assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
+        assertTrue( resolved.get( 0 ).isResolved() );
     }
 
     @Test
@@ -161,7 +164,7 @@ class BoltServerAddressTest
         BoltServerAddress address = new BoltServerAddress( "127.0.0.1", 80 );
         List<BoltServerAddress> resolved = address.resolveAll();
         assertThat( resolved, hasSize( 1 ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
+        resolved.forEach( resolvedAddress -> assertTrue( resolvedAddress.isResolved() ) );
     }
 
     @Test
@@ -170,7 +173,7 @@ class BoltServerAddressTest
         BoltServerAddress address = new BoltServerAddress( "localhost", 80 );
         List<BoltServerAddress> resolved = address.resolveAll();
         assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
+        resolved.forEach( resolvedAddress -> assertTrue( resolvedAddress.isResolved() ) );
     }
 
     @Test
@@ -179,7 +182,7 @@ class BoltServerAddressTest
         BoltServerAddress address = new BoltServerAddress( "[::1]", 80 );
         List<BoltServerAddress> resolved = address.resolveAll();
         assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
+        resolved.forEach( resolvedAddress -> assertTrue( resolvedAddress.isResolved() ) );
     }
 
     @Test
@@ -199,5 +202,29 @@ class BoltServerAddressTest
         assertThat( resolved.toString(), anyOf( containsString( "(127.0.0.1)" ), containsString( "(::1)" ) ) );
         assertThat( resolved.toString(), startsWith( "localhost" ) );
         assertThat( resolved.toString(), endsWith( "8081" ) );
+    }
+
+    @Test
+    void shouldEqualWhenBothAreUnresolved()
+    {
+        BoltServerAddress address1 = new BoltServerAddress( "localhost", 8081 );
+        BoltServerAddress address2 = new BoltServerAddress( "localhost", 8081 );
+        assertEquals( address1, address2 );
+    }
+
+    @Test
+    void shouldNotEqualWhenOneIsResolved() throws UnknownHostException
+    {
+        BoltServerAddress address1 = new BoltServerAddress( "localhost", 8081 );
+        BoltServerAddress address2 = new BoltServerAddress( "localhost", InetAddress.getByName( "127.0.0.1" ), 8081 );
+        assertNotEquals( address1, address2 );
+    }
+
+    @Test
+    void shouldEqualWhenBothAreResolved() throws UnknownHostException
+    {
+        BoltServerAddress address1 = new BoltServerAddress( "localhost", InetAddress.getByName( "127.0.0.1" ), 8081 );
+        BoltServerAddress address2 = new BoltServerAddress( "localhost", InetAddress.getByName( "127.0.0.1" ), 8081 );
+        assertEquals( address1, address2 );
     }
 }

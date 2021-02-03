@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -26,6 +27,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ProtocolException;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.value.ValueException;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.spi.Connection;
@@ -114,6 +116,10 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
             throw new ProtocolException( format(
                     PROTOCOL_ERROR_MESSAGE + "unparsable record received.",
                     invokedProcedureString( response ) ), e );
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new ServiceUnavailableException( "Failed to resolve server addresses", e );
         }
 
         // the cluster result is not a legal reply

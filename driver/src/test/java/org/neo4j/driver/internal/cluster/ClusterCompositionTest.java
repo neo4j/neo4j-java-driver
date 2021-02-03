@@ -20,17 +20,19 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalRecord;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
@@ -38,13 +40,19 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A_RESOLVED;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B_RESOLVED;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C_RESOLVED;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D_RESOLVED;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E_RESOLVED;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F_RESOLVED;
 
 class ClusterCompositionTest
 {
@@ -145,13 +153,13 @@ class ClusterCompositionTest
     }
 
     @Test
-    void parseCorrectRecord()
+    void parseCorrectRecord() throws UnknownHostException
     {
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ", A, B ),
-                        serversEntry( "WRITE", C, D ),
-                        serversEntry( "ROUTE", E, F ) ) )
+                               serversEntry( "WRITE", C, D ),
+                               serversEntry( "ROUTE", E, F ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -160,55 +168,55 @@ class ClusterCompositionTest
         // TTL is received in seconds and is converted to millis
         assertEquals( 42_000, composition.expirationTimestamp() );
 
-        assertEquals( addresses( A, B ), composition.readers() );
-        assertEquals( addresses( C, D ), composition.writers() );
-        assertEquals( addresses( E, F ), composition.routers() );
+        assertEquals( addresses( A_RESOLVED, B_RESOLVED ), composition.readers() );
+        assertEquals( addresses( C_RESOLVED, D_RESOLVED ), composition.writers() );
+        assertEquals( addresses( E_RESOLVED, F_RESOLVED ), composition.routers() );
     }
 
     @Test
-    void parsePreservesOrderOfReaders()
+    void parsePreservesOrderOfReaders() throws UnknownHostException
     {
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ", A, C, E, B, F, D ),
-                        serversEntry( "WRITE" ),
-                        serversEntry( "ROUTE" ) ) )
+                               serversEntry( "WRITE" ),
+                               serversEntry( "ROUTE" ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
         ClusterComposition composition = ClusterComposition.parse( record, 0 );
 
-        assertThat( composition.readers(), contains( A, C, E, B, F, D ) );
+        assertThat( composition.readers(), contains( A_RESOLVED, C_RESOLVED, E_RESOLVED, B_RESOLVED, F_RESOLVED, D_RESOLVED ) );
         assertEquals( 0, composition.writers().size() );
         assertEquals( 0, composition.routers().size() );
     }
 
     @Test
-    void parsePreservesOrderOfWriters()
+    void parsePreservesOrderOfWriters() throws UnknownHostException
     {
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ" ),
-                        serversEntry( "WRITE", C, F, D, A, B, E ),
-                        serversEntry( "ROUTE" ) ) )
+                               serversEntry( "WRITE", C, F, D, A, B, E ),
+                               serversEntry( "ROUTE" ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
         ClusterComposition composition = ClusterComposition.parse( record, 0 );
 
         assertEquals( 0, composition.readers().size() );
-        assertThat( composition.writers(), contains( C, F, D, A, B, E ) );
+        assertThat( composition.writers(), contains( C_RESOLVED, F_RESOLVED, D_RESOLVED, A_RESOLVED, B_RESOLVED, E_RESOLVED ) );
         assertEquals( 0, composition.routers().size() );
     }
 
     @Test
-    void parsePreservesOrderOfRouters()
+    void parsePreservesOrderOfRouters() throws UnknownHostException
     {
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ" ),
-                        serversEntry( "WRITE" ),
-                        serversEntry( "ROUTE", F, D, A, B, C, E ) ) )
+                               serversEntry( "WRITE" ),
+                               serversEntry( "ROUTE", F, D, A, B, C, E ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -216,11 +224,26 @@ class ClusterCompositionTest
 
         assertEquals( 0, composition.readers().size() );
         assertEquals( 0, composition.writers().size() );
-        assertThat( composition.routers(), contains( F, D, A, B, C, E ) );
+        assertThat( composition.routers(), contains( F_RESOLVED, D_RESOLVED, A_RESOLVED, B_RESOLVED, C_RESOLVED, E_RESOLVED ) );
+    }
+
+    @Test
+    void shouldResolveProvidedRecords() throws UnknownHostException
+    {
+        Value[] values = {
+                value( 42L ),
+                value( Collections.singletonList( serversEntry( "READ", A ) ) )
+        };
+        Record record = new InternalRecord( asList( "ttl", "servers" ), values );
+
+        ClusterComposition composition = ClusterComposition.parse( record, 0 );
+
+        assertEquals( 1, composition.readers().size() );
+        assertTrue( composition.readers().stream().allMatch( BoltServerAddress::isResolved ) );
     }
 
     private static ClusterComposition newComposition( long expirationTimestamp, Set<BoltServerAddress> readers,
-            Set<BoltServerAddress> writers, Set<BoltServerAddress> routers )
+                                                      Set<BoltServerAddress> writers, Set<BoltServerAddress> routers )
     {
         return new ClusterComposition( expirationTimestamp, readers, writers, routers );
     }

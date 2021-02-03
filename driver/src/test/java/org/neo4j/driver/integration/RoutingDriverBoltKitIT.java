@@ -20,7 +20,6 @@ package org.neo4j.driver.integration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -276,7 +275,7 @@ class RoutingDriverBoltKitIT
                 tx.commit();
             }
         } );
-        assertEquals( "Server at 127.0.0.1:9005 is no longer available", e.getMessage() );
+        assertEquals( "Server at 127.0.0.1(127.0.0.1):9005 is no longer available", e.getMessage() );
         assertThat( server.exitStatus(), equalTo( 0 ) );
         assertThat( readServer.exitStatus(), equalTo( 0 ) );
     }
@@ -480,7 +479,7 @@ class RoutingDriverBoltKitIT
         catch ( SessionExpiredException e )
         {
             failed = true;
-            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1(127.0.0.1):9007 no longer accepts writes" ) );
         }
         assertTrue( failed );
 
@@ -507,7 +506,7 @@ class RoutingDriverBoltKitIT
         catch ( SessionExpiredException e )
         {
             failed = true;
-            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1(127.0.0.1):9007 no longer accepts writes" ) );
         }
         assertTrue( failed );
 
@@ -534,7 +533,7 @@ class RoutingDriverBoltKitIT
         catch ( SessionExpiredException e )
         {
             failed = true;
-            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1:9007 no longer accepts writes" ) );
+            assertThat( e.getMessage(), equalTo( "Server at 127.0.0.1(127.0.0.1):9007 no longer accepts writes" ) );
         }
         assertTrue( failed );
 
@@ -827,7 +826,7 @@ class RoutingDriverBoltKitIT
             assertEquals( 0, writer.exitStatus() );
         }
         verify( logger, times( 3 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1(127.0.0.1):9004" ), any( SessionExpiredException.class ) );
     }
 
     @Test
@@ -861,7 +860,7 @@ class RoutingDriverBoltKitIT
         }
         verify( logger, times( 1 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( TransientException.class ) );
         verify( logger, times( 2 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1(127.0.0.1):9004" ), any( SessionExpiredException.class ) );
     }
 
     @Test
@@ -1134,11 +1133,11 @@ class RoutingDriverBoltKitIT
 
             Result readResult1 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult1.list().size() );
-            assertEquals( "127.0.0.1:9003", readResult1.consume().server().address() );
+            assertEquals( "127.0.0.1(127.0.0.1):9003", readResult1.consume().server().address() );
 
             Result readResult2 = session.run( "MATCH (n) RETURN n.name" );
             assertEquals( 3, readResult2.list().size() );
-            assertEquals( "127.0.0.1:9004", readResult2.consume().server().address() );
+            assertEquals( "127.0.0.1(127.0.0.1):9004", readResult2.consume().server().address() );
         }
         finally
         {

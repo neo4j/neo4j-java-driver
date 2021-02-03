@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.util;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,16 +30,42 @@ import org.neo4j.driver.internal.cluster.ClusterComposition;
 
 public final class ClusterCompositionUtil
 {
-    private ClusterCompositionUtil() {}
+    private ClusterCompositionUtil()
+    {
+    }
 
     public static final long NEVER_EXPIRE = System.currentTimeMillis() + TimeUnit.HOURS.toMillis( 1 );
 
-    public static final BoltServerAddress A = new BoltServerAddress( "1111:11" );
-    public static final BoltServerAddress B = new BoltServerAddress( "2222:22" );
-    public static final BoltServerAddress C = new BoltServerAddress( "3333:33" );
-    public static final BoltServerAddress D = new BoltServerAddress( "4444:44" );
-    public static final BoltServerAddress E = new BoltServerAddress( "5555:55" );
-    public static final BoltServerAddress F = new BoltServerAddress( "6666:66" );
+    public static final BoltServerAddress A = new BoltServerAddress( "192.168.99.1:11" );
+    public static final BoltServerAddress B = new BoltServerAddress( "192.168.99.2:22" );
+    public static final BoltServerAddress C = new BoltServerAddress( "192.168.99.3:33" );
+    public static final BoltServerAddress D = new BoltServerAddress( "192.168.99.4:44" );
+    public static final BoltServerAddress E = new BoltServerAddress( "192.168.99.5:55" );
+    public static final BoltServerAddress F = new BoltServerAddress( "192.168.99.6:66" );
+
+    public static BoltServerAddress A_RESOLVED;
+    public static BoltServerAddress B_RESOLVED;
+    public static BoltServerAddress C_RESOLVED;
+    public static BoltServerAddress D_RESOLVED;
+    public static BoltServerAddress E_RESOLVED;
+    public static BoltServerAddress F_RESOLVED;
+
+    static
+    {
+        try
+        {
+            A_RESOLVED = A.resolve();
+            B_RESOLVED = B.resolve();
+            C_RESOLVED = C.resolve();
+            D_RESOLVED = D.resolve();
+            E_RESOLVED = E.resolve();
+            F_RESOLVED = F.resolve();
+        }
+        catch ( UnknownHostException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 
     public static final List<BoltServerAddress> EMPTY = new ArrayList<>();
 
