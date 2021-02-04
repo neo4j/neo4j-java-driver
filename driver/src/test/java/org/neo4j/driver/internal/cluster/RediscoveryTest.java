@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Logger;
@@ -49,6 +50,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -400,7 +402,8 @@ class RediscoveryTest
         Rediscovery rediscovery = new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logger );
         RoutingTable table = routingTableMock( A );
 
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
+        ServiceUnavailableException e =
+                assertThrows( ServiceUnavailableException.class, () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
 
         // rediscovery should not log about retries and should not schedule any retries
@@ -408,14 +411,27 @@ class RediscoveryTest
         assertEquals( 0, eventExecutor.scheduleDelays().size() );
     }
 
+    @Test
+    void shouldNotResolveToIPs()
+    {
+        ServerAddressResolver resolver = resolverMock( A, A );
+        Rediscovery rediscovery = new RediscoveryImpl( A, null, null, null, resolver, null );
+
+        List<BoltServerAddress> addresses = rediscovery.resolve();
+
+        verify( resolver, times( 1 ) ).resolve( A );
+        assertEquals( 1, addresses.size() );
+        assertFalse( addresses.get( 0 ).isResolved() );
+    }
+
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
-            ServerAddressResolver resolver )
+                                        ServerAddressResolver resolver )
     {
         return newRediscovery( initialRouter, compositionProvider, resolver, DEV_NULL_LOGGER );
     }
 
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
-            ServerAddressResolver resolver, Logger logger )
+                                        ServerAddressResolver resolver, Logger logger )
     {
         RoutingSettings settings = new RoutingSettings( 1, 0, 0 );
         return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logger );
