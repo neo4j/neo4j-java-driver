@@ -268,9 +268,9 @@ public class RediscoveryImpl implements Rediscovery
     public List<BoltServerAddress> resolve()
     {
         return resolver.resolve( initialRouter )
-                .stream()
-                .flatMap( resolved -> resolveAll( BoltServerAddress.from( resolved ) ) )
-                .collect( toList() ); // collect to list to preserve the order
+                       .stream()
+                       .map( BoltServerAddress::from )
+                       .collect( toList() ); // collect to list to preserve the order
     }
 
     private Stream<BoltServerAddress> resolveAll( BoltServerAddress address )
