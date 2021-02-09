@@ -191,8 +191,15 @@ public class Neo4jRunner
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
             debug( "------------- status" );
-            executeCommand( "java", "--version" );
-            debug( "------------- status end" );
+            try
+            {
+                executeCommand( "java", "--version" );
+            } catch ( Exception e ) {
+                e.printStackTrace();
+            } finally
+            {
+                debug( "------------- status end" );
+            }
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
     }
