@@ -116,9 +116,6 @@ public class Neo4jRunner
     {
         try
         {
-            debug( "------- get service" );
-            CommandLineUtil.executeCommand( "Powershell", "-NoProfile", "Get-Service" );
-            debug( "------- service retrieved" );
             installNeo4j();
             updateServerSettingsFile();
             try
@@ -193,6 +190,9 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
+            debug( "------------- status" );
+            executeCommand( HOME_DIR + "/bin/neo4j.bat", "status" );
+            debug( "------------- status end" );
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
     }
