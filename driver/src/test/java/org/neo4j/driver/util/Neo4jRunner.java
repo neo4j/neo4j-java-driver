@@ -189,6 +189,8 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
+            debug( "GET SERVICE" );
+            executeCommand( "Get-Service" );
             debug( "UPDATE SERVICE" );
             executeCommand( HOME_DIR + "/bin/neo4j.bat", "update-service" );
             debug( "UPDATED SERVICE" );
