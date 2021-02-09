@@ -191,7 +191,7 @@ public class Neo4jRunner
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
             debug( "------------- status" );
-            executeCommand( HOME_DIR + "/bin/neo4j.bat", "status" );
+            executeCommand( HOME_DIR + "\\bin\\neo4j.bat", "status" );
             debug( "------------- status end" );
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
