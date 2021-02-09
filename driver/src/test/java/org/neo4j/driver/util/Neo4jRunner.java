@@ -117,7 +117,7 @@ public class Neo4jRunner
         try
         {
             debug( "------- get service" );
-            CommandLineUtil.executeCommand( "Get-Service" );
+            CommandLineUtil.executeCommand( "Powershell -NoProfile Get-Service" );
             debug( "------- service retrieved" );
             installNeo4j();
             updateServerSettingsFile();
