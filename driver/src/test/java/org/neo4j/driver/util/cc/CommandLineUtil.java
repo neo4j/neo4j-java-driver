@@ -58,6 +58,7 @@ public class CommandLineUtil
         try
         {
             ProcessBuilder processBuilder = new ProcessBuilder().command( commands );
+            System.out.println("Commands: " + commands.toString());
             ProcessEnvConfigurator.configure( processBuilder );
             return executeAndGetStdOut( processBuilder );
         }
