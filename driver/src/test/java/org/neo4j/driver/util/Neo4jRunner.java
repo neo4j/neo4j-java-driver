@@ -189,9 +189,9 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
-            debug( "UNINSTALL SERVICE" );
-            executeCommand( HOME_DIR + "/bin/neo4j.bat", "uninstall-service" );
-            debug( "UNINSTALLED SERVICE" );
+            debug( "UPDATE SERVICE" );
+            executeCommand( HOME_DIR + "/bin/neo4j.bat", "update-service" );
+            debug( "UPDATED SERVICE" );
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
     }
