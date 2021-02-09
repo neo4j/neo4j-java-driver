@@ -41,6 +41,7 @@ public final class ProcessEnvConfigurator
     public static void configure( ProcessBuilder processBuilder )
     {
         processBuilder.environment().put( JAVA_HOME, determineJavaHome() );
+        System.out.println("JVM LOC: " + determineJavaHome());
 
         String localPackage = determineLocalPackage();
         if ( localPackage != null )
