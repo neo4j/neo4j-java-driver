@@ -35,6 +35,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ErrorUtil;
+import org.neo4j.driver.util.cc.CommandLineUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.logging.Level.INFO;
@@ -115,6 +116,9 @@ public class Neo4jRunner
     {
         try
         {
+            debug( "------- get service" );
+            CommandLineUtil.executeCommand( "Get-Service" );
+            debug( "------- service retrieved" );
             installNeo4j();
             updateServerSettingsFile();
             try
@@ -189,11 +193,6 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
-            debug( "GET SERVICE" );
-            executeCommand( "Get-Service" );
-            debug( "UPDATE SERVICE" );
-            executeCommand( HOME_DIR + "/bin/neo4j.bat", "update-service" );
-            debug( "UPDATED SERVICE" );
             executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
         }
     }
