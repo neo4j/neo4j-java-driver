@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.net.ServerAddress;
@@ -152,6 +151,11 @@ public class BoltServerAddress implements ServerAddress
     public int port()
     {
         return port;
+    }
+
+    public boolean isResolved()
+    {
+        return resolved != null;
     }
 
     private static String hostFrom( URI uri )
