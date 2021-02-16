@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
@@ -45,6 +46,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
     private final Logger log;
 
+    private volatile boolean gracefullyClosed;
     private Throwable currentError;
     private boolean fatalErrorOccurred;
 
@@ -142,6 +144,20 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         handler.onFailure( error );
     }
 
+    public void handleChannelInactive( Throwable cause )
+    {
+        // report issue if the connection has not been terminated as a result of a graceful shutdown request from its
+        // parent pool
+        if ( !gracefullyClosed )
+        {
+            handleChannelError( cause );
+        }
+        else
+        {
+            channel.close();
+        }
+    }
+
     public void handleChannelError( Throwable error )
     {
         if ( currentError != null )
@@ -160,6 +176,9 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             ResponseHandler handler = removeHandler();
             handler.onFailure( currentError );
         }
+
+        log.debug( "Closing channel because of a failure '%s'", error );
+        channel.close();
     }
 
     public void clearCurrentError()
@@ -175,6 +194,11 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     public boolean fatalErrorOccurred()
     {
         return fatalErrorOccurred;
+    }
+
+    public void prepareToCloseChannel( )
+    {
+        this.gracefullyClosed = true;
     }
 
     /**
