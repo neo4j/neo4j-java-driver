@@ -18,18 +18,12 @@
  */
 package org.neo4j.driver;
 
-import org.reactivestreams.Subscription;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
@@ -37,9 +31,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.Immutable;
-import org.neo4j.driver.util.Resource;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.Logging.javaUtilLogging;
@@ -318,8 +310,8 @@ public class Config
          * Enable logging of leaked sessions.
          * <p>
          * Each {@link Session session} is associated with a network connection and thus is a
-         * {@link Resource resource} that needs to be explicitly closed. Unclosed sessions will result in socket
-         * leaks and could cause {@link OutOfMemoryError}s.
+         * {@link org.neo4j.driver.util.Resource resource} that needs to be explicitly closed.
+         * Unclosed sessions will result in socket leaks and could cause {@link OutOfMemoryError}s.
          * <p>
          * Session is considered to be leaked when it is finalized via {@link Object#finalize()} while not being
          * closed. This option turns on logging of such sessions and stacktraces of where they were created.
@@ -606,12 +598,13 @@ public class Config
          * This config is only valid when the driver is used with servers that support Bolt V4 (Server version 4.0 and later).
          *
          * Bolt V4 enables pulling records in batches to allow client to take control of data population and apply back pressure to server.
-         * This config specifies the default fetch size for all query runs using {@link Session} and {@link AsyncSession}.
+         * This config specifies the default fetch size for all query runs using {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
          * By default, the value is set to {@code 1000}.
          * Use {@code -1} to disables back pressure and config client to pull all records at once after each run.
          *
-         * This config only applies to run result obtained via {@link Session} and {@link AsyncSession}.
-         * As with {@link RxSession}, the batch size is provided via {@link Subscription#request(long)} instead.
+         * This config only applies to run result obtained via {@link Session} and {@link org.neo4j.driver.async.AsyncSession}.
+         * As with {@link org.neo4j.driver.reactive.RxSession}, the batch size is provided via
+         * {@link org.reactivestreams.Subscription#request(long)} instead.
          * @param size the default record fetch size when pulling records in batches using Bolt V4.
          * @return this builder
          */
@@ -660,9 +653,9 @@ public class Config
         /**
          * Specify the maximum time transactions are allowed to retry via
          * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}
-         * methods. These methods will retry the given unit of work on {@link ServiceUnavailableException},
-         * {@link SessionExpiredException} and {@link TransientException} with exponential backoff using initial
-         * delay of 1 second.
+         * methods. These methods will retry the given unit of work on {@link org.neo4j.driver.exceptions.ServiceUnavailableException},
+         * {@link org.neo4j.driver.exceptions.SessionExpiredException} and {@link org.neo4j.driver.exceptions.TransientException} with
+         * exponential backoff using initial delay of 1 second.
          * <p>
          * Default value is 30 seconds.
          *
