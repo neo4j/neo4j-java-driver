@@ -67,14 +67,20 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         log.debug( "Channel is inactive" );
 
+        String terminationReason = terminationReason( ctx.channel() );
+        Throwable error = ErrorUtil.newConnectionTerminatedError( terminationReason );
+
         if ( !failed )
         {
             // channel became inactive not because of a fatal exception that came from exceptionCaught
             // it is most likely inactive because actual network connection broke or was explicitly closed by the driver
 
-            String terminationReason = terminationReason( ctx.channel() );
-            ServiceUnavailableException error = ErrorUtil.newConnectionTerminatedError( terminationReason );
-            fail( ctx, error );
+            messageDispatcher.handleChannelInactive( error );
+            ctx.channel().close();
+        }
+        else
+        {
+            fail( error );
         }
     }
 
@@ -89,16 +95,14 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
         {
             failed = true;
             log.warn( "Fatal error occurred in the pipeline", error );
-            fail( ctx, error );
+            fail( error );
         }
     }
 
-    private void fail( ChannelHandlerContext ctx, Throwable error )
+    private void fail( Throwable error )
     {
         Throwable cause = transformError( error );
         messageDispatcher.handleChannelError( cause );
-        log.debug( "Closing channel because of a failure '%s'", error );
-        ctx.close();
     }
 
     private static Throwable transformError( Throwable error )

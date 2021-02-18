@@ -33,6 +33,7 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.AsyncResultCursorOnlyFactory;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -101,9 +102,13 @@ public class BoltProtocolV3 implements BoltProtocol
     @Override
     public void prepareToCloseChannel( Channel channel )
     {
+        InboundMessageDispatcher messageDispatcher = messageDispatcher( channel );
+
         GoodbyeMessage message = GoodbyeMessage.GOODBYE;
-        messageDispatcher( channel ).enqueue( NoOpResponseHandler.INSTANCE );
+        messageDispatcher.enqueue( NoOpResponseHandler.INSTANCE );
         channel.writeAndFlush( message, channel.voidPromise() );
+
+        messageDispatcher.prepareToCloseChannel( );
     }
 
     @Override
