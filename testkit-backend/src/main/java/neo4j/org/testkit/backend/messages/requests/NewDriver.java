@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
+import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitErrorResponse;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
@@ -32,6 +33,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.net.ServerAddressResolver;
 
 @Setter
 @Getter
@@ -59,9 +61,33 @@ public class NewDriver implements TestkitRequest
         }
 
         Config.ConfigBuilder configBuilder = Config.builder();
+        if ( data.isResolverRegistered() )
+        {
+            configBuilder.withResolver( callbackResolver( testkitState ) );
+        }
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         testkitState.getDrivers().putIfAbsent( id, GraphDatabase.driver( data.uri, authToken, configBuilder.build() ) );
         return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
+    }
+
+    private ServerAddressResolver callbackResolver( TestkitState testkitState )
+    {
+        return address ->
+        {
+            String callbackId = testkitState.newId();
+            ResolverResolutionRequired.ResolverResolutionRequiredBody body =
+                    ResolverResolutionRequired.ResolverResolutionRequiredBody.builder()
+                                                                             .id( callbackId )
+                                                                             .address( address.toString() )
+                                                                             .build();
+            ResolverResolutionRequired response =
+                    ResolverResolutionRequired.builder()
+                                              .data( body )
+                                              .build();
+            testkitState.getResponseWriter().accept( response );
+            testkitState.getProcessor().get();
+            return testkitState.getIdToServerAddresses().remove( callbackId );
+        };
     }
 
     @Setter
@@ -72,5 +98,6 @@ public class NewDriver implements TestkitRequest
         private String uri;
         private AuthorizationToken authorizationToken;
         private String userAgent;
+        private boolean resolverRegistered;
     }
 }

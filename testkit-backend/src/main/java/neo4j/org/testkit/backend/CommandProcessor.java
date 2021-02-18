@@ -20,7 +20,6 @@ package neo4j.org.testkit.backend;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
@@ -147,7 +146,7 @@ public class CommandProcessor
                         // Error to track
                         String id = testkitState.newId();
                         testkitState.getErrors().put( id, (Neo4jException) e );
-                        writeResponse( driverError( id ) );
+                        writeResponse( driverError( id, (Neo4jException) e ) );
                         System.out.println( "Neo4jException: " + e );
                     }
                     else
@@ -174,9 +173,9 @@ public class CommandProcessor
         }
     }
 
-    private DriverError driverError( String id )
+    private DriverError driverError( String id, Neo4jException e )
     {
-        return DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).build() ).build();
+        return DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).errorType( e.getClass().getName() ).build() ).build();
     }
 
     public void processRequest( String request )
