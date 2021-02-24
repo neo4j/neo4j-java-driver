@@ -20,6 +20,7 @@ package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
 // tag::rx-result-consume-import[]
+import io.reactivex.Observable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -58,15 +59,15 @@ public class RxResultConsumeExample extends BaseApplication
         String query = "MATCH (a:Person) RETURN a.name ORDER BY a.name";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        RxSession session = driver.rxSession();
-        return Flowable.fromPublisher( session.readTransaction( tx -> {
-            RxResult result = tx.run( query, parameters );
-            return Flowable.fromPublisher( result.records() )
-                    .map( record -> record.get( 0 ).asString() );
-        } ) ).onErrorResumeNext( error -> {
-            // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
-            return Flowable.<String>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
-        } );
+        return Flowable.using(
+                driver::rxSession,
+                session ->  session.readTransaction( tx -> {
+                    RxResult result = tx.run( query, parameters );
+                    return Flowable.fromPublisher( result.records() )
+                            .map( record -> record.get( 0 ).asString() );
+                } ) ,
+                session -> Observable.fromPublisher(session.close()).subscribe()
+        );
     }
     // end::RxJava-result-consume[]
 }

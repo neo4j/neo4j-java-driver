@@ -20,6 +20,7 @@ package org.neo4j.docs.driver;
 
 import io.reactivex.Flowable;
 // tag::rx-transaction-function-import[]
+import io.reactivex.Observable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -60,15 +61,15 @@ public class RxTransactionFunctionExample extends BaseApplication
         String query = "MATCH (p:Product) WHERE p.id = $id RETURN p.title";
         Map<String,Object> parameters = Collections.singletonMap( "id", 0 );
 
-        RxSession session = driver.rxSession();
-        return Flowable.fromPublisher( session.readTransaction( tx -> {
+        return Flowable.using(
+                driver::rxSession,
+                session -> session.readTransaction( tx -> {
                     RxResult result = tx.run( query, parameters );
                     return Flowable.fromPublisher( result.records() )
                             .doOnNext( record -> System.out.println( record.get( 0 ).asString() ) ).ignoreElements().andThen( result.consume() );
-                } ) ).onErrorResumeNext( error -> {
-                    // We rollback and rethrow the error. For a real application, you may want to handle the error directly here
-                    return Flowable.<ResultSummary>fromPublisher( session.close() ).concatWith( Flowable.error( error ) );
-                } );
+                } ) ,
+                session -> Observable.fromPublisher(session.close()).subscribe()
+        );
     }
     // end::RxJava-transaction-function[]
 }
