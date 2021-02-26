@@ -33,6 +33,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -41,11 +42,10 @@ import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.exceptions.ResultConsumedException;
-import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -63,8 +63,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
@@ -222,7 +222,7 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.consumeAsync() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
     }
@@ -235,7 +235,7 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
 
@@ -257,7 +257,7 @@ class AsyncTransactionIT
         ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
     }
@@ -280,7 +280,7 @@ class AsyncTransactionIT
         ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
 
@@ -292,7 +292,7 @@ class AsyncTransactionIT
         ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
 
         Exception e1 = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
-        assertThat( e1, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e1, is( syntaxError() ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> tx.runAsync( "CREATE ()" ) );
         assertThat( e2.getMessage(), startsWith( "Cannot run more queries in this transaction" ) );
