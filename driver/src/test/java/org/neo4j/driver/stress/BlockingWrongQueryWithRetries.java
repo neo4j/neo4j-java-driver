@@ -40,7 +40,7 @@ public class BlockingWrongQueryWithRetries<C extends AbstractContext> extends Ab
         try ( Session session = newSession( AccessMode.READ, context ) )
         {
             Exception e = assertThrows( Exception.class, () -> session.readTransaction( tx -> tx.run( "RETURN" ).consume() ) );
-            assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+            assertThat( e, is( syntaxError() ) );
         }
     }
 }

@@ -154,7 +154,7 @@ class AsyncSessionIT
         ResultCursor cursor = await( session.runAsync( "RETURN" ) );
 
         Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
     }
 
     @Test
@@ -446,9 +446,9 @@ class AsyncSessionIT
 
         IOException e = assertThrows( IOException.class, () ->
                 await( cursor.forEachAsync( record ->
-                {
-                    throw new CompletionException( error );
-                } ) ) );
+                                            {
+                                                throw new CompletionException( error );
+                                            } ) ) );
         assertEquals( error, e );
     }
 
@@ -462,7 +462,7 @@ class AsyncSessionIT
     void shouldConvertToListWithNonEmptyCursor()
     {
         testList( "UNWIND range(1, 100, 10) AS x RETURN x",
-                Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
+                  Arrays.asList( 1L, 11L, 21L, 31L, 41L, 51L, 61L, 71L, 81L, 91L ) );
     }
 
     @Test
@@ -489,9 +489,9 @@ class AsyncSessionIT
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
                 await( cursor.listAsync( record ->
-                {
-                    throw error;
-                } ) ) );
+                                         {
+                                             throw error;
+                                         } ) ) );
         assertEquals( error, e );
     }
 
@@ -604,8 +604,8 @@ class AsyncSessionIT
                     throw new SessionExpiredException( "Oh!" );
                 }
                 return tx.runAsync( "UNWIND range(1, 10) AS x RETURN count(x)" )
-                        .thenCompose( ResultCursor::singleAsync )
-                        .thenApply( record -> record.get( 0 ).asInt() );
+                         .thenCompose( ResultCursor::singleAsync )
+                         .thenApply( record -> record.get( 0 ).asInt() );
             }
         } );
 
@@ -629,8 +629,8 @@ class AsyncSessionIT
                     throw new ServiceUnavailableException( "Oh!" );
                 }
                 return tx.runAsync( "CREATE (n1:TestNode), (n2:TestNode) RETURN 2" )
-                        .thenCompose( ResultCursor::singleAsync )
-                        .thenApply( record -> record.get( 0 ).asInt() );
+                         .thenCompose( ResultCursor::singleAsync )
+                         .thenApply( record -> record.get( 0 ).asInt() );
             }
         } );
 
@@ -651,16 +651,16 @@ class AsyncSessionIT
             public CompletionStage<Integer> execute( AsyncTransaction tx )
             {
                 return tx.runAsync( "RETURN 42" )
-                        .thenCompose( ResultCursor::singleAsync )
-                        .thenApply( record -> record.get( 0 ).asInt() )
-                        .thenCompose( result ->
-                        {
-                            if ( failures.getAndIncrement() < maxFailures )
-                            {
-                                return failedFuture( new TransientException( "A", "B" ) );
-                            }
-                            return completedFuture( result );
-                        } );
+                         .thenCompose( ResultCursor::singleAsync )
+                         .thenApply( record -> record.get( 0 ).asInt() )
+                         .thenCompose( result ->
+                                       {
+                                           if ( failures.getAndIncrement() < maxFailures )
+                                           {
+                                               return failedFuture( new TransientException( "A", "B" ) );
+                                           }
+                                           return completedFuture( result );
+                                       } );
             }
         } );
 
@@ -680,16 +680,16 @@ class AsyncSessionIT
             public CompletionStage<String> execute( AsyncTransaction tx )
             {
                 return tx.runAsync( "CREATE (:MyNode) RETURN 'Hello'" )
-                        .thenCompose( ResultCursor::singleAsync )
-                        .thenApply( record -> record.get( 0 ).asString() )
-                        .thenCompose( result ->
-                        {
-                            if ( failures.getAndIncrement() < maxFailures )
-                            {
-                                return failedFuture( new ServiceUnavailableException( "Hi" ) );
-                            }
-                            return completedFuture( result );
-                        } );
+                         .thenCompose( ResultCursor::singleAsync )
+                         .thenApply( record -> record.get( 0 ).asString() )
+                         .thenCompose( result ->
+                                       {
+                                           if ( failures.getAndIncrement() < maxFailures )
+                                           {
+                                               return failedFuture( new ServiceUnavailableException( "Hi" ) );
+                                           }
+                                           return completedFuture( result );
+                                       } );
             }
         } );
 
@@ -779,7 +779,7 @@ class AsyncSessionIT
     void shouldCloseCleanlyAfterFailure()
     {
         CompletionStage<ResultCursor> runWithOpenTx = session.beginTransactionAsync()
-                .thenCompose( tx -> session.runAsync( "RETURN 1" ) );
+                                                             .thenCompose( tx -> session.runAsync( "RETURN 1" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( runWithOpenTx ) );
         assertThat( e.getMessage(), startsWith( "Queries cannot be run directly on a session with an open transaction" ) );
@@ -791,9 +791,9 @@ class AsyncSessionIT
     void shouldPropagateFailureFromFirstIllegalQuery()
     {
         CompletionStage<ResultCursor> allQueries = session.runAsync( "CREATE (:Node1)" )
-                .thenCompose( ignore -> session.runAsync( "CREATE (:Node2)" ) )
-                .thenCompose( ignore -> session.runAsync( "RETURN invalid" ) )
-                .thenCompose( ignore -> session.runAsync( "CREATE (:Node3)" ) );
+                                                          .thenCompose( ignore -> session.runAsync( "CREATE (:Node2)" ) )
+                                                          .thenCompose( ignore -> session.runAsync( "RETURN invalid" ) )
+                                                          .thenCompose( ignore -> session.runAsync( "CREATE (:Node3)" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( allQueries ) );
         assertThat( e, is( syntaxError( "Variable `invalid` not defined" ) ) );
@@ -820,31 +820,31 @@ class AsyncSessionIT
         return resultFuture;
     }
 
-    private void runNestedQueries(ResultCursor inputCursor, List<CompletionStage<Record>> stages,
-            CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+    private void runNestedQueries( ResultCursor inputCursor, List<CompletionStage<Record>> stages,
+                                   CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         final CompletionStage<Record> recordResponse = inputCursor.nextAsync();
         stages.add( recordResponse );
 
         recordResponse.whenComplete( ( record, error ) ->
-        {
-            if ( error != null )
-            {
-                resultFuture.completeExceptionally( error );
-            }
-            else if ( record != null )
-            {
-                runNestedQuery( inputCursor, record, stages, resultFuture );
-            }
-            else
-            {
-                resultFuture.complete( stages );
-            }
-        } );
+                                     {
+                                         if ( error != null )
+                                         {
+                                             resultFuture.completeExceptionally( error );
+                                         }
+                                         else if ( record != null )
+                                         {
+                                             runNestedQuery( inputCursor, record, stages, resultFuture );
+                                         }
+                                         else
+                                         {
+                                             resultFuture.complete( stages );
+                                         }
+                                     } );
     }
 
-    private void runNestedQuery(ResultCursor inputCursor, Record record,
-            List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
+    private void runNestedQuery( ResultCursor inputCursor, Record record,
+                                 List<CompletionStage<Record>> stages, CompletableFuture<List<CompletionStage<Record>>> resultFuture )
     {
         Node node = record.get( 0 ).asNode();
         long id = node.get( "id" ).asLong();
@@ -852,27 +852,27 @@ class AsyncSessionIT
 
         CompletionStage<ResultCursor> response =
                 session.runAsync( "MATCH (p:Person {id: $id}) SET p.age = $age RETURN p",
-                        parameters( "id", id, "age", age ) );
+                                  parameters( "id", id, "age", age ) );
 
         response.whenComplete( ( cursor, error ) ->
-        {
-            if ( error != null )
-            {
-                resultFuture.completeExceptionally( Futures.completionExceptionCause( error ) );
-            }
-            else
-            {
-                stages.add( cursor.nextAsync() );
-                runNestedQueries( inputCursor, stages, resultFuture );
-            }
-        } );
+                               {
+                                   if ( error != null )
+                                   {
+                                       resultFuture.completeExceptionally( Futures.completionExceptionCause( error ) );
+                                   }
+                                   else
+                                   {
+                                       stages.add( cursor.nextAsync() );
+                                       runNestedQueries( inputCursor, stages, resultFuture );
+                                   }
+                               } );
     }
 
     private long countNodesByLabel( String label )
     {
         CompletionStage<Long> countStage = session.runAsync( "MATCH (n:" + label + ") RETURN count(n)" )
-                .thenCompose( ResultCursor::singleAsync )
-                .thenApply( record -> record.get( 0 ).asLong() );
+                                                  .thenCompose( ResultCursor::singleAsync )
+                                                  .thenApply( record -> record.get( 0 ).asLong() );
 
         return await( countStage );
     }
@@ -960,13 +960,13 @@ class AsyncSessionIT
             CompletableFuture<Record> resultFuture = new CompletableFuture<>();
 
             tx.runAsync( query ).whenComplete( ( cursor, error ) ->
-                    processQueryResult( cursor, Futures.completionExceptionCause( error ), resultFuture ) );
+                                                       processQueryResult( cursor, Futures.completionExceptionCause( error ), resultFuture ) );
 
             return resultFuture;
         }
 
-        private void processQueryResult(ResultCursor cursor, Throwable error,
-                CompletableFuture<Record> resultFuture )
+        private void processQueryResult( ResultCursor cursor, Throwable error,
+                                         CompletableFuture<Record> resultFuture )
         {
             if ( error != null )
             {
@@ -975,7 +975,7 @@ class AsyncSessionIT
             }
 
             cursor.nextAsync().whenComplete( ( record, fetchError ) ->
-                    processFetchResult( record, Futures.completionExceptionCause( fetchError ), resultFuture ) );
+                                                     processFetchResult( record, Futures.completionExceptionCause( fetchError ), resultFuture ) );
         }
 
         private void processFetchResult( Record record, Throwable error, CompletableFuture<Record> resultFuture )

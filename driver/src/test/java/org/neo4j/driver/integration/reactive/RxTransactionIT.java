@@ -38,17 +38,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -899,7 +899,7 @@ class RxTransactionIT
     {
         RxResult result = tx.run( "RETURN" );
         Exception e = assertThrows( Exception.class, () -> await( result.records() ) );
-        assertThat( e, is( syntaxError( "Unexpected end of input" ) ) );
+        assertThat( e, is( syntaxError() ) );
     }
 
     private void assertCanRunReturnOne( RxTransaction tx )
