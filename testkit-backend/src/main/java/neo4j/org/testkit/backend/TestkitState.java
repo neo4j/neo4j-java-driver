@@ -23,6 +23,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -30,6 +31,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.net.ServerAddress;
 
 @Getter
 public class TestkitState
@@ -42,6 +44,7 @@ public class TestkitState
     private int idGenerator = 0;
     private final Consumer<TestkitResponse> responseWriter;
     private final Supplier<Boolean> processor;
+    private final Map<String,Set<ServerAddress>> idToServerAddresses = new HashMap<>();
 
     public TestkitState( Consumer<TestkitResponse> responseWriter, Supplier<Boolean> processor )
     {
