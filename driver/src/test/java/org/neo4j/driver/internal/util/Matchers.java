@@ -25,6 +25,8 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
@@ -34,8 +36,6 @@ import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.summary.ResultSummary;
 
 public final class Matchers
@@ -200,6 +200,11 @@ public final class Matchers
         };
     }
 
+    public static Matcher<Throwable> syntaxError()
+    {
+        return syntaxError( null );
+    }
+
     public static Matcher<Throwable> syntaxError( String messagePrefix )
     {
         return new TypeSafeMatcher<Throwable>()
@@ -211,7 +216,7 @@ public final class Matchers
                 {
                     ClientException clientError = (ClientException) error;
                     return clientError.code().contains( "SyntaxError" ) &&
-                           clientError.getMessage().startsWith( messagePrefix );
+                           (messagePrefix == null || clientError.getMessage().startsWith( messagePrefix ));
                 }
                 return false;
             }
