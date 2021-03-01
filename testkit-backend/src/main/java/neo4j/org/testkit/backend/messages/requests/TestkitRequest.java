@@ -27,11 +27,13 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 @JsonSubTypes( {
         @JsonSubTypes.Type( NewDriver.class ), @JsonSubTypes.Type( NewSession.class ),
         @JsonSubTypes.Type( SessionRun.class ), @JsonSubTypes.Type( ResultNext.class ),
+        @JsonSubTypes.Type( ResultConsume.class ), @JsonSubTypes.Type( VerifyConnectivity.class ),
         @JsonSubTypes.Type( SessionClose.class ), @JsonSubTypes.Type( DriverClose.class ),
         @JsonSubTypes.Type( RetryableNegative.class ), @JsonSubTypes.Type( SessionReadTransaction.class ),
         @JsonSubTypes.Type( TransactionRun.class ), @JsonSubTypes.Type( RetryablePositive.class ),
         @JsonSubTypes.Type( SessionBeginTransaction.class ), @JsonSubTypes.Type( TransactionCommit.class ),
-        @JsonSubTypes.Type( SessionLastBookmarks.class ), @JsonSubTypes.Type( SessionWriteTransaction.class )
+        @JsonSubTypes.Type( SessionLastBookmarks.class ), @JsonSubTypes.Type( SessionWriteTransaction.class ),
+        @JsonSubTypes.Type( ResolverResolutionCompleted.class )
 } )
 public interface TestkitRequest
 {

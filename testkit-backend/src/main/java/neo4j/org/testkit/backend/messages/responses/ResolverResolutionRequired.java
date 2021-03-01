@@ -25,23 +25,23 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class DriverError implements TestkitResponse
+public class ResolverResolutionRequired implements TestkitResponse
 {
-    private DriverErrorBody data;
+    private ResolverResolutionRequiredBody data;
 
     @Override
     public String testkitName()
     {
-        return "DriverError";
+        return "ResolverResolutionRequired";
     }
 
     @Setter
     @Getter
     @Builder
-    public static class DriverErrorBody
+    public static class ResolverResolutionRequiredBody
     {
         private String id;
 
-        private String errorType;
+        private String address;
     }
 }
