@@ -39,14 +39,11 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -70,16 +67,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
+/**
+ * New tests should be added to testkit (https://github.com/neo4j-drivers/testkit).
+ *
+ * This class exists only for the following:
+ * - to keep the remaining tests that are due to be migrated
+ * - to keep the tests that are currently not portable
+ */
+@Deprecated
 class RoutingDriverBoltKitIT
 {
     private static StubServerController stubController;
@@ -96,43 +98,7 @@ class RoutingDriverBoltKitIT
         stubController.reset();
     }
 
-    @Test
-    void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunction() throws IOException, InterruptedException
-    {
-        // Given
-        StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
-
-        // START a write server that fails on the first write attempt but then succeeds on the second
-        StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
-        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
-
-        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
-        List<String> names;
-
-        try ( Session session = driver.session( builder().withDatabase( "mydatabase" ).build() ) )
-        {
-            names = session.writeTransaction( tx ->
-            {
-                tx.run( "RETURN 1" );
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException ex )
-                {
-                }
-                return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitIT::extractNameField );
-            } );
-        }
-
-        assertEquals( asList( "Foo", "Bar" ), names );
-
-        // Finally
-        driver.close();
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
-    }
-
+    // Async is not currently supported in testkit.
     @Test
     void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunctionAsync() throws IOException, InterruptedException
     {
@@ -167,10 +133,12 @@ class RoutingDriverBoltKitIT
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
-    private static String extractNameField(Record record)
+    private static String extractNameField( Record record )
     {
         return record.get( 0 ).asString();
     }
+
+    // RX is not currently supported in testkit.
 
     // This does not exactly reproduce the async and blocking versions above, as we don't have any means of ignoring
     // the flux of the RETURN 1 query (not pulling the result) like we do in above, so this is "just" a test for
@@ -203,95 +171,7 @@ class RoutingDriverBoltKitIT
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
-    @Test
-    void shouldSendInitialBookmark() throws Exception
-    {
-        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
-        StubServer writer = stubController.startStub( "write_tx_with_bookmarks.script", 9007 );
-
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( parse( "OldBookmark" ) ).build() ) )
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                tx.run( "CREATE (n {name:'Bob'})" );
-                tx.commit();
-            }
-
-            assertEquals( parse( "NewBookmark" ), session.lastBookmark() );
-        }
-
-        assertThat( router.exitStatus(), equalTo( 0 ) );
-        assertThat( writer.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    void shouldRetryWriteTransactionUntilSuccessWithWhenLeaderIsRemoved() throws Exception
-    {
-        // This test simulates a router in a cluster when a leader is removed.
-        // The router first returns a RT with a writer inside.
-        // However this writer is killed while the driver is running a tx with it.
-        // Then at the second time the router returns the same RT with the killed writer inside.
-        // At the third round, the router removes the the writer server from RT reply.
-        // Finally, the router returns a RT with a reachable writer.
-        StubServer router = stubController.startStub( "acquire_endpoints_v3_leader_killed.script", 9001 );
-        StubServer brokenWriter = stubController.startStub( "dead_write_server.script", 9004 );
-        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
-
-        Logger logger = mock( Logger.class );
-        Config config = insecureBuilder().withLogging( ignored -> logger ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
-        {
-            AtomicInteger invocations = new AtomicInteger();
-            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
-
-            assertEquals( 0, records.size() );
-            assertEquals( 2, invocations.get() );
-        }
-        finally
-        {
-            assertEquals( 0, router.exitStatus() );
-            assertEquals( 0, brokenWriter.exitStatus() );
-            assertEquals( 0, writer.exitStatus() );
-        }
-        verify( logger, times( 3 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
-    }
-
-    @Test
-    void shouldRetryWriteTransactionUntilSuccessWithWhenLeaderIsRemovedV3() throws Exception
-    {
-        // This test simulates a router in a cluster when a leader is removed.
-        // The router first returns a RT with a writer inside.
-        // However this writer is killed while the driver is running a tx with it.
-        // Then at the second time the router returns the same RT with the killed writer inside.
-        // At the third round, the router removes the the writer server from RT reply.
-        // Finally, the router returns a RT with a reachable writer.
-        StubServer router = stubController.startStub( "acquire_endpoints_v3_leader_killed.script", 9001 );
-        StubServer brokenWriter = stubController.startStub( "database_shutdown_at_commit.script", 9004 );
-        StubServer writer = stubController.startStub( "write_server_v3_write_tx.script", 9008 );
-
-        Logger logger = mock( Logger.class );
-        Config config = insecureBuilder().withLogging( ignored -> logger ).build();
-        try ( Driver driver = newDriverWithSleeplessClock( "neo4j://127.0.0.1:9001", config ); Session session = driver.session() )
-        {
-            AtomicInteger invocations = new AtomicInteger();
-            List<Record> records = session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) );
-
-            assertEquals( 0, records.size() );
-            assertEquals( 2, invocations.get() );
-        }
-        finally
-        {
-            assertEquals( 0, router.exitStatus() );
-            assertEquals( 0, brokenWriter.exitStatus() );
-            assertEquals( 0, writer.exitStatus() );
-        }
-        verify( logger, times( 1 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( TransientException.class ) );
-        verify( logger, times( 2 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
-    }
-
+    // fixed retries are not currently supported in testkit
     @Test
     void shouldRetryReadTransactionUntilFailure() throws Exception
     {
@@ -313,6 +193,7 @@ class RoutingDriverBoltKitIT
         }
     }
 
+    // fixed retries are not currently supported in testkit
     @Test
     void shouldRetryWriteTransactionUntilFailure() throws Exception
     {
@@ -331,46 +212,6 @@ class RoutingDriverBoltKitIT
             assertEquals( 0, router.exitStatus() );
             assertEquals( 0, brokenWriter1.exitStatus() );
             assertEquals( 0, brokenWriter2.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldSendRoutingContextToServer() throws Exception
-    {
-        // stub server is both a router and reader
-        StubServer server = stubController.startStub( "get_routing_table_with_context.script", 9001 );
-
-        URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy&region=china" );
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
-        {
-            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
-            assertEquals( 2, records.size() );
-            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
-            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldSendRoutingContextInHelloMessage() throws Exception
-    {
-        // stub server is both a router and reader
-        StubServer server = StubServer.start( "routing_context_in_hello_neo4j.script", 9001 );
-
-        URI uri = URI.create( "neo4j://127.0.0.1:9001/?policy=my_policy&region=china" );
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ); Session session = driver.session() )
-        {
-            List<Record> records = session.run( "MATCH (n) RETURN n.name AS name" ).list();
-            assertEquals( 2, records.size() );
-            assertEquals( "Alice", records.get( 0 ).get( "name" ).asString() );
-            assertEquals( "Bob", records.get( 1 ).get( "name" ).asString() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
         }
     }
 
