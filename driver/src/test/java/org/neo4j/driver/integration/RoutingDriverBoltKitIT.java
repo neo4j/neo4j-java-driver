@@ -27,7 +27,6 @@ import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,10 +47,8 @@ import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.DriverFactoryWithClock;
 import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.SleeplessClock;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.reactive.RxResult;
@@ -63,9 +60,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -229,6 +224,8 @@ class RoutingDriverBoltKitIT
         verify( resolver ).resolve( ServerAddress.of( "my.server.com", 9001 ) );
     }
 
+    // general error reporting and handling should be improved before this can be moved to testkit
+    // also, backend closes socket on general errors and it negatively impacts testkit's teardown process
     @Test
     void useSessionAfterDriverIsClosed() throws Exception
     {
@@ -256,45 +253,6 @@ class RoutingDriverBoltKitIT
         }
     }
 
-    @Test
-    void shouldServerWithBoltV4SupportMultiDb() throws Throwable
-    {
-        StubServer server = stubController.startStub( "support_multidb_v4.script", 9001 );
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
-        {
-            assertTrue( driver.supportsMultiDb() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
-    {
-        StubServer server = stubController.startStub( "support_multidb_v3.script", 9001 );
-        try ( Driver driver = GraphDatabase.driver( "neo4j://localhost:9001", INSECURE_CONFIG ) )
-        {
-            assertFalse( driver.supportsMultiDb() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    private static Driver newDriverWithSleeplessClock( String uriString, Config config )
-    {
-        DriverFactory driverFactory = new DriverFactoryWithClock( new SleeplessClock() );
-        return newDriver( uriString, driverFactory, config );
-    }
-
-    private static Driver newDriverWithSleeplessClock( String uriString )
-    {
-        return newDriverWithSleeplessClock( uriString, INSECURE_CONFIG );
-    }
-
     private static Driver newDriverWithFixedRetries( String uriString, int retries )
     {
         DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( retries );
@@ -316,20 +274,6 @@ class RoutingDriverBoltKitIT
             invocations.incrementAndGet();
             return tx.run( query ).list();
         };
-    }
-
-    private static List<String> readStrings( final String query, Session session )
-    {
-        return session.readTransaction( tx ->
-        {
-            List<Record> records = tx.run( query ).list();
-            List<String> names = new ArrayList<>( records.size() );
-            for ( Record record : records )
-            {
-                names.add( record.get( 0 ).asString() );
-            }
-            return names;
-        } );
     }
 
     static class PortBasedServerAddressComparator implements Comparator<ServerAddress>
