@@ -203,6 +203,14 @@
         <parallelizable.it.forkCount>1</parallelizable.it.forkCount>
       </properties>
     </profile>
+
+    <!-- Only run the native test setup explicitly -->
+    <profile>
+      <id>run-native-test</id>
+      <modules>
+        <module>native-tests</module>
+      </modules>
+    </profile>
   </profiles>
 
   <build>
