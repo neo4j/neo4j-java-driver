@@ -175,7 +175,13 @@ public class CommandProcessor
 
     private DriverError driverError( String id, Neo4jException e )
     {
-        return DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).errorType( e.getClass().getName() ).build() ).build();
+        return DriverError.builder().data(
+                DriverError.DriverErrorBody.builder()
+                                           .id( id )
+                                           .errorType( e.getClass().getName() )
+                                           .code( e.code() )
+                                           .build() )
+                          .build();
     }
 
     public void processRequest( String request )
