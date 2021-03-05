@@ -43,5 +43,7 @@ public class DriverError implements TestkitResponse
         private String id;
 
         private String errorType;
+
+        private String code;
     }
 }
