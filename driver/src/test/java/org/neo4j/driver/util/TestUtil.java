@@ -687,7 +687,7 @@ public final class TestUtil
     {
         return session.writeTransaction( tx ->
         {
-            Result result = tx.run( "MATCH (n) WITH n LIMIT 10000 DETACH DELETE n RETURN count(n)" );
+            Result result = tx.run( "MATCH (n) WITH n LIMIT 1000 DETACH DELETE n RETURN count(n)" );
             return result.single().get( 0 ).asInt();
         } );
     }
