@@ -28,7 +28,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -39,8 +42,6 @@ import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.security.SecurityPlan;
-import org.neo4j.driver.Config;
-import org.neo4j.driver.Logging;
 
 public class MessageRecordingDriverFactory extends DriverFactory
 {
@@ -56,7 +57,8 @@ public class MessageRecordingDriverFactory extends DriverFactory
                                                 RoutingContext routingContext )
     {
         ChannelPipelineBuilder pipelineBuilder = new MessageRecordingChannelPipelineBuilder();
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext );
+        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext,
+                                         DefaultDomainNameResolver.getInstance() );
     }
 
     private class MessageRecordingChannelPipelineBuilder extends ChannelPipelineBuilderImpl

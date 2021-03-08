@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -147,7 +148,7 @@ class ConnectionPoolImplIT
         FakeClock clock = new FakeClock();
         ConnectionSettings connectionSettings = new ConnectionSettings( neo4j.authToken(), "test", 5000 );
         ChannelConnector connector = new ChannelConnectorImpl( connectionSettings, SecurityPlanImpl.insecure(),
-                                                               DEV_NULL_LOGGING, clock, RoutingContext.EMPTY );
+                                                               DEV_NULL_LOGGING, clock, RoutingContext.EMPTY, DefaultDomainNameResolver.getInstance() );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock, true );

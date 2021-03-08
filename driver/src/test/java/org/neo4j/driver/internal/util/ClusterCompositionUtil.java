@@ -29,16 +29,18 @@ import org.neo4j.driver.internal.cluster.ClusterComposition;
 
 public final class ClusterCompositionUtil
 {
-    private ClusterCompositionUtil() {}
+    private ClusterCompositionUtil()
+    {
+    }
 
     public static final long NEVER_EXPIRE = System.currentTimeMillis() + TimeUnit.HOURS.toMillis( 1 );
 
-    public static final BoltServerAddress A = new BoltServerAddress( "1111:11" );
-    public static final BoltServerAddress B = new BoltServerAddress( "2222:22" );
-    public static final BoltServerAddress C = new BoltServerAddress( "3333:33" );
-    public static final BoltServerAddress D = new BoltServerAddress( "4444:44" );
-    public static final BoltServerAddress E = new BoltServerAddress( "5555:55" );
-    public static final BoltServerAddress F = new BoltServerAddress( "6666:66" );
+    public static final BoltServerAddress A = new BoltServerAddress( "192.168.100.100:11" );
+    public static final BoltServerAddress B = new BoltServerAddress( "192.168.100.101:22" );
+    public static final BoltServerAddress C = new BoltServerAddress( "192.168.100.102:33" );
+    public static final BoltServerAddress D = new BoltServerAddress( "192.168.100.103:44" );
+    public static final BoltServerAddress E = new BoltServerAddress( "192.168.100.104:55" );
+    public static final BoltServerAddress F = new BoltServerAddress( "192.168.100.105:66" );
 
     public static final List<BoltServerAddress> EMPTY = new ArrayList<>();
 

@@ -42,14 +42,15 @@ import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.RevocationStrategy;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -233,7 +234,8 @@ class ChannelConnectorImplIT
             int connectTimeoutMillis )
     {
         ConnectionSettings settings = new ConnectionSettings( authToken, "test", connectTimeoutMillis );
-        return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock(), RoutingContext.EMPTY );
+        return new ChannelConnectorImpl( settings, securityPlan, DEV_NULL_LOGGING, new FakeClock(), RoutingContext.EMPTY,
+                                         DefaultDomainNameResolver.getInstance() );
     }
 
     private static SecurityPlan trustAllCertificates() throws GeneralSecurityException

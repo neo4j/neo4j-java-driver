@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -39,9 +40,35 @@ public class AddressSet
         return addresses.length;
     }
 
-    public synchronized void update( Set<BoltServerAddress> addresses )
+    public synchronized void retainAllAndAdd( Set<BoltServerAddress> newAddresses )
     {
-        this.addresses = addresses.toArray( NONE );
+        BoltServerAddress[] addressesArr = new BoltServerAddress[newAddresses.size()];
+        int insertionIdx = 0;
+        for ( BoltServerAddress address : addresses )
+        {
+            if ( newAddresses.remove( address ) )
+            {
+                addressesArr[insertionIdx] = address;
+                insertionIdx++;
+            }
+        }
+        Iterator<BoltServerAddress> addressIterator = newAddresses.iterator();
+        for ( ; insertionIdx < addressesArr.length && addressIterator.hasNext(); insertionIdx++ )
+        {
+            addressesArr[insertionIdx] = addressIterator.next();
+        }
+        addresses = addressesArr;
+    }
+
+    public synchronized void replaceIfPresent( BoltServerAddress oldAddress, BoltServerAddress newAddress )
+    {
+        for ( int i = 0; i < addresses.length; i++ )
+        {
+            if ( addresses[i].equals( oldAddress ) )
+            {
+                addresses[i] = newAddress;
+            }
+        }
     }
 
     public synchronized void remove( BoltServerAddress address )

@@ -18,14 +18,15 @@
  */
 package org.neo4j.driver.internal.util.io;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.FailingMessageFormat;
-import org.neo4j.driver.Config;
 
 public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends ChannelTrackingDriverFactory
 {
@@ -40,7 +41,8 @@ public class ChannelTrackingDriverFactoryWithFailingMessageFormat extends Channe
     protected ChannelConnector createRealConnector( ConnectionSettings settings, SecurityPlan securityPlan,
                                                     Config config, Clock clock, RoutingContext routingContext )
     {
-        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext );
+        return new ChannelConnectorImpl( settings, securityPlan, pipelineBuilder, config.logging(), clock, routingContext,
+                                         DefaultDomainNameResolver.getInstance() );
     }
 
     public FailingMessageFormat getFailingMessageFormat()
