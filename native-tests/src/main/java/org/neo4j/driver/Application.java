@@ -22,8 +22,10 @@ public class Application {
 
     public static void main( String[] args )
     {
-        String uri = "bolt://localhost:7687";
-        AuthToken auth = AuthTokens.basic( "neo4j", "secret" );
+        String serverAddress = System.getenv( "NATIVE_IMAGE_NEO4J_URL" );
+        String serverPass = System.getenv( "NATIVE_IMAGE_NEO4J_PASS" );
+        String uri = serverAddress +":7687";
+        AuthToken auth = AuthTokens.basic( "neo4j", serverPass );
         Config config = Config.builder().build();
 
         try ( Driver driver = GraphDatabase.driver( uri, auth, config ) )
