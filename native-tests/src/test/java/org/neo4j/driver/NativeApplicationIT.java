@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class NativeApplicationIT
 {
 
@@ -47,7 +49,22 @@ public class NativeApplicationIT
         try ( BufferedReader in = new BufferedReader( new InputStreamReader( p.getInputStream() ) ) )
         {
             Set<String> generatedValues = in.lines().collect( Collectors.toSet() );
+
+            System.out.println( "Native Program Output:" );
+            System.out.println( generatedValues );
+
             Assertions.assertTrue( generatedValues.containsAll( values ) );
+        } catch ( Throwable t )
+        {
+            //dump log output for debugging
+            try ( BufferedReader in = new BufferedReader( new InputStreamReader( p.getErrorStream() ) ) )
+            {
+                Set<String> errorOutput = in.lines().collect( Collectors.toSet() );
+
+                System.out.println( "Native Program Error Output:" );
+                errorOutput.forEach( System.out::println );
+                fail();
+            }
         }
     }
 }

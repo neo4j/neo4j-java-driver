@@ -49,7 +49,7 @@
                         <configuration>
                             <mainClass>org.neo4j.driver.Application</mainClass>
                             <imageName>application</imageName>
-                            <buildArgs>--no-fallback -H:+ReportExceptionStackTraces --allow-incomplete-classpath</buildArgs>
+                            <buildArgs>--no-fallback -H:+ReportExceptionStackTraces --allow-incomplete-classpath --enable-all-security-services -H:+JNI</buildArgs>
                         </configuration>
                     </execution>
                 </executions>
