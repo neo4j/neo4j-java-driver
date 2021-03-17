@@ -20,8 +20,8 @@ package org.neo4j.driver.internal.cluster;
 
 import java.util.Set;
 
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 
 public interface RoutingTable
@@ -45,6 +45,8 @@ public interface RoutingTable
     DatabaseName database();
 
     void forgetWriter( BoltServerAddress toRemove );
+
+    void replaceRouterIfPresent( BoltServerAddress oldRouter, BoltServerAddress newRouter );
 
     boolean preferInitialRouter();
 }

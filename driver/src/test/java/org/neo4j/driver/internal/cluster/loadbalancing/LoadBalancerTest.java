@@ -414,7 +414,7 @@ class LoadBalancerTest
         when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
         Rediscovery rediscovery = mock( Rediscovery.class );
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
-                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
+                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
     }
 
     private static LoadBalancer newLoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery )
@@ -428,6 +428,6 @@ class LoadBalancerTest
     {
         // Used only in testing
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
-                GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
+                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
     }
 }

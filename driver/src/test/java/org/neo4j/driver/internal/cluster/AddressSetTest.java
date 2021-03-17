@@ -37,7 +37,7 @@ class AddressSetTest
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
 
         AddressSet set = new AddressSet();
-        set.update( servers );
+        set.retainAllAndAdd( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -46,7 +46,7 @@ class AddressSetTest
 
         // when
         servers.add( new BoltServerAddress( "fyr" ) );
-        set.update( servers );
+        set.retainAllAndAdd( servers );
 
         // then
         assertArrayEquals( new BoltServerAddress[]{
@@ -62,7 +62,7 @@ class AddressSetTest
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
         AddressSet set = new AddressSet();
-        set.update( servers );
+        set.retainAllAndAdd( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -84,7 +84,7 @@ class AddressSetTest
         // given
         Set<BoltServerAddress> servers = addresses( "one", "two", "tre" );
         AddressSet set = new AddressSet();
-        set.update( servers );
+        set.retainAllAndAdd( servers );
 
         assertArrayEquals( new BoltServerAddress[]{
                 new BoltServerAddress( "one" ),
@@ -93,7 +93,7 @@ class AddressSetTest
 
         // when
         servers.remove( new BoltServerAddress( "one" ) );
-        set.update( servers );
+        set.retainAllAndAdd( servers );
 
         // then
         assertArrayEquals( new BoltServerAddress[]{
@@ -115,7 +115,7 @@ class AddressSetTest
     void shouldExposeCorrectArray()
     {
         AddressSet addressSet = new AddressSet();
-        addressSet.update( addresses( "one", "two", "tre" ) );
+        addressSet.retainAllAndAdd( addresses( "one", "two", "tre" ) );
 
         BoltServerAddress[] addresses = addressSet.toArray();
 
@@ -137,7 +137,7 @@ class AddressSetTest
     void shouldHaveCorrectSize()
     {
         AddressSet addressSet = new AddressSet();
-        addressSet.update( addresses( "one", "two" ) );
+        addressSet.retainAllAndAdd( addresses( "one", "two" ) );
 
         assertEquals( 2, addressSet.size() );
     }

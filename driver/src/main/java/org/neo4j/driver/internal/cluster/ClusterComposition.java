@@ -45,7 +45,9 @@ public final class ClusterComposition
         this.expirationTimestamp = expirationTimestamp;
     }
 
-    /** For testing */
+    /**
+     * For testing
+     */
     public ClusterComposition(
             long expirationTimestamp,
             Set<BoltServerAddress> readers,
@@ -83,7 +85,8 @@ public final class ClusterComposition
         return new LinkedHashSet<>( routers );
     }
 
-    public long expirationTimestamp() {
+    public long expirationTimestamp()
+    {
         return this.expirationTimestamp;
     }
 

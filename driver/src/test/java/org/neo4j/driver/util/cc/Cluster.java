@@ -19,6 +19,7 @@
 package org.neo4j.driver.util.cc;
 
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -29,10 +30,10 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.util.TestUtil;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
@@ -400,7 +401,7 @@ public class Cluster implements AutoCloseable
     {
         try
         {
-            return new BoltServerAddress( uri ).resolve();
+            return new BoltServerAddress( InetAddress.getByName( uri.getHost() ).getHostAddress(), uri.getPort() );
         }
         catch ( UnknownHostException e )
         {

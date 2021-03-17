@@ -48,6 +48,7 @@ import org.neo4j.driver.internal.async.pool.NettyChannelTracker;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.async.pool.TestConnectionPool;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
+import org.neo4j.driver.internal.cluster.ClusterCompositionLookupResult;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
@@ -326,30 +327,31 @@ class RoutingTableAndConnectionPoolTest
     {
         Rediscovery rediscovery = mock( Rediscovery.class );
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
-                GlobalEventExecutor.INSTANCE, logging.getLog( "LB" ) );
+                                 GlobalEventExecutor.INSTANCE, logging.getLog( "LB" ) );
     }
 
-    private CompletableFuture<ClusterComposition> clusterComposition( BoltServerAddress... addresses )
+    private CompletableFuture<ClusterCompositionLookupResult> clusterComposition( BoltServerAddress... addresses )
     {
         return clusterComposition( Duration.ofSeconds( 30 ).toMillis(), addresses );
     }
 
-    private CompletableFuture<ClusterComposition> expiredClusterComposition( BoltServerAddress... addresses )
+    private CompletableFuture<ClusterCompositionLookupResult> expiredClusterComposition( BoltServerAddress... addresses )
     {
         return clusterComposition( -STALE_ROUTING_TABLE_PURGE_DELAY_MS - 1, addresses );
     }
 
-    private CompletableFuture<ClusterComposition> clusterComposition( long expireAfterMs, BoltServerAddress... addresses )
+    private CompletableFuture<ClusterCompositionLookupResult> clusterComposition( long expireAfterMs, BoltServerAddress... addresses )
     {
         HashSet<BoltServerAddress> servers = new HashSet<>( Arrays.asList( addresses ) );
         ClusterComposition composition = new ClusterComposition( clock.millis() + expireAfterMs, servers, servers, servers );
-        return CompletableFuture.completedFuture( composition );
+        return CompletableFuture.completedFuture( new ClusterCompositionLookupResult( composition ) );
     }
 
     private class RandomizedRediscovery implements Rediscovery
     {
         @Override
-        public CompletionStage<ClusterComposition> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark )
+        public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool,
+                                                                                         Bookmark bookmark )
         {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();
@@ -367,7 +369,7 @@ class RoutingTableAndConnectionPoolTest
                 servers.add( A );
             }
             ClusterComposition composition = new ClusterComposition( clock.millis() + 1, servers, servers, servers );
-            return CompletableFuture.completedFuture( composition );
+            return CompletableFuture.completedFuture( new ClusterCompositionLookupResult( composition ) );
         }
 
         @Override
