@@ -417,7 +417,7 @@ class RediscoveryTest
     }
 
     @Test
-    void shouldNotResolveToIPs() throws UnknownHostException
+    void shouldResolveToIP() throws UnknownHostException
     {
         ServerAddressResolver resolver = resolverMock( A, A );
         DomainNameResolver domainNameResolver = mock( DomainNameResolver.class );
