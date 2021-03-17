@@ -111,7 +111,7 @@ class RoutingTableHandlerTest
         ClusterComposition clusterComposition = new ClusterComposition( 42, readers, writers, routers );
         Rediscovery rediscovery = mock( RediscoveryImpl.class );
         when( rediscovery.lookupClusterComposition( eq( routingTable ), eq( connectionPool ), any() ) )
-                .thenReturn( completedFuture( clusterComposition ) );
+                .thenReturn( completedFuture( new ClusterCompositionLookupResult( clusterComposition ) ) );
 
         RoutingTableHandler handler = newRoutingTableHandler( routingTable, rediscovery, connectionPool );
 
@@ -158,7 +158,7 @@ class RoutingTableHandlerTest
 
         Rediscovery rediscovery = newRediscoveryMock();
         when( rediscovery.lookupClusterComposition( any(), any(), any() ) ).thenReturn( completedFuture(
-                new ClusterComposition( 42, asOrderedSet( A, B ), asOrderedSet( B, C ), asOrderedSet( A, C ) ) ) );
+                new ClusterCompositionLookupResult( new ClusterComposition( 42, asOrderedSet( A, B ), asOrderedSet( B, C ), asOrderedSet( A, C ) ) ) ) );
 
         RoutingTableRegistry registry = new RoutingTableRegistry()
         {
@@ -253,7 +253,7 @@ class RoutingTableHandlerTest
         when( routingTable.isStaleFor( mode ) ).thenReturn( true );
 
         AddressSet addresses = new AddressSet();
-        addresses.update( new HashSet<>( singletonList( LOCAL_DEFAULT ) ) );
+        addresses.retainAllAndAdd( new HashSet<>( singletonList( LOCAL_DEFAULT ) ) );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
         when( routingTable.database() ).thenReturn( defaultDatabase() );
@@ -272,7 +272,7 @@ class RoutingTableHandlerTest
         Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition( 1, noServers, noServers, noServers );
         when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ), any( InternalBookmark.class ) ) )
-                .thenReturn( completedFuture( clusterComposition ) );
+                .thenReturn( completedFuture( new ClusterCompositionLookupResult( clusterComposition ) ) );
         return rediscovery;
     }
 
