@@ -39,9 +39,10 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
+import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 @Setter
@@ -93,7 +94,7 @@ public class NewDriver implements TestkitRequest
             ResolverResolutionRequired.ResolverResolutionRequiredBody body =
                     ResolverResolutionRequired.ResolverResolutionRequiredBody.builder()
                                                                              .id( callbackId )
-                                                                             .address( address.toString() )
+                                                                             .address( String.format( "%s:%d", address.host(), address.port() ) )
                                                                              .build();
             ResolverResolutionRequired response =
                     ResolverResolutionRequired.builder()
@@ -129,8 +130,11 @@ public class NewDriver implements TestkitRequest
     {
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
+        SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
+        SecuritySettings securitySettings = securitySettingsBuilder.build();
+        SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
         return new DriverFactoryWithDomainNameResolver( domainNameResolver )
-                .newInstance( uri, authToken, routingSettings, retrySettings, config, SecurityPlanImpl.insecure() );
+                .newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
     }
 
     @Setter
