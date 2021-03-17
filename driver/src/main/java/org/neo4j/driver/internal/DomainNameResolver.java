@@ -16,19 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package org.neo4j.driver.internal;
 
+import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
-public interface Rediscovery
+/**
+ * A resolver function used by the driver to resolve domain names.
+ */
+@FunctionalInterface
+public interface DomainNameResolver
 {
-    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark );
-
-    List<BoltServerAddress> resolve() throws UnknownHostException;
+    /**
+     * Resolve the given domain name to a set of addresses.
+     *
+     * @param name the name to resolve.
+     * @return the resolved addresses.
+     * @throws UnknownHostException must be thrown if the given name can not be resolved to at least one address.
+     */
+    InetAddress[] resolve( String name ) throws UnknownHostException;
 }

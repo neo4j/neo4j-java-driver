@@ -47,7 +47,7 @@ public class ClusterRoutingTable implements RoutingTable
     public ClusterRoutingTable( DatabaseName ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
         this( ofDatabase, clock );
-        routers.update( new LinkedHashSet<>( asList( routingAddresses ) ) );
+        routers.retainAllAndAdd( new LinkedHashSet<>( asList( routingAddresses ) ) );
     }
 
     private ClusterRoutingTable( DatabaseName ofDatabase, Clock clock )
@@ -86,9 +86,9 @@ public class ClusterRoutingTable implements RoutingTable
     public synchronized void update( ClusterComposition cluster )
     {
         expirationTimestamp = cluster.expirationTimestamp();
-        readers.update( cluster.readers() );
-        writers.update( cluster.writers() );
-        routers.update( cluster.routers() );
+        readers.retainAllAndAdd( cluster.readers() );
+        writers.retainAllAndAdd( cluster.writers() );
+        routers.retainAllAndAdd( cluster.routers() );
         preferInitialRouter = !cluster.hasWriters();
     }
 
@@ -138,6 +138,12 @@ public class ClusterRoutingTable implements RoutingTable
     public void forgetWriter( BoltServerAddress toRemove )
     {
         writers.remove( toRemove );
+    }
+
+    @Override
+    public void replaceRouterIfPresent( BoltServerAddress oldRouter, BoltServerAddress newRouter )
+    {
+        routers.replaceIfPresent( oldRouter, newRouter );
     }
 
     @Override

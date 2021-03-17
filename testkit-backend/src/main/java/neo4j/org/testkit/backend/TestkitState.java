@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend;
 import lombok.Getter;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,7 @@ public class TestkitState
     private final Consumer<TestkitResponse> responseWriter;
     private final Supplier<Boolean> processor;
     private final Map<String,Set<ServerAddress>> idToServerAddresses = new HashMap<>();
+    private final Map<String,InetAddress[]> idToResolvedAddresses = new HashMap<>();
 
     public TestkitState( Consumer<TestkitResponse> responseWriter, Supplier<Boolean> processor )
     {

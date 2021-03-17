@@ -31,6 +31,7 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
@@ -50,6 +51,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -68,22 +70,24 @@ public class LoadBalancer implements ConnectionProvider
     private final Rediscovery rediscovery;
 
     public LoadBalancer( BoltServerAddress initialRouter, RoutingSettings settings, ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
-            LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver )
+                         EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
+                         LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver, DomainNameResolver domainNameResolver )
     {
-        this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging ), settings, loadBalancingStrategy,
-                eventExecutorGroup, clock, loadBalancerLogger( logging ) );
+        this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging, requireNonNull( domainNameResolver ) ),
+              settings,
+              loadBalancingStrategy,
+              eventExecutorGroup, clock, loadBalancerLogger( logging ) );
     }
 
     private LoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, LoadBalancingStrategy loadBalancingStrategy,
-            EventExecutorGroup eventExecutorGroup, Clock clock, Logger log )
+                          EventExecutorGroup eventExecutorGroup, Clock clock, Logger log )
     {
         this( connectionPool, createRoutingTables( connectionPool, rediscovery, settings, clock, log ), rediscovery, loadBalancingStrategy, eventExecutorGroup,
-                log );
+              log );
     }
 
     LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery, LoadBalancingStrategy loadBalancingStrategy,
-            EventExecutorGroup eventExecutorGroup, Logger log )
+                  EventExecutorGroup eventExecutorGroup, Logger log )
     {
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
@@ -252,11 +256,11 @@ public class LoadBalancer implements ConnectionProvider
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
-            RoutingSettings settings, Clock clock, Logging logging )
+                                                  RoutingSettings settings, Clock clock, Logging logging, DomainNameResolver domainNameResolver )
     {
         Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
-        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log );
+        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log, domainNameResolver );
     }
 
     private static Logger loadBalancerLogger( Logging logging )

@@ -127,7 +127,7 @@ public class DriverFactory
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
             Config config, Clock clock, RoutingContext routingContext )
     {
-        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock, routingContext );
+        return new ChannelConnectorImpl( settings, securityPlan, config.logging(), clock, routingContext, getDomainNameResolver() );
     }
 
     private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
@@ -210,7 +210,7 @@ public class DriverFactory
         LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
         ServerAddressResolver resolver = createResolver( config );
         return new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
-                config.logging(), loadBalancingStrategy, resolver );
+                                 config.logging(), loadBalancingStrategy, resolver, getDomainNameResolver() );
     }
 
     private static ServerAddressResolver createResolver( Config config )
@@ -271,6 +271,17 @@ public class DriverFactory
         return BootstrapFactory.newBootstrap( eventLoopGroup );
     }
 
+    /**
+     * Provides an instance of {@link DomainNameResolver} that is used for domain name resolution.
+     * <p>
+     * <b>This method is protected only for testing</b>
+     *
+     * @return the instance of {@link DomainNameResolver}.
+     */
+    protected DomainNameResolver getDomainNameResolver()
+    {
+        return DefaultDomainNameResolver.getInstance();
+    }
 
     private static void assertNoRoutingContext( URI uri, RoutingSettings routingSettings )
     {
