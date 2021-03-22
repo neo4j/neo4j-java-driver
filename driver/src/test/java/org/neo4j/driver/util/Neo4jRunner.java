@@ -21,6 +21,7 @@ package org.neo4j.driver.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
@@ -286,7 +287,8 @@ public class Neo4jRunner
         {
             SocketChannel soChannel = SocketChannel.open();
             soChannel.setOption( StandardSocketOptions.SO_REUSEADDR, true );
-            soChannel.connect( boltAddress().toSocketAddress() );
+            BoltServerAddress address = boltAddress();
+            soChannel.connect( new InetSocketAddress( address.connectionHost(), address.port() ) );
             soChannel.close();
             return ServerStatus.ONLINE;
         }

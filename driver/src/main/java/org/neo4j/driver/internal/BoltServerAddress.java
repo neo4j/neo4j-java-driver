@@ -18,14 +18,9 @@
  */
 package org.neo4j.driver.internal;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.net.ServerAddress;
 
@@ -39,11 +34,10 @@ public class BoltServerAddress implements ServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
 
-    private final String host; // This could either be the same as originalHost or it is an IP address resolved from the original host.
-    private final int port;
+    protected final String host; // Host or IP address.
+    private final String connectionHost; // Either is equal to the host or is explicitly provided on creation and is expected to be a resolved IP address.
+    protected final int port;
     private final String stringValue;
-    
-    private final Set<BoltServerAddress> resolved;
 
     public BoltServerAddress( String address )
     {
@@ -57,15 +51,17 @@ public class BoltServerAddress implements ServerAddress
 
     public BoltServerAddress( String host, int port )
     {
-        this( host, port, Collections.emptySet() );
+        this( host, host, port );
     }
 
-    public BoltServerAddress( String host, int port, Set<BoltServerAddress> resolved )
+    public BoltServerAddress( String host, String connectionHost, int port )
     {
         this.host = requireNonNull( host, "host" );
+        this.connectionHost = requireNonNull( connectionHost, "connectionHost" );
         this.port = requireValidPort( port );
-        this.stringValue = String.format( "%s:%d", host, port );
-        this.resolved = Collections.unmodifiableSet( new LinkedHashSet<>( resolved ) );
+        this.stringValue = host.equals( connectionHost )
+                           ? String.format( "%s:%d", host, port )
+                           : String.format( "%s(%s):%d", host, connectionHost, port );
     }
 
     public static BoltServerAddress from( ServerAddress address )
@@ -86,32 +82,20 @@ public class BoltServerAddress implements ServerAddress
         {
             return false;
         }
-        BoltServerAddress that = (BoltServerAddress) o;
-        return port == that.port && host.equals( that.host );
+        BoltServerAddress address = (BoltServerAddress) o;
+        return port == address.port && host.equals( address.host ) && connectionHost.equals( address.connectionHost );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( host, port );
+        return Objects.hash( host, connectionHost, port );
     }
 
     @Override
     public String toString()
     {
         return stringValue;
-    }
-
-    /**
-     * Create a {@link SocketAddress} from this bolt address. This method always attempts to resolve the hostname into
-     * an {@link InetAddress}.
-     *
-     * @return new socket address.
-     * @see InetSocketAddress
-     */
-    public SocketAddress toSocketAddress()
-    {
-        return new InetSocketAddress( host, port );
     }
 
     @Override
@@ -126,9 +110,21 @@ public class BoltServerAddress implements ServerAddress
         return port;
     }
 
-    public Set<BoltServerAddress> resolved()
+    public String connectionHost()
     {
-        return this.resolved;
+        return connectionHost;
+    }
+
+    /**
+     * Create a stream of unicast addresses.
+     * <p>
+     * While this implementation just returns a stream of itself, the subclasses may provide multiple addresses.
+     *
+     * @return stream of unicast addresses.
+     */
+    public Stream<BoltServerAddress> unicastStream()
+    {
+        return Stream.of( this );
     }
 
     private static String hostFrom( URI uri )

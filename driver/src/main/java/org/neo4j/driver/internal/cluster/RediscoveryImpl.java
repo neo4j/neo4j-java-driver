@@ -21,10 +21,8 @@ package org.neo4j.driver.internal.cluster;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
@@ -42,6 +39,7 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DomainNameResolver;
+import org.neo4j.driver.internal.ResolvedBoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddress;
@@ -308,7 +306,7 @@ public class RediscoveryImpl implements Rediscovery
         {
             try
             {
-                resolvedAddresses.addAll( resolveAllByDomainName( BoltServerAddress.from( serverAddress ) ) );
+                resolveAllByDomainName( serverAddress ).unicastStream().forEach( resolvedAddresses::add );
             }
             catch ( UnknownHostException e )
             {
@@ -345,10 +343,13 @@ public class RediscoveryImpl implements Rediscovery
     {
         try
         {
-            Set<BoltServerAddress> resolvedAddresses = resolveAllByDomainName( address );
-            routingTable.replaceRouterIfPresent( address, new BoltServerAddress( address.host(), address.port(), resolvedAddresses ) );
-            return resolvedAddresses.stream().findFirst().orElseThrow(
-                    () -> new IllegalStateException( "Domain name resolution returned empty result set and has not thrown an exception" ) );
+            ResolvedBoltServerAddress resolvedAddress = resolveAllByDomainName( address );
+            routingTable.replaceRouterIfPresent( address, resolvedAddress );
+            return resolvedAddress.unicastStream()
+                                  .findFirst()
+                                  .orElseThrow(
+                                          () -> new IllegalStateException(
+                                                  "Unexpected condition, the ResolvedBoltServerAddress must always have at least one unicast address" ) );
         }
         catch ( Throwable e )
         {
@@ -356,10 +357,8 @@ public class RediscoveryImpl implements Rediscovery
         }
     }
 
-    private Set<BoltServerAddress> resolveAllByDomainName( BoltServerAddress address ) throws UnknownHostException
+    private ResolvedBoltServerAddress resolveAllByDomainName( ServerAddress address ) throws UnknownHostException
     {
-        return Arrays.stream( domainNameResolver.resolve( address.host() ) )
-                     .map( inetAddress -> new BoltServerAddress( inetAddress.getHostAddress(), address.port() ) )
-                     .collect( Collectors.toCollection( LinkedHashSet::new ) );
+        return new ResolvedBoltServerAddress( address.host(), address.port(), domainNameResolver.resolve( address.host() ) );
     }
 }

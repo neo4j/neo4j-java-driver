@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.InternalRecord;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
@@ -38,13 +38,13 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.D;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.E;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.F;
-import static org.neo4j.driver.Values.value;
 
 class ClusterCompositionTest
 {
@@ -150,8 +150,8 @@ class ClusterCompositionTest
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ", A, B ),
-                        serversEntry( "WRITE", C, D ),
-                        serversEntry( "ROUTE", E, F ) ) )
+                               serversEntry( "WRITE", C, D ),
+                               serversEntry( "ROUTE", E, F ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -171,8 +171,8 @@ class ClusterCompositionTest
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ", A, C, E, B, F, D ),
-                        serversEntry( "WRITE" ),
-                        serversEntry( "ROUTE" ) ) )
+                               serversEntry( "WRITE" ),
+                               serversEntry( "ROUTE" ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -189,8 +189,8 @@ class ClusterCompositionTest
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ" ),
-                        serversEntry( "WRITE", C, F, D, A, B, E ),
-                        serversEntry( "ROUTE" ) ) )
+                               serversEntry( "WRITE", C, F, D, A, B, E ),
+                               serversEntry( "ROUTE" ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -207,8 +207,8 @@ class ClusterCompositionTest
         Value[] values = {
                 value( 42L ),
                 value( asList( serversEntry( "READ" ),
-                        serversEntry( "WRITE" ),
-                        serversEntry( "ROUTE", F, D, A, B, C, E ) ) )
+                               serversEntry( "WRITE" ),
+                               serversEntry( "ROUTE", F, D, A, B, C, E ) ) )
         };
         Record record = new InternalRecord( asList( "ttl", "servers" ), values );
 
@@ -220,7 +220,7 @@ class ClusterCompositionTest
     }
 
     private static ClusterComposition newComposition( long expirationTimestamp, Set<BoltServerAddress> readers,
-            Set<BoltServerAddress> writers, Set<BoltServerAddress> routers )
+                                                      Set<BoltServerAddress> writers, Set<BoltServerAddress> routers )
     {
         return new ClusterComposition( expirationTimestamp, readers, writers, routers );
     }
