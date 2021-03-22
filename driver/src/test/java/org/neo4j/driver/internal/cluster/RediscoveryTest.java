@@ -430,7 +430,7 @@ class RediscoveryTest
         verify( resolver, times( 1 ) ).resolve( A );
         verify( domainNameResolver, times( 1 ) ).resolve( A.host() );
         assertEquals( 1, addresses.size() );
-        assertEquals( addresses.get( 0 ), new BoltServerAddress( localhost.getHostAddress(), A.port() ) );
+        assertEquals( new BoltServerAddress( A.host(), localhost.getHostAddress(), A.port() ), addresses.get( 0 ) );
     }
 
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,

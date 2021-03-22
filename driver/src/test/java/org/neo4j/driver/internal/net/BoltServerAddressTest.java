@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.net;
 
 import org.junit.jupiter.api.Test;
 
-import java.net.SocketAddress;
 import java.net.URI;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -29,7 +28,6 @@ import org.neo4j.driver.net.ServerAddress;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -48,17 +46,6 @@ class BoltServerAddressTest
     void portShouldUseDefaultIfNotSupplied()
     {
         assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
-    }
-
-    @Test
-    void shouldAlwaysResolveAddress()
-    {
-        BoltServerAddress boltAddress = new BoltServerAddress( "localhost" );
-
-        SocketAddress socketAddress1 = boltAddress.toSocketAddress();
-        SocketAddress socketAddress2 = boltAddress.toSocketAddress();
-
-        assertNotSame( socketAddress1, socketAddress2 );
     }
 
     @Test

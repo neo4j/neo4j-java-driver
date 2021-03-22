@@ -108,20 +108,18 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
         }
     }
 
-    private synchronized void freshClusterCompositionFetched( ClusterCompositionLookupResult composition )
+    private synchronized void freshClusterCompositionFetched( ClusterCompositionLookupResult compositionLookupResult )
     {
         try
         {
-            routingTable.update( composition.getClusterComposition() );
+            routingTable.update( compositionLookupResult.getClusterComposition() );
             routingTableRegistry.removeAged();
 
             Set<BoltServerAddress> addressesToRetain = new LinkedHashSet<>();
-            for ( BoltServerAddress address : routingTableRegistry.allServers() )
-            {
-                addressesToRetain.add( address );
-                addressesToRetain.addAll( address.resolved() );
-            }
-            composition.getResolvedInitialRouters().ifPresent(
+            routingTableRegistry.allServers().stream()
+                                .flatMap( BoltServerAddress::unicastStream )
+                                .forEach( addressesToRetain::add );
+            compositionLookupResult.getResolvedInitialRouters().ifPresent(
                     addresses ->
                     {
                         resolvedInitialRouters.clear();

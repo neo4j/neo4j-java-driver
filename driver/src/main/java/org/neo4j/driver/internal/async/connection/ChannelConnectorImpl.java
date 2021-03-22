@@ -27,6 +27,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.resolver.AddressResolverGroup;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -53,6 +54,7 @@ public class ChannelConnectorImpl implements ChannelConnector
     private final int connectTimeoutMillis;
     private final Logging logging;
     private final Clock clock;
+    private final DomainNameResolver domainNameResolver;
     private final AddressResolverGroup<InetSocketAddress> addressResolverGroup;
 
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
@@ -73,7 +75,8 @@ public class ChannelConnectorImpl implements ChannelConnector
         this.pipelineBuilder = pipelineBuilder;
         this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
-        this.addressResolverGroup = new NettyDomainNameResolverGroup( requireNonNull( domainNameResolver ) );
+        this.domainNameResolver = requireNonNull( domainNameResolver );
+        this.addressResolverGroup = new NettyDomainNameResolverGroup( this.domainNameResolver );
     }
 
     @Override
@@ -83,7 +86,17 @@ public class ChannelConnectorImpl implements ChannelConnector
         bootstrap.handler( new NettyChannelInitializer( address, securityPlan, connectTimeoutMillis, clock, logging ) );
         bootstrap.resolver( addressResolverGroup );
 
-        ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
+        SocketAddress socketAddress;
+        try
+        {
+            socketAddress = new InetSocketAddress( domainNameResolver.resolve( address.connectionHost() )[0], address.port() );
+        }
+        catch ( Throwable t )
+        {
+            socketAddress = InetSocketAddress.createUnresolved( address.connectionHost(), address.port() );
+        }
+
+        ChannelFuture channelConnected = bootstrap.connect( socketAddress );
 
         Channel channel = channelConnected.channel();
         ChannelPromise handshakeCompleted = channel.newPromise();
