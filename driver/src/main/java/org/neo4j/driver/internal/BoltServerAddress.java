@@ -18,19 +18,13 @@
  */
 package org.neo4j.driver.internal;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.net.ServerAddress;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Holds a host and port pair that denotes a Bolt server address.
@@ -40,11 +34,10 @@ public class BoltServerAddress implements ServerAddress
     public static final int DEFAULT_PORT = 7687;
     public static final BoltServerAddress LOCAL_DEFAULT = new BoltServerAddress( "localhost", DEFAULT_PORT );
 
-    private final String host; // This could either be the same as originalHost or it is an IP address resolved from the original host.
-    private final int port;
+    protected final String host; // Host or IP address.
+    private final String connectionHost; // Either is equal to the host or is explicitly provided on creation and is expected to be a resolved IP address.
+    protected final int port;
     private final String stringValue;
-
-    private InetAddress resolved;
 
     public BoltServerAddress( String address )
     {
@@ -58,15 +51,17 @@ public class BoltServerAddress implements ServerAddress
 
     public BoltServerAddress( String host, int port )
     {
-        this( host, null, port );
+        this( host, host, port );
     }
 
-    private BoltServerAddress( String host, InetAddress resolved, int port )
+    public BoltServerAddress( String host, String connectionHost, int port )
     {
         this.host = requireNonNull( host, "host" );
-        this.resolved = resolved;
+        this.connectionHost = requireNonNull( connectionHost, "connectionHost" );
         this.port = requireValidPort( port );
-        this.stringValue = resolved != null ? String.format( "%s(%s):%d", host, resolved.getHostAddress(), port ) : String.format( "%s:%d", host, port );
+        this.stringValue = host.equals( connectionHost )
+                           ? String.format( "%s:%d", host, port )
+                           : String.format( "%s(%s):%d", host, connectionHost, port );
     }
 
     public static BoltServerAddress from( ServerAddress address )
@@ -87,58 +82,20 @@ public class BoltServerAddress implements ServerAddress
         {
             return false;
         }
-        BoltServerAddress that = (BoltServerAddress) o;
-        return port == that.port && host.equals( that.host );
+        BoltServerAddress address = (BoltServerAddress) o;
+        return port == address.port && host.equals( address.host ) && connectionHost.equals( address.connectionHost );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( host, port );
+        return Objects.hash( host, connectionHost, port );
     }
 
     @Override
     public String toString()
     {
         return stringValue;
-    }
-
-    /**
-     * Create a {@link SocketAddress} from this bolt address. This method always attempts to resolve the hostname into
-     * an {@link InetAddress}.
-     *
-     * @return new socket address.
-     * @see InetSocketAddress
-     */
-    public SocketAddress toSocketAddress()
-    {
-        return resolved == null ? new InetSocketAddress( host, port ) : new InetSocketAddress( resolved, port );
-    }
-
-    /**
-     * Resolve the host name down to an IP address
-     *
-     * @return a new address instance
-     * @throws UnknownHostException if no IP address for the host could be found
-     * @see InetAddress#getByName(String)
-     */
-    public BoltServerAddress resolve() throws UnknownHostException
-    {
-        return new BoltServerAddress( host, InetAddress.getByName( host ), port );
-    }
-
-    /**
-     * Resolve the host name down to all IP addresses that can be resolved to
-     *
-     * @return an array of new address instances that holds resolved addresses
-     * @throws UnknownHostException if no IP address for the host could be found
-     * @see InetAddress#getAllByName(String)
-     */
-    public List<BoltServerAddress> resolveAll() throws UnknownHostException
-    {
-        return Stream.of( InetAddress.getAllByName( host ) )
-                .map( address -> new BoltServerAddress( host, address, port ) )
-                .collect( toList() );
     }
 
     @Override
@@ -153,9 +110,21 @@ public class BoltServerAddress implements ServerAddress
         return port;
     }
 
-    public boolean isResolved()
+    public String connectionHost()
     {
-        return resolved != null;
+        return connectionHost;
+    }
+
+    /**
+     * Create a stream of unicast addresses.
+     * <p>
+     * While this implementation just returns a stream of itself, the subclasses may provide multiple addresses.
+     *
+     * @return stream of unicast addresses.
+     */
+    public Stream<BoltServerAddress> unicastStream()
+    {
+        return Stream.of( this );
     }
 
     private static String hostFrom( URI uri )

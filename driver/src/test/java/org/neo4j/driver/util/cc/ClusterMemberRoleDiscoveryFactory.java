@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.util.cc;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -27,14 +28,14 @@ import java.util.Map;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.ServerVersion;
 
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Iterables.single;
 
 public class ClusterMemberRoleDiscoveryFactory
@@ -145,7 +146,7 @@ public class ClusterMemberRoleDiscoveryFactory
     {
         try
         {
-            return new BoltServerAddress( uri ).resolve();
+            return new BoltServerAddress( InetAddress.getByName( uri.getHost() ).getHostAddress(), uri.getPort() );
         }
         catch ( UnknownHostException e )
         {

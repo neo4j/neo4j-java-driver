@@ -24,21 +24,23 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.resolver.AddressResolverGroup;
 
-import java.util.Map;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
+import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.inbound.ConnectTimeoutHandler;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -52,15 +54,18 @@ public class ChannelConnectorImpl implements ChannelConnector
     private final int connectTimeoutMillis;
     private final Logging logging;
     private final Clock clock;
+    private final DomainNameResolver domainNameResolver;
+    private final AddressResolverGroup<InetSocketAddress> addressResolverGroup;
 
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan, Logging logging,
-            Clock clock, RoutingContext routingContext )
+                                 Clock clock, RoutingContext routingContext, DomainNameResolver domainNameResolver )
     {
-        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock, routingContext );
+        this( connectionSettings, securityPlan, new ChannelPipelineBuilderImpl(), logging, clock, routingContext, domainNameResolver );
     }
 
     public ChannelConnectorImpl( ConnectionSettings connectionSettings, SecurityPlan securityPlan,
-            ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock, RoutingContext routingContext )
+                                 ChannelPipelineBuilder pipelineBuilder, Logging logging, Clock clock, RoutingContext routingContext,
+                                 DomainNameResolver domainNameResolver )
     {
         this.userAgent = connectionSettings.userAgent();
         this.authToken = requireValidAuthToken( connectionSettings.authToken() );
@@ -70,6 +75,8 @@ public class ChannelConnectorImpl implements ChannelConnector
         this.pipelineBuilder = pipelineBuilder;
         this.logging = requireNonNull( logging );
         this.clock = requireNonNull( clock );
+        this.domainNameResolver = requireNonNull( domainNameResolver );
+        this.addressResolverGroup = new NettyDomainNameResolverGroup( this.domainNameResolver );
     }
 
     @Override
@@ -77,8 +84,19 @@ public class ChannelConnectorImpl implements ChannelConnector
     {
         bootstrap.option( ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis );
         bootstrap.handler( new NettyChannelInitializer( address, securityPlan, connectTimeoutMillis, clock, logging ) );
+        bootstrap.resolver( addressResolverGroup );
 
-        ChannelFuture channelConnected = bootstrap.connect( address.toSocketAddress() );
+        SocketAddress socketAddress;
+        try
+        {
+            socketAddress = new InetSocketAddress( domainNameResolver.resolve( address.connectionHost() )[0], address.port() );
+        }
+        catch ( Throwable t )
+        {
+            socketAddress = InetSocketAddress.createUnresolved( address.connectionHost(), address.port() );
+        }
+
+        ChannelFuture channelConnected = bootstrap.connect( socketAddress );
 
         Channel channel = channelConnected.channel();
         ChannelPromise handshakeCompleted = channel.newPromise();

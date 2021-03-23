@@ -20,6 +20,7 @@ package org.neo4j.driver.util.cc;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -111,7 +112,7 @@ public class ClusterMember
     {
         try
         {
-            return new BoltServerAddress( uri ).resolve();
+            return new BoltServerAddress( InetAddress.getByName( uri.getHost() ).getHostAddress(), uri.getPort() );
         }
         catch ( UnknownHostException e )
         {

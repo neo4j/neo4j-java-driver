@@ -20,25 +20,14 @@ package org.neo4j.driver.internal.net;
 
 import org.junit.jupiter.api.Test;
 
-import java.net.SocketAddress;
 import java.net.URI;
-import java.util.List;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.net.ServerAddress;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -57,17 +46,6 @@ class BoltServerAddressTest
     void portShouldUseDefaultIfNotSupplied()
     {
         assertThat( new BoltServerAddress( "localhost" ).port(), equalTo( BoltServerAddress.DEFAULT_PORT ) );
-    }
-
-    @Test
-    void shouldAlwaysResolveAddress()
-    {
-        BoltServerAddress boltAddress = new BoltServerAddress( "localhost" );
-
-        SocketAddress socketAddress1 = boltAddress.toSocketAddress();
-        SocketAddress socketAddress2 = boltAddress.toSocketAddress();
-
-        assertNotSame( socketAddress1, socketAddress2 );
     }
 
     @Test
@@ -147,57 +125,9 @@ class BoltServerAddressTest
     }
 
     @Test
-    void shouldResolveDNSToIPs() throws Exception
-    {
-        BoltServerAddress address = new BoltServerAddress( "google.com", 80 );
-        List<BoltServerAddress> resolved = address.resolveAll();
-        assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
-    }
-
-    @Test
-    void shouldResolveLocalhostIPDNSToIPs() throws Exception
-    {
-        BoltServerAddress address = new BoltServerAddress( "127.0.0.1", 80 );
-        List<BoltServerAddress> resolved = address.resolveAll();
-        assertThat( resolved, hasSize( 1 ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
-    }
-
-    @Test
-    void shouldResolveLocalhostDNSToIPs() throws Exception
-    {
-        BoltServerAddress address = new BoltServerAddress( "localhost", 80 );
-        List<BoltServerAddress> resolved = address.resolveAll();
-        assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
-    }
-
-    @Test
-    void shouldResolveIPv6LocalhostDNSToIPs() throws Exception
-    {
-        BoltServerAddress address = new BoltServerAddress( "[::1]", 80 );
-        List<BoltServerAddress> resolved = address.resolveAll();
-        assertThat( resolved, hasSize( greaterThanOrEqualTo( 1 ) ) );
-        assertThat( resolved, everyItem( equalTo( address ) ) );
-    }
-
-    @Test
     void shouldIncludeHostAndPortInToString()
     {
         BoltServerAddress address = new BoltServerAddress( "localhost", 8081 );
         assertThat( address.toString(), equalTo( "localhost:8081" ) );
-    }
-
-    @Test
-    void shouldIncludeHostResolvedIPAndPortInToStringWhenResolved() throws Exception
-    {
-        BoltServerAddress address = new BoltServerAddress( "localhost", 8081 );
-        BoltServerAddress resolved = address.resolve();
-
-        assertThat( resolved.toString(), not( equalTo( "localhost:8081" ) ) );
-        assertThat( resolved.toString(), anyOf( containsString( "(127.0.0.1)" ), containsString( "(::1)" ) ) );
-        assertThat( resolved.toString(), startsWith( "localhost" ) );
-        assertThat( resolved.toString(), endsWith( "8081" ) );
     }
 }

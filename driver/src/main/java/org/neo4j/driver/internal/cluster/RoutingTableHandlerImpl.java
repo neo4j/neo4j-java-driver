@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -41,6 +43,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
     private final Rediscovery rediscovery;
     private final Logger log;
     private final long routingTablePurgeDelayMs;
+    private final Set<BoltServerAddress> resolvedInitialRouters = new HashSet<>();
 
     public RoutingTableHandlerImpl( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTableRegistry routingTableRegistry,
             Logger log, long routingTablePurgeDelayMs )
@@ -105,13 +108,25 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
         }
     }
 
-    private synchronized void freshClusterCompositionFetched( ClusterComposition composition )
+    private synchronized void freshClusterCompositionFetched( ClusterCompositionLookupResult compositionLookupResult )
     {
         try
         {
-            routingTable.update( composition );
+            routingTable.update( compositionLookupResult.getClusterComposition() );
             routingTableRegistry.removeAged();
-            connectionPool.retainAll( routingTableRegistry.allServers() );
+
+            Set<BoltServerAddress> addressesToRetain = new LinkedHashSet<>();
+            routingTableRegistry.allServers().stream()
+                                .flatMap( BoltServerAddress::unicastStream )
+                                .forEach( addressesToRetain::add );
+            compositionLookupResult.getResolvedInitialRouters().ifPresent(
+                    addresses ->
+                    {
+                        resolvedInitialRouters.clear();
+                        resolvedInitialRouters.addAll( addresses );
+                    } );
+            addressesToRetain.addAll( resolvedInitialRouters );
+            connectionPool.retainAll( addressesToRetain );
 
             log.debug( "Updated routing table for database '%s'. %s", databaseName.description(), routingTable );
 

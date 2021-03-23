@@ -16,19 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.cluster;
+package neo4j.org.testkit.backend.messages.responses;
 
-import java.net.UnknownHostException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
-
-public interface Rediscovery
+@Setter
+@Getter
+@Builder
+public class ResultSummary implements TestkitResponse
 {
-    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark );
-
-    List<BoltServerAddress> resolve() throws UnknownHostException;
+    @Override
+    public String testkitName()
+    {
+        return "ResultSummary";
+    }
 }

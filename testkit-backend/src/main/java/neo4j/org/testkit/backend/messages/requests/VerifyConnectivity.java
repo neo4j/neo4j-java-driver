@@ -16,34 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses;
+package neo4j.org.testkit.backend.messages.requests;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.Driver;
+import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 @Setter
 @Getter
-@Builder
-public class DriverError implements TestkitResponse
+@NoArgsConstructor
+public class VerifyConnectivity implements TestkitRequest
 {
-    private DriverErrorBody data;
+    private VerifyConnectivityBody data;
 
     @Override
-    public String testkitName()
+    public TestkitResponse process( TestkitState testkitState )
     {
-        return "DriverError";
+        String id = data.getDriverId();
+        testkitState.getDrivers().get( id ).verifyConnectivity();
+        return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
     }
 
     @Setter
     @Getter
-    @Builder
-    public static class DriverErrorBody
+    @NoArgsConstructor
+    public static class VerifyConnectivityBody
     {
-        private String id;
-
-        private String errorType;
-
-        private String code;
+        private String driverId;
     }
 }
