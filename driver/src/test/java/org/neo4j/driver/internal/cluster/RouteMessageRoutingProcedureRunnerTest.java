@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
@@ -90,7 +91,7 @@ class RouteMessageRoutingProcedureRunnerTest
         assertEquals( routingTable.get( "ttl" ), record.get( "ttl" ) );
         assertEquals( routingTable.get( "servers" ), record.get( "servers" ) );
 
-        verifyMessageWasWrittenAndFlushed( connection, completableFuture, routingContext, databaseName );
+        verifyMessageWasWrittenAndFlushed( connection, completableFuture, routingContext, null, databaseName );
         verify( connection ).release();
     }
 
@@ -113,19 +114,19 @@ class RouteMessageRoutingProcedureRunnerTest
         assertEquals( reason, response.error() );
         assertThrows( IllegalStateException.class, () -> response.records().size() );
 
-        verifyMessageWasWrittenAndFlushed( connection, completableFuture, RoutingContext.EMPTY, DatabaseNameUtil.defaultDatabase() );
+        verifyMessageWasWrittenAndFlushed( connection, completableFuture, RoutingContext.EMPTY, null, DatabaseNameUtil.defaultDatabase() );
         verify( connection ).release();
     }
 
     private void verifyMessageWasWrittenAndFlushed( Connection connection, CompletableFuture<Map<String,Value>> completableFuture,
-                                                    RoutingContext routingContext, DatabaseName databaseName )
+                                                    RoutingContext routingContext, Bookmark bookmark, DatabaseName databaseName )
     {
         Map<String,Value> context = routingContext.toMap()
                                                   .entrySet()
                                                   .stream()
                                                   .collect( Collectors.toMap( Map.Entry::getKey, entry -> Values.value( entry.getValue() ) ) );
 
-        verify( connection ).writeAndFlush( eq( new RouteMessage( context, databaseName.databaseName().orElse( null ) ) ),
+        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmark, databaseName.databaseName().orElse( null ) ) ),
                                             eq( new RouteMessageResponseHandler( completableFuture ) ) );
     }
 

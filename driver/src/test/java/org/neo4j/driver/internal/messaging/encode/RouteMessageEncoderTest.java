@@ -28,15 +28,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.Values.value;
 
 class RouteMessageEncoderTest
 {
@@ -51,12 +54,31 @@ class RouteMessageEncoderTest
     {
         Map<String, Value> routingContext = getRoutingContext();
 
-        encoder.encode( new RouteMessage( getRoutingContext(), databaseName ), packer );
+        encoder.encode( new RouteMessage( getRoutingContext(), null, databaseName ), packer );
 
         InOrder inOrder = inOrder( packer );
 
-        inOrder.verify( packer ).packStructHeader( 2, (byte) 0x66 );
+        inOrder.verify( packer ).packStructHeader( 3, (byte) 0x66 );
         inOrder.verify( packer ).pack( routingContext );
+        inOrder.verify( packer ).pack( value( emptyList() ) );
+        inOrder.verify( packer ).pack( databaseName );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "neo4j"})
+    @NullSource
+    void shouldEncodeRouteMessageWithBookmark(String databaseName) throws IOException
+    {
+        Map<String, Value> routingContext = getRoutingContext();
+        Bookmark bookmark = InternalBookmark.parse( "somebookmark" );
+
+        encoder.encode( new RouteMessage( getRoutingContext(), bookmark, databaseName ), packer );
+
+        InOrder inOrder = inOrder( packer );
+
+        inOrder.verify( packer ).packStructHeader( 3, (byte) 0x66 );
+        inOrder.verify( packer ).pack( routingContext );
+        inOrder.verify( packer ).pack( value( bookmark.values() ) );
         inOrder.verify( packer ).pack( databaseName );
     }
 
@@ -70,8 +92,7 @@ class RouteMessageEncoderTest
 
     private Map<String,Value> getRoutingContext() {
         Map<String, Value> routingContext = new HashMap<>();
-        routingContext.put( "ip", Values.value( "127.0.0.1" ) );
+        routingContext.put( "ip", value( "127.0.0.1" ) );
         return routingContext;
     }
-
 }

@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.request;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 
@@ -36,23 +37,31 @@ public class RouteMessage implements Message
 {
     public final static byte SIGNATURE = 0x66;
     private final Map<String,Value> routingContext;
+    private final Bookmark bookmark;
     private final String databaseName;
 
     /**
      * Constructor
      *
      * @param routingContext The routing context used to define the routing table. Multi-datacenter deployments is one of its use cases.
+     * @param bookmark      The bookmark used when getting the routing table.
      * @param databaseName   The name of the database to get the routing table for.
      */
-    public RouteMessage( Map<String,Value> routingContext, String databaseName )
+    public RouteMessage( Map<String,Value> routingContext, Bookmark bookmark, String databaseName )
     {
         this.routingContext = unmodifiableMap( routingContext );
+        this.bookmark = bookmark;
         this.databaseName = databaseName;
     }
 
     public Map<String,Value> getRoutingContext()
     {
         return routingContext;
+    }
+
+    public Bookmark getBookmark()
+    {
+        return bookmark;
     }
 
     public String getDatabaseName()
@@ -69,7 +78,7 @@ public class RouteMessage implements Message
     @Override
     public String toString()
     {
-        return String.format( "ROUTE %s %s", routingContext, databaseName );
+        return String.format( "ROUTE %s %s %s", routingContext, bookmark, databaseName );
     }
 
     @Override

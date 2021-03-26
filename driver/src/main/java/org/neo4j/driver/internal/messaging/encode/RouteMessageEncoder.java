@@ -19,12 +19,14 @@
 package org.neo4j.driver.internal.messaging.encode;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.RouteMessage;
 
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
 
 /**
@@ -37,8 +39,9 @@ public class RouteMessageEncoder implements MessageEncoder
     {
         checkArgument( message, RouteMessage.class );
         RouteMessage routeMessage = (RouteMessage) message;
-        packer.packStructHeader( 2, message.signature() );
+        packer.packStructHeader( 3, message.signature() );
         packer.pack( routeMessage.getRoutingContext() );
+        packer.pack( routeMessage.getBookmark() != null ? value( routeMessage.getBookmark().values() ) : value( Collections.emptyList() ) );
         packer.pack( routeMessage.getDatabaseName() );
     }
 }
