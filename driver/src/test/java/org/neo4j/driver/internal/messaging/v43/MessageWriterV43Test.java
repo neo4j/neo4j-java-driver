@@ -147,6 +147,6 @@ class MessageWriterV43Test extends AbstractMessageWriterTestBase
     {
         Map<String,Value> routeContext = new HashMap<>();
         routeContext.put( "someContext", Values.value( 124 ) );
-        return new RouteMessage( routeContext, "dbName" );
+        return new RouteMessage( routeContext, InternalBookmark.empty(), "dbName" );
     }
 }

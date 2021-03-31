@@ -71,7 +71,7 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
         CompletableFuture<Map<String,Value>> completableFuture = createCompletableFuture.get();
 
         DirectConnection directConnection = toDirectConnection( connection, databaseName );
-        directConnection.writeAndFlush( new RouteMessage( routingContext, databaseName.databaseName().orElse( null ) ),
+        directConnection.writeAndFlush( new RouteMessage( routingContext, bookmark, databaseName.databaseName().orElse( null ) ),
                                         new RouteMessageResponseHandler( completableFuture ) );
         return completableFuture
                 .thenApply( routingTable -> new RoutingProcedureResponse( getQuery( databaseName ), singletonList( toRecord( routingTable ) ) ) )
