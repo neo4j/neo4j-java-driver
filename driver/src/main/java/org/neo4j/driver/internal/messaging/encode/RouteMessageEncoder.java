@@ -41,7 +41,7 @@ public class RouteMessageEncoder implements MessageEncoder
         RouteMessage routeMessage = (RouteMessage) message;
         packer.packStructHeader( 3, message.signature() );
         packer.pack( routeMessage.getRoutingContext() );
-        packer.pack( routeMessage.getBookmark() != null ? value( routeMessage.getBookmark().values() ) : value( Collections.emptyList() ) );
+        packer.pack( routeMessage.getBookmark().isPresent() ? value( routeMessage.getBookmark().get().values() ) : value( Collections.emptyList() ) );
         packer.pack( routeMessage.getDatabaseName() );
     }
 }

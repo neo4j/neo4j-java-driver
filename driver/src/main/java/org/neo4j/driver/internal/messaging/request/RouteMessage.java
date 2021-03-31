@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.messaging.request;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
@@ -59,9 +60,9 @@ public class RouteMessage implements Message
         return routingContext;
     }
 
-    public Bookmark getBookmark()
+    public Optional<Bookmark> getBookmark()
     {
-        return bookmark;
+        return Optional.ofNullable( bookmark );
     }
 
     public String getDatabaseName()
