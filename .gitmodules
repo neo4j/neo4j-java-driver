@@ -1,0 +1,3 @@
+[submodule "testkit-sm"]
+	path = testkit-sm
+	url = https://github.com/neo4j-drivers/testkit.git
