@@ -1,0 +1,3 @@
+[submodule "testkit-submodule"]
+	path = testkit-submodule
+	url = git@github.com:neo4j-drivers/testkit.git
