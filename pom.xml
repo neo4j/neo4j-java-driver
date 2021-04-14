@@ -68,7 +68,7 @@
         <!-- corresponding server dependency also needs updating.-->
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.60.Final</version>
+        <version>4.1.63.Final</version>
       </dependency>
       <dependency>
         <!-- Please note that when updating this dependency -->
