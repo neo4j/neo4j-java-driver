@@ -25,6 +25,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
@@ -35,8 +37,6 @@ import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.Config;
 
 public class FailingConnectionDriverFactory extends DriverFactory
 {
@@ -192,6 +192,12 @@ public class FailingConnectionDriverFactory extends DriverFactory
         public void terminateAndRelease( String reason )
         {
             delegate.terminateAndRelease( reason );
+        }
+
+        @Override
+        public String serverAgent()
+        {
+            return delegate.serverAgent();
         }
 
         @Override

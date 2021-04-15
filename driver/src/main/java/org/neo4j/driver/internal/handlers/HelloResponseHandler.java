@@ -23,14 +23,16 @@ import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.Value;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersion;
 
 public class HelloResponseHandler implements ResponseHandler
@@ -53,6 +55,9 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
+            Value serverValue = extractServer( metadata );
+            setServerAgent( channel, serverValue.asString() );
+
             // From Server V4 extracting server from metadata in the success message is unreliable
             // so we fix the Server version against the Bolt Protocol version for Server V4 and above.
             if ( BoltProtocolV3.VERSION.equals( protocolVersion ) )

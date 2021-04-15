@@ -32,6 +32,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.mockito.Mockito.mock;
@@ -63,13 +64,19 @@ class TransactionPullResponseCompletionListenerTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
+        when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
+        when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
         TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
         PullResponseHandler handler = new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler,
-                connection, METADATA_EXTRACTOR, listener );
-        handler.installRecordConsumer( ( record, throwable ) -> {} );
-        handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
+                                                                    connection, METADATA_EXTRACTOR, listener );
+        handler.installRecordConsumer( ( record, throwable ) ->
+                                       {
+                                       } );
+        handler.installSummaryConsumer( ( resultSummary, throwable ) ->
+                                        {
+                                        } );
 
         handler.onFailure( error );
 

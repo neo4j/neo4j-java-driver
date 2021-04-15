@@ -36,6 +36,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastU
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
@@ -43,6 +44,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLa
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
@@ -80,6 +82,23 @@ class ChannelAttributesTest
         setProtocolVersion( channel, new BoltProtocolVersion( 42, 0 ) );
 
         assertThrows( IllegalStateException.class, () -> setProtocolVersion( channel, new BoltProtocolVersion( 43, 0 ) ) );
+    }
+
+    @Test
+    void shouldSetAndGetServerAgent()
+    {
+        String agent = "Neo4j/4.2.5";
+        setServerAgent( channel, agent );
+        assertEquals( agent, serverAgent( channel ) );
+    }
+
+    @Test
+    void shouldFailToSetServerAgentTwice()
+    {
+        String agent = "Neo4j/4.2.5";
+        setServerAgent( channel, agent );
+
+        assertThrows( IllegalStateException.class, () -> setServerAgent( channel, agent ) );
     }
 
     @Test

@@ -349,6 +349,31 @@ class NetworkConnectionTest
     }
 
     @Test
+    void shouldReturnServerAgentWhenCreated()
+    {
+        EmbeddedChannel channel = newChannel();
+        String agent = "Neo4j/4.2.5";
+        ChannelAttributes.setServerAgent( channel, agent );
+
+        NetworkConnection connection = newConnection( channel );
+
+        assertEquals( agent, connection.serverAgent() );
+    }
+
+    @Test
+    void shouldReturnServerAgentWhenReleased()
+    {
+        EmbeddedChannel channel = newChannel();
+        String agent = "Neo4j/4.2.5";
+        ChannelAttributes.setServerAgent( channel, agent );
+
+        NetworkConnection connection = newConnection( channel );
+        connection.release();
+
+        assertEquals( agent, connection.serverAgent() );
+    }
+
+    @Test
     void shouldReturnServerAddressWhenReleased()
     {
         EmbeddedChannel channel = newChannel();

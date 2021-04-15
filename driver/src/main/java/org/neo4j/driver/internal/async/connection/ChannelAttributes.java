@@ -33,6 +33,7 @@ public final class ChannelAttributes
     private static final AttributeKey<String> CONNECTION_ID = newInstance( "connectionId" );
     private static final AttributeKey<String> POOL_ID = newInstance( "poolId" );
     private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance( "protocolVersion" );
+    private static final AttributeKey<String> SERVER_AGENT = newInstance( "serverAgent" );
     private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
     private static final AttributeKey<ServerVersion> SERVER_VERSION = newInstance( "serverVersion" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
@@ -72,6 +73,16 @@ public final class ChannelAttributes
     public static void setProtocolVersion( Channel channel, BoltProtocolVersion version )
     {
         setOnce( channel, PROTOCOL_VERSION, version );
+    }
+
+    public static void setServerAgent( Channel channel, String serverAgent )
+    {
+        setOnce( channel, SERVER_AGENT, serverAgent );
+    }
+
+    public static String serverAgent( Channel channel )
+    {
+        return get( channel, SERVER_AGENT );
     }
 
     public static BoltServerAddress serverAddress( Channel channel )

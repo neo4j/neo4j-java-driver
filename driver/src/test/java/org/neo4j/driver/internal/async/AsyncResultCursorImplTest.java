@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.cursor.AsyncResultCursorImpl;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
@@ -86,10 +87,13 @@ class AsyncResultCursorImplTest
     {
         PullAllResponseHandler pullAllHandler = mock( PullAllResponseHandler.class );
 
-        ResultSummary summary = new InternalResultSummary( new Query( "RETURN 42" ),
-                new InternalServerInfo( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() ), DEFAULT_DATABASE_INFO, QueryType.SCHEMA_WRITE,
+        ResultSummary summary = new InternalResultSummary(
+                new Query( "RETURN 42" ),
+                new InternalServerInfo( "Neo4j/4.2.5", BoltServerAddress.LOCAL_DEFAULT, anyServerVersion(), BoltProtocolV43.VERSION ),
+                DEFAULT_DATABASE_INFO, QueryType.SCHEMA_WRITE,
                 new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0 ),
-                null, null, emptyList(), 42, 42 );
+                null, null, emptyList(), 42, 42
+        );
         when( pullAllHandler.consumeAsync() ).thenReturn( completedFuture( summary ) );
 
         AsyncResultCursorImpl cursor = newCursor( pullAllHandler );

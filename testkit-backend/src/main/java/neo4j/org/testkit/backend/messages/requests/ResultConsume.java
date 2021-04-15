@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
-import neo4j.org.testkit.backend.messages.responses.ResultSummary;
+import neo4j.org.testkit.backend.messages.responses.Summary;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import org.neo4j.driver.Result;
@@ -42,8 +42,17 @@ public class ResultConsume implements TestkitRequest
         try
         {
             Result result = testkitState.getResults().get( data.getResultId() );
-            result.consume();
-            return ResultSummary.builder().build();
+            org.neo4j.driver.summary.ResultSummary summary = result.consume();
+            Summary.ServerInfo serverInfo = Summary.ServerInfo.builder()
+                                                              .protocolVersion( summary.server().protocolVersion() )
+                                                              .agent( summary.server().agent() )
+                                                              .build();
+            Summary.SummaryBody data = Summary.SummaryBody.builder()
+                                                          .serverInfo( serverInfo )
+                                                          .build();
+            return Summary.builder()
+                          .data( data )
+                          .build();
         }
         catch ( NoSuchRecordException ignored )
         {

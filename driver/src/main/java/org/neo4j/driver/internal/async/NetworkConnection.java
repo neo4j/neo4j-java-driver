@@ -54,6 +54,7 @@ public class NetworkConnection implements Connection
 {
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
+    private final String serverAgent;
     private final BoltServerAddress serverAddress;
     private final ServerVersion serverVersion;
     private final BoltProtocol protocol;
@@ -69,6 +70,7 @@ public class NetworkConnection implements Connection
     {
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
+        this.serverAgent = ChannelAttributes.serverAgent( channel );
         this.serverAddress = ChannelAttributes.serverAddress( channel );
         this.serverVersion = ChannelAttributes.serverVersion( channel );
         this.protocol = BoltProtocol.forChannel( channel );
@@ -183,6 +185,12 @@ public class NetworkConnection implements Connection
             releaseFuture.complete( null );
             metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
         }
+    }
+
+    @Override
+    public String serverAgent()
+    {
+        return serverAgent;
     }
 
     @Override

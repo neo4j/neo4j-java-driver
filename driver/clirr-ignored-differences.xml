@@ -1,3 +1,22 @@
 <differences>
-<!--4.0 drivers is not API compatible with 1.0 drivers, as a result we reset API differences from 4.0.0-->
+    <!--4.0 drivers is not API compatible with 1.0 drivers, as a result we reset API differences from 4.0.0-->
+
+    <difference>
+        <className>org/neo4j/driver/summary/ServerInfo</className>
+        <differenceType>7007</differenceType>
+        <method>java.lang.String version()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ServerInfo</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String protocolVersion()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/summary/ServerInfo</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String agent()</method>
+    </difference>
+
 </differences>
