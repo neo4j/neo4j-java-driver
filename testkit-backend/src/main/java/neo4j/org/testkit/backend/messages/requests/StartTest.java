@@ -23,19 +23,49 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RunTest;
+import neo4j.org.testkit.backend.messages.responses.SkipTest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Setter
 @Getter
 @NoArgsConstructor
 public class StartTest implements TestkitRequest
 {
+    private static final Map<String,String> SKIP_PATTERN_TO_REASON = new LinkedHashMap<>();
+
+    static
+    {
+        SKIP_PATTERN_TO_REASON.put( "^.*retry.TestRetryClustering.test_retry_database_unavailable$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.*retry.TestRetryClustering.test_retry_made_up_transient$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.*retry.TestRetryClustering.test_retry_ForbiddenOnReadOnlyDatabase$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.*retry.TestRetryClustering.test_retry_NotALeader$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON
+                .put( "^.*retry.TestRetryClustering.test_retry_ForbiddenOnReadOnlyDatabase_ChangingWriter$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.*routing.Routing\\..+$", "The tests are not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON
+                .put( "^.+routing.Routing.*\\.test_should_successfully_get_server_protocol_version$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.+routing.Routing.*\\.test_should_successfully_get_server_agent$", "The test is not applicable to 4.2 driver" );
+    }
+
     private StartTestBody data;
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return RunTest.builder().build();
+        return SKIP_PATTERN_TO_REASON
+                .entrySet()
+                .stream()
+                .filter( entry -> data.getTestName().matches( entry.getKey() ) )
+                .findFirst()
+                .map( entry -> (TestkitResponse) SkipTest.builder()
+                                                         .data( SkipTest.SkipTestBody.builder()
+                                                                                     .reason( entry.getValue() )
+                                                                                     .build() )
+                                                         .build() )
+                .orElseGet( () -> RunTest.builder().build() );
     }
 
     @Setter
