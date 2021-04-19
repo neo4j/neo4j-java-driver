@@ -21,18 +21,29 @@ package org.neo4j.driver.internal.summary;
 import java.util.Objects;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo
 {
+    private final String agent;
     private final String address;
     private final String version;
+    private final String protocolVersion;
 
-    public InternalServerInfo( BoltServerAddress address, ServerVersion version )
+    public InternalServerInfo( String agent, BoltServerAddress address, ServerVersion version, BoltProtocolVersion protocolVersion )
     {
+        this.agent = agent;
         this.address = address.toString();
         this.version = version.toString();
+        this.protocolVersion = protocolVersion.toString();
+    }
+
+    @Override
+    public String agent()
+    {
+        return agent;
     }
 
     @Override
@@ -45,6 +56,12 @@ public class InternalServerInfo implements ServerInfo
     public String version()
     {
         return version;
+    }
+
+    @Override
+    public String protocolVersion()
+    {
+        return protocolVersion;
     }
 
     @Override

@@ -25,14 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalInputPosition;
 import org.neo4j.driver.summary.DatabaseInfo;
@@ -60,6 +61,7 @@ import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 import static org.neo4j.driver.summary.QueryType.READ_ONLY;
 import static org.neo4j.driver.summary.QueryType.READ_WRITE;
@@ -78,7 +80,7 @@ class MetadataExtractorTest
     void shouldExtractQueryKeys()
     {
         List<String> keys = asList( "hello", " ", "world", "!" );
-        Map<String, Integer> keyIndex = new HashMap<>();
+        Map<String,Integer> keyIndex = new HashMap<>();
         keyIndex.put( "hello", 0 );
         keyIndex.put( " ", 1 );
         keyIndex.put( "world", 2 );
@@ -116,11 +118,11 @@ class MetadataExtractorTest
     void shouldBuildResultSummaryWithQuery()
     {
         Query query = new Query( "UNWIND range(10, 100) AS x CREATE (:Node {name: $name, x: x})",
-                singletonMap( "name", "Apa" ) );
+                                 singletonMap( "name", "Apa" ) );
 
-        ResultSummary summary = extractor.extractSummary(query, connectionMock(), 42, emptyMap() );
+        ResultSummary summary = extractor.extractSummary( query, connectionMock(), 42, emptyMap() );
 
-        assertEquals(query, summary.query() );
+        assertEquals( query, summary.query() );
     }
 
     @Test
@@ -413,6 +415,16 @@ class MetadataExtractorTest
         assertEquals( ServerVersion.v3_5_0, version );
     }
 
+    @Test
+    void shouldExtractServer()
+    {
+        String agent = "Neo4j/3.5.0";
+        Map<String,Value> metadata = singletonMap( "server", value( agent ) );
+
+        Value serverValue = extractServer( metadata );
+
+        assertEquals( agent, serverValue.asString() );
+    }
 
     @Test
     void shouldExtractDatabase()
@@ -466,7 +478,7 @@ class MetadataExtractorTest
         assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", value( "NotNeo4j/1.2.3" ) ) ) );
     }
 
-    private ResultSummary createWithQueryType(Value typeValue )
+    private ResultSummary createWithQueryType( Value typeValue )
     {
         Map<String,Value> metadata = singletonMap( "type", typeValue );
         return extractor.extractSummary( query(), connectionMock(), 42, metadata );
@@ -487,6 +499,8 @@ class MetadataExtractorTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( address );
         when( connection.serverVersion() ).thenReturn( version );
+        when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
+        when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return connection;
     }
 }

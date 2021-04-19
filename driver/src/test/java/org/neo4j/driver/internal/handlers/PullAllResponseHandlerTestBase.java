@@ -22,9 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -36,10 +34,10 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.value.BooleanValue;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -714,6 +712,8 @@ public abstract class PullAllResponseHandlerTestBase<T extends PullAllResponseHa
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
+        when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
+        when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return connection;
     }
 }

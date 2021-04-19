@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.handlers.pulln.BasicPullResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
@@ -94,6 +95,8 @@ class SessionPullResponseCompletionListenerTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
+        when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
+        when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return connection;
     }
 }

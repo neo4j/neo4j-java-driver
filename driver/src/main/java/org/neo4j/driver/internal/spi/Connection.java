@@ -51,6 +51,8 @@ public interface Connection
 
     void terminateAndRelease( String reason );
 
+    String serverAgent();
+
     BoltServerAddress serverAddress();
 
     ServerVersion serverVersion();

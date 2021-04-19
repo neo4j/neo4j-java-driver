@@ -28,6 +28,9 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -60,6 +63,24 @@ class RoutingConnectionTest
     void shouldWrapHandlersWhenWritingAndFlushingMultipleMessages()
     {
         testHandlersWrappingWithMultipleMessages( true );
+    }
+
+    @Test
+    void shouldReturnServerAgent()
+    {
+        // given
+        Connection connection = mock( Connection.class );
+        RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
+        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, errorHandler );
+        String agent = "Neo4j/4.2.5";
+        given( connection.serverAgent() ).willReturn( agent );
+
+        // when
+        String actualAgent = routingConnection.serverAgent();
+
+        // then
+        assertEquals( agent, actualAgent );
+        then( connection ).should().serverAgent();
     }
 
     private static void testHandlersWrappingWithSingleMessage( boolean flush )

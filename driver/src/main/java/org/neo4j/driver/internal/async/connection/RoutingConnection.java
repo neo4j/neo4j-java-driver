@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async.connection;
 
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.RoutingErrorHandler;
@@ -29,7 +30,6 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ServerVersion;
-import org.neo4j.driver.AccessMode;
 
 /**
  * A connection used by the routing driver.
@@ -107,6 +107,12 @@ public class RoutingConnection implements Connection
     public void terminateAndRelease( String reason )
     {
         delegate.terminateAndRelease( reason );
+    }
+
+    @Override
+    public String serverAgent()
+    {
+        return delegate.serverAgent();
     }
 
     @Override

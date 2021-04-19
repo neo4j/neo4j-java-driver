@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.util.Pair;
@@ -360,6 +361,8 @@ class InternalResultTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
         when( connection.serverVersion() ).thenReturn( anyServerVersion() );
+        when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
+        when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         PullAllResponseHandler pullAllHandler =
                 new LegacyPullAllResponseHandler( query, runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
                                                   mock( PullResponseCompletionListener.class ) );

@@ -25,11 +25,31 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class ResultSummary implements TestkitResponse
+public class Summary implements TestkitResponse
 {
+    private SummaryBody data;
+
     @Override
     public String testkitName()
     {
-        return "ResultSummary";
+        return "Summary";
+    }
+
+    @Setter
+    @Getter
+    @Builder
+    public static class SummaryBody
+    {
+        private ServerInfo serverInfo;
+    }
+
+    @Setter
+    @Getter
+    @Builder
+    public static class ServerInfo
+    {
+        private String protocolVersion;
+
+        private String agent;
     }
 }

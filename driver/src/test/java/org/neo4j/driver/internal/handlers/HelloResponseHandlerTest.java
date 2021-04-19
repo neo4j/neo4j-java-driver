@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
@@ -84,6 +85,20 @@ class HelloResponseHandlerTest
 
         assertTrue( channelPromise.isSuccess() );
         assertEquals( anyServerVersion(), serverVersion( channel ) );
+    }
+
+    @Test
+    void shouldSetServerAgentOnChannel()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV3.VERSION );
+
+        String agent = "Neo4j/4.2.5";
+        Map<String,Value> metadata = metadata( agent, "bolt-1" );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertEquals( agent, serverAgent( channel ) );
     }
 
     @Test
