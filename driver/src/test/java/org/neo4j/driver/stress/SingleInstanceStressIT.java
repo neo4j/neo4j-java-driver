@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.Config;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -45,12 +44,6 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     AuthToken authToken()
     {
         return neo4j.authToken();
-    }
-
-    @Override
-    Config.ConfigBuilder config( Config.ConfigBuilder builder )
-    {
-        return builder.withoutEncryption();
     }
 
     @Override
