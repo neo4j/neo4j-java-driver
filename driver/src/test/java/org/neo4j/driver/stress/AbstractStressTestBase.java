@@ -208,15 +208,13 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
 
     abstract AuthToken authToken();
 
-    abstract Config.ConfigBuilder config( Config.ConfigBuilder builder );
-
     Config config()
     {
-        Config.ConfigBuilder builder = Config.builder()
-                .withLogging( logging )
-                .withMaxConnectionPoolSize( 100 )
-                .withConnectionAcquisitionTimeout( 1, MINUTES );
-        return config( builder ).build();
+        return Config.builder()
+                     .withLogging( logging )
+                     .withMaxConnectionPoolSize( 100 )
+                     .withConnectionAcquisitionTimeout( 1, MINUTES )
+                     .build();
     }
 
     abstract C createContext();

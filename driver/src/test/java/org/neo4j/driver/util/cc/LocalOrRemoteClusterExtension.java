@@ -61,20 +61,6 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         return localClusterExtension.getDefaultAuthToken();
     }
 
-    public Config.ConfigBuilder config( Config.ConfigBuilder builder )
-    {
-        if ( remoteClusterExists() )
-        {
-            builder.withEncryption();
-        }
-        else
-        {
-            builder.withoutEncryption();
-        }
-
-        return builder;
-    }
-
     @Override
     public void beforeAll( ExtensionContext context ) throws Exception
     {
@@ -126,7 +112,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         Config.ConfigBuilder builder = Config.builder();
         builder.withEventLoopThreads( 1 );
 
-        try ( Driver driver = GraphDatabase.driver( getClusterUri(), getAuthToken(), config( builder ).build() ) )
+        try ( Driver driver = GraphDatabase.driver( getClusterUri(), getAuthToken(), builder.build() ) )
         {
             TestUtil.cleanDb( driver );
         }
