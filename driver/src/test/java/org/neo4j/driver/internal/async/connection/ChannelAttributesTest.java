@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
@@ -38,6 +39,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.proto
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
@@ -196,5 +198,24 @@ class ChannelAttributesTest
         setTerminationReason( channel, "Reason 1" );
 
         assertThrows( IllegalStateException.class, () -> setTerminationReason( channel, "Reason 2" ) );
+    }
+
+    @Test
+    void shouldSetAndGetAuthorizationStateListener()
+    {
+        AuthorizationStateListener listener = mock( AuthorizationStateListener.class );
+        setAuthorizationStateListener( channel, listener );
+        assertEquals( listener, authorizationStateListener( channel ) );
+    }
+
+    @Test
+    void shouldAllowOverridingAuthorizationStateListener()
+    {
+        AuthorizationStateListener listener = mock( AuthorizationStateListener.class );
+        setAuthorizationStateListener( channel, listener );
+        assertEquals( listener, authorizationStateListener( channel ) );
+        AuthorizationStateListener newListener = mock( AuthorizationStateListener.class );
+        setAuthorizationStateListener( channel, newListener );
+        assertEquals( newListener, authorizationStateListener( channel ) );
     }
 }

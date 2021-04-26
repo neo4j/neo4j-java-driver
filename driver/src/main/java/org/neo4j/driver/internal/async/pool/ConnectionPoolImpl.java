@@ -46,6 +46,7 @@ import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.lang.String.format;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completeWithNullIfNoError;
 
@@ -66,19 +67,22 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final ConnectionFactory connectionFactory;
 
     public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings, MetricsListener metricsListener, Logging logging,
-            Clock clock, boolean ownsEventLoopGroup )
+                               Clock clock, boolean ownsEventLoopGroup )
     {
-        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ), settings, metricsListener, logging,
-                clock, ownsEventLoopGroup, new NetworkConnectionFactory( clock, metricsListener ) );
+        this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ),
+              new NettyChannelHealthChecker( settings, clock, logging ), settings, metricsListener, logging,
+              clock, ownsEventLoopGroup, new NetworkConnectionFactory( clock, metricsListener ) );
     }
 
-    public ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker, PoolSettings settings,
-            MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup, ConnectionFactory connectionFactory )
+    protected ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,
+                                  NettyChannelHealthChecker nettyChannelHealthChecker, PoolSettings settings,
+                                  MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup,
+                                  ConnectionFactory connectionFactory )
     {
         this.connector = connector;
         this.bootstrap = bootstrap;
         this.nettyChannelTracker = nettyChannelTracker;
-        this.channelHealthChecker = new NettyChannelHealthChecker( settings, clock, logging );
+        this.channelHealthChecker = nettyChannelHealthChecker;
         this.settings = settings;
         this.metricsListener = metricsListener;
         this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
@@ -104,6 +108,7 @@ public class ConnectionPoolImpl implements ConnectionPool
             {
                 processAcquisitionError( pool, address, error );
                 assertNotClosed( address, channel, pool );
+                setAuthorizationStateListener( channel, channelHealthChecker );
                 Connection connection = connectionFactory.createConnection( channel, pool );
 
                 metricsListener.afterAcquiredOrCreated( pool.id(), acquireEvent );

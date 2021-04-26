@@ -44,6 +44,7 @@ import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
+import org.neo4j.driver.internal.async.pool.NettyChannelHealthChecker;
 import org.neo4j.driver.internal.async.pool.NettyChannelTracker;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.async.pool.TestConnectionPool;
@@ -314,8 +315,9 @@ class RoutingTableAndConnectionPoolTest
         PoolSettings poolSettings = new PoolSettings( 10, 5000, -1, -1 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         NettyChannelTracker channelTracker = new NettyChannelTracker( metrics, bootstrap.config().group().next(), logging );
+        NettyChannelHealthChecker channelHealthChecker = new NettyChannelHealthChecker( poolSettings, clock, logging );
 
-        return new TestConnectionPool( bootstrap, channelTracker, poolSettings, metrics, logging, clock, true );
+        return new TestConnectionPool( bootstrap, channelTracker, channelHealthChecker, poolSettings, metrics, logging, clock, true );
     }
 
     private RoutingTableRegistryImpl newRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery )

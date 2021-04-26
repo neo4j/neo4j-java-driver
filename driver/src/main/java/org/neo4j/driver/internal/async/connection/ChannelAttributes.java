@@ -40,6 +40,7 @@ public final class ChannelAttributes
     private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
     private static final AttributeKey<String> TERMINATION_REASON = newInstance( "terminationReason" );
+    private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER = newInstance( "authorizationStateListener" );
 
     private ChannelAttributes()
     {
@@ -143,6 +144,16 @@ public final class ChannelAttributes
     public static void setTerminationReason( Channel channel, String reason )
     {
         setOnce( channel, TERMINATION_REASON, reason );
+    }
+
+    public static AuthorizationStateListener authorizationStateListener( Channel channel )
+    {
+        return get( channel, AUTHORIZATION_STATE_LISTENER );
+    }
+
+    public static void setAuthorizationStateListener( Channel channel, AuthorizationStateListener authorizationStateListener )
+    {
+        set( channel, AUTHORIZATION_STATE_LISTENER, authorizationStateListener );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

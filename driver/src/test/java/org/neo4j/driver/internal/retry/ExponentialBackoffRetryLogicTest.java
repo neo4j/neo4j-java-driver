@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -776,13 +777,35 @@ class ExponentialBackoffRetryLogicTest
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
         String result = logic.retry( () ->
-        {
-            if ( exceptionThrown.compareAndSet( false, true ) )
-            {
-                throw clientExceptionWithValidTerminationCause();
-            }
-            return "Done";
-        } );
+                                     {
+                                         if ( exceptionThrown.compareAndSet( false, true ) )
+                                         {
+                                             throw clientExceptionWithValidTerminationCause();
+                                         }
+                                         return "Done";
+                                     } );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
+    void doesRetryOnAuthorizationExpiredException()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = logic.retry( () ->
+                                     {
+                                         if ( exceptionThrown.compareAndSet( false, true ) )
+                                         {
+                                             throw authorizationExpiredException();
+                                         }
+                                         return "Done";
+                                     } );
 
         assertEquals( "Done", result );
     }
@@ -852,6 +875,28 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void doesRetryOnAuthorizationExpiredExceptionAsync()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = await( logic.retryAsync( () ->
+                                                 {
+                                                     if ( exceptionThrown.compareAndSet( false, true ) )
+                                                     {
+                                                         throw authorizationExpiredException();
+                                                     }
+                                                     return CompletableFuture.completedFuture( "Done" );
+                                                 } ) );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
     void doesNotRetryOnRandomClientExceptionAsync()
     {
         Clock clock = mock( Clock.class );
@@ -914,6 +959,28 @@ class ExponentialBackoffRetryLogicTest
             }
             return "Done";
         } ) ) ) );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
+    void doesRetryOnAuthorizationExpiredExceptionRx()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = await( Mono.from( logic.retryRx( Mono.fromSupplier( () ->
+                                                                            {
+                                                                                if ( exceptionThrown.compareAndSet( false, true ) )
+                                                                                {
+                                                                                    throw authorizationExpiredException();
+                                                                                }
+                                                                                return "Done";
+                                                                            } ) ) ) );
 
         assertEquals( "Done", result );
     }
@@ -1270,6 +1337,11 @@ class ExponentialBackoffRetryLogicTest
         return new TransientException( "", "" );
     }
 
+    private static AuthorizationExpiredException authorizationExpiredException()
+    {
+        return new AuthorizationExpiredException( "", "" );
+    }
+
     @SuppressWarnings( "unchecked" )
     private static <T> Supplier<T> newWorkMock()
     {
@@ -1277,7 +1349,7 @@ class ExponentialBackoffRetryLogicTest
     }
 
     private static void assertDelaysApproximatelyEqual( List<Long> expectedDelays, List<Long> actualDelays,
-            double delta )
+                                                        double delta )
     {
         assertEquals( expectedDelays.size(), actualDelays.size() );
 

@@ -25,18 +25,19 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.exceptions.ClientException;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
@@ -114,9 +115,17 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             return;
         }
 
-        // write a RESET to "acknowledge" the failure
-        enqueue( new ResetResponseHandler( this ) );
-        channel.writeAndFlush( RESET, channel.voidPromise() );
+        Throwable currentError = this.currentError;
+        if ( currentError instanceof AuthorizationExpiredException )
+        {
+            authorizationStateListener( channel ).onExpired( (AuthorizationExpiredException) currentError, channel );
+        }
+        else
+        {
+            // write a RESET to "acknowledge" the failure
+            enqueue( new ResetResponseHandler( this ) );
+            channel.writeAndFlush( RESET, channel.voidPromise() );
+        }
 
         ResponseHandler handler = removeHandler();
         handler.onFailure( currentError );
