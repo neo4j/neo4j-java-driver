@@ -26,11 +26,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
@@ -65,12 +65,12 @@ import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 import static org.neo4j.driver.util.TestUtil.newSession;
 import static org.neo4j.driver.util.TestUtil.setupFailingBegin;
-import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunAndPull;
+import static org.neo4j.driver.util.TestUtil.setupSuccessfulRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyBeginTx;
 import static org.neo4j.driver.util.TestUtil.verifyRollbackTx;
-import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 import static org.neo4j.driver.util.TestUtil.verifyRunAndPull;
+import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
 class NetworkSessionTest
 {
@@ -271,7 +271,7 @@ class NetworkSessionTest
 
         UnmanagedTransaction tx = beginTransaction( session );
         assertNotNull( tx );
-        verifyBeginTx( connection, bookmark );
+        verifyBeginTx( connection );
     }
 
     @Test
@@ -292,7 +292,7 @@ class NetworkSessionTest
         assertEquals( bookmark1, session.lastBookmark() );
 
         UnmanagedTransaction tx2 = beginTransaction( session );
-        verifyBeginTx( connection, bookmark1 );
+        verifyBeginTx( connection, 2 );
         await( tx2.commitAsync() );
 
         assertEquals( bookmark2, session.lastBookmark() );
@@ -396,7 +396,7 @@ class NetworkSessionTest
         run( session, "RETURN 2" );
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection1, bookmark );
+        verifyBeginTx( connection1 );
         verifyRunAndPull( connection2, "RETURN 2" );
     }
 
@@ -420,8 +420,8 @@ class NetworkSessionTest
         beginTransaction( session );
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyBeginTx( connection1, bookmark );
-        verifyBeginTx( connection2, bookmark );
+        verifyBeginTx( connection1 );
+        verifyBeginTx( connection2 );
     }
 
     @Test

@@ -51,7 +51,6 @@ import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
 import org.neo4j.driver.internal.handlers.CommitTxResponseHandler;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RollbackTxResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -187,7 +186,8 @@ public final class BoltProtocolV4Test
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), TransactionConfig.empty() );
 
         verify( connection )
-                .write( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE ), NoOpResponseHandler.INSTANCE );
+                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE ) ),
+                                any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -211,7 +211,8 @@ public final class BoltProtocolV4Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), txConfig );
 
-        verify( connection ).write( new BeginMessage( InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE ), NoOpResponseHandler.INSTANCE );
+        verify( connection )
+                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -521,15 +522,7 @@ public final class BoltProtocolV4Test
     {
         ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
         BeginMessage beginMessage = new BeginMessage( bookmark, config, databaseName, mode );
-
-        if( bookmark.isEmpty() )
-        {
-            verify( connection ).write( eq( beginMessage ), eq( NoOpResponseHandler.INSTANCE ) );
-        }
-        else
-        {
-            verify( connection ).write( eq( beginMessage ), beginHandlerCaptor.capture() );
-            assertThat( beginHandlerCaptor.getValue(), instanceOf( BeginTxResponseHandler.class ) );
-        }
+        verify( connection ).writeAndFlush( eq( beginMessage ), beginHandlerCaptor.capture() );
+        assertThat( beginHandlerCaptor.getValue(), instanceOf( BeginTxResponseHandler.class ) );
     }
 }
