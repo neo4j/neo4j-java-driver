@@ -4,10 +4,10 @@
 !: AUTO GOODBYE
 
 C: BEGIN {}
-   RUN "CREATE (n {name:'Bob'})" {} {}
+S: SUCCESS {}
+C: RUN "CREATE (n {name:'Bob'})" {} {}
    PULL_ALL
 S: SUCCESS {}
-   SUCCESS {}
    SUCCESS {}
 C: COMMIT
 S: FAILURE {"code": "Neo.TransientError.General.DatabaseUnavailable", "message": "Database shut down."}
