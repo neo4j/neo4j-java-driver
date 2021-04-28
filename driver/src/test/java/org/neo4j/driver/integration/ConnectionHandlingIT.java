@@ -32,15 +32,18 @@ import reactor.test.StepVerifier;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.logging.Level;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -59,8 +62,8 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
@@ -78,7 +81,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -100,7 +102,7 @@ class ConnectionHandlingIT
         AuthToken auth = neo4j.authToken();
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig(), SecurityPlanImpl.insecure() );
+        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, Config.builder().withLogging( Logging.console( Level.FINE ) ).build(), SecurityPlanImpl.insecure() );
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
@@ -367,46 +369,80 @@ class ConnectionHandlingIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void txCommitShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    void txCommitShouldReleaseConnectionUsedByBeginTx()
     {
-        RxSession session = driver.rxSession();
+        AtomicReference<Connection> connection1Ref = new AtomicReference<>();
 
-        StepVerifier.create( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-            verify( connection1, never() ).release();
+        Function<RxSession,Publisher<Record>> sessionToRecordPublisher = ( RxSession session ) -> Flux.usingWhen(
+                Mono.fromDirect( session.beginTransaction() ),
+                tx ->
+                {
+                    connection1Ref.set( connectionPool.lastAcquiredConnectionSpy );
+                    verify( connection1Ref.get(), never() ).release();
+                    return tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).records();
+                },
+                RxTransaction::commit,
+                ( tx, error ) -> tx.rollback(),
+                RxTransaction::rollback
+        );
 
-            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
-            StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
-                    .expectNext( 1, 2, 3, 4 ).verifyComplete();
+        Flux<Integer> resultsFlux = Flux.usingWhen(
+                Mono.fromSupplier( driver::rxSession ),
+                sessionToRecordPublisher,
+                session ->
+                {
+                    Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+                    assertSame( connection1Ref.get(), connection2 );
+                    verify( connection1Ref.get() ).release();
+                    return Mono.empty();
+                },
+                ( session, error ) -> session.close(),
+                RxSession::close
+        ).map( record -> record.get( "a" ).asInt() );
 
-            StepVerifier.create( Mono.from( tx.commit() ) ).verifyComplete();
-            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
-            assertSame( connection1, connection2 );
-            verify( connection1 ).release();
-
-        } ) ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( resultsFlux )
+                    .expectNext( 1, 2, 3, 4 )
+                    .expectComplete()
+                    .verify();
     }
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void txRollbackShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    void txRollbackShouldReleaseConnectionUsedByBeginTx()
     {
-        RxSession session = driver.rxSession();
+        AtomicReference<Connection> connection1Ref = new AtomicReference<>();
 
-        StepVerifier.create( Mono.from( session.beginTransaction() ).doOnSuccess( tx -> {
-            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-            verify( connection1, never() ).release();
+        Function<RxSession,Publisher<Record>> sessionToRecordPublisher = ( RxSession session ) -> Flux.usingWhen(
+                Mono.fromDirect( session.beginTransaction() ),
+                tx ->
+                {
+                    connection1Ref.set( connectionPool.lastAcquiredConnectionSpy );
+                    verify( connection1Ref.get(), never() ).release();
+                    return tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).records();
+                },
+                RxTransaction::rollback,
+                ( tx, error ) -> tx.rollback(),
+                RxTransaction::rollback
+        );
 
-            RxResult result = tx.run( "UNWIND [1,2,3,4] AS a RETURN a" );
-            StepVerifier.create( Flux.from( result.records() ).map( record -> record.get( "a" ).asInt() ) )
-                    .expectNext( 1, 2, 3, 4 ).verifyComplete();
+        Flux<Integer> resultsFlux = Flux.usingWhen(
+                Mono.fromSupplier( driver::rxSession ),
+                sessionToRecordPublisher,
+                session ->
+                {
+                    Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
+                    assertSame( connection1Ref.get(), connection2 );
+                    verify( connection1Ref.get() ).release();
+                    return Mono.empty();
+                },
+                ( session, error ) -> session.close(),
+                RxSession::close
+        ).map( record -> record.get( "a" ).asInt() );
 
-            StepVerifier.create( Mono.from( tx.rollback() ) ).verifyComplete();
-            Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
-            assertSame( connection1, connection2 );
-            verify( connection1 ).release();
-
-        } ) ).expectNextCount( 1 ).verifyComplete();
+        StepVerifier.create( resultsFlux )
+                    .expectNext( 1, 2, 3, 4 )
+                    .expectComplete()
+                    .verify();
     }
 
     @Test
