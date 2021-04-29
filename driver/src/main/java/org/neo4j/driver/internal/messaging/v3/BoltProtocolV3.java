@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.messaging.v3;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -29,7 +28,6 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -123,19 +121,10 @@ public class BoltProtocolV3 implements BoltProtocol
             return Futures.failedFuture( error );
         }
 
+        CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
         BeginMessage beginMessage = new BeginMessage( bookmark, config, connection.databaseName(), connection.mode() );
-
-        if ( bookmark.isEmpty() )
-        {
-            connection.write( beginMessage, NoOpResponseHandler.INSTANCE );
-            return Futures.completedWithNull();
-        }
-        else
-        {
-            CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
-            connection.writeAndFlush( beginMessage, new BeginTxResponseHandler( beginTxFuture ) );
-            return beginTxFuture;
-        }
+        connection.writeAndFlush( beginMessage, new BeginTxResponseHandler( beginTxFuture ) );
+        return beginTxFuture;
     }
 
     @Override

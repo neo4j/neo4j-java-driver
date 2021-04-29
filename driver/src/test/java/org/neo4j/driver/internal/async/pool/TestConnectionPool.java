@@ -47,11 +47,13 @@ public class TestConnectionPool extends ConnectionPoolImpl
     final Map<BoltServerAddress,ExtendedChannelPool> channelPoolsByAddress = new HashMap<>();
     private final NettyChannelTracker nettyChannelTracker;
 
-    public TestConnectionPool( Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker, PoolSettings settings,
-            MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
+    public TestConnectionPool( Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker, NettyChannelHealthChecker nettyChannelHealthChecker,
+                               PoolSettings settings,
+                               MetricsListener metricsListener, Logging logging, Clock clock, boolean ownsEventLoopGroup )
     {
-        super( mock( ChannelConnector.class ), bootstrap, nettyChannelTracker, settings, metricsListener, logging, clock, ownsEventLoopGroup,
-                newConnectionFactory() );
+        super( mock( ChannelConnector.class ), bootstrap, nettyChannelTracker, nettyChannelHealthChecker, settings, metricsListener, logging, clock,
+               ownsEventLoopGroup,
+               newConnectionFactory() );
         this.nettyChannelTracker = nettyChannelTracker;
     }
 

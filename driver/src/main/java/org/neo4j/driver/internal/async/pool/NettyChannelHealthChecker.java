@@ -23,27 +23,34 @@ import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.internal.async.connection.AuthorizationStateListener;
 import org.neo4j.driver.internal.handlers.PingResponseHandler;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Logging;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
 
-public class NettyChannelHealthChecker implements ChannelHealthChecker
+public class NettyChannelHealthChecker implements ChannelHealthChecker, AuthorizationStateListener
 {
     private final PoolSettings poolSettings;
     private final Clock clock;
     private final Logger log;
+    private final AtomicReference<Optional<Long>> minCreationTimestampMillisOpt;
 
     public NettyChannelHealthChecker( PoolSettings poolSettings, Clock clock, Logging logging )
     {
         this.poolSettings = poolSettings;
         this.clock = clock;
         this.log = logging.getLog( getClass().getSimpleName() );
+        this.minCreationTimestampMillisOpt = new AtomicReference<>( Optional.empty() );
     }
 
     @Override
@@ -60,11 +67,27 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
         return ACTIVE.isHealthy( channel );
     }
 
+    @Override
+    public void onExpired( AuthorizationExpiredException e, Channel channel )
+    {
+        long ts = creationTimestamp( channel );
+        // Override current value ONLY if the new one is greater
+        minCreationTimestampMillisOpt.getAndUpdate( prev -> Optional.of( prev.filter( prevTs -> ts <= prevTs ).orElse( ts ) ) );
+    }
+
     private boolean isTooOld( Channel channel )
     {
-        if ( poolSettings.maxConnectionLifetimeEnabled() )
+        long creationTimestampMillis = creationTimestamp( channel );
+        Optional<Long> minCreationTimestampMillisOpt = this.minCreationTimestampMillisOpt.get();
+
+        if ( minCreationTimestampMillisOpt.isPresent() && creationTimestampMillis <= minCreationTimestampMillisOpt.get() )
         {
-            long creationTimestampMillis = creationTimestamp( channel );
+            log.trace( "The channel %s is marked for closure as its creation timestamp is older than or equal to the acceptable minimum timestamp: %s <= %s",
+                       channel, creationTimestampMillis, minCreationTimestampMillisOpt.get() );
+            return true;
+        }
+        else if ( poolSettings.maxConnectionLifetimeEnabled() )
+        {
             long currentTimestampMillis = clock.millis();
 
             long ageMillis = currentTimestampMillis - creationTimestampMillis;
@@ -74,7 +97,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker
             if ( tooOld )
             {
                 log.trace( "Failed acquire channel %s from the pool because it is too old: %s > %s",
-                        channel, ageMillis, maxAgeMillis );
+                           channel, ageMillis, maxAgeMillis );
             }
 
             return tooOld;

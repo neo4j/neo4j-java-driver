@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
@@ -155,7 +156,8 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     @Experimental
     public static boolean isRetryable( Throwable error )
     {
-        return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || isTransientError( error );
+        return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || error instanceof AuthorizationExpiredException ||
+               isTransientError( error );
     }
 
     /**

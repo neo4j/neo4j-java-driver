@@ -28,6 +28,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
@@ -136,8 +137,14 @@ public class UnmanagedTransaction
                 {
                     if ( beginError != null )
                     {
-                        // release connection if begin failed, transaction can't be started
-                        connection.release();
+                        if ( beginError instanceof AuthorizationExpiredException )
+                        {
+                            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+                        }
+                        else
+                        {
+                            connection.release();
+                        }
                         throw Futures.asCompletionException( beginError );
                     }
                     return this;
@@ -169,8 +176,8 @@ public class UnmanagedTransaction
         else
         {
             return resultCursors.retrieveNotConsumedError()
-                    .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( ( ignore, error ) -> transactionClosed( error == null ) );
+                                .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
+                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.COMMITTED, error ) );
         }
     }
 
@@ -187,8 +194,8 @@ public class UnmanagedTransaction
         else
         {
             return resultCursors.retrieveNotConsumedError()
-                    .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                    .whenComplete( ( ignore, error ) -> transactionClosed( false ) );
+                                .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
+                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.ROLLED_BACK, error ) );
         }
     }
 
@@ -274,16 +281,16 @@ public class UnmanagedTransaction
         };
     }
 
-    private void transactionClosed( boolean isCommitted )
+    private void handleTransactionCompletion( State onSuccessState, Throwable throwable )
     {
-        if ( isCommitted )
+        if ( throwable instanceof AuthorizationExpiredException )
         {
-            state = StateHolder.of( State.COMMITTED );
+            markTerminated( throwable );
+            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+            return;
         }
-        else
-        {
-            state = StateHolder.of( State.ROLLED_BACK );
-        }
+
+        state = StateHolder.of( onSuccessState );
         connection.release(); // release in background
     }
 }

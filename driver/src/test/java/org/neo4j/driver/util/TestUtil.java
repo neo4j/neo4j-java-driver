@@ -57,7 +57,6 @@ import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
-import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.Message;
@@ -88,7 +87,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -353,19 +351,12 @@ public final class TestUtil
 
     public static void verifyBeginTx( Connection connectionMock )
     {
-        verifyBeginTx( connectionMock, empty() );
+        verifyBeginTx( connectionMock, 1 );
     }
 
-    public static void verifyBeginTx( Connection connectionMock, Bookmark bookmark )
+    public static void verifyBeginTx( Connection connectionMock, int times )
     {
-        if ( bookmark.isEmpty() )
-        {
-            verify( connectionMock ).write( any( BeginMessage.class ), eq( NoOpResponseHandler.INSTANCE ) );
-        }
-        else
-        {
-            verify( connectionMock ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
-        }
+        verify( connectionMock, times( times ) ).writeAndFlush( any( BeginMessage.class ), any( BeginTxResponseHandler.class ) );
     }
 
     public static void setupFailingRun( Connection connection, Throwable error )

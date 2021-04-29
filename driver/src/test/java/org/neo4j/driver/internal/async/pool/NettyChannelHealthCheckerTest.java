@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async.pool;
 
+import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
@@ -25,11 +26,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Value;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -82,13 +88,62 @@ class NettyChannelHealthCheckerTest
     void shouldAllowVeryOldChannelsWhenMaxLifetimeDisabled()
     {
         PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
-                DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
+                                                  DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
         NettyChannelHealthChecker healthChecker = newHealthChecker( settings, Clock.SYSTEM );
 
         setCreationTimestamp( channel, 0 );
         Future<Boolean> healthy = healthChecker.isHealthy( channel );
 
         assertThat( await( healthy ), is( true ) );
+    }
+
+    @Test
+    void shouldFailAllConnectionsCreatedOnOrBeforeExpirationTimestamp()
+    {
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                                                  DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
+        Clock clock = Clock.SYSTEM;
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
+
+        long initialTimestamp = clock.millis();
+        List<Channel> channels = IntStream.range( 0, 100 ).mapToObj( i ->
+                                                                     {
+                                                                         Channel channel = new EmbeddedChannel();
+                                                                         setCreationTimestamp( channel, initialTimestamp + i );
+                                                                         return channel;
+                                                                     } ).collect( Collectors.toList() );
+
+        int authorizationExpiredChannelIndex = channels.size() / 2 - 1;
+        healthChecker.onExpired( new AuthorizationExpiredException( "", "" ), channels.get( authorizationExpiredChannelIndex ) );
+
+        for ( int i = 0; i < channels.size(); i++ )
+        {
+            Channel channel = channels.get( i );
+            boolean health = Objects.requireNonNull( await( healthChecker.isHealthy( channel ) ) );
+            boolean expectedHealth = i > authorizationExpiredChannelIndex;
+            assertEquals( expectedHealth, health, String.format( "Channel %d has failed the check", i ) );
+        }
+    }
+
+    @Test
+    void shouldUseGreatestExpirationTimestamp()
+    {
+        PoolSettings settings = new PoolSettings( DEFAULT_MAX_CONNECTION_POOL_SIZE,
+                                                  DEFAULT_CONNECTION_ACQUISITION_TIMEOUT, NOT_CONFIGURED, DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST );
+        Clock clock = Clock.SYSTEM;
+        NettyChannelHealthChecker healthChecker = newHealthChecker( settings, clock );
+
+        long initialTimestamp = clock.millis();
+        Channel channel1 = new EmbeddedChannel();
+        Channel channel2 = new EmbeddedChannel();
+        setCreationTimestamp( channel1, initialTimestamp );
+        setCreationTimestamp( channel2, initialTimestamp + 100 );
+
+        healthChecker.onExpired( new AuthorizationExpiredException( "", "" ), channel2 );
+        healthChecker.onExpired( new AuthorizationExpiredException( "", "" ), channel1 );
+
+        assertFalse( Objects.requireNonNull( await( healthChecker.isHealthy( channel1 ) ) ) );
+        assertFalse( Objects.requireNonNull( await( healthChecker.isHealthy( channel2 ) ) ) );
     }
 
     @Test

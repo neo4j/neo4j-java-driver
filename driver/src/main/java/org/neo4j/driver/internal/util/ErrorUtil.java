@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
@@ -74,6 +75,10 @@ public final class ErrorUtil
             else if ( code.equalsIgnoreCase( "Neo.ClientError.Database.DatabaseNotFound" ) )
             {
                 return new FatalDiscoveryException( code, message );
+            }
+            else if ( code.equalsIgnoreCase( "Neo.ClientError.Security.AuthorizationExpired" ) )
+            {
+                return new AuthorizationExpiredException( code, message );
             }
             else
             {

@@ -126,7 +126,7 @@ class UnmanagedTransactionTest
 
         beginTx( connection, bookmark );
 
-        verifyBeginTx( connection, bookmark );
+        verifyBeginTx( connection );
         verify( connection, never() ).write( any(), any(), any(), any() );
     }
 

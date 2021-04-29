@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -160,5 +161,18 @@ class ErrorUtilTest
         ServiceUnavailableException error = newConnectionTerminatedError( reason );
         assertThat( error.getMessage(), startsWith( "Connection to the database terminated" ) );
         assertThat( error.getMessage(), containsString( reason ) );
+    }
+
+    @Test
+    void shouldCreateAuthorizationExpiredException()
+    {
+        String code = "Neo.ClientError.Security.AuthorizationExpired";
+        String message = "Expired authorization info";
+
+        Neo4jException error = newNeo4jError( code, message );
+
+        assertThat( error, instanceOf( AuthorizationExpiredException.class ) );
+        assertEquals( code, error.code() );
+        assertEquals( message, error.getMessage() );
     }
 }

@@ -19,21 +19,27 @@
 package org.neo4j.driver.internal.async.pool;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 
@@ -111,6 +117,21 @@ class ConnectionPoolImplTest
         assertTrue( pool.getPool( ADDRESS_3 ).isClosed() );
     }
 
+    @Test
+    void shouldRegisterAuthorizationStateListenerWithChannel() throws ExecutionException, InterruptedException
+    {
+        NettyChannelTracker nettyChannelTracker = mock( NettyChannelTracker.class );
+        NettyChannelHealthChecker nettyChannelHealthChecker = mock( NettyChannelHealthChecker.class );
+        ArgumentCaptor<Channel> channelArgumentCaptor = ArgumentCaptor.forClass( Channel.class );
+        TestConnectionPool pool = newConnectionPool( nettyChannelTracker, nettyChannelHealthChecker );
+
+        pool.acquire( ADDRESS_1 ).toCompletableFuture().get();
+        verify( nettyChannelTracker ).channelAcquired( channelArgumentCaptor.capture() );
+        Channel channel = channelArgumentCaptor.getValue();
+
+        assertEquals( nettyChannelHealthChecker, authorizationStateListener( channel ) );
+    }
+
     private static PoolSettings newSettings()
     {
         return new PoolSettings( 10, 5000, -1, -1 );
@@ -118,7 +139,13 @@ class ConnectionPoolImplTest
 
     private static TestConnectionPool newConnectionPool( NettyChannelTracker nettyChannelTracker )
     {
-        return new TestConnectionPool( mock( Bootstrap.class ), nettyChannelTracker, newSettings(), DEV_NULL_METRICS, DEV_NULL_LOGGING,
-                new FakeClock(), true );
+        return newConnectionPool( nettyChannelTracker, mock( NettyChannelHealthChecker.class ) );
+    }
+
+    private static TestConnectionPool newConnectionPool( NettyChannelTracker nettyChannelTracker, NettyChannelHealthChecker nettyChannelHealthChecker )
+    {
+        return new TestConnectionPool( mock( Bootstrap.class ), nettyChannelTracker, nettyChannelHealthChecker, newSettings(), DEV_NULL_METRICS,
+                                       DEV_NULL_LOGGING,
+                                       new FakeClock(), true );
     }
 }
