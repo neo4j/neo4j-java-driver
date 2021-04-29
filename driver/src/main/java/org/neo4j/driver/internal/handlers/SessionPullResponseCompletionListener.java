@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.handlers;
 import java.util.Map;
 
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -48,7 +49,14 @@ public class SessionPullResponseCompletionListener implements PullResponseComple
     @Override
     public void afterFailure( Throwable error )
     {
-        releaseConnection();
+        if ( error instanceof AuthorizationExpiredException )
+        {
+            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        else
+        {
+            releaseConnection();
+        }
     }
 
     private void releaseConnection()
