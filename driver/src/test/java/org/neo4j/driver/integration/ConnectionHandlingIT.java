@@ -34,7 +34,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.logging.Level;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
@@ -81,6 +80,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -102,7 +102,7 @@ class ConnectionHandlingIT
         AuthToken auth = neo4j.authToken();
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, Config.builder().withLogging( Logging.console( Level.FINE ) ).build(), SecurityPlanImpl.insecure() );
+        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig(), SecurityPlanImpl.insecure() );
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
