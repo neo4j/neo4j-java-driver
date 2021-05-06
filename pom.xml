@@ -67,7 +67,7 @@
         <!-- corresponding server dependency also needs updating.-->
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.59.Final</version>
+        <version>4.1.63.Final</version>
       </dependency>
       <dependency>
         <!-- Please note that when updating this dependency -->
@@ -75,7 +75,7 @@
         <!-- corresponding server dependency also needs updating.-->
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>Dysprosium-SR7</version>
+        <version>Dysprosium-SR19</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -84,7 +84,7 @@
       <dependency>
         <groupId>io.reactivex.rxjava2</groupId>
         <artifactId>rxjava</artifactId>
-        <version>2.2.19</version>
+        <version>2.2.21</version>
       </dependency>
 
       <!-- Optional dependencies -->
@@ -116,19 +116,19 @@
       <dependency>
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
-        <version>0.7.1</version>
+        <version>1.1.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.65.01</version>
+        <version>1.68</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.65</version>
+        <version>1.68</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -140,7 +140,7 @@
       <dependency>
         <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>20.1.0</version>
+        <version>20.3.1.2</version>
         <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
         <scope>provided</scope>
       </dependency>
