@@ -32,10 +32,12 @@ import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.c
 
 public class TestkitListDeserializer extends StdDeserializer<List<?>>
 {
+    private final TestkitCypherParamDeserializer mapDeserializer;
 
     public TestkitListDeserializer()
     {
         super( List.class );
+        mapDeserializer = new TestkitCypherParamDeserializer();
     }
 
     @Override
@@ -88,14 +90,17 @@ public class TestkitListDeserializer extends StdDeserializer<List<?>>
                     }
                     else
                     {
-                        result.add( p.readValueAs( mapValueType ) );
+                        if ( paramType.equals( "CypherMap" ) ) // special recursive case for maps
+                        {
+                            result.add( mapDeserializer.deserialize( p, ctxt ) );
+                        } else {
+                            result.add( p.readValueAs( mapValueType ) );
+                        }
                     }
                 }
             }
             nextToken = p.nextToken();
         }
-        p.nextToken();
-        p.nextToken();
         return result;
     }
 }
