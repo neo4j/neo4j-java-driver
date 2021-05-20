@@ -25,7 +25,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.FeatureList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,7 +34,10 @@ import java.util.Set;
 @NoArgsConstructor
 public class GetFeatures implements TestkitRequest
 {
-    private static final Set<String> FEATURES = new HashSet<>( Collections.singletonList( "AuthorizationExpiredTreatment" ) );
+    private static final Set<String> FEATURES = new HashSet<>( Arrays.asList(
+            "AuthorizationExpiredTreatment",
+            "Optimization:PullPipelining"
+    ) );
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
