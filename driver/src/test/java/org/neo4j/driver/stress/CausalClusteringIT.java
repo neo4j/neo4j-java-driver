@@ -340,10 +340,10 @@ public class CausalClusteringIT implements NestedQueries
             // gracefully stop current leader to force re-election
             cluster.stop( leader );
 
-            tx1.run( "CREATE (person:Person {name: $name, title: $title})",
-                    parameters( "name", "Webber", "title", "Mr" ) );
+            assertThrows( (Class<? extends Exception>) SessionExpiredException.class,
+                          () -> tx1.run( "CREATE (person:Person {name: $name, title: $title})",
+                                         parameters( "name", "Webber", "title", "Mr" ) ) );
 
-            assertThrows( (Class<? extends Exception>) SessionExpiredException.class, tx1::commit );
             session1.close();
 
             Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->

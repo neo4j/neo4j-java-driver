@@ -54,7 +54,6 @@ public class RxResultCursorImpl implements RxResultCursor
     {
         Objects.requireNonNull( runHandler );
         Objects.requireNonNull( pullHandler );
-        assertRunResponseArrived( runHandler );
 
         this.runResponseError = runError;
         this.runHandler = runHandler;
@@ -158,14 +157,6 @@ public class RxResultCursorImpl implements RxResultCursor
             }
             //else (null, null) to indicate a has_more success
         } );
-    }
-
-    private void assertRunResponseArrived( RunResponseHandler runHandler )
-    {
-        if ( !runHandler.runFuture().isDone() )
-        {
-            throw new IllegalStateException( "Should wait for response of RUN before allowing PULL." );
-        }
     }
 
     enum RecordConsumerStatus

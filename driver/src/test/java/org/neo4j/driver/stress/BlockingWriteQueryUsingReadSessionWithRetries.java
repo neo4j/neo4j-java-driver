@@ -18,16 +18,11 @@
  */
 package org.neo4j.driver.stress;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.exceptions.ClientException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractContext> extends AbstractBlockingQuery<C>
@@ -40,18 +35,9 @@ public class BlockingWriteQueryUsingReadSessionWithRetries<C extends AbstractCon
     @Override
     public void execute( C context )
     {
-        AtomicReference<Result> resultRef = new AtomicReference<>();
-        assertThrows( ClientException.class, () ->
+        try ( Session session = newSession( AccessMode.READ, context ) )
         {
-            try ( Session session = newSession( AccessMode.READ, context ) )
-            {
-                session.readTransaction( tx -> {
-                    resultRef.set( tx.run( "CREATE ()" ));
-                    return 1;
-                });
-            }
-        } );
-        assertNotNull( resultRef.get() );
-        assertEquals( 0, resultRef.get().consume().counters().nodesCreated() );
+            assertThrows( ClientException.class, () -> session.readTransaction( tx -> tx.run( "CREATE ()" ) ) );
+        }
     }
 }

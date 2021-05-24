@@ -82,7 +82,7 @@ class SessionPullResponseCompletionListenerTest
 
     private static ResponseHandler newHandler( Connection connection, PullResponseCompletionListener listener )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         BasicPullResponseHandler handler =
                 new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, listener );
         handler.installRecordConsumer( ( record, throwable ) -> {} );

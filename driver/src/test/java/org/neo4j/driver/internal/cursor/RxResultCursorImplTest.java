@@ -29,13 +29,11 @@ import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
+import org.neo4j.driver.internal.spi.Connection;
 
 import static java.util.Arrays.asList;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static junit.framework.TestCase.assertTrue;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,25 +44,12 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.cursor.RxResultCursorImpl.DISCARD_RECORD_CONSUMER;
 import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 class RxResultCursorImplTest
 {
     @Test
-    void shouldWaitForRunToFinishBeforeCreatingRxResultCurosr() throws Throwable
-    {
-        // Given
-        CompletableFuture<Throwable> runFuture = new CompletableFuture<>();
-        RunResponseHandler runHandler = newRunResponseHandler( runFuture );
-        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
-
-        // When
-        IllegalStateException error = assertThrows( IllegalStateException.class, () -> new RxResultCursorImpl( runHandler, pullHandler ) );
-        // Then
-        assertThat( error.getMessage(), containsString( "Should wait for response of RUN" ) );
-    }
-
-    @Test
-    void shouldInstallSummaryConsumerWithoutReportingError() throws Throwable
+    void shouldInstallSummaryConsumerWithoutReportingError()
     {
         // Given
         RuntimeException error = new RuntimeException( "Hi" );
@@ -80,7 +65,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldReturnQueryKeys() throws Throwable
+    void shouldReturnQueryKeys()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -98,7 +83,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldSupportReturnQueryKeysMultipleTimes() throws Throwable
+    void shouldSupportReturnQueryKeysMultipleTimes()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -123,7 +108,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldPull() throws Throwable
+    void shouldPull()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -138,7 +123,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldCancel() throws Throwable
+    void shouldCancel()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -153,7 +138,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldInstallRecordConsumerAndReportError() throws Throwable
+    void shouldInstallRecordConsumerAndReportError()
     {
         // Given
         RuntimeException error = new RuntimeException( "Hi" );
@@ -171,7 +156,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldReturnSummaryFuture() throws Throwable
+    void shouldReturnSummaryFuture()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -188,7 +173,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldNotAllowToInstallRecordConsumerAfterSummary() throws Throwable
+    void shouldNotAllowToInstallRecordConsumerAfterSummary()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -203,7 +188,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldAllowToCallSummaryMultipleTimes() throws Throwable
+    void shouldAllowToCallSummaryMultipleTimes()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -219,7 +204,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldOnlyInstallRecordConsumerOnce() throws Throwable
+    void shouldOnlyInstallRecordConsumerOnce()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -235,7 +220,7 @@ class RxResultCursorImplTest
     }
 
     @Test
-    void shouldCancelIfNotPulled() throws Throwable
+    void shouldCancelIfNotPulled()
     {
         // Given
         RunResponseHandler runHandler = newRunResponseHandler();
@@ -251,14 +236,14 @@ class RxResultCursorImplTest
         assertFalse( cursor.isDone() );
     }
 
-    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Throwable> runFuture )
+    private static RunResponseHandler newRunResponseHandler( CompletableFuture<Void> runFuture )
     {
-        return new RunResponseHandler( runFuture, METADATA_EXTRACTOR );
+        return new RunResponseHandler( runFuture, METADATA_EXTRACTOR, mock( Connection.class ), null );
     }
 
     private static RunResponseHandler newRunResponseHandler( Throwable error )
     {
-        return newRunResponseHandler( completedFuture( error ) );
+        return newRunResponseHandler( failedFuture( error ) );
     }
 
     private static RunResponseHandler newRunResponseHandler()

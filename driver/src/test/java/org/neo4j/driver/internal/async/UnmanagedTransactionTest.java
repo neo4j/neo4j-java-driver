@@ -19,8 +19,6 @@
 package org.neo4j.driver.internal.async;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.util.function.Consumer;
@@ -64,9 +62,8 @@ import static org.neo4j.driver.util.TestUtil.verifyRunRx;
 
 class UnmanagedTransactionTest
 {
-    @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldFlushOnRunAsync( boolean waitForResponse )
+    @Test
+    void shouldFlushOnRunAsync()
     {
         // Given
         Connection connection = connectionMock( BoltProtocolV4.INSTANCE );
@@ -74,7 +71,7 @@ class UnmanagedTransactionTest
         setupSuccessfulRunAndPull( connection );
 
         // When
-        await( tx.runAsync( new Query( "RETURN 1" ), waitForResponse ) );
+        await( tx.runAsync( new Query( "RETURN 1" ) ) );
 
         // Then
         verifyRunAndPull( connection, "RETURN 1" );

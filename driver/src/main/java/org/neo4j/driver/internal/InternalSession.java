@@ -23,14 +23,14 @@ import java.util.Map;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 
@@ -66,8 +66,8 @@ public class InternalSession extends AbstractQueryRunner implements Session
     @Override
     public Result run(Query query, TransactionConfig config )
     {
-        ResultCursor cursor = Futures.blockingGet( session.runAsync(query, config, false ),
-                () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
+        ResultCursor cursor = Futures.blockingGet( session.runAsync( query, config ),
+                                                   () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while running query in session" ) );
 
         // query executed, it is safe to obtain a connection in a blocking way
         Connection connection = Futures.getNow( session.connectionAsync() );

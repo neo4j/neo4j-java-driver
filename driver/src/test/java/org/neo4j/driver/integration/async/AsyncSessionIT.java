@@ -152,9 +152,8 @@ class AsyncSessionIT
     @Test
     void shouldFailForIncorrectQuery()
     {
-        ResultCursor cursor = await( session.runAsync( "RETURN" ) );
+        Exception e = assertThrows( Exception.class, () -> await( session.runAsync( "RETURN" ) ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
         assertThat( e, is( syntaxError() ) );
     }
 
@@ -585,8 +584,7 @@ class AsyncSessionIT
         Bookmark illegalBookmark = InternalBookmark.parse( "Illegal Bookmark" );
         session = neo4j.driver().asyncSession( builder().withBookmarks( illegalBookmark ).build() );
         assertThrows( ClientException.class, () -> await( session.beginTransactionAsync() ) );
-        ResultCursor cursor = await( session.runAsync( "RETURN 'Hello!'" ) );
-        assertThrows( ClientException.class, () -> await( cursor.singleAsync() ) );
+        assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN 'Hello!'" ) ) );
     }
 
     @Test
@@ -700,20 +698,18 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldPropagateRunFailureWhenClosed()
+    void shouldNotPropagateRunFailureWhenClosed()
     {
         session.runAsync( "RETURN 10 / 0" );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        await( session.closeAsync() );
     }
 
     @Test
-    void shouldPropagateBlockedRunFailureWhenClosed()
+    void shouldPropagateRunFailureImmediately()
     {
-        await( session.runAsync( "RETURN 10 / 0" ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN 10 / 0" ) ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
@@ -738,9 +734,8 @@ class AsyncSessionIT
     @Test
     void shouldCloseCleanlyWhenRunErrorConsumed()
     {
-        ResultCursor cursor = await( session.runAsync( "SomeWrongQuery" ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "SomeWrongQuery" ) ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), startsWith( "Invalid input" ) );
         assertNull( await( session.closeAsync() ) );
     }
@@ -758,23 +753,20 @@ class AsyncSessionIT
     @Test
     void shouldPropagateFailureFromSummary()
     {
-        ResultCursor cursor = await( session.runAsync( "RETURN Something" ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN Something" ) ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.code(), containsString( "SyntaxError" ) );
-        assertNotNull( await( cursor.consumeAsync() ) );
     }
 
     @Test
-    void shouldPropagateFailureInCloseFromPreviousRun()
+    void shouldNotPropagateFailureInCloseFromPreviousRun()
     {
         session.runAsync( "CREATE ()" );
         session.runAsync( "CREATE ()" );
         session.runAsync( "CREATE ()" );
         session.runAsync( "RETURN invalid" );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( session.closeAsync() ) );
-        assertThat( e.code(), containsString( "SyntaxError" ) );
+        await( session.closeAsync() );
     }
 
     @Test

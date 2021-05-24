@@ -32,14 +32,14 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.InternalDriver;
-import org.neo4j.driver.SessionConfig;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -92,12 +92,12 @@ class UnmanagedTransactionIT
 
     private ResultCursor sessionRun(NetworkSession session, Query query)
     {
-        return await( session.runAsync(query, TransactionConfig.empty(), true ) );
+        return await( session.runAsync( query, TransactionConfig.empty() ) );
     }
 
     private ResultCursor txRun(UnmanagedTransaction tx, String query )
     {
-        return await( tx.runAsync( new Query( query ), true ) );
+        return await( tx.runAsync( new Query( query ) ) );
     }
 
     @Test
@@ -190,10 +190,10 @@ class UnmanagedTransactionIT
         assertThat( e.getMessage(), startsWith( "Transaction can't be committed" ) );
 
         await( session.beginTransactionAsync( TransactionConfig.empty() )
-                .thenCompose( tx -> tx.runAsync( new Query( "CREATE (:Node {id: 42})" ), true )
-                        .thenCompose( ResultCursor::consumeAsync )
-                        .thenApply( ignore -> tx )
-                ).thenCompose( UnmanagedTransaction::commitAsync ) );
+                      .thenCompose( tx -> tx.runAsync( new Query( "CREATE (:Node {id: 42})" ) )
+                                            .thenCompose( ResultCursor::consumeAsync )
+                                            .thenApply( ignore -> tx )
+                      ).thenCompose( UnmanagedTransaction::commitAsync ) );
 
         assertEquals( 1, countNodes( 42 ) );
     }

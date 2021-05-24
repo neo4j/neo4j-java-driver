@@ -80,7 +80,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
@@ -102,7 +101,8 @@ class ConnectionHandlingIT
         AuthToken auth = neo4j.authToken();
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
-        driver = driverFactory.newInstance( neo4j.uri(), auth, routingSettings, retrySettings, defaultConfig(), SecurityPlanImpl.insecure() );
+        driver = driverFactory
+                .newInstance( neo4j.uri(), auth, routingSettings, retrySettings, Config.builder().withFetchSize( 1 ).build(), SecurityPlanImpl.insecure() );
         connectionPool = driverFactory.connectionPool;
         connectionPool.startMemorizing(); // start memorizing connections after driver creation
     }
@@ -165,14 +165,10 @@ class ConnectionHandlingIT
     {
         Result result = createNodesInNewSession( 1 );
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).release();
-
         assertNotNull( result.single() );
 
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
-        assertSame( connection1, connection2 );
-        verify( connection1 ).release();
+        Connection connection = connectionPool.lastAcquiredConnectionSpy;
+        verify( connection ).release();
     }
 
     @Test
@@ -197,20 +193,16 @@ class ConnectionHandlingIT
     }
 
     @Test
-    void connectionUsedForSessionRunReturnedToThePoolWhenServerErrorDuringResultFetching()
+    void connectionUsedForSessionRunReturnedToThePoolOnServerFailure()
     {
-        Session session = driver.session();
-        // provoke division by zero
-        Result result = session.run( "UNWIND range(10, 0, -1) AS i CREATE (n {index: 10/i}) RETURN n" );
+        try ( Session session = driver.session() )
+        {
+            // provoke division by zero
+            assertThrows( ClientException.class, () -> session.run( "UNWIND range(10, -1, 0) AS i CREATE (n {index: 10/i}) RETURN n" ).consume() );
 
-        Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
-        verify( connection1, never() ).release();
-
-        assertThrows( ClientException.class, result::consume );
-
-        Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
-        assertSame( connection1, connection2 );
-        verify( connection1 ).release();
+            Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
+            verify( connection1 ).release();
+        }
     }
 
     @Test
@@ -258,7 +250,7 @@ class ConnectionHandlingIT
     }
 
     @Test
-    void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted() throws Exception
+    void connectionUsedForTransactionReturnedToThePoolWhenTransactionFailsToCommitted()
     {
         try ( Session session = driver.session() )
         {
@@ -316,7 +308,7 @@ class ConnectionHandlingIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void sessionCloseShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    void sessionCloseShouldReleaseConnectionUsedBySessionRun()
     {
         RxSession session = driver.rxSession();
         RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
@@ -335,7 +327,7 @@ class ConnectionHandlingIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void resultRecordsShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    void resultRecordsShouldReleaseConnectionUsedBySessionRun()
     {
         RxSession session = driver.rxSession();
         RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
@@ -344,7 +336,7 @@ class ConnectionHandlingIT
 
         // When we run and pull
         StepVerifier.create( Flux.from( res.records() ).map( record -> record.get( "a" ).asInt() ) )
-                .expectNext( 1, 2, 3, 4 ).verifyComplete();
+                    .expectNext( 1, 2, 3, 4 ).verifyComplete();
 
         Connection connection2 = connectionPool.lastAcquiredConnectionSpy;
         assertNotSame( connection1, connection2 );
@@ -353,7 +345,7 @@ class ConnectionHandlingIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void resultSummaryShouldReleaseConnectionUsedBySessionRun() throws Throwable
+    void resultSummaryShouldReleaseConnectionUsedBySessionRun()
     {
         RxSession session = driver.rxSession();
         RxResult res = session.run( "UNWIND [1,2,3,4] AS a RETURN a" );
@@ -447,7 +439,7 @@ class ConnectionHandlingIT
 
     @Test
     @EnabledOnNeo4jWith( BOLT_V4 )
-    void sessionCloseShouldReleaseConnectionUsedByBeginTx() throws Throwable
+    void sessionCloseShouldReleaseConnectionUsedByBeginTx()
     {
         // Given
         RxSession session = driver.rxSession();

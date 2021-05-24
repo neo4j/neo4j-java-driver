@@ -67,8 +67,9 @@ class TransactionPullResponseCompletionListenerTest
         when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
         TransactionPullResponseCompletionListener listener = new TransactionPullResponseCompletionListener( tx );
-        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR );
+        RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), METADATA_EXTRACTOR, null, null );
         PullResponseHandler handler = new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler,
                                                                     connection, METADATA_EXTRACTOR, listener );
         handler.installRecordConsumer( ( record, throwable ) ->

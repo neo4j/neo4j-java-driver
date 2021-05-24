@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -50,9 +51,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -85,6 +86,7 @@ import static org.neo4j.driver.util.Neo4jSettings.IMPORT_DIR;
 import static org.neo4j.driver.util.Neo4jSettings.TEST_SETTINGS;
 import static org.neo4j.driver.util.TestUtil.activeQueryCount;
 import static org.neo4j.driver.util.TestUtil.activeQueryNames;
+import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
 import static org.neo4j.driver.util.TestUtil.awaitCondition;
 
@@ -171,7 +173,7 @@ class SessionResetIT
     }
 
     @Test
-    void shouldNotAllowBeginTxIfResetFailureIsNotConsumed() throws Throwable
+    void shouldRejectNewTransactionWhenOpenTransactionExistsAndShouldFailRunResultOnSessionReset() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -179,7 +181,8 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            Result result = tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) );
+            CompletableFuture<Void> txRunFuture = CompletableFuture.runAsync(
+                    () -> tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
@@ -191,29 +194,28 @@ class SessionResetIT
             assertThat( e2.getMessage(), containsString( "Cannot run more queries in this transaction" ) );
 
             // Make sure failure from the terminated long running query is propagated
-            Neo4jException e3 = assertThrows( Neo4jException.class, result::consume );
+            Neo4jException e3 = assertThrows( Neo4jException.class, () -> await( txRunFuture ) );
             assertThat( e3.getMessage(), containsString( "The transaction has been terminated" ) );
         }
     }
 
     @Test
-    void shouldThrowExceptionOnCloseIfResetFailureIsNotConsumed() throws Throwable
+    void shouldSuccessfullyCloseAfterSessionReset() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
-        Session session = neo4j.driver().session();
-        session.run( "CALL test.driver.longRunningStatement({seconds})",
-                parameters( "seconds", 10 ) );
+        try ( Session session = neo4j.driver().session() )
+        {
+            CompletableFuture.runAsync(
+                    () -> session.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) ) );
 
-        awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
-        session.reset();
-
-        Neo4jException e = assertThrows( Neo4jException.class, session::close );
-        assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
+            awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
+            session.reset();
+        }
     }
 
     @Test
-    void shouldBeAbleToBeginTxAfterResetFailureIsConsumed() throws Throwable
+    void shouldBeAbleToBeginNewTransactionAfterFirstTransactionInterruptedBySessionResetIsClosed() throws Throwable
     {
         neo4j.ensureProcedures( "longRunningStatement.jar" );
 
@@ -221,13 +223,13 @@ class SessionResetIT
         {
             Transaction tx1 = session.beginTransaction();
 
-            Result procedureResult = tx1.run( "CALL test.driver.longRunningStatement({seconds})",
-                    parameters( "seconds", 10 ) );
+            CompletableFuture<Void> txRunFuture = runAsync(
+                    () -> tx1.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", 10 ) ) );
 
             awaitActiveQueriesToContain( "CALL test.driver.longRunningStatement" );
             session.reset();
 
-            Neo4jException e = assertThrows( Neo4jException.class, procedureResult::consume );
+            Neo4jException e = assertThrows( Neo4jException.class, () -> await( txRunFuture ) );
             assertThat( e.getMessage(), containsString( "The transaction has been terminated" ) );
             tx1.close();
 
@@ -253,20 +255,20 @@ class SessionResetIT
         final AtomicLong startTime = new AtomicLong( -1 );
         long endTime;
 
-        assertThrows( Neo4jException.class, () ->
+        try ( Session session = neo4j.driver().session() )
         {
-            try ( Session session = neo4j.driver().session() )
-            {
-                Result result = session.run( "CALL test.driver.longRunningStatement({seconds})",
-                        parameters( "seconds", executionTimeout ) );
+            CompletableFuture<Void> sessionRunFuture = CompletableFuture.runAsync(
+                    () ->
+                    {
+                        // When
+                        startTime.set( System.currentTimeMillis() );
+                        session.run( "CALL test.driver.longRunningStatement({seconds})", parameters( "seconds", executionTimeout ) );
+                    } );
 
-                resetSessionAfterTimeout( session, killTimeout );
+            resetSessionAfterTimeout( session, killTimeout );
 
-                // When
-                startTime.set( System.currentTimeMillis() );
-                result.consume(); // blocking to run the query
-            }
-        } );
+            assertThrows( Neo4jException.class, () -> await( sessionRunFuture ) );
+        }
 
         endTime = System.currentTimeMillis();
         assertTrue( startTime.get() > 0 );

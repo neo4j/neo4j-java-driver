@@ -98,33 +98,26 @@ public interface BoltProtocol
     /**
      * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
      *
-     * @param connection the network connection to use.
-     * @param query the cypher to execute.
+     * @param connection     the network connection to use.
+     * @param query          the cypher to execute.
      * @param bookmarkHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
-     * @param config the transaction config for the implicitly started auto-commit transaction.
-     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
-     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have query
-     * keys populated.
-     * @param fetchSize the record fetch size for PULL message.
+     * @param config         the transaction config for the implicitly started auto-commit transaction.
+     * @param fetchSize      the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInAutoCommitTransaction(Connection connection, Query query, BookmarkHolder bookmarkHolder,
-                                                   TransactionConfig config, boolean waitForRunResponse, long fetchSize );
+    ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarkHolder bookmarkHolder, TransactionConfig config,
+                                                    long fetchSize );
 
     /**
      * Execute the given query in a running unmanaged transaction, i.e. {@link Transaction#run(Query)}.
      *
      * @param connection the network connection to use.
-     * @param query the cypher to execute.
-     * @param tx the transaction which executes the query.
-     * @param waitForRunResponse {@code true} for async query execution and {@code false} for blocking query
-     * execution. Makes returned cursor stage be chained after the RUN response arrives. Needed to have query
-     * keys populated.
-     * @param fetchSize the record fetch size for PULL message.
+     * @param query      the cypher to execute.
+     * @param tx         the transaction which executes the query.
+     * @param fetchSize  the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInUnmanagedTransaction(Connection connection, Query query, UnmanagedTransaction tx, boolean waitForRunResponse,
-                                                 long fetchSize );
+    ResultCursorFactory runInUnmanagedTransaction( Connection connection, Query query, UnmanagedTransaction tx, long fetchSize );
 
     /**
      * Returns the protocol version. It can be used for version specific error messages.

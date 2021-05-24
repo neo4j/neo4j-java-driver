@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cursor;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -28,7 +29,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Used by Bolt V1, V2, V3
@@ -38,23 +38,24 @@ public class AsyncResultCursorOnlyFactory implements ResultCursorFactory
     protected final Connection connection;
     protected final Message runMessage;
     protected final RunResponseHandler runHandler;
+    private final CompletableFuture<Void> runFuture;
     protected final PullAllResponseHandler pullAllHandler;
-    private final boolean waitForRunResponse;
 
-    public AsyncResultCursorOnlyFactory(Connection connection, Message runMessage, RunResponseHandler runHandler,
-                                        PullAllResponseHandler pullHandler, boolean waitForRunResponse )
+    public AsyncResultCursorOnlyFactory( Connection connection, Message runMessage, RunResponseHandler runHandler, CompletableFuture<Void> runFuture,
+                                         PullAllResponseHandler pullHandler )
     {
         requireNonNull( connection );
         requireNonNull( runMessage );
         requireNonNull( runHandler );
+        requireNonNull( runFuture );
         requireNonNull( pullHandler );
 
         this.connection = connection;
         this.runMessage = runMessage;
         this.runHandler = runHandler;
+        this.runFuture = runFuture;
 
         this.pullAllHandler = pullHandler;
-        this.waitForRunResponse = waitForRunResponse;
     }
 
     public CompletionStage<AsyncResultCursor> asyncResult()
@@ -63,16 +64,7 @@ public class AsyncResultCursorOnlyFactory implements ResultCursorFactory
         connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
         pullAllHandler.prePopulateRecords();
 
-        if ( waitForRunResponse )
-        {
-            // wait for response of RUN before proceeding
-            return runHandler.runFuture().thenApply( ignore ->
-                    new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
-        }
-        else
-        {
-            return completedFuture( new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
-        }
+        return runFuture.thenApply( ignore -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
     }
 
     public CompletionStage<RxResultCursor> rxResult()

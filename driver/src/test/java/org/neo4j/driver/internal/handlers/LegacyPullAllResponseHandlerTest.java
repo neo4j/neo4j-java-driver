@@ -237,7 +237,8 @@ class LegacyPullAllResponseHandlerTest extends PullAllResponseHandlerTestBase<Le
     protected LegacyPullAllResponseHandler newHandler(Query query, List<String> queryKeys,
                                                       Connection connection )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler =
+                new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         runResponseHandler.onSuccess( singletonMap( "fields", value( queryKeys ) ) );
         return new LegacyPullAllResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
                                                  mock( PullResponseCompletionListener.class ) );

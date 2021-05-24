@@ -47,7 +47,7 @@ public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implement
     @Override
     public CompletionStage<ResultCursor> runAsync(Query query)
     {
-        return tx.runAsync(query, true );
+        return tx.runAsync( query );
     }
 
     public boolean isOpen()

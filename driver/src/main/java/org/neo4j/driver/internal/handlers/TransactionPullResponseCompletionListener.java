@@ -45,6 +45,9 @@ public class TransactionPullResponseCompletionListener implements PullResponseCo
         // always mark transaction as terminated because every error is "acknowledged" with a RESET message
         // so database forgets about the transaction after the first error
         // such transaction should not attempt to commit and can be considered as rolled back
-        tx.markTerminated( error );
+        if ( tx.isOpen() )
+        {
+            tx.markTerminated( error );
+        }
     }
 }

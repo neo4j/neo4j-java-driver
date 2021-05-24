@@ -220,9 +220,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-
-        Exception e = assertThrows( Exception.class, () -> await( cursor.consumeAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( tx.runAsync( "RETURN" ) ) );
         assertThat( e, is( syntaxError() ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -233,9 +231,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-
-        Exception e = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( tx.runAsync( "RETURN" ) ) );
         assertThat( e, is( syntaxError() ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
@@ -255,9 +251,7 @@ class AsyncTransactionIT
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
-        ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
-
-        Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( tx.runAsync( "RETURN" ) ) );
         assertThat( e, is( syntaxError() ) );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -278,9 +272,7 @@ class AsyncTransactionIT
         assertNotNull( record2 );
         assertEquals( 42, record2.get( 0 ).asInt() );
 
-        ResultCursor cursor3 = await( tx.runAsync( "RETURN" ) );
-
-        Exception e = assertThrows( Exception.class, () -> await( cursor3.consumeAsync() ) );
+        Exception e = assertThrows( Exception.class, () -> await( tx.runAsync( "RETURN" ) ) );
         assertThat( e, is( syntaxError() ) );
         assertThat( await( tx.rollbackAsync() ), is( nullValue() ) );
     }
@@ -290,9 +282,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        ResultCursor cursor = await( tx.runAsync( "RETURN" ) );
-
-        Exception e1 = assertThrows( Exception.class, () -> await( cursor.nextAsync() ) );
+        Exception e1 = assertThrows( Exception.class, () -> await( tx.runAsync( "RETURN" ) ) );
         assertThat( e1, is( syntaxError() ) );
 
         ClientException e2 = assertThrows( ClientException.class, () -> tx.runAsync( "CREATE ()" ) );
@@ -668,7 +658,7 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitWhenQueriesFailAndErrorNotConsumed() throws InterruptedException
+    void shouldFailToCommitWhenQueriesFail()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -679,11 +669,12 @@ class AsyncTransactionIT
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
         assertNoCircularReferences( e );
-        assertEquals( "/ by zero", e.getMessage() );
+        assertEquals( "Transaction can't be committed. It has been rolled back either because of an error or explicit termination",
+                      e.getMessage() );
     }
 
     @Test
-    void shouldPropagateRunFailureFromCommit()
+    void shouldFailToCommitWhenRunFailed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
@@ -691,41 +682,40 @@ class AsyncTransactionIT
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
         assertNoCircularReferences( e );
-        assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
+        assertThat( e.getMessage(), containsString( "Transaction can't be committed" ) );
     }
 
     @Test
-    void shouldPropagateBlockedRunFailureFromCommit()
+    void shouldFailToCommitWhenBlockedRunFailed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        await( tx.runAsync( "RETURN 42 / 0" ) );
+        ClientException runException = assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 42 / 0" ) ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertNoCircularReferences( e );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        ClientException commitException = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertThat( runException.getMessage(), containsString( "/ by zero" ) );
+        assertNoCircularReferences( commitException );
+        assertThat( commitException.getMessage(), containsString( "Transaction can't be committed" ) );
     }
 
     @Test
-    void shouldPropagateRunFailureFromRollback()
+    void shouldRollbackSuccessfullyWhenRunFailed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
         tx.runAsync( "RETURN ILLEGAL" );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
-        assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
+        await( tx.rollbackAsync() );
     }
 
     @Test
-    void shouldPropagateBlockedRunFailureFromRollback()
+    void shouldRollbackSuccessfullyWhenBlockedRunFailed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        await( tx.runAsync( "RETURN 42 / 0" ) );
+        assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 42 / 0" ) ) );
 
-        ClientException e = assertThrows( ClientException.class, () -> await( tx.rollbackAsync() ) );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        await( tx.rollbackAsync() );
     }
 
     @Test
@@ -775,44 +765,6 @@ class AsyncTransactionIT
     }
 
     @Test
-    void shouldFailToCommitWhenRunFailureIsConsumed()
-    {
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
-
-        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
-        assertThat( e1.code(), containsString( "SyntaxError" ) );
-
-        ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "Transaction can't be committed" ) );
-    }
-
-    @Test
-    void shouldFailToCommitWhenPullAllFailureIsConsumed()
-    {
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-        ResultCursor cursor = await( tx.runAsync(
-                "FOREACH (value IN [1,2, 'aaa'] | CREATE (:Person {name: 10 / value}))" ) );
-
-        ClientException e1 = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
-        assertThat( e1.code(), containsString( "TypeError" ) );
-
-        ClientException e2 = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( e2.getMessage(), startsWith( "Transaction can't be committed" ) );
-    }
-
-    @Test
-    void shouldRollbackWhenRunFailureIsConsumed()
-    {
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
-        assertThat( e.code(), containsString( "SyntaxError" ) );
-        assertNull( await( tx.rollbackAsync() ) );
-    }
-
-    @Test
     void shouldRollbackWhenPullAllFailureIsConsumed()
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
@@ -821,18 +773,6 @@ class AsyncTransactionIT
         ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
         assertNull( await( tx.rollbackAsync() ) );
-    }
-
-    @Test
-    void shouldPropagateFailureFromSummary()
-    {
-        AsyncTransaction tx = await( session.beginTransactionAsync() );
-
-        ResultCursor cursor = await( tx.runAsync( "RETURN Wrong" ) );
-
-        ClientException e = assertThrows( ClientException.class, () -> await( cursor.consumeAsync() ) );
-        assertThat( e.code(), containsString( "SyntaxError" ) );
-        assertNotNull( await( cursor.consumeAsync() ) );
     }
 
     private int countNodes( Object id )

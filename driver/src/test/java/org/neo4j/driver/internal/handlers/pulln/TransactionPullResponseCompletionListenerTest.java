@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class TransactionPullResponseCompletionListenerTest extends BasicPullResponseHandlerTestBase
 {
@@ -65,6 +66,7 @@ public class TransactionPullResponseCompletionListenerTest extends BasicPullResp
         BiConsumer<Record,Throwable> recordConsumer = mock( BiConsumer.class );
         BiConsumer<ResultSummary,Throwable> summaryConsumer = mock( BiConsumer.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
         BasicPullResponseHandler handler = newTxResponseHandler( conn, recordConsumer, summaryConsumer, tx, state );
 
         // When

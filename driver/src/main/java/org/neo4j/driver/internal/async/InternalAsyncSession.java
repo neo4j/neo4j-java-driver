@@ -23,13 +23,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
@@ -66,7 +66,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     @Override
     public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config )
     {
-        return session.runAsync(query, config, true );
+        return session.runAsync( query, config );
     }
 
     @Override

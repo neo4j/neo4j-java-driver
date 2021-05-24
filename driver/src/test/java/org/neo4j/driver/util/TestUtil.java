@@ -367,7 +367,7 @@ public final class TestUtil
                       ResponseHandler runHandler = invocation.getArgument( 1 );
                       runHandler.onFailure( error );
                       return null;
-                  } ).when( connection ).writeAndFlush( any( RunWithMetadataMessage.class ), any() );
+                  } ).when( connection ).write( any( RunWithMetadataMessage.class ), any() );
 
         doAnswer( invocation ->
                   {

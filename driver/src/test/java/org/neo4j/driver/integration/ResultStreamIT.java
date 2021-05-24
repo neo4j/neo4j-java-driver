@@ -33,7 +33,6 @@ import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
@@ -41,8 +40,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -125,33 +122,14 @@ class ResultStreamIT
     void shouldBeAbleToReuseSessionAfterFailure()
     {
         // Given
-        Result res1 = session.run( "INVALID" );
-        assertThrows( Exception.class, res1::consume );
+        assertThrows( Exception.class, () -> session.run( "INVALID" ) );
 
         // When
         Result res2 = session.run( "RETURN 1" );
 
         // Then
         assertTrue( res2.hasNext() );
-        assertEquals( res2.next().get("1").asLong(), 1L );
-    }
-
-    @Test
-    void shouldBeAbleToAccessSummaryAfterFailure()
-    {
-        // Given
-        Result res1 = session.run( "INVALID" );
-        ResultSummary summary;
-
-        // When
-        assertThrows( Exception.class, res1::consume );
-        summary = res1.consume();
-
-
-        // Then
-        assertThat( summary, notNullValue() );
-        assertThat( summary.server().address(), equalTo( "localhost:" + session.boltPort() ) );
-        assertThat( summary.counters().nodesCreated(), equalTo( 0 ) );
+        assertEquals( res2.next().get( "1" ).asLong(), 1L );
     }
 
     @Test
@@ -172,24 +150,6 @@ class ResultStreamIT
         Result result = resultRef.get();
         assertNotNull( result );
         assertEquals( 0, result.consume().counters().nodesCreated() );
-    }
-
-    @Test
-    void shouldHasNoElementsAfterFailure()
-    {
-        Result result = session.run( "INVALID" );
-
-        assertThrows( ClientException.class, result::hasNext );
-        assertFalse( result.hasNext() );
-    }
-
-    @Test
-    void shouldBeAnEmptyLitAfterFailure()
-    {
-        Result result = session.run( "UNWIND (0, 1) as i RETURN 10 / i" );
-
-        assertThrows( ClientException.class, result::list );
-        assertTrue( result.list().isEmpty() );
     }
 
     @Test

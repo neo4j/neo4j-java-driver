@@ -144,30 +144,30 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public ResultCursorFactory runInAutoCommitTransaction(Connection connection, Query query, BookmarkHolder bookmarkHolder,
-                                                          TransactionConfig config, boolean waitForRunResponse, long fetchSize )
+    public ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarkHolder bookmarkHolder,
+                                                           TransactionConfig config, long fetchSize )
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
                 autoCommitTxRunMessage(query, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark() );
-        return buildResultCursorFactory( connection, query, bookmarkHolder, null, runMessage, waitForRunResponse, fetchSize );
+        return buildResultCursorFactory( connection, query, bookmarkHolder, null, runMessage, fetchSize );
     }
 
     @Override
-    public ResultCursorFactory runInUnmanagedTransaction(Connection connection, Query query, UnmanagedTransaction tx,
-                                                         boolean waitForRunResponse, long fetchSize )
+    public ResultCursorFactory runInUnmanagedTransaction( Connection connection, Query query, UnmanagedTransaction tx, long fetchSize )
     {
-        RunWithMetadataMessage runMessage = unmanagedTxRunMessage(query);
-        return buildResultCursorFactory( connection, query, BookmarkHolder.NO_OP, tx, runMessage, waitForRunResponse, fetchSize );
+        RunWithMetadataMessage runMessage = unmanagedTxRunMessage( query );
+        return buildResultCursorFactory( connection, query, BookmarkHolder.NO_OP, tx, runMessage, fetchSize );
     }
 
-    protected ResultCursorFactory buildResultCursorFactory(Connection connection, Query query, BookmarkHolder bookmarkHolder,
-                                                           UnmanagedTransaction tx, RunWithMetadataMessage runMessage, boolean waitForRunResponse, long ignored )
+    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarkHolder bookmarkHolder,
+                                                            UnmanagedTransaction tx, RunWithMetadataMessage runMessage, long ignored )
     {
-        RunResponseHandler runHandler = new RunResponseHandler( METADATA_EXTRACTOR );
-        PullAllResponseHandler pullHandler = newBoltV3PullAllHandler(query, runHandler, connection, bookmarkHolder, tx );
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        RunResponseHandler runHandler = new RunResponseHandler( runFuture, METADATA_EXTRACTOR, connection, tx );
+        PullAllResponseHandler pullHandler = newBoltV3PullAllHandler( query, runHandler, connection, bookmarkHolder, tx );
 
-        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, pullHandler, waitForRunResponse );
+        return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, runFuture, pullHandler );
     }
 
     protected void verifyDatabaseNameBeforeTransaction( DatabaseName databaseName )
