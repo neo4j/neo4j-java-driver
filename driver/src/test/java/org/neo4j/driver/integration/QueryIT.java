@@ -38,6 +38,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 
 @ParallelizableIT
 class QueryIT
@@ -181,5 +182,23 @@ class QueryIT
     {
         assertThrows( IllegalArgumentException.class, () -> session.run( (String) null ) );
         assertThrows( IllegalArgumentException.class, () -> session.run( "" ) );
+    }
+
+    @Test
+    void shouldBeAbleToLogSemanticWrongExceptions()
+    {
+        try
+        {
+            // When I run a query with the old syntax
+            session.writeTransaction( tx ->
+                                              tx.run( "MATCH (n:Element) WHERE n.name = {param} RETURN n",
+                                                      parameters( "param", "Luke" ) ).list() );
+        }
+        catch ( Exception ex )
+        {
+            // And exception happens
+            // Then it should not have circular reference
+            assertNoCircularReferences( ex );
+        }
     }
 }

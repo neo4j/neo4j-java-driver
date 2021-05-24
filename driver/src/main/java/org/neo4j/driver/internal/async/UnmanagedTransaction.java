@@ -176,7 +176,7 @@ public class UnmanagedTransaction
         else
         {
             return resultCursors.retrieveNotConsumedError()
-                                .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
+                                .thenCompose( error -> doCommitAsync( error ).handle( handleCommitOrRollback( error ) ) )
                                 .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.COMMITTED, error ) );
         }
     }
@@ -249,12 +249,13 @@ public class UnmanagedTransaction
         }
     }
 
-    private CompletionStage<Void> doCommitAsync()
+    private CompletionStage<Void> doCommitAsync( Throwable cursorFailure )
     {
         if ( state.value == State.TERMINATED )
         {
             return failedFuture( new ClientException( "Transaction can't be committed. " +
-                                                      "It has been rolled back either because of an error or explicit termination", state.causeOfTermination ) );
+                                                      "It has been rolled back either because of an error or explicit termination",
+                                                      state.causeOfTermination != cursorFailure ? state.causeOfTermination : null ) );
         }
         return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }

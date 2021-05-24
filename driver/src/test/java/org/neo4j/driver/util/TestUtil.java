@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -644,14 +645,46 @@ public final class TestUtil
         return ServerVersion.v4_0_0;
     }
 
+    public static void assertNoCircularReferences( Throwable ex )
+    {
+        assertNoCircularReferences( ex, new ArrayList<>() );
+    }
+
+    private static void assertNoCircularReferences( Throwable ex, List<Throwable> list )
+    {
+        list.add( ex );
+        if ( ex.getCause() != null )
+        {
+            if ( containsReference( list, ex.getCause() ) )
+            {
+                throw new AssertionError( "Circular reference detected", ex.getCause() );
+            }
+            assertNoCircularReferences( ex.getCause(), list );
+        }
+        for ( Throwable suppressed : ex.getSuppressed() )
+        {
+            if ( containsReference( list, suppressed ) )
+            {
+                throw new AssertionError( "Circular reference detected", suppressed );
+            }
+            assertNoCircularReferences( suppressed, list );
+        }
+    }
+
+    private static <T> boolean containsReference( List<T> list, T object )
+    {
+        return list.stream()
+                   .anyMatch( element -> element == object );
+    }
+
     private static void setupSuccessfulPullAll( Connection connection, String query )
     {
         doAnswer( invocation ->
-        {
-            ResponseHandler handler = invocation.getArgument( 3 );
-            handler.onSuccess( emptyMap() );
-            return null;
-        } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( query ) ), any(), any(), any() );
+                  {
+                      ResponseHandler handler = invocation.getArgument( 3 );
+                      handler.onSuccess( emptyMap() );
+                      return null;
+                  } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( query ) ), any(), any(), any() );
     }
 
     private static void setupSuccessResponse( Connection connection, Class<? extends Message> messageType )
