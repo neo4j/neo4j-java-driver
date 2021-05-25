@@ -19,17 +19,12 @@
 package org.neo4j.driver.integration.async;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
@@ -43,8 +38,6 @@ import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 @ParallelizableIT
 public class AsyncQueryIT
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( AsyncQueryIT.class );
-
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
