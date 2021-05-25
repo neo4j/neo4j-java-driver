@@ -30,12 +30,14 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
+import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,10 +45,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.beginMessage;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
@@ -195,12 +200,60 @@ class UnmanagedTransactionTest
         Connection connection = connectionMock();
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
-        tx.markTerminated(  null  );
+        tx.markTerminated( null );
 
         assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
 
         assertFalse( tx.isOpen() );
         verify( connection ).release();
+    }
+
+    @Test
+    void shouldNotCreateCircularExceptionWhenTerminationCauseEqualsToCursorFailure()
+    {
+        Connection connection = connectionMock();
+        ClientException terminationCause = new ClientException( "Custom exception" );
+        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( terminationCause );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+
+        tx.markTerminated( terminationCause );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
+        assertEquals( terminationCause, e );
+    }
+
+    @Test
+    void shouldNotCreateCircularExceptionWhenTerminationCauseDifferentFromCursorFailure()
+    {
+        Connection connection = connectionMock();
+        ClientException terminationCause = new ClientException( "Custom exception" );
+        ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( new ClientException( "Cursor error" ) );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+
+        tx.markTerminated( terminationCause );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
+        assertEquals( 1, e.getSuppressed().length );
+
+        Throwable suppressed = e.getSuppressed()[0];
+        assertEquals( terminationCause, suppressed.getCause() );
+    }
+
+    @Test
+    void shouldNotCreateCircularExceptionWhenTerminatedWithoutFailure()
+    {
+        Connection connection = connectionMock();
+        ClientException terminationCause = new ClientException( "Custom exception" );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+
+        tx.markTerminated( terminationCause );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
+
+        assertEquals( terminationCause, e.getCause() );
     }
 
     @Test
@@ -249,5 +302,16 @@ class UnmanagedTransactionTest
                   } ).when( connection ).writeAndFlush( argThat( beginMessage() ), any() );
 
         return connection;
+    }
+
+    private ResultCursorsHolder mockResultCursorWith( ClientException clientException )
+    {
+        ResultCursorsHolder resultCursorsHolder = new ResultCursorsHolder();
+        FailableCursor cursor = mock( FailableCursor.class );
+        doReturn( completedFuture( clientException ) )
+                .when( cursor )
+                .discardAllFailureAsync();
+        resultCursorsHolder.add( completedFuture( cursor ) );
+        return resultCursorsHolder;
     }
 }

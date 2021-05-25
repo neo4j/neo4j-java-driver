@@ -18,20 +18,17 @@
  */
 package org.neo4j.driver.integration;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.UUID;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.Bookmark;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.DisabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.internal.util.Neo4jFeature;
@@ -47,6 +44,7 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsSingleValue;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContainsSingleUniqueValues;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 
 @ParallelizableIT
 class BookmarkIT
@@ -137,7 +135,8 @@ class BookmarkIT
         Transaction tx = session.beginTransaction();
         tx.run( "RETURN" );
 
-        assertThrows( ClientException.class, tx::commit );
+        ClientException e = assertThrows( ClientException.class, tx::commit );
+        assertNoCircularReferences( e );
         assertEquals( bookmark, session.lastBookmark() );
     }
 

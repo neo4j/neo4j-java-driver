@@ -18,9 +18,13 @@
  */
 package org.neo4j.driver.integration;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -36,8 +40,10 @@ import org.neo4j.driver.util.SessionExtension;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 
 @ParallelizableIT
 class QueryIT
@@ -181,5 +187,19 @@ class QueryIT
     {
         assertThrows( IllegalArgumentException.class, () -> session.run( (String) null ) );
         assertThrows( IllegalArgumentException.class, () -> session.run( "" ) );
+    }
+
+    @Test
+    void shouldBeAbleToLogSemanticWrongExceptions() {
+        try {
+            // When I run a query with the old syntax
+            session.writeTransaction(tx ->
+                                             tx.run( "MATCH (n:Element) WHERE n.name = {param} RETURN n",
+                                                     parameters("param", "Luke" )).list());
+        } catch ( Exception ex ) {
+            // And exception happens
+            // Then it should not have circular reference
+            assertNoCircularReferences(ex);
+        }
     }
 }

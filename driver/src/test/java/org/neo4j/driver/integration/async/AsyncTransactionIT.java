@@ -69,6 +69,7 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAfterAndResultConsumedAfter;
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -677,6 +678,7 @@ class AsyncTransactionIT
         tx.runAsync( "CREATE (:TestNode)" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
         assertEquals( "/ by zero", e.getMessage() );
     }
 
@@ -688,6 +690,7 @@ class AsyncTransactionIT
         tx.runAsync( "RETURN ILLEGAL" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
         assertThat( e.getMessage(), containsString( "ILLEGAL" ) );
     }
 
@@ -699,6 +702,7 @@ class AsyncTransactionIT
         await( tx.runAsync( "RETURN 42 / 0" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );
     }
 
@@ -732,6 +736,7 @@ class AsyncTransactionIT
         tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
         assertThat( e.code(), containsString( "TypeError" ) );
     }
 
@@ -743,6 +748,7 @@ class AsyncTransactionIT
         await( tx.runAsync( "UNWIND [1, 2, 3, 'Hi'] AS x RETURN 10 / x" ) );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
+        assertNoCircularReferences( e );
         assertThat( e.code(), containsString( "TypeError" ) );
     }
 

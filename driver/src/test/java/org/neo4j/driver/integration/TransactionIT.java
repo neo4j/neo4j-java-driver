@@ -29,8 +29,8 @@ import java.util.function.Consumer;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.retry.RetrySettings.DEFAULT;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 
 @ParallelizableIT
 class TransactionIT
@@ -291,7 +292,8 @@ class TransactionIT
         Transaction tx = session.beginTransaction();
         tx.run( "invalid" ); // send run, pull_all
 
-        assertThrows( ClientException.class, tx::commit );
+        ClientException e = assertThrows( ClientException.class, tx::commit );
+        assertNoCircularReferences( e );
 
         try ( Transaction anotherTx = session.beginTransaction() )
         {
@@ -385,7 +387,8 @@ class TransactionIT
 
             try
             {
-                assertThrows( ServiceUnavailableException.class, tx2::commit );
+                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, tx2::commit );
+                assertNoCircularReferences( e );
             }
             finally
             {
@@ -481,6 +484,7 @@ class TransactionIT
             }
         } );
 
+        assertNoCircularReferences( error );
         assertThat( error.code(), containsString( "SyntaxError" ) );
         assertThat( error.getSuppressed().length, greaterThanOrEqualTo( 1 ) );
         Throwable suppressed = error.getSuppressed()[0];

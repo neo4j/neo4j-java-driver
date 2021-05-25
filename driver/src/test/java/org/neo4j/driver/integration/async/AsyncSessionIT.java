@@ -83,6 +83,7 @@ import static org.neo4j.driver.internal.util.Matchers.containsResultAvailableAft
 import static org.neo4j.driver.internal.util.Matchers.syntaxError;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
+import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAll;
 
@@ -381,7 +382,8 @@ class AsyncSessionIT
         InvocationTrackingWork work = new InvocationTrackingWork( "UNWIND [10, 5, 0] AS x CREATE (:Hi) RETURN 10/x" );
         CompletionStage<Record> txStage = session.writeTransactionAsync( work );
 
-        assertThrows( ClientException.class, () -> await( txStage ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( txStage ) );
+        assertNoCircularReferences( e );
         assertEquals( 1, work.invocationCount() );
         assertEquals( 0, countNodesByLabel( "Hi" ) );
     }

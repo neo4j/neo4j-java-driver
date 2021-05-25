@@ -121,24 +121,29 @@ public class UnmanagedTransaction
 
     private volatile StateHolder state = StateHolder.of( State.ACTIVE );
 
-    public UnmanagedTransaction(Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
+    public UnmanagedTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
+    {
+        this( connection, bookmarkHolder, fetchSize, new ResultCursorsHolder() );
+    }
+
+    protected UnmanagedTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize, ResultCursorsHolder resultCursors )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
         this.bookmarkHolder = bookmarkHolder;
-        this.resultCursors = new ResultCursorsHolder();
+        this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<UnmanagedTransaction> beginAsync(Bookmark initialBookmark, TransactionConfig config )
+    public CompletionStage<UnmanagedTransaction> beginAsync( Bookmark initialBookmark, TransactionConfig config )
     {
         return protocol.beginTransaction( connection, initialBookmark, config )
-                .handle( ( ignore, beginError ) ->
-                {
-                    if ( beginError != null )
-                    {
-                        if ( beginError instanceof AuthorizationExpiredException )
-                        {
+                       .handle( ( ignore, beginError ) ->
+                                {
+                                    if ( beginError != null )
+                                    {
+                                        if ( beginError instanceof AuthorizationExpiredException )
+                                        {
                             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
                         }
                         else
@@ -176,7 +181,7 @@ public class UnmanagedTransaction
         else
         {
             return resultCursors.retrieveNotConsumedError()
-                                .thenCompose( error -> doCommitAsync().handle( handleCommitOrRollback( error ) ) )
+                                .thenCompose( error -> doCommitAsync( error ).handle( handleCommitOrRollback( error ) ) )
                                 .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.COMMITTED, error ) );
         }
     }
@@ -249,12 +254,13 @@ public class UnmanagedTransaction
         }
     }
 
-    private CompletionStage<Void> doCommitAsync()
+    private CompletionStage<Void> doCommitAsync( Throwable cursorFailure )
     {
         if ( state.value == State.TERMINATED )
         {
             return failedFuture( new ClientException( "Transaction can't be committed. " +
-                                                      "It has been rolled back either because of an error or explicit termination", state.causeOfTermination ) );
+                                                      "It has been rolled back either because of an error or explicit termination",
+                                                      cursorFailure != state.causeOfTermination ? state.causeOfTermination : null ) );
         }
         return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }
