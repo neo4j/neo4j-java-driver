@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -642,6 +643,29 @@ public final class TestUtil
     public static ServerVersion anyServerVersion()
     {
         return ServerVersion.v4_0_0;
+    }
+
+    public static void assertNoCircularReferences(Throwable ex)
+    {
+        assertNoCircularReferences( ex, new ArrayList<>() );
+    }
+
+    private static void assertNoCircularReferences(Throwable ex, List<Throwable> list)
+    {
+        list.add( ex );
+        if (ex.getCause() != null ) {
+            if (list.contains( ex.getCause() )) {
+                throw new AssertionError("Circular reference detected", ex.getCause());
+            }
+            assertNoCircularReferences(ex.getCause(), list);
+        }
+        for ( Throwable suppressed: ex.getSuppressed()  )
+        {
+            if(list.contains( suppressed )) {
+                throw new AssertionError("Circular reference detected", suppressed);
+            }
+            assertNoCircularReferences( suppressed, list );
+        }
     }
 
     private static void setupSuccessfulPullAll( Connection connection, String query )
