@@ -48,6 +48,7 @@ public class StartTest implements TestkitRequest
         SKIP_PATTERN_TO_REASON
                 .put( "^.+routing.Routing.*\\.test_should_successfully_get_server_protocol_version$", "The test is not applicable to 4.2 driver" );
         SKIP_PATTERN_TO_REASON.put( "^.+routing.Routing.*\\.test_should_successfully_get_server_agent$", "The test is not applicable to 4.2 driver" );
+        SKIP_PATTERN_TO_REASON.put( "^.*authorization.AuthorizationTests.*", "These tests is not applicable to 4.2 driver" );
     }
 
     private StartTestBody data;
