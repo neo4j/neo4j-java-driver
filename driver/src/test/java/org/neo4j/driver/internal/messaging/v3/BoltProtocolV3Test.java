@@ -77,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -389,6 +390,7 @@ public class BoltProtocolV3Test
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, false, InternalBookmark.empty(), TransactionConfig.empty(), mode ).runHandler;
         assertFalse( cursorFuture.isDone() );
+        Throwable error = new RuntimeException();
 
         if ( success )
         {
@@ -397,18 +399,18 @@ public class BoltProtocolV3Test
         else
         {
             // When responded with a failure
-            runResponseHandler.onFailure( new RuntimeException() );
+            runResponseHandler.onFailure( error );
         }
 
         // Then
         assertTrue( cursorFuture.isDone() );
         if ( success )
         {
-            assertNotNull( cursorFuture.get() );
+            assertFalse( cursorFuture.get().runError().isPresent() );
         }
         else
         {
-            assertThrows( RuntimeException.class, () -> await( cursorFuture ) );
+            assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
         }
     }
 
@@ -474,11 +476,12 @@ public class BoltProtocolV3Test
         assertFalse( cursorFuture.isDone() );
 
         ResponseHandler runResponseHandler = verifyRunInvoked( connection, true, bookmark, config, mode ).runHandler;
-        runResponseHandler.onFailure( new RuntimeException() );
+        Throwable error = new RuntimeException();
+        runResponseHandler.onFailure( error );
         assertEquals( bookmark, bookmarkHolder.getBookmark() );
 
-        assertTrue( cursorFuture.isCompletedExceptionally() );
-        assertThrows( RuntimeException.class, () -> await( cursorFuture ) );
+        assertTrue( cursorFuture.isDone() );
+        assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
     }
 
     private static InternalAuthToken dummyAuthToken()

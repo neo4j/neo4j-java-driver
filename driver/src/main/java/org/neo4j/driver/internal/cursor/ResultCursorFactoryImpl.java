@@ -66,7 +66,7 @@ public class ResultCursorFactoryImpl implements ResultCursorFactory
         // only write and flush messages when async result is wanted.
         connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
         pullAllHandler.prePopulateRecords();
-        return runFuture.thenApply( ignore -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
+        return runFuture.handle( ( ignored, error ) -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( error, runHandler, pullAllHandler ) ) );
     }
 
     @Override

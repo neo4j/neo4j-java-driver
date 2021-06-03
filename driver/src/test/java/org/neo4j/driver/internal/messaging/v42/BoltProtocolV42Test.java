@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -376,12 +376,13 @@ public final class BoltProtocolV42Test
         assertFalse( cursorFuture.isDone() );
 
         // When I response to Run message with a failure
-        runHandler.onFailure( new RuntimeException() );
+        Throwable error = new RuntimeException();
+        runHandler.onFailure( error );
 
         // Then
         assertEquals( bookmark, bookmarkHolder.getBookmark() );
-        assertTrue( cursorFuture.isCompletedExceptionally() );
-        assertThrows( RuntimeException.class, () -> await( cursorFuture ) );
+        assertTrue( cursorFuture.isDone() );
+        assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
     }
 
     private void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Bookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
@@ -419,6 +420,7 @@ public final class BoltProtocolV42Test
 
         ResponseHandler runHandler = verifyTxRunInvoked( connection );
         assertFalse( cursorFuture.isDone() );
+        Throwable error = new RuntimeException();
 
         if ( success )
         {
@@ -427,18 +429,18 @@ public final class BoltProtocolV42Test
         else
         {
             // When responded with a failure
-            runHandler.onFailure( new RuntimeException() );
+            runHandler.onFailure( error );
         }
 
         // Then
         assertTrue( cursorFuture.isDone() );
         if ( success )
         {
-            assertNotNull( cursorFuture.get() );
+            assertFalse( cursorFuture.get().runError().isPresent() );
         }
         else
         {
-            assertThrows( RuntimeException.class, () -> await( cursorFuture ) );
+            assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
         }
     }
 

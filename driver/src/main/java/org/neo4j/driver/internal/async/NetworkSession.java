@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,7 +83,10 @@ public class NetworkSession
                 buildResultCursorFactory( query, config ).thenCompose( ResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
-        return newResultCursorStage.thenApply( cursor -> cursor ); // convert the return type
+        return newResultCursorStage.thenCompose(
+                cursor -> cursor.runError()
+                                .map( Futures::<ResultCursor>failedFuture )
+                                .orElseGet( () -> CompletableFuture.completedFuture( cursor ) ) );
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config )

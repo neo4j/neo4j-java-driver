@@ -66,16 +66,9 @@ public class RunResponseHandler implements ResponseHandler
         {
             tx.markTerminated( error );
         }
-        else
+        else if ( error instanceof AuthorizationExpiredException )
         {
-            if ( error instanceof AuthorizationExpiredException )
-            {
-                connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-            }
-            else
-            {
-                connection.release();
-            }
+            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
         }
         runFuture.completeExceptionally( error );
     }

@@ -404,12 +404,12 @@ class AsyncResultCursorImplTest
 
     private static AsyncResultCursorImpl newCursor(PullAllResponseHandler pullAllHandler )
     {
-        return new AsyncResultCursorImpl( newRunResponseHandler(), pullAllHandler );
+        return new AsyncResultCursorImpl( null, newRunResponseHandler(), pullAllHandler );
     }
 
     private static AsyncResultCursorImpl newCursor(RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
-        return new AsyncResultCursorImpl( runHandler, pullAllHandler );
+        return new AsyncResultCursorImpl( null, runHandler, pullAllHandler );
     }
 
     private static RunResponseHandler newRunResponseHandler()

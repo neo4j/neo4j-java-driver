@@ -154,7 +154,7 @@ class RunResponseHandlerTest
     }
 
     @Test
-    void shouldReleaseConnectionAndFailOnFailure()
+    void shouldNotReleaseConnectionAndFailOnFailure()
     {
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
         Connection connection = mock( Connection.class );
@@ -167,7 +167,7 @@ class RunResponseHandlerTest
         assertTrue( runFuture.isCompletedExceptionally() );
         Throwable actualException = assertThrows( Throwable.class, () -> await( runFuture ) );
         assertSame( throwable, actualException );
-        verify( connection ).release();
+        verify( connection, never() ).release();
         verify( connection, never() ).terminateAndRelease( any( String.class ) );
     }
 

@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.cursor;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
@@ -30,10 +29,10 @@ import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -58,7 +57,7 @@ class ResultCursorFactoryImplTest
     }
 
     @Test
-    void shouldFailAsyncResultWhenRunFailed()
+    void shouldReturnAsyncResultWithRunErrorWhenRunFailed()
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -68,8 +67,9 @@ class ResultCursorFactoryImplTest
         CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        CompletionException actual = assertThrows( CompletionException.class, () -> getNow( cursorFuture ) );
-        assertThat( actual.getCause(), equalTo( error ) );
+        AsyncResultCursor cursor = getNow( cursorFuture );
+        assertTrue( cursor.runError().isPresent() );
+        assertSame( error, cursor.runError().get() );
     }
 
     @Test

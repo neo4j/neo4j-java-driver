@@ -31,10 +31,11 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -58,7 +59,7 @@ class AsyncResultCursorOnlyFactoryTest
     }
 
     @Test
-    void shouldFailAsyncResultWhenRunFailed()
+    void shouldReturnAsyncResultWithRunErrorWhenRunFailed()
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -68,8 +69,9 @@ class AsyncResultCursorOnlyFactoryTest
         CompletionStage<AsyncResultCursor> cursorFuture = cursorFactory.asyncResult();
 
         // Then
-        CompletionException actual = assertThrows( CompletionException.class, () -> getNow( cursorFuture ) );
-        assertThat( actual.getCause(), equalTo( error ) );
+        AsyncResultCursor cursor = getNow( cursorFuture );
+        assertTrue( cursor.runError().isPresent() );
+        assertSame( error, cursor.runError().get() );
     }
 
     @Test

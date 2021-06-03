@@ -64,7 +64,7 @@ public class AsyncResultCursorOnlyFactory implements ResultCursorFactory
         connection.write( runMessage, runHandler ); // queues the run message, will be flushed with pull message together
         pullAllHandler.prePopulateRecords();
 
-        return runFuture.thenApply( ignore -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( runHandler, pullAllHandler ) ) );
+        return runFuture.handle( ( ignored, error ) -> new DisposableAsyncResultCursor( new AsyncResultCursorImpl( error, runHandler, pullAllHandler ) ) );
     }
 
     public CompletionStage<RxResultCursor> rxResult()

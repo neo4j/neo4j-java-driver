@@ -278,7 +278,7 @@ class ConnectionHandlingIT
     void connectionUsedForSessionRunReturnedToThePoolWhenSessionClose()
     {
         Session session = driver.session();
-        Result result = createNodes( 12, session );
+        createNodes( 12, session );
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;
         verify( connection1, never() ).release();

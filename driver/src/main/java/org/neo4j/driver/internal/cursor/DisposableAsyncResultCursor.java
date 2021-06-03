@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cursor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -117,5 +118,11 @@ public class DisposableAsyncResultCursor implements AsyncResultCursor
     boolean isDisposed()
     {
         return this.isDisposed;
+    }
+
+    @Override
+    public Optional<Throwable> runError()
+    {
+        return this.delegate.runError();
     }
 }

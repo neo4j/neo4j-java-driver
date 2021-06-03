@@ -373,7 +373,7 @@ class InternalResultTest
         }
         pullAllHandler.onSuccess( emptyMap() );
 
-        AsyncResultCursor cursor = new AsyncResultCursorImpl( runHandler, pullAllHandler );
+        AsyncResultCursor cursor = new AsyncResultCursorImpl( null, runHandler, pullAllHandler );
         return new InternalResult( connection, new DisposableAsyncResultCursor( cursor ) );
     }
 

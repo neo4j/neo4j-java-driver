@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -210,7 +212,10 @@ public class UnmanagedTransaction
         CompletionStage<AsyncResultCursor> cursorStage =
                 protocol.runInUnmanagedTransaction( connection, query, this, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
-        return cursorStage.thenApply( cursor -> cursor );
+        return cursorStage.thenCompose(
+                cursor -> cursor.runError()
+                                .map( Futures::<ResultCursor>failedFuture )
+                                .orElseGet( () -> CompletableFuture.completedFuture( cursor ) ) );
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query)
@@ -229,7 +234,29 @@ public class UnmanagedTransaction
 
     public void markTerminated( Throwable cause )
     {
-        state = StateHolder.terminatedWith( cause );
+        if ( state.value == State.TERMINATED )
+        {
+            if ( state.causeOfTermination != null )
+            {
+                addSuppressedWhenNotCaptured( state.causeOfTermination, cause );
+            }
+        }
+        else
+        {
+            state = StateHolder.terminatedWith( cause );
+        }
+    }
+
+    private void addSuppressedWhenNotCaptured( Throwable currentCause, Throwable newCause )
+    {
+        if ( currentCause != newCause )
+        {
+            boolean noneMatch = Arrays.stream( currentCause.getSuppressed() ).noneMatch( suppressed -> suppressed == newCause );
+            if ( noneMatch )
+            {
+                currentCause.addSuppressed( newCause );
+            }
+        }
     }
 
     public Connection connection()
