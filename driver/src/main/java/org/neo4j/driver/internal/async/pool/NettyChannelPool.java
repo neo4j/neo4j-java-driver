@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.async.pool;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.FixedChannelPool;
 
@@ -66,21 +67,27 @@ public class NettyChannelPool implements ExtendedChannelPool
             protected ChannelFuture connectChannel( Bootstrap bootstrap )
             {
                 ListenerEvent creatingEvent = handler.channelCreating( id );
-                ChannelFuture channelFuture = connector.connect( address, bootstrap );
-                channelFuture.addListener( future -> {
-                    if ( future.isSuccess() )
-                    {
-                        // notify pool handler about a successful connection
-                        Channel channel = channelFuture.channel();
-                        setPoolId( channel, id );
-                        handler.channelCreated( channel, creatingEvent );
-                    }
-                    else
-                    {
-                        handler.channelFailedToCreate( id );
-                    }
-                } );
-                return channelFuture;
+                ChannelFuture connectedChannelFuture = connector.connect( address, bootstrap );
+                Channel channel = connectedChannelFuture.channel();
+                // This ensures that handler.channelCreated is called before SimpleChannelPool calls handler.channelAcquired
+                ChannelPromise trackedChannelFuture = channel.newPromise();
+                connectedChannelFuture.addListener(
+                        future ->
+                        {
+                            if ( future.isSuccess() )
+                            {
+                                // notify pool handler about a successful connection
+                                setPoolId( channel, id );
+                                handler.channelCreated( channel, creatingEvent );
+                                trackedChannelFuture.setSuccess();
+                            }
+                            else
+                            {
+                                handler.channelFailedToCreate( id );
+                                trackedChannelFuture.setFailure( future.cause() );
+                            }
+                        } );
+                return trackedChannelFuture;
             }
         };
     }
