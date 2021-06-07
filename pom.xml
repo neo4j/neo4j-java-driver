@@ -10,7 +10,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <rootDir>${project.basedir}</rootDir>
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
-    <junit.version>5.6.2</junit.version>
+    <junit.version>5.7.2</junit.version>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
@@ -75,7 +75,7 @@
         <!-- corresponding server dependency also needs updating.-->
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>Dysprosium-SR19</version>
+        <version>Dysprosium-SR20</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -140,7 +140,7 @@
       <dependency>
         <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>20.3.1.2</version>
+        <version>20.3.2</version>
         <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
         <scope>provided</scope>
       </dependency>
