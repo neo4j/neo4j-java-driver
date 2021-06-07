@@ -188,6 +188,25 @@ class ExamplesIT
     }
 
     @Test
+    void testShouldAsyncRunMultipleTransactionExample() throws Exception
+    {
+        // Given
+        write( "CREATE (a:Person {name: 'Alice'})" );
+        write( "CREATE (a:Person {name: 'Bob'})" );
+        try ( AsyncRunMultipleTransactionExample example = new AsyncRunMultipleTransactionExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            Integer nodesCreated = await( example.addEmployees("Acme") );
+
+            // Then
+            int employeeCount = readInt(
+                    "MATCH (emp:Person)-[WORKS_FOR]->(com:Company) WHERE com.name = 'Acme' RETURN count(emp)" );
+            assertThat( employeeCount, equalTo( 2 ) );
+            assertThat( nodesCreated, equalTo( 1 ) );
+        }
+    }
+
+    @Test
     void testShouldRunConfigConnectionPoolExample() throws Exception
     {
         // Given
