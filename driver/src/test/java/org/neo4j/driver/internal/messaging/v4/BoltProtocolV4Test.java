@@ -79,6 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -387,7 +388,8 @@ public final class BoltProtocolV4Test
         // Then
         assertEquals( bookmark, bookmarkHolder.getBookmark() );
         assertTrue( cursorFuture.isDone() );
-        assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
+        Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
+        assertSame( error, actual );
     }
 
     protected void testSuccessfulRunInAutoCommitTxWithWaitingForResponse( Bookmark bookmark, TransactionConfig config, AccessMode mode ) throws Exception
@@ -441,11 +443,12 @@ public final class BoltProtocolV4Test
         assertTrue( cursorFuture.isDone() );
         if ( success )
         {
-            assertFalse( cursorFuture.get().runError().isPresent() );
+            assertNotNull( await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
         }
         else
         {
-            assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
+            Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
+            assertSame( error, actual );
         }
     }
 

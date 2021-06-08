@@ -406,11 +406,12 @@ public class BoltProtocolV3Test
         assertTrue( cursorFuture.isDone() );
         if ( success )
         {
-            assertFalse( cursorFuture.get().runError().isPresent() );
+            assertNotNull( await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
         }
         else
         {
-            assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
+            Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
+            assertSame( error, actual );
         }
     }
 
@@ -481,7 +482,8 @@ public class BoltProtocolV3Test
         assertEquals( bookmark, bookmarkHolder.getBookmark() );
 
         assertTrue( cursorFuture.isDone() );
-        assertSame( error, cursorFuture.get().runError().orElseThrow( () -> new RuntimeException( "Unexpected" ) ) );
+        Throwable actual = assertThrows( error.getClass(), () -> await( cursorFuture.get().mapSuccessfulRunCompletionAsync() ) );
+        assertSame( error, actual );
     }
 
     private static InternalAuthToken dummyAuthToken()

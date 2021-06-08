@@ -20,7 +20,6 @@ package org.neo4j.driver.internal.async;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
@@ -212,10 +211,7 @@ public class UnmanagedTransaction
         CompletionStage<AsyncResultCursor> cursorStage =
                 protocol.runInUnmanagedTransaction( connection, query, this, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
-        return cursorStage.thenCompose(
-                cursor -> cursor.runError()
-                                .map( Futures::<ResultCursor>failedFuture )
-                                .orElseGet( () -> CompletableFuture.completedFuture( cursor ) ) );
+        return cursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor );
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query)

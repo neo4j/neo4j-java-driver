@@ -32,12 +32,13 @@ import org.neo4j.driver.internal.spi.Connection;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.driver.internal.util.Futures.getNow;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class ResultCursorFactoryImplTest
 {
@@ -68,8 +69,8 @@ class ResultCursorFactoryImplTest
 
         // Then
         AsyncResultCursor cursor = getNow( cursorFuture );
-        assertTrue( cursor.runError().isPresent() );
-        assertSame( error, cursor.runError().get() );
+        Throwable actual = assertThrows( error.getClass(), () -> await( cursor.mapSuccessfulRunCompletionAsync() ) );
+        assertSame( error, actual );
     }
 
     @Test

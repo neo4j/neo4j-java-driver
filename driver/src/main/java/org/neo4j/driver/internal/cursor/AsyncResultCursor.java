@@ -18,12 +18,12 @@
  */
 package org.neo4j.driver.internal.cursor;
 
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.FailableCursor;
 
 public interface AsyncResultCursor extends ResultCursor, FailableCursor
 {
-    Optional<Throwable> runError();
+    CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync();
 }

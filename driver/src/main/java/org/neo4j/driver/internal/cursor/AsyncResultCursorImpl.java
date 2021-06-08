@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.cursor;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -161,8 +160,8 @@ public class AsyncResultCursorImpl implements AsyncResultCursor
     }
 
     @Override
-    public Optional<Throwable> runError()
+    public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync()
     {
-        return Optional.ofNullable( runError );
+        return runError != null ? Futures.failedFuture( runError ) : CompletableFuture.completedFuture( this );
     }
 }
