@@ -82,7 +82,7 @@ public class NetworkSession
                 buildResultCursorFactory( query, config ).thenCompose( ResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
-        return newResultCursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor );
+        return newResultCursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor ); // convert the return type
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config )

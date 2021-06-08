@@ -36,7 +36,7 @@ public class DisposableAsyncResultCursor implements AsyncResultCursor
     private final AsyncResultCursor delegate;
     private boolean isDisposed;
 
-    public DisposableAsyncResultCursor(AsyncResultCursor delegate )
+    public DisposableAsyncResultCursor( AsyncResultCursor delegate )
     {
         this.delegate = delegate;
     }
@@ -122,6 +122,6 @@ public class DisposableAsyncResultCursor implements AsyncResultCursor
     @Override
     public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync()
     {
-        return this.delegate.mapSuccessfulRunCompletionAsync().thenApply( ignored -> this.delegate );
+        return this.delegate.mapSuccessfulRunCompletionAsync().thenApply( ignored -> this );
     }
 }
