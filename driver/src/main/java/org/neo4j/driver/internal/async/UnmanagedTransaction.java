@@ -182,7 +182,7 @@ public class UnmanagedTransaction
         {
             return resultCursors.retrieveNotConsumedError()
                                 .thenCompose( error -> doCommitAsync( error ).handle( handleCommitOrRollback( error ) ) )
-                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.COMMITTED, error ) );
+                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( true, error ) );
         }
     }
 
@@ -200,7 +200,7 @@ public class UnmanagedTransaction
         {
             return resultCursors.retrieveNotConsumedError()
                                 .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( State.ROLLED_BACK, error ) );
+                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( false, error ) );
         }
     }
 
@@ -287,16 +287,24 @@ public class UnmanagedTransaction
         };
     }
 
-    private void handleTransactionCompletion( State onSuccessState, Throwable throwable )
+    private void handleTransactionCompletion( boolean commitOnSuccess, Throwable throwable )
     {
-        if ( throwable instanceof AuthorizationExpiredException )
+        if ( commitOnSuccess && throwable == null )
         {
-            markTerminated( throwable );
-            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-            return;
+            state = StateHolder.of( State.COMMITTED );
+        }
+        else
+        {
+            state = StateHolder.of( State.ROLLED_BACK );
         }
 
-        state = StateHolder.of( onSuccessState );
-        connection.release(); // release in background
+        if ( throwable instanceof AuthorizationExpiredException )
+        {
+            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        else
+        {
+            connection.release(); // release in background
+        }
     }
 }
