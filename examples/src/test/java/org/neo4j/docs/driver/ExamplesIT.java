@@ -443,6 +443,34 @@ class ExamplesIT
     }
 
     @Test
+    void testShouldConfigureTransactionTimeoutExample() throws Exception
+    {
+        // Given
+        try ( TransactionTimeoutConfigExample example = new TransactionTimeoutConfigExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            example.addPerson( "Alice" );
+
+            // Then
+            assertThat( personCount( "Alice" ), greaterThan( 0 ) );
+        }
+    }
+
+    @Test
+    void testShouldConfigureTransactionMetadataExample() throws Exception
+    {
+        // Given
+        try ( TransactionMetadataConfigExample example = new TransactionMetadataConfigExample( uri, USER, PASSWORD ) )
+        {
+            // When
+            example.addPerson( "Alice" );
+
+            // Then
+            assertThat( personCount( "Alice" ), greaterThan( 0 ) );
+        }
+    }
+
+    @Test
     void testShouldRunAsyncTransactionFunctionExample() throws Exception
     {
         try ( AsyncTransactionFunctionExample example = new AsyncTransactionFunctionExample( uri, USER, PASSWORD ) )
