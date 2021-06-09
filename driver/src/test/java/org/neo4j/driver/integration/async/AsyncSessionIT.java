@@ -751,14 +751,6 @@ class AsyncSessionIT
     }
 
     @Test
-    void shouldPropagateFailureFromSummary()
-    {
-        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN Something" ) ) );
-
-        assertThat( e.code(), containsString( "SyntaxError" ) );
-    }
-
-    @Test
     void shouldNotPropagateFailureInCloseFromPreviousRun()
     {
         session.runAsync( "CREATE ()" );
