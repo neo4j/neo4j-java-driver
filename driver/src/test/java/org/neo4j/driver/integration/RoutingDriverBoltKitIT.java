@@ -31,7 +31,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -39,7 +38,6 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Logging;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
@@ -106,8 +104,7 @@ class RoutingDriverBoltKitIT
         StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
-        Driver driver = GraphDatabase
-                .driver( uri, Config.builder().withLogging( Logging.console( Level.FINE ) ).withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
+        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
         AsyncSession session = driver.asyncSession( builder().withDatabase( "mydatabase" ).build() );
         List<String> names = Futures.blockingGet( session.writeTransactionAsync(
                 tx -> tx.runAsync( "RETURN 1" )
