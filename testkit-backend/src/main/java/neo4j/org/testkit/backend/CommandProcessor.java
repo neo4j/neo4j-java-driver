@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
+import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
-import neo4j.org.testkit.backend.messages.responses.TestkitErrorResponse;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.io.BufferedReader;
@@ -154,7 +154,7 @@ public class CommandProcessor
                         // Unknown error, interpret this as a backend error.
                         // Report to frontend and rethrow, note that if socket been
                         // closed the writing will throw itself...
-                        writeResponse( TestkitErrorResponse.builder().errorMessage( e.toString() ).build() );
+                        writeResponse( BackendError.builder().data( BackendError.BackendErrorBody.builder().msg( e.toString() ).build() ).build() );
                         // This won't print if there was an IO exception since line above will rethrow
                         e.printStackTrace();
                         throw e;
