@@ -23,10 +23,10 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
-import neo4j.org.testkit.backend.messages.responses.TestkitErrorResponse;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.net.URI;
@@ -66,8 +66,13 @@ public class NewDriver implements TestkitRequest
                                           data.authorizationToken.getTokens().get( "realm" ) );
             break;
         default:
-            return TestkitErrorResponse.builder().errorMessage( "Auth scheme " + data.authorizationToken.getTokens().get( "scheme" ) + "not implemented" )
-                                       .build();
+            return BackendError.builder()
+                               .data( BackendError
+                                              .BackendErrorBody.builder()
+                                                               .msg( "Auth scheme " + data.authorizationToken.getTokens().get( "scheme" ) +
+                                                                     "not implemented" )
+                                                               .build() )
+                               .build();
         }
 
         Config.ConfigBuilder configBuilder = Config.builder();
