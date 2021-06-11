@@ -26,6 +26,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
+import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
@@ -87,7 +88,16 @@ public class NewDriver implements TestkitRequest
         }
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         Optional.ofNullable( data.connectionTimeoutMs ).ifPresent( timeout -> configBuilder.withConnectionTimeout( timeout, TimeUnit.MILLISECONDS ) );
-        testkitState.getDrivers().putIfAbsent( id, driver( URI.create( data.uri ), authToken, configBuilder.build(), domainNameResolver ) );
+        org.neo4j.driver.Driver driver;
+        try
+        {
+            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), domainNameResolver );
+        }
+        catch ( RuntimeException e )
+        {
+            return handleExceptionAsErrorResponse( testkitState, e ).orElseThrow( () -> e );
+        }
+        testkitState.getDrivers().putIfAbsent( id, driver );
         return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
     }
 
@@ -140,6 +150,20 @@ public class NewDriver implements TestkitRequest
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
         return new DriverFactoryWithDomainNameResolver( domainNameResolver )
                 .newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
+    }
+
+    private Optional<TestkitResponse> handleExceptionAsErrorResponse( TestkitState testkitState, RuntimeException e )
+    {
+        Optional<TestkitResponse> response = Optional.empty();
+        if ( e instanceof IllegalArgumentException && e.getMessage().startsWith( DriverFactory.NO_ROUTING_CONTEXT_ERROR_MESSAGE ) )
+        {
+            String id = testkitState.newId();
+            String errorType = e.getClass().getName();
+            response = Optional.of(
+                    DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).errorType( errorType ).build() ).build()
+            );
+        }
+        return response;
     }
 
     @Setter

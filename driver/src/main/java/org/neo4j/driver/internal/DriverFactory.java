@@ -61,14 +61,16 @@ import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
 {
+    public static final String NO_ROUTING_CONTEXT_ERROR_MESSAGE = "Routing parameters are not supported with scheme 'bolt'. Given URI: ";
+
     public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
                                      RetrySettings retrySettings, Config config, SecurityPlan securityPlan )
     {
         return newInstance( uri, authToken, routingSettings, retrySettings, config, null, securityPlan );
     }
 
-    public final Driver newInstance ( URI uri, AuthToken authToken, RoutingSettings routingSettings,
-            RetrySettings retrySettings, Config config,  EventLoopGroup eventLoopGroup, SecurityPlan securityPlan )
+    public final Driver newInstance( URI uri, AuthToken authToken, RoutingSettings routingSettings,
+                                     RetrySettings retrySettings, Config config, EventLoopGroup eventLoopGroup, SecurityPlan securityPlan )
     {
         Bootstrap bootstrap;
         boolean ownsEventLoopGroup;
@@ -288,8 +290,7 @@ public class DriverFactory
         RoutingContext routingContext = routingSettings.routingContext();
         if ( routingContext.isDefined() )
         {
-            throw new IllegalArgumentException(
-                    "Routing parameters are not supported with scheme 'bolt'. Given URI: '" + uri + "'" );
+            throw new IllegalArgumentException( NO_ROUTING_CONTEXT_ERROR_MESSAGE + "'" + uri + "'" );
         }
     }
 
