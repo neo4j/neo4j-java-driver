@@ -118,7 +118,7 @@ Otherwise, if you have Git, Python3 and Docker installed, please go ahead and cl
 git clone git@github.com:neo4j/neo4j-java-driver.git 
 git clone git@github.com:neo4j-drivers/testkit.git
 cd testkit
-TEST_DRIVER_NAME=neo4j-java-driver \
+TEST_DRIVER_NAME=java \
 TEST_DRIVER_REPO=`realpath ../neo4j-java-driver` \
 TEST_DOCKER_RMI=true \
 python3 main.py --tests UNIT_TESTS --configs 4.3-enterprise
@@ -127,7 +127,7 @@ python3 main.py --tests UNIT_TESTS --configs 4.3-enterprise
 To run additional Testkit test, specify `TESTKIT_TESTS`:
 
 ```
-TEST_DRIVER_NAME=neo4j-java-driver \
+TEST_DRIVER_NAME=java \
 TEST_DRIVER_REPO=`realpath ../neo4j-java-driver` \
 TEST_DOCKER_RMI=true \
 python3 main.py --tests TESTKIT_TESTS UNIT_TESTS --configs 4.3-enterprise
