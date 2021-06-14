@@ -40,6 +40,7 @@ public final class EventLoopGroupFactory
 {
     private static final String THREAD_NAME_PREFIX = "Neo4jDriverIO";
     private static final int THREAD_PRIORITY = Thread.MAX_PRIORITY;
+    private static final boolean THREAD_IS_DAEMON = true;
 
     private EventLoopGroupFactory()
     {
@@ -127,7 +128,7 @@ public final class EventLoopGroupFactory
     {
         DriverThreadFactory()
         {
-            super( THREAD_NAME_PREFIX, THREAD_PRIORITY );
+            super( THREAD_NAME_PREFIX, THREAD_IS_DAEMON, THREAD_PRIORITY );
         }
 
         @Override
