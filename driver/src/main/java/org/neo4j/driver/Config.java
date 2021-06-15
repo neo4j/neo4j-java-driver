@@ -465,15 +465,15 @@ public class Config
         }
 
         /**
-         * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to.
-         * This defaults to {@link TrustStrategy#trustSystemCertificates()}.
-         * See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to verify
-         * trust.
+         * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to. This defaults to {@link
+         * TrustStrategy#trustSystemCertificates()}. See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to
+         * verify trust.
          * <p>
-         * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to
-         * is really Neo4j, there is no point to encrypt at all, since anyone could pretend to be the remote Neo4j instance.
+         * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to is really Neo4j, there
+         * is no point to encrypt at all, since anyone could pretend to be the remote Neo4j instance.
          * <p>
-         * For this reason, there is no option to disable trust verification, if you find this cumbersome you should disable encryption using
+         * For this reason, there is no option to disable trust verification. However, it is possible to turn off encryption using the {@link
+         * ConfigBuilder#withoutEncryption()} option.
          *
          * @param trustStrategy TLS authentication strategy
          * @return this builder
