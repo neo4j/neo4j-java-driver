@@ -78,6 +78,9 @@ public class StartTest implements TestkitRequest
         SKIP_PATTERN_TO_REASON
                 .put( "^.+test_routing_v4x1.RoutingV4x1.test_should_write_successfully_on_writer_using_tx_function", SERVER_INFO_SKIP_REASON_MESSAGE );
         SKIP_PATTERN_TO_REASON.put( "^.+test_routing_v4x1.RoutingV4x1.test_should_write_successfully_on_writer_using_tx_run", SERVER_INFO_SKIP_REASON_MESSAGE );
+        SKIP_PATTERN_TO_REASON.put( "^.+versions.TestProtocolVersions.test_server_agent", SERVER_INFO_SKIP_REASON_MESSAGE );
+        SKIP_PATTERN_TO_REASON.put( "^.+versions.TestProtocolVersions.test_server_version", SERVER_INFO_SKIP_REASON_MESSAGE );
+        SKIP_PATTERN_TO_REASON.put( "^.+test_retry.TestRetry.test_no_retry_on_syntax_error$", "This test uses 4.3 Bolt" );
     }
 
     private StartTestBody data;
