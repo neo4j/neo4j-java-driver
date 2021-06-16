@@ -59,7 +59,7 @@ import java.util.Map;
  * @see Transaction
  * @since 1.0
  */
-public interface QueryRunner
+public interface QueryRunner extends AutoCloseable
 {
     /**
      * Run a query and return a result stream.
