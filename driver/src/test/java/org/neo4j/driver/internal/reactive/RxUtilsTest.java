@@ -27,21 +27,22 @@ import java.util.function.Predicate;
 
 import org.neo4j.driver.internal.util.Futures;
 
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.internal.reactive.RxUtils.createMono;
+import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 class RxUtilsTest
 {
     @Test
-    void emptyPublisherShouldComplete() throws Throwable
+    void emptyPublisherShouldComplete()
     {
         Publisher<Void> emptyPublisher = createEmptyPublisher( Futures::completedWithNull );
         StepVerifier.create( emptyPublisher ).verifyComplete();
     }
 
     @Test
-    void emptyPublisherShouldErrorIfSupplierErrored() throws Throwable
+    void emptyPublisherShouldErrorWhenSupplierErrors()
     {
         RuntimeException error = new RuntimeException( "Error" );
         Publisher<Void> emptyPublisher = createEmptyPublisher( () -> failedFuture( error ) );
@@ -50,18 +51,27 @@ class RxUtilsTest
     }
 
     @Test
-    void monoPublisherShouldCompleteWithValue() throws Throwable
+    void singleItemPublisherShouldCompleteWithValue()
     {
-        Publisher<String> mono = createMono( () -> CompletableFuture.completedFuture( "One" ) );
-        StepVerifier.create( mono ).expectNext( "One" ).verifyComplete();
+        Publisher<String> publisher = createSingleItemPublisher( () -> CompletableFuture.completedFuture( "One" ), () -> mock( Throwable.class ) );
+        StepVerifier.create( publisher ).expectNext( "One" ).verifyComplete();
     }
 
     @Test
-    void monoPublisherShouldErrorIfSupplierErrored() throws Throwable
+    void singleItemPublisherShouldErrorWhenFutureCompletesWithNull()
     {
-        RuntimeException error = new RuntimeException( "Error" );
-        Publisher<String> mono = createMono( () -> failedFuture( error ) );
+        Throwable error = mock( Throwable.class );
+        Publisher<String> publisher = createSingleItemPublisher( Futures::completedWithNull, () -> error );
 
-        StepVerifier.create( mono ).verifyErrorMatches( Predicate.isEqual( error ) );
+        StepVerifier.create( publisher ).verifyErrorMatches( actualError -> error == actualError );
+    }
+
+    @Test
+    void singleItemPublisherShouldErrorWhenSupplierErrors()
+    {
+        RuntimeException error = mock( RuntimeException.class );
+        Publisher<String> publisher = createSingleItemPublisher( () -> failedFuture( error ), () -> mock( Throwable.class ) );
+
+        StepVerifier.create( publisher ).verifyErrorMatches( actualError -> error == actualError );
     }
 }
