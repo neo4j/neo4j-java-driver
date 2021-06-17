@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
@@ -26,8 +25,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
+import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -38,7 +38,7 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.reactive.RxTransactionWork;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.internal.reactive.RxUtils.createMono;
+import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
 
 public class InternalRxSession extends AbstractRxQueryRunner implements RxSession
 {
@@ -61,40 +61,46 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     @Override
     public Publisher<RxTransaction> beginTransaction( TransactionConfig config )
     {
-        return createMono( () ->
-        {
-            CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
-            session.beginTransactionAsync( config ).whenComplete( ( tx, completionError ) -> {
-                if ( tx != null )
+        return createSingleItemPublisher(
+                () ->
                 {
-                    txFuture.complete( new InternalRxTransaction( tx ) );
-                }
-                else
-                {
-                    releaseConnectionBeforeReturning( txFuture, completionError );
-                }
-            } );
-            return txFuture;
-        } );
+                    CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
+                    session.beginTransactionAsync( config ).whenComplete(
+                            ( tx, completionError ) ->
+                            {
+                                if ( tx != null )
+                                {
+                                    txFuture.complete( new InternalRxTransaction( tx ) );
+                                }
+                                else
+                                {
+                                    releaseConnectionBeforeReturning( txFuture, completionError );
+                                }
+                            } );
+                    return txFuture;
+                }, () -> new IllegalStateException( "Unexpected condition, begin transaction call has completed successfully with transaction being null" ) );
     }
 
     private Publisher<RxTransaction> beginTransaction( AccessMode mode, TransactionConfig config )
     {
-        return createMono( () ->
-        {
-            CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
-            session.beginTransactionAsync( mode, config ).whenComplete( ( tx, completionError ) -> {
-                if ( tx != null )
+        return createSingleItemPublisher(
+                () ->
                 {
-                    txFuture.complete( new InternalRxTransaction( tx ) );
-                }
-                else
-                {
-                    releaseConnectionBeforeReturning( txFuture, completionError );
-                }
-            } );
-            return txFuture;
-        } );
+                    CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
+                    session.beginTransactionAsync( mode, config ).whenComplete(
+                            ( tx, completionError ) ->
+                            {
+                                if ( tx != null )
+                                {
+                                    txFuture.complete( new InternalRxTransaction( tx ) );
+                                }
+                                else
+                                {
+                                    releaseConnectionBeforeReturning( txFuture, completionError );
+                                }
+                            } );
+                    return txFuture;
+                }, () -> new IllegalStateException( "Unexpected condition, begin transaction call has completed successfully with transaction being null" ) );
     }
 
     @Override
