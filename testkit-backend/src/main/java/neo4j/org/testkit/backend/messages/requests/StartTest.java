@@ -51,9 +51,11 @@ public class StartTest implements TestkitRequest
         SKIP_PATTERN_TO_REASON
                 .put( "^.+routing.Routing.*\\.test_should_successfully_get_server_protocol_version$", "The test is not applicable to 4.2 driver" );
         SKIP_PATTERN_TO_REASON.put( "^.+routing.Routing.*\\.test_should_successfully_get_server_agent$", "The test is not applicable to 4.2 driver" );
-        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.*\\.test_client_says_goodbye$", "This test uses 4.3 Bolt" );
-        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.*\\.test_disconnect_after_hello", "This test uses 4.3 Bolt" );
-        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.*\\.test_disconnect_on_tx_begin", "The 4.2 driver disconnects after first next" );
+        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.test_client_says_goodbye$", "This test uses 4.3 Bolt" );
+        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.test_disconnect_after_hello", "This test uses 4.3 Bolt" );
+        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.test_disconnect_on_tx_begin", "The 4.2 driver disconnects after first next" );
+        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.test_disconnect_on_tx_run", "The 4.2 driver disconnects after first next" );
+        SKIP_PATTERN_TO_REASON.put( "^.+disconnects.TestDisconnects.test_disconnect_session_on_run", "The 4.2 driver disconnects after first next" );
         SKIP_PATTERN_TO_REASON.put( "^.+test_no_routing.NoRouting.test_should_read_successfully_using_session_run", SERVER_INFO_SKIP_REASON_MESSAGE );
         SKIP_PATTERN_TO_REASON
                 .put( "^.+test_routing_v3.RoutingV3.test_should_read_successfully_from_reader_using_session_run", SERVER_INFO_SKIP_REASON_MESSAGE );
