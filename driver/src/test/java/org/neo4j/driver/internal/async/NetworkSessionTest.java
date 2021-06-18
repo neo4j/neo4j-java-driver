@@ -20,8 +20,6 @@ package org.neo4j.driver.internal.async;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -88,12 +86,11 @@ class NetworkSessionTest
         session = newSession( connectionProvider );
     }
 
-    @ParameterizedTest
-    @ValueSource( strings = {"true", "false"} )
-    void shouldFlushOnRunAsync( boolean waitForResponse )
+    @Test
+    void shouldFlushOnRunAsync()
     {
         setupSuccessfulRunAndPull( connection );
-        await( session.runAsync( new Query( "RETURN 1" ), TransactionConfig.empty(), waitForResponse ) );
+        await( session.runAsync( new Query( "RETURN 1" ), TransactionConfig.empty() ) );
 
         verifyRunAndPull( connection, "RETURN 1" );
     }
@@ -145,13 +142,15 @@ class NetworkSessionTest
     void shouldBeAbleToUseSessionAgainWhenTransactionIsClosed()
     {
         // Given
-        await ( beginTransaction( session ).closeAsync() );
+        await( beginTransaction( session ).closeAsync() );
+        String query = "RETURN 1";
+        setupSuccessfulRunAndPull( connection, query );
 
         // When
-        run( session, "RETURN 1" );
+        run( session, query );
 
         // Then
-        verifyRunAndPull( connection, "RETURN 1" );
+        verifyRunAndPull( connection, query );
     }
 
     @Test
@@ -179,7 +178,10 @@ class NetworkSessionTest
     @Test
     void acquiresNewConnectionForRun()
     {
-        run( session, "RETURN 1" );
+        String query = "RETURN 1";
+        setupSuccessfulRunAndPull( connection, query );
+
+        run( session, query );
 
         verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
     }
@@ -254,7 +256,7 @@ class NetworkSessionTest
         setupSuccessfulRunAndPull( connection, query );
 
         UnmanagedTransaction tx = beginTransaction( session );
-        await( tx.runAsync( new Query( query ), false ) );
+        await( tx.runAsync( new Query( query ) ) );
 
         verify( connectionProvider ).acquireConnection( any( ConnectionContext.class ) );
         verifyRunAndPull( connection, query );
@@ -330,14 +332,18 @@ class NetworkSessionTest
     @Test
     void connectionShouldBeResetAfterSessionReset()
     {
-        run( session, "RETURN 1" );
+        String query = "RETURN 1";
+        setupSuccessfulRunAndPull( connection, query );
 
-        verify( connection, never() ).reset();
-        verify( connection, never() ).release();
+        run( session, query );
+
+        InOrder connectionInOrder = inOrder( connection );
+        connectionInOrder.verify( connection, never() ).reset();
+        connectionInOrder.verify( connection ).release();
 
         await( session.resetAsync() );
-        verify( connection ).reset();
-        verify( connection, never() ).release();
+        connectionInOrder.verify( connection ).reset();
+        connectionInOrder.verify( connection, never() ).release();
     }
 
     @Test
@@ -361,19 +367,23 @@ class NetworkSessionTest
     }
 
     @Test
-    void shouldRunAfterRunFailureToAcquireConnection()
+    void shouldRunAfterRunFailure()
     {
         RuntimeException error = new RuntimeException( "Hi" );
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( failedFuture( error ) ).thenReturn( completedFuture( connection ) );
 
-        Exception e = assertThrows( Exception.class, () -> run( session,"RETURN 1" ) );
+        Exception e = assertThrows( Exception.class, () -> run( session, "RETURN 1" ) );
+
         assertEquals( error, e );
 
-        run( session, "RETURN 2" );
+        String query = "RETURN 2";
+        setupSuccessfulRunAndPull( connection, query );
+
+        run( session, query );
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
-        verifyRunAndPull( connection, "RETURN 2" );
+        verifyRunAndPull( connection, query );
     }
 
     @Test
@@ -392,8 +402,10 @@ class NetworkSessionTest
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
         assertEquals( error, e );
+        String query = "RETURN 2";
+        setupSuccessfulRunAndPull( connection2, query );
 
-        run( session, "RETURN 2" );
+        run( session, query );
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
         verifyBeginTx( connection1 );
@@ -455,7 +467,7 @@ class NetworkSessionTest
 
     private static ResultCursor run(NetworkSession session, String query )
     {
-        return await( session.runAsync( new Query( query ), TransactionConfig.empty(), false ) );
+        return await( session.runAsync( new Query( query ), TransactionConfig.empty() ) );
     }
 
     private static UnmanagedTransaction beginTransaction(NetworkSession session )

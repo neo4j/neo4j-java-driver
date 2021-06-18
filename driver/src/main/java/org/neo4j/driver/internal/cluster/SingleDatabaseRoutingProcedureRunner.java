@@ -92,8 +92,8 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
     {
         return connection.protocol()
-                .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), true, UNLIMITED_FETCH_SIZE )
-                .asyncResult().thenCompose( ResultCursor::listAsync );
+                         .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE )
+                         .asyncResult().thenCompose( ResultCursor::listAsync );
     }
 
     private CompletionStage<List<Record>> releaseConnection( Connection connection, List<Record> records )

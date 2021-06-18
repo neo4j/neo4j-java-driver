@@ -22,28 +22,31 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 import org.neo4j.driver.internal.util.QueryKeys;
 
 public class RunResponseHandler implements ResponseHandler
 {
-    private final CompletableFuture<Throwable> runCompletedFuture;
+    private final CompletableFuture<Void> runFuture;
     private final MetadataExtractor metadataExtractor;
     private long queryId = MetadataExtractor.ABSENT_QUERY_ID;
 
     private QueryKeys queryKeys = QueryKeys.empty();
     private long resultAvailableAfter = -1;
 
-    public RunResponseHandler( MetadataExtractor metadataExtractor )
-    {
-        this( new CompletableFuture<>(), metadataExtractor );
-    }
+    private final Connection connection;
+    private final UnmanagedTransaction tx;
 
-    public RunResponseHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
+    public RunResponseHandler( CompletableFuture<Void> runFuture, MetadataExtractor metadataExtractor, Connection connection, UnmanagedTransaction tx )
     {
-        this.runCompletedFuture = runCompletedFuture;
+        this.runFuture = runFuture;
         this.metadataExtractor = metadataExtractor;
+        this.connection = connection;
+        this.tx = tx;
     }
 
     @Override
@@ -53,13 +56,21 @@ public class RunResponseHandler implements ResponseHandler
         resultAvailableAfter = metadataExtractor.extractResultAvailableAfter( metadata );
         queryId = metadataExtractor.extractQueryId( metadata );
 
-        completeRunFuture( null );
+        runFuture.complete( null );
     }
 
     @Override
     public void onFailure( Throwable error )
     {
-        completeRunFuture( error );
+        if ( tx != null )
+        {
+            tx.markTerminated( error );
+        }
+        else if ( error instanceof AuthorizationExpiredException )
+        {
+            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        runFuture.completeExceptionally( error );
     }
 
     @Override
@@ -81,21 +92,5 @@ public class RunResponseHandler implements ResponseHandler
     public long queryId()
     {
         return queryId;
-    }
-
-    /**
-     * Complete the given future with error if the future was failed.
-     * Future is never completed exceptionally.
-     * Async API needs to wait for RUN because it needs to access query keys.
-     * Reactive API needs to know if RUN failed by checking the error.
-     */
-    private void completeRunFuture( Throwable error )
-    {
-        runCompletedFuture.complete( error );
-    }
-
-    public CompletableFuture<Throwable> runFuture()
-    {
-        return runCompletedFuture;
     }
 }

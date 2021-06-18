@@ -766,14 +766,14 @@ class SessionIT
     }
 
     @Test
-    void shouldPropagateRunFailureWhenClosed()
+    void shouldThrowRunFailureImmediatelyAndCloseSuccessfully()
     {
-        Session session = neo4j.driver().session();
+        try ( Session session = neo4j.driver().session() )
+        {
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
 
-        session.run( "RETURN 10 / 0" );
-
-        ClientException e = assertThrows( ClientException.class, session::close );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        }
     }
 
     @EnabledOnNeo4jWith( BOLT_V4 )
@@ -798,48 +798,28 @@ class SessionIT
     }
 
     @Test
-    void shouldPropagateFailureFromSummary()
+    void shouldThrowRunFailureImmediatelyAfterMultipleSuccessfulRunsAndCloseSuccessfully()
     {
         try ( Session session = neo4j.driver().session() )
         {
-            Result result = session.run( "RETURN Wrong" );
+            session.run( "CREATE ()" );
+            session.run( "CREATE ()" );
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
 
-            ClientException e = assertThrows( ClientException.class, result::consume );
-            assertThat( e.code(), containsString( "SyntaxError" ) );
-            assertNotNull( result.consume() );
-        }
-    }
-
-    @Test
-    void shouldThrowFromCloseWhenPreviousErrorNotConsumed()
-    {
-        Session session = neo4j.driver().session();
-
-        session.run( "CREATE ()" );
-        session.run( "CREATE ()" );
-        session.run( "RETURN 10 / 0" );
-
-        ClientException e = assertThrows( ClientException.class, session::close );
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
-    }
-
-    @Test
-    void shouldThrowFromRunWhenPreviousErrorNotConsumed()
-    {
-        Session session = neo4j.driver().session();
-
-        session.run( "CREATE ()" );
-        session.run( "CREATE ()" );
-        session.run( "RETURN 10 / 0" );
-
-        try
-        {
-            ClientException e = assertThrows( ClientException.class, () -> session.run( "CREATE ()" ) );
             assertThat( e.getMessage(), containsString( "/ by zero" ) );
         }
-        finally
+    }
+
+    @Test
+    void shouldThrowRunFailureImmediatelyAndAcceptSubsequentRun()
+    {
+        try ( Session session = neo4j.driver().session() )
         {
-            session.close();
+            session.run( "CREATE ()" );
+            session.run( "CREATE ()" );
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
+            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            session.run( "CREATE ()" );
         }
     }
 

@@ -46,13 +46,10 @@ import org.neo4j.driver.util.TestUtil;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -286,15 +283,14 @@ class TransactionIT
     }
 
     @Test
-    void shouldRollBackTxIfErrorWithoutConsume()
+    void shouldRollbackTransactionAfterFailedRunAndCommitAndSessionShouldSuccessfullyBeginNewTransaction()
     {
         // Given
         Transaction tx = session.beginTransaction();
-        tx.run( "invalid" ); // send run, pull_all
 
+        assertThrows( ClientException.class, () -> tx.run( "invalid" ) ); // send run, pull_all
         ClientException e = assertThrows( ClientException.class, tx::commit );
         assertNoCircularReferences( e );
-
         try ( Transaction anotherTx = session.beginTransaction() )
         {
             Result cursor = anotherTx.run( "RETURN 1" );
@@ -324,15 +320,13 @@ class TransactionIT
     }
 
     @Test
-    void shouldPropagateFailureFromSummary()
+    void shouldFailRun()
     {
         try ( Transaction tx = session.beginTransaction() )
         {
-            Result result = tx.run( "RETURN Wrong" );
+            ClientException e = assertThrows( ClientException.class, () -> tx.run( "RETURN Wrong" ) );
 
-            ClientException e = assertThrows( ClientException.class, result::consume );
             assertThat( e.code(), containsString( "SyntaxError" ) );
-            assertNotNull( result.consume() );
         }
     }
 
@@ -357,7 +351,7 @@ class TransactionIT
                 ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
                         () -> tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ).consume() );
                 assertThat( e.getMessage(), containsString( "Connection to the database terminated" ) );
-                assertThat( e.getMessage(), containsString( "Thread interrupted while waiting for result to arrive" ) );
+                assertThat( e.getMessage(), containsString( "Thread interrupted while running query in transaction" ) );
             }
             finally
             {
@@ -380,15 +374,12 @@ class TransactionIT
 
             // now 'Beta Ray Bill' node is locked
 
-            tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" );
-
             // setup other thread to interrupt current thread when it blocks
             TestUtil.interruptWhenInWaitingState( Thread.currentThread() );
 
             try
             {
-                ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, tx2::commit );
-                assertNoCircularReferences( e );
+                assertThrows( ServiceUnavailableException.class, () -> tx2.run( "MATCH (n:Person {name: 'Beta Ray Bill'}) SET n.hammer = 'Stormbreaker'" ) );
             }
             finally
             {
@@ -468,7 +459,7 @@ class TransactionIT
     }
 
     @Test
-    void shouldRollbackWhenMarkedSuccessfulButOneQueryFails()
+    void shouldRollbackWhenOneOfQueriesFails()
     {
         ClientException error = assertThrows( ClientException.class, () ->
         {
@@ -477,19 +468,10 @@ class TransactionIT
                 tx.run( "CREATE (:Node1)" );
                 tx.run( "CREATE (:Node2)" );
                 tx.run( "CREATE SmthStrange" );
-                tx.run( "CREATE (:Node3)" );
-                tx.run( "CREATE (:Node4)" );
-
-                tx.commit();
             }
         } );
 
-        assertNoCircularReferences( error );
         assertThat( error.code(), containsString( "SyntaxError" ) );
-        assertThat( error.getSuppressed().length, greaterThanOrEqualTo( 1 ) );
-        Throwable suppressed = error.getSuppressed()[0];
-        assertThat( suppressed, instanceOf( ClientException.class ) );
-        assertThat( suppressed.getMessage(), startsWith( "Transaction can't be committed" ) );
 
         assertEquals( 0, countNodesByLabel( "Node1" ) );
         assertEquals( 0, countNodesByLabel( "Node2" ) );

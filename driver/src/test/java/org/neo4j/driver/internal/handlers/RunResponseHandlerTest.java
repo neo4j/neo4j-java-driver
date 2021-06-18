@@ -24,49 +24,62 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.util.TestUtil.await;
 
 class RunResponseHandlerTest
 {
     @Test
-    void shouldNotifyCompletionFutureOnSuccess() throws Exception
+    void shouldNotifyRunFutureOnSuccess() throws Exception
     {
-        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler handler = newHandler( runCompletedFuture );
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        RunResponseHandler handler = newHandler( runFuture );
 
-        assertFalse( runCompletedFuture.isDone() );
+        assertFalse( runFuture.isDone() );
         handler.onSuccess( emptyMap() );
 
-        assertTrue( runCompletedFuture.isDone() );
-        assertNull( runCompletedFuture.get() );
+        assertTrue( runFuture.isDone() );
+        assertNull( runFuture.get() );
     }
 
     @Test
-    void shouldNotifyCompletionFutureOnFailure() throws Exception
+    void shouldNotifyRunFutureOnFailure()
     {
-        CompletableFuture<Throwable> runCompletedFuture = new CompletableFuture<>();
-        RunResponseHandler handler = newHandler( runCompletedFuture );
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        RunResponseHandler handler = newHandler( runFuture );
 
-        assertFalse( runCompletedFuture.isDone() );
-        handler.onFailure( new RuntimeException() );
+        assertFalse( runFuture.isDone() );
+        RuntimeException exception = new RuntimeException();
+        handler.onFailure( exception );
 
-        assertTrue( runCompletedFuture.isDone() );
-        assertNotNull( runCompletedFuture.get() );
+        assertTrue( runFuture.isCompletedExceptionally() );
+        ExecutionException executionException = assertThrows( ExecutionException.class, runFuture::get );
+        assertThat( executionException.getCause(), equalTo( exception ) );
     }
 
     @Test
@@ -104,7 +117,7 @@ class RunResponseHandlerTest
         RunResponseHandler handler = newHandler();
 
         List<String> keys = asList( "key1", "key2", "key3" );
-        Map<String, Integer> keyIndex = new HashMap<>();
+        Map<String,Integer> keyIndex = new HashMap<>();
         keyIndex.put( "key1", 0 );
         keyIndex.put( "key2", 1 );
         keyIndex.put( "key3", 2 );
@@ -114,11 +127,66 @@ class RunResponseHandlerTest
         assertEquals( keyIndex, handler.queryKeys().keyIndex() );
     }
 
-
     @Test
     void shouldReturnResultAvailableAfterWhenSucceededV3()
     {
         testResultAvailableAfterOnSuccess( "t_first", BoltProtocolV3.METADATA_EXTRACTOR );
+    }
+
+    @Test
+    void shouldMarkTxAndKeepConnectionAndFailOnFailure()
+    {
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        Connection connection = mock( Connection.class );
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        RunResponseHandler handler = new RunResponseHandler( runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, tx );
+        Throwable throwable = new RuntimeException();
+
+        assertFalse( runFuture.isDone() );
+        handler.onFailure( throwable );
+
+        assertTrue( runFuture.isCompletedExceptionally() );
+        Throwable actualException = assertThrows( Throwable.class, () -> await( runFuture ) );
+        assertSame( throwable, actualException );
+        verify( tx ).markTerminated( throwable );
+        verify( connection, never() ).release();
+        verify( connection, never() ).terminateAndRelease( any( String.class ) );
+    }
+
+    @Test
+    void shouldNotReleaseConnectionAndFailOnFailure()
+    {
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        Connection connection = mock( Connection.class );
+        RunResponseHandler handler = new RunResponseHandler( runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null );
+        Throwable throwable = new RuntimeException();
+
+        assertFalse( runFuture.isDone() );
+        handler.onFailure( throwable );
+
+        assertTrue( runFuture.isCompletedExceptionally() );
+        Throwable actualException = assertThrows( Throwable.class, () -> await( runFuture ) );
+        assertSame( throwable, actualException );
+        verify( connection, never() ).release();
+        verify( connection, never() ).terminateAndRelease( any( String.class ) );
+    }
+
+    @Test
+    void shouldReleaseConnectionImmediatelyAndFailOnAuthorizationExpiredExceptionFailure()
+    {
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        Connection connection = mock( Connection.class );
+        RunResponseHandler handler = new RunResponseHandler( runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null );
+        AuthorizationExpiredException authorizationExpiredException = new AuthorizationExpiredException( "code", "message" );
+
+        assertFalse( runFuture.isDone() );
+        handler.onFailure( authorizationExpiredException );
+
+        assertTrue( runFuture.isCompletedExceptionally() );
+        AuthorizationExpiredException actualException = assertThrows( AuthorizationExpiredException.class, () -> await( runFuture ) );
+        assertSame( authorizationExpiredException, actualException );
+        verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        verify( connection, never() ).release();
     }
 
     private static void testResultAvailableAfterOnSuccess( String key, MetadataExtractor metadataExtractor )
@@ -135,9 +203,9 @@ class RunResponseHandlerTest
         return newHandler( BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture )
+    private static RunResponseHandler newHandler( CompletableFuture<Void> runFuture )
     {
-        return newHandler( runCompletedFuture, BoltProtocolV3.METADATA_EXTRACTOR );
+        return newHandler( runFuture, BoltProtocolV3.METADATA_EXTRACTOR );
     }
 
     private static RunResponseHandler newHandler( MetadataExtractor metadataExtractor )
@@ -145,8 +213,8 @@ class RunResponseHandlerTest
         return newHandler( new CompletableFuture<>(), metadataExtractor );
     }
 
-    private static RunResponseHandler newHandler( CompletableFuture<Throwable> runCompletedFuture, MetadataExtractor metadataExtractor )
+    private static RunResponseHandler newHandler( CompletableFuture<Void> runFuture, MetadataExtractor metadataExtractor )
     {
-        return new RunResponseHandler( runCompletedFuture, metadataExtractor );
+        return new RunResponseHandler( runFuture, metadataExtractor, mock( Connection.class ), null );
     }
 }

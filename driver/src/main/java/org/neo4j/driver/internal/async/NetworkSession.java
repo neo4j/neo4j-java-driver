@@ -35,8 +35,8 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
-import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.logging.PrefixedLogger;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.spi.Connection;
@@ -76,19 +76,19 @@ public class NetworkSession
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<ResultCursor> runAsync(Query query, TransactionConfig config, boolean waitForRunResponse )
+    public CompletionStage<ResultCursor> runAsync( Query query, TransactionConfig config )
     {
         CompletionStage<AsyncResultCursor> newResultCursorStage =
-                buildResultCursorFactory(query, config, waitForRunResponse ).thenCompose( ResultCursorFactory::asyncResult );
+                buildResultCursorFactory( query, config ).thenCompose( ResultCursorFactory::asyncResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
-        return newResultCursorStage.thenApply( cursor -> cursor ); // convert the return type
+        return newResultCursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor ); // convert the return type
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query, TransactionConfig config )
     {
         CompletionStage<RxResultCursor> newResultCursorStage =
-                buildResultCursorFactory(query, config, true ).thenCompose( ResultCursorFactory::rxResult );
+                buildResultCursorFactory( query, config ).thenCompose( ResultCursorFactory::rxResult );
 
         resultCursorStage = newResultCursorStage.exceptionally( error -> null );
         return newResultCursorStage;
@@ -223,24 +223,27 @@ public class NetworkSession
                 connection.isOpen() ); // and it's still open
     }
 
-    private CompletionStage<ResultCursorFactory> buildResultCursorFactory(Query query, TransactionConfig config, boolean waitForRunResponse )
+    private CompletionStage<ResultCursorFactory> buildResultCursorFactory( Query query, TransactionConfig config )
     {
         ensureSessionIsOpen();
 
         return ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
-                .thenCompose( connection -> {
-                    try
-                    {
-                        ResultCursorFactory factory = connection.protocol()
-                                .runInAutoCommitTransaction( connection, query, bookmarkHolder, config, waitForRunResponse, fetchSize );
-                        return completedFuture( factory );
-                    }
-                    catch ( Throwable e )
-                    {
-                        return Futures.failedFuture( e );
-                    }
-                } );
+                .thenCompose(
+                        connection ->
+                        {
+                            try
+                            {
+                                ResultCursorFactory factory = connection
+                                        .protocol()
+                                        .runInAutoCommitTransaction( connection, query, bookmarkHolder, config, fetchSize );
+                                return completedFuture( factory );
+                            }
+                            catch ( Throwable e )
+                            {
+                                return Futures.failedFuture( e );
+                            }
+                        } );
     }
 
     private CompletionStage<Connection> acquireConnection( AccessMode mode )

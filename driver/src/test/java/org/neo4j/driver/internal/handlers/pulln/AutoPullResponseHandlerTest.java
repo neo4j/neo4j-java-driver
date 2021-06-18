@@ -53,7 +53,8 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
     @Override
     protected AutoPullResponseHandler newHandler( Query query, List<String> queryKeys, Connection connection )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler =
+                new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         runResponseHandler.onSuccess( singletonMap( "fields", value( queryKeys ) ) );
         AutoPullResponseHandler handler =
                 new AutoPullResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,
@@ -65,7 +66,8 @@ class AutoPullResponseHandlerTest extends PullAllResponseHandlerTestBase<AutoPul
 
     protected AutoPullResponseHandler newHandler( Query query, Connection connection, long fetchSize )
     {
-        RunResponseHandler runResponseHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
+        RunResponseHandler runResponseHandler =
+                new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         runResponseHandler.onSuccess( emptyMap() );
         AutoPullResponseHandler handler =
                 new AutoPullResponseHandler( query, runResponseHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR,

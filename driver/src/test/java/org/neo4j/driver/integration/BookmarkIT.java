@@ -44,7 +44,6 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkContainsSingleValue;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarkIsEmpty;
 import static org.neo4j.driver.internal.util.BookmarkUtil.assertBookmarksContainsSingleUniqueValues;
-import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
 
 @ParallelizableIT
 class BookmarkIT
@@ -133,10 +132,8 @@ class BookmarkIT
         assertBookmarkContainsSingleValue( bookmark );
 
         Transaction tx = session.beginTransaction();
-        tx.run( "RETURN" );
 
-        ClientException e = assertThrows( ClientException.class, tx::commit );
-        assertNoCircularReferences( e );
+        assertThrows( ClientException.class, () -> tx.run( "RETURN" ) );
         assertEquals( bookmark, session.lastBookmark() );
     }
 

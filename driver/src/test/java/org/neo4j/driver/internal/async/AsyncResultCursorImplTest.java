@@ -38,6 +38,7 @@ import org.neo4j.driver.internal.handlers.PullAllResponseHandler;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
+import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.summary.InternalResultSummary;
 import org.neo4j.driver.internal.summary.InternalServerInfo;
 import org.neo4j.driver.internal.summary.InternalSummaryCounters;
@@ -403,16 +404,16 @@ class AsyncResultCursorImplTest
 
     private static AsyncResultCursorImpl newCursor(PullAllResponseHandler pullAllHandler )
     {
-        return new AsyncResultCursorImpl( newRunResponseHandler(), pullAllHandler );
+        return new AsyncResultCursorImpl( null, newRunResponseHandler(), pullAllHandler );
     }
 
     private static AsyncResultCursorImpl newCursor(RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
-        return new AsyncResultCursorImpl( runHandler, pullAllHandler );
+        return new AsyncResultCursorImpl( null, runHandler, pullAllHandler );
     }
 
     private static RunResponseHandler newRunResponseHandler()
     {
-        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR );
+        return new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
     }
 }

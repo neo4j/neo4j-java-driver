@@ -18,68 +18,35 @@
  */
 package org.neo4j.driver.internal.cursor;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.internal.util.Futures;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class DisposableAsyncResultCursorTest
 {
-    @Test
-    void summaryShouldDisposeCursor() throws Throwable
+    DisposableAsyncResultCursor cursor;
+
+    AsyncResultCursor delegate;
+
+    @BeforeEach
+    void beforeEach()
     {
-        // Given
-        DisposableAsyncResultCursor cursor = newCursor();
+        delegate = mock( AsyncResultCursor.class );
 
-        // When
-        await( cursor.consumeAsync() );
-
-        // Then
-        assertTrue( cursor.isDisposed() );
-    }
-
-    @Test
-    void consumeShouldDisposeCursor() throws Throwable
-    {
-        // Given
-        DisposableAsyncResultCursor cursor = newCursor();
-
-        // When
-        await( cursor.discardAllFailureAsync() );
-
-        // Then
-        assertTrue( cursor.isDisposed() );
-    }
-
-    @Test
-    void shouldNotDisposeCursor() throws Throwable
-    {
-        // Given
-        DisposableAsyncResultCursor cursor = newCursor();
-
-        // When
-        cursor.keys();
-        await( cursor.peekAsync() );
-        await( cursor.nextAsync() );
-        await( cursor.singleAsync() );
-        await( cursor.forEachAsync( record -> {} ) );
-        await( cursor.listAsync() );
-        await( cursor.listAsync( record -> record ) );
-        await( cursor.pullAllFailureAsync() );
-
-        // Then
-        assertFalse( cursor.isDisposed() );
-    }
-
-    private static DisposableAsyncResultCursor newCursor()
-    {
-        AsyncResultCursor delegate = mock( AsyncResultCursor.class );
         when( delegate.consumeAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.discardAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.peekAsync() ).thenReturn( Futures.completedWithNull() );
@@ -89,6 +56,73 @@ class DisposableAsyncResultCursorTest
         when( delegate.listAsync() ).thenReturn( Futures.completedWithNull() );
         when( delegate.listAsync( any() ) ).thenReturn( Futures.completedWithNull() );
         when( delegate.pullAllFailureAsync() ).thenReturn( Futures.completedWithNull() );
-        return new DisposableAsyncResultCursor( delegate );
+        when( delegate.mapSuccessfulRunCompletionAsync() ).thenReturn( CompletableFuture.completedFuture( delegate ) );
+
+        cursor = new DisposableAsyncResultCursor( delegate );
+    }
+
+    @Test
+    void summaryShouldDisposeCursor()
+    {
+        // When
+        await( cursor.consumeAsync() );
+
+        // Then
+        assertTrue( cursor.isDisposed() );
+    }
+
+    @Test
+    void consumeShouldDisposeCursor()
+    {
+        // When
+        await( cursor.discardAllFailureAsync() );
+
+        // Then
+        assertTrue( cursor.isDisposed() );
+    }
+
+    @Test
+    void shouldNotDisposeCursor()
+    {
+        // When
+        cursor.keys();
+        await( cursor.peekAsync() );
+        await( cursor.nextAsync() );
+        await( cursor.singleAsync() );
+        await( cursor.forEachAsync( record ->
+                                    {
+                                    } ) );
+        await( cursor.listAsync() );
+        await( cursor.listAsync( record -> record ) );
+        await( cursor.pullAllFailureAsync() );
+
+        // Then
+        assertFalse( cursor.isDisposed() );
+    }
+
+    @Test
+    void shouldReturnItselfOnMapSuccessfulRunCompletionAsync()
+    {
+        // When
+        AsyncResultCursor actual = await( cursor.mapSuccessfulRunCompletionAsync() );
+
+        // Then
+        then( delegate ).should().mapSuccessfulRunCompletionAsync();
+        assertSame( cursor, actual );
+    }
+
+    @Test
+    void shouldFailOnMapSuccessfulRunCompletionAsyncFailure()
+    {
+        // Given
+        Throwable error = mock( Throwable.class );
+        given( delegate.mapSuccessfulRunCompletionAsync() ).willReturn( Futures.failedFuture( error ) );
+
+        // When
+        Throwable actual = assertThrows( Throwable.class, () -> await( cursor.mapSuccessfulRunCompletionAsync() ) );
+
+        // Then
+        then( delegate ).should().mapSuccessfulRunCompletionAsync();
+        assertSame( error, actual );
     }
 }

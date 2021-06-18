@@ -39,7 +39,6 @@ public class InternalResult implements Result
 {
     private final Connection connection;
     private final ResultCursor cursor;
-    private List<String> keys;
 
     public InternalResult(Connection connection, ResultCursor cursor )
     {
@@ -50,12 +49,7 @@ public class InternalResult implements Result
     @Override
     public List<String> keys()
     {
-        if ( keys == null )
-        {
-            blockingGet( cursor.peekAsync() );
-            keys = cursor.keys();
-        }
-        return keys;
+        return cursor.keys();
     }
 
     @Override

@@ -37,8 +37,8 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -152,7 +152,7 @@ class ErrorIT
     }
 
     @Test
-    void shouldHandleFailureAtCommitTime()
+    void shouldHandleFailureAtRunTime()
     {
         String label = UUID.randomUUID().toString();  // avoid clashes with other tests
 
@@ -162,11 +162,11 @@ class ErrorIT
         tx.commit();
 
         // and
-        tx = session.beginTransaction();
-        tx.run( "CREATE INDEX ON :`" + label + "`(name)" );
+        Transaction anotherTx = session.beginTransaction();
 
         // then expect
-        ClientException e = assertThrows( ClientException.class, tx::commit );
+        ClientException e = assertThrows( ClientException.class, () -> anotherTx.run( "CREATE INDEX ON :`" + label + "`(name)" ) );
+        anotherTx.rollback();
         assertThat( e.getMessage(), containsString( label ) );
         assertThat( e.getMessage(), containsString( "name" ) );
     }

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -204,20 +205,20 @@ public class UnmanagedTransaction
         }
     }
 
-    public CompletionStage<ResultCursor> runAsync(Query query, boolean waitForRunResponse )
+    public CompletionStage<ResultCursor> runAsync( Query query )
     {
         ensureCanRunQueries();
         CompletionStage<AsyncResultCursor> cursorStage =
-                protocol.runInUnmanagedTransaction( connection, query, this, waitForRunResponse, fetchSize ).asyncResult();
+                protocol.runInUnmanagedTransaction( connection, query, this, fetchSize ).asyncResult();
         resultCursors.add( cursorStage );
-        return cursorStage.thenApply( cursor -> cursor );
+        return cursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor );
     }
 
     public CompletionStage<RxResultCursor> runRx(Query query)
     {
         ensureCanRunQueries();
         CompletionStage<RxResultCursor> cursorStage =
-                protocol.runInUnmanagedTransaction( connection, query, this, false, fetchSize ).rxResult();
+                protocol.runInUnmanagedTransaction( connection, query, this, fetchSize ).rxResult();
         resultCursors.add( cursorStage );
         return cursorStage;
     }
@@ -229,7 +230,29 @@ public class UnmanagedTransaction
 
     public void markTerminated( Throwable cause )
     {
-        state = StateHolder.terminatedWith( cause );
+        if ( state.value == State.TERMINATED )
+        {
+            if ( state.causeOfTermination != null )
+            {
+                addSuppressedWhenNotCaptured( state.causeOfTermination, cause );
+            }
+        }
+        else
+        {
+            state = StateHolder.terminatedWith( cause );
+        }
+    }
+
+    private void addSuppressedWhenNotCaptured( Throwable currentCause, Throwable newCause )
+    {
+        if ( currentCause != newCause )
+        {
+            boolean noneMatch = Arrays.stream( currentCause.getSuppressed() ).noneMatch( suppressed -> suppressed == newCause );
+            if ( noneMatch )
+            {
+                currentCause.addSuppressed( newCause );
+            }
+        }
     }
 
     public Connection connection()

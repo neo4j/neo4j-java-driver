@@ -28,15 +28,15 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.InternalRecord;
+import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
+import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
-import org.neo4j.driver.internal.cursor.RxResultCursor;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
@@ -49,8 +49,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
 class InternalRxResultTest
 {
@@ -97,8 +97,8 @@ class InternalRxResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ) )
-                .expectNext( Arrays.asList( "one", "two", "three" ) )
-                .verifyComplete();
+                    .expectNext( Arrays.asList( "one", "two", "three" ) )
+                    .verifyComplete();
     }
 
     @Test
@@ -110,8 +110,8 @@ class InternalRxResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ) )
-                .expectErrorMatches( isEqual( error ) )
-                .verify();
+                    .expectErrorMatches( isEqual( error ) )
+                    .verify();
     }
 
     @Test
@@ -126,8 +126,8 @@ class InternalRxResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ).limitRate( 1 ).take( 1 ) )
-                .expectNext( Arrays.asList( "one", "two", "three" ) )
-                .verifyComplete();
+                    .expectNext( Arrays.asList( "one", "two", "three" ) )
+                    .verifyComplete();
     }
 
     @Test
@@ -143,10 +143,10 @@ class InternalRxResultTest
 
         // When
         StepVerifier.create( Flux.from( rxResult.records() ) )
-                .expectNext( record1 )
-                .expectNext( record2 )
-                .expectNext( record3 )
-                .verifyComplete();
+                    .expectNext( record1 )
+                    .expectNext( record2 )
+                    .expectNext( record3 )
+                    .verifyComplete();
         StepVerifier.create( Mono.from( rxResult.consume() ) ).expectNextCount( 1 ).verifyComplete();
     }
 
@@ -163,8 +163,8 @@ class InternalRxResultTest
 
         // When
         StepVerifier.create( Flux.from( rxResult.records() ).limitRate( 1 ).take( 1 ) )
-                .expectNext( record1 )
-                .verifyComplete();
+                    .expectNext( record1 )
+                    .verifyComplete();
         StepVerifier.create( Mono.from( rxResult.consume() ) ).expectNextCount( 1 ).verifyComplete();
     }
 
@@ -189,32 +189,32 @@ class InternalRxResultTest
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
-        StepVerifier.create( Mono.from( rxResult.consume() ) ).assertNext( summary -> {
-            assertThat( summary, instanceOf( ResultSummary.class ) );
-        } ).verifyComplete();
+        StepVerifier.create( Mono.from( rxResult.consume() ) )
+                    .assertNext( summary -> assertThat( summary, instanceOf( ResultSummary.class ) ) ).verifyComplete();
     }
 
-    private InternalRxResult newRxResult(PullResponseHandler pullHandler )
+    private InternalRxResult newRxResult( PullResponseHandler pullHandler )
     {
         RunResponseHandler runHandler = mock( RunResponseHandler.class );
-        when( runHandler.runFuture() ).thenReturn( Futures.completedWithNull() );
         RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
         return newRxResult( cursor );
     }
 
-    private InternalRxResult newRxResult(RxResultCursor cursor )
+    private InternalRxResult newRxResult( RxResultCursor cursor )
     {
-        return new InternalRxResult( () -> {
-            // now we successfully run
-            return completedFuture( cursor );
-        } );
+        return new InternalRxResult( () ->
+                                     {
+                                         // now we successfully run
+                                         return completedFuture( cursor );
+                                     } );
     }
 
-    private InternalRxResult newRxResult(Throwable error )
+    private InternalRxResult newRxResult( Throwable error )
     {
-        return new InternalRxResult( () -> {
-            // now we successfully run
-            return failedFuture( new CompletionException( error ) );
-        } );
+        return new InternalRxResult( () ->
+                                     {
+                                         // now we successfully run
+                                         return failedFuture( new CompletionException( error ) );
+                                     } );
     }
 }

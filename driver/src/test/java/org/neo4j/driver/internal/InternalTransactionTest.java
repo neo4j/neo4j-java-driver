@@ -88,7 +88,7 @@ class InternalTransactionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<Transaction, Result> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<Transaction,Result> runReturnOne )
     {
         setupSuccessfulRunAndPull( connection );
 
@@ -99,7 +99,7 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldCommit() throws Throwable
+    void shouldCommit()
     {
         tx.commit();
         tx.close();
@@ -109,7 +109,7 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldRollbackByDefault() throws Throwable
+    void shouldRollbackByDefault()
     {
         tx.close();
 
@@ -118,7 +118,7 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldRollback() throws Throwable
+    void shouldRollback()
     {
         tx.rollback();
         tx.close();
@@ -128,10 +128,10 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldRollbackWhenFailedRun() throws Throwable
+    void shouldRollbackWhenFailedRun()
     {
         setupFailingRun( connection, new RuntimeException( "Bang!" ) );
-        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ).consume() );
+        assertThrows( RuntimeException.class, () -> tx.run( "RETURN 1" ) );
 
         tx.close();
 
@@ -140,7 +140,7 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToCommit() throws Throwable
+    void shouldReleaseConnectionWhenFailedToCommit()
     {
         setupFailingCommit( connection );
         assertThrows( Exception.class, () -> tx.commit() );
@@ -150,13 +150,13 @@ class InternalTransactionTest
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToRollback() throws Throwable
+    void shouldReleaseConnectionWhenFailedToRollback()
     {
         shouldReleaseConnectionWhenFailedToAction( Transaction::rollback );
     }
 
     @Test
-    void shouldReleaseConnectionWhenFailedToClose() throws Throwable
+    void shouldReleaseConnectionWhenFailedToClose()
     {
         shouldReleaseConnectionWhenFailedToAction( Transaction::close );
     }

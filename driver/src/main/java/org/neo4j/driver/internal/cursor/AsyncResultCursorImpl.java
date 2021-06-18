@@ -33,11 +33,13 @@ import org.neo4j.driver.summary.ResultSummary;
 
 public class AsyncResultCursorImpl implements AsyncResultCursor
 {
+    private final Throwable runError;
     private final RunResponseHandler runHandler;
     private final PullAllResponseHandler pullAllHandler;
 
-    public AsyncResultCursorImpl(RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
+    public AsyncResultCursorImpl( Throwable runError, RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
+        this.runError = runError;
         this.runHandler = runHandler;
         this.pullAllHandler = pullAllHandler;
     }
@@ -113,13 +115,15 @@ public class AsyncResultCursorImpl implements AsyncResultCursor
     @Override
     public CompletionStage<Throwable> discardAllFailureAsync()
     {
-        return consumeAsync().handle( ( summary, error ) -> error );
+        // runError has priority over other errors and is expected to have been reported to user by now
+        return consumeAsync().handle( ( summary, error ) -> runError != null ? null : error );
     }
 
     @Override
     public CompletionStage<Throwable> pullAllFailureAsync()
     {
-        return pullAllHandler.pullAllFailureAsync();
+        // runError has priority over other errors and is expected to have been reported to user by now
+        return pullAllHandler.pullAllFailureAsync().thenApply( error -> runError != null ? null : error );
     }
 
     private void internalForEachAsync( Consumer<Record> action, CompletableFuture<Void> resultFuture )
@@ -153,5 +157,11 @@ public class AsyncResultCursorImpl implements AsyncResultCursor
                 resultFuture.complete( null );
             }
         } );
+    }
+
+    @Override
+    public CompletableFuture<AsyncResultCursor> mapSuccessfulRunCompletionAsync()
+    {
+        return runError != null ? Futures.failedFuture( runError ) : CompletableFuture.completedFuture( this );
     }
 }
