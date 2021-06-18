@@ -22,8 +22,6 @@ package org.neo4j.driver.util;
  * A Resource is an {@link AutoCloseable} that allows introspecting if it
  * already has been closed through its {@link #isOpen()} method.
  *
- * Additionally, calling {@link AutoCloseable#close()} twice is expected to fail
- * (i.e. is not idempotent).
  * @since 1.0
  */
 public interface Resource extends AutoCloseable
@@ -34,10 +32,4 @@ public interface Resource extends AutoCloseable
      * @return true if the resource is open
      */
     boolean isOpen();
-
-    /**
-     * @throws IllegalStateException if already closed
-     */
-    @Override
-    void close();
 }

@@ -99,26 +99,45 @@ To use the driver in a project, please use the released driver via Maven Central
 
 #### Running Tests and Creating a Package
 
-The driver unit tests relies on latest [`boltkit`](https://github.com/neo4j-drivers/boltkit) installed on your local machine. 
+Our test setup requires a bit of infrastructure to run.
+We rely mostly on [`testkit`](https://github.com/neo4j-drivers/testkit).
+Testkit is a tooling that is used to run integration tests for all of the drivers we provide.
+
+Some older tests still rely on [`boltkit`](https://github.com/neo4j-drivers/boltkit), the predecessor to Testkit.
 If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and will not be executed.
 
-The following Maven command shows how to run all tests and build the source code:
-```
-mvn clean install
-```
-When running integration tests, the driver would start a Neo4j instance and a Neo4j cluster on your local machine.
-Your tests might fail due to
-* a Neo4j server instance is already running on your machine and occupying the default server ports,
-* a lack of persmission to download Neo4j Enterprise artifacts.
+In case you want or can verify contributions with unit tests alone, use the following command to skip all integration tests:
 
-To skip the integration tests, use:
 ```
 mvn clean install -DskipITs
 ```
 
+Otherwise, if you have Git, Python3 and Docker installed, please go ahead and clone Testkit and run as follows:
 
-#### Windows
+```
+git clone git@github.com:neo4j/neo4j-java-driver.git 
+git clone git@github.com:neo4j-drivers/testkit.git
+cd testkit
+TEST_DRIVER_NAME=java \
+TEST_DRIVER_REPO=`realpath ../neo4j-java-driver` \
+TEST_DOCKER_RMI=true \
+python3 main.py --tests UNIT_TESTS --configs 4.3-enterprise
+```
 
-If you are building on windows, you will need to run the install with admin rights.
-This is because integration tests require admin privileges to install and start a service.
+To run additional Testkit test, specify `TESTKIT_TESTS`:
 
+```
+TEST_DRIVER_NAME=java \
+TEST_DRIVER_REPO=`realpath ../neo4j-java-driver` \
+TEST_DOCKER_RMI=true \
+python3 main.py --tests TESTKIT_TESTS UNIT_TESTS --configs 4.3-enterprise
+````
+
+On Windows or in the abscence of a Bash-compatible environment, the required steps are probably different.
+A simple `mvn clean install` will require admin rights on Windows, because our integration tests require admin privileges to install and start a service.
+
+If all of this fails and you only want to try out a local development version of the driver, you could skip all tests like this:
+
+```
+mvn clean install -DskipTests
+```

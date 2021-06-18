@@ -145,16 +145,16 @@ public class UnmanagedTransaction
                                     {
                                         if ( beginError instanceof AuthorizationExpiredException )
                                         {
-                            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
-                        }
-                        else
-                        {
-                            connection.release();
-                        }
-                        throw Futures.asCompletionException( beginError );
-                    }
-                    return this;
-                } );
+                                            connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+                                        }
+                                        else
+                                        {
+                                            connection.release();
+                                        }
+                                        throw Futures.asCompletionException( beginError );
+                                    }
+                                    return this;
+                                } );
     }
 
     public CompletionStage<Void> closeAsync()
