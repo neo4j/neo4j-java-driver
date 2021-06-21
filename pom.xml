@@ -67,7 +67,7 @@
         <!-- corresponding server dependency also needs updating.-->
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.63.Final</version>
+        <version>4.1.65.Final</version>
       </dependency>
       <dependency>
         <!-- Please note that when updating this dependency -->
@@ -91,7 +91,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.30</version>
+        <version>1.7.31</version>
       </dependency>
 
       <!-- Test dependencies -->
@@ -122,13 +122,13 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.68</version>
+        <version>1.69</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.68</version>
+        <version>1.69</version>
         <scope>test</scope>
       </dependency>
       <dependency>
