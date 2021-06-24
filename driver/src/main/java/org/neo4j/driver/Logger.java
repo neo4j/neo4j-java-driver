@@ -104,6 +104,14 @@ public interface Logger
     void debug( String message, Object... params );
 
     /**
+     * Logs debug message with throwable.
+     *
+     * @param message   the message to log
+     * @param throwable the throwable to include into the log entry
+     */
+    void debug( String message, Throwable throwable );
+
+    /**
      * Logs binary sent and received by this driver.
      * It is only enabled when {@link Logger#isTraceEnabled()} returns {@code true}.
      * This logging level generates huge amount of log entries.

@@ -177,7 +177,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             handler.onFailure( currentError );
         }
 
-        log.debug( "Closing channel because of a failure '%s'", error );
+        log.debug( "Closing channel because of a failure", error );
         channel.close();
     }
 
