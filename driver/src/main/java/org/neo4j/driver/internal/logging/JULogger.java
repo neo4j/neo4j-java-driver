@@ -63,16 +63,25 @@ public class JULogger implements Logger
     @Override
     public void debug( String format, Object... params )
     {
-        if( debugEnabled )
+        if ( debugEnabled )
         {
             delegate.log( Level.FINE, String.format( format, params ) );
         }
     }
 
     @Override
+    public void debug( String message, Throwable throwable )
+    {
+        if ( debugEnabled )
+        {
+            delegate.log( Level.FINE, message, throwable );
+        }
+    }
+
+    @Override
     public void trace( String format, Object... params )
     {
-        if( traceEnabled )
+        if ( traceEnabled )
         {
             delegate.log( Level.FINEST, String.format( format, params ) );
         }
