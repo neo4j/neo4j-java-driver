@@ -19,4 +19,10 @@
         <method>java.lang.String agent()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Logger</className>
+        <differenceType>7012</differenceType>
+        <method>void debug(java.lang.String, java.lang.Throwable)</method>
+    </difference>
+
 </differences>

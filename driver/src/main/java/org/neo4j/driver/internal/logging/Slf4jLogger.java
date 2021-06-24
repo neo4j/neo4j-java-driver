@@ -77,6 +77,15 @@ class Slf4jLogger implements Logger
     }
 
     @Override
+    public void debug( String message, Throwable throwable )
+    {
+        if ( isDebugEnabled() )
+        {
+            delegate.debug( message, throwable );
+        }
+    }
+
+    @Override
     public void trace( String message, Object... params )
     {
         if ( isTraceEnabled() )
