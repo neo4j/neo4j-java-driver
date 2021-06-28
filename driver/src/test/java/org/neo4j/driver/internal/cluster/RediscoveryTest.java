@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.startsWith;
@@ -182,9 +181,14 @@ class RediscoveryTest
         ClusterComposition composition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) );
         assertEquals( validComposition, composition );
 
-        ArgumentCaptor<DiscoveryException> argument = ArgumentCaptor.forClass( DiscoveryException.class );
-        verify( logger ).warn( anyString(), argument.capture() );
-        assertThat( argument.getValue().getCause(), equalTo( protocolError ) );
+        ArgumentCaptor<String> warningMessageCaptor = ArgumentCaptor.forClass( String.class );
+        ArgumentCaptor<String> debugMessageCaptor = ArgumentCaptor.forClass( String.class );
+        ArgumentCaptor<DiscoveryException> debugThrowableCaptor = ArgumentCaptor.forClass( DiscoveryException.class );
+        verify( logger ).warn( warningMessageCaptor.capture() );
+        verify( logger ).debug( debugMessageCaptor.capture(), debugThrowableCaptor.capture() );
+        assertNotNull( warningMessageCaptor.getValue() );
+        assertEquals( warningMessageCaptor.getValue(), debugMessageCaptor.getValue() );
+        assertThat( debugThrowableCaptor.getValue().getCause(), equalTo( protocolError ) );
     }
 
     @Test
