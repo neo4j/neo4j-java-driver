@@ -26,8 +26,21 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
+/**
+ * Provides cluster composition lookup capabilities and initial router address resolution.
+ */
 public interface Rediscovery
 {
+    /**
+     * Fetches cluster composition using the provided routing table.
+     * <p>
+     * Implementation must be thread safe to be called with distinct routing tables concurrently. The routing table instance may be modified.
+     *
+     * @param routingTable   the routing table for cluster composition lookup
+     * @param connectionPool the connection pool for connection acquisition
+     * @param bookmark       the bookmark that is presented to the server
+     * @return cluster composition lookup result
+     */
     CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark );
 
     List<BoltServerAddress> resolve() throws UnknownHostException;
