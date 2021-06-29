@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -62,6 +63,11 @@ import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 public class LoadBalancer implements ConnectionProvider
 {
     private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
+    private static final String CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE = "Connection acquisition failed for all available addresses.";
+    private static final String CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE =
+            "Failed to obtain connection towards %s server. Known routing table is: %s";
+    private static final String CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE =
+            "Failed to obtain a connection towards address %s, will try other addresses if available. Complete failure is reported separately from this entry.";
     private final ConnectionPool connectionPool;
     private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
@@ -181,19 +187,23 @@ public class LoadBalancer implements ConnectionProvider
     {
         AddressSet addresses = addressSet( mode, routingTable );
         CompletableFuture<Connection> result = new CompletableFuture<>();
-        acquire( mode, routingTable, addresses, result );
+        List<Throwable> attemptExceptions = new ArrayList<>();
+        acquire( mode, routingTable, addresses, result, attemptExceptions );
         return result;
     }
 
-    private void acquire( AccessMode mode, RoutingTable routingTable, AddressSet addresses, CompletableFuture<Connection> result )
+    private void acquire( AccessMode mode, RoutingTable routingTable, AddressSet addresses, CompletableFuture<Connection> result,
+                          List<Throwable> attemptErrors )
     {
         BoltServerAddress address = selectAddress( mode, addresses );
 
         if ( address == null )
         {
-            result.completeExceptionally( new SessionExpiredException(
-                    "Failed to obtain connection towards " + mode + " server. " +
-                    "Known routing table is: " + routingTable ) );
+            SessionExpiredException completionError =
+                    new SessionExpiredException( format( CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE, mode, routingTable ) );
+            attemptErrors.forEach( completionError::addSuppressed );
+            log.error( CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE, completionError );
+            result.completeExceptionally( completionError );
             return;
         }
 
@@ -204,10 +214,12 @@ public class LoadBalancer implements ConnectionProvider
             {
                 if ( error instanceof ServiceUnavailableException )
                 {
-                    SessionExpiredException errorToLog = new SessionExpiredException( format( "Server at %s is no longer available", address ), error );
-                    log.warn( "Failed to obtain a connection towards address " + address, errorToLog );
+                    String attemptMessage = format( CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE, address );
+                    log.warn( attemptMessage );
+                    log.debug( attemptMessage, error );
+                    attemptErrors.add( error );
                     routingTable.forget( address );
-                    eventExecutorGroup.next().execute( () -> acquire( mode, routingTable, addresses, result ) );
+                    eventExecutorGroup.next().execute( () -> acquire( mode, routingTable, addresses, result, attemptErrors ) );
                 }
                 else
                 {
