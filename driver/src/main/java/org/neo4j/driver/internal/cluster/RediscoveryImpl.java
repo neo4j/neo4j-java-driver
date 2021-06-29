@@ -57,6 +57,9 @@ public class RediscoveryImpl implements Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
     private static final String RECOVERABLE_ROUTING_ERROR = "Failed to update routing table with server '%s'.";
+    private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER = "Received a recoverable discovery error with server '%s', " +
+                                                                          "will continue discovery with other routing servers if available. " +
+                                                                          "Complete failure is reported separately from this entry.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
@@ -258,8 +261,9 @@ public class RediscoveryImpl implements Rediscovery
         // Retriable error happened during discovery.
         DiscoveryException discoveryError = new DiscoveryException( format( RECOVERABLE_ROUTING_ERROR, routerAddress ), error );
         Futures.combineErrors( baseError, discoveryError ); // we record each failure here
-        logger.warn( format( "Received a recoverable discovery error with server '%s', will continue discovery with other routing servers if available.",
-                routerAddress ), discoveryError );
+        String warningMessage = format( RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress );
+        logger.warn( warningMessage );
+        logger.debug( warningMessage, discoveryError );
         routingTable.forget( routerAddress );
         return null;
     }
