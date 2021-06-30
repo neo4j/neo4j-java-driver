@@ -2,21 +2,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <artifactId>neo4j-java-driver-parent</artifactId>
         <groupId>org.neo4j.driver</groupId>
         <version>4.2-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <properties>
-        <rootDir>${project.basedir}/..</rootDir>
-    </properties>
 
     <artifactId>testkit-backend</artifactId>
 
     <name>Neo4j Java Driver Testkit Backend</name>
     <description>Integration component for use with Testkit</description>
+
+    <properties>
+        <rootDir>${project.basedir}/..</rootDir>
+    </properties>
 
     <dependencies>
         <dependency>

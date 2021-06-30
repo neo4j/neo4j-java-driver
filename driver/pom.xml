@@ -3,13 +3,6 @@
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
-    <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
-    <moduleName>org.neo4j.driver</moduleName>
-    <rootDir>${project.basedir}/..</rootDir>
-  </properties>
-
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
@@ -22,6 +15,13 @@
   <packaging>jar</packaging>
   <name>Neo4j Java Driver</name>
   <description>Access to the Neo4j graph database through Java</description>
+
+  <properties>
+    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
+    <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
+    <moduleName>org.neo4j.driver</moduleName>
+    <rootDir>${project.basedir}/..</rootDir>
+  </properties>
 
   <dependencies>
     <!-- Compile dependencies -->
