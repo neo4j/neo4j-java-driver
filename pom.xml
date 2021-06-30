@@ -3,19 +3,6 @@
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <rootDir>${project.basedir}</rootDir>
-    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
-    <junit.version>5.7.2</junit.version>
-    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
-    <!-- All tests tagged are to be executed in parallel -->
-    <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-  </properties>
-
   <groupId>org.neo4j.driver</groupId>
   <artifactId>neo4j-java-driver-parent</artifactId>
   <version>4.3-SNAPSHOT</version>
@@ -24,6 +11,40 @@
   <name>Neo4j Java Driver Project</name>
   <description>A project for building a Java driver for the Neo4j Bolt protocol.</description>
   <url>https://github.com/neo4j/neo4j-java-driver</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <rootDir>${project.basedir}</rootDir>
+    <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
+    <!-- All tests tagged are to be executed in parallel -->
+    <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
+    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+
+    <!-- Versions -->
+    <reactive-streams.version>1.0.3</reactive-streams.version>
+    <!-- Please note that when updating this dependency -->
+    <!-- (i.e. due to a security vulnerability or bug) that the -->
+    <!-- corresponding server dependency also needs updating.-->
+    <netty-handler.version>4.1.65.Final</netty-handler.version>
+    <!-- Please note that when updating this dependency -->
+    <!-- (i.e. due to a security vulnerability or bug) that the -->
+    <!-- corresponding server dependency also needs updating.-->
+    <reactor-bom.version>Dysprosium-SR20</reactor-bom.version>
+    <rxjava.version>2.2.21</rxjava.version>
+    <slf4j-api.version>1.7.31</slf4j-api.version>
+    <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
+    <mockito-core.version>2.28.2</mockito-core.version>
+    <junit.version>5.7.2</junit.version>
+    <jarchivelib.version>1.1.0</jarchivelib.version>
+    <bouncycastle-jdk15on.version>1.69</bouncycastle-jdk15on.version>
+    <logback-classic.version>1.2.3</logback-classic.version>
+    <jackson.version>2.12.3</jackson.version>
+    <lombok.version>1.18.20</lombok.version>
+    <svm.version>20.3.2</svm.version>
+  </properties>
 
   <modules>
     <module>driver</module>
@@ -60,23 +81,17 @@
       <dependency>
         <groupId>org.reactivestreams</groupId>
         <artifactId>reactive-streams</artifactId>
-        <version>1.0.3</version>
+        <version>${reactive-streams.version}</version>
       </dependency>
       <dependency>
-        <!-- Please note that when updating this dependency -->
-        <!-- (i.e. due to a security vulnerability or bug) that the -->
-        <!-- corresponding server dependency also needs updating.-->
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
-        <version>4.1.65.Final</version>
+        <version>${netty-handler.version}</version>
       </dependency>
       <dependency>
-        <!-- Please note that when updating this dependency -->
-        <!-- (i.e. due to a security vulnerability or bug) that the -->
-        <!-- corresponding server dependency also needs updating.-->
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>Dysprosium-SR20</version>
+        <version>${reactor-bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -85,27 +100,27 @@
       <dependency>
         <groupId>io.reactivex.rxjava2</groupId>
         <artifactId>rxjava</artifactId>
-        <version>2.2.21</version>
+        <version>${rxjava.version}</version>
       </dependency>
 
       <!-- Optional dependencies -->
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.31</version>
+        <version>${slf4j-api.version}</version>
       </dependency>
 
       <!-- Test dependencies -->
       <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-junit</artifactId>
-        <version>2.0.0.0</version>
+        <version>${hamcrest-junit.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.28.2</version>
+        <version>${mockito-core.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -117,45 +132,51 @@
       <dependency>
         <groupId>org.rauschig</groupId>
         <artifactId>jarchivelib</artifactId>
-        <version>1.1.0</version>
+        <version>${jarchivelib.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15on</artifactId>
-        <version>1.69</version>
+        <version>${bouncycastle-jdk15on.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcpkix-jdk15on</artifactId>
-        <version>1.69</version>
+        <version>${bouncycastle-jdk15on.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-        <version>1.2.3</version>
+        <version>${logback-classic.version}</version>
         <scope>test</scope>
       </dependency>
 
-      <!-- Testkit Dependencies -->
+      <!-- Testkit Backend Dependencies -->
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.12.3</version>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.12.3</version>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
       </dependency>
 
       <!-- Graal VM -->
       <dependency>
         <groupId>org.graalvm.nativeimage</groupId>
         <artifactId>svm</artifactId>
-        <version>20.3.2</version>
+        <version>${svm.version}</version>
         <!-- Provided scope as it is only needed for compiling the SVM substitution classes -->
         <scope>provided</scope>
       </dependency>
