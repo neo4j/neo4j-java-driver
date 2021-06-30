@@ -3,10 +3,6 @@
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <rootDir>${project.basedir}/..</rootDir>
-  </properties>
-
   <parent>
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
@@ -20,6 +16,10 @@
   <packaging>jar</packaging>
   <name>Neo4j Java Driver Examples</name>
   <description>Examples of using the Neo4j graph database through Java</description>
+
+  <properties>
+    <rootDir>${project.basedir}/..</rootDir>
+  </properties>
 
   <dependencies>
     <!-- Compile dependencies -->
