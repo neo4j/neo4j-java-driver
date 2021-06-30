@@ -25,16 +25,17 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuples;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Logger;
@@ -145,7 +146,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     @Override
     public <T> Publisher<T> retryRx( Publisher<T> work )
     {
-        return Flux.from( work ).retryWhen( retryRxCondition() );
+        return Flux.from( work ).retryWhen( exponentialBackoffRetryRx() );
     }
 
     protected boolean canRetryOn( Throwable error )
@@ -177,48 +178,52 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         return error;
     }
 
-    private Function<Flux<Throwable>,Publisher<Context>> retryRxCondition()
+    private Retry exponentialBackoffRetryRx()
     {
-        return errorCurrentAttempt -> errorCurrentAttempt.flatMap( e -> Mono.subscriberContext().map( ctx -> Tuples.of( e, ctx ) ) ).flatMap( t2 ->
-        {
-
-            Throwable throwable = t2.getT1();
-            Throwable error = extractPossibleTerminationCause( throwable );
-
-            Context ctx = t2.getT2();
-
-            List<Throwable> errors = ctx.getOrDefault( "errors", null );
-
-            long startTime = ctx.getOrDefault( "startTime", -1L );
-            long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
-
-            if ( canRetryOn( error ) )
-            {
-                long currentTime = clock.millis();
-                if ( startTime == -1 )
+        return Retry.from( retrySignals -> retrySignals.flatMap( retrySignal -> Mono.deferContextual(
+                contextView -> Mono.just( Tuples.of( retrySignal, contextView ) ) ) ).flatMap(
+                tuple ->
                 {
-                    startTime = currentTime;
-                }
+                    Throwable throwable = tuple.getT1().failure();
+                    Throwable error = extractPossibleTerminationCause( throwable );
 
-                long elapsedTime = currentTime - startTime;
-                if ( elapsedTime < maxRetryTimeMs )
-                {
-                    long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
-                    log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
+                    ContextView contextView = tuple.getT2();
+                    List<Throwable> errors = contextView.getOrDefault( "errors", null );
 
-                    nextDelayMs = (long) (nextDelayMs * multiplier);
-                    errors = recordError( error, errors );
+                    long startTime = contextView.getOrDefault( "startTime", -1L );
+                    long nextDelayMs = contextView.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
-                    // retry on netty event loop thread
-                    EventExecutor eventExecutor = eventExecutorGroup.next();
-                    return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) ).delayElement(
-                            Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
-                }
-            }
-            addSuppressed( throwable, errors );
+                    if ( canRetryOn( error ) )
+                    {
+                        long currentTime = clock.millis();
+                        if ( startTime == -1 )
+                        {
+                            startTime = currentTime;
+                        }
 
-            return Mono.error( throwable );
-        } );
+                        long elapsedTime = currentTime - startTime;
+                        if ( elapsedTime < maxRetryTimeMs )
+                        {
+                            long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                            log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
+
+                            nextDelayMs = (long) (nextDelayMs * multiplier);
+                            errors = recordError( error, errors );
+
+                            // retry on netty event loop thread
+                            EventExecutor eventExecutor = eventExecutorGroup.next();
+                            Context context = Context.of(
+                                    "errors", errors,
+                                    "startTime", startTime,
+                                    "nextDelayMs", nextDelayMs
+                            );
+                            return Mono.just( context ).delayElement( Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
+                        }
+                    }
+                    addSuppressed( throwable, errors );
+
+                    return Mono.error( throwable );
+                } ) );
     }
 
     private <T> void executeWorkInEventLoop( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work )
@@ -373,7 +378,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     {
         if ( errors == null )
         {
-            errors = new ArrayList<>();
+            errors = new LinkedList<>();
         }
         errors.add( error );
         return errors;
