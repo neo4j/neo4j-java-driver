@@ -25,12 +25,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
-import reactor.util.context.ContextView;
-import reactor.util.function.Tuples;
 import reactor.util.retry.Retry;
 
 import java.time.Duration;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -372,7 +370,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     {
         if ( errors == null )
         {
-            errors = new LinkedList<>();
+            errors = new ArrayList<>();
         }
         errors.add( error );
         return errors;
