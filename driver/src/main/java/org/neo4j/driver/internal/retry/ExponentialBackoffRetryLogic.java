@@ -181,25 +181,19 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
     private Retry exponentialBackoffRetryRx()
     {
         return Retry.from( retrySignals -> retrySignals.flatMap( retrySignal -> Mono.deferContextual(
-                contextView -> Mono.just( Tuples.of( retrySignal, contextView ) ) ) ).flatMap(
-                tuple ->
+                contextView ->
                 {
-                    Throwable throwable = tuple.getT1().failure();
+                    Throwable throwable = retrySignal.failure();
                     Throwable error = extractPossibleTerminationCause( throwable );
 
-                    ContextView contextView = tuple.getT2();
                     List<Throwable> errors = contextView.getOrDefault( "errors", null );
-
-                    long startTime = contextView.getOrDefault( "startTime", -1L );
-                    long nextDelayMs = contextView.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
                     if ( canRetryOn( error ) )
                     {
                         long currentTime = clock.millis();
-                        if ( startTime == -1 )
-                        {
-                            startTime = currentTime;
-                        }
+
+                        long startTime = contextView.getOrDefault( "startTime", currentTime );
+                        long nextDelayMs = contextView.getOrDefault( "nextDelayMs", initialRetryDelayMs );
 
                         long elapsedTime = currentTime - startTime;
                         if ( elapsedTime < maxRetryTimeMs )
@@ -223,7 +217,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                     addSuppressed( throwable, errors );
 
                     return Mono.error( throwable );
-                } ) );
+                } ) ) );
     }
 
     private <T> void executeWorkInEventLoop( CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work )
