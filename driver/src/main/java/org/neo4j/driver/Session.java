@@ -264,7 +264,7 @@ public interface Session extends Resource, QueryRunner
 
     BackgroundJob submitJob( String query, Map<String,Object> parameters );
 
-    BackgroundJob submitJob( Query query, Duration maxDuration );
+    BackgroundJob submitJob( Query query, Duration preferredMaxDuration );
 
     BackgroundJob submitJob( Query query );
 }
