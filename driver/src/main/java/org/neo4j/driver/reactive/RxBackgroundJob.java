@@ -16,19 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.reactive;
 
-import org.neo4j.driver.exceptions.BackgroundJobExpiredException;
+import org.reactivestreams.Publisher;
 
-public interface BackgroundJob
+public interface RxBackgroundJob
 {
-    /**
-     * Check whether result summary is available.
-     * <p>
-     * This makes a request to the server that is executing the job to check its status.
-     *
-     * @return {@code true} when job has completed successfully
-     * @throws BackgroundJobExpiredException when background job execution exceeds the maximum execution duration determined by the server.
-     */
-    Boolean checkCompleted() throws BackgroundJobExpiredException;
+    Publisher<Boolean> checkCompleted();
 }

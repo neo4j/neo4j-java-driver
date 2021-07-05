@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.async;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -25,11 +26,11 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.Bookmark;
 
 /**
  * Provides a context of work for database interactions.
@@ -315,4 +316,6 @@ public interface AsyncSession extends AsyncQueryRunner
      * @return a {@link CompletionStage completion stage} that represents the asynchronous close.
      */
     CompletionStage<Void> closeAsync();
+
+    CompletionStage<AsyncBackgroundJob> submitJobAsync( String query, Map<String,Object> parameters, Duration preferredMaxDuration );
 }

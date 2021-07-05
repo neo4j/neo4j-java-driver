@@ -18,17 +18,18 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.Bookmark;
 
 /**
  * A reactive session is the same as {@link Session} except it provides a reactive API.
@@ -252,4 +253,6 @@ public interface RxSession extends RxQueryRunner
      * @return an empty publisher that represents the reactive close.
      */
     <T> Publisher<T> close();
+
+    Publisher<RxBackgroundJob> submitJob( String query, Map<String,Object> parameters, Duration preferredMaxDuration );
 }
