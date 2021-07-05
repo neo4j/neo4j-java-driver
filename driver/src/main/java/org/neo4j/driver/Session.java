@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.neo4j.driver.async.AsyncSession;
@@ -253,17 +254,17 @@ public interface Session extends Resource, QueryRunner
      * <p>
      * The returned handle must be used to check the status of the job. This may happen over different network connections.
      *
-     * @param query      text of a Neo4j query.
-     * @param parameters input data for the query.
+     * @param query                text of a Neo4j query.
+     * @param parameters           input data for the query.
+     * @param preferredMaxDuration preferred maximum duration that the job may execute before it gets evicted by the server. The server may override this with
+     *                             the configured maximum duration threshold.
      * @return a job handle that can be used to manage the background job, it is only valid until the driver instance that created it is open.
      */
+    BackgroundJob submitJob( String query, Map<String,Object> parameters, Duration preferredMaxDuration );
+
     BackgroundJob submitJob( String query, Map<String,Object> parameters );
 
-    /**
-     * TODO fill in documentation
-     *
-     * @param query TODO fill in documentation
-     * @return TODO fill in documentation
-     */
+    BackgroundJob submitJob( Query query, Duration maxDuration );
+
     BackgroundJob submitJob( Query query );
 }

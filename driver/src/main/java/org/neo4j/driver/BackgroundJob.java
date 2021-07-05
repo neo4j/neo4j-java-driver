@@ -20,6 +20,7 @@ package org.neo4j.driver;
 
 import java.util.Optional;
 
+import org.neo4j.driver.exceptions.BackgroundJobExpiredException;
 import org.neo4j.driver.exceptions.BackgroundJobUnfinishedException;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -34,13 +35,14 @@ public interface BackgroundJob
      *
      * @return an {@link Optional} of {@link ResultSummary} when job is completed successfully or empty {@link Optional} if job is still in progress. An
      * exception is thrown is job has failed.
+     * @throws BackgroundJobExpiredException when background job execution exceeds the maximum execution duration determined by the server.
      */
-    Optional<ResultSummary> checkSummary();
+    Optional<ResultSummary> checkSummary() throws BackgroundJobExpiredException;
 
     // ------------------- OPTION 2 -------------------
 
     /**
-     * Returns {@code true} if completed in any fashion: normally or exceptionally.
+     * Returns {@code true} if completed in any fashion: normally, exceptionally or expired.
      * <p>
      * This makes a request to the server that is executing the job to check its status.
      *
@@ -52,7 +54,8 @@ public interface BackgroundJob
      * Return the result summary.
      *
      * @return a summary for the whole query result.
-     * @throws BackgroundJobUnfinishedException if called before {@link BackgroundJob#checkCompleted()} returns {@code true}
+     * @throws BackgroundJobUnfinishedException if called before {@link BackgroundJob#checkCompleted()} returns {@code true}.
+     * @throws BackgroundJobExpiredException    when background job execution exceeds the maximum execution duration determined by the server.
      */
-    ResultSummary getSummary() throws BackgroundJobUnfinishedException;
+    ResultSummary getSummary() throws BackgroundJobUnfinishedException, BackgroundJobExpiredException;
 }
