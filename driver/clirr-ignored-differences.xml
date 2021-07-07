@@ -1,3 +1,10 @@
 <differences>
-<!--4.0 drivers is not API compatible with 1.0 drivers, as a result we reset API differences from 4.0.0-->
+    <!--4.0 drivers is not API compatible with 1.0 drivers, as a result we reset API differences from 4.0.0-->
+
+    <difference>
+        <className>org/neo4j/driver/Logger</className>
+        <differenceType>7012</differenceType>
+        <method>void debug(java.lang.String, java.lang.Throwable)</method>
+    </difference>
+
 </differences>

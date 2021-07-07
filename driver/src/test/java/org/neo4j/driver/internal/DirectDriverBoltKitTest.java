@@ -78,7 +78,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
-import static org.neo4j.driver.util.StubServer.start;
 import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -181,7 +180,7 @@ class DirectDriverBoltKitTest
             assertEquals( asList( "Foo", "Bar" ), names );
 
             ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
-            verify( logger, atLeastOnce() ).debug( messageCaptor.capture(), any() );
+            verify( logger, atLeastOnce() ).debug( messageCaptor.capture(), any( Object[].class ) );
 
             Optional<String> logMessageWithConnectionId = messageCaptor.getAllValues()
                     .stream()
