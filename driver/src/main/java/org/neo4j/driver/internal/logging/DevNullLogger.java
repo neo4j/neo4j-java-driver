@@ -54,6 +54,11 @@ public class DevNullLogger implements Logger
     }
 
     @Override
+    public void debug( String message, Throwable throwable )
+    {
+    }
+
+    @Override
     public void trace( String message, Object... params )
     {
     }

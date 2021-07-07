@@ -65,6 +65,15 @@ public abstract class ReformattedLogger implements Logger
     }
 
     @Override
+    public void debug( String message, Throwable throwable )
+    {
+        if ( isDebugEnabled() )
+        {
+            delegate.debug( reformat( message ), throwable );
+        }
+    }
+
+    @Override
     public void trace( String message, Object... params )
     {
         if ( isTraceEnabled() )

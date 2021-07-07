@@ -80,7 +80,18 @@ class PrefixedLoggerTest
         PrefixedLogger logger = new PrefixedLogger( delegate );
         logger.debug( MESSAGE );
 
-        verify( delegate, never() ).debug( anyString(), any() );
+        verify( delegate, never() ).debug( anyString(), any( Object[].class ) );
+    }
+
+    @Test
+    void shouldNotDelegateDebugLogWithThrowableWhenDebugDisabled()
+    {
+        Logger delegate = newLoggerMock();
+
+        PrefixedLogger logger = new PrefixedLogger( delegate );
+        logger.debug( MESSAGE, mock( Throwable.class ) );
+
+        verify( delegate, never() ).debug( anyString(), any( Throwable.class ) );
     }
 
     @Test

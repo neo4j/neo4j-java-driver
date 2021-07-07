@@ -68,7 +68,7 @@ class LoggingIT
         }
 
         // Then
-        verify( logger, atLeastOnce() ).debug( anyString(), any() );
+        verify( logger, atLeastOnce() ).debug( anyString(), any( Object[].class ) );
         verify( logger, atLeastOnce() ).trace( anyString(), any() );
     }
 }
