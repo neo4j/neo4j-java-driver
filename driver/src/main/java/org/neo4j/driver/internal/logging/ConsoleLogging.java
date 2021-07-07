@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.logging.ConsoleHandler;
@@ -70,14 +72,14 @@ public class ConsoleLogging implements Logging
             }
 
             handler = new ConsoleHandler();
-            handler.setFormatter( new ShortFormatter() );
+            handler.setFormatter( new ConsoleFormatter() );
             handler.setLevel( level );
             logger.addHandler( handler );
             logger.setLevel( level );
         }
     }
 
-    private static class ShortFormatter extends Formatter
+    private static class ConsoleFormatter extends Formatter
     {
         @Override
         public String format( LogRecord record )
@@ -86,7 +88,23 @@ public class ConsoleLogging implements Logging
                    record.getLevel() + " " +
                    record.getLoggerName() + " - " +
                    formatMessage( record ) +
+                   formatThrowable( record.getThrown() ) +
                    "\n";
+        }
+
+        private String formatThrowable( Throwable throwable )
+        {
+            String throwableString = "";
+            if ( throwable != null )
+            {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter( sw );
+                pw.println();
+                throwable.printStackTrace( pw );
+                pw.close();
+                throwableString = sw.toString();
+            }
+            return throwableString;
         }
     }
 }
