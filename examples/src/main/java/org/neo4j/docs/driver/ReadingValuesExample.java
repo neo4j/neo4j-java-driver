@@ -42,13 +42,13 @@ public class ReadingValuesExample extends BaseApplication
         return echo( null, record ->
         {
             // tag::java-driver-reading-values-null[]
-            Value nullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get( nullFieldName );
 
             // Checking if its null
-            Boolean trueBoolean = nullValue.isNull(); // true
+            boolean wasNull = possibleNullValue.isNull(); // true
 
             // end::java-driver-reading-values-null[]
-            return trueBoolean;
+            return wasNull;
         } );
     }
 
@@ -56,10 +56,10 @@ public class ReadingValuesExample extends BaseApplication
     {
         return echo( null, record ->
         {
-            Value nullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get( nullFieldName );
             // tag::java-driver-reading-values-null[]
             // Getting the null value as string
-            String stringWithNullContent = nullValue.asString(); // "null"
+            String stringWithNullContent = possibleNullValue.asString(); // "null"
 
             // end::java-driver-reading-values-null[]
             return stringWithNullContent;
@@ -70,10 +70,10 @@ public class ReadingValuesExample extends BaseApplication
     {
         return echo( null, record ->
         {
-            Value nullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get( nullFieldName );
             // tag::java-driver-reading-values-null[]
             // Getting `null` as object
-            Object nullObject = nullValue.asObject(); // null
+            Object nullObject = possibleNullValue.asObject(); // null
 
             // end::java-driver-reading-values-null[]
             return nullObject;
@@ -84,10 +84,10 @@ public class ReadingValuesExample extends BaseApplication
     {
         return echo( null, record ->
         {
-            Value nullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get( nullFieldName );
             // tag::java-driver-reading-values-null[]
             // Coercing value with a default value set
-            float floatValue = nullValue.asFloat( 1.0f ); // 1.0f
+            float floatValue = possibleNullValue.asFloat( 1.0f ); // 1.0f
 
             // end::java-driver-reading-values-null[]
             return floatValue;
@@ -98,10 +98,10 @@ public class ReadingValuesExample extends BaseApplication
     {
         echo( null, record ->
         {
-            Value nullValue = record.get( nullFieldName );
+            Value possibleNullValue = record.get( nullFieldName );
             // tag::java-driver-reading-values-null[]
             // Could not cast null to float
-            float floatValue = nullValue.asFloat(); // throws org.neo4j.driver.exceptions.value.Uncoercible
+            float floatValue = possibleNullValue.asFloat(); // throws org.neo4j.driver.exceptions.value.Uncoercible
             // end::java-driver-reading-values-null[]
             return floatValue;
         } );
