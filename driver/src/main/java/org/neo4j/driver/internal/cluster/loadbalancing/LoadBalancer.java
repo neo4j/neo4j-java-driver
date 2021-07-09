@@ -20,7 +20,7 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -187,7 +187,7 @@ public class LoadBalancer implements ConnectionProvider
     {
         AddressSet addresses = addressSet( mode, routingTable );
         CompletableFuture<Connection> result = new CompletableFuture<>();
-        List<Throwable> attemptExceptions = new LinkedList<>();
+        List<Throwable> attemptExceptions = new ArrayList<>();
         acquire( mode, routingTable, addresses, result, attemptExceptions );
         return result;
     }
