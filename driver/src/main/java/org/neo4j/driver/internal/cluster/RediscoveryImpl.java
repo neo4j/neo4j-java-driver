@@ -52,10 +52,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
-/**
- * This class is used by all router tables to perform discovery.
- * In other words, the methods in this class could be called by multiple threads concurrently.
- */
 public class RediscoveryImpl implements Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
