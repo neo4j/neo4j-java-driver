@@ -52,13 +52,17 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 
+/**
+ * This class is used by all router tables to perform discovery.
+ * In other words, the methods in this class could be called by multiple threads concurrently.
+ */
 public class RediscoveryImpl implements Rediscovery
 {
     private static final String NO_ROUTERS_AVAILABLE = "Could not perform discovery for database '%s'. No routing server available.";
     private static final String RECOVERABLE_ROUTING_ERROR = "Failed to update routing table with server '%s'.";
     private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER = "Received a recoverable discovery error with server '%s', " +
                                                                           "will continue discovery with other routing servers if available. " +
-                                                                          "Complete routing failures will be reported separately from this warning.";
+                                                                          "Complete failure is reported separately from this entry.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
