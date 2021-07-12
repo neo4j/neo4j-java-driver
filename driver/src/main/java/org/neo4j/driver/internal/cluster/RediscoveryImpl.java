@@ -55,7 +55,7 @@ public class RediscoveryImpl implements Rediscovery
     private static final String RECOVERABLE_ROUTING_ERROR = "Failed to update routing table with server '%s'.";
     private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER = "Received a recoverable discovery error with server '%s', " +
                                                                           "will continue discovery with other routing servers if available. " +
-                                                                          "Complete routing failures will be reported separately from this warning.";
+                                                                          "Complete failure is reported separately from this entry.";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;

@@ -36,7 +36,6 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -119,7 +118,7 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
 
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             List<String> result = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -140,7 +139,7 @@ class RoutingDriverBoltKitTest
         StubServer readServer = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
 
         {
             List<String> result = session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ) );
@@ -162,7 +161,7 @@ class RoutingDriverBoltKitTest
         StubServer readServer = stubController.startStub( "read_server_v3_read_tx.script", 9005 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ); Transaction tx = session.beginTransaction() )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ); Transaction tx = session.beginTransaction() )
         {
             List<String> result = tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() );
 
@@ -192,7 +191,7 @@ class RoutingDriverBoltKitTest
                 try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
                 {
                     assertThat( session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
-                            equalTo( asList( "Bob", "Alice", "Tina" ) ) );
+                                equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                 }
             }
         }
@@ -218,10 +217,10 @@ class RoutingDriverBoltKitTest
             for ( int i = 0; i < 2; i++ )
             {
                 try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-                        Transaction tx = session.beginTransaction() )
+                      Transaction tx = session.beginTransaction() )
                 {
                     assertThat( tx.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( "n.name" ).asString() ),
-                            equalTo( asList( "Bob", "Alice", "Tina" ) ) );
+                                equalTo( asList( "Bob", "Alice", "Tina" ) ) );
                     tx.commit();
                 }
             }
@@ -246,7 +245,7 @@ class RoutingDriverBoltKitTest
         assertThrows( SessionExpiredException.class, () ->
         {
             try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                    Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+                  Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
             {
                 session.run( "MATCH (n) RETURN n.name" );
             }
@@ -269,8 +268,8 @@ class RoutingDriverBoltKitTest
         SessionExpiredException e = assertThrows( SessionExpiredException.class, () ->
         {
             try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                    Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-                    Transaction tx = session.beginTransaction() )
+                  Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
+                  Transaction tx = session.beginTransaction() )
             {
                 tx.run( "MATCH (n) RETURN n.name" );
                 tx.commit();
@@ -293,7 +292,7 @@ class RoutingDriverBoltKitTest
 
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
             assertThrows( SessionExpiredException.class, () -> session.run( "CREATE (n {name:'Bob'})" ).consume() );
         }
@@ -316,7 +315,7 @@ class RoutingDriverBoltKitTest
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         //Expect
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
             assertThrows( SessionExpiredException.class, () -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
         }
@@ -337,7 +336,7 @@ class RoutingDriverBoltKitTest
         StubServer writeServer = stubController.startStub( "write_server_v3_write.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
             session.run( "CREATE (n {name:'Bob'})" );
         }
@@ -374,7 +373,7 @@ class RoutingDriverBoltKitTest
         StubServer writeServer = stubController.startStub( "write_server_v3_write_tx.script", 9007 );
         URI uri = URI.create( "neo4j://127.0.0.1:9001" );
         try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ); Transaction tx = session.beginTransaction() )
         {
             tx.run( "CREATE (n {name:'Bob'})" );
             tx.commit();
@@ -558,18 +557,19 @@ class RoutingDriverBoltKitTest
 
         try ( Session session = driver.session( builder().withDatabase( "mydatabase" ).build() ) )
         {
-            names = session.writeTransaction( tx ->
-            {
-                tx.run( "RETURN 1" );
-                try
-                {
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException ex )
-                {
-                }
-                return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField );
-            } );
+            names = session.writeTransaction(
+                    tx ->
+                    {
+                        tx.run( "RETURN 1" );
+                        try
+                        {
+                            Thread.sleep( 100 );
+                        }
+                        catch ( InterruptedException ex )
+                        {
+                        }
+                        return tx.run( "MATCH (n) RETURN n.name" ).list( RoutingDriverBoltKitTest::extractNameField );
+                    } );
         }
 
         assertEquals( asList( "Foo", "Bar" ), names );
@@ -594,16 +594,18 @@ class RoutingDriverBoltKitTest
         AsyncSession session = driver.asyncSession( builder().withDatabase( "mydatabase" ).build() );
         List<String> names = Futures.blockingGet( session.writeTransactionAsync(
                 tx -> tx.runAsync( "RETURN 1" )
-                        .thenComposeAsync( ignored -> {
-                            try
-                            {
-                                Thread.sleep( 100 );
-                            }
-                            catch ( InterruptedException ex )
-                            {
-                            }
-                            return tx.runAsync( "MATCH (n) RETURN n.name" );
-                        } )
+                        .thenComposeAsync(
+                                ignored ->
+                                {
+                                    try
+                                    {
+                                        Thread.sleep( 100 );
+                                    }
+                                    catch ( InterruptedException ex )
+                                    {
+                                    }
+                                    return tx.runAsync( "MATCH (n) RETURN n.name" );
+                                } )
                         .thenComposeAsync( cursor -> cursor.listAsync( RoutingDriverBoltKitTest::extractNameField ) ) ) );
 
         assertEquals( asList( "Foo", "Bar" ), names );
@@ -614,7 +616,7 @@ class RoutingDriverBoltKitTest
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
-    private static String extractNameField(Record record)
+    private static String extractNameField( Record record )
     {
         return record.get( 0 ).asString();
     }
@@ -635,12 +637,15 @@ class RoutingDriverBoltKitTest
         Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
 
         Flux<String> fluxOfNames = Flux.usingWhen( Mono.fromSupplier( () -> driver.rxSession( builder().withDatabase( "mydatabase" ).build() ) ),
-                session -> session.writeTransaction( tx ->
-                {
-                    RxResult result = tx.run( "RETURN 1" );
-                    return Flux.from( result.records() ).limitRate( 100 ).thenMany( tx.run( "MATCH (n) RETURN n.name" ).records() ).limitRate( 100 ).map(
-                            RoutingDriverBoltKitTest::extractNameField );
-                } ), RxSession::close );
+                                                   session -> session.writeTransaction(
+                                                           tx ->
+                                                           {
+                                                               RxResult result = tx.run( "RETURN 1" );
+                                                               return Flux.from( result.records() ).limitRate( 100 ).thenMany(
+                                                                       tx.run( "MATCH (n) RETURN n.name" ).records() )
+                                                                          .limitRate( 100 ).map(
+                                                                               RoutingDriverBoltKitTest::extractNameField );
+                                                           } ), RxSession::close );
 
         StepVerifier.create( fluxOfNames ).expectNext( "Foo", "Bar" ).verifyComplete();
 
@@ -657,7 +662,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = stubController.startStub( "write_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( parse( "OldBookmark" ) ).build() ) )
+              Session session = driver.session( builder().withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -679,7 +684,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = stubController.startStub( "write_tx_with_bookmarks.script", 9008 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -701,7 +706,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = stubController.startStub( "read_tx_with_bookmarks.script", 9005 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( parse( "OldBookmark" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -726,7 +731,7 @@ class RoutingDriverBoltKitTest
         StubServer writer = stubController.startStub( "write_read_tx_with_bookmarks.script", 9007 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( parse( "BookmarkA" ) ).build() ) )
+              Session session = driver.session( builder().withBookmarks( parse( "BookmarkA" ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -827,7 +832,9 @@ class RoutingDriverBoltKitTest
             assertEquals( 0, writer.exitStatus() );
         }
         verify( logger, times( 3 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+        String messageBeginning = "Failed to obtain a connection towards address 127.0.0.1:9004";
+        verify( logger ).warn( startsWith( messageBeginning ) );
+        verify( logger ).debug( startsWith( messageBeginning ), any( ServiceUnavailableException.class ) );
     }
 
     @Test
@@ -861,7 +868,9 @@ class RoutingDriverBoltKitTest
         }
         verify( logger, times( 1 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( TransientException.class ) );
         verify( logger, times( 2 ) ).warn( startsWith( "Transaction failed and will be retried in" ), any( SessionExpiredException.class ) );
-        verify( logger ).warn( startsWith( "Failed to obtain a connection towards address 127.0.0.1:9004" ), any( SessionExpiredException.class ) );
+        String messageBeginning = "Failed to obtain a connection towards address 127.0.0.1:9004";
+        verify( logger ).warn( startsWith( messageBeginning ) );
+        verify( logger ).debug( startsWith( messageBeginning ), any( ServiceUnavailableException.class ) );
     }
 
     @Test
@@ -1127,7 +1136,7 @@ class RoutingDriverBoltKitTest
         StubServer reader2 = stubController.startStub( "read_server_v3_read.script", 9004 );
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9010", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
         {
             // returned routing table contains only one router, this should be fine and we should be able to
             // read multiple times without additional rediscovery
@@ -1156,7 +1165,7 @@ class RoutingDriverBoltKitTest
 
         try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ); Session session = driver.session( builder().withBookmarks(
                 InternalBookmark.parse( asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29", "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56",
-                        "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
+                                                      "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) ) ).build() ) )
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -1393,16 +1402,17 @@ class RoutingDriverBoltKitTest
 
     private static List<String> readStrings( final String query, Session session )
     {
-        return session.readTransaction( tx ->
-        {
-            List<Record> records = tx.run( query ).list();
-            List<String> names = new ArrayList<>( records.size() );
-            for ( Record record : records )
-            {
-                names.add( record.get( 0 ).asString() );
-            }
-            return names;
-        } );
+        return session.readTransaction(
+                tx ->
+                {
+                    List<Record> records = tx.run( query ).list();
+                    List<String> names = new ArrayList<>( records.size() );
+                    for ( Record record : records )
+                    {
+                        names.add( record.get( 0 ).asString() );
+                    }
+                    return names;
+                } );
     }
 
     static class PortBasedServerAddressComparator implements Comparator<ServerAddress>
