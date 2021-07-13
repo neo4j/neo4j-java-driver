@@ -92,25 +92,52 @@ public class ValuesTest
     @Test
     public void shouldConvertPrimitiveArrays() throws Throwable
     {
+        assertThat( value( new short[]{1, 2, 3} ),
+                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+
+        assertThat( value( (Object) new short[]{1, 2, 3} ),
+                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+
         assertThat( value( new int[]{1, 2, 3} ),
+                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+
+        assertThat( value( (Object) new int[]{1, 2, 3} ),
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
 
         assertThat( value( new long[]{1, 2, 3} ),
                 equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
 
+        assertThat( value( (Object) new long[]{1, 2, 3} ),
+                equalTo( (Value) new ListValue( values( 1, 2, 3 ) ) ) );
+
         assertThat( value( new float[]{1.1f, 2.2f, 3.3f} ),
+                equalTo( (Value) new ListValue( values( 1.1f, 2.2f, 3.3f ) ) ) );
+
+        assertThat( value( (Object) new float[]{1.1f, 2.2f, 3.3f} ),
                 equalTo( (Value) new ListValue( values( 1.1f, 2.2f, 3.3f ) ) ) );
 
         assertThat( value( new double[]{1.1, 2.2, 3.3} ),
                 equalTo( (Value) new ListValue( values( 1.1, 2.2, 3.3 ) ) ) );
 
+        assertThat( value( (Object) new double[]{1.1, 2.2, 3.3} ),
+                equalTo( (Value) new ListValue( values( 1.1, 2.2, 3.3 ) ) ) );
+
         assertThat( value( new boolean[]{true, false, true} ),
+                equalTo( (Value) new ListValue( values( true, false, true ) ) ) );
+
+        assertThat( value( (Object) new boolean[]{true, false, true} ),
                 equalTo( (Value) new ListValue( values( true, false, true ) ) ) );
 
         assertThat( value( new char[]{'a', 'b', 'c'} ),
                 equalTo( (Value) new ListValue( values( 'a', 'b', 'c' ) ) ) );
 
+        assertThat( value( (Object) new char[]{'a', 'b', 'c'} ),
+                equalTo( (Value) new ListValue( values( 'a', 'b', 'c' ) ) ) );
+
         assertThat( value( new String[]{"a", "b", "c"} ),
+                equalTo( (Value) new ListValue( values( "a", "b", "c" ) ) ) );
+
+        assertThat( (Object) value( new String[]{"a", "b", "c"} ),
                 equalTo( (Value) new ListValue( values( "a", "b", "c" ) ) ) );
     }
 
