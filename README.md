@@ -106,13 +106,41 @@ Testkit is a tooling that is used to run integration tests for all of the driver
 Some older tests still rely on [`boltkit`](https://github.com/neo4j-drivers/boltkit), the predecessor to Testkit.
 If `boltkit` is not installed, then all tests that requires `boltkit` will be ignored and will not be executed.
 
-In case you want or can verify contributions with unit tests alone, use the following command to skip all integration tests:
+In case you want or can verify contributions with unit tests alone, use the following command to skip all integration and Testkit tests:
 
 ```
-mvn clean install -DskipITs
+mvn clean install -DskipITs -P skip-testkit
 ```
 
-Otherwise, if you have Git, Python3 and Docker installed, please go ahead and clone Testkit and run as follows:
+There are 2 ways of running Testkit tests:
+1. Using the `testkit-tests` module of this project.
+2. Manually cloning Testkit and running it directly.
+
+##### Using the testkit-tests module
+
+The `testkit-tests` module will automatically checkout Testkit and run it during Maven build.
+
+Prerequisites:
+- Docker
+- `/var/run/docker.sock` available to be passed through to running containers. 
+  This is required because Testkit needs access to Docker in order to launch additional containers.
+- The driver project location must be sharable with Docker containers as Testkit container needs to have access to it.
+
+Make sure to run build for the whole project and not just for `testkit-tests` module. Sample commands:
+- `mvn clean verify` - runs all tests.
+- `mvn clean verify -DskipTests` - skips all tests.
+- `mvn clean verify -DtestkitArgs='--tests STUB_TESTS'` - runs all project tests and Testkit stub tests.
+- `mvn clean verify -DskipTests -P testkit-tests` - skips all project tests and runs Testkit tests.
+- `mvn clean verify -DskipTests -DtestkitArgs='--tests STUB_TESTS'` - skips all project tests and runs Testkit stub tests.
+
+##### Running Testkit manually
+
+Prerequisites:
+- Docker
+- Python3
+- Git
+
+Clone Testkit and run as follows:
 
 ```
 git clone git@github.com:neo4j/neo4j-java-driver.git 
