@@ -90,6 +90,9 @@ class ValuesTest
     @Test
     void shouldConvertPrimitiveArrays()
     {
+        assertThat( value( new short[]{1, 2, 3} ),
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
+
         assertThat( value( new int[]{1, 2, 3} ),
                 equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
 
@@ -109,6 +112,34 @@ class ValuesTest
                 equalTo( new ListValue( values( 'a', 'b', 'c' ) ) ) );
 
         assertThat( value( new String[]{"a", "b", "c"} ),
+                equalTo( new ListValue( values( "a", "b", "c" ) ) ) );
+    }
+
+    @Test
+    void shouldConvertPrimitiveArraysFromObject()
+    {
+        assertThat( value( (Object) new short[]{1, 2, 3} ),
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
+
+        assertThat( value( (Object) new int[]{1, 2, 3} ),
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
+
+        assertThat( value( (Object) new long[]{1, 2, 3} ),
+                equalTo( new ListValue( values( 1, 2, 3 ) ) ) );
+
+        assertThat( value( (Object) new float[]{1.1f, 2.2f, 3.3f} ),
+                equalTo( new ListValue( values( 1.1f, 2.2f, 3.3f ) ) ) );
+
+        assertThat( value( (Object) new double[]{1.1, 2.2, 3.3} ),
+                equalTo( new ListValue( values( 1.1, 2.2, 3.3 ) ) ) );
+
+        assertThat( value( (Object) new boolean[]{true, false, true} ),
+                equalTo( new ListValue( values( true, false, true ) ) ) );
+
+        assertThat( value( (Object) new char[]{'a', 'b', 'c'} ),
+                equalTo( new ListValue( values( 'a', 'b', 'c' ) ) ) );
+
+        assertThat( value( (Object) new String[]{"a", "b", "c"} ),
                 equalTo( new ListValue( values( "a", "b", "c" ) ) ) );
     }
 
