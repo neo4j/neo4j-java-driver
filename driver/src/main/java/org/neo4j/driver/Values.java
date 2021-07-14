@@ -121,11 +121,13 @@ public abstract class Values
         if ( value instanceof Iterator<?> ) { return value( (Iterator<Object>) value ); }
         if ( value instanceof Stream<?> ) { return value( (Stream<Object>) value ); }
 
+        if ( value instanceof char[] ) { return value( (char[]) value ); }
         if ( value instanceof byte[] ) { return value( (byte[]) value ); }
         if ( value instanceof boolean[] ) { return value( (boolean[]) value ); }
         if ( value instanceof String[] ) { return value( (String[]) value ); }
         if ( value instanceof long[] ) { return value( (long[]) value ); }
         if ( value instanceof int[] ) { return value( (int[]) value ); }
+        if ( value instanceof short[] ) { return value( (short[]) value ); }
         if ( value instanceof double[] ) { return value( (double[]) value ); }
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof Value[] ) { return value( (Value[]) value ); }
@@ -188,6 +190,16 @@ public abstract class Values
     }
 
     public static Value value( long... input )
+    {
+        Value[] values = new Value[input.length];
+        for ( int i = 0; i < input.length; i++ )
+        {
+            values[i] = value( input[i] );
+        }
+        return new ListValue( values );
+    }
+
+    public static Value value( short... input )
     {
         Value[] values = new Value[input.length];
         for ( int i = 0; i < input.length; i++ )
