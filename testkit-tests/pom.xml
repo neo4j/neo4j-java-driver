@@ -1,0 +1,179 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.neo4j.driver</groupId>
+        <artifactId>neo4j-java-driver-parent</artifactId>
+        <version>4.3-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <artifactId>testkit-tests</artifactId>
+
+    <name>Neo4j Java Driver Testkit Tests</name>
+    <description>Tests this driver using Testkit.</description>
+
+    <properties>
+        <rootDir>${project.basedir}/..</rootDir>
+
+        <testkit.url>https://github.com/neo4j-drivers/testkit.git</testkit.url>
+        <testkit.version>4.3</testkit.version>
+        <!-- See the testkit-custom-args profile if you want to customize this on individual runs. -->
+        <testkit.args>--tests TESTKIT_TESTS INTEGRATION_TESTS STUB_TESTS STRESS_TESTS TLS_TESTS</testkit.args>
+        <testkit.timeout>7200000</testkit.timeout>
+
+        <docker-maven-plugin.version>0.36.1</docker-maven-plugin.version>
+        <docker.showLogs>true</docker.showLogs>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${docker-maven-plugin.version}</version>
+
+                    <configuration>
+                        <images>
+                            <image>
+                                <name>testkit-launcher:%v</name>
+
+                                <build>
+                                    <contextDir>${project.basedir}/src/main/docker</contextDir>
+                                </build>
+
+                                <run>
+                                    <!--
+                                    A sanitized version of the image’s short name from which this container is created.
+                                    As this Maven plugin does not currently remove Docker containers when Maven build is interrupted,
+                                    a unique name should prevent running multiple concurrent builds.
+                                    -->
+                                    <containerNamePattern>%n</containerNamePattern>
+                                    <wait>
+                                        <exit>0</exit>
+                                        <time>${testkit.timeout}</time>
+                                    </wait>
+                                    <env>
+                                        <TESTKIT_URL>${testkit.url}</TESTKIT_URL>
+                                        <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit</TESTKIT_CHECKOUT_PATH>
+                                        <TESTKIT_VERSION>${testkit.version}</TESTKIT_VERSION>
+                                        <TESTKIT_ARGS>${testkit.args}</TESTKIT_ARGS>
+                                        <TEST_DRIVER_NAME>java</TEST_DRIVER_NAME>
+                                        <TEST_DRIVER_REPO>${rootDir}</TEST_DRIVER_REPO>
+                                        <TEST_SKIP_BUILD>true</TEST_SKIP_BUILD>
+                                    </env>
+                                    <volumes>
+                                        <bind>
+                                            <!--
+                                            Testkit requires access to Docker to launch other containers.
+                                            This is achieved by passing through the host's Docker socket.
+                                            -->
+                                            <volume>/var/run/docker.sock:/var/run/docker.sock</volume>
+                                            <!--
+                                            Testkit launches other containers and shares sources with them via volumes.
+                                            Given that Testkit runs in the container and uses the host's Docker instance,
+                                            the filesystem paths it uses must exist on the host system.
+                                            This is achieved by using the same path as on the host system.
+                                            -->
+                                            <volume>${rootDir}:${rootDir}</volume>
+                                        </bind>
+                                    </volumes>
+                                </run>
+                            </image>
+                        </images>
+                    </configuration>
+
+                    <executions>
+                        <execution>
+                            <id>build-testkit-launcher</id>
+                            <phase>pre-integration-test</phase>
+                            <goals>
+                                <goal>build</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>run-testkit</id>
+                            <phase>integration-test</phase>
+                            <goals>
+                                <!-- Testkit is expected to exit automatically. -->
+                                <goal>start</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>remove-testkit-launcher</id>
+                            <phase>post-integration-test</phase>
+                            <goals>
+                                <!-- This is to remove the stopped container. -->
+                                <goal>stop</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <!-- Skips running Testkit when tests are skipped. -->
+        <profile>
+            <id>skip-testkit</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                </property>
+            </activation>
+            <properties>
+                <docker.skip>true</docker.skip>
+            </properties>
+        </profile>
+        <!-- Skips running Testkit in TeamCity as it is launched separately. -->
+        <profile>
+            <id>skip-testkit-teamcity</id>
+            <activation>
+                <property>
+                    <name>env.TEAMCITY_VERSION</name>
+                </property>
+            </activation>
+            <properties>
+                <docker.skip>true</docker.skip>
+            </properties>
+        </profile>
+        <!-- Enables running Testkit when other tests are skipped. -->
+        <profile>
+            <id>testkit-tests</id>
+            <properties>
+                <docker.skip>false</docker.skip>
+            </properties>
+        </profile>
+        <!-- Enables passing custom arguments to Testkit and also enables running Testkit when other tests are skipped. -->
+        <profile>
+            <id>testkit-custom-args</id>
+            <activation>
+                <property>
+                    <name>testkitArgs</name>
+                </property>
+            </activation>
+            <properties>
+                <docker.skip>false</docker.skip>
+                <testkit.args>${testkitArgs}</testkit.args>
+            </properties>
+        </profile>
+        <!-- Enables docker maven plugin verbose output. For instance, this can be useful for checking build logs. -->
+        <profile>
+            <id>testkit-docker-verbose</id>
+            <properties>
+                <docker.verbose>true</docker.verbose>
+            </properties>
+        </profile>
+    </profiles>
+</project>
