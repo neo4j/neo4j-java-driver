@@ -1,28 +1,26 @@
 # Neo4j Java Driver
 
-This repository holds the official Java driver for Neo4j.
-The API is designed to work against both single instance and clustered databases.
+This repository holds the official Java Driver for Neo4j.
 
+It works with both single instance and clustered databases.
 
-## For Driver Users
+Network communication is handled using [Bolt Protocol](https://7687.org/).
 
-This section provides general information for developers who are building Neo4j-backed applications.
-Note that this driver is designed to be used only by Neo4j 3.0 and above and provides no HTTP capabilities.
+## Supported Driver Series
 
+| Driver Series | Supported Java Runtime versions | Status | Changelog |
+| --- | --- | --- | --- |
+| 4.3 | 8, 11 | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.3-changelog) |
+| 4.2 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.2-changelog) |
+| 4.1 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.1-changelog) |
 
-### Java Runtime
+## Server Compatibility
 
-Recent drivers require the Java 8 or higher version of the runtime.
-The table below shows runtime compatibility for the currently-supported driver versions.
+The compatibility with Neo4j Server versions is documented in the [Neo4j Knowledge Base](https://neo4j.com/developer/kb/neo4j-supported-versions/).
 
-| Driver Series | Java 8 | Java 11 |
-|---------------|:------:|:-------:|
-| 1.6           |   X    |   X     |
-| 1.7           |   X    |   X     |
-| 4.0           |   X    |   X     |
+## Usage
 
-The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
-
+This section provides general information for engineers who are building Neo4j-backed applications.
 
 ### The `pom.xml` file
 
@@ -42,6 +40,9 @@ All available versions of this driver can be found at
 [Maven Central](https://mvnrepository.com/artifact/org.neo4j.driver/neo4j-java-driver) or
 [Releases](https://github.com/neo4j/neo4j-java-driver/releases).
 
+### Java Module System
+
+The automatic module name of the driver for the Java Module System is `org.neo4j.driver`.
 
 ### Example
 
@@ -61,15 +62,12 @@ Network connections are acquired on demand from the pool when running Cypher que
 As a result of this design, it is expensive to create and close a ``Driver`` object.
 ``Session`` objects, on the other hand, are very cheap to use.
 
-
 ### Thread Safety
 
 ``Driver`` objects are thread-safe, but ``Session`` and ``Transaction`` objects should only be used by a single thread.
 
-
 ### Further reading
-Check out our [Wiki](https://github.com/neo4j/neo4j-java-driver/wiki) for detailed and most up-to-date developer manuals, driver API documentations, changelogs, etc.
-
+Check out our [Wiki](https://github.com/neo4j/neo4j-java-driver/wiki) for detailed and most up-to-date manuals, driver API documentations, changelogs, etc.
 
 ### Bug Report
 If you encounter any bugs while using this driver, please follow the instructions in our [Contribution Guide](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#need-to-raise-an-issue)
@@ -78,24 +76,22 @@ when raising an issue at [Issues](https://github.com/neo4j/neo4j-java-driver/iss
 When reporting, please mention the versions of the driver and server, as well as the server topology (single instance, causal cluster, etc).
 Also include any error stacktraces and a code snippet to reproduce the error if possible, as well as anything else that you think might be helpful.
 
-
-## For Driver Developers
+## For Driver Engineers
 
 This section targets users who would like to compile the driver source code on their own machine for the purpose of, for example, contributing a PR.
 Before contributing to this project, please take a few minutes to read our [Contribution Guide](https://github.com/neo4j/neo4j-java-driver/blob/1.6/CONTRIBUTING.md#want-to-contribute).
 
-
 ### Java Version
 
-For the 1.5 series driver and above, source code _must_ compile on Java 8.
-For previous versions, the compilation requires Java 7.
+For the 1.5+ Driver Series, the source code _must_ compile on Java 8.
 
+For the previous versions, the compilation requires Java 7.
 
 ### Building
 
 The source code here reflects the current development status of a new driver version.
-To use the driver in a project, please use the released driver via Maven Central or check out the code with git tags of corresponding versions instead.
 
+To use the driver in a project, please use the released driver via Maven Central or check out the code with git tags of corresponding versions instead.
 
 #### Running Tests and Creating a Package
 
