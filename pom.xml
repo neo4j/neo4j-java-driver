@@ -50,6 +50,7 @@
     <module>driver</module>
     <module>examples</module>
     <module>testkit-backend</module>
+    <module>testkit-tests</module>
   </modules>
 
   <licenses>
