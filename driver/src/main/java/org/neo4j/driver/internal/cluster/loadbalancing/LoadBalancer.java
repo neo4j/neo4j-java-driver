@@ -175,12 +175,19 @@ public class LoadBalancer implements ConnectionProvider
         } );
     }
 
+    public RoutingTableRegistry getRoutingTableRegistry()
+    {
+        return routingTables;
+    }
+
     private CompletionStage<Boolean> supportsMultiDb( BoltServerAddress address )
     {
-        return connectionPool.acquire( address ).thenCompose( conn -> {
-            boolean supportsMultiDatabase = supportsMultiDatabase( conn );
-            return conn.release().thenApply( ignored -> supportsMultiDatabase );
-        } );
+        return connectionPool.acquire( address ).thenCompose(
+                conn ->
+                {
+                    boolean supportsMultiDatabase = supportsMultiDatabase( conn );
+                    return conn.release().thenApply( ignored -> supportsMultiDatabase );
+                } );
     }
 
     private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )

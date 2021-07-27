@@ -21,6 +21,8 @@ package org.neo4j.driver.internal.async.connection;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
 
+import java.util.Optional;
+
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -41,6 +43,9 @@ public final class ChannelAttributes
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
     private static final AttributeKey<String> TERMINATION_REASON = newInstance( "terminationReason" );
     private static final AttributeKey<AuthorizationStateListener> AUTHORIZATION_STATE_LISTENER = newInstance( "authorizationStateListener" );
+
+    // configuration hints provided by the server
+    private static final AttributeKey<Long> CONNECTION_READ_TIMEOUT = newInstance( "connectionReadTimeout" );
 
     private ChannelAttributes()
     {
@@ -154,6 +159,16 @@ public final class ChannelAttributes
     public static void setAuthorizationStateListener( Channel channel, AuthorizationStateListener authorizationStateListener )
     {
         set( channel, AUTHORIZATION_STATE_LISTENER, authorizationStateListener );
+    }
+
+    public static Optional<Long> connectionReadTimeout( Channel channel )
+    {
+        return Optional.ofNullable( get( channel, CONNECTION_READ_TIMEOUT ) );
+    }
+
+    public static void setConnectionReadTimeout( Channel channel, Long connectionReadTimeout )
+    {
+        setOnce( channel, CONNECTION_READ_TIMEOUT, connectionReadTimeout );
     }
 
     private static <T> T get( Channel channel, AttributeKey<T> key )

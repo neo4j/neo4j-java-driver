@@ -128,6 +128,9 @@ Make sure to run build for the whole project and not just for `testkit-tests` mo
 - `mvn clean verify -DtestkitArgs='--tests STUB_TESTS'` - runs all project tests and Testkit stub tests.
 - `mvn clean verify -DskipTests -P testkit-tests` - skips all project tests and runs Testkit tests.
 - `mvn clean verify -DskipTests -DtestkitArgs='--tests STUB_TESTS'` - skips all project tests and runs Testkit stub tests.
+- `mvn clean verify -DskipITs -DtestkitArgs='--tests STUB_TESTS'` - skips all integration tests and runs Testkit stub tests.
+
+If you interrupt Maven build, you have to remove Testkit containers manually.
 
 ##### Running Testkit manually
 

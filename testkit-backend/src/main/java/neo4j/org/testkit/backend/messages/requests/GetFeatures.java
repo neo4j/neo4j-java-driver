@@ -36,7 +36,8 @@ public class GetFeatures implements TestkitRequest
 {
     private static final Set<String> FEATURES = new HashSet<>( Arrays.asList(
             "AuthorizationExpiredTreatment",
-            "Optimization:PullPipelining"
+            "Optimization:PullPipelining",
+            "ConfHint:connection.recv_timeout_seconds"
     ) );
 
     @Override

@@ -207,12 +207,25 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected LoadBalancer createLoadBalancer( BoltServerAddress address, ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
+                                               EventExecutorGroup eventExecutorGroup, Config config, RoutingSettings routingSettings )
     {
         LoadBalancingStrategy loadBalancingStrategy = new LeastConnectedLoadBalancingStrategy( connectionPool, config.logging() );
         ServerAddressResolver resolver = createResolver( config );
-        return new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
-                                 config.logging(), loadBalancingStrategy, resolver, getDomainNameResolver() );
+        LoadBalancer loadBalancer = new LoadBalancer( address, routingSettings, connectionPool, eventExecutorGroup, createClock(),
+                                                      config.logging(), loadBalancingStrategy, resolver, getDomainNameResolver() );
+        handleNewLoadBalancer( loadBalancer );
+        return loadBalancer;
+    }
+
+    /**
+     * Handles new {@link LoadBalancer} instance.
+     * <p>
+     * <b>This method is protected for Testkit backend usage only.</b>
+     *
+     * @param loadBalancer the new load balancer instance.
+     */
+    protected void handleNewLoadBalancer( LoadBalancer loadBalancer )
+    {
     }
 
     private static ServerAddressResolver createResolver( Config config )

@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Query;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -35,6 +37,7 @@ import org.neo4j.driver.internal.spi.ResponseHandler;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
@@ -80,13 +83,44 @@ class SessionPullResponseCompletionListenerTest
         verify( bookmarkHolder ).setBookmark( InternalBookmark.parse( bookmarkValue ) );
     }
 
+    @Test
+    void shouldReleaseConnectionImmediatelyOnAuthorizationExpiredExceptionFailure()
+    {
+        Connection connection = newConnectionMock();
+        PullResponseCompletionListener listener = new SessionPullResponseCompletionListener( connection, BookmarkHolder.NO_OP );
+        ResponseHandler handler = newHandler( connection, listener );
+        AuthorizationExpiredException exception = new AuthorizationExpiredException( "code", "message" );
+
+        handler.onFailure( exception );
+
+        verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        verify( connection, never() ).release();
+    }
+
+    @Test
+    void shouldReleaseConnectionImmediatelyOnConnectionReadTimeoutExceptionFailure()
+    {
+        Connection connection = newConnectionMock();
+        PullResponseCompletionListener listener = new SessionPullResponseCompletionListener( connection, BookmarkHolder.NO_OP );
+        ResponseHandler handler = newHandler( connection, listener );
+
+        handler.onFailure( ConnectionReadTimeoutException.INSTANCE );
+
+        verify( connection ).terminateAndRelease( ConnectionReadTimeoutException.INSTANCE.getMessage() );
+        verify( connection, never() ).release();
+    }
+
     private static ResponseHandler newHandler( Connection connection, PullResponseCompletionListener listener )
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         BasicPullResponseHandler handler =
                 new BasicPullResponseHandler( new Query( "RETURN 1" ), runHandler, connection, BoltProtocolV3.METADATA_EXTRACTOR, listener );
-        handler.installRecordConsumer( ( record, throwable ) -> {} );
-        handler.installSummaryConsumer( ( resultSummary, throwable ) -> {} );
+        handler.installRecordConsumer( ( record, throwable ) ->
+                                       {
+                                       } );
+        handler.installSummaryConsumer( ( resultSummary, throwable ) ->
+                                        {
+                                        } );
         return handler;
     }
 

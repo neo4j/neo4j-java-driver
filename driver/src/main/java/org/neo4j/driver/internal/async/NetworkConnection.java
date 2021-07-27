@@ -19,13 +19,18 @@
 package org.neo4j.driver.internal.async;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
+import org.neo4j.driver.internal.async.inbound.ConnectionReadTimeoutHandler;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.ChannelReleasingResetResponseHandler;
@@ -45,13 +50,12 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolI
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 
 /**
- * This connection represents a simple network connection to a remote server.
- * It wraps a channel obtained from a connection pool.
- * The life cycle of this connection start from the moment the channel is borrowed out of the pool
- * and end at the time the connection is released back to the pool.
+ * This connection represents a simple network connection to a remote server. It wraps a channel obtained from a connection pool. The life cycle of this
+ * connection start from the moment the channel is borrowed out of the pool and end at the time the connection is released back to the pool.
  */
 public class NetworkConnection implements Connection
 {
+    private final Logger log;
     private final Channel channel;
     private final InboundMessageDispatcher messageDispatcher;
     private final String serverAgent;
@@ -66,8 +70,12 @@ public class NetworkConnection implements Connection
     private final MetricsListener metricsListener;
     private final ListenerEvent inUseEvent;
 
-    public NetworkConnection( Channel channel, ExtendedChannelPool channelPool, Clock clock, MetricsListener metricsListener )
+    private final Long connectionReadTimeout;
+    private ChannelHandler connectionReadTimeoutHandler;
+
+    public NetworkConnection( Channel channel, ExtendedChannelPool channelPool, Clock clock, MetricsListener metricsListener, Logging logging )
     {
+        this.log = logging.getLog( this.getClass().getCanonicalName() );
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
         this.serverAgent = ChannelAttributes.serverAgent( channel );
@@ -79,6 +87,7 @@ public class NetworkConnection implements Connection
         this.clock = clock;
         this.metricsListener = metricsListener;
         this.inUseEvent = metricsListener.createListenerEvent();
+        this.connectionReadTimeout = ChannelAttributes.connectionReadTimeout( channel ).orElse( null );
         metricsListener.afterConnectionCreated( poolId( this.channel ), this.inUseEvent );
     }
 
@@ -225,14 +234,19 @@ public class NetworkConnection implements Connection
                 setAutoRead( true );
 
                 messageDispatcher.enqueue( resetHandler );
-                channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
+                channel.writeAndFlush( ResetMessage.RESET ).addListener( future -> registerConnectionReadTimeout( channel ) );
             }
         } );
     }
 
     private void flushInEventLoop()
     {
-        channel.eventLoop().execute( channel::flush );
+        channel.eventLoop().execute(
+                () ->
+                {
+                    channel.flush();
+                    registerConnectionReadTimeout( channel );
+                } );
     }
 
     private void writeMessageInEventLoop( Message message, ResponseHandler handler, boolean flush )
@@ -243,7 +257,7 @@ public class NetworkConnection implements Connection
 
             if ( flush )
             {
-                channel.writeAndFlush( message, channel.voidPromise() );
+                channel.writeAndFlush( message ).addListener( future -> registerConnectionReadTimeout( channel ) );
             }
             else
             {
@@ -263,7 +277,7 @@ public class NetworkConnection implements Connection
 
             if ( flush )
             {
-                channel.writeAndFlush( message2, channel.voidPromise() );
+                channel.writeAndFlush( message2 ).addListener( future -> registerConnectionReadTimeout( channel ) );
             }
             else
             {
@@ -308,6 +322,29 @@ public class NetworkConnection implements Connection
             return false;
         default:
             throw new IllegalStateException( "Unknown status: " + connectionStatus );
+        }
+    }
+
+    private void registerConnectionReadTimeout( Channel channel )
+    {
+        if ( !channel.eventLoop().inEventLoop() )
+        {
+            throw new IllegalStateException( "This method may only be called in the EventLoop" );
+        }
+
+        if ( connectionReadTimeout != null && connectionReadTimeoutHandler == null )
+        {
+            connectionReadTimeoutHandler = new ConnectionReadTimeoutHandler( connectionReadTimeout, TimeUnit.SECONDS );
+            channel.pipeline().addFirst( connectionReadTimeoutHandler );
+            log.debug( "Added ConnectionReadTimeoutHandler" );
+            messageDispatcher.setBeforeLastHandlerHook(
+                    ( messageType ) ->
+                    {
+                        channel.pipeline().remove( connectionReadTimeoutHandler );
+                        connectionReadTimeoutHandler = null;
+                        messageDispatcher.setBeforeLastHandlerHook( null );
+                        log.debug( "Removed ConnectionReadTimeoutHandler" );
+                    } );
         }
     }
 

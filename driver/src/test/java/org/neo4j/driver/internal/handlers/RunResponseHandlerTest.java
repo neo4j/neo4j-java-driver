@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.Connection;
@@ -186,6 +187,23 @@ class RunResponseHandlerTest
         AuthorizationExpiredException actualException = assertThrows( AuthorizationExpiredException.class, () -> await( runFuture ) );
         assertSame( authorizationExpiredException, actualException );
         verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        verify( connection, never() ).release();
+    }
+
+    @Test
+    void shouldReleaseConnectionImmediatelyAndFailOnConnectionReadTimeoutExceptionFailure()
+    {
+        CompletableFuture<Void> runFuture = new CompletableFuture<>();
+        Connection connection = mock( Connection.class );
+        RunResponseHandler handler = new RunResponseHandler( runFuture, BoltProtocolV3.METADATA_EXTRACTOR, connection, null );
+
+        assertFalse( runFuture.isDone() );
+        handler.onFailure( ConnectionReadTimeoutException.INSTANCE );
+
+        assertTrue( runFuture.isCompletedExceptionally() );
+        ConnectionReadTimeoutException actualException = assertThrows( ConnectionReadTimeoutException.class, () -> await( runFuture ) );
+        assertSame( ConnectionReadTimeoutException.INSTANCE, actualException );
+        verify( connection ).terminateAndRelease( ConnectionReadTimeoutException.INSTANCE.getMessage() );
         verify( connection, never() ).release();
     }
 

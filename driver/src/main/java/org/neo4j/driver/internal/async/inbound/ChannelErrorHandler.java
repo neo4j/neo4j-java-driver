@@ -24,11 +24,12 @@ import io.netty.handler.codec.CodecException;
 
 import java.io.IOException;
 
-import org.neo4j.driver.internal.logging.ChannelActivityLogger;
-import org.neo4j.driver.internal.util.ErrorUtil;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
@@ -94,8 +95,16 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
         else
         {
             failed = true;
-            log.warn( "Fatal error occurred in the pipeline", error );
+            logUnexpectedErrorWarning( error );
             fail( error );
+        }
+    }
+
+    private void logUnexpectedErrorWarning( Throwable error )
+    {
+        if ( !(error instanceof ConnectionReadTimeoutException) )
+        {
+            log.warn( "Fatal error occurred in the pipeline", error );
         }
     }
 

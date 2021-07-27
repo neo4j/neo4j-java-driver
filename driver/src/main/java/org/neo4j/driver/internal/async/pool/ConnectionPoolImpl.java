@@ -71,7 +71,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         this( connector, bootstrap, new NettyChannelTracker( metricsListener, bootstrap.config().group().next(), logging ),
               new NettyChannelHealthChecker( settings, clock, logging ), settings, metricsListener, logging,
-              clock, ownsEventLoopGroup, new NetworkConnectionFactory( clock, metricsListener ) );
+              clock, ownsEventLoopGroup, new NetworkConnectionFactory( clock, metricsListener, logging ) );
     }
 
     protected ConnectionPoolImpl( ChannelConnector connector, Bootstrap bootstrap, NettyChannelTracker nettyChannelTracker,

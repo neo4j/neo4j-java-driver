@@ -26,7 +26,9 @@ import java.util.function.Consumer;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
@@ -38,6 +40,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -276,12 +279,44 @@ class UnmanagedTransactionTest
         verify( connection ).release();
     }
 
-    private static UnmanagedTransaction beginTx(Connection connection )
+    @Test
+    void shouldReleaseConnectionOnConnectionAuthorizationExpiredExceptionFailure()
+    {
+        AuthorizationExpiredException exception = new AuthorizationExpiredException( "code", "message" );
+        Connection connection = connectionWithBegin( handler -> handler.onFailure( exception ) );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        TransactionConfig txConfig = TransactionConfig.empty();
+
+        AuthorizationExpiredException actualException = assertThrows( AuthorizationExpiredException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+
+        assertSame( exception, actualException );
+        verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        verify( connection, never() ).release();
+    }
+
+    @Test
+    void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure()
+    {
+        Connection connection = connectionWithBegin( handler -> handler.onFailure( ConnectionReadTimeoutException.INSTANCE ) );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        TransactionConfig txConfig = TransactionConfig.empty();
+
+        ConnectionReadTimeoutException actualException =
+                assertThrows( ConnectionReadTimeoutException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+
+        assertSame( ConnectionReadTimeoutException.INSTANCE, actualException );
+        verify( connection ).terminateAndRelease( ConnectionReadTimeoutException.INSTANCE.getMessage() );
+        verify( connection, never() ).release();
+    }
+
+    private static UnmanagedTransaction beginTx( Connection connection )
     {
         return beginTx( connection, InternalBookmark.empty() );
     }
 
-    private static UnmanagedTransaction beginTx(Connection connection, Bookmark initialBookmark )
+    private static UnmanagedTransaction beginTx( Connection connection, Bookmark initialBookmark )
     {
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
         return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );

@@ -50,6 +50,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     private volatile boolean gracefullyClosed;
     private Throwable currentError;
     private boolean fatalErrorOccurred;
+    private HandlerHook beforeLastHandlerHook;
 
     private ResponseHandler autoReadManagingHandler;
 
@@ -72,6 +73,15 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
         }
     }
 
+    public void setBeforeLastHandlerHook( HandlerHook beforeLastHandlerHook )
+    {
+        if ( !channel.eventLoop().inEventLoop() )
+        {
+            throw new IllegalStateException( "This method may only be called in the EventLoop" );
+        }
+        this.beforeLastHandlerHook = beforeLastHandlerHook;
+    }
+
     public int queuedHandlersCount()
     {
         return handlers.size();
@@ -81,6 +91,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     public void handleSuccessMessage( Map<String,Value> meta )
     {
         log.debug( "S: SUCCESS %s", meta );
+        invokeBeforeLastHandlerHook( HandlerHook.MessageType.SUCCESS );
         ResponseHandler handler = removeHandler();
         handler.onSuccess( meta );
     }
@@ -127,6 +138,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             channel.writeAndFlush( RESET, channel.voidPromise() );
         }
 
+        invokeBeforeLastHandlerHook( HandlerHook.MessageType.FAILURE );
         ResponseHandler handler = removeHandler();
         handler.onFailure( currentError );
     }
@@ -249,5 +261,24 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             channel.config().setAutoRead( true );
         }
         autoReadManagingHandler = newHandler;
+    }
+
+    private void invokeBeforeLastHandlerHook( HandlerHook.MessageType messageType )
+    {
+        if ( handlers.size() == 1 && beforeLastHandlerHook != null )
+        {
+            beforeLastHandlerHook.run( messageType );
+        }
+    }
+
+    public interface HandlerHook
+    {
+        enum MessageType
+        {
+            SUCCESS,
+            FAILURE
+        }
+
+        void run( MessageType messageType );
     }
 }

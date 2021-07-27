@@ -32,12 +32,14 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.net.ServerAddress;
 
 @Getter
 public class TestkitState
 {
     private final Map<String,Driver> drivers = new HashMap<>();
+    private final Map<String,RoutingTableRegistry> routingTableRegistry = new HashMap<>();
     private final Map<String,SessionState> sessionStates = new HashMap<>();
     private final Map<String,Result> results = new HashMap<>();
     private final Map<String,Transaction> transactions = new HashMap<>();
