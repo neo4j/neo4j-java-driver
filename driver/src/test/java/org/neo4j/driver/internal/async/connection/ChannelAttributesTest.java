@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.creationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.lastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messageDispatcher;
@@ -41,6 +42,7 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serve
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setCreationTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
@@ -217,5 +219,21 @@ class ChannelAttributesTest
         AuthorizationStateListener newListener = mock( AuthorizationStateListener.class );
         setAuthorizationStateListener( channel, newListener );
         assertEquals( newListener, authorizationStateListener( channel ) );
+    }
+
+    @Test
+    void shouldSetAndGetConnectionReadTimeout()
+    {
+        long timeout = 15L;
+        setConnectionReadTimeout( channel, timeout );
+        assertEquals( timeout, connectionReadTimeout( channel ).orElse( null ) );
+    }
+
+    @Test
+    void shouldFailToSetConnectionReadTimeoutTwice()
+    {
+        long timeout = 15L;
+        setConnectionReadTimeout( channel, timeout );
+        assertThrows( IllegalStateException.class, () -> setConnectionReadTimeout( channel, timeout ) );
     }
 }

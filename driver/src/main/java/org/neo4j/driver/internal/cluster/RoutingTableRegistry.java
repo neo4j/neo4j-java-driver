@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -52,4 +53,12 @@ public interface RoutingTableRegistry
      * Removes all routing tables that has been not used for a long time.
      */
     void removeAged();
+
+    /**
+     * Returns routing table handler for the given database name if it exists in the registry.
+     *
+     * @param databaseName the database name
+     * @return the routing table handler for the requested database name
+     */
+    Optional<RoutingTableHandler> getRoutingTableHandler( DatabaseName databaseName );
 }

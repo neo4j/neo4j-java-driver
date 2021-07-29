@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -69,6 +70,10 @@ public class RunResponseHandler implements ResponseHandler
         else if ( error instanceof AuthorizationExpiredException )
         {
             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        else if ( error instanceof ConnectionReadTimeoutException )
+        {
+            connection.terminateAndRelease( error.getMessage() );
         }
         runFuture.completeExceptionally( error );
     }

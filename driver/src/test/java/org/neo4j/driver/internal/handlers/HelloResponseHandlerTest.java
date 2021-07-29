@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.connectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
@@ -224,7 +225,68 @@ class HelloResponseHandlerTest
         assertEquals( error, channelPromise.cause() );
     }
 
+    @Test
+    void shouldNotThrowWhenConfigurationHintsAreAbsent()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x" );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertFalse( channel.closeFuture().isDone() );
+    }
+
+    @Test
+    void shouldNotThrowWhenConfigurationHintsAreEmpty()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", value( new HashMap<>() ) );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertFalse( channel.closeFuture().isDone() );
+    }
+
+    @Test
+    void shouldNotThrowWhenConfigurationHintsAreNull()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", Values.NULL );
+        handler.onSuccess( metadata );
+
+        assertTrue( channelPromise.isSuccess() );
+        assertFalse( channel.closeFuture().isDone() );
+    }
+
+    @Test
+    void shouldSetConnectionTimeoutHint()
+    {
+        ChannelPromise channelPromise = channel.newPromise();
+        HelloResponseHandler handler = new HelloResponseHandler( channelPromise, BoltProtocolV41.VERSION );
+
+        long timeout = 15L;
+        Map<String,Value> hints = new HashMap<>();
+        hints.put( HelloResponseHandler.CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY, value( timeout ) );
+        Map<String,Value> metadata = metadata( anyServerVersion(), "bolt-x", value( hints ) );
+        handler.onSuccess( metadata );
+
+        assertEquals( timeout, connectionReadTimeout( channel ).orElse( null ) );
+        assertTrue( channelPromise.isSuccess() );
+        assertFalse( channel.closeFuture().isDone() );
+    }
+
     private static Map<String,Value> metadata( Object version, Object connectionId )
+    {
+        return metadata( version, connectionId, null );
+    }
+
+    private static Map<String,Value> metadata( Object version, Object connectionId, Value hints )
     {
         Map<String,Value> result = new HashMap<>();
 
@@ -249,6 +311,7 @@ class HelloResponseHandlerTest
         {
             result.put( "connection_id", value( connectionId ) );
         }
+        result.put( HelloResponseHandler.CONFIGURATION_HINTS_KEY, hints );
 
         return result;
     }

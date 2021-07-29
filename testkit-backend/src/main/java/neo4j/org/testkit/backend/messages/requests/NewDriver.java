@@ -42,6 +42,7 @@ import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -91,7 +92,7 @@ public class NewDriver implements TestkitRequest
         org.neo4j.driver.Driver driver;
         try
         {
-            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), domainNameResolver );
+            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), domainNameResolver, testkitState, id );
         }
         catch ( RuntimeException e )
         {
@@ -141,14 +142,15 @@ public class NewDriver implements TestkitRequest
         };
     }
 
-    private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, DomainNameResolver domainNameResolver )
+    private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, DomainNameResolver domainNameResolver, TestkitState testkitState,
+                                            String driverId )
     {
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
         RetrySettings retrySettings = RetrySettings.DEFAULT;
         SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         SecuritySettings securitySettings = securitySettingsBuilder.build();
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
-        return new DriverFactoryWithDomainNameResolver( domainNameResolver )
+        return new DriverFactoryWithDomainNameResolver( domainNameResolver, testkitState, driverId )
                 .newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
     }
 
@@ -183,11 +185,19 @@ public class NewDriver implements TestkitRequest
     private static class DriverFactoryWithDomainNameResolver extends DriverFactory
     {
         private final DomainNameResolver domainNameResolver;
+        private final TestkitState testkitState;
+        private final String driverId;
 
         @Override
         protected DomainNameResolver getDomainNameResolver()
         {
             return domainNameResolver;
+        }
+
+        @Override
+        protected void handleNewLoadBalancer( LoadBalancer loadBalancer )
+        {
+            testkitState.getRoutingTableRegistry().put( driverId, loadBalancer.getRoutingTableRegistry() );
         }
     }
 }

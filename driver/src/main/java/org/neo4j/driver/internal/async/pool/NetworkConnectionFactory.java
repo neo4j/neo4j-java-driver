@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async.pool;
 
 import io.netty.channel.Channel;
 
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.NetworkConnection;
 import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
@@ -29,16 +30,18 @@ public class NetworkConnectionFactory implements ConnectionFactory
 {
     private final Clock clock;
     private final MetricsListener metricsListener;
+    private final Logging logging;
 
-    public NetworkConnectionFactory( Clock clock, MetricsListener metricsListener )
+    public NetworkConnectionFactory( Clock clock, MetricsListener metricsListener, Logging logging )
     {
         this.clock = clock;
         this.metricsListener = metricsListener;
+        this.logging = logging;
     }
 
     @Override
     public Connection createConnection( Channel channel, ExtendedChannelPool pool )
     {
-        return new NetworkConnection( channel, pool, clock, metricsListener );
+        return new NetworkConnection( channel, pool, clock, metricsListener, logging );
     }
 }

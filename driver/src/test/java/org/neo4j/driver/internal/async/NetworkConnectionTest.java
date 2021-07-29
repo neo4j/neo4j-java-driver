@@ -641,7 +641,7 @@ class NetworkConnectionTest
 
     private static NetworkConnection newConnection( Channel channel, ExtendedChannelPool pool )
     {
-        return new NetworkConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS );
+        return new NetworkConnection( channel, pool, new FakeClock(), DEV_NULL_METRICS, DEV_NULL_LOGGING );
     }
 
     private static void assertConnectionReleasedError( IllegalStateException e )

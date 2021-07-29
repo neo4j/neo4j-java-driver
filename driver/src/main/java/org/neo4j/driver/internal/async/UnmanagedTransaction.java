@@ -31,6 +31,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -146,6 +147,10 @@ public class UnmanagedTransaction
                                         if ( beginError instanceof AuthorizationExpiredException )
                                         {
                                             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+                                        }
+                                        else if ( beginError instanceof ConnectionReadTimeoutException )
+                                        {
+                                            connection.terminateAndRelease( beginError.getMessage() );
                                         }
                                         else
                                         {
@@ -324,6 +329,10 @@ public class UnmanagedTransaction
         if ( throwable instanceof AuthorizationExpiredException )
         {
             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        else if ( throwable instanceof ConnectionReadTimeoutException )
+        {
+            connection.terminateAndRelease( throwable.getMessage() );
         }
         else
         {

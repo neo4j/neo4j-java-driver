@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,14 +80,23 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     @Override
     public void removeAged()
     {
-        routingTableHandlers.forEach( ( databaseName, handler ) -> {
-            if ( handler.isRoutingTableAged() )
-            {
-                logger.info( "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
-                        databaseName.description(), handler.routingTable() );
-                routingTableHandlers.remove( databaseName );
-            }
-        } );
+        routingTableHandlers.forEach(
+                ( databaseName, handler ) ->
+                {
+                    if ( handler.isRoutingTableAged() )
+                    {
+                        logger.info(
+                                "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
+                                databaseName.description(), handler.routingTable() );
+                        routingTableHandlers.remove( databaseName );
+                    }
+                } );
+    }
+
+    @Override
+    public Optional<RoutingTableHandler> getRoutingTableHandler( DatabaseName databaseName )
+    {
+        return Optional.ofNullable( routingTableHandlers.get( databaseName ) );
     }
 
     // For tests
@@ -97,11 +107,13 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
 
     private RoutingTableHandler getOrCreate( DatabaseName databaseName )
     {
-        return routingTableHandlers.computeIfAbsent( databaseName, name -> {
-            RoutingTableHandler handler = factory.newInstance( name, this );
-            logger.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
-            return handler;
-        } );
+        return routingTableHandlers.computeIfAbsent(
+                databaseName, name ->
+                {
+                    RoutingTableHandler handler = factory.newInstance( name, this );
+                    logger.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
+                    return handler;
+                } );
     }
 
     static class RoutingTableHandlerFactory

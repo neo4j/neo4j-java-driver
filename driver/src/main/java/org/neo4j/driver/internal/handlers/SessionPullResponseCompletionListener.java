@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.MetadataExtractor;
@@ -52,6 +53,10 @@ public class SessionPullResponseCompletionListener implements PullResponseComple
         if ( error instanceof AuthorizationExpiredException )
         {
             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
+        }
+        else if ( error instanceof ConnectionReadTimeoutException )
+        {
+            connection.terminateAndRelease( error.getMessage() );
         }
         else
         {

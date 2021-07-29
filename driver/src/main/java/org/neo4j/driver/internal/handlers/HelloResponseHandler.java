@@ -22,6 +22,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -29,6 +31,7 @@ import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
+import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
@@ -38,6 +41,8 @@ import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersi
 public class HelloResponseHandler implements ResponseHandler
 {
     private static final String CONNECTION_ID_METADATA_KEY = "connection_id";
+    public static final String CONFIGURATION_HINTS_KEY = "hints";
+    public static final String CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY = "connection.recv_timeout_seconds";
 
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
@@ -72,6 +77,8 @@ public class HelloResponseHandler implements ResponseHandler
             String connectionId = extractConnectionId( metadata );
             setConnectionId( channel, connectionId );
 
+            processConfigurationHints( metadata );
+
             connectionInitializedPromise.setSuccess();
         }
         catch ( Throwable error )
@@ -102,5 +109,27 @@ public class HelloResponseHandler implements ResponseHandler
                                              "Received metadata: " + metadata );
         }
         return value.asString();
+    }
+
+    private void processConfigurationHints( Map<String,Value> metadata )
+    {
+        Value configurationHints = metadata.get( CONFIGURATION_HINTS_KEY );
+        if ( configurationHints != null )
+        {
+            getFromSupplierOrEmptyOnException( () -> configurationHints.get( CONNECTION_RECEIVE_TIMEOUT_SECONDS_KEY ).asLong() )
+                    .ifPresent( timeout -> setConnectionReadTimeout( channel, timeout ) );
+        }
+    }
+
+    private static <T> Optional<T> getFromSupplierOrEmptyOnException( Supplier<T> supplier )
+    {
+        try
+        {
+            return Optional.of( supplier.get() );
+        }
+        catch ( Exception e )
+        {
+            return Optional.empty();
+        }
     }
 }

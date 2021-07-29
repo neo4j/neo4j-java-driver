@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -183,6 +184,12 @@ class RoutingTableHandlerTest
             @Override
             public void removeAged()
             {
+            }
+
+            @Override
+            public Optional<RoutingTableHandler> getRoutingTableHandler( DatabaseName databaseName )
+            {
+                return Optional.empty();
             }
         };
 

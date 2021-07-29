@@ -21,16 +21,16 @@ package org.neo4j.driver.internal.handlers;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.util.Futures;
 
 import static java.lang.String.format;
 
