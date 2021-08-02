@@ -22,6 +22,8 @@
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
     <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+    <!-- Skip deployment by default for everything in this project. -->
+    <maven.deploy.skip>true</maven.deploy.skip>
 
     <!-- Versions -->
     <reactive-streams.version>1.0.3</reactive-streams.version>
@@ -423,6 +425,15 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <!-- Explicit deployment override for this artifact only. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <skip>false</skip>
+        </configuration>
       </plugin>
     </plugins>
   </build>
