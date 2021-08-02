@@ -21,6 +21,7 @@
     <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
     <moduleName>org.neo4j.driver</moduleName>
     <rootDir>${project.basedir}/..</rootDir>
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
 
   <dependencies>
