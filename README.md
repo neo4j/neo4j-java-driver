@@ -10,7 +10,8 @@ Network communication is handled using [Bolt Protocol](https://7687.org/).
 
 | Driver Series | Supported Java Runtime versions | Status | Changelog |
 | --- | --- | --- | --- |
-| 4.3 | 8, 11 | Primary development branch. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.3-changelog) |
+| 4.4 | 8, 11 | Primary development branch. | No releases yet. |
+| 4.3 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.3-changelog) |
 | 4.2 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.2-changelog) |
 | 4.1 | 8, 11 | Maintenance. | [link](https://github.com/neo4j/neo4j-java-driver/wiki/4.1-changelog) |
 
