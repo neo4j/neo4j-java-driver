@@ -34,7 +34,7 @@ import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Immutable;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.Logging.javaUtilLogging;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 /**
  * A configuration class to config driver properties.
@@ -269,7 +269,7 @@ public class Config
      */
     public static class ConfigBuilder
     {
-        private Logging logging = javaUtilLogging( Level.INFO );
+        private Logging logging = DEV_NULL_LOGGING;
         private boolean logLeakedSessions;
         private int maxConnectionPoolSize = PoolSettings.DEFAULT_MAX_CONNECTION_POOL_SIZE;
         private long idleTimeBeforeConnectionTest = PoolSettings.DEFAULT_IDLE_TIME_BEFORE_CONNECTION_TEST;
