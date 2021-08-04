@@ -22,23 +22,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
-import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 
 class LeastConnectedLoadBalancingStrategyTest
 {
@@ -164,7 +163,7 @@ class LeastConnectedLoadBalancingStrategyTest
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
 
@@ -180,7 +179,7 @@ class LeastConnectedLoadBalancingStrategyTest
     {
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         when( connectionPool.inUseConnections( any( BoltServerAddress.class ) ) ).thenReturn( 42 );
 

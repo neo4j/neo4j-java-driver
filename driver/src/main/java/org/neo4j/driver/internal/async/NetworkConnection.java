@@ -75,7 +75,7 @@ public class NetworkConnection implements Connection
 
     public NetworkConnection( Channel channel, ExtendedChannelPool channelPool, Clock clock, MetricsListener metricsListener, Logging logging )
     {
-        this.log = logging.getLog( this.getClass().getCanonicalName() );
+        this.log = logging.getLog( getClass() );
         this.channel = channel;
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
         this.serverAgent = ChannelAttributes.serverAgent( channel );

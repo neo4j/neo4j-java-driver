@@ -51,8 +51,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ExponentialBackoffRetryLogic implements RetryLogic
 {
-    private final static String RETRY_LOGIC_LOG_NAME = "RetryLogic";
-
     static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis( 30 );
 
     private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis( 1 );
@@ -84,7 +82,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         this.jitterFactor = jitterFactor;
         this.eventExecutorGroup = eventExecutorGroup;
         this.clock = clock;
-        this.log = logging.getLog( RETRY_LOGIC_LOG_NAME );
+        this.log = logging.getLog( getClass() );
 
         verifyAfterConstruction();
     }

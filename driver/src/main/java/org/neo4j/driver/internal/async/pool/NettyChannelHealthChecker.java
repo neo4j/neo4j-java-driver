@@ -42,6 +42,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
 {
     private final PoolSettings poolSettings;
     private final Clock clock;
+    private final Logging logging;
     private final Logger log;
     private final AtomicReference<Optional<Long>> minCreationTimestampMillisOpt;
 
@@ -49,7 +50,8 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
     {
         this.poolSettings = poolSettings;
         this.clock = clock;
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.logging = logging;
+        this.log = logging.getLog( getClass() );
         this.minCreationTimestampMillisOpt = new AtomicReference<>( Optional.empty() );
     }
 
@@ -129,7 +131,7 @@ public class NettyChannelHealthChecker implements ChannelHealthChecker, Authoriz
     private Future<Boolean> ping( Channel channel )
     {
         Promise<Boolean> result = channel.eventLoop().newPromise();
-        messageDispatcher( channel ).enqueue( new PingResponseHandler( result, channel, log ) );
+        messageDispatcher( channel ).enqueue( new PingResponseHandler( result, channel, logging ) );
         channel.writeAndFlush( ResetMessage.RESET, channel.voidPromise() );
         return result;
     }

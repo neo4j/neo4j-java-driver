@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
@@ -65,7 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.InternalBookmark.empty;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -176,10 +177,12 @@ class RediscoveryTest
         responsesByAddress.put( B, protocolError ); // first -> fatal failure
         responsesByAddress.put( C, validComposition ); // second -> valid cluster composition
 
+        Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
-        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ), logger );
+        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ), logging );
         RoutingTable table = routingTableMock( B, C );
 
         // When
@@ -189,6 +192,7 @@ class RediscoveryTest
         ArgumentCaptor<String> warningMessageCaptor = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<String> debugMessageCaptor = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<DiscoveryException> debugThrowableCaptor = ArgumentCaptor.forClass( DiscoveryException.class );
+        verify( logging ).getLog( RediscoveryImpl.class );
         verify( logger ).warn( warningMessageCaptor.capture() );
         verify( logger ).debug( debugMessageCaptor.capture(), debugThrowableCaptor.capture() );
         assertNotNull( warningMessageCaptor.getValue() );
@@ -383,7 +387,8 @@ class RediscoveryTest
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
         Rediscovery rediscovery =
-                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGER, DefaultDomainNameResolver.getInstance() );
+                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGING,
+                                     DefaultDomainNameResolver.getInstance() );
         RoutingTable table = routingTableMock( A, B );
 
         ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) ).getClusterComposition();
@@ -406,9 +411,11 @@ class RediscoveryTest
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
         RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
+        Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         Rediscovery rediscovery =
-                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logger, DefaultDomainNameResolver.getInstance() );
+                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logging, DefaultDomainNameResolver.getInstance() );
         RoutingTable table = routingTableMock( A );
 
         ServiceUnavailableException e =
@@ -416,6 +423,7 @@ class RediscoveryTest
         assertThat( e.getMessage(), containsString( "Could not perform discovery" ) );
 
         // rediscovery should not log about retries and should not schedule any retries
+        verify( logging ).getLog( RediscoveryImpl.class );
         verify( logger, never() ).info( startsWith( "Unable to fetch new routing table, will try again in " ) );
         assertEquals( 0, eventExecutor.scheduleDelays().size() );
     }
@@ -427,7 +435,7 @@ class RediscoveryTest
         DomainNameResolver domainNameResolver = mock( DomainNameResolver.class );
         InetAddress localhost = InetAddress.getLocalHost();
         when( domainNameResolver.resolve( A.host() ) ).thenReturn( new InetAddress[]{localhost} );
-        Rediscovery rediscovery = new RediscoveryImpl( A, null, null, null, resolver, null, domainNameResolver );
+        Rediscovery rediscovery = new RediscoveryImpl( A, null, null, null, resolver, DEV_NULL_LOGGING, domainNameResolver );
 
         List<BoltServerAddress> addresses = rediscovery.resolve();
 
@@ -440,14 +448,14 @@ class RediscoveryTest
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
                                         ServerAddressResolver resolver )
     {
-        return newRediscovery( initialRouter, compositionProvider, resolver, DEV_NULL_LOGGER );
+        return newRediscovery( initialRouter, compositionProvider, resolver, DEV_NULL_LOGGING );
     }
 
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
-                                        ServerAddressResolver resolver, Logger logger )
+                                        ServerAddressResolver resolver, Logging logging )
     {
         RoutingSettings settings = new RoutingSettings( 1, 0, 0 );
-        return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logger,
+        return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logging,
                                     DefaultDomainNameResolver.getInstance() );
     }
 

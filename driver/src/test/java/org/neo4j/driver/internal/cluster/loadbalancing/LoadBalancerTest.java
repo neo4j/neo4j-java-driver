@@ -78,7 +78,6 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
@@ -414,7 +413,7 @@ class LoadBalancerTest
         when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
         Rediscovery rediscovery = mock( Rediscovery.class );
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
-                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
+                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
     }
 
     private static LoadBalancer newLoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery )
@@ -428,6 +427,6 @@ class LoadBalancerTest
     {
         // Used only in testing
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
-                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGER );
+                                 GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
     }
 }

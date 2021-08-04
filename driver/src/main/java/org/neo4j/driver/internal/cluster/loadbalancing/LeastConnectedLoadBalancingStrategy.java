@@ -18,10 +18,10 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
 /**
  * Load balancing strategy that finds server with least amount of active (checked out of the pool) connections from
@@ -30,8 +30,6 @@ import org.neo4j.driver.Logging;
  */
 public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy
 {
-    private static final String LOGGER_NAME = LeastConnectedLoadBalancingStrategy.class.getSimpleName();
-
     private final RoundRobinArrayIndex readersIndex = new RoundRobinArrayIndex();
     private final RoundRobinArrayIndex writersIndex = new RoundRobinArrayIndex();
 
@@ -41,7 +39,7 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
     public LeastConnectedLoadBalancingStrategy( ConnectionPool connectionPool, Logging logging )
     {
         this.connectionPool = connectionPool;
-        this.log = logging.getLog( LOGGER_NAME );
+        this.log = logging.getLog( getClass() );
     }
 
     @Override

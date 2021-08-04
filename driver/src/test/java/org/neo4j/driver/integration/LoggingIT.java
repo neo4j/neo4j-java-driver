@@ -50,7 +50,7 @@ class LoggingIT
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
 
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         when( logger.isDebugEnabled() ).thenReturn( true );
         when( logger.isTraceEnabled() ).thenReturn( true );
 

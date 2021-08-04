@@ -773,7 +773,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
@@ -795,7 +795,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
@@ -817,7 +817,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
@@ -862,7 +862,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor,
                 clock, logging );
 
@@ -880,7 +880,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
@@ -903,7 +903,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
@@ -950,7 +950,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor,
                 clock, logging );
@@ -969,7 +969,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
@@ -992,7 +992,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
 
         AtomicBoolean exceptionThrown = new AtomicBoolean( false );
@@ -1039,7 +1039,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor,
                 clock, logging );
@@ -1108,7 +1108,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         RetrySettings settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic( settings, eventExecutor, clock, logging );
 
@@ -1146,7 +1146,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         RetrySettings settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic( settings, eventExecutor, clock, logging );
 
@@ -1184,7 +1184,7 @@ class ExponentialBackoffRetryLogicTest
         Clock clock = mock( Clock.class );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         RetrySettings settings = RetrySettings.DEFAULT;
         RetryLogic logic = new ExponentialBackoffRetryLogic( settings, eventExecutor, clock, logging );
 

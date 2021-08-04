@@ -23,9 +23,10 @@ import io.netty.util.concurrent.Promise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 public class PingResponseHandler implements ResponseHandler
 {
@@ -33,11 +34,11 @@ public class PingResponseHandler implements ResponseHandler
     private final Channel channel;
     private final Logger log;
 
-    public PingResponseHandler( Promise<Boolean> result, Channel channel, Logger log )
+    public PingResponseHandler( Promise<Boolean> result, Channel channel, Logging logging )
     {
         this.result = result;
         this.channel = channel;
-        this.log = log;
+        this.log = logging.getLog( getClass() );
     }
 
     @Override

@@ -88,6 +88,18 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 public interface Logging
 {
     /**
+     * Obtain a {@link Logger} instance by class, its name will be the fully qualified name of the class.
+     *
+     * @param clazz class whose name should be used as the {@link Logger} name.
+     * @return {@link Logger} instance
+     */
+    default Logger getLog( Class<?> clazz )
+    {
+        String canonicalName = clazz.getCanonicalName();
+        return getLog( canonicalName != null ? canonicalName : clazz.getName() );
+    }
+
+    /**
      * Obtain a {@link Logger} instance by name.
      *
      * @param name name of a {@link Logger}

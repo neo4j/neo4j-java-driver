@@ -85,7 +85,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         this.channelHealthChecker = nettyChannelHealthChecker;
         this.settings = settings;
         this.metricsListener = metricsListener;
-        this.log = logging.getLog( ConnectionPool.class.getSimpleName() );
+        this.log = logging.getLog( getClass() );
         this.ownsEventLoopGroup = ownsEventLoopGroup;
         this.connectionFactory = connectionFactory;
     }

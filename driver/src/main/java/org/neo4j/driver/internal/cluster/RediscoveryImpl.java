@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
@@ -62,18 +63,18 @@ public class RediscoveryImpl implements Rediscovery
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
-    private final Logger logger;
+    private final Logger log;
     private final ClusterCompositionProvider provider;
     private final ServerAddressResolver resolver;
     private final EventExecutorGroup eventExecutorGroup;
     private final DomainNameResolver domainNameResolver;
 
     public RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-                            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logger logger, DomainNameResolver domainNameResolver )
+                            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logging logging, DomainNameResolver domainNameResolver )
     {
         this.initialRouter = initialRouter;
         this.settings = settings;
-        this.logger = logger;
+        this.log = logging.getLog( getClass() );
         this.provider = provider;
         this.resolver = resolver;
         this.eventExecutorGroup = eventExecutorGroup;
@@ -127,7 +128,7 @@ public class RediscoveryImpl implements Rediscovery
                                 else
                                 {
                                     long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
-                                    logger.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
+                                    log.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
                                     eventExecutorGroup.next().schedule(
                                             () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark, baseError ),
                                             nextDelay, TimeUnit.MILLISECONDS
@@ -291,8 +292,8 @@ public class RediscoveryImpl implements Rediscovery
         DiscoveryException discoveryError = new DiscoveryException( format( RECOVERABLE_ROUTING_ERROR, routerAddress ), error );
         Futures.combineErrors( baseError, discoveryError ); // we record each failure here
         String warningMessage = format( RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER, routerAddress );
-        logger.warn( warningMessage );
-        logger.debug( warningMessage, discoveryError );
+        log.warn( warningMessage );
+        log.debug( warningMessage, discoveryError );
         routingTable.forget( routerAddress );
         return null;
     }

@@ -34,6 +34,7 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -213,7 +214,7 @@ class ChunkDecoderTest
     private static Logging newLogging( Logger logger )
     {
         Logging logging = mock( Logging.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         return logging;
     }
 }
