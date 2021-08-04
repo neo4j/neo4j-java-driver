@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ConnectionContext;
@@ -45,15 +46,16 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
     private final long routingTablePurgeDelayMs;
     private final Set<BoltServerAddress> resolvedInitialRouters = new HashSet<>();
 
-    public RoutingTableHandlerImpl( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool, RoutingTableRegistry routingTableRegistry,
-            Logger log, long routingTablePurgeDelayMs )
+    public RoutingTableHandlerImpl( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool,
+                                    RoutingTableRegistry routingTableRegistry,
+                                    Logging logging, long routingTablePurgeDelayMs )
     {
         this.routingTable = routingTable;
         this.databaseName = routingTable.database();
         this.rediscovery = rediscovery;
         this.connectionPool = connectionPool;
         this.routingTableRegistry = routingTableRegistry;
-        this.log = log;
+        this.log = logging.getLog( getClass() );
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 

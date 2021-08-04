@@ -25,4 +25,10 @@
         <method>void debug(java.lang.String, java.lang.Throwable)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Logging</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.Logger getLog(java.lang.Class)</method>
+    </difference>
+
 </differences>

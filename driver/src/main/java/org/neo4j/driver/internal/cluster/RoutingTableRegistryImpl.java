@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.ConnectionContext;
@@ -36,18 +37,18 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
 {
     private final ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers;
     private final RoutingTableHandlerFactory factory;
-    private final Logger logger;
+    private final Logger log;
 
-    public RoutingTableRegistryImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger logger, long routingTablePurgeDelayMs )
+    public RoutingTableRegistryImpl( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logging logging, long routingTablePurgeDelayMs )
     {
-        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logger, routingTablePurgeDelayMs ), logger );
+        this( new ConcurrentHashMap<>(), new RoutingTableHandlerFactory( connectionPool, rediscovery, clock, logging, routingTablePurgeDelayMs ), logging );
     }
 
-    RoutingTableRegistryImpl( ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Logger logger )
+    RoutingTableRegistryImpl( ConcurrentMap<DatabaseName,RoutingTableHandler> routingTableHandlers, RoutingTableHandlerFactory factory, Logging logging )
     {
         this.factory = factory;
         this.routingTableHandlers = routingTableHandlers;
-        this.logger = logger;
+        this.log = logging.getLog( getClass() );
     }
 
     @Override
@@ -74,7 +75,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     public void remove( DatabaseName databaseName )
     {
         routingTableHandlers.remove( databaseName );
-        logger.debug( "Routing table handler for database '%s' is removed.", databaseName.description() );
+        log.debug( "Routing table handler for database '%s' is removed.", databaseName.description() );
     }
 
     @Override
@@ -85,7 +86,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
                 {
                     if ( handler.isRoutingTableAged() )
                     {
-                        logger.info(
+                        log.info(
                                 "Routing table handler for database '%s' is removed because it has not been used for a long time. Routing table: %s",
                                 databaseName.description(), handler.routingTable() );
                         routingTableHandlers.remove( databaseName );
@@ -111,7 +112,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
                 databaseName, name ->
                 {
                     RoutingTableHandler handler = factory.newInstance( name, this );
-                    logger.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
+                    log.debug( "Routing table handler for database '%s' is added.", databaseName.description() );
                     return handler;
                 } );
     }
@@ -120,23 +121,23 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
     {
         private final ConnectionPool connectionPool;
         private final Rediscovery rediscovery;
-        private final Logger log;
+        private final Logging logging;
         private final Clock clock;
         private final long routingTablePurgeDelayMs;
 
-        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logger log, long routingTablePurgeDelayMs )
+        RoutingTableHandlerFactory( ConnectionPool connectionPool, Rediscovery rediscovery, Clock clock, Logging logging, long routingTablePurgeDelayMs )
         {
             this.connectionPool = connectionPool;
             this.rediscovery = rediscovery;
             this.clock = clock;
-            this.log = log;
+            this.logging = logging;
             this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
         }
 
         RoutingTableHandler newInstance( DatabaseName databaseName, RoutingTableRegistry allTables )
         {
             ClusterRoutingTable routingTable = new ClusterRoutingTable( databaseName, clock );
-            return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, allTables, log, routingTablePurgeDelayMs );
+            return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, allTables, logging, routingTablePurgeDelayMs );
         }
     }
 }

@@ -55,7 +55,7 @@ class LeakLoggingNetworkSessionTest
     {
         Logging logging = mock( Logging.class );
         Logger log = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( log );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( log );
         LeakLoggingNetworkSession session = newSession( logging, false );
 
         finalize( session );
@@ -68,7 +68,7 @@ class LeakLoggingNetworkSessionTest
     {
         Logging logging = mock( Logging.class );
         Logger log = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( log );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( log );
         LeakLoggingNetworkSession session = newSession( logging, true );
         // begin transaction to make session obtain a connection
         session.beginTransactionAsync( TransactionConfig.empty() );

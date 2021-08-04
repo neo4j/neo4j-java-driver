@@ -62,7 +62,6 @@ import static org.neo4j.driver.internal.util.Futures.onErrorContinue;
 
 public class LoadBalancer implements ConnectionProvider
 {
-    private static final String LOAD_BALANCER_LOG_NAME = "LoadBalancer";
     private static final String CONNECTION_ACQUISITION_COMPLETION_FAILURE_MESSAGE = "Connection acquisition failed for all available addresses.";
     private static final String CONNECTION_ACQUISITION_COMPLETION_EXCEPTION_MESSAGE =
             "Failed to obtain connection towards %s server. Known routing table is: %s";
@@ -80,27 +79,25 @@ public class LoadBalancer implements ConnectionProvider
                          LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver, DomainNameResolver domainNameResolver )
     {
         this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging, requireNonNull( domainNameResolver ) ),
-              settings,
-              loadBalancingStrategy,
-              eventExecutorGroup, clock, loadBalancerLogger( logging ) );
+              settings, loadBalancingStrategy, eventExecutorGroup, clock, logging );
     }
 
     private LoadBalancer( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, LoadBalancingStrategy loadBalancingStrategy,
-                          EventExecutorGroup eventExecutorGroup, Clock clock, Logger log )
+                          EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging )
     {
-        this( connectionPool, createRoutingTables( connectionPool, rediscovery, settings, clock, log ), rediscovery, loadBalancingStrategy, eventExecutorGroup,
-              log );
+        this( connectionPool, createRoutingTables( connectionPool, rediscovery, settings, clock, logging ), rediscovery, loadBalancingStrategy,
+              eventExecutorGroup, logging );
     }
 
     LoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables, Rediscovery rediscovery, LoadBalancingStrategy loadBalancingStrategy,
-                  EventExecutorGroup eventExecutorGroup, Logger log )
+                  EventExecutorGroup eventExecutorGroup, Logging logging )
     {
         this.connectionPool = connectionPool;
         this.routingTables = routingTables;
         this.rediscovery = rediscovery;
         this.loadBalancingStrategy = loadBalancingStrategy;
         this.eventExecutorGroup = eventExecutorGroup;
-        this.log = log;
+        this.log = logging.getLog( getClass() );
     }
 
     @Override
@@ -269,22 +266,16 @@ public class LoadBalancer implements ConnectionProvider
     }
 
     private static RoutingTableRegistry createRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery, RoutingSettings settings, Clock clock,
-            Logger log )
+                                                             Logging logging )
     {
-        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, log, settings.routingTablePurgeDelayMs() );
+        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging, settings.routingTablePurgeDelayMs() );
     }
 
     private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
                                                   RoutingSettings settings, Clock clock, Logging logging, DomainNameResolver domainNameResolver )
     {
-        Logger log = loadBalancerLogger( logging );
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
-        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, log, domainNameResolver );
-    }
-
-    private static Logger loadBalancerLogger( Logging logging )
-    {
-        return logging.getLog( LOAD_BALANCER_LOG_NAME );
+        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, logging, domainNameResolver );
     }
 
     private static RuntimeException unknownMode( AccessMode mode )

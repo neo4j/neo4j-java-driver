@@ -48,13 +48,11 @@ import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class NetworkSession
 {
-    private static final String LOG_NAME = "Session";
-
     private final ConnectionProvider connectionProvider;
     private final NetworkSessionConnectionContext connectionContext;
     private final AccessMode mode;
     private final RetryLogic retryLogic;
-    protected final Logger logger;
+    protected final Logger log;
 
     private final BookmarkHolder bookmarkHolder;
     private final long fetchSize;
@@ -70,7 +68,7 @@ public class NetworkSession
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
-        this.logger = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( LOG_NAME ) );
+        this.log = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( getClass() ) );
         this.bookmarkHolder = bookmarkHolder;
         this.connectionContext = new NetworkSessionConnectionContext( databaseName, bookmarkHolder.getBookmark() );
         this.fetchSize = fetchSize;

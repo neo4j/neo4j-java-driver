@@ -36,8 +36,6 @@ import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
  */
 public class GraphDatabase
 {
-    private static final String LOGGER_NAME = GraphDatabase.class.getSimpleName();
-
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
      *
@@ -206,7 +204,7 @@ public class GraphDatabase
     private static Logger createLogger( Config config )
     {
         Logging logging = getOrDefault( config ).logging();
-        return logging.getLog( LOGGER_NAME );
+        return logging.getLog( GraphDatabase.class );
     }
 
     private static Config getOrDefault( Config config )

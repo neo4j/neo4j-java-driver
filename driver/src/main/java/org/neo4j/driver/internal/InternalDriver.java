@@ -54,7 +54,7 @@ public class InternalDriver implements Driver
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
         this.metricsProvider = metricsProvider;
-        this.log = logging.getLog( Driver.class.getSimpleName() );
+        this.log = logging.getLog( getClass() );
     }
 
     @Override

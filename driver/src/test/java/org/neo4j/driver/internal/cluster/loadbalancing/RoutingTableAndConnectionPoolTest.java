@@ -322,14 +322,14 @@ class RoutingTableAndConnectionPoolTest
 
     private RoutingTableRegistryImpl newRoutingTables( ConnectionPool connectionPool, Rediscovery rediscovery )
     {
-        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging.getLog( "RT" ), STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+        return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging, STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 
     private LoadBalancer newLoadBalancer( ConnectionPool connectionPool, RoutingTableRegistry routingTables )
     {
         Rediscovery rediscovery = mock( Rediscovery.class );
         return new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, logging ),
-                                 GlobalEventExecutor.INSTANCE, logging.getLog( "LB" ) );
+                                 GlobalEventExecutor.INSTANCE, logging );
     }
 
     private CompletableFuture<ClusterCompositionLookupResult> clusterComposition( BoltServerAddress... addresses )

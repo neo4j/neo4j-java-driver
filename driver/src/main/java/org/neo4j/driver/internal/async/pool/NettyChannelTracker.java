@@ -61,7 +61,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
     public NettyChannelTracker( MetricsListener metricsListener, ChannelGroup channels, Logging logging )
     {
         this.metricsListener = metricsListener;
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.log = logging.getLog( getClass() );
         this.allChannels = channels;
     }
 

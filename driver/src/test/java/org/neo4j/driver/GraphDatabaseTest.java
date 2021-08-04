@@ -38,7 +38,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -102,7 +101,7 @@ class GraphDatabaseTest
 
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
-        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
 
         Config config = Config.builder()
                 .withoutEncryption()

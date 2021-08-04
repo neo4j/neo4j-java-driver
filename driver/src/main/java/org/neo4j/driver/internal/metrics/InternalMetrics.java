@@ -45,7 +45,7 @@ public class InternalMetrics extends InternalAbstractMetrics
         Objects.requireNonNull( clock );
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
         this.clock = clock;
-        this.log = logging.getLog( getClass().getSimpleName() );
+        this.log = logging.getLog( getClass() );
     }
 
     @Override

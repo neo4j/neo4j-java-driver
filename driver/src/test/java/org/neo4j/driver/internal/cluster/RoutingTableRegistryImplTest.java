@@ -55,7 +55,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -71,8 +71,8 @@ class RoutingTableRegistryImplTest
     {
         Clock clock = Clock.SYSTEM;
         RoutingTableHandlerFactory factory =
-                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGER,
-                        STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+                new RoutingTableHandlerFactory( mock( ConnectionPool.class ), mock( RediscoveryImpl.class ), clock, DEV_NULL_LOGGING,
+                                                STALE_ROUTING_TABLE_PURGE_DELAY_MS );
 
         RoutingTableHandler handler = factory.newInstance( database( "Molly" ), null );
         RoutingTable table = handler.routingTable();
@@ -136,7 +136,7 @@ class RoutingTableRegistryImplTest
         ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
-        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGING );
 
         ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
         // When
@@ -155,7 +155,7 @@ class RoutingTableRegistryImplTest
         map.put( database( "Banana" ), mockedRoutingTableHandler( B, C, D ) );
         map.put( database( "Orange" ), mockedRoutingTableHandler( E, F, C ) );
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGER );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGING );
 
         // When
         Set<BoltServerAddress> servers = routingTables.allServers();
@@ -210,7 +210,7 @@ class RoutingTableRegistryImplTest
 
     private RoutingTableRegistryImpl newRoutingTables( ConcurrentMap<DatabaseName,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
     {
-        return new RoutingTableRegistryImpl( handlers, factory, DEV_NULL_LOGGER );
+        return new RoutingTableRegistryImpl( handlers, factory, DEV_NULL_LOGGING );
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory( RoutingTableHandler handler )

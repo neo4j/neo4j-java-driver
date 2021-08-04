@@ -59,7 +59,7 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithMode;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.A;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.B;
 import static org.neo4j.driver.internal.util.ClusterCompositionUtil.C;
@@ -308,13 +308,14 @@ class RoutingTableHandlerTest
 
     private static RoutingTableHandler newRoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool )
     {
-        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, newRoutingTableRegistryMock(), DEV_NULL_LOGGER,
-                STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, newRoutingTableRegistryMock(), DEV_NULL_LOGGING,
+                                            STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 
     private static RoutingTableHandler newRoutingTableHandler( RoutingTable routingTable, Rediscovery rediscovery, ConnectionPool connectionPool,
             RoutingTableRegistry routingTableRegistry )
     {
-        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, routingTableRegistry, DEV_NULL_LOGGER, STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+        return new RoutingTableHandlerImpl( routingTable, rediscovery, connectionPool, routingTableRegistry, DEV_NULL_LOGGING,
+                                            STALE_ROUTING_TABLE_PURGE_DELAY_MS );
     }
 }

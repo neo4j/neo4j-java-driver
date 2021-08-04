@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.logging.DevNullLogger.DEV_NULL_LOGGER;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 
 class PingResponseHandlerTest
 {
@@ -73,6 +73,6 @@ class PingResponseHandlerTest
 
     private static PingResponseHandler newHandler( Promise<Boolean> result )
     {
-        return new PingResponseHandler( result, mock( Channel.class ), DEV_NULL_LOGGER );
+        return new PingResponseHandler( result, mock( Channel.class ), DEV_NULL_LOGGING );
     }
 }

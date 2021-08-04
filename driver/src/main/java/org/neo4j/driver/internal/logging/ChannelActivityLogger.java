@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.logging;
 
 import io.netty.channel.Channel;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.util.Format.valueOrEmpty;
@@ -38,7 +38,7 @@ public class ChannelActivityLogger extends ReformattedLogger
 
     public ChannelActivityLogger( Channel channel, Logging logging, Class<?> owner )
     {
-        this( channel, logging.getLog( owner.getSimpleName() ) );
+        this( channel, logging.getLog( owner ) );
     }
 
     private ChannelActivityLogger( Channel channel, Logger delegate )
