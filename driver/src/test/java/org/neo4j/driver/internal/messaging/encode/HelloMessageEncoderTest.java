@@ -21,20 +21,18 @@ package org.neo4j.driver.internal.messaging.encode;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.Value;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.Values.NULL;
-import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.messaging.request.PullAllMessage.PULL_ALL;
 
 class HelloMessageEncoderTest
 {
@@ -55,7 +53,6 @@ class HelloMessageEncoderTest
 
         Map<String,Value> expectedMetadata = new HashMap<>( authToken );
         expectedMetadata.put( "user_agent", value( "MyDriver" ) );
-        expectedMetadata.put( "routing", NULL );
         order.verify( packer ).pack( expectedMetadata );
     }
 

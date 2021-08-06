@@ -22,7 +22,6 @@ import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -30,7 +29,6 @@ import reactor.test.StepVerifier;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.AccessMode;
@@ -39,8 +37,6 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Logger;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -67,18 +63,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
-import static org.neo4j.driver.util.TestUtil.asOrderedSet;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectDriverBoltKitIT
@@ -95,140 +84,6 @@ class DirectDriverBoltKitIT
     public void killServers()
     {
         stubController.reset();
-    }
-
-    @Test
-    void shouldBeAbleRunCypher() throws Exception
-    {
-        StubServer server = stubController.startStub( "return_x.script", 9001 );
-        URI uri = URI.create( "bolt://127.0.0.1:9001" );
-        int x;
-
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
-        {
-            try ( Session session = driver.session() )
-            {
-                Record record = session.run( "RETURN {x}", parameters( "x", 1 ) ).single();
-                x = record.get( 0 ).asInt();
-            }
-        }
-
-        assertThat( x, equalTo( 1 ) );
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    void shouldSendMultipleBookmarks() throws Exception
-    {
-        StubServer server = stubController.startStub( "multiple_bookmarks.script", 9001 );
-
-        Bookmark bookmarks = InternalBookmark.parse( asOrderedSet( "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx29",
-                "neo4j:bookmark:v1:tx94", "neo4j:bookmark:v1:tx56", "neo4j:bookmark:v1:tx16", "neo4j:bookmark:v1:tx68" ) );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session( builder().withBookmarks( bookmarks ).build() ) )
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                tx.run( "CREATE (n {name:'Bob'})" );
-                tx.commit();
-            }
-
-            assertEquals( InternalBookmark.parse( "neo4j:bookmark:v1:tx95" ), session.lastBookmark() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldSendNullRoutingContextForBoltUri() throws Exception
-    {
-        StubServer server = StubServer.start( "hello_with_routing_context_bolt.script", 9001 );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-              Session session = driver.session() )
-        {
-            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
-            assertEquals( asList( "Foo", "Bar" ), names );
-
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldLogConnectionIdInDebugMode() throws Exception
-    {
-        StubServer server = stubController.startStub( "hello_run_exit.script", 9001 );
-
-        Logger logger = mock( Logger.class );
-        when( logger.isDebugEnabled() ).thenReturn( true );
-
-        Config config = Config.builder()
-                .withLogging( ignore -> logger )
-                .withoutEncryption()
-                .build();
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-              Session session = driver.session() )
-        {
-            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
-            assertEquals( asList( "Foo", "Bar" ), names );
-
-            ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass( String.class );
-            verify( logger, atLeastOnce() ).debug( messageCaptor.capture(), any( Object[].class ) );
-
-            Optional<String> logMessageWithConnectionId = messageCaptor.getAllValues()
-                    .stream()
-                    .filter( line -> line.contains( "bolt-123456789" ) )
-                    .findAny();
-
-            assertTrue( logMessageWithConnectionId.isPresent(),
-                    "Expected log call did not happen. All debug log calls:\n" + String.join( "\n", messageCaptor.getAllValues() ) );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldSendReadAccessModeInQueryMetadata() throws Exception
-    {
-        StubServer server = stubController.startStub( "hello_run_exit_read.script", 9001 );
-
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
-        {
-            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
-            assertEquals( asList( "Foo", "Bar" ), names );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldNotSendWriteAccessModeInQueryMetadata() throws Exception
-    {
-        StubServer server = stubController.startStub( "hello_run_exit.script", 9001 );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-        {
-            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
-            assertEquals( asList( "Foo", "Bar" ), names );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
     }
 
     @Test
@@ -595,25 +450,6 @@ class DirectDriverBoltKitIT
         }
 
         assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    void shouldSendCustomerUserAgentInHelloMessage() throws Exception
-    {
-        StubServer server = stubController.startStub( "hello_with_custom_user_agent.script", 9001 );
-
-        Config config = Config.builder().withUserAgent( "AwesomeClient" ).build();
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", config );
-              Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-        {
-            List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( record -> record.get( 0 ).asString() );
-            assertEquals( asList( "Foo", "Bar" ), names );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
     }
 
     private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
