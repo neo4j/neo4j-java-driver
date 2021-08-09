@@ -281,4 +281,10 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
 
         void run( MessageType messageType );
     }
+
+    //    For testing only
+    Logger getLog()
+    {
+        return log;
+    }
 }
