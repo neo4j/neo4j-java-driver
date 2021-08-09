@@ -23,24 +23,38 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.DefaultChannelId;
 import io.netty.util.Attribute;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.Logger;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.messaging.Message;
+import org.neo4j.driver.internal.messaging.response.FailureMessage;
+import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
+import org.neo4j.driver.internal.messaging.response.RecordMessage;
+import org.neo4j.driver.internal.messaging.response.SuccessMessage;
+import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.internal.value.IntegerValue;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -49,9 +63,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.messaging.request.ResetMessage.RESET;
-import static org.neo4j.driver.Values.value;
 
 class InboundMessageDispatcherTest
 {
@@ -352,6 +366,69 @@ class InboundMessageDispatcherTest
         assertNull( dispatcher.autoReadManagingHandler() );
         verify( handler ).disableAutoReadManagement();
         verify( channel.config() ).setAutoRead( anyBoolean() );
+    }
+
+    @ParameterizedTest
+    @ValueSource( classes = {SuccessMessage.class, FailureMessage.class, RecordMessage.class, IgnoredMessage.class} )
+    void shouldCreateChannelActivityLoggerAndLogDebugMessageOnMessageHandling( Class<? extends Message> message )
+    {
+        // GIVEN
+        Channel channel = newChannelMock();
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logger.isDebugEnabled() ).thenReturn( true );
+        when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
+        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
+        ResponseHandler handler = mock( ResponseHandler.class );
+        dispatcher.enqueue( handler );
+
+        // WHEN
+        if ( SuccessMessage.class.isAssignableFrom( message ) )
+        {
+            dispatcher.handleSuccessMessage( new HashMap<>() );
+        }
+        else if ( FailureMessage.class.isAssignableFrom( message ) )
+        {
+            dispatcher.handleFailureMessage( FAILURE_CODE, FAILURE_MESSAGE );
+        }
+        else if ( RecordMessage.class.isAssignableFrom( message ) )
+        {
+            dispatcher.handleRecordMessage( Values.values() );
+        }
+        else if ( IgnoredMessage.class.isAssignableFrom( message ) )
+        {
+            dispatcher.handleIgnoredMessage();
+        }
+        else
+        {
+            fail( "Unexpected message type parameter provided" );
+        }
+
+        // THEN
+        assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
+        verify( logger ).debug( anyString(), any( Object.class ) );
+    }
+
+    @Test
+    void shouldCreateChannelActivityLoggerAndLogDebugMessageOnChannelError()
+    {
+        // GIVEN
+        Channel channel = newChannelMock();
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logger.isDebugEnabled() ).thenReturn( true );
+        when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
+        InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
+        ResponseHandler handler = mock( ResponseHandler.class );
+        dispatcher.enqueue( handler );
+        Throwable throwable = mock( Throwable.class );
+
+        // WHEN
+        dispatcher.handleChannelError( throwable );
+
+        // THEN
+        assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
+        verify( logger ).debug( anyString(), eq( throwable ) );
     }
 
     private static void verifyFailure( ResponseHandler handler )
