@@ -118,31 +118,6 @@ class DirectDriverBoltKitIT
     }
 
     @Test
-    void shouldPropagateTransactionRollbackErrorWhenSessionClosed() throws Exception
-    {
-        StubServer server = stubController.startStub( "rollback_error.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                Session session = driver.session();
-
-                Transaction tx = session.beginTransaction();
-                Result result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
-                assertEquals( "Alice", result.single().get( "name" ).asString() );
-
-                TransientException e = assertThrows( TransientException.class, session::close );
-                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                assertEquals( "Unable to rollback", e.getMessage() );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
     void shouldStreamingRecordsInBatchesRx() throws Exception
     {
         StubServer server = stubController.startStub( "streaming_records_v4_rx.script", 9001 );
@@ -154,46 +129,6 @@ class DirectDriverBoltKitIT
                 RxResult result = session.run( "MATCH (n) RETURN n.name" );
                 Flux<String> records = Flux.from( result.records() ).limitRate( 2 ).map( record -> record.get( "n.name" ).asString() );
                 StepVerifier.create( records ).expectNext( "Bob", "Alice", "Tina" ).verifyComplete();
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldStreamingRecordsInBatches() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( 2 ).build() ) )
-            {
-                Session session = driver.session();
-                Result result = session.run( "MATCH (n) RETURN n.name" );
-                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
-                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldChangeFetchSize() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                Session session = driver.session( builder().withFetchSize( 2 ).build() );
-                Result result = session.run( "MATCH (n) RETURN n.name" );
-                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
-                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
             }
         }
         finally
@@ -296,19 +231,6 @@ class DirectDriverBoltKitIT
     {
         testTxCloseErrorPropagation( "commit_error.script", Transaction::commit, "Unable to commit" );
     }
-
-    @Test
-    void shouldThrowRollbackErrorWhenTransactionRollback() throws Exception
-    {
-        testTxCloseErrorPropagation( "rollback_error.script", Transaction::rollback, "Unable to rollback" );
-    }
-
-    @Test
-    void shouldThrowRollbackErrorWhenTransactionClose() throws Exception
-    {
-        testTxCloseErrorPropagation( "rollback_error.script", Transaction::close, "Unable to rollback" );
-    }
-
 
     @Test
     void shouldThrowCorrectErrorOnRunFailure() throws Throwable

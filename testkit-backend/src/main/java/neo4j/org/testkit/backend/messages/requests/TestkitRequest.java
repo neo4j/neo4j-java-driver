@@ -36,7 +36,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
         @JsonSubTypes.Type( ResolverResolutionCompleted.class ), @JsonSubTypes.Type( CheckMultiDBSupport.class ),
         @JsonSubTypes.Type( DomainNameResolutionCompleted.class ), @JsonSubTypes.Type( StartTest.class ),
         @JsonSubTypes.Type( TransactionRollback.class ), @JsonSubTypes.Type( GetFeatures.class ),
-        @JsonSubTypes.Type( GetRoutingTable.class )
+        @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class )
 } )
 public interface TestkitRequest
 {

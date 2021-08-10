@@ -22,29 +22,40 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.responses.FeatureList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import neo4j.org.testkit.backend.messages.responses.Transaction;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Optional;
 
 @Setter
 @Getter
 @NoArgsConstructor
-public class GetFeatures implements TestkitRequest
+public class TransactionClose implements TestkitRequest
 {
-    private static final Set<String> FEATURES = new HashSet<>( Arrays.asList(
-            "AuthorizationExpiredTreatment",
-            "Optimization:PullPipelining",
-            "ConfHint:connection.recv_timeout_seconds",
-            "Temporary:TransactionClose",
-            "Temporary:DriverFetchSize"
-    ) );
+    private TransactionCloseBody data;
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return FeatureList.builder().data( FeatureList.FeatureListBody.builder().features( FEATURES ).build() ).build();
+        return Optional.ofNullable( testkitState.getTransactions().get( data.txId ) )
+                       .map( tx ->
+                             {
+                                 tx.close();
+                                 return transaction( data.txId );
+                             } )
+                       .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
+    }
+
+    private Transaction transaction( String txId )
+    {
+        return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
+    }
+
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    private static class TransactionCloseBody
+    {
+        private String txId;
     }
 }
