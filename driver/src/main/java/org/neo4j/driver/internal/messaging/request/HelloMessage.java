@@ -78,7 +78,10 @@ public class HelloMessage extends MessageWithMetadata
     {
         Map<String,Value> result = new HashMap<>( authToken );
         result.put( USER_AGENT_METADATA_KEY, value( userAgent ) );
-        result.put( ROUTING_CONTEXT_METADATA_KEY, value( routingContext ) );
+        if ( routingContext != null )
+        {
+            result.put( ROUTING_CONTEXT_METADATA_KEY, value( routingContext ) );
+        }
         return result;
     }
 }
