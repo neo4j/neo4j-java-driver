@@ -29,20 +29,16 @@ import reactor.test.StepVerifier;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.exceptions.TransientException;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -56,18 +52,12 @@ import org.neo4j.driver.util.StubServerController;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
-import static org.neo4j.driver.util.StubServer.insecureBuilder;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectDriverBoltKitIT
@@ -207,76 +197,6 @@ class DirectDriverBoltKitIT
     }
 
     @Test
-    void shouldAllowPullAll() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4_all.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", insecureBuilder().withFetchSize( -1 ).build() ) )
-            {
-                Session session = driver.session();
-                Result result = session.run( "MATCH (n) RETURN n.name" );
-                List<String> list = result.list( record -> record.get( "n.name" ).asString() );
-                assertEquals( list, asList( "Bob", "Alice", "Tina" ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldThrowCommitErrorWhenTransactionCommit() throws Exception
-    {
-        testTxCloseErrorPropagation( "commit_error.script", Transaction::commit, "Unable to commit" );
-    }
-
-    @Test
-    void shouldThrowCorrectErrorOnRunFailure() throws Throwable
-    {
-        StubServer server = stubController.startStub( "database_shutdown.script", 9001 );
-
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx0" );
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withBookmarks( bookmark ).build() );
-                // has to enforce to flush BEGIN to have tx started.
-                Transaction transaction = session.beginTransaction() )
-        {
-            TransientException error = assertThrows( TransientException.class, () -> {
-                Result result = transaction.run( "RETURN 1" );
-                result.consume();
-            } );
-            assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldThrowCorrectErrorOnCommitFailure() throws Throwable
-    {
-        StubServer server = stubController.startStub( "database_shutdown_at_commit.script", 9001 );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session() )
-        {
-            Transaction transaction = session.beginTransaction();
-            Result result = transaction.run( "CREATE (n {name:'Bob'})" );
-            result.consume();
-
-            TransientException error = assertThrows( TransientException.class, transaction::commit );
-            assertThat( error.code(), equalTo( "Neo.TransientError.General.DatabaseUnavailable" ) );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
     void shouldAllowDatabaseNameInSessionRun() throws Throwable
     {
         StubServer server = stubController.startStub( "read_server_v4_read.script", 9001 );
@@ -321,77 +241,6 @@ class DirectDriverBoltKitIT
                     session -> session.readTransaction( tx -> tx.run( "UNWIND [1,2,3,4] AS a RETURN a" ).keys() ),
                     RxSession::close );
             StepVerifier.create( keys ).expectNext( singletonList( "a" ) ).verifyComplete();
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldServerWithBoltV4SupportMultiDb() throws Throwable
-    {
-        StubServer server = stubController.startStub( "support_multidb_v4.script", 9001 );
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-        {
-            assertTrue( driver.supportsMultiDb() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldServerWithBoltV3NotSupportMultiDb() throws Throwable
-    {
-        StubServer server = stubController.startStub( "support_multidb_v3.script", 9001 );
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-        {
-            assertFalse( driver.supportsMultiDb() );
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldBeAbleHandleNOOPsDuringRunCypher() throws Exception
-    {
-        StubServer server = stubController.startStub( "noop.script", 9001 );
-        URI uri = URI.create( "bolt://127.0.0.1:9001" );
-
-        try ( Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG ) )
-        {
-            try ( Session session = driver.session() )
-            {
-                List<String> names = session.run( "MATCH (n) RETURN n.name" ).list( rec -> rec.get( 0 ).asString() );
-                assertEquals( asList( "Foo", "Bar", "Baz" ), names );
-            }
-        }
-
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    private static void testTxCloseErrorPropagation( String script, Consumer<Transaction> txAction, String expectedErrorMessage )
-            throws Exception
-    {
-        StubServer server = stubController.startStub( script, 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                  Session session = driver.session() )
-            {
-                Transaction tx = session.beginTransaction();
-                Result result = tx.run( "CREATE (n {name:'Alice'}) RETURN n.name AS name" );
-                assertEquals( "Alice", result.single().get( "name" ).asString() );
-
-                TransientException e = assertThrows( TransientException.class, () -> txAction.accept( tx ) );
-
-                assertEquals( "Neo.TransientError.General.DatabaseUnavailable", e.code() );
-                assertEquals( expectedErrorMessage, e.getMessage() );
-            }
         }
         finally
         {
