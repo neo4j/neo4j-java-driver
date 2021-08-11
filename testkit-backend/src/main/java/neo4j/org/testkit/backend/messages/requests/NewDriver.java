@@ -89,6 +89,7 @@ public class NewDriver implements TestkitRequest
         }
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         Optional.ofNullable( data.connectionTimeoutMs ).ifPresent( timeout -> configBuilder.withConnectionTimeout( timeout, TimeUnit.MILLISECONDS ) );
+        Optional.ofNullable( data.fetchSize ).ifPresent( configBuilder::withFetchSize );
         org.neo4j.driver.Driver driver;
         try
         {
@@ -179,6 +180,7 @@ public class NewDriver implements TestkitRequest
         private boolean resolverRegistered;
         private boolean domainNameResolverRegistered;
         private Long connectionTimeoutMs;
+        private Integer fetchSize;
     }
 
     @RequiredArgsConstructor

@@ -180,6 +180,7 @@ public class CommandProcessor
                                            .id( id )
                                            .errorType( e.getClass().getName() )
                                            .code( e.code() )
+                                           .msg( e.getMessage() )
                                            .build() )
                           .build();
     }
