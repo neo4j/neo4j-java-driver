@@ -122,19 +122,24 @@ public class GraphDatabase
     /**
      * Return a driver for a Neo4j instance with custom configuration.
      *
-     * @param uri the URL to a Neo4j instance
+     * @param uri       the URL to a Neo4j instance
      * @param authToken authentication to use, see {@link AuthTokens}
-     * @param config user defined configuration
+     * @param config    user defined configuration
      * @return a new driver to the database instance specified by the URL
      */
     public static Driver driver( URI uri, AuthToken authToken, Config config )
+    {
+        return driver( uri, authToken, config, new DriverFactory() );
+    }
+
+    static Driver driver( URI uri, AuthToken authToken, Config config, DriverFactory driverFactory )
     {
         config = getOrDefault( config );
         RoutingSettings routingSettings = config.routingSettings();
         RetrySettings retrySettings = config.retrySettings();
         SecuritySettings securitySettings = config.securitySettings();
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
-        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
+        return driverFactory.newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
     }
 
     /**
@@ -150,12 +155,17 @@ public class GraphDatabase
      */
     public static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config )
     {
+        return routingDriver( routingUris, authToken, config, new DriverFactory() );
+    }
+
+    static Driver routingDriver( Iterable<URI> routingUris, AuthToken authToken, Config config, DriverFactory driverFactory )
+    {
         assertRoutingUris( routingUris );
         Logger log = createLogger( config );
 
         for ( URI uri : routingUris )
         {
-            final Driver driver = driver( uri, authToken, config );
+            final Driver driver = driver( uri, authToken, config, driverFactory );
             try
             {
                 driver.verifyConnectivity();
