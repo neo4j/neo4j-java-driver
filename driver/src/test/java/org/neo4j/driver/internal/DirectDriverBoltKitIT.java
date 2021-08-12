@@ -30,12 +30,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
@@ -55,7 +53,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -128,28 +125,6 @@ class DirectDriverBoltKitIT
     }
 
     @Test
-    void shouldOnlyPullRecordsWhenNeededSimpleSession() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4_buffering.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                Session session = driver.session( builder().withFetchSize( 2 ).build() );
-                Result result = session.run( "MATCH (n) RETURN n.name" );
-                ArrayList<String> resultList = new ArrayList<>();
-                result.forEachRemaining( ( rec ) -> resultList.add( rec.get( 0 ).asString() ) );
-
-                assertEquals( resultList, asList( "Bob", "Alice", "Tina", "Frank", "Daisy", "Clive" ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
     void shouldOnlyPullRecordsWhenNeededAsyncSession() throws Exception
     {
         StubServer server = stubController.startStub( "streaming_records_v4_buffering.script", 9001 );
@@ -189,39 +164,6 @@ class DirectDriverBoltKitIT
 
                 assertEquals( records, asList( "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ) );
             }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldAllowDatabaseNameInSessionRun() throws Throwable
-    {
-        StubServer server = stubController.startStub( "read_server_v4_read.script", 9001 );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( builder().withDatabase( "mydatabase" ).withDefaultAccessMode( AccessMode.READ ).build() ) )
-        {
-            final Result result = session.run( "MATCH (n) RETURN n.name" );
-            result.consume();
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldAllowDatabaseNameInBeginTransaction() throws Throwable
-    {
-        StubServer server = stubController.startStub( "read_server_v4_read_tx.script", 9001 );
-
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG );
-                Session session = driver.session( forDatabase( "mydatabase" ) ) )
-        {
-            session.readTransaction( tx -> tx.run( "MATCH (n) RETURN n.name" ).consume() );
         }
         finally
         {
