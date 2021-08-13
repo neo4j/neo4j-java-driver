@@ -39,7 +39,8 @@ public class GetFeatures implements TestkitRequest
             "Optimization:PullPipelining",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:TransactionClose",
-            "Temporary:DriverFetchSize"
+            "Temporary:DriverFetchSize",
+            "Temporary:DriverMaxTxRetryTime"
     ) );
 
     @Override
