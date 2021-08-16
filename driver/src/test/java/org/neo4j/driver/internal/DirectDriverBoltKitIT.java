@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal;
 
-import io.netty.channel.Channel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,22 +25,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
@@ -49,11 +39,8 @@ import org.neo4j.driver.util.StubServerController;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -71,37 +58,6 @@ class DirectDriverBoltKitIT
     public void killServers()
     {
         stubController.reset();
-    }
-
-    @Test
-    void shouldCloseChannelWhenResetFails() throws Exception
-    {
-        StubServer server = stubController.startStub( "reset_error.script", 9001 );
-        try
-        {
-            URI uri = URI.create( "bolt://localhost:9001" );
-            Config config = Config.builder().withLogging( DEV_NULL_LOGGING ).withoutEncryption().build();
-            ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( 1, Clock.SYSTEM );
-
-            try ( Driver driver = driverFactory.newInstance( uri, AuthTokens.none(), RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config,
-                                                             SecurityPlanImpl.insecure() ) )
-            {
-                try ( Session session = driver.session() )
-                {
-                    assertEquals( 42, session.run( "RETURN 42 AS answer" ).single().get( 0 ).asInt() );
-                }
-
-                List<Channel> channels = driverFactory.pollChannels();
-                // there should be a single channel
-                assertEquals( 1, channels.size() );
-                // and it should be closed because it failed to RESET
-                assertNull( channels.get( 0 ).closeFuture().get( 30, SECONDS ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
     }
 
     @Test
