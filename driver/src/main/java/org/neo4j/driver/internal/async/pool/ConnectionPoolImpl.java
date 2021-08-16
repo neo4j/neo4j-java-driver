@@ -52,6 +52,8 @@ import static org.neo4j.driver.internal.util.Futures.completeWithNullIfNoError;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
+    public static final String CONNECTION_POOL_CLOSED_ERROR_MESSAGE = "Pool closed";
+
     private final ChannelConnector connector;
     private final Bootstrap bootstrap;
     private final NettyChannelTracker nettyChannelTracker;
@@ -227,7 +229,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     {
         if ( closed.get() )
         {
-            throw new IllegalStateException( "Pool closed" );
+            throw new IllegalStateException( CONNECTION_POOL_CLOSED_ERROR_MESSAGE );
         }
     }
 

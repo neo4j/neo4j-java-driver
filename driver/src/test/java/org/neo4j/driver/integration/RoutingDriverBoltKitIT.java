@@ -27,27 +27,14 @@ import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.DriverFactoryWithFixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
@@ -66,7 +53,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.SessionConfig.builder;
-import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 import static org.neo4j.driver.util.StubServer.insecureBuilder;
 
 /**
@@ -166,50 +152,6 @@ class RoutingDriverBoltKitIT
         assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
-    // fixed retries are not currently supported in testkit
-    @Test
-    void shouldRetryReadTransactionUntilFailure() throws Exception
-    {
-        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenReader1 = stubController.startStub( "dead_read_server_tx.script", 9005 );
-        StubServer brokenReader2 = stubController.startStub( "dead_read_server_tx.script", 9006 );
-
-        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 ); Session session = driver.session() )
-        {
-            AtomicInteger invocations = new AtomicInteger();
-            assertThrows( SessionExpiredException.class, () -> session.readTransaction( queryWork( "MATCH (n) RETURN n.name", invocations ) ) );
-            assertEquals( 2, invocations.get() );
-        }
-        finally
-        {
-            assertEquals( 0, router.exitStatus() );
-            assertEquals( 0, brokenReader1.exitStatus() );
-            assertEquals( 0, brokenReader2.exitStatus() );
-        }
-    }
-
-    // fixed retries are not currently supported in testkit
-    @Test
-    void shouldRetryWriteTransactionUntilFailure() throws Exception
-    {
-        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
-        StubServer brokenWriter1 = stubController.startStub( "dead_write_server.script", 9007 );
-        StubServer brokenWriter2 = stubController.startStub( "dead_write_server.script", 9008 );
-
-        try ( Driver driver = newDriverWithFixedRetries( "neo4j://127.0.0.1:9001", 1 ); Session session = driver.session() )
-        {
-            AtomicInteger invocations = new AtomicInteger();
-            assertThrows( SessionExpiredException.class, () -> session.writeTransaction( queryWork( "CREATE (n {name:'Bob'})", invocations ) ) );
-            assertEquals( 2, invocations.get() );
-        }
-        finally
-        {
-            assertEquals( 0, router.exitStatus() );
-            assertEquals( 0, brokenWriter1.exitStatus() );
-            assertEquals( 0, brokenWriter2.exitStatus() );
-        }
-    }
-
     @Test
     void shouldFailInitialDiscoveryWhenConfiguredResolverThrows()
     {
@@ -222,66 +164,5 @@ class RoutingDriverBoltKitIT
         RuntimeException error = assertThrows( RuntimeException.class, driver::verifyConnectivity );
         assertEquals( "Resolution failure!", error.getMessage() );
         verify( resolver ).resolve( ServerAddress.of( "my.server.com", 9001 ) );
-    }
-
-    // general error reporting and handling should be improved before this can be moved to testkit
-    // also, backend closes socket on general errors and it negatively impacts testkit's teardown process
-    @Test
-    void useSessionAfterDriverIsClosed() throws Exception
-    {
-        StubServer router = stubController.startStub( "acquire_endpoints_v3.script", 9001 );
-        StubServer readServer = stubController.startStub( "read_server_v3_read.script", 9005 );
-
-        try ( Driver driver = GraphDatabase.driver( "neo4j://127.0.0.1:9001", INSECURE_CONFIG ) )
-        {
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
-            {
-                List<Record> records = session.run( "MATCH (n) RETURN n.name" ).list();
-                assertEquals( 3, records.size() );
-            }
-
-            Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
-
-            driver.close();
-
-            assertThrows( IllegalStateException.class, () -> session.run( "MATCH (n) RETURN n.name" ) );
-        }
-        finally
-        {
-            assertEquals( 0, readServer.exitStatus() );
-            assertEquals( 0, router.exitStatus() );
-        }
-    }
-
-    private static Driver newDriverWithFixedRetries( String uriString, int retries )
-    {
-        DriverFactory driverFactory = new DriverFactoryWithFixedRetryLogic( retries );
-        return newDriver( uriString, driverFactory, INSECURE_CONFIG );
-    }
-
-    private static Driver newDriver( String uriString, DriverFactory driverFactory, Config config )
-    {
-        URI uri = URI.create( uriString );
-        RoutingSettings routingConf = new RoutingSettings( 1, 1, 0, null );
-        AuthToken auth = AuthTokens.none();
-        return driverFactory.newInstance( uri, auth, routingConf, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() );
-    }
-
-    private static TransactionWork<List<Record>> queryWork( final String query, final AtomicInteger invocations )
-    {
-        return tx ->
-        {
-            invocations.incrementAndGet();
-            return tx.run( query ).list();
-        };
-    }
-
-    static class PortBasedServerAddressComparator implements Comparator<ServerAddress>
-    {
-        @Override
-        public int compare( ServerAddress a1, ServerAddress a2 )
-        {
-            return Integer.compare( a1.port(), a2.port() );
-        }
     }
 }
