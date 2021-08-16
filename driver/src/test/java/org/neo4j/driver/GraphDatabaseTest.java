@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,68 +27,34 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.util.StubServer;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.InternalDriver;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.retry.RetryLogic;
+import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
-import static org.neo4j.driver.internal.util.Matchers.directDriver;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 
 class GraphDatabaseTest
 {
-    @Test
-    void boltSchemeShouldInstantiateDirectDriver() throws Exception
-    {
-        // Given
-        StubServer server = StubServer.start( "dummy_connection.script", 9001 );
-        URI uri = URI.create( "bolt://localhost:9001" );
-
-        // When
-        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-        driver.verifyConnectivity();
-
-        // Then
-        assertThat( driver, is( directDriver() ) );
-
-        // Finally
-        driver.close();
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
-    @Test
-    void boltPlusDiscoverySchemeShouldInstantiateClusterDriver() throws Exception
-    {
-        // Given
-        StubServer server = StubServer.start( "discover_servers.script", 9001 );
-        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
-
-        // When
-        Driver driver = GraphDatabase.driver( uri, INSECURE_CONFIG );
-        driver.verifyConnectivity();
-
-        // Then
-        assertThat( driver, is( clusterDriver() ) );
-
-        // Finally
-        driver.close();
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-    }
-
     @Test
     void throwsWhenBoltSchemeUsedWithRoutingParams()
     {
@@ -95,34 +62,29 @@ class GraphDatabaseTest
     }
 
     @Test
-    void shouldLogWhenUnableToCreateRoutingDriver() throws Exception
+    void shouldLogWhenUnableToCreateRoutingDriver()
     {
-        StubServer server1 = StubServer.start( "discover_not_supported_9001.script", 9001 );
-        StubServer server2 = StubServer.start( "discover_not_supported_9002.script", 9002 );
-
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
         when( logging.getLog( anyString() ) ).thenReturn( logger );
-
+        InternalDriver driver = mock( InternalDriver.class );
+        doThrow( ServiceUnavailableException.class ).when( driver ).verifyConnectivity();
+        DriverFactory driverFactory = new MockSupplyingDriverFactory( driver );
         Config config = Config.builder()
-                .withoutEncryption()
-                .withLogging( logging )
-                .build();
+                              .withLogging( logging )
+                              .build();
 
         List<URI> routingUris = asList(
                 URI.create( "neo4j://localhost:9001" ),
                 URI.create( "neo4j://localhost:9002" ) );
 
-        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config ) );
+        assertThrows( ServiceUnavailableException.class, () -> GraphDatabase.routingDriver( routingUris, AuthTokens.none(), config, driverFactory ) );
 
         verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9001" ),
                 any( Throwable.class ) );
 
         verify( logger ).warn( eq( "Unable to create routing driver for URI: neo4j://localhost:9002" ),
                 any( Throwable.class ) );
-
-        assertEquals( 0, server1.exitStatus() );
-        assertEquals( 0, server2.exitStatus() );
     }
 
     @Test
@@ -214,5 +176,23 @@ class GraphDatabaseTest
         }
 
         return configBuilder.build();
+    }
+
+    private static class MockSupplyingDriverFactory extends DriverFactory
+    {
+        private final InternalDriver driver;
+
+        private MockSupplyingDriverFactory( InternalDriver driver )
+        {
+            this.driver = driver;
+        }
+
+        @Override
+        protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
+                                                      EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
+                                                      MetricsProvider metricsProvider, Config config )
+        {
+            return driver;
+        }
     }
 }

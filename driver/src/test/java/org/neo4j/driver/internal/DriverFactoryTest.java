@@ -57,6 +57,7 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -66,6 +67,8 @@ import static org.neo4j.driver.Config.defaultConfig;
 import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
+import static org.neo4j.driver.internal.util.Matchers.directDriver;
 
 class DriverFactoryTest
 {
@@ -166,6 +169,27 @@ class DriverFactoryTest
         // Then
         assertThat( provider.isMetricsEnabled(), is( true ) );
         assertThat( provider instanceof InternalMetricsProvider, is( true ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "testUris" )
+    void shouldCreateAppropriateDriverType( String uri )
+    {
+        DriverFactory driverFactory = new DriverFactory();
+        Driver driver = createDriver( uri, driverFactory );
+
+        if ( uri.startsWith( "bolt://" ) )
+        {
+            assertThat( driver, is( directDriver() ) );
+        }
+        else if ( uri.startsWith( "neo4j://" ) )
+        {
+            assertThat( driver, is( clusterDriver() ) );
+        }
+        else
+        {
+            fail( "Unexpected scheme provided in argument" );
+        }
     }
 
     private Driver createDriver( String uri, DriverFactory driverFactory )
