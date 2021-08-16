@@ -1,9 +1,0 @@
-!: BOLT 3
-!: AUTO RESET
-!: AUTO HELLO
-!: AUTO GOODBYE
-!: AUTO BEGIN
-
-C: RUN "CREATE (n {name:'Bob'})" {} {}
-C: PULL_ALL
-S: <EXIT>

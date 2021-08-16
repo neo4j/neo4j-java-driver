@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
 public class CommandProcessor
 {
@@ -149,6 +151,20 @@ public class CommandProcessor
                         writeResponse( driverError( id, (Neo4jException) e ) );
                         System.out.println( "Neo4jException: " + e );
                     }
+                    else if ( isConnectionPoolClosedException( e ) || e instanceof UntrustedServerException )
+                    {
+                        String id = testkitState.newId();
+                        DriverError driverError = DriverError.builder()
+                                                             .data(
+                                                                     DriverError.DriverErrorBody.builder()
+                                                                                                .id( id )
+                                                                                                .errorType( e.getClass().getName() )
+                                                                                                .msg( e.getMessage() )
+                                                                                                .build()
+                                                             )
+                                                             .build();
+                        writeResponse( driverError );
+                    }
                     else
                     {
                         // Unknown error, interpret this as a backend error.
@@ -218,5 +234,11 @@ public class CommandProcessor
         {
             throw new RuntimeException( "Error writing response", ex );
         }
+    }
+
+    private boolean isConnectionPoolClosedException( Exception e )
+    {
+        return e instanceof IllegalStateException && e.getMessage() != null &&
+               e.getMessage().equals( ConnectionPoolImpl.CONNECTION_POOL_CLOSED_ERROR_MESSAGE );
     }
 }

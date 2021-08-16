@@ -90,10 +90,13 @@ public class NewDriver implements TestkitRequest
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         Optional.ofNullable( data.connectionTimeoutMs ).ifPresent( timeout -> configBuilder.withConnectionTimeout( timeout, TimeUnit.MILLISECONDS ) );
         Optional.ofNullable( data.fetchSize ).ifPresent( configBuilder::withFetchSize );
+        RetrySettings retrySettings = Optional.ofNullable( data.maxTxRetryTimeMs )
+                                              .map( RetrySettings::new )
+                                              .orElse( RetrySettings.DEFAULT );
         org.neo4j.driver.Driver driver;
         try
         {
-            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), domainNameResolver, testkitState, id );
+            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), retrySettings, domainNameResolver, testkitState, id );
         }
         catch ( RuntimeException e )
         {
@@ -143,11 +146,11 @@ public class NewDriver implements TestkitRequest
         };
     }
 
-    private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, DomainNameResolver domainNameResolver, TestkitState testkitState,
+    private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, RetrySettings retrySettings, DomainNameResolver domainNameResolver,
+                                            TestkitState testkitState,
                                             String driverId )
     {
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
-        RetrySettings retrySettings = RetrySettings.DEFAULT;
         SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         SecuritySettings securitySettings = securitySettingsBuilder.build();
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
@@ -181,6 +184,7 @@ public class NewDriver implements TestkitRequest
         private boolean domainNameResolverRegistered;
         private Long connectionTimeoutMs;
         private Integer fetchSize;
+        private Long maxTxRetryTimeMs;
     }
 
     @RequiredArgsConstructor
