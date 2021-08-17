@@ -26,6 +26,8 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -43,6 +45,12 @@ public class ResolverResolutionCompleted implements TestkitRequest
         testkitState.getIdToServerAddresses().put( data.getRequestId(), data.getAddresses().stream().map( BoltServerAddress::new )
                                                                             .collect( Collectors.toCollection( LinkedHashSet::new ) ) );
         return null;
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Setter

@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 @JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "name" )
 @JsonSubTypes( {
         @JsonSubTypes.Type( NewDriver.class ), @JsonSubTypes.Type( NewSession.class ),
@@ -41,4 +44,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 public interface TestkitRequest
 {
     TestkitResponse process( TestkitState testkitState );
+
+    CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState );
 }

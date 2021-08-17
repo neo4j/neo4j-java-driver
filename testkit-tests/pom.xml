@@ -23,6 +23,7 @@
         <!-- See the testkit-custom-args profile if you want to customize this on individual runs. -->
         <testkit.args>--tests TESTKIT_TESTS INTEGRATION_TESTS STUB_TESTS STRESS_TESTS TLS_TESTS</testkit.args>
         <testkit.timeout>7200000</testkit.timeout>
+        <testkit.async.name.pattern>%a-async</testkit.async.name.pattern>
 
         <docker-maven-plugin.version>0.36.1</docker-maven-plugin.version>
         <docker.showLogs>true</docker.showLogs>
@@ -46,6 +47,7 @@
                     <configuration>
                         <images>
                             <image>
+                                <alias>tklnchr</alias>
                                 <name>testkit-launcher:%v</name>
 
                                 <build>
@@ -54,11 +56,11 @@
 
                                 <run>
                                     <!--
-                                    A sanitized version of the image’s short name from which this container is created.
+                                    The alias of the image.
                                     As this Maven plugin does not currently remove Docker containers when Maven build is interrupted,
                                     a unique name should prevent running multiple concurrent builds.
                                     -->
-                                    <containerNamePattern>%n</containerNamePattern>
+                                    <containerNamePattern>%a</containerNamePattern>
                                     <wait>
                                         <exit>0</exit>
                                         <time>${testkit.timeout}</time>
@@ -110,10 +112,36 @@
                             </goals>
                         </execution>
                         <execution>
+                            <!-- Use async backend to test async driver. -->
+                            <id>run-testkit-async</id>
+                            <phase>integration-test</phase>
+                            <goals>
+                                <!-- Testkit is expected to exit automatically. -->
+                                <goal>start</goal>
+                            </goals>
+                            <configuration>
+                                <images>
+                                    <image>
+                                        <alias>tklnchr</alias>
+                                        <run>
+                                            <containerNamePattern>${testkit.async.name.pattern}</containerNamePattern>
+                                            <env>
+                                                <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit-async</TESTKIT_CHECKOUT_PATH>
+                                                <TEST_BACKEND_SERVER>async</TEST_BACKEND_SERVER>
+                                            </env>
+                                            <log>
+                                                <prefix xml:space="preserve">${testkit.async.name.pattern}> </prefix>
+                                            </log>
+                                        </run>
+                                    </image>
+                                </images>
+                            </configuration>
+                        </execution>
+                        <execution>
                             <id>remove-testkit-launcher</id>
                             <phase>post-integration-test</phase>
                             <goals>
-                                <!-- This is to remove the stopped container. -->
+                                <!-- This is to remove the stopped containers. -->
                                 <goal>stop</goal>
                             </goals>
                         </execution>

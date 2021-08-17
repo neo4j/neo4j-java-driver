@@ -25,6 +25,9 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -36,6 +39,20 @@ public class DriverClose implements TestkitRequest
     public TestkitResponse process( TestkitState testkitState )
     {
         testkitState.getDrivers().get( data.getDriverId() ).close();
+        return createResponse();
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getDrivers().get( data.getDriverId() )
+                           .closeAsync()
+                           .thenApply( ignored -> createResponse() )
+                           .thenApply( Optional::of );
+    }
+
+    private Driver createResponse()
+    {
         return Driver.builder().data( Driver.DriverBody.builder().id( data.getDriverId() ).build() ).build();
     }
 
