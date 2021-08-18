@@ -26,6 +26,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
@@ -37,16 +38,22 @@ public class TransactionClose implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.txId ) )
+        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
                        .map( tx ->
                              {
                                  tx.close();
-                                 return transaction( data.txId );
+                                 return createResponse( data.getTxId() );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
     }
 
-    private Transaction transaction( String txId )
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    private Transaction createResponse( String txId )
     {
         return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
     }

@@ -30,10 +30,12 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
+import org.neo4j.driver.async.AsyncSession;
 
 @Setter
 @Getter
@@ -57,6 +59,27 @@ public class SessionRun implements TestkitRequest
         testkitState.getResults().put( newId, result );
 
         return Result.builder().data( Result.ResultBody.builder().id( newId ).build() ).build();
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        AsyncSession session = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession();
+        Query query = Optional.ofNullable( data.params )
+                              .map( params -> new Query( data.cypher, data.params ) )
+                              .orElseGet( () -> new Query( data.cypher ) );
+        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+
+        return session.runAsync( query, transactionConfig.build() )
+                      .thenApply( resultCursor ->
+                                  {
+                                      String newId = testkitState.newId();
+                                      testkitState.getResultCursors().put( newId, resultCursor );
+                                      return Result.builder().data( Result.ResultBody.builder().id( newId ).build() ).build();
+                                  } )
+                      .thenApply( Optional::of );
     }
 
     @Setter
