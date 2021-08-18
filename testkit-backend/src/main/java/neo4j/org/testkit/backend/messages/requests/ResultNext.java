@@ -26,6 +26,9 @@ import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 
@@ -42,13 +45,26 @@ public class ResultNext implements TestkitRequest
         try
         {
             Result result = testkitState.getResults().get( data.getResultId() );
-            org.neo4j.driver.Record record = result.next();
-            return Record.builder().data( Record.RecordBody.builder().values( record ).build() ).build();
+            return createResponse( result.next() );
         }
         catch ( NoSuchRecordException ignored )
         {
             return NullRecord.builder().build();
         }
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getResultCursors().get( data.getResultId() )
+                           .nextAsync()
+                           .thenApply( record -> record != null ? createResponse( record ) : NullRecord.builder().build() )
+                           .thenApply( Optional::of );
+    }
+
+    private Record createResponse( org.neo4j.driver.Record record )
+    {
+        return Record.builder().data( Record.RecordBody.builder().values( record ).build() ).build();
     }
 
     @Setter

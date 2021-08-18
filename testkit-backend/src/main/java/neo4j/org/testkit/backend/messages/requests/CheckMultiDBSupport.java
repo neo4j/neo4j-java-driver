@@ -25,6 +25,9 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -37,7 +40,25 @@ public class CheckMultiDBSupport implements TestkitRequest
     {
         String driverId = data.getDriverId();
         boolean available = testkitState.getDrivers().get( driverId ).supportsMultiDb();
-        return MultiDBSupport.builder().data( MultiDBSupport.MultiDBSupportBody.builder().available( available ).build() ).build();
+        return createResponse( available );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getDrivers().get( data.getDriverId() )
+                           .supportsMultiDbAsync()
+                           .thenApply( this::createResponse )
+                           .thenApply( Optional::of );
+    }
+
+    private MultiDBSupport createResponse( boolean available )
+    {
+        return MultiDBSupport.builder()
+                             .data( MultiDBSupport.MultiDBSupportBody.builder()
+                                                                     .available( available )
+                                                                     .build() )
+                             .build();
     }
 
     @Setter

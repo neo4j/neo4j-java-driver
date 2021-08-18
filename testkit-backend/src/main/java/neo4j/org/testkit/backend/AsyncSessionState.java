@@ -18,19 +18,22 @@
  */
 package neo4j.org.testkit.backend;
 
-import java.io.IOException;
+import lombok.Getter;
+import lombok.Setter;
 
-public class Runner
+import java.util.concurrent.CompletableFuture;
+
+import org.neo4j.driver.async.AsyncSession;
+
+@Getter
+@Setter
+public class AsyncSessionState
 {
-    public static void main( String[] args ) throws IOException, InterruptedException
+    public AsyncSession session;
+    public CompletableFuture<Void> txWorkFuture;
+
+    public AsyncSessionState( AsyncSession session )
     {
-        if ( args.length > 0 && args[0].equals( "async" ) )
-        {
-            new AsyncBackendServer().run();
-        }
-        else
-        {
-            new BackendServer().run();
-        }
+        this.session = session;
     }
 }

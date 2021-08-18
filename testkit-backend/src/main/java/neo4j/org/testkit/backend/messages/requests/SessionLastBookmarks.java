@@ -27,6 +27,8 @@ import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
 
@@ -45,9 +47,21 @@ public class SessionLastBookmarks implements TestkitRequest
                        .map( session ->
                              {
                                  Bookmark bookmark = testkitState.getSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-                                 return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();
+                                 return createResponse( bookmark );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        Bookmark bookmark = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
+        return CompletableFuture.completedFuture( Optional.of( createResponse( bookmark ) ) );
+    }
+
+    private Bookmarks createResponse( Bookmark bookmark )
+    {
+        return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();
     }
 
     @Setter

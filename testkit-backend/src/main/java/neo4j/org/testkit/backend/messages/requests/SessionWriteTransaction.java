@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
@@ -29,9 +30,13 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
+import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.async.AsyncTransactionWork;
 
 @Setter
 @Getter
@@ -50,6 +55,28 @@ public class SessionWriteTransaction implements TestkitRequest
                                  session.writeTransaction( handle( testkitState, sessionState ) );
                                  return retryableDone();
                              } ).orElseThrow( () -> new RuntimeException( "Could not find session" ) );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
+        AsyncSession session = sessionState.getSession();
+
+        AsyncTransactionWork<CompletionStage<Void>> workWrapper =
+                tx ->
+                {
+                    String txId = testkitState.newId();
+                    testkitState.getAsyncTransactions().put( txId, tx );
+                    testkitState.getResponseWriter().accept( retryableTry( txId ) );
+                    CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                    sessionState.setTxWorkFuture( tryResult );
+                    return tryResult;
+                };
+
+        return session.writeTransactionAsync( workWrapper )
+                      .thenApply( nothing -> retryableDone() )
+                      .thenApply( Optional::of );
     }
 
     private TransactionWork<Integer> handle( TestkitState testkitState, SessionState sessionState )

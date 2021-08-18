@@ -25,6 +25,9 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -37,6 +40,21 @@ public class VerifyConnectivity implements TestkitRequest
     {
         String id = data.getDriverId();
         testkitState.getDrivers().get( id ).verifyConnectivity();
+        return createResponse( id );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        String id = data.getDriverId();
+        return testkitState.getDrivers().get( id )
+                           .verifyConnectivityAsync()
+                           .thenApply( ignored -> createResponse( id ) )
+                           .thenApply( Optional::of );
+    }
+
+    private Driver createResponse( String id )
+    {
         return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
     }
 

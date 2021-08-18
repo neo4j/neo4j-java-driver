@@ -21,13 +21,18 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
@@ -45,6 +50,19 @@ public class NewSession implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
+        return createSessionStateAndResponse( testkitState, this::createSessionState, testkitState.getSessionStates() );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return CompletableFuture.completedFuture(
+                Optional.of( createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState.getAsyncSessionStates() ) ) );
+    }
+
+    private <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<Driver,SessionConfig,T> sessionStateProducer,
+                                                               Map<String,T> sessionStateContainer )
+    {
         Driver driver = testkitState.getDrivers().get( data.getDriverId() );
         AccessMode formattedAccessMode = data.getAccessMode().equals( "r" ) ? AccessMode.READ : AccessMode.WRITE;
         SessionConfig.Builder builder = SessionConfig.builder()
@@ -53,7 +71,7 @@ public class NewSession implements TestkitRequest
         Optional.ofNullable( data.bookmarks )
                 .map( bookmarks -> bookmarks.stream().map( InternalBookmark::parse ).collect( Collectors.toList() ) )
                 .ifPresent( builder::withBookmarks );
-        
+
         Optional.ofNullable( data.database ).ifPresent( builder::withDatabase );
 
         if ( data.getFetchSize() != 0 )
@@ -61,11 +79,21 @@ public class NewSession implements TestkitRequest
             builder.withFetchSize( data.getFetchSize() );
         }
 
-        org.neo4j.driver.Session session = driver.session( builder.build() );
         String newId = testkitState.newId();
-        testkitState.getSessionStates().put( newId, new SessionState( session ) );
+        T sessionState = sessionStateProducer.apply( driver, builder.build() );
+        sessionStateContainer.put( newId, sessionState );
 
         return Session.builder().data( Session.SessionBody.builder().id( newId ).build() ).build();
+    }
+
+    private SessionState createSessionState( Driver driver, SessionConfig sessionConfig )
+    {
+        return new SessionState( driver.session( sessionConfig ) );
+    }
+
+    private AsyncSessionState createAsyncSessionState( Driver driver, SessionConfig sessionConfig )
+    {
+        return new AsyncSessionState( driver.asyncSession( sessionConfig ) );
     }
 
     @Setter

@@ -25,6 +25,9 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -36,6 +39,20 @@ public class SessionClose implements TestkitRequest
     public TestkitResponse process( TestkitState testkitState )
     {
         testkitState.getSessionStates().get( data.getSessionId() ).getSession().close();
+        return createResponse();
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession()
+                           .closeAsync()
+                           .thenApply( ignored -> createResponse() )
+                           .thenApply( Optional::of );
+    }
+
+    private Session createResponse()
+    {
         return Session.builder().data( Session.SessionBody.builder().id( data.getSessionId() ).build() ).build();
     }
 
