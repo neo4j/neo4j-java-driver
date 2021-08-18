@@ -32,6 +32,8 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.AuthToken;
@@ -104,6 +106,12 @@ public class NewDriver implements TestkitRequest
         }
         testkitState.getDrivers().putIfAbsent( id, driver );
         return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
     }
 
     private ServerAddressResolver callbackResolver( TestkitState testkitState )

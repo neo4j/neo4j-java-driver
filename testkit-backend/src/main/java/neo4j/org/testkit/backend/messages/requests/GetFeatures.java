@@ -26,26 +26,46 @@ import neo4j.org.testkit.backend.messages.responses.FeatureList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
 @NoArgsConstructor
 public class GetFeatures implements TestkitRequest
 {
-    private static final Set<String> FEATURES = new HashSet<>( Arrays.asList(
+    private static final Set<String> COMMON_FEATURES = new HashSet<>( Arrays.asList(
             "AuthorizationExpiredTreatment",
             "Optimization:PullPipelining",
             "ConfHint:connection.recv_timeout_seconds",
-            "Temporary:TransactionClose",
             "Temporary:DriverFetchSize",
             "Temporary:DriverMaxTxRetryTime"
+    ) );
+
+    private static final Set<String> SYNC_FEATURES = new HashSet<>( Collections.singletonList(
+            "Temporary:TransactionClose"
     ) );
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return FeatureList.builder().data( FeatureList.FeatureListBody.builder().features( FEATURES ).build() ).build();
+        Set<String> features = new HashSet<>( COMMON_FEATURES );
+        features.addAll( SYNC_FEATURES );
+        return createResponse( features );
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return CompletableFuture.completedFuture( Optional.of( createResponse( COMMON_FEATURES ) ) );
+    }
+
+    private FeatureList createResponse( Set<String> features )
+    {
+        return FeatureList.builder().data( FeatureList.FeatureListBody.builder().features( features ).build() ).build();
     }
 }

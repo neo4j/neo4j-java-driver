@@ -26,6 +26,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @Getter
 @NoArgsConstructor
@@ -37,16 +38,25 @@ public class TransactionCommit implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.txId ) )
+        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
                        .map( tx ->
                              {
                                  tx.commit();
-                                 return transaction( data.txId );
+                                 return createResponse( data.getTxId() );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
     }
 
-    private Transaction transaction( String txId )
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getAsyncTransactions().get( data.getTxId() )
+                           .commitAsync()
+                           .thenApply( ignored -> createResponse( data.getTxId() ) )
+                           .thenApply( Optional::of );
+    }
+
+    private Transaction createResponse( String txId )
     {
         return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
     }

@@ -27,6 +27,8 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
@@ -56,6 +58,12 @@ public class DomainNameResolutionCompleted implements TestkitRequest
                             } )
                     .toArray( InetAddress[]::new ) );
         return null;
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Setter

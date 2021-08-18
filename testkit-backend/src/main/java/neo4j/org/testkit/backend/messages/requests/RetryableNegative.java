@@ -21,9 +21,14 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
@@ -43,6 +48,23 @@ public class RetryableNegative implements TestkitRequest
         sessionState.setRetryableState( -1 );
         sessionState.setRetryableErrorId( data.errorId );
         return null;
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
+        Throwable throwable;
+        if ( !"".equals( data.getErrorId() ) )
+        {
+            throwable = testkitState.getErrors().get( data.getErrorId() );
+        }
+        else
+        {
+            throwable = new RuntimeException( "Error from client in retryable tx" );
+        }
+        sessionState.getTxWorkFuture().completeExceptionally( throwable );
+        return CompletableFuture.completedFuture( Optional.empty() );
     }
 
     @Setter

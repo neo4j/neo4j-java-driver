@@ -26,6 +26,9 @@ import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Summary;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 
@@ -42,22 +45,35 @@ public class ResultConsume implements TestkitRequest
         try
         {
             Result result = testkitState.getResults().get( data.getResultId() );
-            org.neo4j.driver.summary.ResultSummary summary = result.consume();
-            Summary.ServerInfo serverInfo = Summary.ServerInfo.builder()
-                                                              .protocolVersion( summary.server().protocolVersion() )
-                                                              .agent( summary.server().agent() )
-                                                              .build();
-            Summary.SummaryBody data = Summary.SummaryBody.builder()
-                                                          .serverInfo( serverInfo )
-                                                          .build();
-            return Summary.builder()
-                          .data( data )
-                          .build();
+            return createResponse( result.consume() );
         }
         catch ( NoSuchRecordException ignored )
         {
             return NullRecord.builder().build();
         }
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getResultCursors().get( data.getResultId() )
+                           .consumeAsync()
+                           .thenApply( this::createResponse )
+                           .thenApply( Optional::of );
+    }
+
+    private Summary createResponse( org.neo4j.driver.summary.ResultSummary summary )
+    {
+        Summary.ServerInfo serverInfo = Summary.ServerInfo.builder()
+                                                          .protocolVersion( summary.server().protocolVersion() )
+                                                          .agent( summary.server().agent() )
+                                                          .build();
+        Summary.SummaryBody data = Summary.SummaryBody.builder()
+                                                      .serverInfo( serverInfo )
+                                                      .build();
+        return Summary.builder()
+                      .data( data )
+                      .build();
     }
 
     @Setter

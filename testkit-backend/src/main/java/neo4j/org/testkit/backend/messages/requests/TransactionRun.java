@@ -30,6 +30,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
@@ -41,19 +42,33 @@ public class TransactionRun implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.txId ) )
+        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
                        .map( tx ->
-                                     tx.run( data.cypher, data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
+                                     tx.run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
                        .map( result ->
                              {
                                  String resultId = testkitState.newId();
                                  testkitState.getResults().put( resultId, result );
-                                 return result( resultId );
+                                 return createResponse( resultId );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
     }
 
-    private Result result( String resultId )
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        return testkitState.getAsyncTransactions().get( data.getTxId() )
+                           .runAsync( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() )
+                           .thenApply( resultCursor ->
+                                       {
+                                           String resultId = testkitState.newId();
+                                           testkitState.getResultCursors().put( resultId, resultCursor );
+                                           return createResponse( resultId );
+                                       } )
+                           .thenApply( Optional::of );
+    }
+
+    private Result createResponse( String resultId )
     {
         return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
     }

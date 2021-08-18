@@ -16,21 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend;
+package neo4j.org.testkit.backend.messages.responses;
 
-import java.io.IOException;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
-public class Runner
+@Setter
+@Getter
+@Builder
+public class SkipTest implements TestkitResponse
 {
-    public static void main( String[] args ) throws IOException, InterruptedException
+    private SkipTestBody data;
+
+    @Override
+    public String testkitName()
     {
-        if ( args.length > 0 && args[0].equals( "async" ) )
-        {
-            new AsyncBackendServer().run();
-        }
-        else
-        {
-            new BackendServer().run();
-        }
+        return "SkipTest";
+    }
+
+    @Setter
+    @Getter
+    @Builder
+    public static class SkipTestBody
+    {
+        private final String reason;
     }
 }

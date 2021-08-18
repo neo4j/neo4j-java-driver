@@ -10,5 +10,5 @@ if __name__ == "__main__":
     err = open("/artifacts/backenderr.log", "w")
     out = open("/artifacts/backendout.log", "w")
     subprocess.check_call(
-        ["java", "-jar", "testkit-backend/target/testkit-backend.jar"], stdout=out, stderr=err)
+        ["java", "-jar", "testkit-backend/target/testkit-backend.jar", os.getenv('TEST_BACKEND_SERVER', '')], stdout=out, stderr=err)
 

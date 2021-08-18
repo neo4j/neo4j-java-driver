@@ -23,19 +23,57 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RunTest;
+import neo4j.org.testkit.backend.messages.responses.SkipTest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
 @NoArgsConstructor
 public class StartTest implements TestkitRequest
 {
+    private static final Map<String,String> ASYNC_SKIP_PATTERN_TO_REASON = new HashMap<>();
+
+    static
+    {
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_fail_when_driver_closed_using_session_run$", "Does not throw error" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_read_successfully_on_empty_discovery_result_using_session_run$", "Resolver not implemented" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_request_rt_from_all_initial_routers_until_successful", "Resolver not implemented" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_revert_to_initial_router_if_known_router_throws_protocol_errors", "Resolver not implemented" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_successfully_acquire_rt_when_router_ip_changes$", "Resolver not implemented" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_use_resolver_during_rediscovery_when_existing_routers_fail$", "Resolver not implemented" );
+        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*.test_should_reject_server_using_verify_connectivity_bolt_3x0", "Does not error as expected" );
+    }
+
     private StartTestBody data;
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
         return RunTest.builder().build();
+    }
+
+    @Override
+    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    {
+        TestkitResponse testkitResponse = ASYNC_SKIP_PATTERN_TO_REASON
+                .entrySet()
+                .stream()
+                .filter( entry -> data.getTestName().matches( entry.getKey() ) )
+                .findFirst()
+                .map( entry -> (TestkitResponse) SkipTest.builder()
+                                                         .data( SkipTest.SkipTestBody.builder()
+                                                                                     .reason( entry.getValue() )
+                                                                                     .build() )
+                                                         .build() )
+                .orElseGet( () -> RunTest.builder().build() );
+
+        return CompletableFuture.completedFuture( Optional.of( testkitResponse ) );
     }
 
     @Setter
