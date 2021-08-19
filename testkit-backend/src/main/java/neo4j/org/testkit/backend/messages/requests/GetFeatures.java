@@ -43,7 +43,8 @@ public class GetFeatures implements TestkitRequest
             "Optimization:PullPipelining",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
-            "Temporary:DriverMaxTxRetryTime"
+            "Temporary:DriverMaxTxRetryTime",
+            "Temporary:ResultList"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Collections.singletonList(
