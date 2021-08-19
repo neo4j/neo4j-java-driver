@@ -25,24 +25,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
 import org.neo4j.driver.util.StubServerController;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
-import static org.neo4j.driver.util.TestUtil.await;
 
 class DirectDriverBoltKitIT
 {
@@ -72,53 +66,6 @@ class DirectDriverBoltKitIT
                 RxResult result = session.run( "MATCH (n) RETURN n.name" );
                 Flux<String> records = Flux.from( result.records() ).limitRate( 2 ).map( record -> record.get( "n.name" ).asString() );
                 StepVerifier.create( records ).expectNext( "Bob", "Alice", "Tina" ).verifyComplete();
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldOnlyPullRecordsWhenNeededAsyncSession() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4_buffering.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                AsyncSession session = driver.asyncSession( builder().withFetchSize( 2 ).build() );
-
-                ArrayList<String> resultList = new ArrayList<>();
-
-                await( session.runAsync( "MATCH (n) RETURN n.name" )
-                              .thenCompose( resultCursor ->
-                                                    resultCursor.forEachAsync( record -> resultList.add( record.get( 0 ).asString() ) ) ) );
-
-                assertEquals( resultList, asList( "Bob", "Alice", "Tina", "Frank", "Daisy", "Clive" ) );
-            }
-        }
-        finally
-        {
-            assertEquals( 0, server.exitStatus() );
-        }
-    }
-
-    @Test
-    void shouldPullAllRecordsOnListAsyncWhenOverWatermark() throws Exception
-    {
-        StubServer server = stubController.startStub( "streaming_records_v4_list_async.script", 9001 );
-        try
-        {
-            try ( Driver driver = GraphDatabase.driver( "bolt://localhost:9001", INSECURE_CONFIG ) )
-            {
-                AsyncSession session = driver.asyncSession( builder().withFetchSize( 10 ).build() );
-
-                ResultCursor cursor = await( session.runAsync( "MATCH (n) RETURN n.name" ) );
-                List<String> records = await( cursor.listAsync( record -> record.get( 0 ).asString() ) );
-
-                assertEquals( records, asList( "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ) );
             }
         }
         finally
