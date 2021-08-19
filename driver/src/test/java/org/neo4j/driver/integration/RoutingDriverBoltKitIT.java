@@ -27,15 +27,12 @@ import reactor.test.StepVerifier;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Record;
-import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.reactive.RxResult;
@@ -43,7 +40,6 @@ import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.util.StubServer;
 import org.neo4j.driver.util.StubServerController;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,41 +73,6 @@ class RoutingDriverBoltKitIT
     public void killServers()
     {
         stubController.reset();
-    }
-
-    // Async is not currently supported in testkit.
-    @Test
-    void shouldHandleLeaderSwitchAndRetryWhenWritingInTxFunctionAsync() throws IOException, InterruptedException
-    {
-        // Given
-        StubServer server = stubController.startStub( "acquire_endpoints_twice_v4.script", 9001 );
-
-        // START a write server that fails on the first write attempt but then succeeds on the second
-        StubServer writeServer = stubController.startStub( "not_able_to_write_server_tx_func_retries.script", 9007 );
-        URI uri = URI.create( "neo4j://127.0.0.1:9001" );
-
-        Driver driver = GraphDatabase.driver( uri, Config.builder().withMaxTransactionRetryTime( 1, TimeUnit.MILLISECONDS ).build() );
-        AsyncSession session = driver.asyncSession( builder().withDatabase( "mydatabase" ).build() );
-        List<String> names = Futures.blockingGet( session.writeTransactionAsync(
-                tx -> tx.runAsync( "RETURN 1" )
-                        .thenComposeAsync( ignored -> {
-                            try
-                            {
-                                Thread.sleep( 100 );
-                            }
-                            catch ( InterruptedException ex )
-                            {
-                            }
-                            return tx.runAsync( "MATCH (n) RETURN n.name" );
-                        } )
-                        .thenComposeAsync( cursor -> cursor.listAsync( RoutingDriverBoltKitIT::extractNameField ) ) ) );
-
-        assertEquals( asList( "Foo", "Bar" ), names );
-
-        // Finally
-        driver.close();
-        assertThat( server.exitStatus(), equalTo( 0 ) );
-        assertThat( writeServer.exitStatus(), equalTo( 0 ) );
     }
 
     private static String extractNameField( Record record )

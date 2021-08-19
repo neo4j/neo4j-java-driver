@@ -39,7 +39,8 @@ import java.util.concurrent.CompletionStage;
         @JsonSubTypes.Type( ResolverResolutionCompleted.class ), @JsonSubTypes.Type( CheckMultiDBSupport.class ),
         @JsonSubTypes.Type( DomainNameResolutionCompleted.class ), @JsonSubTypes.Type( StartTest.class ),
         @JsonSubTypes.Type( TransactionRollback.class ), @JsonSubTypes.Type( GetFeatures.class ),
-        @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class )
+        @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class ),
+        @JsonSubTypes.Type( ResultList.class )
 } )
 public interface TestkitRequest
 {
