@@ -30,15 +30,20 @@ import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
@@ -128,9 +133,20 @@ public class NewDriver implements TestkitRequest
                     ResolverResolutionRequired.builder()
                                               .data( body )
                                               .build();
-            testkitState.getResponseWriter().accept( response );
-            testkitState.getProcessor().get();
-            return testkitState.getIdToServerAddresses().remove( callbackId );
+            CompletionStage<TestkitCallbackResult> c = testkitState.dispatchTestkitCallback( response );
+            ResolverResolutionCompleted resolutionCompleted;
+            try
+            {
+                resolutionCompleted = (ResolverResolutionCompleted) c.toCompletableFuture().get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            return resolutionCompleted.getData().getAddresses()
+                                      .stream()
+                                      .map( BoltServerAddress::new )
+                                      .collect( Collectors.toCollection( LinkedHashSet::new ) );
         };
     }
 
@@ -144,13 +160,37 @@ public class NewDriver implements TestkitRequest
                                                                                  .id( callbackId )
                                                                                  .name( address )
                                                                                  .build();
-            DomainNameResolutionRequired response =
+            DomainNameResolutionRequired callback =
                     DomainNameResolutionRequired.builder()
                                                 .data( body )
                                                 .build();
-            testkitState.getResponseWriter().accept( response );
-            testkitState.getProcessor().get();
-            return testkitState.getIdToResolvedAddresses().remove( callbackId );
+
+            CompletionStage<TestkitCallbackResult> callbackStage = testkitState.dispatchTestkitCallback( callback );
+            DomainNameResolutionCompleted resolutionCompleted;
+            try
+            {
+                resolutionCompleted = (DomainNameResolutionCompleted) callbackStage.toCompletableFuture().get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Unexpected failure during Testkit callback", e );
+            }
+
+            return resolutionCompleted.getData().getAddresses()
+                                      .stream()
+                                      .map(
+                                              addr ->
+                                              {
+                                                  try
+                                                  {
+                                                      return InetAddress.getByName( addr );
+                                                  }
+                                                  catch ( UnknownHostException e )
+                                                  {
+                                                      throw new RuntimeException( e );
+                                                  }
+                                              } )
+                                      .toArray( InetAddress[]::new );
         };
     }
 

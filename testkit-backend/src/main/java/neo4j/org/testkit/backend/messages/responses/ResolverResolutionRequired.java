@@ -25,7 +25,7 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class ResolverResolutionRequired implements TestkitResponse
+public class ResolverResolutionRequired implements TestkitCallback
 {
     private ResolverResolutionRequiredBody data;
 
@@ -33,6 +33,12 @@ public class ResolverResolutionRequired implements TestkitResponse
     public String testkitName()
     {
         return "ResolverResolutionRequired";
+    }
+
+    @Override
+    public String getCallbackId()
+    {
+        return data.getId();
     }
 
     @Setter

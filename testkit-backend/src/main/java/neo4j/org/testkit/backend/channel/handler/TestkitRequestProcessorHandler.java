@@ -27,6 +27,7 @@ import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -49,20 +50,25 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         TestkitRequest testkitRequest = (TestkitRequest) msg;
-        try
-        {
-            testkitRequest.processAsync( testkitState )
-                          .thenAccept( responseOpt -> responseOpt.ifPresent( ctx::writeAndFlush ) )
-                          .exceptionally( throwable ->
-                                          {
-                                              ctx.writeAndFlush( createErrorResponse( throwable ) );
-                                              return null;
-                                          } );
-        }
-        catch ( Throwable throwable )
-        {
-            ctx.writeAndFlush( createErrorResponse( throwable ) );
-        }
+        // Processing is done in a separate thread to avoid blocking EventLoop because some testing logic, like resolvers support, is blocking.
+        CompletableFuture.runAsync(
+                () ->
+                {
+                    try
+                    {
+                        testkitRequest.processAsync( testkitState )
+                                      .thenAccept( responseOpt -> responseOpt.ifPresent( ctx::writeAndFlush ) )
+                                      .exceptionally( throwable ->
+                                                      {
+                                                          ctx.writeAndFlush( createErrorResponse( throwable ) );
+                                                          return null;
+                                                      } );
+                    }
+                    catch ( Throwable throwable )
+                    {
+                        ctx.writeAndFlush( createErrorResponse( throwable ) );
+                    }
+                } );
     }
 
     private TestkitResponse createErrorResponse( Throwable throwable )

@@ -18,36 +18,13 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 
-@Setter
-@Getter
-@Builder
-public class DomainNameResolutionRequired implements TestkitCallback
+/**
+ * This is a special type of {@link TestkitResponse} that is typically sent during driver action processing to request some action or data from Testkit, which
+ * must respond with {@link TestkitCallbackResult}.
+ */
+public interface TestkitCallback extends TestkitResponse
 {
-    private DomainNameResolutionRequiredBody data;
-
-    @Override
-    public String testkitName()
-    {
-        return "DomainNameResolutionRequired";
-    }
-
-    @Override
-    public String getCallbackId()
-    {
-        return data.getId();
-    }
-
-    @Setter
-    @Getter
-    @Builder
-    public static class DomainNameResolutionRequiredBody
-    {
-        private String id;
-
-        private String name;
-    }
+    String getCallbackId();
 }
