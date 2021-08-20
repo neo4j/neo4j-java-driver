@@ -19,12 +19,14 @@
 package neo4j.org.testkit.backend;
 
 import lombok.Getter;
+import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
+import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -35,7 +37,6 @@ import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
-import org.neo4j.driver.net.ServerAddress;
 
 @Getter
 public class TestkitState
@@ -52,13 +53,22 @@ public class TestkitState
     private int idGenerator = 0;
     private final Consumer<TestkitResponse> responseWriter;
     private final Supplier<Boolean> processor;
-    private final Map<String,Set<ServerAddress>> idToServerAddresses = new HashMap<>();
-    private final Map<String,InetAddress[]> idToResolvedAddresses = new HashMap<>();
+    private final Map<String,CompletableFuture<TestkitCallbackResult>> callbackIdToFuture = new HashMap<>();
 
     public TestkitState( Consumer<TestkitResponse> responseWriter, Supplier<Boolean> processor )
     {
         this.responseWriter = responseWriter;
         this.processor = processor;
+    }
+
+    public CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( TestkitCallback response )
+    {
+        CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
+        callbackIdToFuture.put( response.getCallbackId(), future );
+        responseWriter.accept( response );
+        // This is required for sync backend, but should be removed during migration to Netty implementation.
+        processor.get();
+        return future;
     }
 
     public String newId()

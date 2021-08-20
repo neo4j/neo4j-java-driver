@@ -21,55 +21,26 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
 @NoArgsConstructor
-public class DomainNameResolutionCompleted implements TestkitRequest
+public class DomainNameResolutionCompleted implements TestkitCallbackResult
 {
     private DomainNameResolutionCompletedBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
+    public String getCallbackId()
     {
-        testkitState.getIdToResolvedAddresses().put(
-                data.getRequestId(),
-                data.getAddresses()
-                    .stream()
-                    .map(
-                            addr ->
-                            {
-                                try
-                                {
-                                    return InetAddress.getByName( addr );
-                                }
-                                catch ( UnknownHostException e )
-                                {
-                                    throw new RuntimeException( e );
-                                }
-                            } )
-                    .toArray( InetAddress[]::new ) );
-        return null;
-    }
-
-    @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException();
+        return data.getRequestId();
     }
 
     @Setter
     @Getter
     @NoArgsConstructor
-    private static class DomainNameResolutionCompletedBody
+    public static class DomainNameResolutionCompletedBody
     {
         private String requestId;
         private List<String> addresses;
