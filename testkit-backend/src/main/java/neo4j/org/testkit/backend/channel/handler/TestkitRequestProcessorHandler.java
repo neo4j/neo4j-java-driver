@@ -36,7 +36,7 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 {
-    private final TestkitState testkitState = new TestkitState( this::writeAndFlush, () -> true );
+    private final TestkitState testkitState = new TestkitState( this::writeAndFlush );
     private Channel channel;
 
     @Override

@@ -18,16 +18,19 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CommandProcessor;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
+import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.net.InetAddress;
@@ -56,9 +59,15 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class NewDriver implements TestkitRequest
 {
+    private final CommandProcessor commandProcessor;
+
+    public NewDriver( @JacksonInject(CommandProcessor.COMMAND_PROCESSOR_ID) CommandProcessor commandProcessor )
+    {
+        this.commandProcessor = commandProcessor;
+    }
+
     private NewDriverBody data;
 
     @Override
@@ -92,7 +101,7 @@ public class NewDriver implements TestkitRequest
         DomainNameResolver domainNameResolver = DefaultDomainNameResolver.getInstance();
         if ( data.isDomainNameResolverRegistered() )
         {
-            domainNameResolver = callbackDomainNameResolver( testkitState );
+            domainNameResolver = callbackDomainNameResolver( commandProcessor, testkitState );
         }
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         Optional.ofNullable( data.connectionTimeoutMs ).ifPresent( timeout -> configBuilder.withConnectionTimeout( timeout, TimeUnit.MILLISECONDS ) );
@@ -133,7 +142,7 @@ public class NewDriver implements TestkitRequest
                     ResolverResolutionRequired.builder()
                                               .data( body )
                                               .build();
-            CompletionStage<TestkitCallbackResult> c = testkitState.dispatchTestkitCallback( response );
+            CompletionStage<TestkitCallbackResult> c = dispatchTestkitCallback( commandProcessor, testkitState, response );
             ResolverResolutionCompleted resolutionCompleted;
             try
             {
@@ -150,7 +159,7 @@ public class NewDriver implements TestkitRequest
         };
     }
 
-    private DomainNameResolver callbackDomainNameResolver( TestkitState testkitState )
+    private DomainNameResolver callbackDomainNameResolver( CommandProcessor commandProcessor, TestkitState testkitState )
     {
         return address ->
         {
@@ -165,7 +174,7 @@ public class NewDriver implements TestkitRequest
                                                 .data( body )
                                                 .build();
 
-            CompletionStage<TestkitCallbackResult> callbackStage = testkitState.dispatchTestkitCallback( callback );
+            CompletionStage<TestkitCallbackResult> callbackStage = dispatchTestkitCallback( commandProcessor, testkitState, callback );
             DomainNameResolutionCompleted resolutionCompleted;
             try
             {
@@ -192,6 +201,17 @@ public class NewDriver implements TestkitRequest
                                               } )
                                       .toArray( InetAddress[]::new );
         };
+    }
+
+    private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( CommandProcessor commandProcessor, TestkitState testkitState,
+                                                                            TestkitCallback response )
+    {
+        CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
+        testkitState.getCallbackIdToFuture().put( response.getCallbackId(), future );
+        testkitState.getResponseWriter().accept( response );
+        // This is required for sync backend, but should be removed during migration to Netty implementation.
+        commandProcessor.process();
+        return future;
     }
 
     private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, RetrySettings retrySettings, DomainNameResolver domainNameResolver,

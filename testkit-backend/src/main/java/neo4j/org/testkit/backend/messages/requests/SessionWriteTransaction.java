@@ -18,10 +18,12 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.CommandProcessor;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
@@ -40,10 +42,16 @@ import org.neo4j.driver.async.AsyncTransactionWork;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionWriteTransaction implements TestkitRequest
 {
+    private final CommandProcessor commandProcessor;
+
     private SessionWriteTransactionBody data;
+
+    public SessionWriteTransaction( @JacksonInject(CommandProcessor.COMMAND_PROCESSOR_ID) CommandProcessor commandProcessor )
+    {
+        this.commandProcessor = commandProcessor;
+    }
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
@@ -92,7 +100,7 @@ public class SessionWriteTransaction implements TestkitRequest
             while ( true )
             {
                 // Process commands as usual but blocking in here
-                testkitState.getProcessor().get();
+                commandProcessor.process();
 
                 // Check if state changed on session
                 switch ( sessionState.retryableState )

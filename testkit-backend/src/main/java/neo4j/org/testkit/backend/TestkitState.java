@@ -18,17 +18,16 @@
  */
 package neo4j.org.testkit.backend;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
-import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
@@ -50,29 +49,18 @@ public class TestkitState
     private final Map<String,Transaction> transactions = new HashMap<>();
     private final Map<String,AsyncTransaction> asyncTransactions = new HashMap<>();
     private final Map<String,Neo4jException> errors = new HashMap<>();
-    private int idGenerator = 0;
+    @Getter( AccessLevel.NONE )
+    private final AtomicInteger idGenerator = new AtomicInteger( 0 );
     private final Consumer<TestkitResponse> responseWriter;
-    private final Supplier<Boolean> processor;
     private final Map<String,CompletableFuture<TestkitCallbackResult>> callbackIdToFuture = new HashMap<>();
 
-    public TestkitState( Consumer<TestkitResponse> responseWriter, Supplier<Boolean> processor )
+    public TestkitState( Consumer<TestkitResponse> responseWriter )
     {
         this.responseWriter = responseWriter;
-        this.processor = processor;
-    }
-
-    public CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( TestkitCallback response )
-    {
-        CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
-        callbackIdToFuture.put( response.getCallbackId(), future );
-        responseWriter.accept( response );
-        // This is required for sync backend, but should be removed during migration to Netty implementation.
-        processor.get();
-        return future;
     }
 
     public String newId()
     {
-        return String.valueOf( idGenerator++ );
+        return String.valueOf( idGenerator.getAndIncrement() );
     }
 }
