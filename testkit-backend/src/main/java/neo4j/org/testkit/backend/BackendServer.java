@@ -50,7 +50,7 @@ public class BackendServer
             System.out.println( "Handling connection from: " + clientSocket.getRemoteSocketAddress() );
             BufferedReader in = new BufferedReader( new InputStreamReader( clientSocket.getInputStream() ) );
             BufferedWriter out = new BufferedWriter( new OutputStreamWriter( clientSocket.getOutputStream() ) );
-            CommandProcessor commandProcessor = new CommandProcessor( in, out );
+            CommandProcessor commandProcessor = new DefaultCommandProcessor( in, out );
 
             boolean cont = true;
             while ( cont )

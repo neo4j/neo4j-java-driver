@@ -20,13 +20,14 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import neo4j.org.testkit.backend.CommandProcessor;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "name" )
+@JsonTypeInfo( use = JsonTypeInfo.Id.NAME, property = "name" )
 @JsonSubTypes( {
         @JsonSubTypes.Type( NewDriver.class ), @JsonSubTypes.Type( NewSession.class ),
         @JsonSubTypes.Type( SessionRun.class ), @JsonSubTypes.Type( ResultNext.class ),
