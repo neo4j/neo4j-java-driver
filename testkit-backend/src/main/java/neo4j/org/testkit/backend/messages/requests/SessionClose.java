@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
@@ -30,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionClose implements TestkitRequest
 {
     private SessionCloseBody data;
@@ -58,7 +56,6 @@ public class SessionClose implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     private static class SessionCloseBody
     {
         private String sessionId;

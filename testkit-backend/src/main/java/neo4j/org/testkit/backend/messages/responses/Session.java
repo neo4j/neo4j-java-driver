@@ -20,9 +20,7 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
 @Builder
 public class Session implements TestkitResponse
@@ -35,7 +33,6 @@ public class Session implements TestkitResponse
         return "Session";
     }
 
-    @Setter
     @Getter
     @Builder
     public static class SessionBody

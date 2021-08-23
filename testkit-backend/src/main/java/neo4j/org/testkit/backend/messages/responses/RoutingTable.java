@@ -20,11 +20,9 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
-@Setter
 @Getter
 @Builder
 public class RoutingTable implements TestkitResponse
@@ -37,7 +35,6 @@ public class RoutingTable implements TestkitResponse
         return "RoutingTable";
     }
 
-    @Setter
     @Getter
     @Builder
     public static class RoutingTableBody

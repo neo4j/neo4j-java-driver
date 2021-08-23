@@ -20,7 +20,6 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.CommandProcessor;
@@ -63,7 +62,7 @@ public class NewDriver implements TestkitRequest
 {
     private final CommandProcessor commandProcessor;
 
-    public NewDriver( @JacksonInject(CommandProcessor.COMMAND_PROCESSOR_ID) CommandProcessor commandProcessor )
+    public NewDriver( @JacksonInject( CommandProcessor.COMMAND_PROCESSOR_ID ) CommandProcessor commandProcessor )
     {
         this.commandProcessor = commandProcessor;
     }
@@ -242,7 +241,6 @@ public class NewDriver implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class NewDriverBody
     {
         private String uri;

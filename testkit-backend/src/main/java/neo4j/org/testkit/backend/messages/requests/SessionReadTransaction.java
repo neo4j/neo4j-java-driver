@@ -19,9 +19,7 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
-import lombok.Data;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.CommandProcessor;
@@ -48,7 +46,7 @@ public class SessionReadTransaction implements TestkitRequest
 
     private SessionReadTransactionBody data;
 
-    public SessionReadTransaction( @JacksonInject(CommandProcessor.COMMAND_PROCESSOR_ID) CommandProcessor commandProcessor )
+    public SessionReadTransaction( @JacksonInject( CommandProcessor.COMMAND_PROCESSOR_ID ) CommandProcessor commandProcessor )
     {
         this.commandProcessor = commandProcessor;
     }
@@ -137,7 +135,6 @@ public class SessionReadTransaction implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class SessionReadTransactionBody
     {
         private String sessionId;
