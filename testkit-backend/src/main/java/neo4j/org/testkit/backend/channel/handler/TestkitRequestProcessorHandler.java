@@ -27,8 +27,11 @@ import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
@@ -37,7 +40,13 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 {
     private final TestkitState testkitState = new TestkitState( this::writeAndFlush );
+    private final boolean asyncMode;
     private Channel channel;
+
+    public TestkitRequestProcessorHandler( boolean asyncMode )
+    {
+        this.asyncMode = asyncMode;
+    }
 
     @Override
     public void channelRegistered( ChannelHandlerContext ctx ) throws Exception
@@ -51,24 +60,40 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     {
         TestkitRequest testkitRequest = (TestkitRequest) msg;
         // Processing is done in a separate thread to avoid blocking EventLoop because some testing logic, like resolvers support, is blocking.
-        CompletableFuture.runAsync(
-                () ->
-                {
-                    try
-                    {
-                        testkitRequest.processAsync( testkitState )
-                                      .thenAccept( responseOpt -> responseOpt.ifPresent( ctx::writeAndFlush ) )
-                                      .exceptionally( throwable ->
-                                                      {
-                                                          ctx.writeAndFlush( createErrorResponse( throwable ) );
-                                                          return null;
-                                                      } );
-                    }
-                    catch ( Throwable throwable )
-                    {
-                        ctx.writeAndFlush( createErrorResponse( throwable ) );
-                    }
-                } );
+        CompletableFuture.supplyAsync(
+                                 () -> asyncMode
+                                       ? processAsync( testkitRequest, testkitState )
+                                       : process( testkitRequest, testkitState )
+                         ).thenCompose( Function.identity() )
+                         .thenApply( responseOpt ->
+                                     {
+                                         responseOpt.ifPresent( ctx::writeAndFlush );
+                                         return null;
+                                     } )
+                         .exceptionally( throwable ->
+                                         {
+                                             ctx.writeAndFlush( createErrorResponse( throwable ) );
+                                             return null;
+                                         } );
+    }
+
+    private CompletionStage<Optional<TestkitResponse>> processAsync( TestkitRequest testkitRequest, TestkitState testkitState )
+    {
+        return testkitRequest.processAsync( testkitState );
+    }
+
+    private CompletionStage<Optional<TestkitResponse>> process( TestkitRequest testkitRequest, TestkitState testkitState )
+    {
+        CompletableFuture<Optional<TestkitResponse>> result = new CompletableFuture<>();
+        try
+        {
+            result.complete( Optional.ofNullable( testkitRequest.process( testkitState ) ) );
+        }
+        catch ( Throwable t )
+        {
+            result.completeExceptionally( t );
+        }
+        return result;
     }
 
     private TestkitResponse createErrorResponse( Throwable throwable )

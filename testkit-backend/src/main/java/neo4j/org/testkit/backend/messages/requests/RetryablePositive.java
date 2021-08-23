@@ -44,7 +44,7 @@ public class RetryablePositive implements TestkitRequest
         {
             throw new RuntimeException( "Could not find session" );
         }
-        sessionState.setRetryableState( 1 );
+        sessionState.getTxWorkFuture().complete( null );
         return null;
     }
 

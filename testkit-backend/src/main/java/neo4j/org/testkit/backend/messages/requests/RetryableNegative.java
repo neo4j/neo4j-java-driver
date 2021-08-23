@@ -45,8 +45,16 @@ public class RetryableNegative implements TestkitRequest
         {
             throw new RuntimeException( "Could not find session" );
         }
-        sessionState.setRetryableState( -1 );
-        sessionState.setRetryableErrorId( data.errorId );
+        Throwable throwable;
+        if ( !"".equals( data.getErrorId() ) )
+        {
+            throwable = testkitState.getErrors().get( data.getErrorId() );
+        }
+        else
+        {
+            throwable = new RuntimeException( "Error from client in retryable tx" );
+        }
+        sessionState.getTxWorkFuture().completeExceptionally( throwable );
         return null;
     }
 
