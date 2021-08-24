@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -28,7 +27,7 @@ import neo4j.org.testkit.backend.messages.responses.Transaction;
 import java.util.concurrent.CompletionStage;
 
 @Getter
-@NoArgsConstructor
+
 @Setter
 public class TransactionRollback implements TestkitRequest
 {
@@ -53,7 +52,6 @@ public class TransactionRollback implements TestkitRequest
     }
 
     @Getter
-    @NoArgsConstructor
     @Setter
     public static class TransactionRollbackBody
     {

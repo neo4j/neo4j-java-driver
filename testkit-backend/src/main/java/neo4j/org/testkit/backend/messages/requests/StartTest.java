@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RunTest;
@@ -33,7 +32,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class StartTest implements TestkitRequest
 {
     private static final Map<String,String> ASYNC_SKIP_PATTERN_TO_REASON = new HashMap<>();
@@ -71,7 +69,6 @@ public class StartTest implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class StartTestBody
     {
         private String testName;

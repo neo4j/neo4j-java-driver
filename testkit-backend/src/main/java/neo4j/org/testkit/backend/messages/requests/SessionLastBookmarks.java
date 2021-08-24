@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
@@ -34,7 +33,6 @@ import org.neo4j.driver.Bookmark;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionLastBookmarks implements TestkitRequest
 {
     private SessionLastBookmarksBody data;
@@ -66,7 +64,6 @@ public class SessionLastBookmarks implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class SessionLastBookmarksBody
     {
         private String sessionId;

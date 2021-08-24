@@ -20,11 +20,9 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Set;
 
-@Setter
 @Getter
 @Builder
 public class FeatureList implements TestkitResponse
@@ -37,7 +35,6 @@ public class FeatureList implements TestkitResponse
         return "FeatureList";
     }
 
-    @Setter
     @Getter
     @Builder
     public static class FeatureListBody

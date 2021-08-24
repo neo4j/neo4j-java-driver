@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
@@ -41,7 +40,6 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class GetRoutingTable implements TestkitRequest
 {
     private GetRoutingTableBody data;
@@ -85,7 +83,6 @@ public class GetRoutingTable implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class GetRoutingTableBody
     {
         private String driverId;

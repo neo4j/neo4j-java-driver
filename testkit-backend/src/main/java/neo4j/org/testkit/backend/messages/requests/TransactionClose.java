@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -29,7 +28,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class TransactionClose implements TestkitRequest
 {
     private TransactionCloseBody data;
@@ -54,7 +52,6 @@ public class TransactionClose implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     private static class TransactionCloseBody
     {
         private String txId;

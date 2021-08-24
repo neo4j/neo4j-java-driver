@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -230,7 +229,6 @@ public class NewDriver implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class NewDriverBody
     {
         private String uri;

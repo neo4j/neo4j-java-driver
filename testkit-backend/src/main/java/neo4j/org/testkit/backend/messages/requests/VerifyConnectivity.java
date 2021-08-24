@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
@@ -29,7 +28,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class VerifyConnectivity implements TestkitRequest
 {
     private VerifyConnectivityBody data;
@@ -58,7 +56,6 @@ public class VerifyConnectivity implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class VerifyConnectivityBody
     {
         private String driverId;

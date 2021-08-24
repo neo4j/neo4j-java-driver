@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
@@ -29,7 +28,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class CheckMultiDBSupport implements TestkitRequest
 {
     private CheckMultiDBSupportBody data;
@@ -61,7 +59,6 @@ public class CheckMultiDBSupport implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class CheckMultiDBSupportBody
     {
         private String driverId;

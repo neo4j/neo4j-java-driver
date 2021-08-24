@@ -19,14 +19,12 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class ResolverResolutionCompleted implements TestkitCallbackResult
 {
     private ResolverResolutionCompletedBody data;
@@ -39,7 +37,6 @@ public class ResolverResolutionCompleted implements TestkitCallbackResult
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class ResolverResolutionCompletedBody
     {
         private String requestId;

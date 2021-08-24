@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
@@ -30,7 +29,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class RetryablePositive implements TestkitRequest
 {
     private RetryablePositiveBody data;
@@ -56,7 +54,6 @@ public class RetryablePositive implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class RetryablePositiveBody
     {
         private String sessionId;

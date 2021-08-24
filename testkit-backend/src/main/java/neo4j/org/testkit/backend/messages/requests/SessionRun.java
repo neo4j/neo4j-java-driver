@@ -20,7 +20,6 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
@@ -39,7 +38,6 @@ import org.neo4j.driver.async.AsyncSession;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionRun implements TestkitRequest
 {
     private SessionRunBody data;
@@ -83,7 +81,6 @@ public class SessionRun implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class SessionRunBody
     {
         @JsonDeserialize( using = TestkitCypherParamDeserializer.class )

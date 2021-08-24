@@ -20,9 +20,7 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
 @Builder
 public class ResolverResolutionRequired implements TestkitCallback
@@ -41,7 +39,6 @@ public class ResolverResolutionRequired implements TestkitCallback
         return data.getId();
     }
 
-    @Setter
     @Getter
     @Builder
     public static class ResolverResolutionRequiredBody

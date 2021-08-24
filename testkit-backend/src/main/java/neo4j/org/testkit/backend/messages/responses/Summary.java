@@ -20,9 +20,7 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
 @Builder
 public class Summary implements TestkitResponse
@@ -35,7 +33,6 @@ public class Summary implements TestkitResponse
         return "Summary";
     }
 
-    @Setter
     @Getter
     @Builder
     public static class SummaryBody
@@ -43,7 +40,6 @@ public class Summary implements TestkitResponse
         private ServerInfo serverInfo;
     }
 
-    @Setter
     @Getter
     @Builder
     public static class ServerInfo
