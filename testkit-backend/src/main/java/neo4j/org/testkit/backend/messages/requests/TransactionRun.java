@@ -20,7 +20,6 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
@@ -34,7 +33,6 @@ import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class TransactionRun implements TestkitRequest
 {
     private TransactionRunBody data;
@@ -75,7 +73,6 @@ public class TransactionRun implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class TransactionRunBody
     {
         private String txId;

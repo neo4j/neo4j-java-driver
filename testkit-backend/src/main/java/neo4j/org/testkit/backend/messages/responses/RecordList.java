@@ -20,11 +20,9 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
-@Setter
 @Getter
 @Builder
 public class RecordList implements TestkitResponse
@@ -37,7 +35,6 @@ public class RecordList implements TestkitResponse
         return "RecordList";
     }
 
-    @Setter
     @Getter
     @Builder
     public static class RecordListBody

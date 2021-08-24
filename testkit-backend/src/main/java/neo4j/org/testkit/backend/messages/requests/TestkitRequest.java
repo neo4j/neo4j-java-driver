@@ -20,7 +20,6 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import neo4j.org.testkit.backend.CommandProcessor;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 

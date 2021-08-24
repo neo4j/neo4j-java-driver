@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
@@ -34,7 +33,6 @@ import org.neo4j.driver.exceptions.NoSuchRecordException;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class ResultConsume implements TestkitRequest
 {
     private ResultConsumeBody data;
@@ -78,7 +76,6 @@ public class ResultConsume implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class ResultConsumeBody
     {
         private String resultId;
