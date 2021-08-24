@@ -29,6 +29,8 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
@@ -37,7 +39,17 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 {
     private final TestkitState testkitState = new TestkitState( this::writeAndFlush );
+    private final BiFunction<TestkitRequest, TestkitState, CompletionStage<TestkitResponse>> processorImpl;
     private Channel channel;
+
+    public TestkitRequestProcessorHandler( boolean asyncMode )
+    {
+        if (asyncMode) {
+            processorImpl = (request, state) -> request.processAsync( state );
+        } else {
+            processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
+        }
+    }
 
     @Override
     public void channelRegistered( ChannelHandlerContext ctx ) throws Exception
@@ -49,26 +61,35 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
-        TestkitRequest testkitRequest = (TestkitRequest) msg;
         // Processing is done in a separate thread to avoid blocking EventLoop because some testing logic, like resolvers support, is blocking.
-        CompletableFuture.runAsync(
-                () ->
+        CompletableFuture.supplyAsync( () -> (TestkitRequest) msg )
+                .thenCompose( request -> processorImpl.apply( request, testkitState ) )
+                .thenApply( response ->
                 {
-                    try
+                    if ( response != null )
                     {
-                        testkitRequest.processAsync( testkitState )
-                                      .thenAccept( responseOpt -> responseOpt.ifPresent( ctx::writeAndFlush ) )
-                                      .exceptionally( throwable ->
-                                                      {
-                                                          ctx.writeAndFlush( createErrorResponse( throwable ) );
-                                                          return null;
-                                                      } );
+                        ctx.writeAndFlush( response );
                     }
-                    catch ( Throwable throwable )
-                    {
-                        ctx.writeAndFlush( createErrorResponse( throwable ) );
-                    }
-                } );
+                    return null;
+                } ).exceptionally( throwable ->
+        {
+            ctx.writeAndFlush( createErrorResponse( throwable ) );
+            return null;
+        } );
+    }
+
+    private static CompletionStage<TestkitResponse> wrapSyncRequest( TestkitRequest testkitRequest, TestkitState testkitState )
+    {
+        CompletableFuture<TestkitResponse> result = new CompletableFuture<>();
+        try
+        {
+            result.complete( testkitRequest.process( testkitState ) );
+        }
+        catch ( Throwable t )
+        {
+            result.completeExceptionally( t );
+        }
+        return result;
     }
 
     private TestkitResponse createErrorResponse( Throwable throwable )

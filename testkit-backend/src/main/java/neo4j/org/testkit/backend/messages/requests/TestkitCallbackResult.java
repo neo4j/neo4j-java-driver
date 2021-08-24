@@ -22,7 +22,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -41,9 +40,9 @@ public interface TestkitCallbackResult extends TestkitRequest
     }
 
     @Override
-    default CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    default CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
-        return CompletableFuture.completedFuture( Optional.empty() );
+        return CompletableFuture.completedFuture( null );
     }
 }

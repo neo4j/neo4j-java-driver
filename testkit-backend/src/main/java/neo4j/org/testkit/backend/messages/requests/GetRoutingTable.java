@@ -26,7 +26,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -77,9 +76,9 @@ public class GetRoutingTable implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
+        return CompletableFuture.completedFuture( process( testkitState ) ) ;
     }
 
     @Setter

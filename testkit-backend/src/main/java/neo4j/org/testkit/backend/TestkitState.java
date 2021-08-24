@@ -40,13 +40,17 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 @Getter
 public class TestkitState
 {
+    private static final String TRANSACTION_NOT_FOUND_MESSAGE = "Could not find transaction";
+
     private final Map<String,Driver> drivers = new HashMap<>();
     private final Map<String,RoutingTableRegistry> routingTableRegistry = new HashMap<>();
     private final Map<String,SessionState> sessionStates = new HashMap<>();
     private final Map<String,AsyncSessionState> asyncSessionStates = new HashMap<>();
     private final Map<String,Result> results = new HashMap<>();
     private final Map<String,ResultCursor> resultCursors = new HashMap<>();
+    @Getter( AccessLevel.NONE )
     private final Map<String,Transaction> transactions = new HashMap<>();
+    @Getter( AccessLevel.NONE )
     private final Map<String,AsyncTransaction> asyncTransactions = new HashMap<>();
     private final Map<String,Neo4jException> errors = new HashMap<>();
     @Getter( AccessLevel.NONE )
@@ -62,5 +66,39 @@ public class TestkitState
     public String newId()
     {
         return String.valueOf( idGenerator.getAndIncrement() );
+    }
+
+    public String addTransaction( Transaction transaction )
+    {
+        String id = newId();
+        this.transactions.put( id, transaction );
+        return id;
+    }
+
+    public Transaction getTransaction( String id )
+    {
+        if ( !this.transactions.containsKey( id ) )
+        {
+            throw new RuntimeException( TRANSACTION_NOT_FOUND_MESSAGE );
+        }
+        return this.transactions.get( id );
+    }
+
+    public String addAsyncTransaction( AsyncTransaction transaction )
+    {
+        String id = newId();
+        this.asyncTransactions.put( id, transaction );
+        return id;
+    }
+
+    public CompletableFuture<AsyncTransaction> getAsyncTransaction( String id )
+    {
+        if ( !this.asyncTransactions.containsKey( id ) )
+        {
+            CompletableFuture<AsyncTransaction> future = new CompletableFuture<>();
+            future.completeExceptionally( new RuntimeException( TRANSACTION_NOT_FOUND_MESSAGE ) );
+            return future;
+        }
+        return CompletableFuture.completedFuture( asyncTransactions.get( id ) );
     }
 }

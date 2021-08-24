@@ -60,7 +60,7 @@ public class SessionRun implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSession session = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession();
         Query query = Optional.ofNullable( data.params )
@@ -76,8 +76,7 @@ public class SessionRun implements TestkitRequest
                                       String newId = testkitState.newId();
                                       testkitState.getResultCursors().put( newId, resultCursor );
                                       return Result.builder().data( Result.ResultBody.builder().id( newId ).build() ).build();
-                                  } )
-                      .thenApply( Optional::of );
+                                  } );
     }
 
     @Setter

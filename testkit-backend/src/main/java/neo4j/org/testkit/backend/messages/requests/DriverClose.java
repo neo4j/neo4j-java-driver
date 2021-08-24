@@ -24,7 +24,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
@@ -41,12 +40,11 @@ public class DriverClose implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getDrivers().get( data.getDriverId() )
                            .closeAsync()
-                           .thenApply( ignored -> createResponse() )
-                           .thenApply( Optional::of );
+                           .thenApply( ignored -> createResponse() );
     }
 
     private Driver createResponse()

@@ -18,11 +18,9 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import neo4j.org.testkit.backend.CommandProcessor;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
@@ -60,13 +58,6 @@ import org.neo4j.driver.net.ServerAddressResolver;
 @Getter
 public class NewDriver implements TestkitRequest
 {
-    private final CommandProcessor commandProcessor;
-
-    public NewDriver( @JacksonInject( CommandProcessor.COMMAND_PROCESSOR_ID ) CommandProcessor commandProcessor )
-    {
-        this.commandProcessor = commandProcessor;
-    }
-
     private NewDriverBody data;
 
     @Override
@@ -100,7 +91,7 @@ public class NewDriver implements TestkitRequest
         DomainNameResolver domainNameResolver = DefaultDomainNameResolver.getInstance();
         if ( data.isDomainNameResolverRegistered() )
         {
-            domainNameResolver = callbackDomainNameResolver( commandProcessor, testkitState );
+            domainNameResolver = callbackDomainNameResolver( testkitState );
         }
         Optional.ofNullable( data.userAgent ).ifPresent( configBuilder::withUserAgent );
         Optional.ofNullable( data.connectionTimeoutMs ).ifPresent( timeout -> configBuilder.withConnectionTimeout( timeout, TimeUnit.MILLISECONDS ) );
@@ -122,9 +113,9 @@ public class NewDriver implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
+        return CompletableFuture.completedFuture( process( testkitState ) );
     }
 
     private ServerAddressResolver callbackResolver( TestkitState testkitState )
@@ -141,7 +132,7 @@ public class NewDriver implements TestkitRequest
                     ResolverResolutionRequired.builder()
                                               .data( body )
                                               .build();
-            CompletionStage<TestkitCallbackResult> c = dispatchTestkitCallback( commandProcessor, testkitState, response );
+            CompletionStage<TestkitCallbackResult> c = dispatchTestkitCallback( testkitState, response );
             ResolverResolutionCompleted resolutionCompleted;
             try
             {
@@ -158,7 +149,7 @@ public class NewDriver implements TestkitRequest
         };
     }
 
-    private DomainNameResolver callbackDomainNameResolver( CommandProcessor commandProcessor, TestkitState testkitState )
+    private DomainNameResolver callbackDomainNameResolver( TestkitState testkitState )
     {
         return address ->
         {
@@ -173,7 +164,7 @@ public class NewDriver implements TestkitRequest
                                                 .data( body )
                                                 .build();
 
-            CompletionStage<TestkitCallbackResult> callbackStage = dispatchTestkitCallback( commandProcessor, testkitState, callback );
+            CompletionStage<TestkitCallbackResult> callbackStage = dispatchTestkitCallback( testkitState, callback );
             DomainNameResolutionCompleted resolutionCompleted;
             try
             {
@@ -202,14 +193,11 @@ public class NewDriver implements TestkitRequest
         };
     }
 
-    private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( CommandProcessor commandProcessor, TestkitState testkitState,
-                                                                            TestkitCallback response )
+    private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( TestkitState testkitState, TestkitCallback response )
     {
         CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
         testkitState.getCallbackIdToFuture().put( response.getCallbackId(), future );
         testkitState.getResponseWriter().accept( response );
-        // This is required for sync backend, but should be removed during migration to Netty implementation.
-        commandProcessor.process();
         return future;
     }
 

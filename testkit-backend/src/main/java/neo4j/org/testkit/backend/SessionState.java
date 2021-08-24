@@ -21,6 +21,8 @@ package neo4j.org.testkit.backend;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.driver.Session;
 
 @Getter
@@ -28,12 +30,9 @@ import org.neo4j.driver.Session;
 public class SessionState
 {
     public Session session;
-    public int     retryableState;
-    public String  retryableErrorId;
+    public CompletableFuture<Void> txWorkFuture;
 
     public SessionState(Session session) {
         this.session = session;
-        this.retryableState = 0;
-        this.retryableErrorId = "";
     }
 }

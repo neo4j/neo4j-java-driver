@@ -27,7 +27,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -51,7 +50,7 @@ public class StartTest implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         TestkitResponse testkitResponse = ASYNC_SKIP_PATTERN_TO_REASON
                 .entrySet()
@@ -65,7 +64,7 @@ public class StartTest implements TestkitRequest
                                                          .build() )
                 .orElseGet( () -> RunTest.builder().build() );
 
-        return CompletableFuture.completedFuture( Optional.of( testkitResponse ) );
+        return CompletableFuture.completedFuture( testkitResponse );
     }
 
     @Setter

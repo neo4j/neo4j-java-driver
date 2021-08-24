@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @JsonTypeInfo( use = JsonTypeInfo.Id.NAME, property = "name" )
@@ -46,5 +45,5 @@ public interface TestkitRequest
 {
     TestkitResponse process( TestkitState testkitState );
 
-    CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState );
+    CompletionStage<TestkitResponse> processAsync( TestkitState testkitState );
 }

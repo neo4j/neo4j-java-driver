@@ -51,10 +51,10 @@ public class SessionLastBookmarks implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         Bookmark bookmark = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-        return CompletableFuture.completedFuture( Optional.of( createResponse( bookmark ) ) );
+        return CompletableFuture.completedFuture( createResponse( bookmark ) );
     }
 
     private Bookmarks createResponse( Bookmark bookmark )

@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Result;
@@ -52,12 +51,11 @@ public class ResultNext implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getResultCursors().get( data.getResultId() )
                            .nextAsync()
-                           .thenApply( record -> record != null ? createResponse( record ) : NullRecord.builder().build() )
-                           .thenApply( Optional::of );
+                           .thenApply( record -> record != null ? createResponse( record ) : NullRecord.builder().build() );
     }
 
     private Record createResponse( org.neo4j.driver.Record record )
