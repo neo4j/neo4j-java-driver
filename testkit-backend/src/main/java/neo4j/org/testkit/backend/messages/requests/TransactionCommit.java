@@ -27,7 +27,6 @@ import neo4j.org.testkit.backend.messages.responses.Transaction;
 import java.util.concurrent.CompletionStage;
 
 @Getter
-
 @Setter
 public class TransactionCommit implements TestkitRequest
 {
