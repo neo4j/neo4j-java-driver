@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.SessionState;
@@ -37,7 +36,6 @@ import org.neo4j.driver.async.AsyncSession;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionBeginTransaction implements TestkitRequest
 {
     private SessionBeginTransactionBody data;
@@ -101,7 +99,6 @@ public class SessionBeginTransaction implements TestkitRequest
     }
 
     @Getter
-    @NoArgsConstructor
     @Setter
     public static class SessionBeginTransactionBody
     {

@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
 import neo4j.org.testkit.backend.SessionState;
@@ -42,7 +41,6 @@ import org.neo4j.driver.internal.InternalBookmark;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class NewSession implements TestkitRequest
 {
     private NewSessionBody data;
@@ -98,7 +96,6 @@ public class NewSession implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class NewSessionBody
     {
         private String driverId;
