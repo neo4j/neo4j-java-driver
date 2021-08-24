@@ -54,10 +54,9 @@ public class NewSession implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture(
-                Optional.of( createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState.getAsyncSessionStates() ) ) );
+        return CompletableFuture.completedFuture( createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState.getAsyncSessionStates() ) );
     }
 
     private <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<Driver,SessionConfig,T> sessionStateProducer,

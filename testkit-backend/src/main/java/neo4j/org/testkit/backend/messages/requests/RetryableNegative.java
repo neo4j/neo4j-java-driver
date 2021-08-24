@@ -26,7 +26,6 @@ import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -59,7 +58,7 @@ public class RetryableNegative implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         Throwable throwable;
@@ -72,7 +71,7 @@ public class RetryableNegative implements TestkitRequest
             throwable = new RuntimeException( "Error from client in retryable tx" );
         }
         sessionState.getTxWorkFuture().completeExceptionally( throwable );
-        return CompletableFuture.completedFuture( Optional.empty() );
+        return CompletableFuture.completedFuture( null );
     }
 
     @Setter

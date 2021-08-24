@@ -30,6 +30,7 @@ import neo4j.org.testkit.backend.messages.responses.Transaction;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.TransactionConfig;
@@ -57,16 +58,13 @@ public class SessionBeginTransaction implements TestkitRequest
                                      builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
                                  }
 
-                                 String txId = testkitState.newId();
-                                 org.neo4j.driver.Transaction tx = session.beginTransaction( builder.build() );
-                                 testkitState.getTransactions().put( txId, tx );
-                                 return transaction( txId );
+                                 return transaction( testkitState.addTransaction( session.beginTransaction( builder.build() ) ) );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         if ( sessionState != null )
@@ -80,18 +78,13 @@ public class SessionBeginTransaction implements TestkitRequest
                 builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
             }
 
-            String txId = testkitState.newId();
-            return session.beginTransactionAsync( builder.build() )
-                          .thenApply( tx ->
-                                      {
-                                          testkitState.getAsyncTransactions().put( txId, tx );
-                                          return transaction( txId );
-                                      } )
-                          .thenApply( Optional::of );
+            return session.beginTransactionAsync( builder.build() ).thenApply( tx -> transaction( testkitState.addAsyncTransaction( tx ) ) );
         }
         else
         {
-            return null;
+            CompletableFuture<TestkitResponse> future = new CompletableFuture<>();
+            future.completeExceptionally( new RuntimeException( "Could not find session" ) );
+            return future;
         }
     }
 

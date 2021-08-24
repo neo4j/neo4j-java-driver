@@ -28,7 +28,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -60,9 +59,9 @@ public class GetFeatures implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( createResponse( COMMON_FEATURES ) ) );
+        return CompletableFuture.completedFuture( createResponse( COMMON_FEATURES ) );
     }
 
     private FeatureList createResponse( Set<String> features )

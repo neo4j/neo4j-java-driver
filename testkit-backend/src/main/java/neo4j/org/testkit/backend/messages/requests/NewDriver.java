@@ -114,9 +114,9 @@ public class NewDriver implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
+        return CompletableFuture.completedFuture( process( testkitState ) );
     }
 
     private ServerAddressResolver callbackResolver( TestkitState testkitState )

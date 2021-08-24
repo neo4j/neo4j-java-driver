@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
@@ -44,12 +43,11 @@ public class CheckMultiDBSupport implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getDrivers().get( data.getDriverId() )
                            .supportsMultiDbAsync()
-                           .thenApply( this::createResponse )
-                           .thenApply( Optional::of );
+                           .thenApply( this::createResponse );
     }
 
     private MultiDBSupport createResponse( boolean available )

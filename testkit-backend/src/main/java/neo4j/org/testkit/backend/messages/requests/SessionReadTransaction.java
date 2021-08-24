@@ -58,15 +58,14 @@ public class SessionReadTransaction implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         AsyncSession session = sessionState.getSession();
 
         AsyncTransactionWork<CompletionStage<Void>> workWrapper = tx ->
         {
-            String txId = testkitState.newId();
-            testkitState.getAsyncTransactions().put( txId, tx );
+            String txId = testkitState.addAsyncTransaction( tx );
             testkitState.getResponseWriter().accept( retryableTry( txId ) );
             CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
             sessionState.setTxWorkFuture( txWorkFuture );
@@ -74,16 +73,14 @@ public class SessionReadTransaction implements TestkitRequest
         };
 
         return session.readTransactionAsync( workWrapper )
-                      .thenApply( nothing -> retryableDone() )
-                      .thenApply( Optional::of );
+                      .thenApply( nothing -> retryableDone() );
     }
 
     private TransactionWork<Void> handle( TestkitState testkitState, SessionState sessionState )
     {
         return tx ->
         {
-            String txId = testkitState.newId();
-            testkitState.getTransactions().put( txId, tx );
+            String txId = testkitState.addTransaction( tx );
             testkitState.getResponseWriter().accept( retryableTry( txId ) );
             CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
             sessionState.setTxWorkFuture( txWorkFuture );

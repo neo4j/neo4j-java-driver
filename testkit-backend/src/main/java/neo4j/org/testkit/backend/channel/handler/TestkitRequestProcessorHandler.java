@@ -27,11 +27,10 @@ import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
@@ -40,12 +39,16 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 {
     private final TestkitState testkitState = new TestkitState( this::writeAndFlush );
-    private final boolean asyncMode;
+    private final BiFunction<TestkitRequest, TestkitState, CompletionStage<TestkitResponse>> processorImpl;
     private Channel channel;
 
     public TestkitRequestProcessorHandler( boolean asyncMode )
     {
-        this.asyncMode = asyncMode;
+        if (asyncMode) {
+            processorImpl = (request, state) -> request.processAsync( state );
+        } else {
+            processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
+        }
     }
 
     @Override
@@ -58,36 +61,29 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
-        TestkitRequest testkitRequest = (TestkitRequest) msg;
         // Processing is done in a separate thread to avoid blocking EventLoop because some testing logic, like resolvers support, is blocking.
-        CompletableFuture.supplyAsync(
-                                 () -> asyncMode
-                                       ? processAsync( testkitRequest, testkitState )
-                                       : process( testkitRequest, testkitState )
-                         ).thenCompose( Function.identity() )
-                         .thenApply( responseOpt ->
-                                     {
-                                         responseOpt.ifPresent( ctx::writeAndFlush );
-                                         return null;
-                                     } )
-                         .exceptionally( throwable ->
-                                         {
-                                             ctx.writeAndFlush( createErrorResponse( throwable ) );
-                                             return null;
-                                         } );
+        CompletableFuture.supplyAsync( () -> (TestkitRequest) msg )
+                .thenCompose( request -> processorImpl.apply( request, testkitState ) )
+                .thenApply( response ->
+                {
+                    if ( response != null )
+                    {
+                        ctx.writeAndFlush( response );
+                    }
+                    return null;
+                } ).exceptionally( throwable ->
+        {
+            ctx.writeAndFlush( createErrorResponse( throwable ) );
+            return null;
+        } );
     }
 
-    private CompletionStage<Optional<TestkitResponse>> processAsync( TestkitRequest testkitRequest, TestkitState testkitState )
+    private static CompletionStage<TestkitResponse> wrapSyncRequest( TestkitRequest testkitRequest, TestkitState testkitState )
     {
-        return testkitRequest.processAsync( testkitState );
-    }
-
-    private CompletionStage<Optional<TestkitResponse>> process( TestkitRequest testkitRequest, TestkitState testkitState )
-    {
-        CompletableFuture<Optional<TestkitResponse>> result = new CompletableFuture<>();
+        CompletableFuture<TestkitResponse> result = new CompletableFuture<>();
         try
         {
-            result.complete( Optional.ofNullable( testkitRequest.process( testkitState ) ) );
+            result.complete( testkitRequest.process( testkitState ) );
         }
         catch ( Throwable t )
         {

@@ -27,7 +27,6 @@ import neo4j.org.testkit.backend.messages.responses.RecordList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
@@ -45,12 +44,11 @@ public class ResultList implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getResultCursors().get( data.getResultId() )
                            .listAsync()
-                           .thenApply( this::createResponse )
-                           .thenApply( Optional::of );
+                           .thenApply( this::createResponse );
     }
 
     private RecordList createResponse( List<org.neo4j.driver.Record> records )

@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -49,10 +48,10 @@ public class RetryablePositive implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         testkitState.getAsyncSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
-        return CompletableFuture.completedFuture( Optional.empty() );
+        return CompletableFuture.completedFuture( null );
     }
 
     @Setter
