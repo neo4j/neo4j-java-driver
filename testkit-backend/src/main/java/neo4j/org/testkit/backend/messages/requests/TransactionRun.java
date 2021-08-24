@@ -28,7 +28,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
@@ -40,30 +39,24 @@ public class TransactionRun implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
-                       .map( tx ->
-                                     tx.run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
-                       .map( result ->
-                             {
-                                 String resultId = testkitState.newId();
-                                 testkitState.getResults().put( resultId, result );
-                                 return createResponse( resultId );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
+        org.neo4j.driver.Result result =
+                testkitState.getTransaction( data.getTxId() ).run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() );
+        String resultId = testkitState.newId();
+        testkitState.getResults().put( resultId, result );
+        return createResponse( resultId );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncTransactions().get( data.getTxId() )
-                           .runAsync( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() )
-                           .thenApply( resultCursor ->
-                                       {
-                                           String resultId = testkitState.newId();
-                                           testkitState.getResultCursors().put( resultId, resultCursor );
-                                           return createResponse( resultId );
-                                       } )
-                           .thenApply( Optional::of );
+        return testkitState.getAsyncTransaction( data.getTxId() )
+                .thenCompose( tx -> tx.runAsync( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() ))
+                .thenApply( resultCursor ->
+                {
+                    String resultId = testkitState.newId();
+                    testkitState.getResultCursors().put( resultId, resultCursor );
+                    return createResponse( resultId );
+                } ) ;
     }
 
     private Result createResponse( String resultId )

@@ -19,17 +19,18 @@
 package neo4j.org.testkit.backend.channel.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import neo4j.org.testkit.backend.CommandProcessor;
+import neo4j.org.testkit.backend.messages.TestkitModule;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
 public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler
 {
-    private final ObjectMapper objectMapper = CommandProcessor.newObjectMapperFor( () -> true );
+    private final ObjectMapper objectMapper = newObjectMapper();
 
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
@@ -53,5 +54,14 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler
         TestkitResponse testkitResponse = (TestkitResponse) msg;
         String responseStr = objectMapper.writeValueAsString( testkitResponse );
         ctx.writeAndFlush( responseStr, promise );
+    }
+
+    public static ObjectMapper newObjectMapper()
+    {
+        ObjectMapper objectMapper = new ObjectMapper();
+        TestkitModule testkitModule = new TestkitModule();
+        objectMapper.registerModule( testkitModule );
+        objectMapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
+        return objectMapper;
     }
 }
