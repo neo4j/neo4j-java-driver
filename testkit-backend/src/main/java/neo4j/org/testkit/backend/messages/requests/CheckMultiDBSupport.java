@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
@@ -46,6 +47,12 @@ public class CheckMultiDBSupport implements TestkitRequest
         return testkitState.getDrivers().get( data.getDriverId() )
                            .supportsMultiDbAsync()
                            .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private MultiDBSupport createResponse( boolean available )

@@ -29,6 +29,7 @@ import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -116,6 +117,12 @@ public class NewDriver implements TestkitRequest
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return CompletableFuture.completedFuture( process( testkitState ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private ServerAddressResolver callbackResolver( TestkitState testkitState )

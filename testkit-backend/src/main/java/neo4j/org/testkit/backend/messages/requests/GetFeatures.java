@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.FeatureList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,6 +61,12 @@ public class GetFeatures implements TestkitRequest
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return CompletableFuture.completedFuture( createResponse( COMMON_FEATURES ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.just( createResponse( COMMON_FEATURES ) );
     }
 
     private FeatureList createResponse( Set<String> features )
