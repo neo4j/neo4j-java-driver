@@ -24,11 +24,13 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Summary;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.reactive.RxResult;
 
 @Setter
 @Getter
@@ -56,6 +58,13 @@ public class ResultConsume implements TestkitRequest
         return testkitState.getResultCursors().get( data.getResultId() )
                            .consumeAsync()
                            .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxResult result = testkitState.getRxResults().get( data.getResultId() );
+        return Mono.fromDirect( result.consume() ).map( this::createResponse );
     }
 
     private Summary createResponse( org.neo4j.driver.summary.ResultSummary summary )

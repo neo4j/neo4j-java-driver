@@ -25,6 +25,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,6 +36,8 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 
 @Setter
 @Getter
@@ -53,10 +56,10 @@ public class SessionRun implements TestkitRequest
         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
         Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
         org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
-        String newId = testkitState.newId();
-        testkitState.getResults().put( newId, result );
+        String id = testkitState.newId();
+        testkitState.getResults().put( id, result );
 
-        return Result.builder().data( Result.ResultBody.builder().id( newId ).build() ).build();
+        return createResponse( id );
     }
 
     @Override
@@ -73,10 +76,36 @@ public class SessionRun implements TestkitRequest
         return session.runAsync( query, transactionConfig.build() )
                       .thenApply( resultCursor ->
                                   {
-                                      String newId = testkitState.newId();
-                                      testkitState.getResultCursors().put( newId, resultCursor );
-                                      return Result.builder().data( Result.ResultBody.builder().id( newId ).build() ).build();
+                                      String id = testkitState.newId();
+                                      testkitState.getResultCursors().put( id, resultCursor );
+                                      return createResponse( id );
                                   } );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSession session = testkitState.getRxSessionStates().get( data.getSessionId() ).getSession();
+        Query query = Optional.ofNullable( data.params )
+                              .map( params -> new Query( data.cypher, data.params ) )
+                              .orElseGet( () -> new Query( data.cypher ) );
+        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+
+        RxResult result = session.run( query, transactionConfig.build() );
+        String id = testkitState.newId();
+        testkitState.getRxResults().put( id, result );
+
+        // The keys() method causes RUN message exchange.
+        // However, it does not currently report errors.
+        return Mono.fromDirect( result.keys() )
+                   .map( ignored -> createResponse( id ) );
+    }
+
+    private Result createResponse( String resultId )
+    {
+        return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
     }
 
     @Setter

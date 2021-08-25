@@ -23,8 +23,11 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.async.AsyncTransaction;
 
 @Getter
 @Setter
@@ -42,7 +45,16 @@ public class TransactionRollback implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncTransaction( data.getTxId() ).thenCompose( tx -> tx.rollbackAsync() ).thenApply( ignored -> createResponse( data.getTxId() ) );
+        return testkitState.getAsyncTransaction( data.getTxId() ).thenCompose( AsyncTransaction::rollbackAsync )
+                           .thenApply( ignored -> createResponse( data.getTxId() ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return testkitState.getRxTransaction( data.getTxId() )
+                           .flatMap( tx -> Mono.fromDirect( tx.rollback() ) )
+                           .then( Mono.just( createResponse( data.getTxId() ) ) );
     }
 
     private Transaction createResponse( String txId )

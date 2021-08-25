@@ -34,9 +34,24 @@ public class Runner
 {
     public static void main( String[] args ) throws InterruptedException
     {
-        boolean asyncMode = args.length > 0 && args[0].equals( "async" );
+        TestkitRequestProcessorHandler.BackendMode backendMode;
+        String modeArg = args.length > 0 ? args[0] : null;
+        if ( "async".equals( modeArg ) )
+        {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
+        }
+        else if ( "reactive".equals( modeArg ) )
+        {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;
+        }
+        else
+        {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.SYNC;
+        }
+
         EventLoopGroup group = new NioEventLoopGroup();
         try
+
         {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group( group )
@@ -50,7 +65,7 @@ public class Runner
                              channel.pipeline().addLast( new TestkitMessageInboundHandler() );
                              channel.pipeline().addLast( new TestkitMessageOutboundHandler() );
                              channel.pipeline().addLast( new TestkitRequestResponseMapperHandler() );
-                             channel.pipeline().addLast( new TestkitRequestProcessorHandler( asyncMode ) );
+                             channel.pipeline().addLast( new TestkitRequestProcessorHandler( backendMode ) );
                          }
                      } );
             ChannelFuture server = bootstrap.bind().sync();

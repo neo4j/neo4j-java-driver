@@ -21,9 +21,11 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -70,6 +72,23 @@ public class RetryableNegative implements TestkitRequest
         }
         sessionState.getTxWorkFuture().completeExceptionally( throwable );
         return CompletableFuture.completedFuture( null );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
+        Throwable throwable;
+        if ( !"".equals( data.getErrorId() ) )
+        {
+            throwable = testkitState.getErrors().get( data.getErrorId() );
+        }
+        else
+        {
+            throwable = new RuntimeException( "Error from client in retryable tx" );
+        }
+        sessionState.getTxWorkFuture().completeExceptionally( throwable );
+        return Mono.empty();
     }
 
     @Setter

@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
@@ -45,6 +46,13 @@ public class SessionClose implements TestkitRequest
         return testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession()
                            .closeAsync()
                            .thenApply( ignored -> createResponse() );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromDirect( testkitState.getRxSessionStates().get( data.getSessionId() ).getSession().close() )
+                   .then( Mono.just( createResponse() ) );
     }
 
     private Session createResponse()
