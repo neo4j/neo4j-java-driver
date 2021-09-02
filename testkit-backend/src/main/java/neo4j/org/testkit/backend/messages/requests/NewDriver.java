@@ -78,12 +78,15 @@ public class NewDriver implements TestkitRequest
         case "bearer":
             authToken = AuthTokens.bearer( data.authorizationToken.getTokens().get( "credentials" ) );
             break;
+        case "kerberos":
+            authToken = AuthTokens.kerberos(data.authorizationToken.getTokens().get( "credentials" ));
+            break;
         default:
             return BackendError.builder()
                                .data( BackendError
                                               .BackendErrorBody.builder()
                                                                .msg( "Auth scheme " + data.authorizationToken.getTokens().get( "scheme" ) +
-                                                                     "not implemented" )
+                                                                     " not implemented" )
                                                                .build() )
                                .build();
         }
