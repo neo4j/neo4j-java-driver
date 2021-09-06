@@ -23,9 +23,6 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
@@ -104,6 +101,22 @@ class AuthTokensTest
     }
 
     @Test
+    void shouldSupportBearerAuth()
+    {
+        // GIVEN
+        String tokenStr = "token";
+
+        // WHEN
+        InternalAuthToken token = (InternalAuthToken) AuthTokens.bearer( tokenStr );
+
+        // THEN
+        Map<String,Value> map = token.toMap();
+        assertThat( map.size(), equalTo( 2 ) );
+        assertThat( map.get( "scheme" ), equalTo( new StringValue( "bearer" ) ) );
+        assertThat( map.get( "credentials" ), equalTo( new StringValue( tokenStr ) ) );
+    }
+
+    @Test
     void basicKerberosAuthWithRealm()
     {
         InternalAuthToken token = (InternalAuthToken) AuthTokens.kerberos( "base64" );
@@ -139,6 +152,13 @@ class AuthTokensTest
         assertEquals( "basic", map.get( "scheme" ).asString() );
         assertEquals( "username", map.get( "principal" ).asString() );
         assertEquals( "password", map.get( "credentials" ).asString() );
+    }
+
+    @Test
+    void shouldNotAllowBearerAuthTokenWithNullToken()
+    {
+        NullPointerException e = assertThrows( NullPointerException.class, () -> AuthTokens.bearer( null ) );
+        assertEquals( "Token can't be null", e.getMessage() );
     }
 
     @Test

@@ -28,6 +28,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
 
 import static org.hamcrest.Matchers.containsString;
@@ -172,6 +173,19 @@ class ErrorUtilTest
         Neo4jException error = newNeo4jError( code, message );
 
         assertThat( error, instanceOf( AuthorizationExpiredException.class ) );
+        assertEquals( code, error.code() );
+        assertEquals( message, error.getMessage() );
+    }
+
+    @Test
+    void shouldCreateTokenExpiredException()
+    {
+        String code = "Neo.ClientError.Security.TokenExpired";
+        String message = "message";
+
+        Neo4jException error = newNeo4jError( code, message );
+
+        assertThat( error, instanceOf( TokenExpiredException.class ) );
         assertEquals( code, error.code() );
         assertEquals( message, error.getMessage() );
     }
