@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -50,6 +51,13 @@ public class RetryablePositive implements TestkitRequest
     {
         testkitState.getAsyncSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
         return CompletableFuture.completedFuture( null );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        testkitState.getRxSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
+        return Mono.empty();
     }
 
     @Setter

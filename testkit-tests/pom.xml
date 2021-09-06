@@ -24,6 +24,9 @@
         <testkit.args>--tests TESTKIT_TESTS INTEGRATION_TESTS STUB_TESTS STRESS_TESTS TLS_TESTS</testkit.args>
         <testkit.timeout>7200000</testkit.timeout>
         <testkit.async.name.pattern>%a-async</testkit.async.name.pattern>
+        <testkit.rx.name.pattern>%a-rx</testkit.rx.name.pattern>
+        <!-- Debug logging for backend messages. Empty string - off, Non-empty string - on. -->
+        <testkit.debug.reqres></testkit.debug.reqres>
 
         <docker-maven-plugin.version>0.36.1</docker-maven-plugin.version>
         <docker.showLogs>true</docker.showLogs>
@@ -73,6 +76,7 @@
                                         <TEST_DRIVER_NAME>java</TEST_DRIVER_NAME>
                                         <TEST_DRIVER_REPO>${rootDir}</TEST_DRIVER_REPO>
                                         <TEST_SKIP_BUILD>true</TEST_SKIP_BUILD>
+                                        <TEST_DEBUG_REQRES>${testkit.debug.reqres}</TEST_DEBUG_REQRES>
                                     </env>
                                     <volumes>
                                         <bind>
@@ -131,6 +135,34 @@
                                             </env>
                                             <log>
                                                 <prefix xml:space="preserve">${testkit.async.name.pattern}> </prefix>
+                                            </log>
+                                        </run>
+                                    </image>
+                                </images>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <!-- Use reactive backend to test reactive driver. -->
+                            <id>run-testkit-rx</id>
+                            <phase>integration-test</phase>
+                            <goals>
+                                <!-- Testkit is expected to exit automatically. -->
+                                <goal>start</goal>
+                            </goals>
+                            <configuration>
+                                <images>
+                                    <image>
+                                        <alias>tklnchr</alias>
+                                        <run>
+                                            <containerNamePattern>${testkit.rx.name.pattern}</containerNamePattern>
+                                            <env>
+                                                <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit-rx</TESTKIT_CHECKOUT_PATH>
+                                                <TEST_BACKEND_SERVER>reactive</TEST_BACKEND_SERVER>
+                                                <!-- Excludes 3.5 -->
+                                                <TESTKIT_ARGS>--configs 4.2-cluster,4.0-community,4.1-enterprise ${testkit.args}</TESTKIT_ARGS>
+                                            </env>
+                                            <log>
+                                                <prefix xml:space="preserve">${testkit.rx.name.pattern}> </prefix>
                                             </log>
                                         </run>
                                     </image>

@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.messages.requests;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -44,5 +45,12 @@ public interface TestkitCallbackResult extends TestkitRequest
     {
         testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
         return CompletableFuture.completedFuture( null );
+    }
+
+    @Override
+    default Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
+        return Mono.empty();
     }
 }

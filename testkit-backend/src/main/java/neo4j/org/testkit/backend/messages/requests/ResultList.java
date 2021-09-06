@@ -24,6 +24,7 @@ import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.RecordList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -47,6 +48,12 @@ public class ResultList implements TestkitRequest
         return testkitState.getResultCursors().get( data.getResultId() )
                            .listAsync()
                            .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
     }
 
     private RecordList createResponse( List<org.neo4j.driver.Record> records )
