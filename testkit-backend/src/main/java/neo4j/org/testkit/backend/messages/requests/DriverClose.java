@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
@@ -45,6 +46,12 @@ public class DriverClose implements TestkitRequest
         return testkitState.getDrivers().get( data.getDriverId() )
                            .closeAsync()
                            .thenApply( ignored -> createResponse() );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private Driver createResponse()

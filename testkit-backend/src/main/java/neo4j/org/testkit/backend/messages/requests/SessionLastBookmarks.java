@@ -24,6 +24,7 @@ import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -55,6 +56,13 @@ public class SessionLastBookmarks implements TestkitRequest
     {
         Bookmark bookmark = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
         return CompletableFuture.completedFuture( createResponse( bookmark ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        Bookmark bookmark = testkitState.getRxSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
+        return Mono.just( createResponse( bookmark ) );
     }
 
     private Bookmarks createResponse( Bookmark bookmark )

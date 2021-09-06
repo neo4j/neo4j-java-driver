@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
@@ -43,6 +44,12 @@ public class TransactionClose implements TestkitRequest
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
     }
 
     private Transaction createResponse( String txId )

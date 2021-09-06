@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +79,13 @@ public class GetRoutingTable implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( process( testkitState ) ) ;
+        return CompletableFuture.completedFuture( process( testkitState ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.just( process( testkitState ) );
     }
 
     @Setter

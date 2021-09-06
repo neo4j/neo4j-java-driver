@@ -21,11 +21,14 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +41,7 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.reactive.RxTransactionWork;
 
 @Setter
 @Getter
@@ -75,6 +79,23 @@ public class SessionWriteTransaction implements TestkitRequest
 
         return session.writeTransactionAsync( workWrapper )
                       .thenApply( nothing -> retryableDone() );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
+        RxTransactionWork<Publisher<Void>> workWrapper = tx ->
+        {
+            String txId = testkitState.addRxTransaction( tx );
+            testkitState.getResponseWriter().accept( retryableTry( txId ) );
+            CompletableFuture<Void> tryResult = new CompletableFuture<>();
+            sessionState.setTxWorkFuture( tryResult );
+            return Mono.fromCompletionStage( tryResult );
+        };
+
+        return Mono.fromDirect( sessionState.getSession().writeTransaction( workWrapper ) )
+                   .then( Mono.just( retryableDone() ) );
     }
 
     private TransactionWork<Void> handle( TestkitState testkitState, SessionState sessionState )
