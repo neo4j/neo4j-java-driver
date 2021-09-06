@@ -19,18 +19,16 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class DriverClose implements TestkitRequest
 {
     private DriverCloseBody data;
@@ -43,12 +41,17 @@ public class DriverClose implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getDrivers().get( data.getDriverId() )
                            .closeAsync()
-                           .thenApply( ignored -> createResponse() )
-                           .thenApply( Optional::of );
+                           .thenApply( ignored -> createResponse() );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private Driver createResponse()
@@ -58,7 +61,6 @@ public class DriverClose implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     private static class DriverCloseBody
     {
         private String driverId;

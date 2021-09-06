@@ -19,17 +19,17 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.async.AsyncTransaction;
+
 @Getter
-@NoArgsConstructor
 @Setter
 public class TransactionRollback implements TestkitRequest
 {
@@ -38,22 +38,23 @@ public class TransactionRollback implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
-                       .map( tx ->
-                             {
-                                 tx.rollback();
-                                 return createResponse( data.getTxId() );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
+        testkitState.getTransaction( data.getTxId() ).rollback();
+        return createResponse( data.getTxId() );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncTransactions().get( data.getTxId() )
-                           .rollbackAsync()
-                           .thenApply( ignored -> createResponse( data.getTxId() ) )
-                           .thenApply( Optional::of );
+        return testkitState.getAsyncTransaction( data.getTxId() ).thenCompose( AsyncTransaction::rollbackAsync )
+                           .thenApply( ignored -> createResponse( data.getTxId() ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return testkitState.getRxTransaction( data.getTxId() )
+                           .flatMap( tx -> Mono.fromDirect( tx.rollback() ) )
+                           .then( Mono.just( createResponse( data.getTxId() ) ) );
     }
 
     private Transaction createResponse( String txId )
@@ -62,7 +63,6 @@ public class TransactionRollback implements TestkitRequest
     }
 
     @Getter
-    @NoArgsConstructor
     @Setter
     public static class TransactionRollbackBody
     {

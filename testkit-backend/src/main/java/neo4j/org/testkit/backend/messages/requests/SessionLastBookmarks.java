@@ -19,12 +19,12 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -34,7 +34,6 @@ import org.neo4j.driver.Bookmark;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionLastBookmarks implements TestkitRequest
 {
     private SessionLastBookmarksBody data;
@@ -53,10 +52,17 @@ public class SessionLastBookmarks implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         Bookmark bookmark = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-        return CompletableFuture.completedFuture( Optional.of( createResponse( bookmark ) ) );
+        return CompletableFuture.completedFuture( createResponse( bookmark ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        Bookmark bookmark = testkitState.getRxSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
+        return Mono.just( createResponse( bookmark ) );
     }
 
     private Bookmarks createResponse( Bookmark bookmark )
@@ -66,7 +72,6 @@ public class SessionLastBookmarks implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class SessionLastBookmarksBody
     {
         private String sessionId;

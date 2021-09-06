@@ -19,13 +19,14 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Session;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.neo4j.driver.internal.InternalBookmark;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class NewSession implements TestkitRequest
 {
     private NewSessionBody data;
@@ -54,14 +54,20 @@ public class NewSession implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return CompletableFuture.completedFuture(
-                Optional.of( createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState.getAsyncSessionStates() ) ) );
+                createSessionStateAndResponse( testkitState, this::createAsyncSessionState, testkitState.getAsyncSessionStates() ) );
     }
 
-    private <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<Driver,SessionConfig,T> sessionStateProducer,
-                                                               Map<String,T> sessionStateContainer )
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.just( createSessionStateAndResponse( testkitState, this::createRxSessionState, testkitState.getRxSessionStates() ) );
+    }
+
+    protected <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<Driver,SessionConfig,T> sessionStateProducer,
+                                                                 Map<String,T> sessionStateContainer )
     {
         Driver driver = testkitState.getDrivers().get( data.getDriverId() );
         AccessMode formattedAccessMode = data.getAccessMode().equals( "r" ) ? AccessMode.READ : AccessMode.WRITE;
@@ -96,9 +102,13 @@ public class NewSession implements TestkitRequest
         return new AsyncSessionState( driver.asyncSession( sessionConfig ) );
     }
 
+    private RxSessionState createRxSessionState( Driver driver, SessionConfig sessionConfig )
+    {
+        return new RxSessionState( driver.rxSession( sessionConfig ) );
+    }
+
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class NewSessionBody
     {
         private String driverId;

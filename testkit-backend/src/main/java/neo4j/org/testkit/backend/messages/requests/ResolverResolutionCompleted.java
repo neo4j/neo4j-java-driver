@@ -19,43 +19,24 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
-import org.neo4j.driver.internal.BoltServerAddress;
 
 @Setter
 @Getter
-@NoArgsConstructor
-public class ResolverResolutionCompleted implements TestkitRequest
+public class ResolverResolutionCompleted implements TestkitCallbackResult
 {
     private ResolverResolutionCompletedBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
+    public String getCallbackId()
     {
-        testkitState.getIdToServerAddresses().put( data.getRequestId(), data.getAddresses().stream().map( BoltServerAddress::new )
-                                                                            .collect( Collectors.toCollection( LinkedHashSet::new ) ) );
-        return null;
-    }
-
-    @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
-    {
-        throw new UnsupportedOperationException();
+        return data.getRequestId();
     }
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class ResolverResolutionCompletedBody
     {
         private String requestId;

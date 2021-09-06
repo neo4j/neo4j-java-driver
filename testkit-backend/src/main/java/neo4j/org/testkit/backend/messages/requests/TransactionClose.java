@@ -19,18 +19,16 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class TransactionClose implements TestkitRequest
 {
     private TransactionCloseBody data;
@@ -38,19 +36,20 @@ public class TransactionClose implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
-                       .map( tx ->
-                             {
-                                 tx.close();
-                                 return createResponse( data.getTxId() );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
+        testkitState.getTransaction( data.getTxId() ).close();
+        return createResponse( data.getTxId() );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
     }
 
     private Transaction createResponse( String txId )
@@ -60,7 +59,6 @@ public class TransactionClose implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     private static class TransactionCloseBody
     {
         private String txId;

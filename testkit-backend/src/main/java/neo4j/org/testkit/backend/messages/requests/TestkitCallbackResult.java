@@ -18,52 +18,39 @@
  */
 package neo4j.org.testkit.backend.messages.requests;
 
-import lombok.Getter;
-import lombok.Setter;
-import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-@Setter
-@Getter
-public class RetryablePositive implements TestkitRequest
+/**
+ * This request is sent by Testkit in response to previously sent {@link TestkitCallback}.
+ */
+public interface TestkitCallbackResult extends TestkitRequest
 {
-    private RetryablePositiveBody data;
+    String getCallbackId();
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
+    default TestkitResponse process( TestkitState testkitState )
     {
-        SessionState sessionState = testkitState.getSessionStates().get( data.sessionId );
-        if ( sessionState == null )
-        {
-            throw new RuntimeException( "Could not find session" );
-        }
-        sessionState.getTxWorkFuture().complete( null );
+        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
         return null;
     }
 
     @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
+    default CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        testkitState.getAsyncSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
+        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
         return CompletableFuture.completedFuture( null );
     }
 
     @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    default Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        testkitState.getRxSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
+        testkitState.getCallbackIdToFuture().get( getCallbackId() ).complete( this );
         return Mono.empty();
-    }
-
-    @Setter
-    @Getter
-    public static class RetryablePositiveBody
-    {
-        private String sessionId;
     }
 }

@@ -20,12 +20,10 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
 @Builder
-public class DomainNameResolutionRequired implements TestkitResponse
+public class DomainNameResolutionRequired implements TestkitCallback
 {
     private DomainNameResolutionRequiredBody data;
 
@@ -35,7 +33,12 @@ public class DomainNameResolutionRequired implements TestkitResponse
         return "DomainNameResolutionRequired";
     }
 
-    @Setter
+    @Override
+    public String getCallbackId()
+    {
+        return data.getId();
+    }
+
     @Getter
     @Builder
     public static class DomainNameResolutionRequiredBody

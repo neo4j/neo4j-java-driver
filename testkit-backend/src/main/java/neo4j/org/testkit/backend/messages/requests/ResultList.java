@@ -19,21 +19,19 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.RecordList;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class ResultList implements TestkitRequest
 {
     private ResultListBody data;
@@ -45,12 +43,17 @@ public class ResultList implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getResultCursors().get( data.getResultId() )
                            .listAsync()
-                           .thenApply( this::createResponse )
-                           .thenApply( Optional::of );
+                           .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
     }
 
     private RecordList createResponse( List<org.neo4j.driver.Record> records )
@@ -65,7 +68,6 @@ public class ResultList implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class ResultListBody
     {
         private String resultId;

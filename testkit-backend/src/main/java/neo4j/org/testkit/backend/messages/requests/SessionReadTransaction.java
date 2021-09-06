@@ -19,27 +19,31 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RetryableDone;
 import neo4j.org.testkit.backend.messages.responses.RetryableTry;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
+import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.reactive.RxTransactionWork;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionReadTransaction implements TestkitRequest
 {
     private SessionReadTransactionBody data;
@@ -57,15 +61,14 @@ public class SessionReadTransaction implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         AsyncSession session = sessionState.getSession();
 
         AsyncTransactionWork<CompletionStage<Void>> workWrapper = tx ->
         {
-            String txId = testkitState.newId();
-            testkitState.getAsyncTransactions().put( txId, tx );
+            String txId = testkitState.addAsyncTransaction( tx );
             testkitState.getResponseWriter().accept( retryableTry( txId ) );
             CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
             sessionState.setTxWorkFuture( txWorkFuture );
@@ -73,44 +76,53 @@ public class SessionReadTransaction implements TestkitRequest
         };
 
         return session.readTransactionAsync( workWrapper )
-                      .thenApply( nothing -> retryableDone() )
-                      .thenApply( Optional::of );
+                      .thenApply( nothing -> retryableDone() );
     }
 
-    private TransactionWork<Integer> handle( TestkitState testkitState, SessionState sessionState )
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
+        RxTransactionWork<Publisher<Void>> workWrapper = tx ->
+        {
+            String txId = testkitState.addRxTransaction( tx );
+            testkitState.getResponseWriter().accept( retryableTry( txId ) );
+            CompletableFuture<Void> tryResult = new CompletableFuture<>();
+            sessionState.setTxWorkFuture( tryResult );
+            return Mono.fromCompletionStage( tryResult );
+        };
+
+        return Mono.fromDirect( sessionState.getSession().readTransaction( workWrapper ) )
+                   .then( Mono.just( retryableDone() ) );
+    }
+
+    private TransactionWork<Void> handle( TestkitState testkitState, SessionState sessionState )
     {
         return tx ->
         {
-            System.out.println( "Start" );
-            sessionState.setRetryableState( 0 );
-            String txId = testkitState.newId();
-            testkitState.getTransactions().put( txId, tx );
+            String txId = testkitState.addTransaction( tx );
             testkitState.getResponseWriter().accept( retryableTry( txId ) );
+            CompletableFuture<Void> txWorkFuture = new CompletableFuture<>();
+            sessionState.setTxWorkFuture( txWorkFuture );
 
-            while ( true )
+            try
             {
-                // Process commands as usual but blocking in here
-                testkitState.getProcessor().get();
-
-                // Check if state changed on session
-                switch ( sessionState.retryableState )
+                return txWorkFuture.get();
+            }
+            catch ( Throwable throwable )
+            {
+                Throwable workThrowable = throwable;
+                if ( workThrowable instanceof ExecutionException )
                 {
-                case 0:
-                    // Nothing happened to session state while processing command
-                    break;
-                case 1:
-                    // Client is happy to commit
-                    return 0;
-                case -1:
-                    // Client wants to rollback
-                    if ( !"".equals( sessionState.retryableErrorId ) )
-                    {
-                        throw testkitState.getErrors().get( sessionState.retryableErrorId );
-                    }
-                    else
-                    {
-                        throw new RuntimeException( "Error from client in retryable tx" );
-                    }
+                    workThrowable = workThrowable.getCause();
+                }
+                if ( workThrowable instanceof Neo4jException )
+                {
+                    throw (Neo4jException) workThrowable;
+                }
+                else
+                {
+                    throw new RuntimeException( "Unexpected exception occurred in transaction work function", workThrowable );
                 }
             }
         };
@@ -128,7 +140,6 @@ public class SessionReadTransaction implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class SessionReadTransactionBody
     {
         private String sessionId;

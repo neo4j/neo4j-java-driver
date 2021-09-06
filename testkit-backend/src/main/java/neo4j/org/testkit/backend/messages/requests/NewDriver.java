@@ -19,7 +19,6 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
@@ -28,17 +27,24 @@ import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
 import neo4j.org.testkit.backend.messages.responses.ResolverResolutionRequired;
+import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.DriverFactory;
@@ -51,7 +57,6 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class NewDriver implements TestkitRequest
 {
     private NewDriverBody data;
@@ -109,9 +114,15 @@ public class NewDriver implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
+        return CompletableFuture.completedFuture( process( testkitState ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private ServerAddressResolver callbackResolver( TestkitState testkitState )
@@ -128,9 +139,20 @@ public class NewDriver implements TestkitRequest
                     ResolverResolutionRequired.builder()
                                               .data( body )
                                               .build();
-            testkitState.getResponseWriter().accept( response );
-            testkitState.getProcessor().get();
-            return testkitState.getIdToServerAddresses().remove( callbackId );
+            CompletionStage<TestkitCallbackResult> c = dispatchTestkitCallback( testkitState, response );
+            ResolverResolutionCompleted resolutionCompleted;
+            try
+            {
+                resolutionCompleted = (ResolverResolutionCompleted) c.toCompletableFuture().get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            return resolutionCompleted.getData().getAddresses()
+                                      .stream()
+                                      .map( BoltServerAddress::new )
+                                      .collect( Collectors.toCollection( LinkedHashSet::new ) );
         };
     }
 
@@ -144,14 +166,46 @@ public class NewDriver implements TestkitRequest
                                                                                  .id( callbackId )
                                                                                  .name( address )
                                                                                  .build();
-            DomainNameResolutionRequired response =
+            DomainNameResolutionRequired callback =
                     DomainNameResolutionRequired.builder()
                                                 .data( body )
                                                 .build();
-            testkitState.getResponseWriter().accept( response );
-            testkitState.getProcessor().get();
-            return testkitState.getIdToResolvedAddresses().remove( callbackId );
+
+            CompletionStage<TestkitCallbackResult> callbackStage = dispatchTestkitCallback( testkitState, callback );
+            DomainNameResolutionCompleted resolutionCompleted;
+            try
+            {
+                resolutionCompleted = (DomainNameResolutionCompleted) callbackStage.toCompletableFuture().get();
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Unexpected failure during Testkit callback", e );
+            }
+
+            return resolutionCompleted.getData().getAddresses()
+                                      .stream()
+                                      .map(
+                                              addr ->
+                                              {
+                                                  try
+                                                  {
+                                                      return InetAddress.getByName( addr );
+                                                  }
+                                                  catch ( UnknownHostException e )
+                                                  {
+                                                      throw new RuntimeException( e );
+                                                  }
+                                              } )
+                                      .toArray( InetAddress[]::new );
         };
+    }
+
+    private CompletionStage<TestkitCallbackResult> dispatchTestkitCallback( TestkitState testkitState, TestkitCallback response )
+    {
+        CompletableFuture<TestkitCallbackResult> future = new CompletableFuture<>();
+        testkitState.getCallbackIdToFuture().put( response.getCallbackId(), future );
+        testkitState.getResponseWriter().accept( response );
+        return future;
     }
 
     private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, RetrySettings retrySettings, DomainNameResolver domainNameResolver,
@@ -182,7 +236,6 @@ public class NewDriver implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class NewDriverBody
     {
         private String uri;

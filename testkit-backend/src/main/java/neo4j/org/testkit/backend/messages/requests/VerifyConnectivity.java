@@ -19,18 +19,16 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class VerifyConnectivity implements TestkitRequest
 {
     private VerifyConnectivityBody data;
@@ -44,13 +42,18 @@ public class VerifyConnectivity implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         String id = data.getDriverId();
         return testkitState.getDrivers().get( id )
                            .verifyConnectivityAsync()
-                           .thenApply( ignored -> createResponse( id ) )
-                           .thenApply( Optional::of );
+                           .thenApply( ignored -> createResponse( id ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private Driver createResponse( String id )
@@ -60,7 +63,6 @@ public class VerifyConnectivity implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class VerifyConnectivityBody
     {
         private String driverId;

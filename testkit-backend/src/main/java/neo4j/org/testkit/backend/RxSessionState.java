@@ -16,29 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses;
+package neo4j.org.testkit.backend;
 
-import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import org.neo4j.driver.reactive.RxSession;
 
 @Getter
-@Builder
-public class FeatureList implements TestkitResponse
+@Setter
+public class RxSessionState
 {
-    private final FeatureListBody data;
+    public RxSession session;
+    public CompletableFuture<Void> txWorkFuture;
 
-    @Override
-    public String testkitName()
+    public RxSessionState( RxSession session )
     {
-        return "FeatureList";
-    }
-
-    @Getter
-    @Builder
-    public static class FeatureListBody
-    {
-        private final Set<String> features;
+        this.session = session;
     }
 }

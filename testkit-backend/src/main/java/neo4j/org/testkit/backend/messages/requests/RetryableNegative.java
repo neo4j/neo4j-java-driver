@@ -19,20 +19,19 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class RetryableNegative implements TestkitRequest
 {
     private RetryableNegativeBody data;
@@ -45,13 +44,21 @@ public class RetryableNegative implements TestkitRequest
         {
             throw new RuntimeException( "Could not find session" );
         }
-        sessionState.setRetryableState( -1 );
-        sessionState.setRetryableErrorId( data.errorId );
+        Throwable throwable;
+        if ( !"".equals( data.getErrorId() ) )
+        {
+            throwable = testkitState.getErrors().get( data.getErrorId() );
+        }
+        else
+        {
+            throwable = new RuntimeException( "Error from client in retryable tx" );
+        }
+        sessionState.getTxWorkFuture().completeExceptionally( throwable );
         return null;
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         Throwable throwable;
@@ -64,12 +71,28 @@ public class RetryableNegative implements TestkitRequest
             throwable = new RuntimeException( "Error from client in retryable tx" );
         }
         sessionState.getTxWorkFuture().completeExceptionally( throwable );
-        return CompletableFuture.completedFuture( Optional.empty() );
+        return CompletableFuture.completedFuture( null );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
+        Throwable throwable;
+        if ( !"".equals( data.getErrorId() ) )
+        {
+            throwable = testkitState.getErrors().get( data.getErrorId() );
+        }
+        else
+        {
+            throwable = new RuntimeException( "Error from client in retryable tx" );
+        }
+        sessionState.getTxWorkFuture().completeExceptionally( throwable );
+        return Mono.empty();
     }
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class RetryableNegativeBody
     {
         private String sessionId;

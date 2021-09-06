@@ -19,22 +19,21 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.Summary;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.reactive.RxResult;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class ResultConsume implements TestkitRequest
 {
     private ResultConsumeBody data;
@@ -54,12 +53,19 @@ public class ResultConsume implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getResultCursors().get( data.getResultId() )
                            .consumeAsync()
-                           .thenApply( this::createResponse )
-                           .thenApply( Optional::of );
+                           .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxResult result = testkitState.getRxResults().get( data.getResultId() );
+        return Mono.fromDirect( result.consume() )
+                   .map( this::createResponse );
     }
 
     private Summary createResponse( org.neo4j.driver.summary.ResultSummary summary )
@@ -78,7 +84,6 @@ public class ResultConsume implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class ResultConsumeBody
     {
         private String resultId;

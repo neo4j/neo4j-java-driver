@@ -19,18 +19,16 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.MultiDBSupport;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class CheckMultiDBSupport implements TestkitRequest
 {
     private CheckMultiDBSupportBody data;
@@ -44,12 +42,17 @@ public class CheckMultiDBSupport implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getDrivers().get( data.getDriverId() )
                            .supportsMultiDbAsync()
-                           .thenApply( this::createResponse )
-                           .thenApply( Optional::of );
+                           .thenApply( this::createResponse );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 
     private MultiDBSupport createResponse( boolean available )
@@ -63,7 +66,6 @@ public class CheckMultiDBSupport implements TestkitRequest
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class CheckMultiDBSupportBody
     {
         private String driverId;

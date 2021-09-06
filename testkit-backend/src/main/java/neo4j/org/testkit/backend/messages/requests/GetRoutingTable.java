@@ -19,15 +19,14 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -42,7 +41,6 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class GetRoutingTable implements TestkitRequest
 {
     private GetRoutingTableBody data;
@@ -79,14 +77,19 @@ public class GetRoutingTable implements TestkitRequest
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( Optional.of( process( testkitState ) ) );
+        return CompletableFuture.completedFuture( process( testkitState ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return Mono.just( process( testkitState ) );
     }
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class GetRoutingTableBody
     {
         private String driverId;

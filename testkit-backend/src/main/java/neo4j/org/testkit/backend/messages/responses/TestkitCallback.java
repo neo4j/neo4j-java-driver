@@ -18,27 +18,13 @@
  */
 package neo4j.org.testkit.backend.messages.responses;
 
-import lombok.Builder;
-import lombok.Getter;
+import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 
-import java.util.Set;
-
-@Getter
-@Builder
-public class FeatureList implements TestkitResponse
+/**
+ * This is a special type of {@link TestkitResponse} that is typically sent during driver action processing to request some action or data from Testkit, which
+ * must respond with {@link TestkitCallbackResult}.
+ */
+public interface TestkitCallback extends TestkitResponse
 {
-    private final FeatureListBody data;
-
-    @Override
-    public String testkitName()
-    {
-        return "FeatureList";
-    }
-
-    @Getter
-    @Builder
-    public static class FeatureListBody
-    {
-        private final Set<String> features;
-    }
+    String getCallbackId();
 }

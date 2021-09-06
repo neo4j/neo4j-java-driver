@@ -20,62 +20,71 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.reactive.RxResult;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class TransactionRun implements TestkitRequest
 {
-    private TransactionRunBody data;
+    protected TransactionRunBody data;
 
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getTransactions().get( data.getTxId() ) )
-                       .map( tx ->
-                                     tx.run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
-                       .map( result ->
-                             {
-                                 String resultId = testkitState.newId();
-                                 testkitState.getResults().put( resultId, result );
-                                 return createResponse( resultId );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find transaction" ) );
+        org.neo4j.driver.Result result =
+                testkitState.getTransaction( data.getTxId() ).run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() );
+        String resultId = testkitState.newId();
+        testkitState.getResults().put( resultId, result );
+        return createResponse( resultId );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncTransactions().get( data.getTxId() )
-                           .runAsync( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() )
+        return testkitState.getAsyncTransaction( data.getTxId() )
+                           .thenCompose( tx -> tx.runAsync( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() ) )
                            .thenApply( resultCursor ->
                                        {
                                            String resultId = testkitState.newId();
                                            testkitState.getResultCursors().put( resultId, resultCursor );
                                            return createResponse( resultId );
-                                       } )
-                           .thenApply( Optional::of );
+                                       } );
     }
 
-    private Result createResponse( String resultId )
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        String resultId = testkitState.newId();
+        return testkitState.getRxTransaction( data.getTxId() )
+                           .flatMap( tx ->
+                                     {
+                                         RxResult result = tx.run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() );
+                                         testkitState.getRxResults().put( resultId, result );
+                                         // The keys() method causes RUN message exchange.
+                                         // However, it does not currently report errors.
+                                         return Mono.fromDirect( result.keys() );
+                                     } )
+                           .map( ignored -> createResponse( resultId ) );
+    }
+
+    protected Result createResponse( String resultId )
     {
         return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
     }
 
     @Setter
     @Getter
-    @NoArgsConstructor
     public static class TransactionRunBody
     {
         private String txId;

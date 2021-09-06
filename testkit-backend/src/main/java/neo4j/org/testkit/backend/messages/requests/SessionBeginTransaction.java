@@ -19,25 +19,27 @@
 package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.AsyncSessionState;
+import neo4j.org.testkit.backend.RxSessionState;
 import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.reactive.RxSession;
 
 @Setter
 @Getter
-@NoArgsConstructor
 public class SessionBeginTransaction implements TestkitRequest
 {
     private SessionBeginTransactionBody data;
@@ -57,16 +59,13 @@ public class SessionBeginTransaction implements TestkitRequest
                                      builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
                                  }
 
-                                 String txId = testkitState.newId();
-                                 org.neo4j.driver.Transaction tx = session.beginTransaction( builder.build() );
-                                 testkitState.getTransactions().put( txId, tx );
-                                 return transaction( txId );
+                                 return transaction( testkitState.addTransaction( session.beginTransaction( builder.build() ) ) );
                              } )
                        .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
     }
 
     @Override
-    public CompletionStage<Optional<TestkitResponse>> processAsync( TestkitState testkitState )
+    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
         if ( sessionState != null )
@@ -80,18 +79,37 @@ public class SessionBeginTransaction implements TestkitRequest
                 builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
             }
 
-            String txId = testkitState.newId();
-            return session.beginTransactionAsync( builder.build() )
-                          .thenApply( tx ->
-                                      {
-                                          testkitState.getAsyncTransactions().put( txId, tx );
-                                          return transaction( txId );
-                                      } )
-                          .thenApply( Optional::of );
+            return session.beginTransactionAsync( builder.build() ).thenApply( tx -> transaction( testkitState.addAsyncTransaction( tx ) ) );
         }
         else
         {
-            return null;
+            CompletableFuture<TestkitResponse> future = new CompletableFuture<>();
+            future.completeExceptionally( new RuntimeException( "Could not find session" ) );
+            return future;
+        }
+    }
+
+    @Override
+    public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
+        if ( sessionState != null )
+        {
+            RxSession session = sessionState.getSession();
+            TransactionConfig.Builder builder = TransactionConfig.builder();
+            Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
+
+            if ( data.getTimeout() != null )
+            {
+                builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+            }
+
+            return Mono.fromDirect( session.beginTransaction( builder.build() ) )
+                       .map( tx -> transaction( testkitState.addRxTransaction( tx ) ) );
+        }
+        else
+        {
+            return Mono.error( new RuntimeException( "Could not find session" ) );
         }
     }
 
@@ -101,7 +119,6 @@ public class SessionBeginTransaction implements TestkitRequest
     }
 
     @Getter
-    @NoArgsConstructor
     @Setter
     public static class SessionBeginTransactionBody
     {

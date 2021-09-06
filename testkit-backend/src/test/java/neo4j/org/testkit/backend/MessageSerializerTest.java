@@ -19,11 +19,9 @@
 package neo4j.org.testkit.backend;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import neo4j.org.testkit.backend.messages.TestkitModule;
+import neo4j.org.testkit.backend.channel.handler.TestkitRequestResponseMapperHandler;
 import neo4j.org.testkit.backend.messages.responses.Driver;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,16 +29,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class MessageSerializerTest
 {
-    private static final ObjectMapper mapper = new ObjectMapper();
-
-    @BeforeAll
-    static void setUp()
-    {
-        TestkitModule tkm = new TestkitModule();
-
-        mapper.registerModule( tkm );
-        mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-    }
+    private static final ObjectMapper mapper = TestkitRequestResponseMapperHandler.newObjectMapper();
 
     @Test
     void shouldSerializerNewDriverResponse() throws JsonProcessingException
