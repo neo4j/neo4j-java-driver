@@ -22,18 +22,17 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.RxBlockingSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
-import neo4j.org.testkit.backend.messages.responses.Record;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.reactive.RxResult;
 
 @Setter
 @Getter
@@ -46,7 +45,7 @@ public class ResultNext implements TestkitRequest
     {
         try
         {
-            Result result = testkitState.getResults().get( data.getResultId() );
+            Result result = testkitState.getResultHolder( data.getResultId() ).getResult();
             return createResponse( result.next() );
         }
         catch ( NoSuchRecordException ignored )
@@ -58,52 +57,98 @@ public class ResultNext implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getResultCursors().get( data.getResultId() )
-                           .nextAsync()
-                           .thenApply( record -> record != null ? createResponse( record ) : NullRecord.builder().build() );
+        return testkitState.getAsyncResultHolder( data.getResultId() )
+                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().nextAsync() )
+                           .thenApply( this::createResponseNullSafe );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        CompletableFuture<RxBlockingSubscriber<org.neo4j.driver.Record>> subscriberFuture;
-        String resultId = data.getResultId();
-        RxBlockingSubscriber<org.neo4j.driver.Record> currentSubscriber = testkitState.getRxResultIdToRecordSubscriber().get( resultId );
-
-        if ( currentSubscriber == null )
-        {
-            RxBlockingSubscriber<org.neo4j.driver.Record> subscriber = new RxBlockingSubscriber<>();
-            subscriberFuture = subscriber.getSubscriptionFuture().thenApply( subscription ->
-                                                                             {
-                                                                                 subscription.request( 1000 );
-                                                                                 return subscriber;
-                                                                             } );
-            testkitState.getRxResultIdToRecordSubscriber().put( resultId, subscriber );
-            RxResult result = testkitState.getRxResults().get( resultId );
-            result.records().subscribe( subscriber );
-        }
-        else
-        {
-            subscriberFuture = CompletableFuture.completedFuture( currentSubscriber );
-        }
-
-        CompletableFuture<TestkitResponse> responseFuture = subscriberFuture
-                .thenApply( recordsSubscriber ->
-                            {
-                                CompletableFuture<org.neo4j.driver.Record> recordConsumer =
-                                        new CompletableFuture<>();
-                                recordsSubscriber.setNextSignalConsumer( recordConsumer );
-                                return recordConsumer;
-                            } )
-                .thenCompose( Function.identity() )
-                .thenApply( record -> record != null ? createResponse( record ) : NullRecord.builder().build() );
-
-        return Mono.fromCompletionStage( responseFuture );
+        return testkitState.getRxResultHolder( data.getResultId() )
+                           .flatMap( resultHolder ->
+                                     {
+                                         CompletionStage<TestkitResponse> responseStage = getSubscriberStage( resultHolder )
+                                                 .thenCompose( subscriber -> requestRecordsWhenPreviousAreConsumed( subscriber, resultHolder ) )
+                                                 .thenCompose( subscriber -> consumeNextRecordOrCompletionSignal( subscriber, resultHolder ) )
+                                                 .thenApply( this::createResponseNullSafe );
+                                         return Mono.fromCompletionStage( responseStage );
+                                     } );
     }
 
-    private Record createResponse( org.neo4j.driver.Record record )
+    private CompletionStage<RxBlockingSubscriber<Record>> getSubscriberStage( RxResultHolder resultHolder )
     {
-        return Record.builder().data( Record.RecordBody.builder().values( record ).build() ).build();
+        return resultHolder.getSubscriber()
+                           .<CompletionStage<RxBlockingSubscriber<Record>>>map( CompletableFuture::completedFuture )
+                           .orElseGet( () ->
+                                       {
+                                           RxBlockingSubscriber<Record> subscriber = new RxBlockingSubscriber<>();
+                                           CompletionStage<RxBlockingSubscriber<Record>> subscriberStage =
+                                                   subscriber.getSubscriptionStage()
+                                                             .thenApply( subscription ->
+                                                                         {
+                                                                             resultHolder.setSubscriber( subscriber );
+                                                                             return subscriber;
+                                                                         } );
+                                           resultHolder.getResult().records().subscribe( subscriber );
+                                           return subscriberStage;
+                                       } );
+    }
+
+    private CompletionStage<RxBlockingSubscriber<Record>> requestRecordsWhenPreviousAreConsumed(
+            RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder
+    )
+    {
+        return resultHolder.getRequestedRecordsCounter().get() > 0
+               ? CompletableFuture.completedFuture( subscriber )
+               : subscriber.getSubscriptionStage()
+                           .thenApply( subscription ->
+                                       {
+                                           long fetchSize = getFetchSize( resultHolder );
+                                           subscription.request( fetchSize );
+                                           resultHolder.getRequestedRecordsCounter().addAndGet( fetchSize );
+                                           return subscriber;
+                                       } );
+    }
+
+    private CompletionStage<Record> consumeNextRecord( RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder )
+    {
+        CompletableFuture<Record> recordConsumer = new CompletableFuture<>();
+        subscriber.setNextSignalConsumer( recordConsumer );
+        return recordConsumer.thenApply( record ->
+                                         {
+                                             resultHolder.getRequestedRecordsCounter().decrementAndGet();
+                                             return record;
+                                         } );
+    }
+
+    private CompletionStage<Record> consumeNextRecordOrCompletionSignal( RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder )
+    {
+        return CompletableFuture.anyOf(
+                consumeNextRecord( subscriber, resultHolder ).toCompletableFuture(),
+                subscriber.getCompletionStage().toCompletableFuture()
+        ).thenApply( Record.class::cast );
+    }
+
+    private long getFetchSize( RxResultHolder resultHolder )
+    {
+        return resultHolder.getSessionHolder().getConfig()
+                           .fetchSize()
+                           .orElse( resultHolder.getSessionHolder().getDriverHolder().getConfig().fetchSize() );
+    }
+
+    private neo4j.org.testkit.backend.messages.responses.Record createResponse( Record record )
+    {
+        return neo4j.org.testkit.backend.messages.responses.Record.builder()
+                                                                  .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
+                                                                                                                                       .values( record )
+                                                                                                                                       .build() )
+                                                                  .build();
+    }
+
+    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponseNullSafe( Record record )
+    {
+        return record != null ? createResponse( record ) : NullRecord.builder().build();
     }
 
     @Setter

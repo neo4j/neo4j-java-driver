@@ -36,7 +36,7 @@ public class TransactionClose implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        testkitState.getTransaction( data.getTxId() ).close();
+        testkitState.getTransactionHolder( data.getTxId() ).getTransaction().close();
         return createResponse( data.getTxId() );
     }
 

@@ -22,6 +22,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.ResultCursorHolder;
+import neo4j.org.testkit.backend.holder.ResultHolder;
+import neo4j.org.testkit.backend.holder.RxResultHolder;
+import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.requests.deserializer.TestkitCypherParamDeserializer;
 import neo4j.org.testkit.backend.messages.responses.Result;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -48,7 +52,8 @@ public class SessionRun implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        Session session = testkitState.getSessionStates().get( data.getSessionId() ).getSession();
+        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+        Session session = sessionHolder.getSession();
         Query query = Optional.ofNullable( data.params )
                               .map( params -> new Query( data.cypher, data.params ) )
                               .orElseGet( () -> new Query( data.cypher ) );
@@ -56,8 +61,7 @@ public class SessionRun implements TestkitRequest
         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
         Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
         org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
-        String id = testkitState.newId();
-        testkitState.getResults().put( id, result );
+        String id = testkitState.addResultHolder( new ResultHolder( sessionHolder, result ) );
 
         return createResponse( id );
     }
@@ -65,42 +69,50 @@ public class SessionRun implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        AsyncSession session = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession();
-        Query query = Optional.ofNullable( data.params )
-                              .map( params -> new Query( data.cypher, data.params ) )
-                              .orElseGet( () -> new Query( data.cypher ) );
-        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+        return testkitState.getAsyncSessionHolder( data.getSessionId() )
+                           .thenCompose( sessionHolder ->
+                                         {
+                                             AsyncSession session = sessionHolder.getSession();
+                                             Query query = Optional.ofNullable( data.params )
+                                                                   .map( params -> new Query( data.cypher, data.params ) )
+                                                                   .orElseGet( () -> new Query( data.cypher ) );
+                                             TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+                                             Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+                                             Optional.ofNullable( data.getTimeout() )
+                                                     .ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
 
-        return session.runAsync( query, transactionConfig.build() )
-                      .thenApply( resultCursor ->
-                                  {
-                                      String id = testkitState.newId();
-                                      testkitState.getResultCursors().put( id, resultCursor );
-                                      return createResponse( id );
-                                  } );
+                                             return session.runAsync( query, transactionConfig.build() )
+                                                           .thenApply( resultCursor ->
+                                                                       {
+                                                                           String id = testkitState.addAsyncResultHolder(
+                                                                                   new ResultCursorHolder( sessionHolder, resultCursor ) );
+                                                                           return createResponse( id );
+                                                                       } );
+                                         } );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        RxSession session = testkitState.getRxSessionStates().get( data.getSessionId() ).getSession();
-        Query query = Optional.ofNullable( data.params )
-                              .map( params -> new Query( data.cypher, data.params ) )
-                              .orElseGet( () -> new Query( data.cypher ) );
-        TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
-        Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+        return testkitState.getRxSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder ->
+                                     {
+                                         RxSession session = sessionHolder.getSession();
+                                         Query query = Optional.ofNullable( data.params )
+                                                               .map( params -> new Query( data.cypher, data.params ) )
+                                                               .orElseGet( () -> new Query( data.cypher ) );
+                                         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+                                         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+                                         Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
 
-        RxResult result = session.run( query, transactionConfig.build() );
-        String id = testkitState.newId();
-        testkitState.getRxResults().put( id, result );
+                                         RxResult result = session.run( query, transactionConfig.build() );
+                                         String id = testkitState.addRxResultHolder( new RxResultHolder( sessionHolder, result ) );
 
-        // The keys() method causes RUN message exchange.
-        // However, it does not currently report errors.
-        return Mono.fromDirect( result.keys() )
-                   .map( ignored -> createResponse( id ) );
+                                         // The keys() method causes RUN message exchange.
+                                         // However, it does not currently report errors.
+                                         return Mono.fromDirect( result.keys() )
+                                                    .map( ignored -> createResponse( id ) );
+                                     } );
     }
 
     private Result createResponse( String resultId )

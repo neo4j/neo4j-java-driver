@@ -30,7 +30,6 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
-import org.neo4j.driver.reactive.RxResult;
 
 @Setter
 @Getter
@@ -43,7 +42,7 @@ public class ResultConsume implements TestkitRequest
     {
         try
         {
-            Result result = testkitState.getResults().get( data.getResultId() );
+            Result result = testkitState.getResultHolder( data.getResultId() ).getResult();
             return createResponse( result.consume() );
         }
         catch ( NoSuchRecordException ignored )
@@ -55,17 +54,17 @@ public class ResultConsume implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getResultCursors().get( data.getResultId() )
-                           .consumeAsync()
+        return testkitState.getAsyncResultHolder( data.getResultId() )
+                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().consumeAsync() )
                            .thenApply( this::createResponse );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        RxResult result = testkitState.getRxResults().get( data.getResultId() );
-        return Mono.fromDirect( result.consume() )
-                   .map( this::createResponse );
+        return testkitState.getRxResultHolder( data.getResultId() )
+                           .flatMap( resultHolder -> Mono.fromDirect( resultHolder.getResult().consume() ) )
+                           .map( this::createResponse );
     }
 
     private Summary createResponse( org.neo4j.driver.summary.ResultSummary summary )

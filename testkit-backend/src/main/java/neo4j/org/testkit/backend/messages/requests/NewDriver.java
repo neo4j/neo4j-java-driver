@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.DriverHolder;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
@@ -101,15 +102,16 @@ public class NewDriver implements TestkitRequest
                                               .map( RetrySettings::new )
                                               .orElse( RetrySettings.DEFAULT );
         org.neo4j.driver.Driver driver;
+        Config config = configBuilder.build();
         try
         {
-            driver = driver( URI.create( data.uri ), authToken, configBuilder.build(), retrySettings, domainNameResolver, testkitState, id );
+            driver = driver( URI.create( data.uri ), authToken, config, retrySettings, domainNameResolver, testkitState, id );
         }
         catch ( RuntimeException e )
         {
             return handleExceptionAsErrorResponse( testkitState, e ).orElseThrow( () -> e );
         }
-        testkitState.getDrivers().putIfAbsent( id, driver );
+        testkitState.addDriverHolder( id, new DriverHolder( driver, config ) );
         return Driver.builder().data( Driver.DriverBody.builder().id( id ).build() ).build();
     }
 

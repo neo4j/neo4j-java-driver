@@ -18,21 +18,31 @@
  */
 package neo4j.org.testkit.backend;
 
-import lombok.Getter;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class RxBlockingSubscriber<T> implements Subscriber<T>
 {
-    @Getter
     private final CompletableFuture<Subscription> subscriptionFuture = new CompletableFuture<>();
+    private final CompletableFuture<Void> completionFuture = new CompletableFuture<>();
     private CompletableFuture<CompletableFuture<T>> nextSignalConsumerFuture;
 
     public void setNextSignalConsumer( CompletableFuture<T> nextSignalConsumer )
     {
         nextSignalConsumerFuture.complete( nextSignalConsumer );
+    }
+
+    public CompletionStage<Subscription> getSubscriptionStage()
+    {
+        return subscriptionFuture;
+    }
+
+    public CompletionStage<Void> getCompletionStage()
+    {
+        return completionFuture;
     }
 
     @Override
@@ -51,13 +61,13 @@ public class RxBlockingSubscriber<T> implements Subscriber<T>
     @Override
     public void onError( Throwable t )
     {
-        blockUntilNextSignalConsumer().completeExceptionally( t );
+        completionFuture.completeExceptionally( t );
     }
 
     @Override
     public void onComplete()
     {
-        blockUntilNextSignalConsumer().complete( null );
+        completionFuture.complete( null );
     }
 
     private CompletableFuture<T> blockUntilNextSignalConsumer()

@@ -36,23 +36,24 @@ public class SessionClose implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        testkitState.getSessionStates().get( data.getSessionId() ).getSession().close();
+        testkitState.getSessionHolder( data.getSessionId() ).getSession().close();
         return createResponse();
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession()
-                           .closeAsync()
+        return testkitState.getAsyncSessionHolder( data.getSessionId() )
+                           .thenCompose( sessionHolder -> sessionHolder.getSession().closeAsync() )
                            .thenApply( ignored -> createResponse() );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        return Mono.fromDirect( testkitState.getRxSessionStates().get( data.getSessionId() ).getSession().close() )
-                   .then( Mono.just( createResponse() ) );
+        return testkitState.getRxSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder -> Mono.fromDirect( sessionHolder.getSession().close() ) )
+                           .then( Mono.just( createResponse() ) );
     }
 
     private Session createResponse()
