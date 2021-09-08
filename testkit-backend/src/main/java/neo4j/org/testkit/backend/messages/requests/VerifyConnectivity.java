@@ -37,7 +37,7 @@ public class VerifyConnectivity implements TestkitRequest
     public TestkitResponse process( TestkitState testkitState )
     {
         String id = data.getDriverId();
-        testkitState.getDrivers().get( id ).verifyConnectivity();
+        testkitState.getDriverHolder( id ).getDriver().verifyConnectivity();
         return createResponse( id );
     }
 
@@ -45,7 +45,8 @@ public class VerifyConnectivity implements TestkitRequest
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         String id = data.getDriverId();
-        return testkitState.getDrivers().get( id )
+        return testkitState.getDriverHolder( id )
+                           .getDriver()
                            .verifyConnectivityAsync()
                            .thenApply( ignored -> createResponse( id ) );
     }

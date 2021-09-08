@@ -20,12 +20,11 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 @Setter
@@ -37,27 +36,35 @@ public class RetryablePositive implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        SessionState sessionState = testkitState.getSessionStates().get( data.sessionId );
-        if ( sessionState == null )
+        SessionHolder sessionHolder = testkitState.getSessionHolder( data.sessionId );
+        if ( sessionHolder == null )
         {
             throw new RuntimeException( "Could not find session" );
         }
-        sessionState.getTxWorkFuture().complete( null );
+        sessionHolder.getTxWorkFuture().complete( null );
         return null;
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        testkitState.getAsyncSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
-        return CompletableFuture.completedFuture( null );
+        return testkitState.getAsyncSessionHolder( data.getSessionId() )
+                           .thenApply( sessionHolder ->
+                                       {
+                                           sessionHolder.getTxWorkFuture().complete( null );
+                                           return null;
+                                       } );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        testkitState.getRxSessionStates().get( data.getSessionId() ).getTxWorkFuture().complete( null );
-        return Mono.empty();
+        return testkitState.getRxSessionHolder( data.getSessionId() )
+                           .mapNotNull( sessionHolder ->
+                                        {
+                                            sessionHolder.getTxWorkFuture().complete( null );
+                                            return null;
+                                        } );
     }
 
     @Setter

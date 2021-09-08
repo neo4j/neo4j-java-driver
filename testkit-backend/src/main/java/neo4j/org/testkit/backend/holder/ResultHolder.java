@@ -16,24 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend;
+package neo4j.org.testkit.backend.holder;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.neo4j.driver.Result;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.async.AsyncSession;
-
-@Getter
-@Setter
-public class AsyncSessionState
+public class ResultHolder extends AbstractResultHolder<SessionHolder,TransactionHolder,Result>
 {
-    public AsyncSession session;
-    public CompletableFuture<Void> txWorkFuture;
-
-    public AsyncSessionState( AsyncSession session )
+    public ResultHolder( SessionHolder sessionHolder, Result result )
     {
-        this.session = session;
+        super( sessionHolder, result );
+    }
+
+    public ResultHolder( TransactionHolder transactionHolder, Result result )
+    {
+        super( transactionHolder, result );
+    }
+
+    @Override
+    protected SessionHolder getSessionHolder( TransactionHolder transactionHolder )
+    {
+        return transactionHolder.getSessionHolder();
     }
 }

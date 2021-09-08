@@ -20,10 +20,11 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.AsyncSessionState;
-import neo4j.org.testkit.backend.RxSessionState;
-import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
+import neo4j.org.testkit.backend.holder.RxTransactionHolder;
+import neo4j.org.testkit.backend.holder.SessionHolder;
+import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 import reactor.core.publisher.Mono;
@@ -31,9 +32,9 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.reactive.RxSession;
@@ -47,70 +48,59 @@ public class SessionBeginTransaction implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getSessionStates().getOrDefault( data.sessionId, null ) )
-                       .map( SessionState::getSession )
-                       .map( session ->
-                             {
-                                 TransactionConfig.Builder builder = TransactionConfig.builder();
-                                 Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
+        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+        Session session = sessionHolder.getSession();
+        TransactionConfig.Builder builder = TransactionConfig.builder();
+        Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-                                 if ( data.getTimeout() != null )
-                                 {
-                                     builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-                                 }
+        if ( data.getTimeout() != null )
+        {
+            builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+        }
 
-                                 return transaction( testkitState.addTransaction( session.beginTransaction( builder.build() ) ) );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
+        org.neo4j.driver.Transaction transaction = session.beginTransaction( builder.build() );
+        return transaction( testkitState.addTransactionHolder( new TransactionHolder( sessionHolder, transaction ) ) );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        AsyncSessionState sessionState = testkitState.getAsyncSessionStates().get( data.getSessionId() );
-        if ( sessionState != null )
-        {
-            AsyncSession session = sessionState.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
+        return testkitState.getAsyncSessionHolder( data.getSessionId() )
+                           .thenCompose( sessionHolder ->
+                                         {
+                                             AsyncSession session = sessionHolder.getSession();
+                                             TransactionConfig.Builder builder = TransactionConfig.builder();
+                                             Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-            if ( data.getTimeout() != null )
-            {
-                builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-            }
+                                             if ( data.getTimeout() != null )
+                                             {
+                                                 builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+                                             }
 
-            return session.beginTransactionAsync( builder.build() ).thenApply( tx -> transaction( testkitState.addAsyncTransaction( tx ) ) );
-        }
-        else
-        {
-            CompletableFuture<TestkitResponse> future = new CompletableFuture<>();
-            future.completeExceptionally( new RuntimeException( "Could not find session" ) );
-            return future;
-        }
+                                             return session.beginTransactionAsync( builder.build() ).thenApply( tx -> transaction(
+                                                     testkitState.addAsyncTransactionHolder( new AsyncTransactionHolder( sessionHolder, tx ) ) ) );
+                                         } );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        RxSessionState sessionState = testkitState.getRxSessionStates().get( data.getSessionId() );
-        if ( sessionState != null )
-        {
-            RxSession session = sessionState.getSession();
-            TransactionConfig.Builder builder = TransactionConfig.builder();
-            Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
+        return testkitState.getRxSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder ->
+                                     {
+                                         RxSession session = sessionHolder.getSession();
+                                         TransactionConfig.Builder builder = TransactionConfig.builder();
+                                         Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-            if ( data.getTimeout() != null )
-            {
-                builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-            }
+                                         if ( data.getTimeout() != null )
+                                         {
+                                             builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+                                         }
 
-            return Mono.fromDirect( session.beginTransaction( builder.build() ) )
-                       .map( tx -> transaction( testkitState.addRxTransaction( tx ) ) );
-        }
-        else
-        {
-            return Mono.error( new RuntimeException( "Could not find session" ) );
-        }
+                                         return Mono.fromDirect( session.beginTransaction( builder.build() ) )
+                                                    .map( tx -> transaction(
+                                                            testkitState.addRxTransactionHolder( new RxTransactionHolder( sessionHolder, tx ) ) ) );
+                                     } );
     }
 
     private Transaction transaction( String txId )
