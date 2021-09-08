@@ -41,12 +41,16 @@ public class GetFeatures implements TestkitRequest
             "Optimization:PullPipelining",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
-            "Temporary:DriverMaxTxRetryTime",
+            "Temporary:DriverMaxTxRetryTime"
+    ) );
+
+    private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
+            "Temporary:TransactionClose",
             "Temporary:ResultList"
     ) );
 
-    private static final Set<String> SYNC_FEATURES = new HashSet<>( Collections.singletonList(
-            "Temporary:TransactionClose"
+    private static final Set<String> ASYNC_FEATURES = new HashSet<>( Collections.singletonList(
+            "Temporary:ResultList"
     ) );
 
     @Override
@@ -60,7 +64,9 @@ public class GetFeatures implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( createResponse( COMMON_FEATURES ) );
+        Set<String> features = new HashSet<>( COMMON_FEATURES );
+        features.addAll( ASYNC_FEATURES );
+        return CompletableFuture.completedFuture( createResponse( features ) );
     }
 
     @Override
