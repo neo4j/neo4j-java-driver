@@ -27,8 +27,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
 
-import org.neo4j.driver.async.AsyncTransaction;
-
 @Getter
 @Setter
 public class TransactionCommit implements TestkitRequest
@@ -38,22 +36,22 @@ public class TransactionCommit implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        testkitState.getTransaction( data.getTxId() ).commit();
+        testkitState.getTransactionHolder( data.getTxId() ).getTransaction().commit();
         return createResponse( data.getTxId() );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getAsyncTransaction( data.getTxId() ).thenCompose( AsyncTransaction::commitAsync )
+        return testkitState.getAsyncTransactionHolder( data.getTxId() ).thenCompose( tx -> tx.getTransaction().commitAsync() )
                            .thenApply( ignored -> createResponse( data.getTxId() ) );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        return testkitState.getRxTransaction( data.getTxId() )
-                           .flatMap( tx -> Mono.fromDirect( tx.commit() ) )
+        return testkitState.getRxTransactionHolder( data.getTxId() )
+                           .flatMap( tx -> Mono.fromDirect( tx.getTransaction().commit() ) )
                            .then( Mono.just( createResponse( data.getTxId() ) ) );
     }
 

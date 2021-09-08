@@ -18,8 +18,17 @@
  */
 package neo4j.org.testkit.backend;
 
-import lombok.AccessLevel;
 import lombok.Getter;
+import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
+import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
+import neo4j.org.testkit.backend.holder.DriverHolder;
+import neo4j.org.testkit.backend.holder.ResultCursorHolder;
+import neo4j.org.testkit.backend.holder.ResultHolder;
+import neo4j.org.testkit.backend.holder.RxResultHolder;
+import neo4j.org.testkit.backend.holder.RxSessionHolder;
+import neo4j.org.testkit.backend.holder.RxTransactionHolder;
+import neo4j.org.testkit.backend.holder.SessionHolder;
+import neo4j.org.testkit.backend.holder.TransactionHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitCallbackResult;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
@@ -27,44 +36,38 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.async.AsyncTransaction;
-import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxTransaction;
 
-@Getter
 public class TestkitState
 {
+    private static final String DRIVER_NOT_FOUND_MESSAGE = "Could not find driver";
+    private static final String SESSION_NOT_FOUND_MESSAGE = "Could not find session";
     private static final String TRANSACTION_NOT_FOUND_MESSAGE = "Could not find transaction";
+    private static final String RESULT_NOT_FOUND_MESSAGE = "Could not find result";
 
-    private final Map<String,Driver> drivers = new HashMap<>();
+    private final Map<String,DriverHolder> driverIdToDriverHolder = new HashMap<>();
+    @Getter
     private final Map<String,RoutingTableRegistry> routingTableRegistry = new HashMap<>();
-    private final Map<String,SessionState> sessionStates = new HashMap<>();
-    private final Map<String,AsyncSessionState> asyncSessionStates = new HashMap<>();
-    private final Map<String,RxSessionState> rxSessionStates = new HashMap<>();
-    private final Map<String,Result> results = new HashMap<>();
-    private final Map<String,ResultCursor> resultCursors = new HashMap<>();
-    private final Map<String,RxResult> rxResults = new HashMap<>();
-    private final Map<String,RxBlockingSubscriber<Record>> rxResultIdToRecordSubscriber = new HashMap<>();
-    @Getter( AccessLevel.NONE )
-    private final Map<String,Transaction> transactions = new HashMap<>();
-    @Getter( AccessLevel.NONE )
-    private final Map<String,AsyncTransaction> asyncTransactions = new HashMap<>();
-    @Getter( AccessLevel.NONE )
-    private final Map<String,RxTransaction> rxTransactions = new HashMap<>();
+    private final Map<String,SessionHolder> sessionIdToSessionHolder = new HashMap<>();
+    private final Map<String,AsyncSessionHolder> sessionIdToAsyncSessionHolder = new HashMap<>();
+    private final Map<String,RxSessionHolder> sessionIdToRxSessionHolder = new HashMap<>();
+    private final Map<String,ResultHolder> resultIdToResultHolder = new HashMap<>();
+    private final Map<String,ResultCursorHolder> resultIdToResultCursorHolder = new HashMap<>();
+    private final Map<String,RxResultHolder> resultIdToRxResultHolder = new HashMap<>();
+    private final Map<String,TransactionHolder> transactionIdToTransactionHolder = new HashMap<>();
+    private final Map<String,AsyncTransactionHolder> transactionIdToAsyncTransactionHolder = new HashMap<>();
+    private final Map<String,RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
+    @Getter
     private final Map<String,Neo4jException> errors = new HashMap<>();
-    @Getter( AccessLevel.NONE )
     private final AtomicInteger idGenerator = new AtomicInteger( 0 );
+    @Getter
     private final Consumer<TestkitResponse> responseWriter;
+    @Getter
     private final Map<String,CompletableFuture<TestkitCallbackResult>> callbackIdToFuture = new HashMap<>();
 
     public TestkitState( Consumer<TestkitResponse> responseWriter )
@@ -77,53 +80,140 @@ public class TestkitState
         return String.valueOf( idGenerator.getAndIncrement() );
     }
 
-    public String addTransaction( Transaction transaction )
+    public void addDriverHolder( String id, DriverHolder driverHolder )
+    {
+        driverIdToDriverHolder.put( id, driverHolder );
+    }
+
+    public DriverHolder getDriverHolder( String id )
+    {
+        return get( id, driverIdToDriverHolder, DRIVER_NOT_FOUND_MESSAGE );
+    }
+
+    public String addSessionHolder( SessionHolder sessionHolder )
+    {
+        return add( sessionHolder, sessionIdToSessionHolder );
+    }
+
+    public SessionHolder getSessionHolder( String id )
+    {
+        return get( id, sessionIdToSessionHolder, SESSION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addAsyncSessionHolder( AsyncSessionHolder sessionHolder )
+    {
+        return add( sessionHolder, sessionIdToAsyncSessionHolder );
+    }
+
+    public CompletionStage<AsyncSessionHolder> getAsyncSessionHolder( String id )
+    {
+        return getAsync( id, sessionIdToAsyncSessionHolder, SESSION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addRxSessionHolder( RxSessionHolder sessionHolder )
+    {
+        return add( sessionHolder, sessionIdToRxSessionHolder );
+    }
+
+    public Mono<RxSessionHolder> getRxSessionHolder( String id )
+    {
+        return getRx( id, sessionIdToRxSessionHolder, SESSION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addTransactionHolder( TransactionHolder transactionHolder )
+    {
+        return add( transactionHolder, transactionIdToTransactionHolder );
+    }
+
+    public TransactionHolder getTransactionHolder( String id )
+    {
+        return get( id, transactionIdToTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addAsyncTransactionHolder( AsyncTransactionHolder transactionHolder )
+    {
+        return add( transactionHolder, transactionIdToAsyncTransactionHolder );
+    }
+
+    public CompletionStage<AsyncTransactionHolder> getAsyncTransactionHolder( String id )
+    {
+        return getAsync( id, transactionIdToAsyncTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addRxTransactionHolder( RxTransactionHolder transactionHolder )
+    {
+        return add( transactionHolder, transactionIdToRxTransactionHolder );
+    }
+
+    public Mono<RxTransactionHolder> getRxTransactionHolder( String id )
+    {
+        return getRx( id, transactionIdToRxTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE );
+    }
+
+    public String addResultHolder( ResultHolder resultHolder )
+    {
+        return add( resultHolder, resultIdToResultHolder );
+    }
+
+    public ResultHolder getResultHolder( String id )
+    {
+        return get( id, resultIdToResultHolder, RESULT_NOT_FOUND_MESSAGE );
+    }
+
+    public String addAsyncResultHolder( ResultCursorHolder resultHolder )
+    {
+        return add( resultHolder, resultIdToResultCursorHolder );
+    }
+
+    public CompletionStage<ResultCursorHolder> getAsyncResultHolder( String id )
+    {
+        return getAsync( id, resultIdToResultCursorHolder, RESULT_NOT_FOUND_MESSAGE );
+    }
+
+    public String addRxResultHolder( RxResultHolder resultHolder )
+    {
+        return add( resultHolder, resultIdToRxResultHolder );
+    }
+
+    public Mono<RxResultHolder> getRxResultHolder( String id )
+    {
+        return getRx( id, resultIdToRxResultHolder, RESULT_NOT_FOUND_MESSAGE );
+    }
+
+    private <T> String add( T value, Map<String,T> idToT )
     {
         String id = newId();
-        this.transactions.put( id, transaction );
+        idToT.put( id, value );
         return id;
     }
 
-    public Transaction getTransaction( String id )
+    private <T> T get( String id, Map<String,T> idToT, String notFoundMessage )
     {
-        if ( !this.transactions.containsKey( id ) )
+        T value = idToT.get( id );
+        if ( value == null )
         {
-            throw new RuntimeException( TRANSACTION_NOT_FOUND_MESSAGE );
+            throw new RuntimeException( notFoundMessage );
         }
-        return this.transactions.get( id );
+        return value;
     }
 
-    public String addAsyncTransaction( AsyncTransaction transaction )
+    private <T> CompletableFuture<T> getAsync( String id, Map<String,T> idToT, String notFoundMessage )
     {
-        String id = newId();
-        this.asyncTransactions.put( id, transaction );
-        return id;
-    }
-
-    public CompletableFuture<AsyncTransaction> getAsyncTransaction( String id )
-    {
-        if ( !this.asyncTransactions.containsKey( id ) )
+        CompletableFuture<T> result = new CompletableFuture<>();
+        T value = idToT.get( id );
+        if ( value == null )
         {
-            CompletableFuture<AsyncTransaction> future = new CompletableFuture<>();
-            future.completeExceptionally( new RuntimeException( TRANSACTION_NOT_FOUND_MESSAGE ) );
-            return future;
+            result.completeExceptionally( new RuntimeException( notFoundMessage ) );
         }
-        return CompletableFuture.completedFuture( asyncTransactions.get( id ) );
-    }
-
-    public String addRxTransaction( RxTransaction transaction )
-    {
-        String id = newId();
-        this.rxTransactions.put( id, transaction );
-        return id;
-    }
-
-    public Mono<RxTransaction> getRxTransaction( String id )
-    {
-        if ( !this.rxTransactions.containsKey( id ) )
+        else
         {
-            return Mono.error( new RuntimeException( TRANSACTION_NOT_FOUND_MESSAGE ) );
+            result.complete( value );
         }
-        return Mono.just( rxTransactions.get( id ) );
+        return result;
+    }
+
+    private <T> Mono<T> getRx( String id, Map<String,T> idToT, String notFoundMessage )
+    {
+        return Mono.fromCompletionStage( getAsync( id, idToT, notFoundMessage ) );
     }
 }
