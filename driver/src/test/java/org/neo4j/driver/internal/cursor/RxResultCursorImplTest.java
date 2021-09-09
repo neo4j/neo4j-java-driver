@@ -123,6 +123,21 @@ class RxResultCursorImplTest
     }
 
     @Test
+    void shouldPullUnboundedOnLongMax()
+    {
+        // Given
+        RunResponseHandler runHandler = newRunResponseHandler();
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+
+        // When
+        cursor.request( Long.MAX_VALUE );
+
+        // Then
+        verify( pullHandler ).request( -1 );
+    }
+
+    @Test
     void shouldCancel()
     {
         // Given

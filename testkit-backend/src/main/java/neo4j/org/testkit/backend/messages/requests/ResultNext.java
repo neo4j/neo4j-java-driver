@@ -132,9 +132,10 @@ public class ResultNext implements TestkitRequest
 
     private long getFetchSize( RxResultHolder resultHolder )
     {
-        return resultHolder.getSessionHolder().getConfig()
-                           .fetchSize()
-                           .orElse( resultHolder.getSessionHolder().getDriverHolder().getConfig().fetchSize() );
+        long fetchSize = resultHolder.getSessionHolder().getConfig()
+                                     .fetchSize()
+                                     .orElse( resultHolder.getSessionHolder().getDriverHolder().getConfig().fetchSize() );
+        return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }
 
     private neo4j.org.testkit.backend.messages.responses.Record createResponse( Record record )
