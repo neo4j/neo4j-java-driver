@@ -88,6 +88,10 @@ public class RxResultCursorImpl implements RxResultCursor
     @Override
     public void request( long n )
     {
+        if ( n == Long.MAX_VALUE )
+        {
+            n = -1;
+        }
         pullHandler.request( n );
     }
 
