@@ -39,14 +39,14 @@ public class ResultList implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return createResponse( testkitState.getResults().get( data.getResultId() ).list() );
+        return createResponse( testkitState.getResultHolder( data.getResultId() ).getResult().list() );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return testkitState.getResultCursors().get( data.getResultId() )
-                           .listAsync()
+        return testkitState.getAsyncResultHolder( data.getResultId() )
+                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().listAsync() )
                            .thenApply( this::createResponse );
     }
 

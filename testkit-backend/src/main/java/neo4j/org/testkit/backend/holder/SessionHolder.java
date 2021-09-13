@@ -16,23 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend;
-
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.concurrent.CompletableFuture;
+package neo4j.org.testkit.backend.holder;
 
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 
-@Getter
-@Setter
-public class SessionState
+public class SessionHolder extends AbstractSessionHolder<Session>
 {
-    public Session session;
-    public CompletableFuture<Void> txWorkFuture;
-
-    public SessionState(Session session) {
-        this.session = session;
+    public SessionHolder( DriverHolder driverHolder, Session session, SessionConfig config )
+    {
+        super( driverHolder, session, config );
     }
 }

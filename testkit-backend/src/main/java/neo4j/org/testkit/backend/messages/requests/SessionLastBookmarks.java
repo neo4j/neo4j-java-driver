@@ -20,14 +20,12 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.SessionState;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
@@ -41,28 +39,25 @@ public class SessionLastBookmarks implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return Optional.ofNullable( testkitState.getSessionStates().getOrDefault( data.sessionId, null ) )
-                       .map( SessionState::getSession )
-                       .map( session ->
-                             {
-                                 Bookmark bookmark = testkitState.getSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-                                 return createResponse( bookmark );
-                             } )
-                       .orElseThrow( () -> new RuntimeException( "Could not find session" ) );
+        SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
+        Bookmark bookmark = sessionHolder.getSession().lastBookmark();
+        return createResponse( bookmark );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        Bookmark bookmark = testkitState.getAsyncSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-        return CompletableFuture.completedFuture( createResponse( bookmark ) );
+        return testkitState.getAsyncSessionHolder( data.getSessionId() )
+                           .thenApply( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .thenApply( this::createResponse );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        Bookmark bookmark = testkitState.getRxSessionStates().get( data.getSessionId() ).getSession().lastBookmark();
-        return Mono.just( createResponse( bookmark ) );
+        return testkitState.getRxSessionHolder( data.getSessionId() )
+                           .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .map( this::createResponse );
     }
 
     private Bookmarks createResponse( Bookmark bookmark )

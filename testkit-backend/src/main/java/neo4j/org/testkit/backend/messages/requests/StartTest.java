@@ -50,6 +50,10 @@ public class StartTest implements TestkitRequest
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.RoutingV3\\..*$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_supports_bolt_3x0", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_all_v3$", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_discards_on_session_close$", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationTxRun\\.test_batch_v3$", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationTxRun\\.test_all_v3$", skipMessage );
 
         // Current limitations (require further investigation or bug fixing)
         skipMessage = "Does not report RUN FAILURE";
@@ -59,35 +63,17 @@ public class StartTest implements TestkitRequest
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestDisconnects\\.test_disconnect_on_tx_run$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestRetry\\..*$", "Unfinished results consumption" );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestRetryClustering\\..*$", "Unfinished results consumption" );
-        skipMessage = "Does not support PULL pipelining";
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_and_rediscovery_until_success$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_read_tx_until_success_on_error$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_and_rediscovery_until_success$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_write_tx_until_success_on_error$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_reader_using_session_run$",
-                                             skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_reader_using_tx_run$",
-                                             skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_on_unexpectedly_interrupting_writer_using_session_run$",
-                                             skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_readers_using_tx_function$",
-                                             skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_to_unexpectedly_interrupting_writers_using_tx_function$",
-                                             skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_write_until_success_with_leader_change_using_tx_function$",
-                                             skipMessage );
-        skipMessage = "Custom fetch size not supported";
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRouting[^.]+\\.test_should_accept_custom_fetch_size_using_driver_configuration$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRouting[^.]+\\.test_should_pull_all_when_fetch_is_minus_one_using_driver_configuration", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRouting[^.]+\\.test_should_pull_custom_size_and_then_all_using_session_configuration$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRouting[^.]+\\.test_should_accept_custom_fetch_size_using_session_configuration$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationTxRun\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTxRun\\.test_rollback_tx_on_session_close_consumed_result$", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_discard_on_session_close_unfinished_result$",
+                                             "Does not support partially consumed state" );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRouting[^.]+\\.test_should_error_on_database_shutdown_using_tx_run$", "Session close throws error" );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_retry_write_until_success_with_leader_shutdown_during_tx_using_tx_function$",
                                              "Commit failure leaks outside function" );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_reading_from_unexpectedly_interrupting_readers_on_run_using_tx_function$",
+                "Rollback failures following commit failure" );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put(
+                "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_to_unexpectedly_interrupting_writers_on_run_using_tx_function$",
+                "Rollback failures following commit failure" );
         skipMessage = "Requires investigation";
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_server_agent", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_server_version", skipMessage );

@@ -26,7 +26,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -38,15 +37,20 @@ public class GetFeatures implements TestkitRequest
 {
     private static final Set<String> COMMON_FEATURES = new HashSet<>( Arrays.asList(
             "AuthorizationExpiredTreatment",
-            "Optimization:PullPipelining",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
-            "Temporary:DriverMaxTxRetryTime",
+            "Temporary:DriverMaxTxRetryTime"
+    ) );
+
+    private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
+            "Optimization:PullPipelining",
+            "Temporary:TransactionClose",
             "Temporary:ResultList"
     ) );
 
-    private static final Set<String> SYNC_FEATURES = new HashSet<>( Collections.singletonList(
-            "Temporary:TransactionClose"
+    private static final Set<String> ASYNC_FEATURES = new HashSet<>( Arrays.asList(
+            "Optimization:PullPipelining",
+            "Temporary:ResultList"
     ) );
 
     @Override
@@ -60,7 +64,9 @@ public class GetFeatures implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        return CompletableFuture.completedFuture( createResponse( COMMON_FEATURES ) );
+        Set<String> features = new HashSet<>( COMMON_FEATURES );
+        features.addAll( ASYNC_FEATURES );
+        return CompletableFuture.completedFuture( createResponse( features ) );
     }
 
     @Override

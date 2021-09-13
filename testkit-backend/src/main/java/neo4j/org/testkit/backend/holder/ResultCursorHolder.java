@@ -16,24 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend;
+package neo4j.org.testkit.backend.holder;
 
-import lombok.Getter;
-import lombok.Setter;
+import org.neo4j.driver.async.ResultCursor;
 
-import java.util.concurrent.CompletableFuture;
-
-import org.neo4j.driver.reactive.RxSession;
-
-@Getter
-@Setter
-public class RxSessionState
+public class ResultCursorHolder extends AbstractResultHolder<AsyncSessionHolder,AsyncTransactionHolder,ResultCursor>
 {
-    public RxSession session;
-    public CompletableFuture<Void> txWorkFuture;
-
-    public RxSessionState( RxSession session )
+    public ResultCursorHolder( AsyncSessionHolder sessionHolder, ResultCursor result )
     {
-        this.session = session;
+        super( sessionHolder, result );
+    }
+
+    public ResultCursorHolder( AsyncTransactionHolder transactionHolder, ResultCursor result )
+    {
+        super( transactionHolder, result );
+    }
+
+    @Override
+    protected AsyncSessionHolder getSessionHolder( AsyncTransactionHolder transactionHolder )
+    {
+        return transactionHolder.getSessionHolder();
     }
 }
