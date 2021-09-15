@@ -18,10 +18,9 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 
@@ -30,6 +29,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
@@ -48,6 +48,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
@@ -136,5 +137,46 @@ class InternalRxTransactionTest
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
         assertThat( t.getCause(), equalTo( error ) );
         verify( tx ).markTerminated( error );
+    }
+
+    @Test
+    void shouldCommitWhenOpen()
+    {
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
+        when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
+
+        InternalRxTransaction rxTx = new InternalRxTransaction( tx );
+        Publisher<Void> publisher = rxTx.commitIfOpen();
+        StepVerifier.create( publisher ).verifyComplete();
+
+        verify( tx ).commitAsync();
+    }
+
+    @Test
+    void shouldNotCommitWhenNotOpen()
+    {
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( false );
+        when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
+
+        InternalRxTransaction rxTx = new InternalRxTransaction( tx );
+        Publisher<Void> publisher = rxTx.commitIfOpen();
+        StepVerifier.create( publisher ).verifyComplete();
+
+        verify( tx, never() ).commitAsync();
+    }
+
+    @Test
+    void shouldDelegateClose()
+    {
+        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.closeAsync() ).thenReturn( Futures.completedWithNull() );
+
+        InternalRxTransaction rxTx = new InternalRxTransaction( tx );
+        Publisher<Void> publisher = rxTx.close();
+        StepVerifier.create( publisher ).verifyComplete();
+
+        verify( tx ).closeAsync();
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.driver.internal.reactive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,11 +34,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
@@ -199,6 +199,7 @@ class InternalRxSessionTest
         // Given
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
@@ -222,6 +223,7 @@ class InternalRxSessionTest
         int retryCount = 2;
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
@@ -239,7 +241,7 @@ class InternalRxSessionTest
 
         // Then
         verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx, times( retryCount + 1 ) ).rollbackAsync();
+        verify( tx, times( retryCount + 1 ) ).closeAsync();
     }
 
     @Test
@@ -249,6 +251,7 @@ class InternalRxSessionTest
         int retryCount = 2;
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
+        when( tx.isOpen() ).thenReturn( true );
         when( tx.commitAsync() ).thenReturn( completedWithNull() );
         when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
 
@@ -273,7 +276,7 @@ class InternalRxSessionTest
 
         // Then
         verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx, times( retryCount ) ).rollbackAsync();
+        verify( tx, times( retryCount ) ).closeAsync();
         verify( tx ).commitAsync();
     }
 

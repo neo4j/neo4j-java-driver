@@ -18,11 +18,11 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
@@ -30,6 +30,7 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTransaction
 {
@@ -67,26 +68,22 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
     @Override
     public <T> Publisher<T> commit()
     {
-        return close( true );
+        return createEmptyPublisher( tx::commitAsync );
     }
 
     @Override
     public <T> Publisher<T> rollback()
     {
-        return close( false );
+        return createEmptyPublisher( tx::rollbackAsync );
     }
 
-    private <T> Publisher<T> close( boolean commit )
+    Publisher<Void> commitIfOpen()
     {
-        return createEmptyPublisher( () -> {
-            if ( commit )
-            {
-                return tx.commitAsync();
-            }
-            else
-            {
-                return tx.rollbackAsync();
-            }
-        } );
+        return createEmptyPublisher( () -> tx.isOpen() ? tx.commitAsync() : completedWithNull() );
+    }
+
+    Publisher<Void> close()
+    {
+        return createEmptyPublisher( tx::closeAsync );
     }
 }
