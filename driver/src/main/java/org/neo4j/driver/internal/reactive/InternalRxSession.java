@@ -81,12 +81,12 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
                 }, () -> new IllegalStateException( "Unexpected condition, begin transaction call has completed successfully with transaction being null" ) );
     }
 
-    private Publisher<RxTransaction> beginTransaction( AccessMode mode, TransactionConfig config )
+    private Publisher<InternalRxTransaction> beginTransaction( AccessMode mode, TransactionConfig config )
     {
         return createSingleItemPublisher(
                 () ->
                 {
-                    CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
+                    CompletableFuture<InternalRxTransaction> txFuture = new CompletableFuture<>();
                     session.beginTransactionAsync( mode, config ).whenComplete(
                             ( tx, completionError ) ->
                             {
@@ -130,7 +130,7 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute,
-                RxTransaction::commit, ( tx, error ) -> tx.rollback(), null );
+                                                 InternalRxTransaction::commitIfOpen, ( tx, error ) -> tx.close(), null );
         return session.retryLogic().retryRx( repeatableWork );
     }
 
