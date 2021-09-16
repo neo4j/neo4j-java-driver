@@ -40,6 +40,7 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
@@ -182,6 +183,11 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
                 contextView ->
                 {
                     Throwable throwable = retrySignal.failure();
+                    // Extract nested Neo4jException from not Neo4jException. Reactor usingWhen returns RuntimeException on async resource cleanup failure.
+                    if ( throwable != null && !(throwable instanceof Neo4jException) && throwable.getCause() instanceof Neo4jException )
+                    {
+                        throwable = throwable.getCause();
+                    }
                     Throwable error = extractPossibleTerminationCause( throwable );
 
                     List<Throwable> errors = contextView.getOrDefault( "errors", null );

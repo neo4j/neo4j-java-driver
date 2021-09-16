@@ -1009,6 +1009,29 @@ class ExponentialBackoffRetryLogicTest
     }
 
     @Test
+    void doesRetryOnAsyncResourceCleanupRuntimeExceptionRx()
+    {
+        Clock clock = mock( Clock.class );
+        Logging logging = mock( Logging.class );
+        Logger logger = mock( Logger.class );
+        when( logging.getLog( anyString() ) ).thenReturn( logger );
+        ExponentialBackoffRetryLogic logic = new ExponentialBackoffRetryLogic( RetrySettings.DEFAULT, eventExecutor, clock, logging );
+
+        AtomicBoolean exceptionThrown = new AtomicBoolean( false );
+        String result = await( Mono.from( logic.retryRx( Mono.fromSupplier( () ->
+                                                                            {
+                                                                                if ( exceptionThrown.compareAndSet( false, true ) )
+                                                                                {
+                                                                                    throw new RuntimeException( "Async resource cleanup failed after",
+                                                                                                                authorizationExpiredException() );
+                                                                                }
+                                                                                return "Done";
+                                                                            } ) ) ) );
+
+        assertEquals( "Done", result );
+    }
+
+    @Test
     void doesNotRetryOnRandomClientExceptionRx()
     {
         Clock clock = mock( Clock.class );
