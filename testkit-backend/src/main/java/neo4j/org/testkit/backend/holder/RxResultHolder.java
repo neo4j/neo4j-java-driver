@@ -38,11 +38,13 @@ public class RxResultHolder extends AbstractResultHolder<RxSessionHolder,RxTrans
     public RxResultHolder( RxSessionHolder sessionHolder, RxResult result )
     {
         super( sessionHolder, result );
+        sessionHolder.setResultHolder( this );
     }
 
     public RxResultHolder( RxTransactionHolder transactionHolder, RxResult result )
     {
         super( transactionHolder, result );
+        transactionHolder.getSessionHolder().setResultHolder( this );
     }
 
     public Optional<RxBlockingSubscriber<Record>> getSubscriber()
