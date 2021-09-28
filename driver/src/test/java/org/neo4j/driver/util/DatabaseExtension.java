@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.util;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -41,7 +42,7 @@ import static org.neo4j.driver.util.Neo4jRunner.getOrCreateGlobalRunner;
 import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_CERT_PATH;
 import static org.neo4j.driver.util.Neo4jSettings.DEFAULT_TLS_KEY_PATH;
 
-public class DatabaseExtension implements BeforeEachCallback
+public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
 {
     static final String TEST_RESOURCE_FOLDER_PATH = "src/test/resources";
 
@@ -64,6 +65,15 @@ public class DatabaseExtension implements BeforeEachCallback
         runner = getOrCreateGlobalRunner();
         runner.ensureRunning( settings );
         TestUtil.cleanDb( driver() );
+    }
+
+    @Override
+    public void afterAll( ExtensionContext context )
+    {
+        if ( runner != null )
+        {
+            runner.stopNeo4j();
+        }
     }
 
     public Driver driver()
