@@ -75,6 +75,9 @@ public class NewDriver implements TestkitRequest
                                           data.authorizationToken.getTokens().get( "credentials" ),
                                           data.authorizationToken.getTokens().get( "realm" ) );
             break;
+        case "bearer":
+            authToken = AuthTokens.bearer( data.authorizationToken.getTokens().get( "credentials" ) );
+            break;
         default:
             return BackendError.builder()
                                .data( BackendError

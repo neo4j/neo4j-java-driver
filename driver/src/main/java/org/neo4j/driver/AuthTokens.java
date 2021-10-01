@@ -24,13 +24,13 @@ import java.util.Objects;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 
 import static java.util.Collections.singletonMap;
+import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.security.InternalAuthToken.CREDENTIALS_KEY;
 import static org.neo4j.driver.internal.security.InternalAuthToken.PARAMETERS_KEY;
 import static org.neo4j.driver.internal.security.InternalAuthToken.PRINCIPAL_KEY;
 import static org.neo4j.driver.internal.security.InternalAuthToken.REALM_KEY;
 import static org.neo4j.driver.internal.security.InternalAuthToken.SCHEME_KEY;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
-import static org.neo4j.driver.Values.value;
 
 /**
  * This is a listing of the various methods of authentication supported by this
@@ -80,12 +80,31 @@ public class AuthTokens
     }
 
     /**
+     * The bearer authentication scheme, using a base64 encoded token.
+     *
+     * @param token base64 encoded token
+     * @return an authentication token that can be used to connect to Neo4j
+     * @throws NullPointerException when token is {@code null}
+     * @see GraphDatabase#driver(String, AuthToken)
+     */
+    public static AuthToken bearer( String token )
+    {
+        Objects.requireNonNull( token, "Token can't be null" );
+
+        Map<String,Value> map = newHashMapWithSize( 2 );
+        map.put( SCHEME_KEY, value( "bearer" ) );
+        map.put( CREDENTIALS_KEY, value( token ) );
+        return new InternalAuthToken( map );
+    }
+
+    /**
      * The kerberos authentication scheme, using a base64 encoded ticket
+     *
      * @param base64EncodedTicket a base64 encoded service ticket
      * @return an authentication token that can be used to connect to Neo4j
+     * @throws NullPointerException when ticket is {@code null}
      * @see GraphDatabase#driver(String, AuthToken)
      * @since 1.3
-     * @throws NullPointerException when ticket is {@code null}
      */
     public static AuthToken kerberos( String base64EncodedTicket )
     {
