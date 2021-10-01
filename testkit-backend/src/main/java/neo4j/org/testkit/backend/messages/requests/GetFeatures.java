@@ -39,7 +39,8 @@ public class GetFeatures implements TestkitRequest
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
-            "Temporary:DriverMaxTxRetryTime"
+            "Temporary:DriverMaxTxRetryTime",
+            "Feature:Auth:Kerberos"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
