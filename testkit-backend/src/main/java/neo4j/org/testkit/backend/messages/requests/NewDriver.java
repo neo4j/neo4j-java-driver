@@ -79,7 +79,7 @@ public class NewDriver implements TestkitRequest
             authToken = AuthTokens.bearer( data.authorizationToken.getTokens().get( "credentials" ) );
             break;
         case "kerberos":
-            authToken = AuthTokens.kerberos(data.authorizationToken.getTokens().get( "ticket" ));
+            authToken = AuthTokens.kerberos( data.authorizationToken.getTokens().get( "credentials" ) );
             break;
         default:
             return BackendError.builder()
