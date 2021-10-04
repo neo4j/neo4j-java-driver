@@ -31,5 +31,16 @@ import java.util.Map;
 public class AuthorizationToken
 {
     @JsonProperty( "data" )
-    private Map<String,String> tokens;
+    private Tokens tokens;
+
+    @Getter
+    @Setter
+    public static class Tokens
+    {
+        private String scheme;
+        private String principal;
+        private String credentials;
+        private String realm;
+        private Map<String,Object> parameters;
+    }
 }
