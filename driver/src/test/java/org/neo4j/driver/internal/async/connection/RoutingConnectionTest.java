@@ -71,7 +71,7 @@ class RoutingConnectionTest
         // given
         Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
         String agent = "Neo4j/4.2.5";
         given( connection.serverAgent() ).willReturn( agent );
 
@@ -87,7 +87,7 @@ class RoutingConnectionTest
     {
         Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
 
         if ( flush )
         {
@@ -116,7 +116,7 @@ class RoutingConnectionTest
     {
         Connection connection = mock( Connection.class );
         RoutingErrorHandler errorHandler = mock( RoutingErrorHandler.class );
-        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, errorHandler );
+        RoutingConnection routingConnection = new RoutingConnection( connection, defaultDatabase(), READ, null, errorHandler );
 
         if ( flush )
         {

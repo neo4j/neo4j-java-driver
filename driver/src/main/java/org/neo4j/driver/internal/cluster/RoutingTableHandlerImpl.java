@@ -72,6 +72,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
         routingTable.forgetWriter( address );
     }
 
+    @Override
     public synchronized CompletionStage<RoutingTable> ensureRoutingTable( ConnectionContext context )
     {
         if ( refreshRoutingTableFuture != null )
@@ -87,19 +88,19 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark() )
-                    .whenComplete( ( composition, completionError ) ->
-                    {
-                        Throwable error = Futures.completionExceptionCause( completionError );
-                        if ( error != null )
-                        {
-                            clusterCompositionLookupFailed( error );
-                        }
-                        else
-                        {
-                            freshClusterCompositionFetched( composition );
-                        }
-                    } );
+            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark(), null )
+                       .whenComplete( ( composition, completionError ) ->
+                                      {
+                                          Throwable error = Futures.completionExceptionCause( completionError );
+                                          if ( error != null )
+                                          {
+                                              clusterCompositionLookupFailed( error );
+                                          }
+                                          else
+                                          {
+                                              freshClusterCompositionFetched( composition );
+                                          }
+                                      } );
 
             return resultFuture;
         }
@@ -107,6 +108,27 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
         {
             // existing routing table is fresh, use it
             return completedFuture( routingTable );
+        }
+    }
+
+    @Override
+    public synchronized CompletionStage<RoutingTable> updateRoutingTable( ClusterCompositionLookupResult compositionLookupResult )
+    {
+        if ( refreshRoutingTableFuture != null )
+        {
+            // refresh is already happening concurrently, just use its result
+            return refreshRoutingTableFuture;
+        }
+        else
+        {
+            if ( compositionLookupResult.getClusterComposition().expirationTimestamp() < routingTable.expirationTimestamp() )
+            {
+                return completedFuture( routingTable );
+            }
+            CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
+            refreshRoutingTableFuture = resultFuture;
+            freshClusterCompositionFetched( compositionLookupResult );
+            return resultFuture;
         }
     }
 

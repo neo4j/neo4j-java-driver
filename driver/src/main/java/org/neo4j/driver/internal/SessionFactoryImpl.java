@@ -52,7 +52,8 @@ public class SessionFactoryImpl implements SessionFactory
     {
         BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( InternalBookmark.from( sessionConfig.bookmarks() ) );
         return createSession( connectionProvider, retryLogic, parseDatabaseName( sessionConfig ),
-                sessionConfig.defaultAccessMode(), bookmarkHolder, parseFetchSize( sessionConfig ), logging );
+                              sessionConfig.defaultAccessMode(), bookmarkHolder, parseFetchSize( sessionConfig ),
+                              sessionConfig.impersonatedUser().orElse( null ), logging );
     }
 
     private long parseFetchSize( SessionConfig sessionConfig )
@@ -98,10 +99,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-            BookmarkHolder bookmarkHolder, long fetchSize, Logging logging )
+                                          BookmarkHolder bookmarkHolder, long fetchSize, String impersonatedUser, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, fetchSize, logging )
-               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, fetchSize, logging );
+               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, impersonatedUser, fetchSize, logging )
+               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, impersonatedUser, fetchSize, logging );
     }
 }

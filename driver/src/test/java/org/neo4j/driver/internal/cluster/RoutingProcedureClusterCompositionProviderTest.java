@@ -72,12 +72,12 @@ class RoutingProcedureClusterCompositionProviderTest
                 newClusterCompositionProvider( mockedRunner, connection );
 
         RoutingProcedureResponse noRecordsResponse = newRoutingResponse();
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
                 .thenReturn( completedFuture( noRecordsResponse ) );
 
         // When & Then
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "records received '0' is too few or too many." ) );
     }
 
@@ -92,11 +92,12 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{new StringValue( "a value" )} );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord, aRecord );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "records received '2' is too few or too many." ) );
     }
 
@@ -111,11 +112,12 @@ class RoutingProcedureClusterCompositionProviderTest
 
         Record aRecord = new InternalRecord( asList( "key1", "key2" ), new Value[]{new StringValue( "a value" )} );
         RoutingProcedureResponse routingResponse = newRoutingResponse( aRecord );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "unparsable record received." ) );
     }
 
@@ -135,12 +137,13 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -160,12 +163,13 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "WRITE", "one:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -185,12 +189,13 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -210,12 +215,13 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedFuture( routingResponse ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
         ProtocolException error = assertThrows( ProtocolException.class,
-                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( error.getMessage(), containsString( "no router or reader found in response." ) );
     }
 
@@ -228,12 +234,12 @@ class RoutingProcedureClusterCompositionProviderTest
         ClusterCompositionProvider provider =
                 newClusterCompositionProvider( mockedRunner, connection );
 
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( failedFuture(
-                new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
+                .thenReturn( failedFuture( new ServiceUnavailableException( "Connection breaks during cypher execution" ) ) );
 
         // When & Then
         ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class,
-                                                      () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                                      () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertThat( e.getMessage(), containsString( "Connection breaks during cypher execution" ) );
     }
 
@@ -254,12 +260,12 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
                 .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterComposition cluster = await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) );
+        ClusterComposition cluster = await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) );
 
         // Then
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
@@ -285,12 +291,12 @@ class RoutingProcedureClusterCompositionProviderTest
                 serverInfo( "ROUTE", "one:1337", "two:1337" ) ) )
         } );
         RoutingProcedureResponse routingResponse = newRoutingResponse( record );
-        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
+        when( mockedRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
                 .thenReturn( completedFuture( routingResponse ) );
         when( mockedClock.millis() ).thenReturn( 12345L );
 
         // When
-        ClusterComposition cluster = await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) );
+        ClusterComposition cluster = await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) );
 
         // Then
         assertEquals( 12345 + 100_000, cluster.expirationTimestamp() );
@@ -306,14 +312,14 @@ class RoutingProcedureClusterCompositionProviderTest
         Connection connection = mock( Connection.class );
 
         RuntimeException error = new RuntimeException( "hi" );
-        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) )
+        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) )
                 .thenReturn( completedFuture( newRoutingResponse( error ) ) );
 
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider( procedureRunner, connection );
 
         RuntimeException e = assertThrows( RuntimeException.class,
-                                           () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty() ) ) );
+                                           () -> await( provider.getClusterComposition( connection, defaultDatabase(), empty(), null ) ) );
         assertEquals( error, e );
     }
 
@@ -326,10 +332,10 @@ class RoutingProcedureClusterCompositionProviderTest
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider( procedureRunner, connection );
 
-        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedWithNull() );
-        provider.getClusterComposition( connection, defaultDatabase(), empty() );
+        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) ).thenReturn( completedWithNull() );
+        provider.getClusterComposition( connection, defaultDatabase(), empty(), null );
 
-        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) );
+        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() );
     }
 
     @Test
@@ -341,10 +347,10 @@ class RoutingProcedureClusterCompositionProviderTest
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider( procedureRunner, connection );
 
-        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedWithNull() );
-        provider.getClusterComposition( connection, defaultDatabase(), empty() );
+        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) ).thenReturn( completedWithNull() );
+        provider.getClusterComposition( connection, defaultDatabase(), empty(), null );
 
-        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) );
+        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() );
     }
 
     @Test
@@ -356,10 +362,10 @@ class RoutingProcedureClusterCompositionProviderTest
         RoutingProcedureClusterCompositionProvider provider =
                 newClusterCompositionProvider( procedureRunner, connection );
 
-        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) ) ).thenReturn( completedWithNull() );
-        provider.getClusterComposition( connection, defaultDatabase(), empty() );
+        when( procedureRunner.run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() ) ).thenReturn( completedWithNull() );
+        provider.getClusterComposition( connection, defaultDatabase(), empty(), null );
 
-        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ) );
+        verify( procedureRunner ).run( eq( connection ), any( DatabaseName.class ), any( InternalBookmark.class ), any() );
     }
 
     private static Map<String,Object> serverInfo( String role, String... addresses )

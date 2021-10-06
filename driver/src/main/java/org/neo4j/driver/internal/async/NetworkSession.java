@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +35,7 @@ import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
+import org.neo4j.driver.internal.ImpersonationUtil;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -63,14 +65,17 @@ public class NetworkSession
     private final AtomicBoolean open = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-            BookmarkHolder bookmarkHolder, long fetchSize, Logging logging )
+                           BookmarkHolder bookmarkHolder, String impersonatedUser, long fetchSize, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.log = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( getClass() ) );
         this.bookmarkHolder = bookmarkHolder;
-        this.connectionContext = new NetworkSessionConnectionContext( databaseName, bookmarkHolder.getBookmark() );
+        CompletableFuture<DatabaseName> databaseNameFuture = databaseName.databaseName()
+                                                                         .map( ignored -> CompletableFuture.completedFuture( databaseName ) )
+                                                                         .orElse( new CompletableFuture<>() );
+        this.connectionContext = new NetworkSessionConnectionContext( databaseNameFuture, bookmarkHolder.getBookmark(), impersonatedUser );
         this.fetchSize = fetchSize;
     }
 
@@ -104,6 +109,7 @@ public class NetworkSession
         // create a chain that acquires connection and starts a transaction
         CompletionStage<UnmanagedTransaction> newTransactionStage = ensureNoOpenTxBeforeStartingTx()
                 .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenApply( connection -> ImpersonationUtil.ensureImpersonationSupport( connection, connection.impersonatedUser() ) )
                 .thenCompose( connection ->
                 {
                     UnmanagedTransaction tx = new UnmanagedTransaction( connection, bookmarkHolder, fetchSize );
@@ -227,6 +233,7 @@ public class NetworkSession
 
         return ensureNoOpenTxBeforeRunningQuery()
                 .thenCompose( ignore -> acquireConnection( mode ) )
+                .thenApply( connection -> ImpersonationUtil.ensureImpersonationSupport( connection, connection.impersonatedUser() ) )
                 .thenCompose(
                         connection ->
                         {
@@ -350,18 +357,20 @@ public class NetworkSession
      */
     private static class NetworkSessionConnectionContext implements ConnectionContext
     {
-        private final DatabaseName databaseName;
+        private final CompletableFuture<DatabaseName> databaseNameFuture;
         private AccessMode mode;
 
         // This bookmark is only used for rediscovery.
         // It has to be the initial bookmark given at the creation of the session.
         // As only that bookmark could carry extra system bookmarks
         private final Bookmark rediscoveryBookmark;
+        private final String impersonatedUser;
 
-        private NetworkSessionConnectionContext( DatabaseName databaseName, Bookmark bookmark )
+        private NetworkSessionConnectionContext( CompletableFuture<DatabaseName> databaseNameFuture, Bookmark bookmark, String impersonatedUser )
         {
-            this.databaseName = databaseName;
+            this.databaseNameFuture = databaseNameFuture;
             this.rediscoveryBookmark = bookmark;
+            this.impersonatedUser = impersonatedUser;
         }
 
         private ConnectionContext contextWithMode( AccessMode mode )
@@ -371,9 +380,9 @@ public class NetworkSession
         }
 
         @Override
-        public DatabaseName databaseName()
+        public CompletableFuture<DatabaseName> databaseNameFuture()
         {
-            return databaseName;
+            return databaseNameFuture;
         }
 
         @Override
@@ -386,6 +395,12 @@ public class NetworkSession
         public Bookmark rediscoveryBookmark()
         {
             return rediscoveryBookmark;
+        }
+
+        @Override
+        public String impersonatedUser()
+        {
+            return impersonatedUser;
         }
     }
 

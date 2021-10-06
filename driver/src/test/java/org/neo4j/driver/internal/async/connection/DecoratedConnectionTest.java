@@ -210,7 +210,7 @@ class DecoratedConnectionTest
     @EnumSource( AccessMode.class )
     void shouldReturnModeFromConstructor( AccessMode mode )
     {
-        DirectConnection connection = new DirectConnection( mock( Connection.class ), defaultDatabase(), mode );
+        DirectConnection connection = new DirectConnection( mock( Connection.class ), defaultDatabase(), mode, null );
 
         assertEquals( mode, connection.mode() );
     }
@@ -226,6 +226,6 @@ class DecoratedConnectionTest
     
     private static DirectConnection newConnection( Connection connection )
     {
-        return new DirectConnection( connection, defaultDatabase(), READ );
+        return new DirectConnection( connection, defaultDatabase(), READ, null );
     }
 }

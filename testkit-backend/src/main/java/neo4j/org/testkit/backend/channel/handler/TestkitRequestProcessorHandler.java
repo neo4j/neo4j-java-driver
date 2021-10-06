@@ -36,7 +36,7 @@ import java.util.function.BiFunction;
 
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
 public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
 {
@@ -154,7 +154,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     private boolean isConnectionPoolClosedException( Throwable throwable )
     {
         return throwable instanceof IllegalStateException && throwable.getMessage() != null &&
-               throwable.getMessage().equals( ConnectionPoolImpl.CONNECTION_POOL_CLOSED_ERROR_MESSAGE );
+               throwable.getMessage().equals( ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE );
     }
 
     private void writeAndFlush( TestkitResponse response )

@@ -40,20 +40,20 @@ public class RunWithMetadataMessage extends MessageWithMetadata
     private final String query;
     private final Map<String,Value> parameters;
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage(Query query, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
-            Bookmark bookmark )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
+                                                                 Bookmark bookmark, String impersonatedUser )
     {
-        return autoCommitTxRunMessage(query, config.timeout(), config.metadata(), databaseName, mode, bookmark );
+        return autoCommitTxRunMessage( query, config.timeout(), config.metadata(), databaseName, mode, bookmark, impersonatedUser );
     }
 
-    public static RunWithMetadataMessage autoCommitTxRunMessage(Query query, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
-            AccessMode mode, Bookmark bookmark )
+    public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
+                                                                 AccessMode mode, Bookmark bookmark, String impersonatedUser )
     {
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser );
         return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), metadata );
     }
 
-    public static RunWithMetadataMessage unmanagedTxRunMessage(Query query)
+    public static RunWithMetadataMessage unmanagedTxRunMessage( Query query )
     {
         return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), emptyMap() );
     }

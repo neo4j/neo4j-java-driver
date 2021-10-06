@@ -42,7 +42,9 @@ public class GetFeatures implements TestkitRequest
             "Temporary:DriverMaxTxRetryTime",
             "Feature:Auth:Bearer",
             "Feature:Auth:Kerberos",
-            "Feature:Auth:Custom"
+            "Feature:Auth:Custom",
+            "Feature:Bolt:4.4",
+            "Feature:Impersonation"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

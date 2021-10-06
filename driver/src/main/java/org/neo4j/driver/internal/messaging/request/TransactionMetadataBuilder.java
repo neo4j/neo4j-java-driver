@@ -39,21 +39,25 @@ public class TransactionMetadataBuilder
     private static final String TX_METADATA_METADATA_KEY = "tx_metadata";
     private static final String MODE_KEY = "mode";
     private static final String MODE_READ_VALUE = "r";
+    private static final String IMPERSONATED_USER_KEY = "imp_user";
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmark bookmark )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, Bookmark bookmark,
+                                                   String impersonatedUser )
     {
-        return buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark );
+        return buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark, impersonatedUser );
     }
 
-    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName, AccessMode mode, Bookmark bookmark )
+    public static Map<String,Value> buildMetadata( Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName, AccessMode mode,
+                                                   Bookmark bookmark, String impersonatedUser )
     {
         boolean bookmarksPresent = bookmark != null && !bookmark.isEmpty();
         boolean txTimeoutPresent = txTimeout != null;
         boolean txMetadataPresent = txMetadata != null && !txMetadata.isEmpty();
         boolean accessModePresent = mode == AccessMode.READ;
         boolean databaseNamePresent = databaseName.databaseName().isPresent();
+        boolean impersonatedUserPresent = impersonatedUser != null;
 
-        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent && !accessModePresent && !databaseNamePresent )
+        if ( !bookmarksPresent && !txTimeoutPresent && !txMetadataPresent && !accessModePresent && !databaseNamePresent && !impersonatedUserPresent )
         {
             return emptyMap();
         }
@@ -72,9 +76,13 @@ public class TransactionMetadataBuilder
         {
             result.put( TX_METADATA_METADATA_KEY, value( txMetadata ) );
         }
-        if( accessModePresent )
+        if ( accessModePresent )
         {
             result.put( MODE_KEY, value( MODE_READ_VALUE ) );
+        }
+        if ( impersonatedUserPresent )
+        {
+            result.put( IMPERSONATED_USER_KEY, value( impersonatedUser ) );
         }
 
         databaseName.databaseName().ifPresent( name -> result.put( DATABASE_NAME_KEY, value( name ) ) );

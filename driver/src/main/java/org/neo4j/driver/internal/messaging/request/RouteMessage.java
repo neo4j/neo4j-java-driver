@@ -40,19 +40,22 @@ public class RouteMessage implements Message
     private final Map<String,Value> routingContext;
     private final Bookmark bookmark;
     private final String databaseName;
+    private final String impersonatedUser;
 
     /**
      * Constructor
      *
-     * @param routingContext The routing context used to define the routing table. Multi-datacenter deployments is one of its use cases.
-     * @param bookmark      The bookmark used when getting the routing table.
-     * @param databaseName   The name of the database to get the routing table for.
+     * @param routingContext   The routing context used to define the routing table. Multi-datacenter deployments is one of its use cases.
+     * @param bookmark         The bookmark used when getting the routing table.
+     * @param databaseName     The name of the database to get the routing table for.
+     * @param impersonatedUser The name of the impersonated user to get the routing table for, should be {@code null} for non-impersonated requests
      */
-    public RouteMessage( Map<String,Value> routingContext, Bookmark bookmark, String databaseName )
+    public RouteMessage( Map<String,Value> routingContext, Bookmark bookmark, String databaseName, String impersonatedUser )
     {
         this.routingContext = unmodifiableMap( routingContext );
         this.bookmark = bookmark;
         this.databaseName = databaseName;
+        this.impersonatedUser = impersonatedUser;
     }
 
     public Map<String,Value> getRoutingContext()
@@ -70,6 +73,11 @@ public class RouteMessage implements Message
         return databaseName;
     }
 
+    public String getImpersonatedUser()
+    {
+        return impersonatedUser;
+    }
+
     @Override
     public byte signature()
     {
@@ -79,7 +87,7 @@ public class RouteMessage implements Message
     @Override
     public String toString()
     {
-        return String.format( "ROUTE %s %s %s", routingContext, bookmark, databaseName );
+        return String.format( "ROUTE %s %s %s %s", routingContext, bookmark, databaseName, impersonatedUser );
     }
 
     @Override
@@ -95,12 +103,13 @@ public class RouteMessage implements Message
         }
         RouteMessage that = (RouteMessage) o;
         return routingContext.equals( that.routingContext ) &&
-               Objects.equals( databaseName, that.databaseName );
+               Objects.equals( databaseName, that.databaseName ) &&
+               Objects.equals( impersonatedUser, that.impersonatedUser );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( routingContext, databaseName );
+        return Objects.hash( routingContext, databaseName, impersonatedUser );
     }
 }

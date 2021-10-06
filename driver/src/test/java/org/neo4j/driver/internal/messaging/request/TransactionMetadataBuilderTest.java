@@ -59,7 +59,7 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark, null );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
@@ -86,7 +86,7 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, database( databaseName ), WRITE, bookmark );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, database( databaseName ), WRITE, bookmark, null );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
         expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
@@ -100,7 +100,7 @@ public class TransactionMetadataBuilderTest
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull()
     {
-        Map<String,Value> metadata = buildMetadata( null, null, defaultDatabase(), WRITE, null );
+        Map<String,Value> metadata = buildMetadata( null, null, defaultDatabase(), WRITE, null, null );
         assertTrue( metadata.isEmpty() );
     }
 }

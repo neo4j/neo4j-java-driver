@@ -54,7 +54,7 @@ class RouteMessageEncoderTest
     {
         Map<String, Value> routingContext = getRoutingContext();
 
-        encoder.encode( new RouteMessage( getRoutingContext(), null, databaseName ), packer );
+        encoder.encode( new RouteMessage( getRoutingContext(), null, databaseName, null ), packer );
 
         InOrder inOrder = inOrder( packer );
 
@@ -72,7 +72,7 @@ class RouteMessageEncoderTest
         Map<String, Value> routingContext = getRoutingContext();
         Bookmark bookmark = InternalBookmark.parse( "somebookmark" );
 
-        encoder.encode( new RouteMessage( getRoutingContext(), bookmark, databaseName ), packer );
+        encoder.encode( new RouteMessage( getRoutingContext(), bookmark, databaseName, null ), packer );
 
         InOrder inOrder = inOrder( packer );
 

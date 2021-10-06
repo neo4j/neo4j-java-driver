@@ -25,6 +25,8 @@ import org.neo4j.driver.internal.BoltServerAddress;
 
 public interface ConnectionPool
 {
+    String CONNECTION_POOL_CLOSED_ERROR_MESSAGE = "Pool closed";
+
     CompletionStage<Connection> acquire( BoltServerAddress address );
 
     void retainAll( Set<BoltServerAddress> addressesToRetain );

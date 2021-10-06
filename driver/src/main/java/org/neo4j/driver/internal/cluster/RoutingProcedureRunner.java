@@ -32,10 +32,11 @@ public interface RoutingProcedureRunner
     /**
      * Run the calls to the server
      *
-     * @param connection The connection which will be used to call the server
-     * @param databaseName The database name
-     * @param bookmark The bookmark used to query the routing information
+     * @param connection       The connection which will be used to call the server
+     * @param databaseName     The database name
+     * @param bookmark         The bookmark used to query the routing information
+     * @param impersonatedUser The impersonated user, should be {@code null} for non-impersonated requests
      * @return The routing table
      */
-    CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark );
+    CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser );
 }

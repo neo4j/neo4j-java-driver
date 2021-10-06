@@ -20,9 +20,11 @@ package org.neo4j.driver.internal.cluster.loadbalancing;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -37,6 +39,8 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseName;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
 import org.neo4j.driver.internal.cluster.AddressSet;
@@ -68,7 +72,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -205,7 +211,7 @@ class LoadBalancerTest
         ConnectionPool connectionPool = newConnectionPoolMockWithFailures( unavailableAddresses );
 
         RoutingTable routingTable = new ClusterRoutingTable( defaultDatabase(), new FakeClock() );
-        routingTable.update( new ClusterComposition( -1, new LinkedHashSet<>( Arrays.asList( A, B ) ), emptySet(), emptySet() ) );
+        routingTable.update( new ClusterComposition( -1, new LinkedHashSet<>( Arrays.asList( A, B ) ), emptySet(), emptySet(), null ) );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
@@ -361,6 +367,52 @@ class LoadBalancerTest
 
         await( loadBalancer.verifyConnectivity() );
         verify( routingTables ).ensureRoutingTable( any( ConnectionContext.class ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void expectsCompetedDatabaseNameAfterRoutingTableRegistry( boolean completed ) throws Throwable
+    {
+        ConnectionPool connectionPool = newConnectionPoolMock();
+        RoutingTable routingTable = mock( RoutingTable.class );
+        AddressSet readerAddresses = mock( AddressSet.class );
+        AddressSet writerAddresses = mock( AddressSet.class );
+        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
+        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{B} );
+        when( routingTable.readers() ).thenReturn( readerAddresses );
+        when( routingTable.writers() ).thenReturn( writerAddresses );
+        RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
+        RoutingTableHandler handler = mock( RoutingTableHandler.class );
+        when( handler.routingTable() ).thenReturn( routingTable );
+        when( routingTables.ensureRoutingTable( any( ConnectionContext.class ) ) ).thenReturn( CompletableFuture.completedFuture( handler ) );
+        Rediscovery rediscovery = mock( Rediscovery.class );
+        LoadBalancer loadBalancer =
+                new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
+                                  GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
+        ConnectionContext context = mock( ConnectionContext.class );
+        CompletableFuture<DatabaseName> databaseNameFuture =
+                spy( completed ? CompletableFuture.completedFuture( DatabaseNameUtil.systemDatabase() ) : new CompletableFuture<>() );
+        when( context.databaseNameFuture() ).thenReturn( databaseNameFuture );
+        when( context.mode() ).thenReturn( WRITE );
+
+        Executable action = () -> await( loadBalancer.acquireConnection( context ) );
+        if ( completed )
+        {
+            action.execute();
+        }
+        else
+        {
+            assertThrows( IllegalStateException.class, action, ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER.get().getMessage() );
+        }
+
+        InOrder inOrder = inOrder( routingTables, context, databaseNameFuture );
+        inOrder.verify( routingTables ).ensureRoutingTable( context );
+        inOrder.verify( context ).databaseNameFuture();
+        inOrder.verify( databaseNameFuture ).isDone();
+        if ( completed )
+        {
+            inOrder.verify( databaseNameFuture ).join();
+        }
     }
 
     private static ConnectionPool newConnectionPoolMock()

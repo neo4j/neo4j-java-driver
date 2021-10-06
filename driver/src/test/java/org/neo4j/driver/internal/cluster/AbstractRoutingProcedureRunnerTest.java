@@ -48,7 +48,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         ClientException error = new ClientException( "Hi" );
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
 
         assertFalse( response.isSuccess() );
         assertEquals( error, response.error() );
@@ -60,7 +60,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         Exception error = new Exception( "Hi" );
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), empty() ) ) );
+        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), empty(), null ) ) );
         assertEquals( error, e );
     }
 
@@ -70,7 +70,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY );
 
         Connection connection = connection();
-        RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), empty(), null ) );
 
         assertTrue( response.isSuccess() );
         verify( connection ).release();
@@ -84,7 +84,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         RuntimeException releaseError = new RuntimeException( "Release failed" );
         Connection connection = connection( failedFuture( releaseError ) );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, defaultDatabase(), empty() ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, defaultDatabase(), empty(), null ) ) );
         assertEquals( releaseError, e );
         verify( connection ).release();
     }

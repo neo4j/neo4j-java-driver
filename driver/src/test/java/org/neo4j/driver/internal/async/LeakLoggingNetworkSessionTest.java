@@ -98,7 +98,7 @@ class LeakLoggingNetworkSessionTest
     private static LeakLoggingNetworkSession newSession( Logging logging, boolean openConnection )
     {
         return new LeakLoggingNetworkSession( connectionProviderMock( openConnection ), new FixedRetryLogic( 0 ), defaultDatabase(), READ,
-                new DefaultBookmarkHolder(), FetchSizeUtil.UNLIMITED_FETCH_SIZE, logging );
+                                              new DefaultBookmarkHolder(), null, FetchSizeUtil.UNLIMITED_FETCH_SIZE, logging );
     }
 
     private static ConnectionProvider connectionProviderMock( boolean openConnection )

@@ -192,7 +192,7 @@ public final class BoltProtocolV43Test
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), TransactionConfig.empty() );
 
         verify( connection )
-                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE ) ),
+                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), TransactionConfig.empty(), defaultDatabase(), WRITE, null ) ),
                                 any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
@@ -206,7 +206,8 @@ public final class BoltProtocolV43Test
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark, TransactionConfig.empty() );
 
         verify( connection )
-                .writeAndFlush( eq( new BeginMessage( bookmark, TransactionConfig.empty(), defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
+                .writeAndFlush( eq( new BeginMessage( bookmark, TransactionConfig.empty(), defaultDatabase(), WRITE, null ) ),
+                                any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -218,7 +219,8 @@ public final class BoltProtocolV43Test
         CompletionStage<Void> stage = protocol.beginTransaction( connection, InternalBookmark.empty(), txConfig );
 
         verify( connection )
-                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
+                .writeAndFlush( eq( new BeginMessage( InternalBookmark.empty(), txConfig, defaultDatabase(), WRITE, null ) ),
+                                any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -230,7 +232,7 @@ public final class BoltProtocolV43Test
 
         CompletionStage<Void> stage = protocol.beginTransaction( connection, bookmark, txConfig );
 
-        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, txConfig, defaultDatabase(), WRITE ) ), any( BeginTxResponseHandler.class ) );
+        verify( connection ).writeAndFlush( eq( new BeginMessage( bookmark, txConfig, defaultDatabase(), WRITE, null ) ), any( BeginTxResponseHandler.class ) );
         assertNull( await( stage ) );
     }
 
@@ -507,7 +509,7 @@ public final class BoltProtocolV43Test
     private ResponseHandler verifySessionRunInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode,
                                                      DatabaseName databaseName )
     {
-        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( QUERY, config, databaseName, mode, bookmark );
+        RunWithMetadataMessage runMessage = RunWithMetadataMessage.autoCommitTxRunMessage( QUERY, config, databaseName, mode, bookmark, null );
         return verifyRunInvoked( connection, runMessage );
     }
 
@@ -528,7 +530,7 @@ public final class BoltProtocolV43Test
     private void verifyBeginInvoked( Connection connection, Bookmark bookmark, TransactionConfig config, AccessMode mode, DatabaseName databaseName )
     {
         ArgumentCaptor<ResponseHandler> beginHandlerCaptor = ArgumentCaptor.forClass( ResponseHandler.class );
-        BeginMessage beginMessage = new BeginMessage( bookmark, config, databaseName, mode );
+        BeginMessage beginMessage = new BeginMessage( bookmark, config, databaseName, mode, null );
         verify( connection ).writeAndFlush( eq( beginMessage ), beginHandlerCaptor.capture() );
         assertThat( beginHandlerCaptor.getValue(), instanceOf( BeginTxResponseHandler.class ) );
     }

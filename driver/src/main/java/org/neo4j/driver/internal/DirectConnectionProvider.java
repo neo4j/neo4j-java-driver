@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.async.ConnectionContext;
@@ -25,12 +26,13 @@ import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
+import org.neo4j.driver.internal.util.Futures;
 
+import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 
 /**
- * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for
- * the given address.
+ * Simple {@link ConnectionProvider connection provider} that obtains connections form the given pool only for the given address.
  */
 public class DirectConnectionProvider implements ConnectionProvider
 {
@@ -46,7 +48,12 @@ public class DirectConnectionProvider implements ConnectionProvider
     @Override
     public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
-        return acquireConnection().thenApply( connection -> new DirectConnection( connection, context.databaseName(), context.mode() ) );
+        CompletableFuture<DatabaseName> databaseNameFuture = context.databaseNameFuture();
+        databaseNameFuture.complete( DatabaseNameUtil.defaultDatabase() );
+        return acquireConnection().thenApply(
+                connection -> new DirectConnection( connection,
+                                                    Futures.joinNowOrElseThrow( databaseNameFuture, PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER ),
+                                                    context.mode(), context.impersonatedUser() ) );
     }
 
     @Override
