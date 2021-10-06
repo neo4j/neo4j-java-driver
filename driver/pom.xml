@@ -93,7 +93,7 @@
         </property>
       </activation>
       <properties>
-        <foo>-slim</foo>
+        <deploymentType>-slim</deploymentType>
       </properties>
     </profile>
 
