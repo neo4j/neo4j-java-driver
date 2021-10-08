@@ -7,18 +7,15 @@
     <groupId>org.neo4j.driver</groupId>
     <artifactId>neo4j-java-driver-parent</artifactId>
     <version>4.4-SNAPSHOT</version>
-    <relativePath>..</relativePath>
   </parent>
 
-  <artifactId>neo4j-java-driver</artifactId>
+  <artifactId>neo4j-java-driver-slim</artifactId>
 
   <packaging>jar</packaging>
-  <name>Neo4j Java Driver</name>
+  <name>Neo4j Java Driver (Slim package)</name>
   <description>Access to the Neo4j graph database through Java</description>
 
   <properties>
-    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
-    <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
     <moduleName>org.neo4j.driver</moduleName>
     <rootDir>${project.basedir}/..</rootDir>
     <maven.deploy.skip>false</maven.deploy.skip>
@@ -39,11 +36,15 @@
       <artifactId>reactor-core</artifactId>
     </dependency>
 
-    <!-- Optional dependencies -->
+    <!-- Optional and / or provided dependencies -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.nativeimage</groupId>
+      <artifactId>svm</artifactId>
     </dependency>
 
     <!-- Test dependencies -->
@@ -76,10 +77,6 @@
       <artifactId>reactor-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.graalvm.nativeimage</groupId>
-      <artifactId>svm</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -96,44 +93,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifestEntries>
-                  <Bundle-Name>${project.name} (Source)</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle.name}.source</Bundle-SymbolicName>
-                  <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
-                  <Eclipse-SourceBundle>${bundle.name};version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}";roots:="."</Eclipse-SourceBundle>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <sourceFileIncludes>
-            <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
-          </sourceFileIncludes>
-          <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
-          <bottom>
-            <![CDATA[
-                    <script>
-                    if (typeof useModuleDirectories !== 'undefined') {
-                      useModuleDirectories = false;
-                    }
-                    </script>
-                ]]>
-          </bottom>
-          <additionalJOption>--allow-script-in-comments</additionalJOption>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -178,85 +141,10 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>bundle-manifest</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <instructions>
-            <Bundle-SymbolicName>${bundle.name}</Bundle-SymbolicName>
-            <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
-            <_snapshot>${maven.build.timestamp}</_snapshot>
-            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
-            <_removeheaders>Bnd-*,Private-Package</_removeheaders>
-            <_nouses>true</_nouses>
-            <!-- each module can override these defaults in their osgi.bnd file -->
-            <_include>-osgi.bnd</_include>
-          </instructions>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <!--
-          Failsafe plugin starting from 2.19 by default runs tests from 'target/test-classes' against a package jar.
-          When we shade things into the jar packages are changed, however tests in 'target/test-classes' do not.
-          This results in AbstractMethodError and other kind of strange errors.
-
-          Following setting tells failsafe to run tests against 'target/classes' instead.
-          See https://issues.apache.org/jira/browse/SUREFIRE-1198 for more details.
-          -->
-          <classesDirectory>${project.build.directory}/classes</classesDirectory>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <artifactSet>
-                <includes>
-                  <include>io.netty:*</include>
-                  <include>io.projectreactor:*</include>
-                </includes>
-              </artifactSet>
-              <relocations>
-                <relocation>
-                  <pattern>io.netty</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.shaded.io.netty</shadedPattern>
-                </relocation>
-                <relocation>
-                  <pattern>reactor</pattern>
-                  <shadedPattern>org.neo4j.driver.internal.shaded.reactor</shadedPattern>
-                </relocation>
-              </relocations>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-              </transformers>
-              <filters>
-                <filter>
-                  <artifact>io.netty:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/native-image/**</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-              <shadeTestJar>true</shadeTestJar>
-              <createSourcesJar>true</createSourcesJar>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

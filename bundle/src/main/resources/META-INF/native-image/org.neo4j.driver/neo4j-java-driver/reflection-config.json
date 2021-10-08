@@ -1,0 +1,58 @@
+[
+    {
+      "name": "org.neo4j.driver.internal.shaded.io.netty.channel.socket.nio.NioSocketChannel",
+      "methods": [
+        { "name": "<init>", "parameterTypes": [] }
+      ]
+    },
+    {
+      "name": "org.neo4j.driver.internal.shaded.io.netty.channel.socket.nio.NioServerSocketChannel",
+      "methods": [
+        { "name": "<init>", "parameterTypes": [] }
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.buffer.AbstractByteBufAllocator",
+      "allDeclaredMethods" : true
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.ReferenceCountUtil",
+      "allDeclaredMethods" : true
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField",
+      "fields": [
+        {"name": "producerIndex", "allowUnsafeAccess": true}
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField",
+      "fields": [
+        {"name": "producerLimit", "allowUnsafeAccess": true}
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField",
+      "fields": [
+        {"name": "consumerIndex", "allowUnsafeAccess": true}
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+      "fields": [
+        {"name": "producerIndex", "allowUnsafeAccess": true}
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+      "fields": [
+        {"name": "producerLimit", "allowUnsafeAccess": true}
+      ]
+    },
+    {
+      "name" : "org.neo4j.driver.internal.shaded.io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+      "fields": [
+        {"name": "consumerIndex", "allowUnsafeAccess": true}
+      ]
+    }
+]
