@@ -98,7 +98,7 @@ class RoutingTableRegistryImplTest
 
         // When
         DatabaseName database = database( databaseName );
-        routingTables.ensureRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ, null ) );
+        routingTables.ensureRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ ) );
 
         // Then
         assertTrue( map.containsKey( database ) );
@@ -117,7 +117,7 @@ class RoutingTableRegistryImplTest
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
-        ImmutableConnectionContext context = new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ, null );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ );
 
         // When
         RoutingTableHandler actual = await( routingTables.ensureRoutingTable( context ) );
@@ -138,7 +138,7 @@ class RoutingTableRegistryImplTest
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
         RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, null, null, null, DEV_NULL_LOGGING );
 
-        ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode, null );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
         // When
         routingTables.ensureRoutingTable( context );
 

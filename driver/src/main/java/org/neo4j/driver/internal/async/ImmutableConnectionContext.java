@@ -34,20 +34,18 @@ import static org.neo4j.driver.internal.InternalBookmark.empty;
  */
 public class ImmutableConnectionContext implements ConnectionContext
 {
-    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ, null );
-    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ, null );
+    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
+    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ );
 
     private final CompletableFuture<DatabaseName> databaseNameFuture;
     private final AccessMode mode;
     private final Bookmark rediscoveryBookmark;
-    private final String impersonatedUser;
 
-    public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode, String impersonatedUser )
+    public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode )
     {
         this.databaseNameFuture = CompletableFuture.completedFuture( databaseName );
         this.rediscoveryBookmark = bookmark;
         this.mode = mode;
-        this.impersonatedUser = impersonatedUser;
     }
 
     @Override
@@ -71,7 +69,7 @@ public class ImmutableConnectionContext implements ConnectionContext
     @Override
     public String impersonatedUser()
     {
-        return impersonatedUser;
+        return null;
     }
 
     /**

@@ -30,11 +30,11 @@ public class RediscoveryUtil
 {
     public static ConnectionContext contextWithDatabase( String databaseName )
     {
-        return new ImmutableConnectionContext( database( databaseName ), InternalBookmark.empty(), AccessMode.WRITE, null );
+        return new ImmutableConnectionContext( database( databaseName ), InternalBookmark.empty(), AccessMode.WRITE );
     }
 
     public static ConnectionContext contextWithMode( AccessMode mode )
     {
-        return new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode, null );
+        return new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
     }
 }

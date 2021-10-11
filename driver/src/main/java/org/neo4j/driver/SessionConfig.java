@@ -126,6 +126,11 @@ public class SessionConfig
         return fetchSize;
     }
 
+    /**
+     * The impersonated user the session is going to use for query execution.
+     *
+     * @return an optional value of the impersonated user.
+     */
     public Optional<String> impersonatedUser()
     {
         return Optional.ofNullable( impersonatedUser );
@@ -280,7 +285,7 @@ public class SessionConfig
         /**
          * Set the impersonated user that the newly created session is going to use for query execution.
          * <p>
-         * The driver must have the necessary permissions to impersonate and run queries as the impersonated user.
+         * The principal provided to the driver on creation must have the necessary permissions to impersonate and run queries as the impersonated user.
          * <p>
          * When {@link #withDatabase(String)} is not used, the driver will discover the default database name of the impersonated user on first session usage.
          * From that moment, the discovered database name will be used as the default database name for the whole lifetime of the new session.
