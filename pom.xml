@@ -30,21 +30,21 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-handler.version>4.1.68.Final</netty-handler.version>
+    <netty-handler.version>4.1.69.Final</netty-handler.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>2020.0.9</reactor-bom.version>
+    <reactor-bom.version>2020.0.11</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.32</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>2.28.2</mockito-core.version>
-    <junit.version>5.7.2</junit.version>
-    <jarchivelib.version>1.1.0</jarchivelib.version>
+    <junit.version>5.8.1</junit.version>
+    <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.69</bouncycastle-jdk15on.version>
-    <logback-classic.version>1.2.5</logback-classic.version>
-    <jackson.version>2.12.4</jackson.version>
-    <lombok.version>1.18.20</lombok.version>
+    <logback-classic.version>1.2.6</logback-classic.version>
+    <jackson.version>2.13.0</jackson.version>
+    <lombok.version>1.18.22</lombok.version>
     <svm.version>20.3.3</svm.version>
   </properties>
 
