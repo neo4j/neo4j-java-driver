@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
@@ -35,21 +37,21 @@ public class ImmutableConnectionContext implements ConnectionContext
     private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
     private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ );
 
-    private final DatabaseName databaseName;
+    private final CompletableFuture<DatabaseName> databaseNameFuture;
     private final AccessMode mode;
     private final Bookmark rediscoveryBookmark;
 
     public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode )
     {
-        this.databaseName = databaseName;
+        this.databaseNameFuture = CompletableFuture.completedFuture( databaseName );
         this.rediscoveryBookmark = bookmark;
         this.mode = mode;
     }
 
     @Override
-    public DatabaseName databaseName()
+    public CompletableFuture<DatabaseName> databaseNameFuture()
     {
-        return databaseName;
+        return databaseNameFuture;
     }
 
     @Override
@@ -64,10 +66,15 @@ public class ImmutableConnectionContext implements ConnectionContext
         return rediscoveryBookmark;
     }
 
+    @Override
+    public String impersonatedUser()
+    {
+        return null;
+    }
+
     /**
-     * A simple context is used to test connectivity with a remote server/cluster.
-     * As long as there is a read only service, the connection shall be established successfully.
-     * Depending on whether multidb is supported or not, this method returns different context for routing table discovery.
+     * A simple context is used to test connectivity with a remote server/cluster. As long as there is a read only service, the connection shall be established
+     * successfully. Depending on whether multidb is supported or not, this method returns different context for routing table discovery.
      */
     public static ConnectionContext simple( boolean supportsMultiDb )
     {

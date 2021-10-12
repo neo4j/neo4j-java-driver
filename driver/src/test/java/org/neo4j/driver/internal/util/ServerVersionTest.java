@@ -24,6 +24,8 @@ import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
+import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 
 import static java.lang.Integer.MAX_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,6 +75,8 @@ class ServerVersionTest
         assertEquals( ServerVersion.v4_0_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV4.VERSION ) );
         assertEquals( ServerVersion.v4_1_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV41.VERSION ) );
         assertEquals( ServerVersion.v4_2_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV42.VERSION ) );
+        assertEquals( ServerVersion.v4_3_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV43.VERSION ) );
+        assertEquals( ServerVersion.v4_4_0, ServerVersion.fromBoltProtocolVersion( BoltProtocolV44.VERSION ) );
         assertEquals( ServerVersion.vInDev, ServerVersion.fromBoltProtocolVersion( new BoltProtocolVersion( MAX_VALUE, MAX_VALUE ) ) );
     }
 }

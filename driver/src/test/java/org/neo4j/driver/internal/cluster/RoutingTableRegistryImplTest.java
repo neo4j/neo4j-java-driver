@@ -136,7 +136,7 @@ class RoutingTableRegistryImplTest
         ConcurrentMap<DatabaseName,RoutingTableHandler> map = new ConcurrentHashMap<>();
         RoutingTableHandler handler = mockedRoutingTableHandler();
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
-        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGING );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, null, null, null, DEV_NULL_LOGGING );
 
         ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
         // When
@@ -155,7 +155,7 @@ class RoutingTableRegistryImplTest
         map.put( database( "Banana" ), mockedRoutingTableHandler( B, C, D ) );
         map.put( database( "Orange" ), mockedRoutingTableHandler( E, F, C ) );
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
-        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, DEV_NULL_LOGGING );
+        RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, null, null, null, DEV_NULL_LOGGING );
 
         // When
         Set<BoltServerAddress> servers = routingTables.allServers();
@@ -210,7 +210,7 @@ class RoutingTableRegistryImplTest
 
     private RoutingTableRegistryImpl newRoutingTables( ConcurrentMap<DatabaseName,RoutingTableHandler> handlers, RoutingTableHandlerFactory factory )
     {
-        return new RoutingTableRegistryImpl( handlers, factory, DEV_NULL_LOGGING );
+        return new RoutingTableRegistryImpl( handlers, factory, null, null, null, DEV_NULL_LOGGING );
     }
 
     private RoutingTableHandlerFactory mockedHandlerFactory( RoutingTableHandler handler )

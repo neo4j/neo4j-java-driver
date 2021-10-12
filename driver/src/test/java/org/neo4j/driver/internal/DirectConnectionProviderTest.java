@@ -22,11 +22,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -36,7 +38,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.AccessMode.READ;
@@ -131,14 +135,36 @@ class DirectConnectionProviderTest
         assertEquals( databaseName, acquired.databaseName().description() );
     }
 
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void ensuresCompletedDatabaseNameBeforeAccessingValue( boolean completed )
+    {
+        BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
+        ConnectionPool pool = poolMock( address, mock( Connection.class ) );
+        DirectConnectionProvider provider = new DirectConnectionProvider( address, pool );
+        ConnectionContext context = mock( ConnectionContext.class );
+        CompletableFuture<DatabaseName> databaseNameFuture =
+                spy( completed ? CompletableFuture.completedFuture( DatabaseNameUtil.systemDatabase() ) : new CompletableFuture<>() );
+        when( context.databaseNameFuture() ).thenReturn( databaseNameFuture );
+        when( context.mode() ).thenReturn( WRITE );
+
+        await( provider.acquireConnection( context ) );
+
+        InOrder inOrder = inOrder( context, databaseNameFuture );
+        inOrder.verify( context ).databaseNameFuture();
+        inOrder.verify( databaseNameFuture ).complete( DatabaseNameUtil.defaultDatabase() );
+        inOrder.verify( databaseNameFuture ).isDone();
+        inOrder.verify( databaseNameFuture ).join();
+    }
+
     @SuppressWarnings( "unchecked" )
     private static ConnectionPool poolMock( BoltServerAddress address, Connection connection,
-            Connection... otherConnections )
+                                            Connection... otherConnections )
     {
         ConnectionPool pool = mock( ConnectionPool.class );
         CompletableFuture<Connection>[] otherConnectionFutures = Stream.of( otherConnections )
-                .map( CompletableFuture::completedFuture )
-                .toArray( CompletableFuture[]::new );
+                                                                       .map( CompletableFuture::completedFuture )
+                                                                       .toArray( CompletableFuture[]::new );
         when( pool.acquire( address ) ).thenReturn( completedFuture( connection ), otherConnectionFutures );
         return pool;
     }

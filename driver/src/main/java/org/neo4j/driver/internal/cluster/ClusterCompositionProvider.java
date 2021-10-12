@@ -26,5 +26,5 @@ import org.neo4j.driver.internal.spi.Connection;
 
 public interface ClusterCompositionProvider
 {
-    CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark );
+    CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser );
 }

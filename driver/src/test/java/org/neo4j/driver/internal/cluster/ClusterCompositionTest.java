@@ -222,7 +222,7 @@ class ClusterCompositionTest
     private static ClusterComposition newComposition( long expirationTimestamp, Set<BoltServerAddress> readers,
                                                       Set<BoltServerAddress> writers, Set<BoltServerAddress> routers )
     {
-        return new ClusterComposition( expirationTimestamp, readers, writers, routers );
+        return new ClusterComposition( expirationTimestamp, readers, writers, routers, null );
     }
 
     private static Set<BoltServerAddress> addresses( BoltServerAddress... elements )

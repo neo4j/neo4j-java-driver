@@ -49,4 +49,6 @@ public interface RoutingTable
     void replaceRouterIfPresent( BoltServerAddress oldRouter, BoltServerAddress newRouter );
 
     boolean preferInitialRouter();
+
+    long expirationTimestamp();
 }

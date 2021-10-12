@@ -18,6 +18,9 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.DatabaseName;
@@ -28,9 +31,13 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
  */
 public interface ConnectionContext
 {
-    DatabaseName databaseName();
+    Supplier<IllegalStateException> PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER = () -> new IllegalStateException( "Pending database name encountered." );
+
+    CompletableFuture<DatabaseName> databaseNameFuture();
 
     AccessMode mode();
 
     Bookmark rediscoveryBookmark();
+
+    String impersonatedUser();
 }

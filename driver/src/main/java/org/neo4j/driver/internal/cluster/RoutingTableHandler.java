@@ -33,5 +33,7 @@ public interface RoutingTableHandler extends RoutingErrorHandler
 
     CompletionStage<RoutingTable> ensureRoutingTable( ConnectionContext context );
 
+    CompletionStage<RoutingTable> updateRoutingTable( ClusterCompositionLookupResult compositionLookupResult );
+
     RoutingTable routingTable();
 }

@@ -38,12 +38,14 @@ public class DirectConnection implements Connection
     private final Connection delegate;
     private final AccessMode mode;
     private final DatabaseName databaseName;
+    private final String impersonatedUser;
 
-    public DirectConnection( Connection delegate, DatabaseName databaseName, AccessMode mode )
+    public DirectConnection( Connection delegate, DatabaseName databaseName, AccessMode mode, String impersonatedUser )
     {
         this.delegate = delegate;
         this.mode = mode;
         this.databaseName = databaseName;
+        this.impersonatedUser = impersonatedUser;
     }
 
     public Connection connection()
@@ -145,6 +147,12 @@ public class DirectConnection implements Connection
     public DatabaseName databaseName()
     {
         return this.databaseName;
+    }
+
+    @Override
+    public String impersonatedUser()
+    {
+        return impersonatedUser;
     }
 
     @Override

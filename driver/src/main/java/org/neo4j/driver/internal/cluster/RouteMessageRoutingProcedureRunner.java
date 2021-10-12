@@ -66,12 +66,12 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
     }
 
     @Override
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser )
     {
         CompletableFuture<Map<String,Value>> completableFuture = createCompletableFuture.get();
 
-        DirectConnection directConnection = toDirectConnection( connection, databaseName );
-        directConnection.writeAndFlush( new RouteMessage( routingContext, bookmark, databaseName.databaseName().orElse( null ) ),
+        DirectConnection directConnection = toDirectConnection( connection, databaseName, impersonatedUser );
+        directConnection.writeAndFlush( new RouteMessage( routingContext, bookmark, databaseName.databaseName().orElse( null ), impersonatedUser ),
                                         new RouteMessageResponseHandler( completableFuture ) );
         return completableFuture
                 .thenApply( routingTable -> new RoutingProcedureResponse( getQuery( databaseName ), singletonList( toRecord( routingTable ) ) ) )
@@ -84,9 +84,9 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
         return new InternalRecord( new ArrayList<>( routingTable.keySet() ), routingTable.values().toArray( new Value[0] ) );
     }
 
-    private DirectConnection toDirectConnection( Connection connection, DatabaseName databaseName )
+    private DirectConnection toDirectConnection( Connection connection, DatabaseName databaseName, String impersonatedUser )
     {
-        return new DirectConnection( connection, databaseName, AccessMode.READ );
+        return new DirectConnection( connection, databaseName, AccessMode.READ, impersonatedUser );
     }
 
     private Query getQuery( DatabaseName databaseName )

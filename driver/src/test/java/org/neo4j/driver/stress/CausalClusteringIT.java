@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -68,6 +70,7 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
+import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.cc.Cluster;
 import org.neo4j.driver.util.cc.ClusterExtension;
@@ -331,8 +334,18 @@ public class CausalClusteringIT implements NestedQueries
     {
         Cluster cluster = clusterRule.getCluster();
         ClusterMember leader = cluster.leader();
+        ServerAddress clusterAddress = ServerAddress.of( "cluster", 7687 );
+        URI clusterUri = URI.create( String.format( "neo4j://%s:%d", clusterAddress.host(), clusterAddress.port() ) );
+        Set<ServerAddress> coreAddresses = cluster.cores().stream()
+                                                  .map( ClusterMember::getBoltAddress )
+                                                  .collect( Collectors.toSet() );
 
-        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        Config config = Config.builder()
+                              .withLogging( none() )
+                              .withResolver( address -> address.equals( clusterAddress ) ? coreAddresses : Collections.singleton( address ) )
+                              .build();
+
+        try ( Driver driver = GraphDatabase.driver( clusterUri, clusterRule.getDefaultAuthToken(), config ) )
         {
             Session session1 = driver.session();
             Transaction tx1 = session1.beginTransaction();
@@ -357,7 +370,8 @@ public class CausalClusteringIT implements NestedQueries
                 return session.lastBookmark();
             } );
 
-            try ( Session session2 = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmark ).build() );
+            try ( Session session2 = driver.session(
+                    builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmark ).build() );
                   Transaction tx2 = session2.beginTransaction() )
             {
                 Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
@@ -538,20 +552,25 @@ public class CausalClusteringIT implements NestedQueries
 
         try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
         {
-            Session writeSession1 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
+            String database = "neo4j";
+            Session writeSession1 =
+                    driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.WRITE ).build() );
             writeSession1.beginTransaction();
 
-            Session writeSession2 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
+            Session writeSession2 =
+                    driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.WRITE ).build() );
             writeSession2.beginTransaction();
 
             // should not be possible to acquire more connections towards leader because limit is 2
-            Session writeSession3 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() );
+            Session writeSession3 =
+                    driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.WRITE ).build() );
             ClientException e = assertThrows( ClientException.class, writeSession3::beginTransaction );
             assertThat( e, is( connectionAcquisitionTimeoutError( 42 ) ) );
 
             // should be possible to acquire new connection towards read server
             // it's a different machine, not leader, so different max connection pool size limit applies
-            Session readSession = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() );
+            Session readSession =
+                    driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.READ ).build() );
             Record record = readSession.readTransaction( tx -> tx.run( "RETURN 1" ).single() );
             assertEquals( 1, record.get( 0 ).asInt() );
         }
@@ -610,7 +629,8 @@ public class CausalClusteringIT implements NestedQueries
         try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
                                                          RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
         {
-            try ( Session session = driver.session() )
+            String database = "neo4j";
+            try ( Session session = driver.session( builder().withDatabase( database ).build() ) )
             {
                 createNode( session, "Person", "name", "Vision" );
 
@@ -626,10 +646,10 @@ public class CausalClusteringIT implements NestedQueries
             makeAllChannelsFailToRunQueries( driverFactory, ServerVersion.version( driver ) );
 
             // observe that connection towards writer is broken
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
+            try ( Session session = driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.WRITE ).build() ) )
             {
                 SessionExpiredException e = assertThrows( SessionExpiredException.class,
-                        () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
+                                                          () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
                 assertEquals( "Disconnected", e.getCause().getMessage() );
             }
 
@@ -637,7 +657,7 @@ public class CausalClusteringIT implements NestedQueries
             int readersCount = cluster.followers().size() + cluster.readReplicas().size();
             for ( int i = 0; i < readersCount; i++ )
             {
-                try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
+                try ( Session session = driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.READ ).build() ) )
                 {
                     runCountNodes( session, "Person", "name", "Vision" );
                 }
@@ -646,7 +666,7 @@ public class CausalClusteringIT implements NestedQueries
                 }
             }
 
-            try ( Session session = driver.session() )
+            try ( Session session = driver.session( builder().withDatabase( database ).build() ) )
             {
                 updateNode( session, "Person", "name", "Vision", "Thanos" );
                 assertEquals( 0, countNodes( session, "Person", "name", "Vision" ) );

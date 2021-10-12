@@ -61,7 +61,8 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark )
+    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark,
+                                                                      String impersonatedUser )
     {
         RoutingProcedureRunner runner;
 
@@ -78,7 +79,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
             runner = singleDatabaseRoutingProcedureRunner;
         }
 
-        return runner.run( connection, databaseName, bookmark )
+        return runner.run( connection, databaseName, bookmark, impersonatedUser )
                      .thenApply( this::processRoutingResponse );
     }
 

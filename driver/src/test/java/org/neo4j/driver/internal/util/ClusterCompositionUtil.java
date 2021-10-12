@@ -69,6 +69,6 @@ public final class ClusterCompositionUtil
         case 1:
             routers.addAll( servers[0] );
         }
-        return new ClusterComposition( expirationTimestamp, readers, writers, routers );
+        return new ClusterComposition( expirationTimestamp, readers, writers, routers, null );
     }
 }

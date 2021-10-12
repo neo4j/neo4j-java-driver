@@ -58,7 +58,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     }
 
     @Override
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser )
     {
         DirectConnection delegate = connection( connection );
         Query procedure = procedureQuery( connection.serverVersion(), databaseName );
@@ -70,7 +70,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
 
     DirectConnection connection( Connection connection )
     {
-        return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE );
+        return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE, null );
     }
 
     Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )

@@ -67,6 +67,6 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
     @Override
     DirectConnection connection( Connection connection )
     {
-        return new DirectConnection( connection, systemDatabase(), AccessMode.READ );
+        return new DirectConnection( connection, systemDatabase(), AccessMode.READ, null );
     }
 }

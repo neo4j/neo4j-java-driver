@@ -41,6 +41,7 @@ public class SessionConfig
     private final AccessMode defaultAccessMode;
     private final String database;
     private final Optional<Long> fetchSize;
+    private final String impersonatedUser;
 
     private SessionConfig( Builder builder )
     {
@@ -48,6 +49,7 @@ public class SessionConfig
         this.defaultAccessMode = builder.defaultAccessMode;
         this.database = builder.database;
         this.fetchSize = builder.fetchSize;
+        this.impersonatedUser = builder.impersonatedUser;
     }
 
     /**
@@ -116,11 +118,22 @@ public class SessionConfig
 
     /**
      * This value if set, overrides the default fetch size set on {@link Config#fetchSize()}.
+     *
      * @return an optional value of fetch size.
      */
     public Optional<Long> fetchSize()
     {
         return fetchSize;
+    }
+
+    /**
+     * The impersonated user the session is going to use for query execution.
+     *
+     * @return an optional value of the impersonated user.
+     */
+    public Optional<String> impersonatedUser()
+    {
+        return Optional.ofNullable( impersonatedUser );
     }
 
     @Override
@@ -136,20 +149,20 @@ public class SessionConfig
         }
         SessionConfig that = (SessionConfig) o;
         return Objects.equals( bookmarks, that.bookmarks ) && defaultAccessMode == that.defaultAccessMode && Objects.equals( database, that.database )
-                && Objects.equals( fetchSize, that.fetchSize );
+               && Objects.equals( fetchSize, that.fetchSize ) && Objects.equals( impersonatedUser, that.impersonatedUser );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( bookmarks, defaultAccessMode, database );
+        return Objects.hash( bookmarks, defaultAccessMode, database, impersonatedUser );
     }
 
     @Override
     public String toString()
     {
         return "SessionParameters{" + "bookmarks=" + bookmarks + ", defaultAccessMode=" + defaultAccessMode + ", database='" + database + '\'' +
-                ", fetchSize=" + fetchSize + '}';
+               ", fetchSize=" + fetchSize + "impersonatedUser=" + impersonatedUser + '}';
     }
 
     /**
@@ -161,6 +174,7 @@ public class SessionConfig
         private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
+        private String impersonatedUser = null;
 
         private Builder()
         {
@@ -265,6 +279,31 @@ public class SessionConfig
         public Builder withFetchSize( long size )
         {
             this.fetchSize = Optional.of( assertValidFetchSize( size ) );
+            return this;
+        }
+
+        /**
+         * Set the impersonated user that the newly created session is going to use for query execution.
+         * <p>
+         * The principal provided to the driver on creation must have the necessary permissions to impersonate and run queries as the impersonated user.
+         * <p>
+         * When {@link #withDatabase(String)} is not used, the driver will discover the default database name of the impersonated user on first session usage.
+         * From that moment, the discovered database name will be used as the default database name for the whole lifetime of the new session.
+         * <p>
+         * <b>Compatible with 4.4+ only.</b> You MUST have all servers running 4.4 version or above and communicating over Bolt 4.4 or above.
+         *
+         * @param impersonatedUser the user to impersonate. Provided value should not be {@code null}.
+         * @return this builder
+         */
+        public Builder withImpersonatedUser( String impersonatedUser )
+        {
+            requireNonNull( impersonatedUser, "Impersonated user should not be null." );
+            if ( impersonatedUser.isEmpty() )
+            {
+                // Empty string is an illegal user. Fail fast on client.
+                throw new IllegalArgumentException( String.format( "Illegal impersonated user '%s'.", impersonatedUser ) );
+            }
+            this.impersonatedUser = impersonatedUser;
             return this;
         }
 

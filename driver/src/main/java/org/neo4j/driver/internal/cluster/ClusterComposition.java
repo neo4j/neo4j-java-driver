@@ -36,13 +36,15 @@ public final class ClusterComposition
     private final Set<BoltServerAddress> writers;
     private final Set<BoltServerAddress> routers;
     private final long expirationTimestamp;
+    private final String databaseName;
 
-    private ClusterComposition( long expirationTimestamp )
+    private ClusterComposition( long expirationTimestamp, String databaseName )
     {
         this.readers = new LinkedHashSet<>();
         this.writers = new LinkedHashSet<>();
         this.routers = new LinkedHashSet<>();
         this.expirationTimestamp = expirationTimestamp;
+        this.databaseName = databaseName;
     }
 
     /**
@@ -52,9 +54,10 @@ public final class ClusterComposition
             long expirationTimestamp,
             Set<BoltServerAddress> readers,
             Set<BoltServerAddress> writers,
-            Set<BoltServerAddress> routers )
+            Set<BoltServerAddress> routers,
+            String databaseName )
     {
-        this( expirationTimestamp );
+        this( expirationTimestamp, databaseName );
         this.readers.addAll( readers );
         this.writers.addAll( writers );
         this.routers.addAll( routers );
@@ -90,6 +93,11 @@ public final class ClusterComposition
         return this.expirationTimestamp;
     }
 
+    public String databaseName()
+    {
+        return databaseName;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -103,6 +111,7 @@ public final class ClusterComposition
         }
         ClusterComposition that = (ClusterComposition) o;
         return expirationTimestamp == that.expirationTimestamp &&
+               Objects.equals( databaseName, that.databaseName ) &&
                Objects.equals( readers, that.readers ) &&
                Objects.equals( writers, that.writers ) &&
                Objects.equals( routers, that.routers );
@@ -111,7 +120,7 @@ public final class ClusterComposition
     @Override
     public int hashCode()
     {
-        return Objects.hash( readers, writers, routers, expirationTimestamp );
+        return Objects.hash( readers, writers, routers, expirationTimestamp, databaseName );
     }
 
     @Override
@@ -122,6 +131,7 @@ public final class ClusterComposition
                ", writers=" + writers +
                ", routers=" + routers +
                ", expirationTimestamp=" + expirationTimestamp +
+               ", databaseName=" + databaseName +
                '}';
     }
 
@@ -132,16 +142,12 @@ public final class ClusterComposition
             return null;
         }
 
-        final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ) );
-        record.get( "servers" ).asList( new Function<Value,Void>()
+        final ClusterComposition result = new ClusterComposition( expirationTimestamp( now, record ), record.get( "db" ).asString( null ) );
+        record.get( "servers" ).asList( (Function<Value,Void>) value ->
         {
-            @Override
-            public Void apply( Value value )
-            {
-                result.servers( value.get( "role" ).asString() )
-                        .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
-                return null;
-            }
+            result.servers( value.get( "role" ).asString() )
+                  .addAll( value.get( "addresses" ).asList( OF_BoltServerAddress ) );
+            return null;
         } );
         return result;
     }

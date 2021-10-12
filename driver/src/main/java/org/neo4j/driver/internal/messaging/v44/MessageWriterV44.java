@@ -31,7 +31,7 @@ import org.neo4j.driver.internal.messaging.encode.HelloMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.RollbackMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.RouteMessageEncoder;
+import org.neo4j.driver.internal.messaging.encode.RouteV44MessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.RunWithMetadataMessageEncoder;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
@@ -62,7 +62,7 @@ public class MessageWriterV44 extends AbstractMessageWriter
         result.put( HelloMessage.SIGNATURE, new HelloMessageEncoder() );
         result.put( GoodbyeMessage.SIGNATURE, new GoodbyeMessageEncoder() );
         result.put( RunWithMetadataMessage.SIGNATURE, new RunWithMetadataMessageEncoder() );
-        result.put( RouteMessage.SIGNATURE, new RouteMessageEncoder() );
+        result.put( RouteMessage.SIGNATURE, new RouteV44MessageEncoder() );
 
         result.put( DiscardMessage.SIGNATURE, new DiscardMessageEncoder() );
         result.put( PullMessage.SIGNATURE, new PullMessageEncoder() );

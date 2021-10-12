@@ -153,9 +153,15 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
+    public long expirationTimestamp()
+    {
+        return expirationTimestamp;
+    }
+
+    @Override
     public synchronized String toString()
     {
         return format( "Ttl %s, currentTime %s, routers %s, writers %s, readers %s, database '%s'",
-                expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description() );
+                       expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description() );
     }
 }

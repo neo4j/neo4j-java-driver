@@ -53,6 +53,7 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.driver.internal.async.ConnectionContext.PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER;
 import static org.neo4j.driver.internal.async.ImmutableConnectionContext.simple;
 import static org.neo4j.driver.internal.messaging.request.MultiDatabaseUtil.supportsMultiDatabase;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -104,8 +105,11 @@ public class LoadBalancer implements ConnectionProvider
     public CompletionStage<Connection> acquireConnection( ConnectionContext context )
     {
         return routingTables.ensureRoutingTable( context )
-                .thenCompose( handler -> acquire( context.mode(), handler.routingTable() )
-                        .thenApply( connection -> new RoutingConnection( connection, context.databaseName(), context.mode(), handler ) ) );
+                            .thenCompose( handler -> acquire( context.mode(), handler.routingTable() )
+                                    .thenApply( connection -> new RoutingConnection( connection,
+                                                                                     Futures.joinNowOrElseThrow( context.databaseNameFuture(),
+                                                                                                                 PENDING_DATABASE_NAME_EXCEPTION_SUPPLIER ),
+                                                                                     context.mode(), context.impersonatedUser(), handler ) ) );
     }
 
     @Override

@@ -60,7 +60,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldCallGetRoutingTableWithEmptyMap()
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
@@ -80,7 +80,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext( uri );
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
@@ -99,7 +99,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldErrorWhenDatabaseIsNotAbsent( String db ) throws Throwable
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), empty() ) ) );
+        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), empty(), null ) ) );
     }
 
     SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context )

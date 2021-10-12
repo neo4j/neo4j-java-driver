@@ -79,6 +79,7 @@ public class NewSession implements TestkitRequest
                 .ifPresent( builder::withBookmarks );
 
         Optional.ofNullable( data.database ).ifPresent( builder::withDatabase );
+        Optional.ofNullable( data.impersonatedUser ).ifPresent( builder::withImpersonatedUser );
 
         if ( data.getFetchSize() != 0 )
         {
@@ -114,6 +115,7 @@ public class NewSession implements TestkitRequest
         private String accessMode;
         private List<String> bookmarks;
         private String database;
+        private String impersonatedUser;
         private int fetchSize;
     }
 }

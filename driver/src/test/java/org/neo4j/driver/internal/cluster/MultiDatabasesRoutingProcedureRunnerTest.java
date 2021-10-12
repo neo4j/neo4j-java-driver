@@ -60,7 +60,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldCallGetRoutingTableWithEmptyMapOnSystemDatabaseForDatabase( String db )
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
@@ -81,7 +81,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext( uri );
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
-        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty() ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );

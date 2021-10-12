@@ -36,7 +36,7 @@ public class DirectConnectionTest
     {
         // given
         Connection connection = mock( Connection.class );
-        DirectConnection directConnection = new DirectConnection( connection, defaultDatabase(), READ );
+        DirectConnection directConnection = new DirectConnection( connection, defaultDatabase(), READ, null );
         String agent = "Neo4j/4.2.5";
         given( connection.serverAgent() ).willReturn( agent );
 

@@ -79,7 +79,7 @@ class RouteMessageRoutingProcedureRunnerTest
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture( null );
         doReturn( releaseConnectionFuture ).when( connection ).release();
 
-        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, databaseName, null ) );
+        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, databaseName, null, null ) );
 
         assertNotNull( response );
         assertTrue( response.isSuccess() );
@@ -106,7 +106,7 @@ class RouteMessageRoutingProcedureRunnerTest
         CompletableFuture<Void> releaseConnectionFuture = CompletableFuture.completedFuture( null );
         doReturn( releaseConnectionFuture ).when( connection ).release();
 
-        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, DatabaseNameUtil.defaultDatabase(), null ) );
+        RoutingProcedureResponse response = TestUtil.await( runner.run( connection, DatabaseNameUtil.defaultDatabase(), null, null ) );
 
         assertNotNull( response );
         assertFalse( response.isSuccess() );
@@ -126,7 +126,7 @@ class RouteMessageRoutingProcedureRunnerTest
                                                   .stream()
                                                   .collect( Collectors.toMap( Map.Entry::getKey, entry -> Values.value( entry.getValue() ) ) );
 
-        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmark, databaseName.databaseName().orElse( null ) ) ),
+        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmark, databaseName.databaseName().orElse( null ), null ) ),
                                             eq( new RouteMessageResponseHandler( completableFuture ) ) );
     }
 

@@ -316,7 +316,7 @@ public final class TestUtil
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
                                              RetryLogic retryLogic, Bookmark bookmark )
     {
-        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), UNLIMITED_FETCH_SIZE,
+        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), null, UNLIMITED_FETCH_SIZE,
                                    DEV_NULL_LOGGING );
     }
 

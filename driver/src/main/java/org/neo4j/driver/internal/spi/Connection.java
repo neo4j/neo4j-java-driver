@@ -69,5 +69,10 @@ public interface Connection
         throw new UnsupportedOperationException( format( "%s does not support database name.", getClass() ) );
     }
 
+    default String impersonatedUser()
+    {
+        throw new UnsupportedOperationException( format( "%s does not support impersonated user.", getClass() ) );
+    }
+
     void flush();
 }

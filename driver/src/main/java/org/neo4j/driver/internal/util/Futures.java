@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 
@@ -158,11 +159,23 @@ public final class Futures
         return stage.toCompletableFuture().getNow( null );
     }
 
+    public static <T> T joinNowOrElseThrow( CompletableFuture<T> future, Supplier<? extends RuntimeException> exceptionSupplier )
+    {
+        if ( future.isDone() )
+        {
+            return future.join();
+        }
+        else
+        {
+            throw exceptionSupplier.get();
+        }
+    }
+
     /**
      * Helper method to extract cause of a {@link CompletionException}.
      * <p>
-     * When using {@link CompletionStage#whenComplete(BiConsumer)} and {@link CompletionStage#handle(BiFunction)}
-     * propagated exceptions might get wrapped in a {@link CompletionException}.
+     * When using {@link CompletionStage#whenComplete(BiConsumer)} and {@link CompletionStage#handle(BiFunction)} propagated exceptions might get wrapped in a
+     * {@link CompletionException}.
      *
      * @param error the exception to get cause for.
      * @return cause of the given exception if it is a {@link CompletionException}, given exception otherwise.

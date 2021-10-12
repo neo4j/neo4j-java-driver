@@ -20,12 +20,15 @@ package org.neo4j.driver.internal.messaging.encode;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -48,8 +51,8 @@ class BeginMessageEncoderTest
     private final ValuePacker packer = mock( ValuePacker.class );
 
     @ParameterizedTest
-    @EnumSource( AccessMode.class )
-    void shouldEncodeBeginMessage( AccessMode mode ) throws Exception
+    @MethodSource( "arguments" )
+    void shouldEncodeBeginMessage( AccessMode mode, String impersonatedUser ) throws Exception
     {
         Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
 
@@ -59,7 +62,7 @@ class BeginMessageEncoderTest
 
         Duration txTimeout = Duration.ofSeconds( 1 );
 
-        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, defaultDatabase() ), packer );
+        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );
@@ -72,8 +75,18 @@ class BeginMessageEncoderTest
         {
             expectedMetadata.put( "mode", value( "r" ) );
         }
+        if ( impersonatedUser != null )
+        {
+            expectedMetadata.put( "imp_user", value( impersonatedUser ) );
+        }
 
         order.verify( packer ).pack( expectedMetadata );
+    }
+
+    private static Stream<Arguments> arguments()
+    {
+        return Arrays.stream( AccessMode.values() )
+                     .flatMap( accessMode -> Stream.of( Arguments.of( accessMode, "user" ), Arguments.of( accessMode, null ) ) );
     }
 
     @Test

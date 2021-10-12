@@ -122,7 +122,7 @@ public class BoltProtocolV3 implements BoltProtocol
         }
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
-        BeginMessage beginMessage = new BeginMessage( bookmark, config, connection.databaseName(), connection.mode() );
+        BeginMessage beginMessage = new BeginMessage( bookmark, config, connection.databaseName(), connection.mode(), connection.impersonatedUser() );
         connection.writeAndFlush( beginMessage, new BeginTxResponseHandler( beginTxFuture ) );
         return beginTxFuture;
     }
@@ -149,7 +149,8 @@ public class BoltProtocolV3 implements BoltProtocol
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
-                autoCommitTxRunMessage(query, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark() );
+                autoCommitTxRunMessage( query, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark(),
+                                        connection.impersonatedUser() );
         return buildResultCursorFactory( connection, query, bookmarkHolder, null, runMessage, fetchSize );
     }
 

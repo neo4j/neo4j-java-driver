@@ -110,7 +110,8 @@ class ParametersTest
         ConnectionProvider provider = mock( ConnectionProvider.class );
         RetryLogic retryLogic = mock( RetryLogic.class );
         NetworkSession session =
-                new NetworkSession( provider, retryLogic, defaultDatabase(), AccessMode.WRITE, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE, DEV_NULL_LOGGING );
+                new NetworkSession( provider, retryLogic, defaultDatabase(), AccessMode.WRITE, new DefaultBookmarkHolder(), null, UNLIMITED_FETCH_SIZE,
+                                    DEV_NULL_LOGGING );
         return new InternalSession( session );
     }
 }

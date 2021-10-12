@@ -36,12 +36,14 @@ public interface Rediscovery
      * <p>
      * Implementation must be thread safe to be called with distinct routing tables concurrently. The routing table instance may be modified.
      *
-     * @param routingTable   the routing table for cluster composition lookup
-     * @param connectionPool the connection pool for connection acquisition
-     * @param bookmark       the bookmark that is presented to the server
+     * @param routingTable     the routing table for cluster composition lookup
+     * @param connectionPool   the connection pool for connection acquisition
+     * @param bookmark         the bookmark that is presented to the server
+     * @param impersonatedUser the impersonated user for cluster composition lookup, should be {@code null} for non-impersonated requests
      * @return cluster composition lookup result
      */
-    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark );
+    CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark,
+                                                                              String impersonatedUser );
 
     List<BoltServerAddress> resolve() throws UnknownHostException;
 }

@@ -40,12 +40,14 @@ public class RoutingConnection implements Connection
     private final AccessMode accessMode;
     private final RoutingErrorHandler errorHandler;
     private final DatabaseName databaseName;
+    private final String impersonatedUser;
 
-    public RoutingConnection( Connection delegate, DatabaseName databaseName, AccessMode accessMode, RoutingErrorHandler errorHandler )
+    public RoutingConnection( Connection delegate, DatabaseName databaseName, AccessMode accessMode, String impersonatedUser, RoutingErrorHandler errorHandler )
     {
         this.delegate = delegate;
         this.databaseName = databaseName;
         this.accessMode = accessMode;
+        this.impersonatedUser = impersonatedUser;
         this.errorHandler = errorHandler;
     }
 
@@ -151,6 +153,11 @@ public class RoutingConnection implements Connection
         return this.databaseName;
     }
 
+    @Override
+    public String impersonatedUser()
+    {
+        return impersonatedUser;
+    }
 
     private RoutingResponseHandler newRoutingResponseHandler( ResponseHandler handler )
     {
