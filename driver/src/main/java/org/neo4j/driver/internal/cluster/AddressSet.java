@@ -40,13 +40,23 @@ public class AddressSet
         return addresses.length;
     }
 
+    /**
+     * Updates addresses using the provided set.
+     * <p>
+     * It aims to retain existing addresses by checking if they are present in the new set. To benefit from this, the provided set MUST contain specifically
+     * {@link BoltServerAddress} instances with equal host and connection host values.
+     *
+     * @param newAddresses the new address set.
+     */
     public synchronized void retainAllAndAdd( Set<BoltServerAddress> newAddresses )
     {
         BoltServerAddress[] addressesArr = new BoltServerAddress[newAddresses.size()];
         int insertionIdx = 0;
         for ( BoltServerAddress address : addresses )
         {
-            if ( newAddresses.remove( address ) )
+            BoltServerAddress lookupAddress =
+                    BoltServerAddress.class.equals( address.getClass() ) ? address : new BoltServerAddress( address.host(), address.port() );
+            if ( newAddresses.remove( lookupAddress ) )
             {
                 addressesArr[insertionIdx] = address;
                 insertionIdx++;

@@ -20,13 +20,18 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.ResolvedBoltServerAddress;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class AddressSetTest
 {
@@ -140,6 +145,32 @@ class AddressSetTest
         addressSet.retainAllAndAdd( addresses( "one", "two" ) );
 
         assertEquals( 2, addressSet.size() );
+    }
+
+    @Test
+    void shouldRetainExistingAddresses()
+    {
+        AddressSet addressSet = new AddressSet();
+        BoltServerAddress address0 = new BoltServerAddress( "node0", 7687 );
+        BoltServerAddress address1 = new ResolvedBoltServerAddress( "node1", 7687, new InetAddress[]{InetAddress.getLoopbackAddress()} );
+        BoltServerAddress address2 = new BoltServerAddress( "node2", 7687 );
+        BoltServerAddress address3 = new BoltServerAddress( "node3", 7687 );
+        BoltServerAddress address4 = new BoltServerAddress( "node4", 7687 );
+        addressSet.retainAllAndAdd( new HashSet<>( Arrays.asList( address0, address1, address2, address3, address4 ) ) );
+
+        BoltServerAddress sameAddress0 = new BoltServerAddress( "node0", 7687 );
+        BoltServerAddress sameAddress1 = new BoltServerAddress( "node1", 7687 );
+        BoltServerAddress differentAddress2 = new BoltServerAddress( "different-node2", 7687 );
+        BoltServerAddress sameAddress3 = new BoltServerAddress( "node3", 7687 );
+        BoltServerAddress sameAddress4 = new BoltServerAddress( "node4", 7687 );
+        addressSet.retainAllAndAdd( new HashSet<>( Arrays.asList( sameAddress0, sameAddress1, differentAddress2, sameAddress3, sameAddress4 ) ) );
+
+        assertEquals( 5, addressSet.size() );
+        assertSame( addressSet.toArray()[0], address0 );
+        assertSame( addressSet.toArray()[1], address1 );
+        assertSame( addressSet.toArray()[2], address3 );
+        assertSame( addressSet.toArray()[3], address4 );
+        assertSame( addressSet.toArray()[4], differentAddress2 );
     }
 
     private static Set<BoltServerAddress> addresses( String... strings )
