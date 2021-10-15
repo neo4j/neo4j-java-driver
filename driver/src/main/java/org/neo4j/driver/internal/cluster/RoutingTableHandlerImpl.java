@@ -136,6 +136,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
     {
         try
         {
+            log.debug( "Fetched cluster composition for database '%s'. %s", databaseName.description(), compositionLookupResult.getClusterComposition() );
             routingTable.update( compositionLookupResult.getClusterComposition() );
             routingTableRegistry.removeAged();
 
@@ -166,7 +167,8 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
 
     private synchronized void clusterCompositionLookupFailed( Throwable error )
     {
-        log.error( String.format( "Failed to update routing table for database '%s'. Current routing table: %s.", databaseName.description(), routingTable ), error );
+        log.error( String.format( "Failed to update routing table for database '%s'. Current routing table: %s.", databaseName.description(), routingTable ),
+                   error );
         routingTableRegistry.remove( databaseName );
         CompletableFuture<RoutingTable> routingTableFuture = refreshRoutingTableFuture;
         refreshRoutingTableFuture = null;
