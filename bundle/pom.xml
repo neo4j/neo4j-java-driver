@@ -47,33 +47,32 @@
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
     </dependency>
-
-
-
   </dependencies>
 
   <build>
     <plugins>
       <!-- Extract the original sources again -->
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <artifactId>maven-resources-plugin</artifactId>
         <executions>
           <execution>
-            <id>unpack-sources</id>
+            <id>copy-appCtx</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>unpack-dependencies</goal>
+              <goal>copy-resources</goal>
             </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/generated-sources/slim</outputDirectory>
+              <overwrite>true</overwrite>
+              <resources>
+                <resource>
+                  <directory>${rootDir}/driver/src/main/java</directory>
+                  <includes>**\/*.java</includes>
+                </resource>
+              </resources>
+            </configuration>
           </execution>
         </executions>
-        <configuration>
-          <classifier>sources</classifier>
-          <type>jar</type>
-          <outputDirectory>${project.build.directory}/generated-sources/slim</outputDirectory>
-          <includeArtifactIds>neo4j-java-driver-slim</includeArtifactIds>
-          <includes>**\/*.java</includes>
-          <overWriteSnapshots>true</overWriteSnapshots>
-        </configuration>
       </plugin>
       <!-- Attach them -->
       <plugin>
