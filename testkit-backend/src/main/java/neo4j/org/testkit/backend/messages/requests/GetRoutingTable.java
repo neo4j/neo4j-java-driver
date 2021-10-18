@@ -25,16 +25,16 @@ import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
-import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTableHandler;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 
@@ -42,10 +42,10 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 @Getter
 public class GetRoutingTable implements TestkitRequest
 {
-    private static final Function<AddressSet,List<String>> ADDRESSES_TO_STRINGS =
-            ( addresses ) -> Arrays.stream( addresses.toArray() )
-                                   .map( address -> String.format( "%s:%d", address.host(), address.port() ) )
-                                   .collect( Collectors.toList() );
+    private static final Function<Set<BoltServerAddress>,List<String>> ADDRESSES_TO_STRINGS =
+            ( addresses ) -> addresses.stream()
+                                      .map( address -> String.format( "%s:%d", address.host(), address.port() ) )
+                                      .collect( Collectors.toList() );
 
     private GetRoutingTableBody data;
 

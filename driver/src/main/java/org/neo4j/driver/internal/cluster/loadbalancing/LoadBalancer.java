@@ -22,6 +22,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -35,7 +36,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DomainNameResolver;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
-import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterCompositionProvider;
 import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RediscoveryImpl;
@@ -68,6 +68,7 @@ public class LoadBalancer implements ConnectionProvider
             "Failed to obtain connection towards %s server. Known routing table is: %s";
     private static final String CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE =
             "Failed to obtain a connection towards address %s, will try other addresses if available. Complete failure is reported separately from this entry.";
+    private static final BoltServerAddress[] BOLT_SERVER_ADDRESSES_EMPTY_ARRAY = new BoltServerAddress[0];
     private final ConnectionPool connectionPool;
     private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
@@ -193,16 +194,15 @@ public class LoadBalancer implements ConnectionProvider
 
     private CompletionStage<Connection> acquire( AccessMode mode, RoutingTable routingTable )
     {
-        AddressSet addresses = addressSet( mode, routingTable );
         CompletableFuture<Connection> result = new CompletableFuture<>();
         List<Throwable> attemptExceptions = new ArrayList<>();
-        acquire( mode, routingTable, addresses, result, attemptExceptions );
+        acquire( mode, routingTable, result, attemptExceptions );
         return result;
     }
 
-    private void acquire( AccessMode mode, RoutingTable routingTable, AddressSet addresses, CompletableFuture<Connection> result,
-                          List<Throwable> attemptErrors )
+    private void acquire( AccessMode mode, RoutingTable routingTable, CompletableFuture<Connection> result, List<Throwable> attemptErrors )
     {
+        Set<BoltServerAddress> addresses = addressSet( mode, routingTable );
         BoltServerAddress address = selectAddress( mode, addresses );
 
         if ( address == null )
@@ -227,7 +227,7 @@ public class LoadBalancer implements ConnectionProvider
                     log.debug( attemptMessage, error );
                     attemptErrors.add( error );
                     routingTable.forget( address );
-                    eventExecutorGroup.next().execute( () -> acquire( mode, routingTable, addresses, result, attemptErrors ) );
+                    eventExecutorGroup.next().execute( () -> acquire( mode, routingTable, result, attemptErrors ) );
                 }
                 else
                 {
@@ -241,7 +241,7 @@ public class LoadBalancer implements ConnectionProvider
         } );
     }
 
-    private static AddressSet addressSet( AccessMode mode, RoutingTable routingTable )
+    private static Set<BoltServerAddress> addressSet( AccessMode mode, RoutingTable routingTable )
     {
         switch ( mode )
         {
@@ -254,9 +254,9 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private BoltServerAddress selectAddress( AccessMode mode, AddressSet servers )
+    private BoltServerAddress selectAddress( AccessMode mode, Set<BoltServerAddress> servers )
     {
-        BoltServerAddress[] addresses = servers.toArray();
+        BoltServerAddress[] addresses = servers.toArray( BOLT_SERVER_ADDRESSES_EMPTY_ARRAY );
 
         switch ( mode )
         {

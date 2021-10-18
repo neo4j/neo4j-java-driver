@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -517,8 +519,7 @@ class RediscoveryTest
     private static RoutingTable routingTableMock( boolean preferInitialRouter, BoltServerAddress... routers )
     {
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet addressSet = new AddressSet();
-        addressSet.retainAllAndAdd( asOrderedSet( routers ) );
+        Set<BoltServerAddress> addressSet = new LinkedHashSet<>( asOrderedSet( routers ) );
         when( routingTable.routers() ).thenReturn( addressSet );
         when( routingTable.database() ).thenReturn( defaultDatabase() );
         when( routingTable.preferInitialRouter() ).thenReturn( preferInitialRouter );

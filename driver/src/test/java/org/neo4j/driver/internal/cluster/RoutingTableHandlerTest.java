@@ -259,8 +259,7 @@ class RoutingTableHandlerTest
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.isStaleFor( mode ) ).thenReturn( true );
 
-        AddressSet addresses = new AddressSet();
-        addresses.retainAllAndAdd( new HashSet<>( singletonList( LOCAL_DEFAULT ) ) );
+        Set<BoltServerAddress> addresses = new LinkedHashSet<>( singletonList( LOCAL_DEFAULT ) );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
         when( routingTable.database() ).thenReturn( defaultDatabase() );

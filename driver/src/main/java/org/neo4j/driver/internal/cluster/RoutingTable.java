@@ -34,11 +34,11 @@ public interface RoutingTable
 
     void forget( BoltServerAddress address );
 
-    AddressSet readers();
+    Set<BoltServerAddress> readers();
 
-    AddressSet writers();
+    Set<BoltServerAddress> writers();
 
-    AddressSet routers();
+    Set<BoltServerAddress> routers();
 
     Set<BoltServerAddress> servers();
 
