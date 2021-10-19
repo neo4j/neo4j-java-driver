@@ -32,10 +32,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -54,6 +52,8 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completeWithNullIfNoError;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLockAsync;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -341,35 +341,5 @@ public class ConnectionPoolImpl implements ConnectionPool
                                        return closePool( pool ).toCompletableFuture();
                                    } )
                              .toArray( CompletableFuture[]::new ) );
-    }
-
-    private void executeWithLock( Lock lock, Runnable runnable )
-    {
-        executeWithLock( lock, () ->
-        {
-            runnable.run();
-            return null;
-        } );
-    }
-
-    private <T> T executeWithLock( Lock lock, Supplier<T> supplier )
-    {
-        lock.lock();
-        try
-        {
-            return supplier.get();
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    private <T> void executeWithLockAsync( Lock lock, Supplier<CompletionStage<T>> stageSupplier )
-    {
-        lock.lock();
-        CompletableFuture.completedFuture( lock )
-                         .thenCompose( ignored -> stageSupplier.get() )
-                         .whenComplete( ( ignored, throwable ) -> lock.unlock() );
     }
 }

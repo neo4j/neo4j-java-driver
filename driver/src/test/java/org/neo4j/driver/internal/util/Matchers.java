@@ -32,8 +32,6 @@ import org.neo4j.driver.internal.DirectConnectionProvider;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.SessionFactory;
 import org.neo4j.driver.internal.SessionFactoryImpl;
-import org.neo4j.driver.internal.cluster.AddressSet;
-import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.summary.ResultSummary;
@@ -42,69 +40,6 @@ public final class Matchers
 {
     private Matchers()
     {
-    }
-
-    public static Matcher<RoutingTable> containsRouter( final BoltServerAddress address )
-    {
-        return new TypeSafeMatcher<RoutingTable>()
-        {
-            @Override
-            protected boolean matchesSafely( RoutingTable routingTable )
-            {
-                BoltServerAddress[] addresses = routingTable.routers().toArray();
-
-                for ( BoltServerAddress currentAddress : addresses )
-                {
-                    if ( currentAddress.equals( address ) )
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "routing table that contains router " ).appendValue( address );
-            }
-        };
-    }
-
-    public static Matcher<RoutingTable> containsReader( final BoltServerAddress address )
-    {
-        return new TypeSafeMatcher<RoutingTable>()
-        {
-            @Override
-            protected boolean matchesSafely( RoutingTable routingTable )
-            {
-                return contains( routingTable.readers(), address );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "routing table that contains reader " ).appendValue( address );
-            }
-        };
-    }
-
-    public static Matcher<RoutingTable> containsWriter( final BoltServerAddress address )
-    {
-        return new TypeSafeMatcher<RoutingTable>()
-        {
-            @Override
-            protected boolean matchesSafely( RoutingTable routingTable )
-            {
-                return contains( routingTable.writers(), address );
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "routing table that contains writer " ).appendValue( address );
-            }
-        };
     }
 
     public static Matcher<Driver> directDriver()
@@ -271,19 +206,6 @@ public final class Matchers
                 description.appendText( "IllegalStateException about blocking operation in event loop thread " );
             }
         };
-    }
-
-    private static boolean contains( AddressSet set, BoltServerAddress address )
-    {
-        BoltServerAddress[] addresses = set.toArray();
-        for ( BoltServerAddress currentAddress : addresses )
-        {
-            if ( currentAddress.equals( address ) )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static boolean hasConnectionProvider( Driver driver, Class<? extends ConnectionProvider> providerClass )

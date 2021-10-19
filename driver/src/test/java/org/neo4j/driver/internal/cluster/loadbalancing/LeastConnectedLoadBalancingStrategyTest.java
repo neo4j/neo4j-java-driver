@@ -22,6 +22,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -53,15 +56,15 @@ class LeastConnectedLoadBalancingStrategyTest
     }
 
     @Test
-    void shouldHandleEmptyReadersArray()
+    void shouldHandleEmptyReaders()
     {
-        assertNull( strategy.selectReader( new BoltServerAddress[0] ) );
+        assertNull( strategy.selectReader( Collections.emptyList() ) );
     }
 
     @Test
-    void shouldHandleEmptyWritersArray()
+    void shouldHandleEmptyWriters()
     {
-        assertNull( strategy.selectWriter( new BoltServerAddress[0] ) );
+        assertNull( strategy.selectWriter( Collections.emptyList() ) );
     }
 
     @Test
@@ -69,7 +72,7 @@ class LeastConnectedLoadBalancingStrategyTest
     {
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
 
-        assertEquals( address, strategy.selectReader( new BoltServerAddress[]{address} ) );
+        assertEquals( address, strategy.selectReader( Collections.singletonList( address ) ) );
     }
 
     @Test
@@ -77,7 +80,7 @@ class LeastConnectedLoadBalancingStrategyTest
     {
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
 
-        assertEquals( address, strategy.selectWriter( new BoltServerAddress[]{address} ) );
+        assertEquals( address, strategy.selectWriter( Collections.singletonList( address ) ) );
     }
 
     @Test
@@ -86,7 +89,7 @@ class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address = new BoltServerAddress( "reader", 9999 );
         when( connectionPool.inUseConnections( address ) ).thenReturn( 42 );
 
-        assertEquals( address, strategy.selectReader( new BoltServerAddress[]{address} ) );
+        assertEquals( address, strategy.selectReader( Collections.singletonList( address ) ) );
     }
 
     @Test
@@ -95,7 +98,7 @@ class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address = new BoltServerAddress( "writer", 9999 );
         when( connectionPool.inUseConnections( address ) ).thenReturn( 24 );
 
-        assertEquals( address, strategy.selectWriter( new BoltServerAddress[]{address} ) );
+        assertEquals( address, strategy.selectWriter( Collections.singletonList( address ) ) );
     }
 
     @Test
@@ -109,7 +112,7 @@ class LeastConnectedLoadBalancingStrategyTest
         when( connectionPool.inUseConnections( address2 ) ).thenReturn( 4 );
         when( connectionPool.inUseConnections( address3 ) ).thenReturn( 1 );
 
-        assertEquals( address3, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
+        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
     }
 
     @Test
@@ -126,7 +129,7 @@ class LeastConnectedLoadBalancingStrategyTest
         when( connectionPool.inUseConnections( address4 ) ).thenReturn( 1 );
 
         assertEquals( address3,
-                strategy.selectWriter( new BoltServerAddress[]{address1, address2, address3, address4} ) );
+                      strategy.selectWriter( Arrays.asList( address1, address2, address3, address4 ) ) );
     }
 
     @Test
@@ -136,13 +139,13 @@ class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address2 = new BoltServerAddress( "reader", 2 );
         BoltServerAddress address3 = new BoltServerAddress( "reader", 3 );
 
-        assertEquals( address1, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
-        assertEquals( address2, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
-        assertEquals( address3, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
+        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
 
-        assertEquals( address1, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
-        assertEquals( address2, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
-        assertEquals( address3, strategy.selectReader( new BoltServerAddress[]{address1, address2, address3} ) );
+        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
+        assertEquals( address3, strategy.selectReader( Arrays.asList( address1, address2, address3 ) ) );
     }
 
     @Test
@@ -151,11 +154,11 @@ class LeastConnectedLoadBalancingStrategyTest
         BoltServerAddress address1 = new BoltServerAddress( "writer", 1 );
         BoltServerAddress address2 = new BoltServerAddress( "writer", 2 );
 
-        assertEquals( address1, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
-        assertEquals( address2, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
+        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
+        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
 
-        assertEquals( address1, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
-        assertEquals( address2, strategy.selectReader( new BoltServerAddress[]{address1, address2} ) );
+        assertEquals( address1, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
+        assertEquals( address2, strategy.selectReader( Arrays.asList( address1, address2 ) ) );
     }
 
     @Test
@@ -167,8 +170,8 @@ class LeastConnectedLoadBalancingStrategyTest
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
 
-        strategy.selectReader( new BoltServerAddress[0] );
-        strategy.selectWriter( new BoltServerAddress[0] );
+        strategy.selectReader( Collections.emptyList() );
+        strategy.selectWriter( Collections.emptyList() );
 
         verify( logger ).trace( startsWith( "Unable to select" ), eq( "reader" ) );
         verify( logger ).trace( startsWith( "Unable to select" ), eq( "writer" ) );
@@ -185,8 +188,8 @@ class LeastConnectedLoadBalancingStrategyTest
 
         LoadBalancingStrategy strategy = new LeastConnectedLoadBalancingStrategy( connectionPool, logging );
 
-        strategy.selectReader( new BoltServerAddress[]{A} );
-        strategy.selectWriter( new BoltServerAddress[]{A} );
+        strategy.selectReader( Collections.singletonList( A ) );
+        strategy.selectWriter( Collections.singletonList( A ) );
 
         verify( logger ).trace( startsWith( "Selected" ), eq( "reader" ), eq( A ), eq( 42 ) );
         verify( logger ).trace( startsWith( "Selected" ), eq( "writer" ), eq( A ), eq( 42 ) );

@@ -197,10 +197,8 @@ public class RediscoveryImpl implements Rediscovery
                                                                                   Set<BoltServerAddress> seenServers, Bookmark bookmark,
                                                                                   String impersonatedUser, Throwable baseError )
     {
-        BoltServerAddress[] addresses = routingTable.routers().toArray();
-
         CompletableFuture<ClusterComposition> result = completedWithNull();
-        for ( BoltServerAddress address : addresses )
+        for ( BoltServerAddress address : routingTable.routers() )
         {
             result = result
                     .thenCompose(

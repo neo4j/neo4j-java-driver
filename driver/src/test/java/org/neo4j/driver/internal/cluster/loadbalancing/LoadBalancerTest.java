@@ -27,8 +27,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -43,7 +45,6 @@ import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.connection.RoutingConnection;
-import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.ClusterComposition;
 import org.neo4j.driver.internal.cluster.ClusterRoutingTable;
 import org.neo4j.driver.internal.cluster.Rediscovery;
@@ -101,10 +102,8 @@ class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet readerAddresses = mock( AddressSet.class );
-        AddressSet writerAddresses = mock( AddressSet.class );
-        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
-        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{B} );
+        List<BoltServerAddress> readerAddresses = Collections.singletonList( A );
+        List<BoltServerAddress> writerAddresses = Collections.singletonList( B );
         when( routingTable.readers() ).thenReturn( readerAddresses );
         when( routingTable.writers() ).thenReturn( writerAddresses );
 
@@ -122,8 +121,7 @@ class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet writerAddresses = mock( AddressSet.class );
-        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
+        List<BoltServerAddress> writerAddresses = Collections.singletonList( A );
         when( routingTable.writers() ).thenReturn( writerAddresses );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
@@ -140,15 +138,17 @@ class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
-        when( routingTable.readers() ).thenReturn( new AddressSet() );
-        when( routingTable.writers() ).thenReturn( new AddressSet() );
+        when( routingTable.readers() ).thenReturn( Collections.emptyList() );
+        when( routingTable.writers() ).thenReturn( Collections.emptyList() );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
 
-        SessionExpiredException error1 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( READ ) ) ) );
+        SessionExpiredException error1 =
+                assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( READ ) ) ) );
         assertThat( error1.getMessage(), startsWith( "Failed to obtain connection towards READ server" ) );
 
-        SessionExpiredException error2 = assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( WRITE ) ) ) );
+        SessionExpiredException error2 =
+                assertThrows( SessionExpiredException.class, () -> await( loadBalancer.acquireConnection( contextWithMode( WRITE ) ) ) );
         assertThat( error2.getMessage(), startsWith( "Failed to obtain connection towards WRITE server" ) );
     }
 
@@ -162,8 +162,7 @@ class LoadBalancerTest
         when( connectionPool.inUseConnections( C ) ).thenReturn( 0 );
 
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet readerAddresses = mock( AddressSet.class );
-        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A, B, C} );
+        List<BoltServerAddress> readerAddresses = Arrays.asList( A, B, C );
         when( routingTable.readers() ).thenReturn( readerAddresses );
 
 
@@ -187,8 +186,7 @@ class LoadBalancerTest
         ConnectionPool connectionPool = newConnectionPoolMock();
 
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet readerAddresses = mock( AddressSet.class );
-        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A, B, C} );
+        List<BoltServerAddress> readerAddresses = Arrays.asList( A, B, C );
         when( routingTable.readers() ).thenReturn( readerAddresses );
 
         LoadBalancer loadBalancer = newLoadBalancer( connectionPool, routingTable );
@@ -375,10 +373,8 @@ class LoadBalancerTest
     {
         ConnectionPool connectionPool = newConnectionPoolMock();
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet readerAddresses = mock( AddressSet.class );
-        AddressSet writerAddresses = mock( AddressSet.class );
-        when( readerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{A} );
-        when( writerAddresses.toArray() ).thenReturn( new BoltServerAddress[]{B} );
+        List<BoltServerAddress> readerAddresses = Collections.singletonList( A );
+        List<BoltServerAddress> writerAddresses = Collections.singletonList( B );
         when( routingTable.readers() ).thenReturn( readerAddresses );
         when( routingTable.writers() ).thenReturn( writerAddresses );
         RoutingTableRegistry routingTables = mock( RoutingTableRegistry.class );
