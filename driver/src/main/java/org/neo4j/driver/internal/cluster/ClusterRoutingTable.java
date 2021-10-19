@@ -18,9 +18,10 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -43,18 +44,18 @@ public class ClusterRoutingTable implements RoutingTable
     private final ReadWriteLock tableLock = new ReentrantReadWriteLock();
     private final DatabaseName databaseName;
     private final Clock clock;
-    private final Set<BoltServerAddress> disused = new LinkedHashSet<>();
+    private final Set<BoltServerAddress> disused = new HashSet<>();
 
     private long expirationTimestamp;
     private boolean preferInitialRouter = true;
-    private Set<BoltServerAddress> readers = Collections.emptySet();
-    private Set<BoltServerAddress> writers = Collections.emptySet();
-    private Set<BoltServerAddress> routers = Collections.emptySet();
+    private List<BoltServerAddress> readers = Collections.emptyList();
+    private List<BoltServerAddress> writers = Collections.emptyList();
+    private List<BoltServerAddress> routers = Collections.emptyList();
 
     public ClusterRoutingTable( DatabaseName ofDatabase, Clock clock, BoltServerAddress... routingAddresses )
     {
         this( ofDatabase, clock );
-        routers = Collections.unmodifiableSet( new LinkedHashSet<>( asList( routingAddresses ) ) );
+        routers = Collections.unmodifiableList( asList( routingAddresses ) );
     }
 
     private ClusterRoutingTable( DatabaseName ofDatabase, Clock clock )
@@ -112,19 +113,19 @@ public class ClusterRoutingTable implements RoutingTable
     }
 
     @Override
-    public Set<BoltServerAddress> readers()
+    public List<BoltServerAddress> readers()
     {
         return executeWithLock( tableLock.readLock(), () -> readers );
     }
 
     @Override
-    public Set<BoltServerAddress> writers()
+    public List<BoltServerAddress> writers()
     {
         return executeWithLock( tableLock.readLock(), () -> writers );
     }
 
     @Override
-    public Set<BoltServerAddress> routers()
+    public List<BoltServerAddress> routers()
     {
         return executeWithLock( tableLock.readLock(), () -> routers );
     }
@@ -185,33 +186,38 @@ public class ClusterRoutingTable implements RoutingTable
                         expirationTimestamp, clock.millis(), routers, writers, readers, databaseName.description() ) );
     }
 
-    private Set<BoltServerAddress> newWithoutAddressIfPresent( Set<BoltServerAddress> addresses, BoltServerAddress addressToSkip )
+    private List<BoltServerAddress> newWithoutAddressIfPresent( List<BoltServerAddress> addresses, BoltServerAddress addressToSkip )
     {
-        return newWithAddressReplacedIfPresent( addresses, addressToSkip, null );
-    }
-
-    private Set<BoltServerAddress> newWithAddressReplacedIfPresent( Set<BoltServerAddress> addresses, BoltServerAddress oldAddress,
-                                                                    BoltServerAddress newAddress )
-    {
-        if ( !addresses.contains( oldAddress ) )
+        List<BoltServerAddress> newList = new ArrayList<>( addresses.size() );
+        for ( BoltServerAddress address : addresses )
         {
-            return addresses;
+            if ( !address.equals( addressToSkip ) )
+            {
+                newList.add( address );
+            }
         }
-        Stream<BoltServerAddress> addressStream = addresses.stream();
-        addressStream = newAddress != null
-                        ? addressStream.map( address -> address.equals( oldAddress ) ? newAddress : address )
-                        : addressStream.filter( address -> !address.equals( oldAddress ) );
-        return Collections.unmodifiableSet( (Set<? extends BoltServerAddress>) addressStream.collect( Collectors.toCollection( LinkedHashSet::new ) ) );
+        return Collections.unmodifiableList( newList );
     }
 
-    private Set<BoltServerAddress> newWithReusedAddresses( Set<BoltServerAddress> currentAddresses, Set<BoltServerAddress> disusedAddresses,
-                                                           Set<BoltServerAddress> newAddresses )
+    private List<BoltServerAddress> newWithAddressReplacedIfPresent( List<BoltServerAddress> addresses, BoltServerAddress oldAddress,
+                                                                     BoltServerAddress newAddress )
     {
-        Set<BoltServerAddress> result = Stream.concat( currentAddresses.stream(), disusedAddresses.stream() )
-                                              .filter( address -> newAddresses.remove( toBoltServerAddress( address ) ) )
-                                              .collect( Collectors.toCollection( LinkedHashSet::new ) );
-        result.addAll( newAddresses );
-        return Collections.unmodifiableSet( result );
+        List<BoltServerAddress> newList = new ArrayList<>( addresses.size() );
+        for ( BoltServerAddress address : addresses )
+        {
+            newList.add( address.equals( oldAddress ) ? newAddress : address );
+        }
+        return Collections.unmodifiableList( newList );
+    }
+
+    private List<BoltServerAddress> newWithReusedAddresses( List<BoltServerAddress> currentAddresses, Set<BoltServerAddress> disusedAddresses,
+                                                            Set<BoltServerAddress> newAddresses )
+    {
+        List<BoltServerAddress> newList = Stream.concat( currentAddresses.stream(), disusedAddresses.stream() )
+                                                .filter( address -> newAddresses.remove( toBoltServerAddress( address ) ) )
+                                                .collect( Collectors.toCollection( () -> new ArrayList<>( newAddresses.size() ) ) );
+        newList.addAll( newAddresses );
+        return Collections.unmodifiableList( newList );
     }
 
     private BoltServerAddress toBoltServerAddress( BoltServerAddress address )

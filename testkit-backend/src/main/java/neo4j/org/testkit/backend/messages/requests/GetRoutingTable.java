@@ -26,7 +26,6 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -42,7 +41,7 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 @Getter
 public class GetRoutingTable implements TestkitRequest
 {
-    private static final Function<Set<BoltServerAddress>,List<String>> ADDRESSES_TO_STRINGS =
+    private static final Function<List<BoltServerAddress>,List<String>> ADDRESSES_TO_STRINGS =
             ( addresses ) -> addresses.stream()
                                       .map( address -> String.format( "%s:%d", address.host(), address.port() ) )
                                       .collect( Collectors.toList() );

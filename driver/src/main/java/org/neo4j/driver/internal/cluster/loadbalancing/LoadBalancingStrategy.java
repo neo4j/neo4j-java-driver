@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
+import java.util.List;
+
 import org.neo4j.driver.internal.BoltServerAddress;
 
 /**
@@ -31,7 +33,7 @@ public interface LoadBalancingStrategy
      * @param knownReaders array of all known readers.
      * @return most appropriate reader or {@code null} if it can't be selected.
      */
-    BoltServerAddress selectReader( BoltServerAddress[] knownReaders );
+    BoltServerAddress selectReader( List<BoltServerAddress> knownReaders );
 
     /**
      * Select most appropriate write address from the given array of addresses.
@@ -39,5 +41,5 @@ public interface LoadBalancingStrategy
      * @param knownWriters array of all known writers.
      * @return most appropriate writer or {@code null} if it can't be selected.
      */
-    BoltServerAddress selectWriter( BoltServerAddress[] knownWriters );
+    BoltServerAddress selectWriter( List<BoltServerAddress> knownWriters );
 }

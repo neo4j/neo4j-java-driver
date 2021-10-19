@@ -22,7 +22,6 @@ import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -202,7 +201,7 @@ public class LoadBalancer implements ConnectionProvider
 
     private void acquire( AccessMode mode, RoutingTable routingTable, CompletableFuture<Connection> result, List<Throwable> attemptErrors )
     {
-        Set<BoltServerAddress> addresses = addressSet( mode, routingTable );
+        List<BoltServerAddress> addresses = getAddressesByMode( mode, routingTable );
         BoltServerAddress address = selectAddress( mode, addresses );
 
         if ( address == null )
@@ -241,7 +240,7 @@ public class LoadBalancer implements ConnectionProvider
         } );
     }
 
-    private static Set<BoltServerAddress> addressSet( AccessMode mode, RoutingTable routingTable )
+    private static List<BoltServerAddress> getAddressesByMode( AccessMode mode, RoutingTable routingTable )
     {
         switch ( mode )
         {
@@ -254,10 +253,8 @@ public class LoadBalancer implements ConnectionProvider
         }
     }
 
-    private BoltServerAddress selectAddress( AccessMode mode, Set<BoltServerAddress> servers )
+    private BoltServerAddress selectAddress( AccessMode mode, List<BoltServerAddress> addresses )
     {
-        BoltServerAddress[] addresses = servers.toArray( BOLT_SERVER_ADDRESSES_EMPTY_ARRAY );
-
         switch ( mode )
         {
         case READ:

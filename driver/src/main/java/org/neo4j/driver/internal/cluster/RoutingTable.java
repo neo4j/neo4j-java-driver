@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
@@ -34,12 +35,34 @@ public interface RoutingTable
 
     void forget( BoltServerAddress address );
 
-    Set<BoltServerAddress> readers();
+    /**
+     * Returns an immutable list of reader addresses.
+     *
+     * @return the immutable list of reader addresses.
+     */
+    List<BoltServerAddress> readers();
 
-    Set<BoltServerAddress> writers();
+    /**
+     * Returns an immutable list of writer addresses.
+     *
+     * @return the immutable list of write addresses.
+     */
 
-    Set<BoltServerAddress> routers();
+    List<BoltServerAddress> writers();
 
+    /**
+     * Returns an immutable list of router addresses.
+     *
+     * @return the immutable list of router addresses.
+     */
+
+    List<BoltServerAddress> routers();
+
+    /**
+     * Returns an immutable unordered set of all addresses known by this routing table. This includes all router, reader, writer and disused addresses.
+     *
+     * @return the immutable set of all addresses.
+     */
     Set<BoltServerAddress> servers();
 
     DatabaseName database();
