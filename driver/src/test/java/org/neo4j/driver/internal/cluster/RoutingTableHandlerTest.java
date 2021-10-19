@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -259,8 +260,7 @@ class RoutingTableHandlerTest
         RoutingTable routingTable = mock( RoutingTable.class );
         when( routingTable.isStaleFor( mode ) ).thenReturn( true );
 
-        AddressSet addresses = new AddressSet();
-        addresses.retainAllAndAdd( new HashSet<>( singletonList( LOCAL_DEFAULT ) ) );
+        List<BoltServerAddress> addresses = singletonList( LOCAL_DEFAULT );
         when( routingTable.readers() ).thenReturn( addresses );
         when( routingTable.writers() ).thenReturn( addresses );
         when( routingTable.database() ).thenReturn( defaultDatabase() );
