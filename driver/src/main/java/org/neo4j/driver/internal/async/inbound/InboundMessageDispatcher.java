@@ -32,6 +32,7 @@ import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.handlers.ResetResponseHandler;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.ResponseMessageHandler;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.ErrorUtil;
@@ -46,6 +47,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     private final Channel channel;
     private final Queue<ResponseHandler> handlers = new LinkedList<>();
     private final Logger log;
+    private final ChannelErrorLogger errorLog;
 
     private volatile boolean gracefullyClosed;
     private Throwable currentError;
@@ -58,6 +60,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     {
         this.channel = requireNonNull( channel );
         this.log = new ChannelActivityLogger( channel, logging, getClass() );
+        this.errorLog = new ChannelErrorLogger( channel, logging );
     }
 
     public void enqueue( ResponseHandler handler )
@@ -198,7 +201,7 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
             handler.onFailure( currentError );
         }
 
-        log.debug( "Closing channel because of a failure", error );
+        errorLog.traceOrDebug( "Closing channel because of a failure", error );
         channel.close();
     }
 
@@ -286,5 +289,11 @@ public class InboundMessageDispatcher implements ResponseMessageHandler
     Logger getLog()
     {
         return log;
+    }
+
+    //    For testing only
+    Logger getErrorLog()
+    {
+        return errorLog;
     }
 }
