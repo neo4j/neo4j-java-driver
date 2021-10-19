@@ -27,16 +27,16 @@ import io.netty.handler.codec.ReplayingDecoder;
 import java.util.List;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.neo4j.driver.internal.logging.ChannelActivityLogger;
-import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.MessageFormat;
-import org.neo4j.driver.internal.util.ErrorUtil;
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.logging.ChannelErrorLogger;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
+import org.neo4j.driver.internal.messaging.MessageFormat;
+import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static org.neo4j.driver.internal.async.connection.BoltProtocolUtil.NO_PROTOCOL_VERSION;
 import static org.neo4j.driver.internal.messaging.BoltProtocolVersion.isHttp;
@@ -48,10 +48,11 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     private final Logging logging;
 
     private boolean failed;
-    private Logger log;
+    private ChannelActivityLogger log;
+    private ChannelErrorLogger errorLog;
 
     public HandshakeHandler( ChannelPipelineBuilder pipelineBuilder, ChannelPromise handshakeCompletedPromise,
-            Logging logging )
+                             Logging logging )
     {
         this.pipelineBuilder = pipelineBuilder;
         this.handshakeCompletedPromise = handshakeCompletedPromise;
@@ -62,6 +63,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     public void handlerAdded( ChannelHandlerContext ctx )
     {
         log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
+        errorLog = new ChannelErrorLogger( ctx.channel(), logging );
     }
 
     @Override
@@ -89,7 +91,7 @@ public class HandshakeHandler extends ReplayingDecoder<Void>
     {
         if ( failed )
         {
-            log.warn( "Another fatal error occurred in the pipeline", error );
+            errorLog.traceOrDebug( "Another fatal error occurred in the pipeline", error );
         }
         else
         {

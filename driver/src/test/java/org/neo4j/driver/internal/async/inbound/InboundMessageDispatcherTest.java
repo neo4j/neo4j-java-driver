@@ -38,6 +38,7 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
@@ -56,6 +57,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -378,6 +380,8 @@ class InboundMessageDispatcherTest
         Logger logger = mock( Logger.class );
         when( logger.isDebugEnabled() ).thenReturn( true );
         when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
+        ChannelErrorLogger errorLogger = mock( ChannelErrorLogger.class );
+        when( logging.getLog( ChannelErrorLogger.class ) ).thenReturn( errorLogger );
         InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
         ResponseHandler handler = mock( ResponseHandler.class );
         dispatcher.enqueue( handler );
@@ -406,11 +410,12 @@ class InboundMessageDispatcherTest
 
         // THEN
         assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
+        assertTrue( dispatcher.getErrorLog() instanceof ChannelErrorLogger );
         verify( logger ).debug( anyString(), any( Object.class ) );
     }
 
     @Test
-    void shouldCreateChannelActivityLoggerAndLogDebugMessageOnChannelError()
+    void shouldCreateChannelErrorLoggerAndLogDebugMessageOnChannelError()
     {
         // GIVEN
         Channel channel = newChannelMock();
@@ -418,6 +423,9 @@ class InboundMessageDispatcherTest
         Logger logger = mock( Logger.class );
         when( logger.isDebugEnabled() ).thenReturn( true );
         when( logging.getLog( InboundMessageDispatcher.class ) ).thenReturn( logger );
+        ChannelErrorLogger errorLogger = mock( ChannelErrorLogger.class );
+        when( errorLogger.isDebugEnabled() ).thenReturn( true );
+        when( logging.getLog( ChannelErrorLogger.class ) ).thenReturn( errorLogger );
         InboundMessageDispatcher dispatcher = new InboundMessageDispatcher( channel, logging );
         ResponseHandler handler = mock( ResponseHandler.class );
         dispatcher.enqueue( handler );
@@ -428,7 +436,8 @@ class InboundMessageDispatcherTest
 
         // THEN
         assertTrue( dispatcher.getLog() instanceof ChannelActivityLogger );
-        verify( logger ).debug( anyString(), eq( throwable ) );
+        assertTrue( dispatcher.getErrorLog() instanceof ChannelErrorLogger );
+        verify( errorLogger ).debug( contains( throwable.getClass().toString() ) );
     }
 
     private static void verifyFailure( ResponseHandler handler )

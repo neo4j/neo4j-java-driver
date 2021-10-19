@@ -24,11 +24,11 @@ import io.netty.handler.codec.CodecException;
 
 import java.io.IOException;
 
-import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.logging.ChannelActivityLogger;
+import org.neo4j.driver.internal.logging.ChannelErrorLogger;
 import org.neo4j.driver.internal.util.ErrorUtil;
 
 import static java.util.Objects.requireNonNull;
@@ -40,7 +40,8 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     private final Logging logging;
 
     private InboundMessageDispatcher messageDispatcher;
-    private Logger log;
+    private ChannelActivityLogger log;
+    private ChannelErrorLogger errorLog;
     private boolean failed;
 
     public ChannelErrorHandler( Logging logging )
@@ -53,6 +54,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         messageDispatcher = requireNonNull( messageDispatcher( ctx.channel() ) );
         log = new ChannelActivityLogger( ctx.channel(), logging, getClass() );
+        errorLog = new ChannelErrorLogger( ctx.channel(), logging );
     }
 
     @Override
@@ -90,7 +92,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         if ( failed )
         {
-            log.warn( "Another fatal error occurred in the pipeline", error );
+            errorLog.traceOrDebug( "Another fatal error occurred in the pipeline", error );
         }
         else
         {
@@ -104,7 +106,7 @@ public class ChannelErrorHandler extends ChannelInboundHandlerAdapter
     {
         if ( !(error instanceof ConnectionReadTimeoutException) )
         {
-            log.warn( "Fatal error occurred in the pipeline", error );
+            errorLog.traceOrDebug( "Fatal error occurred in the pipeline", error );
         }
     }
 
