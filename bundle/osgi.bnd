@@ -1,10 +1,11 @@
 package-version=${version;===;${Bundle-Version}}
 
 Export-Package: \
- !*.internal.*, \
  *;version="${package-version}"
 
 Import-Package: \
+ !io.netty.*, \
+ !reactor.core.*, \
  !com.oracle.svm.*, \
  javax.security.cert, \
  *

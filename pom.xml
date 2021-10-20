@@ -17,6 +17,10 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.build.timestamp.format>'v'yyyyMMdd-HHmm</maven.build.timestamp.format>
+
+    <bundle.name>${project.groupId}.${project.artifactId}</bundle.name>
+
     <rootDir>${project.basedir}</rootDir>
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
@@ -46,10 +50,13 @@
     <jackson.version>2.13.0</jackson.version>
     <lombok.version>1.18.22</lombok.version>
     <svm.version>20.3.3</svm.version>
+    <!-- To be overwritten by child projects -->
+    <moduleName />
   </properties>
 
   <modules>
     <module>driver</module>
+    <module>bundle</module>
     <module>examples</module>
     <module>testkit-backend</module>
     <module>testkit-tests</module>
@@ -272,6 +279,24 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
           <version>3.0.1</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <configuration>
+                <archive>
+                  <manifestEntries>
+                    <Bundle-Name>${project.name} (Source)</Bundle-Name>
+                    <Bundle-SymbolicName>${bundle.name}.source</Bundle-SymbolicName>
+                    <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
+                    <Eclipse-SourceBundle>${bundle.name};version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}";roots:="."</Eclipse-SourceBundle>
+                  </manifestEntries>
+                </archive>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -287,6 +312,26 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>bundle-manifest</id>
+              <phase>process-classes</phase>
+              <goals>
+                <goal>manifest</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <instructions>
+              <Bundle-SymbolicName>${bundle.name}</Bundle-SymbolicName>
+              <Bundle-Version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}.${build.timestamp}</Bundle-Version>
+              <_snapshot>${maven.build.timestamp}</_snapshot>
+              <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+              <_removeheaders>Bnd-*,Private-Package</_removeheaders>
+              <_nouses>true</_nouses>
+              <_include>-osgi.bnd</_include>
+            </instructions>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -360,8 +405,22 @@
             <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
             <script>hljs.initHighlightingOnLoad();</script>
           ]]></top>
+          <bottom>
+            <![CDATA[
+                    <script>
+                    if (typeof useModuleDirectories !== 'undefined') {
+                      useModuleDirectories = false;
+                    }
+                    </script>
+                ]]>
+          </bottom>
           <!-- Required for Java 8u121 or later. See https://github.com/neo4j/neo4j-java-driver/pull/318  -->
           <additionalOptions>--allow-script-in-comments</additionalOptions>
+          <sourceFileIncludes>
+            <sourceFileInclude>org/neo4j/driver/**/*.java</sourceFileInclude>
+          </sourceFileIncludes>
+          <excludePackageNames>org.neo4j.driver.internal</excludePackageNames>
+          <overview>${rootDir}/build/javadoc/overview.html</overview>
         </configuration>
         <executions>
           <execution>
