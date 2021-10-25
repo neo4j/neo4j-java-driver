@@ -44,7 +44,8 @@ public class GetFeatures implements TestkitRequest
             "Feature:Auth:Kerberos",
             "Feature:Auth:Custom",
             "Feature:Bolt:4.4",
-            "Feature:Impersonation"
+            "Feature:Impersonation",
+            "Temporary:FastFailingDiscovery"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

@@ -34,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.SecurityException;
@@ -61,6 +63,8 @@ public class RediscoveryImpl implements Rediscovery
     private static final String RECOVERABLE_DISCOVERY_ERROR_WITH_SERVER = "Received a recoverable discovery error with server '%s', " +
                                                                           "will continue discovery with other routing servers if available. " +
                                                                           "Complete failure is reported separately from this entry.";
+    private static final String INVALID_BOOKMARK_CODE = "Neo.ClientError.Transaction.InvalidBookmark";
+    private static final String INVALID_BOOKMARK_MIXTURE_CODE = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
 
     private final BoltServerAddress initialRouter;
     private final RoutingSettings settings;
@@ -278,10 +282,8 @@ public class RediscoveryImpl implements Rediscovery
     private ClusterComposition handleRoutingProcedureError( Throwable error, RoutingTable routingTable,
                                                             BoltServerAddress routerAddress, Throwable baseError )
     {
-        if ( error instanceof SecurityException || error instanceof FatalDiscoveryException ||
-             (error instanceof IllegalStateException && ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE.equals( error.getMessage() )) )
+        if ( mustAbortDiscovery( error ) )
         {
-            // auth error or routing error happened, terminate the discovery procedure immediately
             throw new CompletionException( error );
         }
 
@@ -293,6 +295,31 @@ public class RediscoveryImpl implements Rediscovery
         log.debug( warningMessage, discoveryError );
         routingTable.forget( routerAddress );
         return null;
+    }
+
+    private boolean mustAbortDiscovery( Throwable throwable )
+    {
+        boolean abort = false;
+
+        if ( !(throwable instanceof AuthorizationExpiredException) && throwable instanceof SecurityException )
+        {
+            abort = true;
+        }
+        else if ( throwable instanceof FatalDiscoveryException )
+        {
+            abort = true;
+        }
+        else if ( throwable instanceof IllegalStateException && ConnectionPool.CONNECTION_POOL_CLOSED_ERROR_MESSAGE.equals( throwable.getMessage() ) )
+        {
+            abort = true;
+        }
+        else if ( throwable instanceof ClientException )
+        {
+            String code = ((ClientException) throwable).code();
+            abort = INVALID_BOOKMARK_CODE.equals( code ) || INVALID_BOOKMARK_MIXTURE_CODE.equals( code );
+        }
+
+        return abort;
     }
 
     @Override
