@@ -26,8 +26,6 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,15 +56,11 @@ public class ServiceUnavailableExample implements AutoCloseable
     {
         try ( Session session = driver.session() )
         {
-            return session.writeTransaction( new TransactionWork<Boolean>()
-            {
-                @Override
-                public Boolean execute( Transaction tx )
-                {
-                    tx.run( "CREATE (a:Item)" );
-                    return true;
-                }
-            } );
+            return session.writeTransaction( tx ->
+                                             {
+                                                 tx.run( "CREATE (a:Item)" ).consume();
+                                                 return true;
+                                             } );
         }
         catch ( ServiceUnavailableException ex )
         {
