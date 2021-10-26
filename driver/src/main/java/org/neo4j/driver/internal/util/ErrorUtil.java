@@ -31,6 +31,7 @@ import org.neo4j.driver.exceptions.DatabaseException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ResultConsumedException;
+import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
 
@@ -64,25 +65,34 @@ public final class ErrorUtil
 
     public static Neo4jException newNeo4jError( String code, String message )
     {
-        String classification = extractClassification( code );
-        switch ( classification )
+        switch ( extractErrorClass( code ) )
         {
         case "ClientError":
-            if ( code.equalsIgnoreCase( "Neo.ClientError.Security.Unauthorized" ) )
+            if ( "Security".equals( extractErrorSubClass( code ) ) )
             {
-                return new AuthenticationException( code, message );
-            }
-            else if ( code.equalsIgnoreCase( "Neo.ClientError.Database.DatabaseNotFound" ) )
-            {
-                return new FatalDiscoveryException( code, message );
-            }
-            else if ( code.equalsIgnoreCase( "Neo.ClientError.Security.AuthorizationExpired" ) )
-            {
-                return new AuthorizationExpiredException( code, message );
+                if ( code.equalsIgnoreCase( "Neo.ClientError.Security.Unauthorized" ) )
+                {
+                    return new AuthenticationException( code, message );
+                }
+                else if ( code.equalsIgnoreCase( "Neo.ClientError.Security.AuthorizationExpired" ) )
+                {
+                    return new AuthorizationExpiredException( code, message );
+                }
+                else
+                {
+                    return new SecurityException( code, message );
+                }
             }
             else
             {
-                return new ClientException( code, message );
+                if ( code.equalsIgnoreCase( "Neo.ClientError.Database.DatabaseNotFound" ) )
+                {
+                    return new FatalDiscoveryException( code, message );
+                }
+                else
+                {
+                    return new ClientException( code, message );
+                }
             }
         case "TransientError":
             return new TransientException( code, message );
@@ -135,7 +145,7 @@ public final class ErrorUtil
         return errorCode != null && (errorCode.contains( "ClientError" ) || errorCode.contains( "TransientError" ));
     }
 
-    private static String extractClassification( String code )
+    private static String extractErrorClass( String code )
     {
         String[] parts = code.split( "\\." );
         if ( parts.length < 2 )
@@ -143,6 +153,16 @@ public final class ErrorUtil
             return "";
         }
         return parts[1];
+    }
+
+    private static String extractErrorSubClass( String code )
+    {
+        String[] parts = code.split( "\\." );
+        if ( parts.length < 3 )
+        {
+            return "";
+        }
+        return parts[2];
     }
 
     public static void addSuppressed( Throwable mainError, Throwable error )

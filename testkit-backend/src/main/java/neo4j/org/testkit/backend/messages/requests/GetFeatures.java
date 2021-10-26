@@ -41,7 +41,8 @@ public class GetFeatures implements TestkitRequest
             "Temporary:DriverFetchSize",
             "Temporary:DriverMaxTxRetryTime",
             "Feature:Auth:Kerberos",
-            "Feature:Auth:Custom"
+            "Feature:Auth:Custom",
+            "Temporary:FastFailingDiscovery"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

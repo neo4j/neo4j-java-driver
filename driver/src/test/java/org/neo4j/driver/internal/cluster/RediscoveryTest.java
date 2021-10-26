@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.cluster;
 
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -32,6 +34,8 @@ import java.util.Map;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.exceptions.AuthenticationException;
+import org.neo4j.driver.exceptions.AuthorizationExpiredException;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -137,8 +141,50 @@ class RediscoveryTest
         RoutingTable table = routingTableMock( A, B, C );
 
         AuthenticationException error = assertThrows( AuthenticationException.class,
-                () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
+                                                      () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
         assertEquals( authError, error );
+        verify( table ).forget( A );
+    }
+
+    @Test
+    void shouldUseAnotherRouterOnAuthorizationExpiredException()
+    {
+        ClusterComposition expectedComposition =
+                new ClusterComposition( 42, asOrderedSet( A, B, C ), asOrderedSet( B, C, D ), asOrderedSet( A, B ) );
+
+        Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
+        responsesByAddress.put( A, new AuthorizationExpiredException( "Neo.ClientError.Security.AuthorizationExpired", "message" ) );
+        responsesByAddress.put( B, expectedComposition );
+
+        ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
+        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
+        RoutingTable table = routingTableMock( A, B, C );
+
+        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty() ) ).getClusterComposition();
+
+        assertEquals( expectedComposition, actualComposition );
+        verify( table ).forget( A );
+        verify( table, never() ).forget( B );
+        verify( table, never() ).forget( C );
+    }
+
+    @ParameterizedTest
+    @ValueSource( strings = {"Neo.ClientError.Transaction.InvalidBookmark", "Neo.ClientError.Transaction.InvalidBookmarkMixture"} )
+    void shouldFailImmediatelyOnBookmarkErrors( String code )
+    {
+        ClientException error = new ClientException( code, "Invalid" );
+
+        Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
+        responsesByAddress.put( A, new RuntimeException( "Hi!" ) );
+        responsesByAddress.put( B, error );
+
+        ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
+        Rediscovery rediscovery = newRediscovery( A, compositionProvider, mock( ServerAddressResolver.class ) );
+        RoutingTable table = routingTableMock( A, B, C );
+
+        ClientException actualError = assertThrows( ClientException.class,
+                                                    () -> await( rediscovery.lookupClusterComposition( table, pool, empty() ) ) );
+        assertEquals( error, actualError );
         verify( table ).forget( A );
     }
 
@@ -146,8 +192,7 @@ class RediscoveryTest
     void shouldFallbackToInitialRouterWhenKnownRoutersFail()
     {
         BoltServerAddress initialRouter = A;
-        ClusterComposition expectedComposition = new ClusterComposition( 42,
-                asOrderedSet( C, B, A ), asOrderedSet( A, B ), asOrderedSet( D, E ) );
+        ClusterComposition expectedComposition = new ClusterComposition( 42, asOrderedSet( C, B, A ), asOrderedSet( A, B ), asOrderedSet( D, E ) );
 
         Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
         responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) ); // first -> non-fatal failure
