@@ -110,7 +110,7 @@ class ExamplesIT
         {
             session.writeTransaction( tx ->
             {
-                tx.run( query, parameters );
+                tx.run( query, parameters ).consume();
                 return null;
             } );
         }

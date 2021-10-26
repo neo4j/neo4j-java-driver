@@ -23,6 +23,7 @@ package org.neo4j.docs.driver;
 import java.util.List;
 
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionWork;
@@ -53,19 +54,16 @@ public class ResultRetainExample extends BaseApplication
             } );
             for ( final Record person : persons )
             {
-                employees += session.writeTransaction( new TransactionWork<Integer>()
-                {
-                    @Override
-                    public Integer execute( Transaction tx )
-                    {
-                        tx.run( "MATCH (emp:Person {name: $person_name}) " +
-                                "MERGE (com:Company {name: $company_name}) " +
-                                "MERGE (emp)-[:WORKS_FOR]->(com)",
-                                parameters( "person_name", person.get( "name" ).asString(), "company_name",
-                                        companyName ) );
-                        return 1;
-                    }
-                } );
+                employees += session.writeTransaction( tx ->
+                                                       {
+                                                           Result result = tx.run( "MATCH (emp:Person {name: $person_name}) " +
+                                                                                   "MERGE (com:Company {name: $company_name}) " +
+                                                                                   "MERGE (emp)-[:WORKS_FOR]->(com)",
+                                                                                   parameters( "person_name", person.get( "name" ).asString(), "company_name",
+                                                                                               companyName ) );
+                                                           result.consume();
+                                                           return 1;
+                                                       } );
             }
             return employees;
         }

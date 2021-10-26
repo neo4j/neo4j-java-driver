@@ -38,7 +38,7 @@ public class TransactionFunctionExample extends BaseApplication
         try ( Session session = driver.session() )
         {
             session.writeTransaction( tx -> {
-                tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
+                tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) ).consume();
                 return 1;
             } );
         }

@@ -20,10 +20,9 @@ package org.neo4j.docs.driver;
 
 // tag::read-write-transaction-import[]
 
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.TransactionWork;
 
 import static org.neo4j.driver.Values.parameters;
 // end::read-write-transaction-import[]
@@ -40,28 +39,14 @@ public class ReadWriteTransactionExample extends BaseApplication
     {
         try ( Session session = driver.session() )
         {
-            session.writeTransaction( new TransactionWork<Void>()
-            {
-                @Override
-                public Void execute( Transaction tx )
-                {
-                    return createPersonNode( tx, name );
-                }
-            } );
-            return session.readTransaction( new TransactionWork<Long>()
-            {
-                @Override
-                public Long execute( Transaction tx )
-                {
-                    return matchPersonNode( tx, name );
-                }
-            } );
+            session.writeTransaction( tx -> createPersonNode( tx, name ) );
+            return session.readTransaction( tx -> matchPersonNode( tx, name ) );
         }
     }
 
     private static Void createPersonNode( Transaction tx, String name )
     {
-        tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
+        tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) ).consume();
         return null;
     }
 

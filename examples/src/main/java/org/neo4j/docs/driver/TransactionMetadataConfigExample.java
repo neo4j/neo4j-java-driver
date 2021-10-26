@@ -46,7 +46,7 @@ public class TransactionMetadataConfigExample extends BaseApplication
                                                           .withMetadata( transactionMetadata ).build();
             session.writeTransaction( tx ->
                                       {
-                                          tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) );
+                                          tx.run( "CREATE (a:Person {name: $name})", parameters( "name", name ) ).consume();
                                           return 1;
                                       }, txConfig );
         }

@@ -19,18 +19,19 @@
 package org.neo4j.docs.driver;
 
 // tag::pass-bookmarks-import[]
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Bookmark;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Transaction;
 
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
 // end::pass-bookmarks-import[]
 
 public class PassBookmarkExample extends BaseApplication
@@ -93,9 +94,9 @@ public class PassBookmarkExample extends BaseApplication
         // Create the first person and employment relationship.
         try ( Session session1 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            session1.writeTransaction( tx -> addCompany( tx, "Wayne Enterprises" ) );
-            session1.writeTransaction( tx -> addPerson( tx, "Alice" ) );
-            session1.writeTransaction( tx -> employ( tx, "Alice", "Wayne Enterprises" ) );
+            session1.writeTransaction( tx -> addCompany( tx, "Wayne Enterprises" ).consume() );
+            session1.writeTransaction( tx -> addPerson( tx, "Alice" ).consume() );
+            session1.writeTransaction( tx -> employ( tx, "Alice", "Wayne Enterprises" ).consume() );
 
             savedBookmarks.add( session1.lastBookmark() );
         }
@@ -103,9 +104,9 @@ public class PassBookmarkExample extends BaseApplication
         // Create the second person and employment relationship.
         try ( Session session2 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
         {
-            session2.writeTransaction( tx -> addCompany( tx, "LexCorp" ) );
-            session2.writeTransaction( tx -> addPerson( tx, "Bob" ) );
-            session2.writeTransaction( tx -> employ( tx, "Bob", "LexCorp" ) );
+            session2.writeTransaction( tx -> addCompany( tx, "LexCorp" ).consume() );
+            session2.writeTransaction( tx -> addPerson( tx, "Bob" ).consume() );
+            session2.writeTransaction( tx -> employ( tx, "Bob", "LexCorp" ).consume() );
 
             savedBookmarks.add( session2.lastBookmark() );
         }
@@ -113,7 +114,7 @@ public class PassBookmarkExample extends BaseApplication
         // Create a friendship between the two people created above.
         try ( Session session3 = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).withBookmarks( savedBookmarks ).build() ) )
         {
-            session3.writeTransaction( tx -> makeFriends( tx, "Alice", "Bob" ) );
+            session3.writeTransaction( tx -> makeFriends( tx, "Alice", "Bob" ).consume() );
 
             session3.readTransaction( this::printFriends );
         }
