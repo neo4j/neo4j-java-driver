@@ -38,6 +38,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
 import org.neo4j.driver.summary.QueryType;
 import org.neo4j.driver.summary.ResultSummary;
@@ -55,8 +56,10 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
 import static org.neo4j.driver.Values.parameters;
@@ -744,6 +747,24 @@ class ExamplesIT
             // Then
             int greetingCount = readInt( "examples", "MATCH (a:Greeting) RETURN count(a)", Values.parameters() );
             assertThat( greetingCount, is( 1 ) );
+        }
+    }
+
+    @Test
+    void testReadingValuesExample() throws Exception
+    {
+        try (ReadingValuesExample example = new ReadingValuesExample( uri, USER, PASSWORD ))
+        {
+            assertThat( example.integerFieldIsNull(), is(false) );
+            assertThat( example.integerAsInteger(), is( 4 ) );
+            assertThat( example.integerAsLong(), is( 4L ) );
+            assertThrows( Uncoercible.class, example::integerAsString );
+
+            assertThat( example.nullIsNull(), is(true) );
+            assertThat( example.nullAsString(), is( "null" ) );
+            assertThat( example.nullAsObject(), nullValue());
+            assertThat( example.nullAsObjectFloatDefaultValue(), is( 1.0f ) );
+            assertThrows( Uncoercible.class, example::nullAsObjectFloat );
         }
     }
 }
