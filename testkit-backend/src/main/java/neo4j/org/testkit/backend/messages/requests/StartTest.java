@@ -102,6 +102,7 @@ public class StartTest implements TestkitRequest
         SKIP_PATTERN_TO_REASON.put( "^.+test_no_routing_v4x1\\.NoRoutingV4x1\\..*$", skipReason );
         SKIP_PATTERN_TO_REASON.put( "^.+TestProtocolVersions\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", skipReason );
         SKIP_PATTERN_TO_REASON.put( "^.+TestProtocolVersions\\.test_supports_bolt_4x3$", skipReason );
+        SKIP_PATTERN_TO_REASON.put( "^.+TestDirectDriver\\.test_multi_db_non_existing$", skipReason );
     }
 
     private StartTestBody data;
