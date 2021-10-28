@@ -336,13 +336,13 @@ class ExamplesIT
 
             try ( AutoCloseable ignored = stdIO.capture() )
             {
-                intro.createFriendship( "Alice", "David" );
+                intro.createFriendship( "Alice", "David", "School" );
                 intro.findPerson( "Alice" );
             }
 
             // Then
             assertThat( stdIO.stdout().size(), equalTo( 2 ) );
-            assertThat( stdIO.stdout().get( 0 ), containsString( "Created friendship between: Alice, David" ) );
+            assertThat( stdIO.stdout().get( 0 ), containsString( "Created friendship between: Alice, David from School" ) );
             assertThat( stdIO.stdout().get( 1 ), containsString( "Found person: Alice" ) );
         }
     }
