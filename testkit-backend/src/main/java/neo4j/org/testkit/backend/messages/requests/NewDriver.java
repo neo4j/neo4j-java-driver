@@ -75,12 +75,15 @@ public class NewDriver implements TestkitRequest
                                           data.authorizationToken.getTokens().get( "credentials" ),
                                           data.authorizationToken.getTokens().get( "realm" ) );
             break;
+        case "kerberos":
+            authToken = AuthTokens.kerberos( data.authorizationToken.getTokens().get( "credentials" ) );
+            break;
         default:
             return BackendError.builder()
                                .data( BackendError
                                               .BackendErrorBody.builder()
                                                                .msg( "Auth scheme " + data.authorizationToken.getTokens().get( "scheme" ) +
-                                                                     "not implemented" )
+                                                                     " not implemented" )
                                                                .build() )
                                .build();
         }
