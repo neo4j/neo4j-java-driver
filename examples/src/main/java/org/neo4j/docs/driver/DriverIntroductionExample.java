@@ -48,17 +48,18 @@ public class DriverIntroductionExample implements AutoCloseable {
         driver.close();
     }
 
-    public void createFriendship(final String person1Name, final String person2Name) {
+    public void createFriendship(final String person1Name, final String person2Name, final String knowsFrom) {
         // To learn more about the Cypher syntax, see https://neo4j.com/docs/cypher-manual/current/
         // The Reference Card is also a good resource for keywords https://neo4j.com/docs/cypher-refcard/current/
         String createFriendshipQuery = "CREATE (p1:Person { name: $person1_name })\n" +
                 "CREATE (p2:Person { name: $person2_name })\n" +
-                "CREATE (p1)-[:KNOWS]->(p2)\n" +
-                "RETURN p1, p2";
+                "CREATE (p1)-[k:KNOWS { from: $knows_from }]->(p2)\n" +
+                "RETURN p1, p2, k";
 
         Map<String, Object> params = new HashMap<>();
         params.put("person1_name", person1Name);
         params.put("person2_name", person2Name);
+        params.put("knows_from", knowsFrom );
 
         try (Session session = driver.session()) {
             // Write transactions allow the driver to handle retries and transient errors
@@ -66,9 +67,10 @@ public class DriverIntroductionExample implements AutoCloseable {
                 Result result = tx.run(createFriendshipQuery, params);
                 return result.single();
             });
-            System.out.println(String.format("Created friendship between: %s, %s",
+            System.out.println(String.format("Created friendship between: %s, %s from %s",
                     record.get("p1").get("name").asString(),
-                    record.get("p2").get("name").asString()));
+                    record.get("p2").get("name").asString(),
+                    record.get("k").get("from").asString()));
         // You should capture any errors along with the query and data for traceability
         } catch (Neo4jException ex) {
             LOGGER.log(Level.SEVERE, createFriendshipQuery + " raised an exception", ex);
@@ -102,9 +104,12 @@ public class DriverIntroductionExample implements AutoCloseable {
 
         String user = "<Username for Neo4j Aura database>";
         String password = "<Password for Neo4j Aura database>";
-        
-        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, Config.defaultConfig())) {
-            app.createFriendship("Alice", "David");
+        Config config = Config.builder()
+                              // Configuring slf4j logging
+                              .withLogging( Logging.slf4j() )
+                              .build();
+        try (DriverIntroductionExample app = new DriverIntroductionExample(boltUrl, user, password, config)) {
+            app.createFriendship("Alice", "David", "School");
             app.findPerson("Alice");
         }
     }
