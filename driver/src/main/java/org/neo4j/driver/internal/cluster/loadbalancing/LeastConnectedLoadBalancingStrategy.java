@@ -18,15 +18,17 @@
  */
 package org.neo4j.driver.internal.cluster.loadbalancing;
 
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
+import java.util.List;
+
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.spi.ConnectionPool;
 
 /**
- * Load balancing strategy that finds server with least amount of active (checked out of the pool) connections from
- * given readers or writers. It finds a start index for iteration in a round-robin fashion. This is done to prevent
- * choosing same first address over and over when all addresses have same amount of active connections.
+ * Load balancing strategy that finds server with the least amount of active (checked out of the pool) connections from given readers or writers. It finds a
+ * start index for iteration in a round-robin fashion. This is done to prevent choosing same first address over and over when all addresses have the same amount
+ * of active connections.
  */
 public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrategy
 {
@@ -45,21 +47,21 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
     }
 
     @Override
-    public BoltServerAddress selectReader( BoltServerAddress[] knownReaders )
+    public BoltServerAddress selectReader( List<BoltServerAddress> knownReaders )
     {
         return select( knownReaders, readersIndex, "reader" );
     }
 
     @Override
-    public BoltServerAddress selectWriter( BoltServerAddress[] knownWriters )
+    public BoltServerAddress selectWriter( List<BoltServerAddress> knownWriters )
     {
         return select( knownWriters, writersIndex, "writer" );
     }
 
-    private BoltServerAddress select( BoltServerAddress[] addresses, RoundRobinArrayIndex addressesIndex,
-            String addressType )
+    private BoltServerAddress select( List<BoltServerAddress> addresses, RoundRobinArrayIndex addressesIndex,
+                                      String addressType )
     {
-        int size = addresses.length;
+        int size = addresses.size();
         if ( size == 0 )
         {
             log.trace( "Unable to select %s, no known addresses given", addressType );
@@ -73,10 +75,10 @@ public class LeastConnectedLoadBalancingStrategy implements LoadBalancingStrateg
         BoltServerAddress leastConnectedAddress = null;
         int leastActiveConnections = Integer.MAX_VALUE;
 
-        // iterate over the array to find least connected address
+        // iterate over the array to find the least connected address
         do
         {
-            BoltServerAddress address = addresses[index];
+            BoltServerAddress address = addresses.get( index );
             int activeConnections = connectionPool.inUseConnections( address );
 
             if ( activeConnections < leastActiveConnections )

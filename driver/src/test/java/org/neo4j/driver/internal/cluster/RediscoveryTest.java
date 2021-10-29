@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -507,9 +508,7 @@ class RediscoveryTest
     private static RoutingTable routingTableMock( boolean preferInitialRouter, BoltServerAddress... routers )
     {
         RoutingTable routingTable = mock( RoutingTable.class );
-        AddressSet addressSet = new AddressSet();
-        addressSet.retainAllAndAdd( asOrderedSet( routers ) );
-        when( routingTable.routers() ).thenReturn( addressSet );
+        when( routingTable.routers() ).thenReturn( Arrays.asList( routers ) );
         when( routingTable.database() ).thenReturn( defaultDatabase() );
         when( routingTable.preferInitialRouter() ).thenReturn( preferInitialRouter );
         return routingTable;

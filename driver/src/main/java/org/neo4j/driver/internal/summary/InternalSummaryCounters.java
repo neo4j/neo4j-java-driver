@@ -204,4 +204,23 @@ public class InternalSummaryCounters implements SummaryCounters
     {
         return value > 0;
     }
+
+    @Override
+    public String toString()
+    {
+        return "InternalSummaryCounters{" +
+               "nodesCreated=" + nodesCreated +
+               ", nodesDeleted=" + nodesDeleted +
+               ", relationshipsCreated=" + relationshipsCreated +
+               ", relationshipsDeleted=" + relationshipsDeleted +
+               ", propertiesSet=" + propertiesSet +
+               ", labelsAdded=" + labelsAdded +
+               ", labelsRemoved=" + labelsRemoved +
+               ", indexesAdded=" + indexesAdded +
+               ", indexesRemoved=" + indexesRemoved +
+               ", constraintsAdded=" + constraintsAdded +
+               ", constraintsRemoved=" + constraintsRemoved +
+               ", systemUpdates=" + systemUpdates +
+               '}';
+    }
 }

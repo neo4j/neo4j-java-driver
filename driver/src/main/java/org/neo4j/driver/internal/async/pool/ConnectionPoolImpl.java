@@ -22,15 +22,18 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
@@ -49,6 +52,8 @@ import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completeWithNullIfNoError;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLockAsync;
 
 public class ConnectionPoolImpl implements ConnectionPool
 {
@@ -63,7 +68,8 @@ public class ConnectionPoolImpl implements ConnectionPool
     private final MetricsListener metricsListener;
     private final boolean ownsEventLoopGroup;
 
-    private final ConcurrentMap<BoltServerAddress,ExtendedChannelPool> pools = new ConcurrentHashMap<>();
+    private final ReadWriteLock addressToPoolLock = new ReentrantReadWriteLock();
+    private final Map<BoltServerAddress,ExtendedChannelPool> addressToPool = new HashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
     private final ConnectionFactory connectionFactory;
@@ -126,25 +132,32 @@ public class ConnectionPoolImpl implements ConnectionPool
     @Override
     public void retainAll( Set<BoltServerAddress> addressesToRetain )
     {
-        for ( BoltServerAddress address : pools.keySet() )
+        executeWithLock( addressToPoolLock.writeLock(), () ->
         {
-            if ( !addressesToRetain.contains( address ) )
+            Iterator<Map.Entry<BoltServerAddress,ExtendedChannelPool>> entryIterator = addressToPool.entrySet().iterator();
+            while ( entryIterator.hasNext() )
             {
-                int activeChannels = nettyChannelTracker.inUseChannelCount( address );
-                if ( activeChannels == 0 )
+                Map.Entry<BoltServerAddress,ExtendedChannelPool> entry = entryIterator.next();
+                BoltServerAddress address = entry.getKey();
+                if ( !addressesToRetain.contains( address ) )
                 {
-                    // address is not present in updated routing table and has no active connections
-                    // it's now safe to terminate corresponding connection pool and forget about it
-                    ExtendedChannelPool pool = pools.remove( address );
-                    if ( pool != null )
+                    int activeChannels = nettyChannelTracker.inUseChannelCount( address );
+                    if ( activeChannels == 0 )
                     {
-                        log.info( "Closing connection pool towards %s, it has no active connections " +
-                                  "and is not in the routing table registry.", address );
-                        closePoolInBackground( address, pool );
+                        // address is not present in updated routing table and has no active connections
+                        // it's now safe to terminate corresponding connection pool and forget about it
+                        ExtendedChannelPool pool = entry.getValue();
+                        entryIterator.remove();
+                        if ( pool != null )
+                        {
+                            log.info( "Closing connection pool towards %s, it has no active connections " +
+                                      "and is not in the routing table registry.", address );
+                            closePoolInBackground( address, pool );
+                        }
                     }
                 }
             }
-        }
+        } );
     }
 
     @Override
@@ -165,21 +178,26 @@ public class ConnectionPoolImpl implements ConnectionPool
         if ( closed.compareAndSet( false, true ) )
         {
             nettyChannelTracker.prepareToCloseChannels();
-            CompletableFuture<Void> allPoolClosedFuture = closeAllPools();
 
-            // We can only shutdown event loop group when all netty pools are fully closed,
-            // otherwise the netty pools might missing threads (from event loop group) to execute clean ups.
-            allPoolClosedFuture.whenComplete( ( ignored, pollCloseError ) -> {
-                pools.clear();
-                if ( !ownsEventLoopGroup )
-                {
-                    completeWithNullIfNoError( closeFuture, pollCloseError );
-                }
-                else
-                {
-                    shutdownEventLoopGroup( pollCloseError );
-                }
-            } );
+            executeWithLockAsync( addressToPoolLock.writeLock(),
+                                  () ->
+                                  {
+                                      // We can only shutdown event loop group when all netty pools are fully closed,
+                                      // otherwise the netty pools might missing threads (from event loop group) to execute clean ups.
+                                      return closeAllPools().whenComplete(
+                                              ( ignored, pollCloseError ) ->
+                                              {
+                                                  addressToPool.clear();
+                                                  if ( !ownsEventLoopGroup )
+                                                  {
+                                                      completeWithNullIfNoError( closeFuture, pollCloseError );
+                                                  }
+                                                  else
+                                                  {
+                                                      shutdownEventLoopGroup( pollCloseError );
+                                                  }
+                                              } );
+                                  } );
         }
         return closeFuture;
     }
@@ -187,13 +205,13 @@ public class ConnectionPoolImpl implements ConnectionPool
     @Override
     public boolean isOpen( BoltServerAddress address )
     {
-        return pools.containsKey( address );
+        return executeWithLock( addressToPoolLock.readLock(), () -> addressToPool.containsKey( address ) );
     }
 
     @Override
     public String toString()
     {
-        return "ConnectionPoolImpl{" + "pools=" + pools + '}';
+        return executeWithLock( addressToPoolLock.readLock(), () -> "ConnectionPoolImpl{" + "pools=" + addressToPool + '}' );
     }
 
     private void processAcquisitionError( ExtendedChannelPool pool, BoltServerAddress serverAddress, Throwable error )
@@ -239,7 +257,7 @@ public class ConnectionPoolImpl implements ConnectionPool
         {
             pool.release( channel );
             closePoolInBackground( address, pool );
-            pools.remove( address );
+            executeWithLock( addressToPoolLock.writeLock(), () -> addressToPool.remove( address ) );
             assertNotClosed();
         }
     }
@@ -247,7 +265,7 @@ public class ConnectionPoolImpl implements ConnectionPool
     // for testing only
     ExtendedChannelPool getPool( BoltServerAddress address )
     {
-        return pools.get( address );
+        return executeWithLock( addressToPoolLock.readLock(), () -> addressToPool.get( address ) );
     }
 
     ExtendedChannelPool newPool( BoltServerAddress address )
@@ -258,12 +276,22 @@ public class ConnectionPoolImpl implements ConnectionPool
 
     private ExtendedChannelPool getOrCreatePool( BoltServerAddress address )
     {
-        return pools.computeIfAbsent( address, ignored -> {
-            ExtendedChannelPool pool = newPool( address );
-            // before the connection pool is added I can add the metrics for the pool.
-            metricsListener.putPoolMetrics( pool.id(), address, this );
-            return pool;
-        } );
+        ExtendedChannelPool existingPool = executeWithLock( addressToPoolLock.readLock(), () -> addressToPool.get( address ) );
+        return existingPool != null
+               ? existingPool
+               : executeWithLock( addressToPoolLock.writeLock(),
+                                  () ->
+                                  {
+                                      ExtendedChannelPool pool = addressToPool.get( address );
+                                      if ( pool == null )
+                                      {
+                                          pool = newPool( address );
+                                          // before the connection pool is added I can add the metrics for the pool.
+                                          metricsListener.putPoolMetrics( pool.id(), address, this );
+                                          addressToPool.put( address, pool );
+                                      }
+                                      return pool;
+                                  } );
     }
 
     private CompletionStage<Void> closePool( ExtendedChannelPool pool )
@@ -305,12 +333,15 @@ public class ConnectionPoolImpl implements ConnectionPool
     private CompletableFuture<Void> closeAllPools()
     {
         return CompletableFuture.allOf(
-                pools.entrySet().stream().map( entry -> {
-                    BoltServerAddress address = entry.getKey();
-                    ExtendedChannelPool pool = entry.getValue();
-                    log.info( "Closing connection pool towards %s", address );
-                    // Wait for all pools to be closed.
-                    return closePool( pool ).toCompletableFuture();
-                } ).toArray( CompletableFuture[]::new ) );
+                addressToPool.entrySet().stream()
+                             .map( entry ->
+                                   {
+                                       BoltServerAddress address = entry.getKey();
+                                       ExtendedChannelPool pool = entry.getValue();
+                                       log.info( "Closing connection pool towards %s", address );
+                                       // Wait for all pools to be closed.
+                                       return closePool( pool ).toCompletableFuture();
+                                   } )
+                             .toArray( CompletableFuture[]::new ) );
     }
 }

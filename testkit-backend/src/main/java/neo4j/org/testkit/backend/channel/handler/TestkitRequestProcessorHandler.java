@@ -51,13 +51,13 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         switch ( backendMode )
         {
         case ASYNC:
-            processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
+            processorImpl = TestkitRequest::processAsync;
             break;
         case REACTIVE:
             processorImpl = ( request, state ) -> request.processRx( state ).toFuture();
             break;
         default:
-            processorImpl = TestkitRequest::processAsync;
+            processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
             break;
         }
     }

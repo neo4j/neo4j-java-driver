@@ -25,7 +25,6 @@ import neo4j.org.testkit.backend.messages.responses.RoutingTable;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -35,7 +34,6 @@ import java.util.stream.Collectors;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.DatabaseNameUtil;
-import org.neo4j.driver.internal.cluster.AddressSet;
 import org.neo4j.driver.internal.cluster.RoutingTableHandler;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 
@@ -43,6 +41,11 @@ import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 @Getter
 public class GetRoutingTable implements TestkitRequest
 {
+    private static final Function<List<BoltServerAddress>,List<String>> ADDRESSES_TO_STRINGS =
+            ( addresses ) -> addresses.stream()
+                                      .map( address -> String.format( "%s:%d", address.host(), address.port() ) )
+                                      .collect( Collectors.toList() );
+
     private GetRoutingTableBody data;
 
     @Override
@@ -61,17 +64,15 @@ public class GetRoutingTable implements TestkitRequest
                         String.format( "There is no routing table handler for the '%s' database.", databaseName.databaseName().orElse( "null" ) ) ) );
 
         org.neo4j.driver.internal.cluster.RoutingTable routingTable = routingTableHandler.routingTable();
-        Function<AddressSet,List<String>> addressesToStrings = ( addresses ) -> Arrays.stream( addresses.toArray() )
-                                                                                      .map( BoltServerAddress::toString ).collect( Collectors.toList() );
 
         return RoutingTable
                 .builder()
                 .data( RoutingTable.RoutingTableBody
                                .builder()
                                .database( databaseName.databaseName().orElse( null ) )
-                               .routers( addressesToStrings.apply( routingTable.routers() ) )
-                               .readers( addressesToStrings.apply( routingTable.readers() ) )
-                               .writers( addressesToStrings.apply( routingTable.writers() ) )
+                               .routers( ADDRESSES_TO_STRINGS.apply( routingTable.routers() ) )
+                               .readers( ADDRESSES_TO_STRINGS.apply( routingTable.readers() ) )
+                               .writers( ADDRESSES_TO_STRINGS.apply( routingTable.writers() ) )
                                .build()
                 ).build();
     }
