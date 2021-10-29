@@ -48,8 +48,8 @@ class MessageDeserializerTest
 
         NewDriver newDriver = (NewDriver) message;
         assertThat( newDriver.getData().getUri(), equalTo( "bolt://localhost:7687" ) );
-        assertThat( newDriver.getData().getAuthorizationToken().getTokens().get( "scheme" ), equalTo( "basic" ) );
-        assertThat( newDriver.getData().getAuthorizationToken().getTokens().get( "principal" ), equalTo( "neo4j" ) );
+        assertThat( newDriver.getData().getAuthorizationToken().getTokens().getScheme(), equalTo( "basic" ) );
+        assertThat( newDriver.getData().getAuthorizationToken().getTokens().getPrincipal(), equalTo( "neo4j" ) );
     }
 
     @Test

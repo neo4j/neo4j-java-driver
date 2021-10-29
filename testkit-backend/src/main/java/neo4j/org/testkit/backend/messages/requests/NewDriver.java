@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.DriverHolder;
-import neo4j.org.testkit.backend.messages.responses.BackendError;
 import neo4j.org.testkit.backend.messages.responses.DomainNameResolutionRequired;
 import neo4j.org.testkit.backend.messages.responses.Driver;
 import neo4j.org.testkit.backend.messages.responses.DriverError;
@@ -68,24 +67,25 @@ public class NewDriver implements TestkitRequest
         String id = testkitState.newId();
 
         AuthToken authToken;
-        switch ( data.getAuthorizationToken().getTokens().get( "scheme" ) )
+        switch ( data.getAuthorizationToken().getTokens().getScheme() )
         {
         case "basic":
-            authToken = AuthTokens.basic( data.authorizationToken.getTokens().get( "principal" ),
-                                          data.authorizationToken.getTokens().get( "credentials" ),
-                                          data.authorizationToken.getTokens().get( "realm" ) );
+            authToken = AuthTokens.basic( data.authorizationToken.getTokens().getPrincipal(),
+                                          data.authorizationToken.getTokens().getCredentials(),
+                                          data.authorizationToken.getTokens().getRealm() );
             break;
         case "kerberos":
-            authToken = AuthTokens.kerberos( data.authorizationToken.getTokens().get( "credentials" ) );
+            authToken = AuthTokens.kerberos( data.authorizationToken.getTokens().getCredentials() );
             break;
         default:
-            return BackendError.builder()
-                               .data( BackendError
-                                              .BackendErrorBody.builder()
-                                                               .msg( "Auth scheme " + data.authorizationToken.getTokens().get( "scheme" ) +
-                                                                     " not implemented" )
-                                                               .build() )
-                               .build();
+            authToken = AuthTokens.custom(
+                    data.authorizationToken.getTokens().getPrincipal(),
+                    data.authorizationToken.getTokens().getCredentials(),
+                    data.authorizationToken.getTokens().getRealm(),
+                    data.authorizationToken.getTokens().getScheme(),
+                    data.authorizationToken.getTokens().getParameters()
+            );
+            break;
         }
 
         Config.ConfigBuilder configBuilder = Config.builder();
