@@ -36,6 +36,11 @@ import java.util.concurrent.CompletionStage;
 public class GetFeatures implements TestkitRequest
 {
     private static final Set<String> COMMON_FEATURES = new HashSet<>( Arrays.asList(
+            "Feature:Bolt:4.0",
+            "Feature:Bolt:4.1",
+            "Feature:Bolt:4.2",
+            "Feature:Bolt:4.3",
+            "Feature:Bolt:4.4",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
@@ -43,18 +48,19 @@ public class GetFeatures implements TestkitRequest
             "Feature:Auth:Bearer",
             "Feature:Auth:Kerberos",
             "Feature:Auth:Custom",
-            "Feature:Bolt:4.4",
             "Feature:Impersonation",
             "Temporary:FastFailingDiscovery"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
+            "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Temporary:TransactionClose",
             "Temporary:ResultList"
     ) );
 
     private static final Set<String> ASYNC_FEATURES = new HashSet<>( Arrays.asList(
+            "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Temporary:ResultList"
     ) );
