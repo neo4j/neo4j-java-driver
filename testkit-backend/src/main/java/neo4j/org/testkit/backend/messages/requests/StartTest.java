@@ -42,21 +42,8 @@ public class StartTest implements TestkitRequest
     {
         ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", "Does not error as expected" );
 
-        // V3 tests
-        String skipMessage = "v3 is not applicable to reactive";
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestAuthorizationV3\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestBookmarksV3\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.NoRoutingV3\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.RoutingV3\\..*$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestProtocolVersions\\.test_supports_bolt_3x0", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_all_v3$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_discards_on_session_close$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationTxRun\\.test_batch_v3$", skipMessage );
-        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationTxRun\\.test_all_v3$", skipMessage );
-
         // Current limitations (require further investigation or bug fixing)
-        skipMessage = "Does not report RUN FAILURE";
+        String skipMessage = "Does not report RUN FAILURE";
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_write_successfully_on_leader_switch_using_tx_function$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestDisconnects\\.test_disconnect_after_hello$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestDisconnects\\.test_disconnect_session_on_run$", skipMessage );
