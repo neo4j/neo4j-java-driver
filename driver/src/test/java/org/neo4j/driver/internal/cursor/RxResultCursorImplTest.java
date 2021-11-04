@@ -19,10 +19,13 @@
 package org.neo4j.driver.internal.cursor;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 import org.neo4j.driver.exceptions.ResultConsumedException;
@@ -30,14 +33,18 @@ import org.neo4j.driver.internal.handlers.RunResponseHandler;
 import org.neo4j.driver.internal.handlers.pulln.PullResponseHandler;
 import org.neo4j.driver.internal.reactive.util.ListBasedPullHandler;
 import org.neo4j.driver.internal.spi.Connection;
+import org.neo4j.driver.summary.ResultSummary;
 
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.driver.Values.value;
@@ -249,6 +256,55 @@ class RxResultCursorImplTest
         verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
         verify( pullHandler ).cancel();
         assertFalse( cursor.isDone() );
+    }
+
+    @Test
+    void shouldPropagateSummaryErrorViaSummaryStageWhenItIsRetrievedExternally() throws ExecutionException, InterruptedException
+    {
+        // Given
+        RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        @SuppressWarnings( "unchecked" )
+        ArgumentCaptor<BiConsumer<ResultSummary,Throwable>> summaryConsumerCaptor = ArgumentCaptor.forClass( BiConsumer.class );
+        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        verify( pullHandler, times( 1 ) ).installSummaryConsumer( summaryConsumerCaptor.capture() );
+        BiConsumer<ResultSummary,Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
+        RuntimeException exception = mock( RuntimeException.class );
+
+        // When
+        CompletionStage<ResultSummary> summaryStage = cursor.summaryAsync();
+        CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
+        summaryConsumer.accept( null, exception );
+
+        // Then
+        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
+        verify( pullHandler ).cancel();
+        ExecutionException actualException = assertThrows( ExecutionException.class, () -> summaryStage.toCompletableFuture().get() );
+        assertSame( exception, actualException.getCause() );
+        assertNull( discardStage.toCompletableFuture().get() );
+    }
+
+    @Test
+    void shouldPropagateSummaryErrorViaDiscardStageWhenSummaryStageIsNotRetrievedExternally() throws ExecutionException, InterruptedException
+    {
+        // Given
+        RunResponseHandler runHandler = mock( RunResponseHandler.class );
+        PullResponseHandler pullHandler = mock( PullResponseHandler.class );
+        @SuppressWarnings( "unchecked" )
+        ArgumentCaptor<BiConsumer<ResultSummary,Throwable>> summaryConsumerCaptor = ArgumentCaptor.forClass( BiConsumer.class );
+        RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
+        verify( pullHandler, times( 1 ) ).installSummaryConsumer( summaryConsumerCaptor.capture() );
+        BiConsumer<ResultSummary,Throwable> summaryConsumer = summaryConsumerCaptor.getValue();
+        RuntimeException exception = mock( RuntimeException.class );
+
+        // When
+        CompletionStage<Throwable> discardStage = cursor.discardAllFailureAsync();
+        summaryConsumer.accept( null, exception );
+
+        // Then
+        verify( pullHandler ).installRecordConsumer( DISCARD_RECORD_CONSUMER );
+        verify( pullHandler ).cancel();
+        assertSame( exception, discardStage.toCompletableFuture().get().getCause() );
     }
 
     private static RunResponseHandler newRunResponseHandler( CompletableFuture<Void> runFuture )
