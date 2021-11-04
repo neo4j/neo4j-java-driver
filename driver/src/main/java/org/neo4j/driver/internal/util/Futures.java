@@ -269,6 +269,21 @@ public final class Futures
         } );
     }
 
+    public static <T> BiConsumer<T,Throwable> futureCompletingConsumer( CompletableFuture<T> future )
+    {
+        return ( value, throwable ) ->
+        {
+            if ( throwable != null )
+            {
+                future.completeExceptionally( throwable );
+            }
+            else
+            {
+                future.complete( value );
+            }
+        };
+    }
+
     private static class CompletionResult<T>
     {
         T value;
