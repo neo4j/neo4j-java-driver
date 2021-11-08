@@ -56,13 +56,15 @@ public class GetFeatures implements TestkitRequest
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Temporary:TransactionClose",
-            "Temporary:ResultList"
+            "Feature:API:Result.List",
+            "Optimization:ResultListFetchAll"
     ) );
 
     private static final Set<String> ASYNC_FEATURES = new HashSet<>( Arrays.asList(
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
-            "Temporary:ResultList"
+            "Feature:API:Result.List",
+            "Optimization:ResultListFetchAll"
     ) );
 
     @Override
