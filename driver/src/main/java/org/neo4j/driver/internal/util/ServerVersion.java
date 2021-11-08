@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v41.BoltProtocolV41;
 import org.neo4j.driver.internal.messaging.v42.BoltProtocolV42;
+import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 
 import static java.lang.Integer.compare;
 
@@ -35,6 +36,7 @@ public class ServerVersion
 {
     public static final String NEO4J_PRODUCT = "Neo4j";
 
+    public static final ServerVersion v4_3_0 = new ServerVersion( NEO4J_PRODUCT, 4, 3, 0 );
     public static final ServerVersion v4_2_0 = new ServerVersion( NEO4J_PRODUCT, 4, 2, 0 );
     public static final ServerVersion v4_1_0 = new ServerVersion( NEO4J_PRODUCT, 4, 1, 0 );
     public static final ServerVersion v4_0_0 = new ServerVersion( NEO4J_PRODUCT, 4, 0, 0 );
@@ -193,6 +195,10 @@ public class ServerVersion
         } else if ( BoltProtocolV42.VERSION.equals( protocolVersion ) )
         {
             return ServerVersion.v4_2_0;
+        }
+        else if ( BoltProtocolV43.VERSION.equals( protocolVersion ) )
+        {
+            return ServerVersion.v4_3_0;
         }
 
         return ServerVersion.vInDev;
