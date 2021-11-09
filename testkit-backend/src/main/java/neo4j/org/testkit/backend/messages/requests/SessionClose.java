@@ -129,7 +129,12 @@ public class SessionClose implements TestkitRequest
             this.unfulfilledDemandCounter = unfulfilledDemandCounter;
 
             subscriber.getCompletionStage().whenComplete( this::onComplete );
-            if ( this.unfulfilledDemandCounter.get() > 0 )
+            long unfulfilledDemand = this.unfulfilledDemandCounter.get();
+            if ( unfulfilledDemand == 0 )
+            {
+                completedStage.complete( CompletionReason.REQUESTED_DEMAND_CONSUMED );
+            }
+            else if ( unfulfilledDemand > 0 )
             {
                 setupNextSignalConsumer();
             }
