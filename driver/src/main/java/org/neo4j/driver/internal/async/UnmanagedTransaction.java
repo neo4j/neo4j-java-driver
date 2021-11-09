@@ -20,9 +20,13 @@ package org.neo4j.driver.internal.async;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -37,91 +41,57 @@ import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.Futures;
 
+import static org.neo4j.driver.internal.util.Futures.asCompletionException;
+import static org.neo4j.driver.internal.util.Futures.combineErrors;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
+import static org.neo4j.driver.internal.util.Futures.futureCompletingConsumer;
+import static org.neo4j.driver.internal.util.LockUtil.executeWithLock;
 
 public class UnmanagedTransaction
 {
     private enum State
     {
-        /** The transaction is running with no explicit success or failure marked */
+        /**
+         * The transaction is running with no explicit success or failure marked
+         */
         ACTIVE,
 
         /**
-         * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a
-         * fatal connection error.
+         * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a fatal connection error.
          */
         TERMINATED,
 
-        /** This transaction has successfully committed */
+        /**
+         * This transaction has successfully committed
+         */
         COMMITTED,
 
-        /** This transaction has been rolled back */
+        /**
+         * This transaction has been rolled back
+         */
         ROLLED_BACK
     }
 
-    /**
-     * This is a holder so that we can have ony the state volatile in the tx without having to synchronize the whole block.
-     */
-    private static final class StateHolder
-    {
-        private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
-        private static final StateHolder ACTIVE_HOLDER = new StateHolder( State.ACTIVE, null );
-        private static final StateHolder COMMITTED_HOLDER = new StateHolder( State.COMMITTED, null );
-        private static final StateHolder ROLLED_BACK_HOLDER = new StateHolder( State.ROLLED_BACK, null );
-
-        /**
-         * The actual state.
-         */
-        final State value;
-
-        /**
-         * If this holder contains a state of {@link State#TERMINATED}, this represents the cause if any.
-         */
-        final Throwable causeOfTermination;
-
-        static StateHolder of( State value )
-        {
-            switch ( value )
-            {
-            case ACTIVE:
-                return ACTIVE_HOLDER;
-            case COMMITTED:
-                return COMMITTED_HOLDER;
-            case ROLLED_BACK:
-                return ROLLED_BACK_HOLDER;
-            case TERMINATED:
-            default:
-                throw new IllegalArgumentException( "Cannot provide a default state holder for state " + value );
-            }
-        }
-
-        static StateHolder terminatedWith( Throwable cause )
-        {
-            return new StateHolder( State.TERMINATED, cause );
-        }
-
-        private StateHolder( State value, Throwable causeOfTermination )
-        {
-            this.value = value;
-            this.causeOfTermination = causeOfTermination;
-        }
-
-        boolean isOpen()
-        {
-            return OPEN_STATES.contains( this.value );
-        }
-    }
+    protected static final String CANT_COMMIT_COMMITTED_MSG = "Can't commit, transaction has been committed";
+    protected static final String CANT_ROLLBACK_COMMITTED_MSG = "Can't rollback, transaction has been committed";
+    protected static final String CANT_COMMIT_ROLLED_BACK_MSG = "Can't commit, transaction has been rolled back";
+    protected static final String CANT_ROLLBACK_ROLLED_BACK_MSG = "Can't rollback, transaction has been rolled back";
+    protected static final String CANT_COMMIT_ROLLING_BACK_MSG = "Can't commit, transaction has been requested to be rolled back";
+    protected static final String CANT_ROLLBACK_COMMITTING_MSG = "Can't rollback, transaction has been requested to be committed";
+    private static final EnumSet<State> OPEN_STATES = EnumSet.of( State.ACTIVE, State.TERMINATED );
 
     private final Connection connection;
     private final BoltProtocol protocol;
     private final BookmarkHolder bookmarkHolder;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
-
-    private volatile StateHolder state = StateHolder.of( State.ACTIVE );
+    private final Lock lock = new ReentrantLock();
+    private State state = State.ACTIVE;
+    private CompletableFuture<Void> commitFuture;
+    private CompletableFuture<Void> rollbackFuture;
+    private Throwable causeOfTermination;
 
     public UnmanagedTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
     {
@@ -156,7 +126,7 @@ public class UnmanagedTransaction
                                         {
                                             connection.release();
                                         }
-                                        throw Futures.asCompletionException( beginError );
+                                        throw asCompletionException( beginError );
                                     }
                                     return this;
                                 } );
@@ -164,50 +134,17 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> closeAsync()
     {
-        if ( isOpen() )
-        {
-            return rollbackAsync();
-        }
-        else
-        {
-            return completedWithNull();
-        }
+        return closeAsync( false, true );
     }
 
     public CompletionStage<Void> commitAsync()
     {
-        if ( state.value == State.COMMITTED )
-        {
-            return failedFuture( new ClientException( "Can't commit, transaction has been committed" ) );
-        }
-        else if ( state.value == State.ROLLED_BACK )
-        {
-            return failedFuture( new ClientException( "Can't commit, transaction has been rolled back" ) );
-        }
-        else
-        {
-            return resultCursors.retrieveNotConsumedError()
-                                .thenCompose( error -> doCommitAsync( error ).handle( handleCommitOrRollback( error ) ) )
-                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( true, error ) );
-        }
+        return closeAsync( true, false );
     }
 
     public CompletionStage<Void> rollbackAsync()
     {
-        if ( state.value == State.COMMITTED )
-        {
-            return failedFuture( new ClientException( "Can't rollback, transaction has been committed" ) );
-        }
-        else if ( state.value == State.ROLLED_BACK )
-        {
-            return failedFuture( new ClientException( "Can't rollback, transaction has been rolled back" ) );
-        }
-        else
-        {
-            return resultCursors.retrieveNotConsumedError()
-                                .thenCompose( error -> doRollbackAsync().handle( handleCommitOrRollback( error ) ) )
-                                .whenComplete( ( ignore, error ) -> handleTransactionCompletion( false, error ) );
-        }
+        return closeAsync( false, false );
     }
 
     public CompletionStage<ResultCursor> runAsync( Query query )
@@ -219,7 +156,7 @@ public class UnmanagedTransaction
         return cursorStage.thenCompose( AsyncResultCursor::mapSuccessfulRunCompletionAsync ).thenApply( cursor -> cursor );
     }
 
-    public CompletionStage<RxResultCursor> runRx(Query query)
+    public CompletionStage<RxResultCursor> runRx( Query query )
     {
         ensureCanRunQueries();
         CompletionStage<RxResultCursor> cursorStage =
@@ -230,22 +167,26 @@ public class UnmanagedTransaction
 
     public boolean isOpen()
     {
-        return state.isOpen();
+        return OPEN_STATES.contains( executeWithLock( lock, () -> state ) );
     }
 
     public void markTerminated( Throwable cause )
     {
-        if ( state.value == State.TERMINATED )
+        executeWithLock( lock, () ->
         {
-            if ( state.causeOfTermination != null )
+            if ( state == State.TERMINATED )
             {
-                addSuppressedWhenNotCaptured( state.causeOfTermination, cause );
+                if ( causeOfTermination != null )
+                {
+                    addSuppressedWhenNotCaptured( causeOfTermination, cause );
+                }
             }
-        }
-        else
-        {
-            state = StateHolder.terminatedWith( cause );
-        }
+            else
+            {
+                state = State.TERMINATED;
+                causeOfTermination = cause;
+            }
+        } );
     }
 
     private void addSuppressedWhenNotCaptured( Throwable currentCause, Throwable newCause )
@@ -267,46 +208,46 @@ public class UnmanagedTransaction
 
     private void ensureCanRunQueries()
     {
-        if ( state.value == State.COMMITTED )
+        executeWithLock( lock, () ->
         {
-            throw new ClientException( "Cannot run more queries in this transaction, it has been committed" );
-        }
-        else if ( state.value == State.ROLLED_BACK )
-        {
-            throw new ClientException( "Cannot run more queries in this transaction, it has been rolled back" );
-        }
-        else if ( state.value == State.TERMINATED )
-        {
-            throw new ClientException( "Cannot run more queries in this transaction, " +
-                    "it has either experienced an fatal error or was explicitly terminated", state.causeOfTermination );
-        }
+            if ( state == State.COMMITTED )
+            {
+                throw new ClientException( "Cannot run more queries in this transaction, it has been committed" );
+            }
+            else if ( state == State.ROLLED_BACK )
+            {
+                throw new ClientException( "Cannot run more queries in this transaction, it has been rolled back" );
+            }
+            else if ( state == State.TERMINATED )
+            {
+                throw new ClientException( "Cannot run more queries in this transaction, " +
+                                           "it has either experienced an fatal error or was explicitly terminated", causeOfTermination );
+            }
+        } );
     }
 
     private CompletionStage<Void> doCommitAsync( Throwable cursorFailure )
     {
-        if ( state.value == State.TERMINATED )
-        {
-            return failedFuture( new ClientException( "Transaction can't be committed. " +
-                                                      "It has been rolled back either because of an error or explicit termination",
-                                                      cursorFailure != state.causeOfTermination ? state.causeOfTermination : null ) );
-        }
-        return protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
+        ClientException exception = executeWithLock(
+                lock, () -> state == State.TERMINATED
+                            ? new ClientException( "Transaction can't be committed. " +
+                                                   "It has been rolled back either because of an error or explicit termination",
+                                                   cursorFailure != causeOfTermination ? causeOfTermination : null )
+                            : null
+        );
+        return exception != null ? failedFuture( exception ) : protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
     }
 
     private CompletionStage<Void> doRollbackAsync()
     {
-        if ( state.value == State.TERMINATED )
-        {
-            return completedWithNull();
-        }
-        return protocol.rollbackTransaction( connection );
+        return executeWithLock( lock, () -> state ) == State.TERMINATED ? completedWithNull() : protocol.rollbackTransaction( connection );
     }
 
     private static BiFunction<Void,Throwable,Void> handleCommitOrRollback( Throwable cursorFailure )
     {
         return ( ignore, commitOrRollbackError ) ->
         {
-            CompletionException combinedError = Futures.combineErrors( cursorFailure, commitOrRollbackError );
+            CompletionException combinedError = combineErrors( cursorFailure, commitOrRollbackError );
             if ( combinedError != null )
             {
                 throw combinedError;
@@ -315,17 +256,19 @@ public class UnmanagedTransaction
         };
     }
 
-    private void handleTransactionCompletion( boolean commitOnSuccess, Throwable throwable )
+    private void handleTransactionCompletion( boolean commitAttempt, Throwable throwable )
     {
-        if ( commitOnSuccess && throwable == null )
+        executeWithLock( lock, () ->
         {
-            state = StateHolder.of( State.COMMITTED );
-        }
-        else
-        {
-            state = StateHolder.of( State.ROLLED_BACK );
-        }
-
+            if ( commitAttempt && throwable == null )
+            {
+                state = State.COMMITTED;
+            }
+            else
+            {
+                state = State.ROLLED_BACK;
+            }
+        } );
         if ( throwable instanceof AuthorizationExpiredException )
         {
             connection.terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
@@ -338,5 +281,82 @@ public class UnmanagedTransaction
         {
             connection.release(); // release in background
         }
+    }
+
+    private CompletionStage<Void> closeAsync( boolean commit, boolean completeWithNullIfNotOpen )
+    {
+        CompletionStage<Void> stage = executeWithLock( lock, () ->
+        {
+            CompletionStage<Void> resultStage = null;
+            if ( completeWithNullIfNotOpen && !isOpen() )
+            {
+                resultStage = completedWithNull();
+            }
+            else if ( state == State.COMMITTED )
+            {
+                resultStage = failedFuture( new ClientException( commit ? CANT_COMMIT_COMMITTED_MSG : CANT_ROLLBACK_COMMITTED_MSG ) );
+            }
+            else if ( state == State.ROLLED_BACK )
+            {
+                resultStage = failedFuture( new ClientException( commit ? CANT_COMMIT_ROLLED_BACK_MSG : CANT_ROLLBACK_ROLLED_BACK_MSG ) );
+            }
+            else
+            {
+                if ( commit )
+                {
+                    if ( rollbackFuture != null )
+                    {
+                        resultStage = failedFuture( new ClientException( CANT_COMMIT_ROLLING_BACK_MSG ) );
+                    }
+                    else if ( commitFuture != null )
+                    {
+                        resultStage = commitFuture;
+                    }
+                    else
+                    {
+                        commitFuture = new CompletableFuture<>();
+                    }
+                }
+                else
+                {
+                    if ( commitFuture != null )
+                    {
+                        resultStage = failedFuture( new ClientException( CANT_ROLLBACK_COMMITTING_MSG ) );
+                    }
+                    else if ( rollbackFuture != null )
+                    {
+                        resultStage = rollbackFuture;
+                    }
+                    else
+                    {
+                        rollbackFuture = new CompletableFuture<>();
+                    }
+                }
+            }
+            return resultStage;
+        } );
+
+        if ( stage == null )
+        {
+            CompletableFuture<Void> targetFuture;
+            Function<Throwable,CompletionStage<Void>> targetAction;
+            if ( commit )
+            {
+                targetFuture = commitFuture;
+                targetAction = throwable -> doCommitAsync( throwable ).handle( handleCommitOrRollback( throwable ) );
+            }
+            else
+            {
+                targetFuture = rollbackFuture;
+                targetAction = throwable -> doRollbackAsync().handle( handleCommitOrRollback( throwable ) );
+            }
+            resultCursors.retrieveNotConsumedError()
+                         .thenCompose( targetAction )
+                         .whenComplete( ( ignored, throwable ) -> handleTransactionCompletion( commit, throwable ) )
+                         .whenComplete( futureCompletingConsumer( targetFuture ) );
+            stage = targetFuture;
+        }
+
+        return stage;
     }
 }
