@@ -130,7 +130,7 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute,
-                                                 InternalRxTransaction::commitIfOpen, ( tx, error ) -> tx.close(), null );
+                                                 InternalRxTransaction::commitIfOpen, ( tx, error ) -> tx.close(), InternalRxTransaction::close );
         return session.retryLogic().retryRx( repeatableWork );
     }
 
