@@ -413,15 +413,21 @@ class UnmanagedTransactionTest
     private static Stream<Arguments> closingNotActionTransactionArgs()
     {
         return Stream.of(
-                Arguments.of( true, 1, "commit" ),
-                Arguments.of( false, 1, "rollback" ),
-                Arguments.of( false, 0, "terminate" )
+                Arguments.of( true, 1, "commit", null ),
+                Arguments.of( false, 1, "rollback", null ),
+                Arguments.of( false, 0, "terminate", null ),
+                Arguments.of( true, 1, "commit", true ),
+                Arguments.of( false, 1, "rollback", true ),
+                Arguments.of( true, 1, "commit", false ),
+                Arguments.of( false, 1, "rollback", false ),
+                Arguments.of( false, 0, "terminate", false )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "closingNotActionTransactionArgs" )
-    void shouldReturnCompletedWithNullStageOnClosingNotActiveTransaction( boolean protocolCommit, int expectedProtocolInvocations, String originalAction )
+    void shouldReturnCompletedWithNullStageOnClosingInactiveTransactionExceptCommittingAborted(
+            boolean protocolCommit, int expectedProtocolInvocations, String originalAction, Boolean commitOnClose )
     {
         Connection connection = mock( Connection.class );
         BoltProtocol protocol = mock( BoltProtocol.class );
@@ -431,7 +437,7 @@ class UnmanagedTransactionTest
         UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
 
         CompletionStage<Void> originalActionStage = mapTransactionAction( originalAction, tx ).get();
-        CompletionStage<Void> closeStage = tx.closeAsync();
+        CompletionStage<Void> closeStage = commitOnClose != null ? tx.closeAsync( commitOnClose ) : tx.closeAsync();
 
         assertTrue( originalActionStage.toCompletableFuture().isDone() );
         assertFalse( originalActionStage.toCompletableFuture().isCompletedExceptionally() );

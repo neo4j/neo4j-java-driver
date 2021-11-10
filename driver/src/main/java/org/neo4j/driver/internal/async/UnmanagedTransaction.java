@@ -134,7 +134,12 @@ public class UnmanagedTransaction
 
     public CompletionStage<Void> closeAsync()
     {
-        return closeAsync( false, true );
+        return closeAsync( false );
+    }
+
+    public CompletionStage<Void> closeAsync( boolean commit )
+    {
+        return closeAsync( commit, true );
     }
 
     public CompletionStage<Void> commitAsync()
