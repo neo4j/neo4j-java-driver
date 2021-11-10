@@ -48,7 +48,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.parameters;
@@ -140,43 +139,28 @@ class InternalRxTransactionTest
     }
 
     @Test
-    void shouldCommitWhenOpen()
+    void shouldDelegateConditionalClose()
     {
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
+        when( tx.closeAsync( true ) ).thenReturn( Futures.completedWithNull() );
 
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
         Publisher<Void> publisher = rxTx.close( true );
         StepVerifier.create( publisher ).verifyComplete();
 
-        verify( tx ).commitAsync();
-    }
-
-    @Test
-    void shouldNotCommitWhenNotOpen()
-    {
-        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( false );
-        when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
-
-        InternalRxTransaction rxTx = new InternalRxTransaction( tx );
-        Publisher<Void> publisher = rxTx.close( true );
-        StepVerifier.create( publisher ).verifyComplete();
-
-        verify( tx, never() ).commitAsync();
+        verify( tx ).closeAsync( true );
     }
 
     @Test
     void shouldDelegateClose()
     {
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.closeAsync() ).thenReturn( Futures.completedWithNull() );
+        when( tx.closeAsync( false ) ).thenReturn( Futures.completedWithNull() );
 
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
         Publisher<Void> publisher = rxTx.close();
         StepVerifier.create( publisher ).verifyComplete();
 
-        verify( tx ).closeAsync();
+        verify( tx ).closeAsync( false );
     }
 }
