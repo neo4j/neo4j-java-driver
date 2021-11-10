@@ -147,7 +147,7 @@ class InternalRxTransactionTest
         when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
-        Publisher<Void> publisher = rxTx.commitIfOpen();
+        Publisher<Void> publisher = rxTx.close( true );
         StepVerifier.create( publisher ).verifyComplete();
 
         verify( tx ).commitAsync();
@@ -161,7 +161,7 @@ class InternalRxTransactionTest
         when( tx.commitAsync() ).thenReturn( Futures.completedWithNull() );
 
         InternalRxTransaction rxTx = new InternalRxTransaction( tx );
-        Publisher<Void> publisher = rxTx.commitIfOpen();
+        Publisher<Void> publisher = rxTx.close( true );
         StepVerifier.create( publisher ).verifyComplete();
 
         verify( tx, never() ).commitAsync();
