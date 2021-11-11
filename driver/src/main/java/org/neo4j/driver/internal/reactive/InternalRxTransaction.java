@@ -30,7 +30,6 @@ import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTransaction
 {
@@ -77,13 +76,13 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
         return createEmptyPublisher( tx::rollbackAsync );
     }
 
-    Publisher<Void> commitIfOpen()
-    {
-        return createEmptyPublisher( () -> tx.isOpen() ? tx.commitAsync() : completedWithNull() );
-    }
-
     Publisher<Void> close()
     {
-        return createEmptyPublisher( tx::closeAsync );
+        return close( false );
+    }
+
+    Publisher<Void> close( boolean commit )
+    {
+        return createEmptyPublisher( () -> tx.closeAsync( commit ) );
     }
 }

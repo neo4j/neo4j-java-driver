@@ -19,9 +19,17 @@
 package org.neo4j.driver.internal.async;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -32,6 +40,7 @@ import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
 import org.neo4j.driver.internal.DefaultBookmarkHolder;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
@@ -40,16 +49,21 @@ import static java.util.Collections.emptyMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
@@ -311,6 +325,133 @@ class UnmanagedTransactionTest
         verify( connection, never() ).release();
     }
 
+    private static Stream<Arguments> similarTransactionCompletingActionArgs()
+    {
+        return Stream.of(
+                Arguments.of( true, "commit", "commit" ),
+
+                Arguments.of( false, "rollback", "rollback" ),
+                Arguments.of( false, "rollback", "close" ),
+
+                Arguments.of( false, "close", "rollback" ),
+                Arguments.of( false, "close", "close" )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "similarTransactionCompletingActionArgs" )
+    void shouldReturnExistingStageOnSimilarCompletingAction( boolean protocolCommit, String initialAction, String similarAction )
+    {
+        Connection connection = mock( Connection.class );
+        BoltProtocol protocol = mock( BoltProtocol.class );
+        given( connection.protocol() ).willReturn( protocol );
+        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) ).willReturn( new CompletableFuture<>() );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+
+        CompletionStage<Void> initialStage = mapTransactionAction( initialAction, tx ).get();
+        CompletionStage<Void> similarStage = mapTransactionAction( similarAction, tx ).get();
+
+        assertSame( initialStage, similarStage );
+        if ( protocolCommit )
+        {
+            then( protocol ).should( times( 1 ) ).commitTransaction( connection );
+        }
+        else
+        {
+            then( protocol ).should( times( 1 ) ).rollbackTransaction( connection );
+        }
+    }
+
+    private static Stream<Arguments> conflictingTransactionCompletingActionArgs()
+    {
+        return Stream.of(
+                Arguments.of( true, true, "commit", "commit", UnmanagedTransaction.CANT_COMMIT_COMMITTED_MSG ),
+                Arguments.of( true, true, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTED_MSG ),
+                Arguments.of( true, false, "commit", "rollback", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG ),
+                Arguments.of( true, false, "commit", "close", UnmanagedTransaction.CANT_ROLLBACK_COMMITTING_MSG ),
+
+                Arguments.of( false, true, "rollback", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG ),
+                Arguments.of( false, true, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG ),
+                Arguments.of( false, false, "rollback", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG ),
+
+                Arguments.of( false, true, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLED_BACK_MSG ),
+                Arguments.of( false, true, "close", "rollback", UnmanagedTransaction.CANT_ROLLBACK_ROLLED_BACK_MSG ),
+                Arguments.of( false, false, "close", "commit", UnmanagedTransaction.CANT_COMMIT_ROLLING_BACK_MSG )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "conflictingTransactionCompletingActionArgs" )
+    void shouldReturnFailingStageOnConflictingCompletingAction( boolean protocolCommit, boolean protocolActionCompleted, String initialAction,
+                                                                String conflictingAction, String expectedErrorMsg )
+    {
+        Connection connection = mock( Connection.class );
+        BoltProtocol protocol = mock( BoltProtocol.class );
+        given( connection.protocol() ).willReturn( protocol );
+        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
+                .willReturn( protocolActionCompleted ? completedFuture( null ) : new CompletableFuture<>() );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+
+        CompletionStage<Void> originalActionStage = mapTransactionAction( initialAction, tx ).get();
+        CompletionStage<Void> conflictingActionStage = mapTransactionAction( conflictingAction, tx ).get();
+
+        assertNotNull( originalActionStage );
+        if ( protocolCommit )
+        {
+            then( protocol ).should( times( 1 ) ).commitTransaction( connection );
+        }
+        else
+        {
+            then( protocol ).should( times( 1 ) ).rollbackTransaction( connection );
+        }
+        assertTrue( conflictingActionStage.toCompletableFuture().isCompletedExceptionally() );
+        Throwable throwable = assertThrows( ExecutionException.class, () -> conflictingActionStage.toCompletableFuture().get() ).getCause();
+        assertTrue( throwable instanceof ClientException );
+        assertEquals( expectedErrorMsg, throwable.getMessage() );
+    }
+
+    private static Stream<Arguments> closingNotActionTransactionArgs()
+    {
+        return Stream.of(
+                Arguments.of( true, 1, "commit", null ),
+                Arguments.of( false, 1, "rollback", null ),
+                Arguments.of( false, 0, "terminate", null ),
+                Arguments.of( true, 1, "commit", true ),
+                Arguments.of( false, 1, "rollback", true ),
+                Arguments.of( true, 1, "commit", false ),
+                Arguments.of( false, 1, "rollback", false ),
+                Arguments.of( false, 0, "terminate", false )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "closingNotActionTransactionArgs" )
+    void shouldReturnCompletedWithNullStageOnClosingInactiveTransactionExceptCommittingAborted(
+            boolean protocolCommit, int expectedProtocolInvocations, String originalAction, Boolean commitOnClose )
+    {
+        Connection connection = mock( Connection.class );
+        BoltProtocol protocol = mock( BoltProtocol.class );
+        given( connection.protocol() ).willReturn( protocol );
+        given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
+                .willReturn( completedFuture( null ) );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+
+        CompletionStage<Void> originalActionStage = mapTransactionAction( originalAction, tx ).get();
+        CompletionStage<Void> closeStage = commitOnClose != null ? tx.closeAsync( commitOnClose ) : tx.closeAsync();
+
+        assertTrue( originalActionStage.toCompletableFuture().isDone() );
+        assertFalse( originalActionStage.toCompletableFuture().isCompletedExceptionally() );
+        if ( protocolCommit )
+        {
+            then( protocol ).should( times( expectedProtocolInvocations ) ).commitTransaction( connection );
+        }
+        else
+        {
+            then( protocol ).should( times( expectedProtocolInvocations ) ).rollbackTransaction( connection );
+        }
+        assertNull( closeStage.toCompletableFuture().join() );
+    }
+
     private static UnmanagedTransaction beginTx( Connection connection )
     {
         return beginTx( connection, InternalBookmark.empty() );
@@ -345,5 +486,35 @@ class UnmanagedTransactionTest
                 .discardAllFailureAsync();
         resultCursorsHolder.add( completedFuture( cursor ) );
         return resultCursorsHolder;
+    }
+
+    private Supplier<CompletionStage<Void>> mapTransactionAction( String actionName, UnmanagedTransaction tx )
+    {
+        Supplier<CompletionStage<Void>> action;
+        if ( "commit".equals( actionName ) )
+        {
+            action = tx::commitAsync;
+        }
+        else if ( "rollback".equals( actionName ) )
+        {
+            action = tx::rollbackAsync;
+        }
+        else if ( "terminate".equals( actionName ) )
+        {
+            action = () ->
+            {
+                tx.markTerminated( mock( Throwable.class ) );
+                return completedFuture( null );
+            };
+        }
+        else if ( "close".equals( actionName ) )
+        {
+            action = tx::closeAsync;
+        }
+        else
+        {
+            throw new RuntimeException( String.format( "Unknown completing action type '%s'", actionName ) );
+        }
+        return action;
     }
 }

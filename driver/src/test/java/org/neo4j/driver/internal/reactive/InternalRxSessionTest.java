@@ -199,9 +199,7 @@ class InternalRxSessionTest
         // Given
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.commitAsync() ).thenReturn( completedWithNull() );
-        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+        when( tx.closeAsync( true ) ).thenReturn( completedWithNull() );
 
         when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( 1 ) );
@@ -213,7 +211,7 @@ class InternalRxSessionTest
 
         // Then
         verify( session ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx ).commitAsync();
+        verify( tx ).closeAsync( true );
     }
 
     @Test
@@ -223,25 +221,24 @@ class InternalRxSessionTest
         int retryCount = 2;
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.commitAsync() ).thenReturn( completedWithNull() );
-        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+        when( tx.closeAsync( false ) ).thenReturn( completedWithNull() );
 
         when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
         InternalRxSession rxSession = new InternalRxSession( session );
 
         // When
-        Publisher<String> strings = rxSession.readTransaction( t ->
-                Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) ) );
+        Publisher<String> strings = rxSession.readTransaction(
+                t ->
+                        Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) ) );
         StepVerifier.create( Flux.from( strings ) )
-                // we lost the "a"s too as the user only see the last failure
-                .expectError( RuntimeException.class )
-                .verify();
+                    // we lost the "a"s too as the user only see the last failure
+                    .expectError( RuntimeException.class )
+                    .verify();
 
         // Then
         verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx, times( retryCount + 1 ) ).closeAsync();
+        verify( tx, times( retryCount + 1 ) ).closeAsync( false );
     }
 
     @Test
@@ -251,9 +248,8 @@ class InternalRxSessionTest
         int retryCount = 2;
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.isOpen() ).thenReturn( true );
-        when( tx.commitAsync() ).thenReturn( completedWithNull() );
-        when( tx.rollbackAsync() ).thenReturn( completedWithNull() );
+        when( tx.closeAsync( false ) ).thenReturn( completedWithNull() );
+        when( tx.closeAsync( true ) ).thenReturn( completedWithNull() );
 
         when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
         when( session.retryLogic() ).thenReturn( new FixedRetryLogic( retryCount ) );
@@ -261,23 +257,25 @@ class InternalRxSessionTest
 
         // When
         AtomicInteger count = new AtomicInteger();
-        Publisher<String> strings = rxSession.readTransaction( t -> {
-            // we fail for the first few retries, and then success on the last run.
-            if ( count.getAndIncrement() == retryCount )
-            {
-                return Flux.just( "a" );
-            }
-            else
-            {
-                return Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) );
-            }
-        } );
+        Publisher<String> strings = rxSession.readTransaction(
+                t ->
+                {
+                    // we fail for the first few retries, and then success on the last run.
+                    if ( count.getAndIncrement() == retryCount )
+                    {
+                        return Flux.just( "a" );
+                    }
+                    else
+                    {
+                        return Flux.just( "a" ).then( Mono.error( new RuntimeException( "Errored" ) ) );
+                    }
+                } );
         StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
 
         // Then
         verify( session, times( retryCount + 1 ) ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx, times( retryCount ) ).closeAsync();
-        verify( tx ).commitAsync();
+        verify( tx, times( retryCount ) ).closeAsync( false );
+        verify( tx ).closeAsync( true );
     }
 
     @Test

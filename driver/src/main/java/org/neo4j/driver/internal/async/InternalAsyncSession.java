@@ -146,7 +146,7 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
             Throwable error = Futures.completionExceptionCause( completionError );
             if ( error != null )
             {
-                rollbackTxAfterFailedTransactionWork( tx, resultFuture, error );
+                closeTxAfterFailedTransactionWork( tx, resultFuture, error );
             }
             else
             {
@@ -174,43 +174,33 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
         }
     }
 
-    private <T> void rollbackTxAfterFailedTransactionWork(UnmanagedTransaction tx, CompletableFuture<T> resultFuture, Throwable error )
+    private <T> void closeTxAfterFailedTransactionWork( UnmanagedTransaction tx, CompletableFuture<T> resultFuture, Throwable error )
     {
-        if ( tx.isOpen() )
-        {
-            tx.rollbackAsync().whenComplete( ( ignore, rollbackError ) -> {
-                if ( rollbackError != null )
+        tx.closeAsync().whenComplete(
+                ( ignored, rollbackError ) ->
                 {
-                    error.addSuppressed( rollbackError );
-                }
-                resultFuture.completeExceptionally( error );
-            } );
-        }
-        else
-        {
-            resultFuture.completeExceptionally( error );
-        }
+                    if ( rollbackError != null )
+                    {
+                        error.addSuppressed( rollbackError );
+                    }
+                    resultFuture.completeExceptionally( error );
+                } );
     }
 
     private <T> void closeTxAfterSucceededTransactionWork(UnmanagedTransaction tx, CompletableFuture<T> resultFuture, T result )
     {
-        if ( tx.isOpen() )
-        {
-            tx.commitAsync().whenComplete( ( ignore, completionError ) -> {
-                Throwable commitError = Futures.completionExceptionCause( completionError );
-                if ( commitError != null )
+        tx.closeAsync( true ).whenComplete(
+                ( ignored, completionError ) ->
                 {
-                    resultFuture.completeExceptionally( commitError );
-                }
-                else
-                {
-                    resultFuture.complete( result );
-                }
-            } );
-        }
-        else
-        {
-            resultFuture.complete( result );
-        }
+                    Throwable commitError = Futures.completionExceptionCause( completionError );
+                    if ( commitError != null )
+                    {
+                        resultFuture.completeExceptionally( commitError );
+                    }
+                    else
+                    {
+                        resultFuture.complete( result );
+                    }
+                } );
     }
 }
