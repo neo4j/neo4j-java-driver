@@ -37,20 +37,22 @@ import static org.neo4j.driver.internal.util.ErrorUtil.newResultConsumedError;
 
 public class RxResultCursorImpl implements RxResultCursor
 {
-    static final BiConsumer<Record,Throwable> DISCARD_RECORD_CONSUMER = ( record, throwable ) -> {/*do nothing*/};
+    static final BiConsumer<Record,Throwable> DISCARD_RECORD_CONSUMER = ( record, throwable ) ->
+    {/*do nothing*/};
     private final RunResponseHandler runHandler;
     private final PullResponseHandler pullHandler;
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+    private boolean summaryFutureExposed;
     private boolean resultConsumed;
     private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
 
-    public RxResultCursorImpl(RunResponseHandler runHandler, PullResponseHandler pullHandler )
+    public RxResultCursorImpl( RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         this( null, runHandler, pullHandler );
     }
 
-    public RxResultCursorImpl(Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler )
+    public RxResultCursorImpl( Throwable runError, RunResponseHandler runHandler, PullResponseHandler pullHandler )
     {
         Objects.requireNonNull( runHandler );
         Objects.requireNonNull( pullHandler );
@@ -105,7 +107,8 @@ public class RxResultCursorImpl implements RxResultCursor
     public CompletionStage<Throwable> discardAllFailureAsync()
     {
         // calling this method will enforce discarding record stream and finish running cypher query
-        return summaryAsync().thenApply( summary -> (Throwable) null ).exceptionally( error -> error );
+        return summaryStage().thenApply( summary -> (Throwable) null )
+                             .exceptionally( throwable -> summaryFutureExposed ? null : throwable );
     }
 
     @Override
@@ -123,6 +126,18 @@ public class RxResultCursorImpl implements RxResultCursor
     @Override
     public CompletionStage<ResultSummary> summaryAsync()
     {
+        summaryFutureExposed = true;
+        return summaryStage();
+    }
+
+    @Override
+    public boolean isDone()
+    {
+        return summaryFuture.isDone();
+    }
+
+    public CompletionStage<ResultSummary> summaryStage()
+    {
         if ( !isDone() && !resultConsumed ) // the summary is called before record streaming
         {
             installRecordConsumer( DISCARD_RECORD_CONSUMER );
@@ -130,12 +145,6 @@ public class RxResultCursorImpl implements RxResultCursor
             resultConsumed = true;
         }
         return this.summaryFuture;
-    }
-
-    @Override
-    public boolean isDone()
-    {
-        return summaryFuture.isDone();
     }
 
     private void assertRunCompletedSuccessfully()
