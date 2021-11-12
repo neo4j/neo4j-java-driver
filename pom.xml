@@ -40,7 +40,7 @@
     <junit.version>5.8.1</junit.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.69</bouncycastle-jdk15on.version>
-    <logback-classic.version>1.2.6</logback-classic.version>
+    <logback-classic.version>1.2.7</logback-classic.version>
     <svm.version>20.3.4</svm.version>
   </properties>
 
