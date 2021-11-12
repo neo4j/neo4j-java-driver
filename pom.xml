@@ -28,20 +28,20 @@
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <netty-handler.version>4.1.65.Final</netty-handler.version>
+    <netty-handler.version>4.1.70.Final</netty-handler.version>
     <!-- Please note that when updating this dependency -->
     <!-- (i.e. due to a security vulnerability or bug) that the -->
     <!-- corresponding server dependency also needs updating.-->
-    <reactor-bom.version>Dysprosium-SR21</reactor-bom.version>
+    <reactor-bom.version>2020.0.13</reactor-bom.version>
     <rxjava.version>2.2.21</rxjava.version>
-    <slf4j-api.version>1.7.31</slf4j-api.version>
+    <slf4j-api.version>1.7.32</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
     <mockito-core.version>2.28.2</mockito-core.version>
-    <junit.version>5.7.2</junit.version>
-    <jarchivelib.version>1.1.0</jarchivelib.version>
+    <junit.version>5.8.1</junit.version>
+    <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.69</bouncycastle-jdk15on.version>
-    <logback-classic.version>1.2.3</logback-classic.version>
-    <svm.version>20.3.2</svm.version>
+    <logback-classic.version>1.2.6</logback-classic.version>
+    <svm.version>20.3.4</svm.version>
   </properties>
 
   <modules>
