@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.security.GeneralSecurityException;
 
 import org.neo4j.driver.Config;
@@ -30,7 +31,7 @@ import static org.neo4j.driver.internal.Scheme.isHighTrustScheme;
 import static org.neo4j.driver.internal.Scheme.isSecurityScheme;
 import static org.neo4j.driver.internal.security.SecurityPlanImpl.insecure;
 
-public class SecuritySettings
+public class SecuritySettings implements Serializable
 {
     private static final boolean DEFAULT_ENCRYPTED = false;
     private static final Config.TrustStrategy DEFAULT_TRUST_STRATEGY = Config.TrustStrategy.trustSystemCertificates();

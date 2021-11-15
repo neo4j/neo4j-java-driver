@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.logging;
 
+import java.io.Serializable;
 import java.util.logging.Level;
 
 import org.neo4j.driver.Logger;
@@ -29,7 +30,7 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#javaUtilLogging(Level)
  */
-public class JULogging implements Logging
+public class JULogging implements Logging, Serializable
 {
     private final Level loggingLevel;
 

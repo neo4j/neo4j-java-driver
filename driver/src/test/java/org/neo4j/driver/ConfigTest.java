@@ -18,16 +18,22 @@
  */
 package org.neo4j.driver;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import org.neo4j.driver.net.ServerAddressResolver;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -347,5 +353,58 @@ class ConfigTest
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( null ).build() );
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( "" ).build() );
+    }
+
+    @Test
+    void shouldSerialize() throws Exception
+    {
+        Config config = Config.builder()
+          .withMaxConnectionPoolSize( 123 )
+          .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
+          .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
+          .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
+          .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
+          .withLogging( Logging.javaUtilLogging( Level.WARNING) )
+          .withFetchSize( 9876L )
+          .withEventLoopThreads( 4 )
+          .withoutEncryption()
+          .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
+          .withUserAgent( "user-agent" )
+          .withDriverMetrics()
+          .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
+          .withLeakedSessionsLogging()
+          .build();
+
+        // Write the config
+        ByteOutputStream bos = new ByteOutputStream();
+        try (ObjectOutputStream oos = new ObjectOutputStream( bos )) {
+            oos.writeObject( config );
+        }
+        bos.close();
+
+        // Read it back
+        Config verify = null;
+        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.getBytes() ) ) ) {
+            verify = (Config)oos.readObject();
+        }
+        assertEquals(config.maxConnectionPoolSize(), verify.maxConnectionPoolSize());
+        assertEquals(config.connectionTimeoutMillis(), verify.connectionTimeoutMillis());
+        assertEquals(config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis());
+        assertEquals(config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest());
+        assertEquals(config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis());
+        assertThat(verify.retrySettings(), notNullValue());
+        assertEquals(config.retrySettings().maxRetryTimeMs(), verify.retrySettings().maxRetryTimeMs());
+        // TODO: logging serialization is an issue: verify class, name, ...?
+        // assertEquals(config.logging(), verify.logging());
+        assertEquals(config.fetchSize(), verify.fetchSize());
+        assertEquals(config.eventLoopThreads(), verify.eventLoopThreads());
+        assertEquals(config.encrypted(), verify.encrypted());
+        assertEquals(config.trustStrategy().strategy(), verify.trustStrategy().strategy());
+        assertEquals(config.trustStrategy().isHostnameVerificationEnabled(), verify.trustStrategy().isHostnameVerificationEnabled());
+        assertEquals(config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy());
+        assertEquals(config.userAgent(), verify.userAgent());
+        assertEquals(config.isMetricsEnabled(), verify.isMetricsEnabled());
+        assertEquals(config.routingSettings().routingTablePurgeDelayMs(), verify.routingSettings().routingTablePurgeDelayMs());
+        assertEquals(config.logLeakedSessions(), verify.logLeakedSessions());
     }
 }

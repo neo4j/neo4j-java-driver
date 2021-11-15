@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.io.File;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,7 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
  * @since 1.0
  */
 @Immutable
-public class Config
+public class Config implements Serializable
 {
     private static final Config EMPTY = builder().build();
 
@@ -780,7 +781,7 @@ public class Config
     /**
      * Control how the driver determines if it can trust the encryption certificates provided by the Neo4j instance it is connected to.
      */
-    public static class TrustStrategy
+    public static class TrustStrategy implements Serializable
     {
         /**
          * The trust strategy that the driver supports

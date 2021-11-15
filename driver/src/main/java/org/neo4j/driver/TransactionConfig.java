@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -61,7 +62,7 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
  *
  * @see Session
  */
-public class TransactionConfig
+public class TransactionConfig implements Serializable
 {
     private static final TransactionConfig EMPTY = builder().build();
 

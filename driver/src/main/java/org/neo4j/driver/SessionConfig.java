@@ -20,6 +20,7 @@ package org.neo4j.driver;
 
 import org.reactivestreams.Subscription;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,7 +34,7 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValid
 /**
  * The session configurations used to configure a session.
  */
-public class SessionConfig
+public class SessionConfig implements Serializable
 {
     private static final SessionConfig EMPTY = builder().build();
 

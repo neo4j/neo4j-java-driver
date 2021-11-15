@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.internal.retry;
 
-public final class RetrySettings
+import java.io.Serializable;
+
+public final class RetrySettings implements Serializable
 {
     public static final RetrySettings DEFAULT =
             new RetrySettings( ExponentialBackoffRetryLogic.DEFAULT_MAX_RETRY_TIME_MS );
