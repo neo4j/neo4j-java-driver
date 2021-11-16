@@ -20,12 +20,14 @@ package org.neo4j.driver;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -36,6 +38,7 @@ import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 
 class TransactionConfigTest
@@ -117,5 +120,50 @@ class TransactionConfigTest
         assertEquals( value( "value1" ), metadata.get( "key1" ) );
         assertEquals( value( true ), metadata.get( "key2" ) );
         assertEquals( value( 42 ), metadata.get( "key3" ) );
+    }
+
+    @Test
+    void cannotMessWithAMapAfterPassingItToTheBuilder() {
+
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "key1", "value1" );
+        metadata.put( "key2", true );
+        metadata.put( "key3", 42 );
+
+        TransactionConfig.Builder builder = TransactionConfig.builder().withMetadata( metadata );
+        metadata.put( "key4", "what?" );
+
+        TransactionConfig config = builder.build();
+        assertTrue( config.metadata().size() == 3 );
+    }
+
+    @Test
+    void shouldSerialize() throws Exception
+    {
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "key1", "value1" );
+        metadata.put( "key2", true );
+        metadata.put( "key3", 42 );
+
+        TransactionConfig config = TransactionConfig.builder()
+                .withTimeout( Duration.ofMillis(12345L) )
+                .withMetadata( metadata )
+                .build();
+
+        // Write the config
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try ( ObjectOutputStream oos = new ObjectOutputStream( bos )) {
+            oos.writeObject( config );
+        }
+        bos.close();
+
+        // Read it back
+        TransactionConfig verify;
+        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.toByteArray() ) ) ) {
+            verify = (TransactionConfig)oos.readObject();
+        }
+
+        assertEquals(config.timeout(), verify.timeout());
+        assertEquals(config.metadata(), verify.metadata());
     }
 }
