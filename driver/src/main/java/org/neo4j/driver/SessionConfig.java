@@ -36,6 +36,8 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValid
  */
 public class SessionConfig implements Serializable
 {
+    private static final long serialVersionUID = 5773462156979050657L;
+
     private static final SessionConfig EMPTY = builder().build();
 
     private final Iterable<Bookmark> bookmarks;

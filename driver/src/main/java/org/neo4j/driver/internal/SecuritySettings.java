@@ -33,6 +33,8 @@ import static org.neo4j.driver.internal.security.SecurityPlanImpl.insecure;
 
 public class SecuritySettings implements Serializable
 {
+    private static final long serialVersionUID = 4494615367164106576L;
+
     private static final boolean DEFAULT_ENCRYPTED = false;
     private static final Config.TrustStrategy DEFAULT_TRUST_STRATEGY = Config.TrustStrategy.trustSystemCertificates();
     private static final SecuritySettings DEFAULT = new SecuritySettings( DEFAULT_ENCRYPTED, DEFAULT_TRUST_STRATEGY );

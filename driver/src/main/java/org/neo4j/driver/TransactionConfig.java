@@ -65,6 +65,8 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
  */
 public class TransactionConfig implements Serializable
 {
+    private static final long serialVersionUID = -7954949878657177280L;
+
     private static final TransactionConfig EMPTY = builder().build();
 
     private final Duration timeout;
