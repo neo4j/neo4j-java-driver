@@ -67,8 +67,9 @@ import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 @Immutable
 public class Config implements Serializable
 {
-    private static final Config EMPTY = builder().build();
     private static final long serialVersionUID = -4496545746399601108L;
+
+    private static final Config EMPTY = builder().build();
 
     /** User defined logging */
     private final Logging logging;

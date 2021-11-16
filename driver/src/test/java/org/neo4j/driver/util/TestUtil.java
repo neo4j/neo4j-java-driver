@@ -28,6 +28,12 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -778,6 +784,22 @@ public final class TestUtil
         if ( buf.refCnt() > 0 )
         {
             buf.release();
+        }
+    }
+
+    public static <T extends Serializable> T serializeAndReadBack( T instance, Class<T> targetClass ) throws IOException, ClassNotFoundException
+    {
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try ( ObjectOutputStream oos = new ObjectOutputStream( bos ) )
+        {
+            oos.writeObject( instance );
+        }
+        bos.close();
+
+        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.toByteArray() ) ) )
+        {
+            return targetClass.cast( oos.readObject() );
         }
     }
 }

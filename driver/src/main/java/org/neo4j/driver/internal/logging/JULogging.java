@@ -32,6 +32,8 @@ import org.neo4j.driver.Logging;
  */
 public class JULogging implements Logging, Serializable
 {
+    private static final long serialVersionUID = -1145576859241657833L;
+
     private final Level loggingLevel;
 
     public JULogging( Level loggingLevel )
