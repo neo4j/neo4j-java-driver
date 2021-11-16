@@ -41,7 +41,7 @@ public class SessionConfig implements Serializable
     private final Iterable<Bookmark> bookmarks;
     private final AccessMode defaultAccessMode;
     private final String database;
-    private final Optional<Long> fetchSize;
+    private final Long fetchSize;
     private final String impersonatedUser;
 
     private SessionConfig( Builder builder )
@@ -124,7 +124,7 @@ public class SessionConfig implements Serializable
      */
     public Optional<Long> fetchSize()
     {
-        return fetchSize;
+        return Optional.ofNullable( fetchSize );
     }
 
     /**
@@ -171,7 +171,7 @@ public class SessionConfig implements Serializable
      */
     public static class Builder
     {
-        private Optional<Long> fetchSize = Optional.empty();
+        private Long fetchSize = null;
         private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
@@ -279,7 +279,7 @@ public class SessionConfig implements Serializable
          */
         public Builder withFetchSize( long size )
         {
-            this.fetchSize = Optional.of( assertValidFetchSize( size ) );
+            this.fetchSize = assertValidFetchSize( size );
             return this;
         }
 

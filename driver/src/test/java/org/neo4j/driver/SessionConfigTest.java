@@ -25,14 +25,22 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -167,5 +175,41 @@ class SessionConfigTest
         SessionConfig config2 = builder().withFetchSize( 100 ).build();
 
         assertEquals( config1, config2 );
+    }
+
+    @Test
+    void shouldSerialize() throws Exception
+    {
+        SessionConfig config = SessionConfig.builder().withBookmarks( Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkA", "bookmarkB" ) ) ),
+                Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkC", "bookmarkD" ) ) ) ).withDefaultAccessMode( AccessMode.WRITE ).withFetchSize(
+                54321L ).withDatabase( "testing" ).withImpersonatedUser( "impersonator" ).build();
+
+        // Write the config
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try ( ObjectOutputStream oos = new ObjectOutputStream( bos ) )
+        {
+            oos.writeObject( config );
+        }
+        bos.close();
+
+        // Read it back
+        SessionConfig verify;
+        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.toByteArray() ) ) )
+        {
+            verify = (SessionConfig) oos.readObject();
+        }
+
+        assertNotNull( verify.bookmarks() );
+
+        List<Set<String>> bookmarks = new ArrayList<>();
+        verify.bookmarks().forEach( b -> bookmarks.add( b.values() ) );
+        assertEquals( 2, bookmarks.size() );
+        assertTrue( bookmarks.get( 0 ).containsAll( Arrays.asList( "bookmarkA", "bookmarkB" ) ) );
+        assertTrue( bookmarks.get( 1 ).containsAll( Arrays.asList( "bookmarkC", "bookmarkD" ) ) );
+
+        assertEquals( config.defaultAccessMode(), verify.defaultAccessMode() );
+        assertEquals( config.fetchSize(), verify.fetchSize() );
+        assertEquals( config.database(), verify.database() );
+        assertEquals( config.impersonatedUser(), verify.impersonatedUser() );
     }
 }
