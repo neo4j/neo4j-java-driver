@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -28,8 +29,10 @@ import org.neo4j.driver.internal.util.Iterables;
 
 import static java.util.Objects.requireNonNull;
 
-public final class InternalBookmark implements Bookmark
+public final class InternalBookmark implements Bookmark, Serializable
 {
+    private static final long serialVersionUID = 8196096018245038950L;
+
     private static final InternalBookmark EMPTY = new InternalBookmark( Collections.emptySet() );
 
     private final Set<String> values;
