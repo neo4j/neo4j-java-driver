@@ -27,16 +27,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.net.ServerAddressResolver;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
 import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
 import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
@@ -299,7 +297,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldDefaultToDefaultFetchSize() throws Throwable
+    void shouldDefaultToDefaultFetchSize()
     {
         Config config = Config.defaultConfig();
         assertEquals( DEFAULT_FETCH_SIZE, config.fetchSize() );
@@ -307,30 +305,30 @@ class ConfigTest
 
     @ParameterizedTest
     @ValueSource( longs = {100, 1, 1000, Long.MAX_VALUE, -1} )
-    void shouldChangeFetchSize( long value ) throws Throwable
+    void shouldChangeFetchSize( long value )
     {
         Config config = Config.builder().withFetchSize( value ).build();
-        assertThat( config.fetchSize(), equalTo( value ) );
+        assertEquals( value, config.fetchSize() );
     }
 
     @ParameterizedTest
     @ValueSource( longs = {0, -100, -2} )
-    void shouldErrorWithIllegalFetchSize( long value ) throws Throwable
+    void shouldErrorWithIllegalFetchSize( long value )
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withFetchSize( value ).build() );
     }
 
     @ParameterizedTest
     @ValueSource( ints = {100, 1, 1000, Integer.MAX_VALUE} )
-    void shouldChangeEventLoopThreads( int value ) throws Throwable
+    void shouldChangeEventLoopThreads( int value )
     {
         Config config = Config.builder().withEventLoopThreads( value ).build();
-        assertThat( config.eventLoopThreads(), equalTo( value ) );
+        assertEquals( value, config.eventLoopThreads() );
     }
 
     @ParameterizedTest
     @ValueSource( ints = {0, -100, -2} )
-    void shouldErrorWithIllegalEventLoopThreadsSize( int value ) throws Throwable
+    void shouldErrorWithIllegalEventLoopThreadsSize( int value )
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withEventLoopThreads( value ).build() );
     }
@@ -339,7 +337,7 @@ class ConfigTest
     void shouldChangeUserAgent()
     {
         Config config = Config.builder().withUserAgent( "AwesomeDriver" ).build();
-        assertThat( config.userAgent(), equalTo( "AwesomeDriver" ) );
+        assertEquals( "AwesomeDriver", config.userAgent() );
     }
 
     @Test
