@@ -159,7 +159,10 @@
                                                 <TESTKIT_CHECKOUT_PATH>${project.build.directory}/testkit-rx</TESTKIT_CHECKOUT_PATH>
                                                 <TEST_BACKEND_SERVER>reactive</TEST_BACKEND_SERVER>
                                                 <!-- Excludes 3.5 -->
-                                                <TESTKIT_ARGS>--configs 4.2-cluster,4.0-community,4.1-enterprise ${testkit.args}</TESTKIT_ARGS>
+                                                <TESTKIT_ARGS>--configs 4.0-enterprise-neo4j 4.1-enterprise-neo4j 4.2-community-bolt 4.2-community-neo4j
+                                                    4.2-enterprise-bolt 4.2-enterprise-neo4j 4.2-enterprise-cluster-neo4j 4.3-community-bolt 4.3-community-neo4j
+                                                    4.3-enterprise-bolt 4.3-enterprise-neo4j 4.3-enterprise-cluster-neo4j ${testkit.args}
+                                                </TESTKIT_ARGS>
                                             </env>
                                             <log>
                                                 <prefix xml:space="preserve">${testkit.rx.name.pattern}> </prefix>

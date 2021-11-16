@@ -20,7 +20,7 @@ package neo4j.org.testkit.backend.holder;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.RxBlockingSubscriber;
+import neo4j.org.testkit.backend.RxBufferedSubscriber;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,23 +31,21 @@ import org.neo4j.driver.reactive.RxResult;
 public class RxResultHolder extends AbstractResultHolder<RxSessionHolder,RxTransactionHolder,RxResult>
 {
     @Setter
-    private RxBlockingSubscriber<Record> subscriber;
+    private RxBufferedSubscriber<Record> subscriber;
     @Getter
     private final AtomicLong requestedRecordsCounter = new AtomicLong();
 
     public RxResultHolder( RxSessionHolder sessionHolder, RxResult result )
     {
         super( sessionHolder, result );
-        sessionHolder.setResultHolder( this );
     }
 
     public RxResultHolder( RxTransactionHolder transactionHolder, RxResult result )
     {
         super( transactionHolder, result );
-        transactionHolder.getSessionHolder().setResultHolder( this );
     }
 
-    public Optional<RxBlockingSubscriber<Record>> getSubscriber()
+    public Optional<RxBufferedSubscriber<Record>> getSubscriber()
     {
         return Optional.ofNullable( subscriber );
     }

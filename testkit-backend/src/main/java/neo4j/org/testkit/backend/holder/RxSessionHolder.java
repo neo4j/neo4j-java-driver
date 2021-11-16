@@ -18,25 +18,13 @@
  */
 package neo4j.org.testkit.backend.holder;
 
-import lombok.Setter;
-
-import java.util.Optional;
-
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.reactive.RxSession;
 
 public class RxSessionHolder extends AbstractSessionHolder<RxSession>
 {
-    @Setter
-    private RxResultHolder resultHolder;
-
     public RxSessionHolder( DriverHolder driverHolder, RxSession session, SessionConfig config )
     {
         super( driverHolder, session, config );
-    }
-
-    public Optional<RxResultHolder> getResultHolder()
-    {
-        return Optional.ofNullable( resultHolder );
     }
 }
