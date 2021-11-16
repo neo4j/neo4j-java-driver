@@ -31,12 +31,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -47,7 +44,7 @@ import static org.neo4j.driver.internal.InternalBookmark.parse;
 class SessionConfigTest
 {
     @Test
-    void shouldReturnDefaultValues() throws Throwable
+    void shouldReturnDefaultValues()
     {
         SessionConfig config = defaultConfig();
 
@@ -59,7 +56,7 @@ class SessionConfigTest
 
     @ParameterizedTest
     @EnumSource( AccessMode.class )
-    void shouldChangeAccessMode( AccessMode mode ) throws Throwable
+    void shouldChangeAccessMode( AccessMode mode )
     {
         SessionConfig config = builder().withDefaultAccessMode( mode ).build();
         assertEquals( mode, config.defaultAccessMode() );
@@ -75,7 +72,7 @@ class SessionConfigTest
     }
 
     @Test
-    void shouldNotAllowNullDatabaseName() throws Throwable
+    void shouldNotAllowNullDatabaseName()
     {
         assertThrows( NullPointerException.class, () -> builder().withDatabase( null ) );
     }
@@ -98,14 +95,14 @@ class SessionConfigTest
 
     @ParameterizedTest
     @ValueSource( strings = {""} )
-    void shouldForbiddenEmptyStringDatabaseName( String databaseName ) throws Throwable
+    void shouldForbiddenEmptyStringDatabaseName( String databaseName )
     {
         IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> builder().withDatabase( databaseName ) );
-        assertThat( error.getMessage(), startsWith( "Illegal database name " ) );
+        assertTrue( error.getMessage().startsWith( "Illegal database name " ) );
     }
 
     @Test
-    void shouldAcceptNullBookmarks() throws Throwable
+    void shouldAcceptNullBookmarks()
     {
         SessionConfig config = builder().withBookmarks( (Bookmark[]) null ).build();
         assertNull( config.bookmarks() );
@@ -115,7 +112,7 @@ class SessionConfigTest
     }
 
     @Test
-    void shouldAcceptEmptyBookmarks() throws Throwable
+    void shouldAcceptEmptyBookmarks()
     {
         SessionConfig config = builder().withBookmarks().build();
         assertEquals( emptyList(), config.bookmarks() );
@@ -125,46 +122,46 @@ class SessionConfigTest
     }
 
     @Test
-    void shouldAcceptBookmarks() throws Throwable
+    void shouldAcceptBookmarks()
     {
         Bookmark one = parse( "one" );
         Bookmark two = parse( "two" );
         SessionConfig config = builder().withBookmarks( one, two ).build();
-        assertThat( config.bookmarks(), equalTo( Arrays.asList( one, two ) ) );
+        assertEquals( Arrays.asList( one, two ), config.bookmarks() );
 
         SessionConfig config2 = builder().withBookmarks( Arrays.asList( one, two ) ).build();
-        assertThat( config2.bookmarks(), equalTo( Arrays.asList( one, two ) ) );
+        assertEquals( Arrays.asList( one, two ), config2.bookmarks() );
     }
 
     @Test
-    void shouldAcceptNullInBookmarks() throws Throwable
+    void shouldAcceptNullInBookmarks()
     {
         Bookmark one = parse( "one" );
         Bookmark two = parse( "two" );
         SessionConfig config = builder().withBookmarks( one, two, null ).build();
-        assertThat( config.bookmarks(), equalTo( Arrays.asList( one, two, null ) ) );
+        assertEquals( Arrays.asList( one, two, null ), config.bookmarks() );
 
         SessionConfig config2 = builder().withBookmarks( Arrays.asList( one, two, null ) ).build();
-        assertThat( config2.bookmarks(), equalTo( Arrays.asList( one, two, null ) ) );
+        assertEquals( Arrays.asList( one, two, null ), config2.bookmarks() );
     }
 
     @ParameterizedTest
     @ValueSource( longs = {100, 1, 1000, Long.MAX_VALUE, -1} )
-    void shouldChangeFetchSize( long value ) throws Throwable
+    void shouldChangeFetchSize( long value )
     {
         SessionConfig config = builder().withFetchSize( value ).build();
-        assertThat( config.fetchSize(), equalTo( Optional.of( value ) ) );
+        assertEquals( Optional.of( value ), config.fetchSize());
     }
 
     @ParameterizedTest
     @ValueSource( longs = {0, -100, -2} )
-    void shouldErrorWithIllegalFetchSize( long value ) throws Throwable
+    void shouldErrorWithIllegalFetchSize( long value )
     {
         assertThrows( IllegalArgumentException.class, () -> builder().withFetchSize( value ).build() );
     }
 
     @Test
-    void shouldTwoConfigBeEqual() throws Throwable
+    void shouldTwoConfigBeEqual()
     {
         SessionConfig config1 = builder().withFetchSize( 100 ).build();
         SessionConfig config2 = builder().withFetchSize( 100 ).build();
