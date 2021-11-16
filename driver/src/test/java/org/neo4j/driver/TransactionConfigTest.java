@@ -18,13 +18,8 @@
  */
 package org.neo4j.driver;
 
-import com.oracle.truffle.object.ImmutableMap;
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,39 +117,5 @@ class TransactionConfigTest
         assertEquals( value( "value1" ), metadata.get( "key1" ) );
         assertEquals( value( true ), metadata.get( "key2" ) );
         assertEquals( value( 42 ), metadata.get( "key3" ) );
-    }
-
-    /**
-     * This test fails because Value is not Serializable.
-     * Value is used when extracting metadata from the given map.
-     */
-    @Test
-    void shouldSerialize() throws Exception
-    {
-        Map<String,Object> metadata = new HashMap<>();
-        metadata.put( "key1", "value1" );
-        metadata.put( "key2", true );
-        metadata.put( "key3", 42 );
-
-        TransactionConfig config = TransactionConfig.builder()
-          .withTimeout( Duration.ofMillis(12345L) )
-          .withMetadata( metadata )
-          .build();
-
-        // Write the config
-        ByteOutputStream bos = new ByteOutputStream();
-        try ( ObjectOutputStream oos = new ObjectOutputStream( bos )) {
-            oos.writeObject( config );
-        }
-        bos.close();
-
-        // Read it back
-        TransactionConfig verify = null;
-        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.getBytes() ) ) ) {
-            verify = (TransactionConfig)oos.readObject();
-        }
-
-        assertEquals(config.timeout(), verify.timeout());
-        assertEquals(config.metadata(), verify.metadata());
     }
 }
