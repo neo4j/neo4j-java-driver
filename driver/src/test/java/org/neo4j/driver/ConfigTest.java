@@ -84,7 +84,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
+    void shouldSupportLivenessCheckTimeoutSetting()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).build();
 
@@ -92,7 +92,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowZeroConnectionLivenessCheckTimeout()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS ).build();
 
@@ -100,7 +100,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowNegativeConnectionLivenessCheckTimeout()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS ).build();
 
@@ -114,7 +114,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
+    void shouldSupportMaxConnectionLifetimeSetting()
     {
         Config config = Config.builder().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).build();
 
@@ -122,7 +122,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowZeroConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowZeroConnectionMaxConnectionLifetime()
     {
         Config config = Config.builder().withMaxConnectionLifetime( 0, TimeUnit.SECONDS ).build();
 
@@ -130,7 +130,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowNegativeConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowNegativeConnectionMaxConnectionLifetime()
     {
         Config config = Config.builder().withMaxConnectionLifetime( -42, TimeUnit.SECONDS ).build();
 

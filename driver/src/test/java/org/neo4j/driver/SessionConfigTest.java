@@ -25,10 +25,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,6 +32,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -184,20 +182,7 @@ class SessionConfigTest
                 Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkC", "bookmarkD" ) ) ) ).withDefaultAccessMode( AccessMode.WRITE ).withFetchSize(
                 54321L ).withDatabase( "testing" ).withImpersonatedUser( "impersonator" ).build();
 
-        // Write the config
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try ( ObjectOutputStream oos = new ObjectOutputStream( bos ) )
-        {
-            oos.writeObject( config );
-        }
-        bos.close();
-
-        // Read it back
-        SessionConfig verify;
-        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.toByteArray() ) ) )
-        {
-            verify = (SessionConfig) oos.readObject();
-        }
+        SessionConfig verify = TestUtil.serializeAndReadBack( config, SessionConfig.class );
 
         assertNotNull( verify.bookmarks() );
 

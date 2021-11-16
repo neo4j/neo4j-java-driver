@@ -20,10 +20,6 @@ package org.neo4j.driver;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +28,7 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -150,18 +147,7 @@ class TransactionConfigTest
                 .withMetadata( metadata )
                 .build();
 
-        // Write the config
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try ( ObjectOutputStream oos = new ObjectOutputStream( bos )) {
-            oos.writeObject( config );
-        }
-        bos.close();
-
-        // Read it back
-        TransactionConfig verify;
-        try ( ObjectInputStream oos = new ObjectInputStream( new ByteArrayInputStream( bos.toByteArray() ) ) ) {
-            verify = (TransactionConfig)oos.readObject();
-        }
+        TransactionConfig verify = TestUtil.serializeAndReadBack( config, TransactionConfig.class );
 
         assertEquals(config.timeout(), verify.timeout());
         assertEquals(config.metadata(), verify.metadata());
