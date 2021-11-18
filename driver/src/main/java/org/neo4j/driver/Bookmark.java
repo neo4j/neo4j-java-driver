@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver;
 
-import java.io.Serializable;
 import java.util.Set;
 
 import org.neo4j.driver.internal.InternalBookmark;

@@ -178,9 +178,15 @@ class SessionConfigTest
     @Test
     void shouldSerialize() throws Exception
     {
-        SessionConfig config = SessionConfig.builder().withBookmarks( Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkA", "bookmarkB" ) ) ),
-                Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkC", "bookmarkD" ) ) ) ).withDefaultAccessMode( AccessMode.WRITE ).withFetchSize(
-                54321L ).withDatabase( "testing" ).withImpersonatedUser( "impersonator" ).build();
+        SessionConfig config = SessionConfig.builder()
+                .withBookmarks(
+                        Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkA", "bookmarkB" ) ) ),
+                        Bookmark.from( new HashSet<>( Arrays.asList( "bookmarkC", "bookmarkD" ) ) ) )
+                .withDefaultAccessMode( AccessMode.WRITE )
+                .withFetchSize( 54321L )
+                .withDatabase( "testing" )
+                .withImpersonatedUser( "impersonator" )
+                .build();
 
         SessionConfig verify = TestUtil.serializeAndReadBack( config, SessionConfig.class );
 

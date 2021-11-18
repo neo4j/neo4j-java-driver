@@ -369,9 +369,22 @@ class ConfigTest
         @Test
         void shouldSerialize() throws Exception
         {
-            Config config = Config.builder().withMaxConnectionPoolSize( 123 ).withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS ).withConnectionAcquisitionTimeout(
-                    5432L, TimeUnit.MILLISECONDS ).withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS ).withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS ).withFetchSize( 9876L ).withEventLoopThreads(
-                    4 ).withoutEncryption().withTrustStrategy( Config.TrustStrategy.trustAllCertificates() ).withUserAgent( "user-agent" ).withDriverMetrics().withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS ).withLeakedSessionsLogging().build();
+            Config config = Config.builder()
+                    .withMaxConnectionPoolSize( 123 )
+                    .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
+                    .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
+                    .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
+                    .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
+                    .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
+                    .withFetchSize( 9876L )
+                    .withEventLoopThreads( 4 )
+                    .withoutEncryption()
+                    .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" )) )
+                    .withUserAgent( "user-agent" )
+                    .withDriverMetrics()
+                    .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
+                    .withLeakedSessionsLogging()
+                    .build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );
 
@@ -388,6 +401,7 @@ class ConfigTest
             assertEquals( config.eventLoopThreads(), verify.eventLoopThreads() );
             assertEquals( config.encrypted(), verify.encrypted() );
             assertEquals( config.trustStrategy().strategy(), verify.trustStrategy().strategy() );
+            assertEquals( config.trustStrategy().certFile(), verify.trustStrategy().certFile() );
             assertEquals( config.trustStrategy().isHostnameVerificationEnabled(), verify.trustStrategy().isHostnameVerificationEnabled() );
             assertEquals( config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy() );
             assertEquals( config.userAgent(), verify.userAgent() );

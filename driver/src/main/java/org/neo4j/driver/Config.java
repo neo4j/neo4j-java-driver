@@ -785,6 +785,8 @@ public class Config implements Serializable
      */
     public static class TrustStrategy implements Serializable
     {
+        private static final long serialVersionUID = -1631888096243987740L;
+
         /**
          * The trust strategy that the driver supports
          */

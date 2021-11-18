@@ -35,7 +35,6 @@ import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
 
 class TransactionConfigTest
@@ -120,7 +119,7 @@ class TransactionConfigTest
     }
 
     @Test
-    void cannotMessWithAMapAfterPassingItToTheBuilder() {
+    void shouldNotModifyMetadataAfterItIsSuppliedToBuilder() {
 
         Map<String,Object> metadata = new HashMap<>();
         metadata.put( "key1", "value1" );
@@ -131,7 +130,7 @@ class TransactionConfigTest
         metadata.put( "key4", "what?" );
 
         TransactionConfig config = builder.build();
-        assertTrue( config.metadata().size() == 3 );
+        assertEquals( 3, config.metadata().size() );
     }
 
     @Test
