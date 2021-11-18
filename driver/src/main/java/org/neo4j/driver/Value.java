@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,11 +27,12 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.value.LossyCoercion;
 import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.MapAccessor;
@@ -42,7 +44,6 @@ import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
-import java.util.function.Function;
 import org.neo4j.driver.util.Immutable;
 
 /**
@@ -429,6 +430,12 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
     ZonedDateTime asZonedDateTime();
 
     /**
+     * @return the value as a {@link Instant}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Instant asInstant();
+
+    /**
      * @return the value as a {@link IsoDuration}, if possible.
      * @throws Uncoercible if value types are incompatible.
      */
@@ -481,6 +488,13 @@ public interface Value extends MapAccessor, MapAccessorWithDefaultValue
      * @throws Uncoercible if value types are incompatible.
      */
     ZonedDateTime asZonedDateTime( ZonedDateTime defaultValue );
+
+    /**
+     * @param defaultValue default to this value if the value is a {@link NullValue}
+     * @return the value as a {@link Instant}, if possible.
+     * @throws Uncoercible if value types are incompatible.
+     */
+    Instant asInstant( Instant defaultValue );
 
     /**
      * @param defaultValue default to this value if the value is a {@link NullValue}

@@ -31,4 +31,16 @@
         <method>org.neo4j.driver.Logger getLog(java.lang.Class)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Value</className>
+        <differenceType>7012</differenceType>
+        <method>java.time.Instant asInstant()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Value</className>
+        <differenceType>7012</differenceType>
+        <method>java.time.Instant asInstant(java.time.Instant)</method>
+    </difference>
+
 </differences>

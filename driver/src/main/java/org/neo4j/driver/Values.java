@@ -19,12 +19,14 @@
 package org.neo4j.driver;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.Period;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,8 +36,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.AsValue;
 import org.neo4j.driver.internal.InternalIsoDuration;
 import org.neo4j.driver.internal.InternalPoint2D;
@@ -55,7 +59,6 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.MapAccessor;
@@ -64,18 +67,15 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.TypeSystem;
-import java.util.function.Function;
 
 import static org.neo4j.driver.internal.util.Extract.assertParameter;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 
 /**
- * Utility for wrapping regular Java types and exposing them as {@link Value}
- * objects, and vice versa.
+ * Utility for wrapping regular Java types and exposing them as {@link Value} objects, and vice versa.
  * <p>
- * The long set of {@code ofXXX} methods in this class are meant to be used as
- * arguments for methods like {@link Value#asList(Function)}, {@link Value#asMap(Function)},
- * {@link Record#asMap(Function)} and so on.
+ * The long set of {@code ofXXX} methods in this class are meant to be used as arguments for methods like {@link Value#asList(Function)}, {@link
+ * Value#asMap(Function)}, {@link Record#asMap(Function)} and so on.
  *
  * @since 1.0
  */
@@ -92,6 +92,7 @@ public abstract class Values
     @SuppressWarnings( "unchecked" )
     public static Value value( Object value )
     {
+        // @formatter:off
         if ( value == null ) { return NullValue.NULL; }
 
         if ( value instanceof AsValue ) { return ((AsValue) value).asValue(); }
@@ -110,6 +111,7 @@ public abstract class Values
         if ( value instanceof LocalDateTime ) { return value( (LocalDateTime) value ); }
         if ( value instanceof OffsetDateTime ) { return value( (OffsetDateTime) value ); }
         if ( value instanceof ZonedDateTime ) { return value( (ZonedDateTime) value ); }
+        if ( value instanceof Instant ) { return value( (Instant) value ); }
         if ( value instanceof IsoDuration ) { return value( (IsoDuration) value ); }
         if ( value instanceof Period ) { return value( (Period) value ); }
         if ( value instanceof Duration ) { return value( (Duration) value ); }
@@ -132,6 +134,7 @@ public abstract class Values
         if ( value instanceof float[] ) { return value( (float[]) value ); }
         if ( value instanceof Value[] ) { return value( (Value[]) value ); }
         if ( value instanceof Object[] ) { return value( Arrays.asList( (Object[]) value ) ); }
+        // @formatter:on
 
         throw new ClientException( "Unable to convert " + value.getClass().getName() + " to Neo4j Value." );
     }
@@ -339,6 +342,11 @@ public abstract class Values
     public static Value value( ZonedDateTime zonedDateTime )
     {
         return new DateTimeValue( zonedDateTime );
+    }
+
+    public static Value value( Instant instant )
+    {
+        return new DateTimeValue( ZonedDateTime.ofInstant( instant, ZoneOffset.UTC ) );
     }
 
     public static Value value( Period period )

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 
@@ -41,6 +42,12 @@ public class DateTimeValue extends ObjectValueAdapter<ZonedDateTime>
     public ZonedDateTime asZonedDateTime()
     {
         return asObject();
+    }
+
+    @Override
+    public Instant asInstant()
+    {
+        return asZonedDateTime().toInstant();
     }
 
     @Override

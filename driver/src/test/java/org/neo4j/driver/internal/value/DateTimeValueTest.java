@@ -20,12 +20,13 @@ package org.neo4j.driver.internal.value;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
-import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.exceptions.value.Uncoercible;
+import org.neo4j.driver.internal.types.InternalTypeSystem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -54,6 +55,14 @@ class DateTimeValueTest
         ZonedDateTime dateTime = ZonedDateTime.of( 1822, 9, 24, 9, 23, 57, 123, ZoneOffset.ofHoursMinutes( 12, 15 ) );
         DateTimeValue dateTimeValue = new DateTimeValue( dateTime );
         assertEquals( dateTime, dateTimeValue.asZonedDateTime() );
+    }
+
+    @Test
+    void shouldSupportAsInstant()
+    {
+        Instant instant = Instant.now();
+        DateTimeValue dateTimeValue = new DateTimeValue( ZonedDateTime.ofInstant( instant, ZoneOffset.UTC ) );
+        assertEquals( instant, dateTimeValue.asInstant() );
     }
 
     @Test

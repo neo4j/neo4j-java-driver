@@ -22,6 +22,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -39,6 +40,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.value.DateTimeValue;
 import org.neo4j.driver.internal.value.DateValue;
 import org.neo4j.driver.internal.value.DurationValue;
@@ -50,9 +54,6 @@ import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.TimeValue;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
@@ -67,9 +68,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
-import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
-import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 import static org.neo4j.driver.Values.isoDuration;
 import static org.neo4j.driver.Values.ofDouble;
 import static org.neo4j.driver.Values.ofFloat;
@@ -84,6 +82,9 @@ import static org.neo4j.driver.Values.ofToString;
 import static org.neo4j.driver.Values.point;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyNodeValue;
+import static org.neo4j.driver.internal.util.ValueFactory.emptyRelationshipValue;
+import static org.neo4j.driver.internal.util.ValueFactory.filledPathValue;
 
 class ValuesTest
 {
@@ -405,6 +406,7 @@ class ValuesTest
         Value value = value( localDateTime );
 
         assertThat( value, instanceOf( LocalDateTimeValue.class ) );
+        assertEquals( localDateTime, value.asLocalDateTime() );
         assertEquals( localDateTime, value.asObject() );
     }
 
@@ -438,6 +440,16 @@ class ValuesTest
 
         assertThat( value, instanceOf( DateTimeValue.class ) );
         assertEquals( zonedDateTime, value.asObject() );
+    }
+
+    @Test
+    void shouldCreateDateTimeValueFromInstant()
+    {
+        Instant instant = Instant.now();
+        Value value = value( instant );
+
+        assertThat( value, instanceOf( DateTimeValue.class ) );
+        assertEquals( instant, value.asInstant() );
     }
 
     @Test

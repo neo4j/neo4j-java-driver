@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.value;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,14 +27,15 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
-import org.neo4j.driver.internal.types.TypeConstructor;
-import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.value.NotMultiValued;
 import org.neo4j.driver.exceptions.value.Uncoercible;
 import org.neo4j.driver.exceptions.value.Unsizable;
+import org.neo4j.driver.internal.types.InternalMapAccessorWithDefaultValue;
+import org.neo4j.driver.internal.types.TypeConstructor;
+import org.neo4j.driver.internal.types.TypeRepresentation;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.IsoDuration;
 import org.neo4j.driver.types.Node;
@@ -41,7 +43,6 @@ import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.driver.types.Type;
-import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.driver.Values.ofObject;
@@ -264,6 +265,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     }
 
     @Override
+    public Instant asInstant( Instant defaultValue )
+    {
+        return computeOrDefault( Value::asInstant, defaultValue );
+    }
+
+    @Override
     public IsoDuration asIsoDuration( IsoDuration defaultValue )
     {
         return computeOrDefault( Value::asIsoDuration, defaultValue );
@@ -345,6 +352,12 @@ public abstract class ValueAdapter extends InternalMapAccessorWithDefaultValue i
     public ZonedDateTime asZonedDateTime()
     {
         throw new Uncoercible( type().name(), "ZonedDateTime" );
+    }
+
+    @Override
+    public Instant asInstant()
+    {
+        throw new Uncoercible( type().name(), "Instant" );
     }
 
     @Override
