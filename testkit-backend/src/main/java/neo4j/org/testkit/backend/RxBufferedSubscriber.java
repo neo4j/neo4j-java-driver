@@ -161,30 +161,32 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
     private static class OneSignalSubscriber<T> extends BaseSubscriber<T>
     {
         private final Lock lock = new ReentrantLock();
+        private final CompletableFuture<Void> completionFuture = new CompletableFuture<>();
         private MonoSink<T> sink;
         private boolean emitted;
-        private boolean done;
-        private Throwable throwable;
 
         public void requestNext( MonoSink<T> sink )
         {
-            boolean done = executeWithLock( lock, () ->
+            executeWithLock( lock, () ->
             {
                 this.sink = sink;
-                emitted = false;
-                return this.done;
+                return emitted = false;
             } );
 
-            if ( done )
+            if ( completionFuture.isDone() )
             {
-                if ( throwable != null )
-                {
-                    this.sink.error( throwable );
-                }
-                else
-                {
-                    this.sink.success();
-                }
+                completionFuture.whenComplete(
+                        ( ignored, throwable ) ->
+                        {
+                            if ( throwable != null )
+                            {
+                                this.sink.error( throwable );
+                            }
+                            else
+                            {
+                                this.sink.success();
+                            }
+                        } );
             }
             else
             {
@@ -214,7 +216,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
         {
             MonoSink<T> sink = executeWithLock( lock, () ->
             {
-                done = true;
+                completionFuture.complete( null );
                 return !emitted ? this.sink : null;
             } );
             if ( sink != null )
@@ -228,8 +230,7 @@ public class RxBufferedSubscriber<T> extends BaseSubscriber<T>
         {
             MonoSink<T> sink = executeWithLock( lock, () ->
             {
-                done = true;
-                this.throwable = throwable;
+                completionFuture.completeExceptionally( throwable );
                 return !emitted ? this.sink : null;
             } );
             if ( sink != null )
