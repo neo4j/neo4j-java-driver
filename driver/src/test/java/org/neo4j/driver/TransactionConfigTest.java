@@ -24,12 +24,11 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -117,5 +116,39 @@ class TransactionConfigTest
         assertEquals( value( "value1" ), metadata.get( "key1" ) );
         assertEquals( value( true ), metadata.get( "key2" ) );
         assertEquals( value( 42 ), metadata.get( "key3" ) );
+    }
+
+    @Test
+    void shouldNotModifyMetadataAfterItIsSuppliedToBuilder() {
+
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "key1", "value1" );
+        metadata.put( "key2", true );
+        metadata.put( "key3", 42 );
+
+        TransactionConfig.Builder builder = TransactionConfig.builder().withMetadata( metadata );
+        metadata.put( "key4", "what?" );
+
+        TransactionConfig config = builder.build();
+        assertEquals( 3, config.metadata().size() );
+    }
+
+    @Test
+    void shouldSerialize() throws Exception
+    {
+        Map<String,Object> metadata = new HashMap<>();
+        metadata.put( "key1", "value1" );
+        metadata.put( "key2", true );
+        metadata.put( "key3", 42 );
+
+        TransactionConfig config = TransactionConfig.builder()
+                .withTimeout( Duration.ofMillis(12345L) )
+                .withMetadata( metadata )
+                .build();
+
+        TransactionConfig verify = TestUtil.serializeAndReadBack( config, TransactionConfig.class );
+
+        assertEquals(config.timeout(), verify.timeout());
+        assertEquals(config.metadata(), verify.metadata());
     }
 }

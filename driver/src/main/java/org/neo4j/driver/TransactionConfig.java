@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver;
 
+import java.io.Serializable;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -61,17 +63,22 @@ import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
  *
  * @see Session
  */
-public class TransactionConfig
+public class TransactionConfig implements Serializable
 {
+    private static final long serialVersionUID = -7954949878657177280L;
+
     private static final TransactionConfig EMPTY = builder().build();
 
     private final Duration timeout;
-    private final Map<String,Value> metadata;
+    private final Map<String,Object> metadata;
+
+    // Values are not serializable, hence, we keep a transient volatile map of them around
+    private transient volatile Map<String, Value> convertedMetadata;
 
     private TransactionConfig( Builder builder )
     {
         this.timeout = builder.timeout;
-        this.metadata = unmodifiableMap( builder.metadata );
+        this.metadata = builder.metadata;
     }
 
     /**
@@ -111,7 +118,20 @@ public class TransactionConfig
      */
     public Map<String,Value> metadata()
     {
-        return metadata;
+        Map<String,Value> result = this.convertedMetadata;
+        if ( result == null )
+        {
+            synchronized ( this )
+            {
+                result = this.convertedMetadata;
+                if ( result == null )
+                {
+                    this.convertedMetadata = unmodifiableMap( Extract.mapOfValues( this.metadata ) );
+                    result = this.convertedMetadata;
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -161,7 +181,7 @@ public class TransactionConfig
     public static class Builder
     {
         private Duration timeout;
-        private Map<String,Value> metadata = emptyMap();
+        private Map<String,Object> metadata = emptyMap();
 
         private Builder()
         {
@@ -202,7 +222,8 @@ public class TransactionConfig
         public Builder withMetadata( Map<String,Object> metadata )
         {
             requireNonNull( metadata, "Transaction metadata should not be null" );
-            this.metadata = Extract.mapOfValues( metadata );
+            metadata.values().forEach( Extract::assertParameter ); // Just assert valid parameters but don't create a value map yet
+            this.metadata = new HashMap<>( metadata ); // Create a defensive copy
             return this;
         }
 

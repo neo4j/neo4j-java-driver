@@ -18,25 +18,38 @@
  */
 package org.neo4j.driver;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.platform.commons.support.HierarchyTraversalMode;
+import org.junit.platform.commons.support.ReflectionSupport;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
+import org.neo4j.driver.internal.logging.ConsoleLogging;
+import org.neo4j.driver.internal.logging.DevNullLogging;
+import org.neo4j.driver.internal.logging.JULogging;
+import org.neo4j.driver.internal.logging.Slf4jLogging;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.util.TestUtil;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
 import static org.neo4j.driver.internal.RevocationStrategy.NO_CHECKS;
+import static org.neo4j.driver.internal.RevocationStrategy.STRICT;
 import static org.neo4j.driver.internal.RevocationStrategy.VERIFY_IF_PRESENT;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.DEFAULT_FETCH_SIZE;
 
@@ -71,7 +84,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldSupportLivenessCheckTimeoutSetting() throws Throwable
+    void shouldSupportLivenessCheckTimeoutSetting()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( 42, TimeUnit.SECONDS ).build();
 
@@ -79,7 +92,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowZeroConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowZeroConnectionLivenessCheckTimeout()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( 0, TimeUnit.SECONDS ).build();
 
@@ -87,7 +100,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowNegativeConnectionLivenessCheckTimeout() throws Throwable
+    void shouldAllowNegativeConnectionLivenessCheckTimeout()
     {
         Config config = Config.builder().withConnectionLivenessCheckTimeout( -42, TimeUnit.SECONDS ).build();
 
@@ -101,7 +114,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldSupportMaxConnectionLifetimeSetting() throws Throwable
+    void shouldSupportMaxConnectionLifetimeSetting()
     {
         Config config = Config.builder().withMaxConnectionLifetime( 42, TimeUnit.SECONDS ).build();
 
@@ -109,7 +122,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowZeroConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowZeroConnectionMaxConnectionLifetime()
     {
         Config config = Config.builder().withMaxConnectionLifetime( 0, TimeUnit.SECONDS ).build();
 
@@ -117,7 +130,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldAllowNegativeConnectionMaxConnectionLifetime() throws Throwable
+    void shouldAllowNegativeConnectionMaxConnectionLifetime()
     {
         Config config = Config.builder().withMaxConnectionLifetime( -42, TimeUnit.SECONDS ).build();
 
@@ -299,7 +312,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldDefaultToDefaultFetchSize() throws Throwable
+    void shouldDefaultToDefaultFetchSize()
     {
         Config config = Config.defaultConfig();
         assertEquals( DEFAULT_FETCH_SIZE, config.fetchSize() );
@@ -307,30 +320,30 @@ class ConfigTest
 
     @ParameterizedTest
     @ValueSource( longs = {100, 1, 1000, Long.MAX_VALUE, -1} )
-    void shouldChangeFetchSize( long value ) throws Throwable
+    void shouldChangeFetchSize( long value )
     {
         Config config = Config.builder().withFetchSize( value ).build();
-        assertThat( config.fetchSize(), equalTo( value ) );
+        assertEquals( value, config.fetchSize() );
     }
 
     @ParameterizedTest
     @ValueSource( longs = {0, -100, -2} )
-    void shouldErrorWithIllegalFetchSize( long value ) throws Throwable
+    void shouldErrorWithIllegalFetchSize( long value )
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withFetchSize( value ).build() );
     }
 
     @ParameterizedTest
     @ValueSource( ints = {100, 1, 1000, Integer.MAX_VALUE} )
-    void shouldChangeEventLoopThreads( int value ) throws Throwable
+    void shouldChangeEventLoopThreads( int value )
     {
         Config config = Config.builder().withEventLoopThreads( value ).build();
-        assertThat( config.eventLoopThreads(), equalTo( value ) );
+        assertEquals( value, config.eventLoopThreads() );
     }
 
     @ParameterizedTest
     @ValueSource( ints = {0, -100, -2} )
-    void shouldErrorWithIllegalEventLoopThreadsSize( int value ) throws Throwable
+    void shouldErrorWithIllegalEventLoopThreadsSize( int value )
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withEventLoopThreads( value ).build() );
     }
@@ -339,7 +352,7 @@ class ConfigTest
     void shouldChangeUserAgent()
     {
         Config config = Config.builder().withUserAgent( "AwesomeDriver" ).build();
-        assertThat( config.userAgent(), equalTo( "AwesomeDriver" ) );
+        assertEquals( "AwesomeDriver", config.userAgent() );
     }
 
     @Test
@@ -347,5 +360,88 @@ class ConfigTest
     {
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( null ).build() );
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( "" ).build() );
+    }
+
+    @Nested
+    class SerializationTest
+    {
+
+        @Test
+        void shouldSerialize() throws Exception
+        {
+            Config config = Config.builder()
+                    .withMaxConnectionPoolSize( 123 )
+                    .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
+                    .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
+                    .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
+                    .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
+                    .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
+                    .withFetchSize( 9876L )
+                    .withEventLoopThreads( 4 )
+                    .withoutEncryption()
+                    .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" )) )
+                    .withUserAgent( "user-agent" )
+                    .withDriverMetrics()
+                    .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
+                    .withLeakedSessionsLogging()
+                    .build();
+
+            Config verify = TestUtil.serializeAndReadBack( config, Config.class );
+
+
+            assertEquals( config.maxConnectionPoolSize(), verify.maxConnectionPoolSize() );
+            assertEquals( config.connectionTimeoutMillis(), verify.connectionTimeoutMillis() );
+            assertEquals( config.connectionAcquisitionTimeoutMillis(), verify.connectionAcquisitionTimeoutMillis() );
+            assertEquals( config.idleTimeBeforeConnectionTest(), verify.idleTimeBeforeConnectionTest() );
+            assertEquals( config.maxConnectionLifetimeMillis(), verify.maxConnectionLifetimeMillis() );
+            assertNotNull( verify.retrySettings() );
+            assertSame( DevNullLogging.DEV_NULL_LOGGING, verify.logging() );
+            assertEquals( config.retrySettings().maxRetryTimeMs(), verify.retrySettings().maxRetryTimeMs() );
+            assertEquals( config.fetchSize(), verify.fetchSize() );
+            assertEquals( config.eventLoopThreads(), verify.eventLoopThreads() );
+            assertEquals( config.encrypted(), verify.encrypted() );
+            assertEquals( config.trustStrategy().strategy(), verify.trustStrategy().strategy() );
+            assertEquals( config.trustStrategy().certFile(), verify.trustStrategy().certFile() );
+            assertEquals( config.trustStrategy().isHostnameVerificationEnabled(), verify.trustStrategy().isHostnameVerificationEnabled() );
+            assertEquals( config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy() );
+            assertEquals( config.userAgent(), verify.userAgent() );
+            assertEquals( config.isMetricsEnabled(), verify.isMetricsEnabled() );
+            assertEquals( config.routingSettings().routingTablePurgeDelayMs(), verify.routingSettings().routingTablePurgeDelayMs() );
+            assertEquals( config.logLeakedSessions(), verify.logLeakedSessions() );
+        }
+
+        @Test
+        void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException
+        {
+
+            Config config = Config.builder().withLogging( Logging.javaUtilLogging( Level.ALL ) ).build();
+
+            Config verify = TestUtil.serializeAndReadBack( config, Config.class );
+            Logging logging = verify.logging();
+            assertInstanceOf( JULogging.class, logging );
+
+            List<Field> loggingLevelFields =
+                    ReflectionSupport.findFields( JULogging.class, f -> "loggingLevel".equals( f.getName() ), HierarchyTraversalMode.TOP_DOWN );
+            assertFalse( loggingLevelFields.isEmpty() );
+            loggingLevelFields.forEach( field ->
+            {
+                try
+                {
+                    field.setAccessible( true );
+                    assertEquals( Level.ALL, field.get( logging ) );
+                }
+                catch ( IllegalAccessException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            } );
+        }
+
+        @ParameterizedTest
+        @ValueSource( classes = {DevNullLogging.class, JULogging.class, ConsoleLogging.class, Slf4jLogging.class} )
+        void officialLoggingProvidersShouldBeSerializable( Class<? extends Logging> loggingClass )
+        {
+            assertTrue( Serializable.class.isAssignableFrom( loggingClass ) );
+        }
     }
 }

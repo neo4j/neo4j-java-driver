@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.logging;
 
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
+
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 
@@ -29,8 +31,10 @@ import org.neo4j.driver.Logging;
  *
  * @see Logging#slf4j()
  */
-public class Slf4jLogging implements Logging
+public class Slf4jLogging implements Logging, Serializable
 {
+    private static final long serialVersionUID = 4120390028025944991L;
+
     @Override
     public Logger getLog( String name )
     {

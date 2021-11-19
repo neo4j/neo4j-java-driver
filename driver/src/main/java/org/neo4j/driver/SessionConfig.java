@@ -20,6 +20,7 @@ package org.neo4j.driver;
 
 import org.reactivestreams.Subscription;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,14 +34,16 @@ import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.assertValid
 /**
  * The session configurations used to configure a session.
  */
-public class SessionConfig
+public class SessionConfig implements Serializable
 {
+    private static final long serialVersionUID = 5773462156979050657L;
+
     private static final SessionConfig EMPTY = builder().build();
 
     private final Iterable<Bookmark> bookmarks;
     private final AccessMode defaultAccessMode;
     private final String database;
-    private final Optional<Long> fetchSize;
+    private final Long fetchSize;
     private final String impersonatedUser;
 
     private SessionConfig( Builder builder )
@@ -123,7 +126,7 @@ public class SessionConfig
      */
     public Optional<Long> fetchSize()
     {
-        return fetchSize;
+        return Optional.ofNullable( fetchSize );
     }
 
     /**
@@ -170,7 +173,7 @@ public class SessionConfig
      */
     public static class Builder
     {
-        private Optional<Long> fetchSize = Optional.empty();
+        private Long fetchSize = null;
         private Iterable<Bookmark> bookmarks = null;
         private AccessMode defaultAccessMode = AccessMode.WRITE;
         private String database = null;
@@ -278,7 +281,7 @@ public class SessionConfig
          */
         public Builder withFetchSize( long size )
         {
-            this.fetchSize = Optional.of( assertValidFetchSize( size ) );
+            this.fetchSize = assertValidFetchSize( size );
             return this;
         }
 
