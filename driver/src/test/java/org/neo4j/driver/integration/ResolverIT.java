@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Logging.none;
 
-class RoutingDriverBoltKitIT
+class ResolverIT
 {
     @Test
     void shouldFailInitialDiscoveryWhenConfiguredResolverThrows()
