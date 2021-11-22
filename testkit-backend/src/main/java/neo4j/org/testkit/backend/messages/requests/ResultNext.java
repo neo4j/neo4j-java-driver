@@ -20,14 +20,13 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.RxBlockingSubscriber;
+import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
@@ -68,66 +67,22 @@ public class ResultNext implements TestkitRequest
         return testkitState.getRxResultHolder( data.getResultId() )
                            .flatMap( resultHolder ->
                                      {
-                                         CompletionStage<TestkitResponse> responseStage = getSubscriberStage( resultHolder )
-                                                 .thenCompose( subscriber -> requestRecordsWhenPreviousAreConsumed( subscriber, resultHolder ) )
-                                                 .thenCompose( subscriber -> consumeNextRecordOrCompletionSignal( subscriber, resultHolder ) )
-                                                 .thenApply( this::createResponseNullSafe );
-                                         return Mono.fromCompletionStage( responseStage );
-                                     } );
-    }
-
-    private CompletionStage<RxBlockingSubscriber<Record>> getSubscriberStage( RxResultHolder resultHolder )
-    {
-        return resultHolder.getSubscriber()
-                           .<CompletionStage<RxBlockingSubscriber<Record>>>map( CompletableFuture::completedFuture )
-                           .orElseGet( () ->
-                                       {
-                                           RxBlockingSubscriber<Record> subscriber = new RxBlockingSubscriber<>();
-                                           CompletionStage<RxBlockingSubscriber<Record>> subscriberStage =
-                                                   subscriber.getSubscriptionStage()
-                                                             .thenApply( subscription ->
+                                         RxBufferedSubscriber<Record> subscriber =
+                                                 resultHolder.getSubscriber()
+                                                             .orElseGet( () ->
                                                                          {
-                                                                             resultHolder.setSubscriber( subscriber );
-                                                                             return subscriber;
+                                                                             RxBufferedSubscriber<Record> subscriberInstance =
+                                                                                     new RxBufferedSubscriber<>(
+                                                                                             getFetchSize( resultHolder ) );
+                                                                             resultHolder.setSubscriber( subscriberInstance );
+                                                                             resultHolder.getResult().records()
+                                                                                         .subscribe( subscriberInstance );
+                                                                             return subscriberInstance;
                                                                          } );
-                                           resultHolder.getResult().records().subscribe( subscriber );
-                                           return subscriberStage;
-                                       } );
-    }
-
-    private CompletionStage<RxBlockingSubscriber<Record>> requestRecordsWhenPreviousAreConsumed(
-            RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder
-    )
-    {
-        return resultHolder.getRequestedRecordsCounter().get() > 0
-               ? CompletableFuture.completedFuture( subscriber )
-               : subscriber.getSubscriptionStage()
-                           .thenApply( subscription ->
-                                       {
-                                           long fetchSize = getFetchSize( resultHolder );
-                                           subscription.request( fetchSize );
-                                           resultHolder.getRequestedRecordsCounter().addAndGet( fetchSize );
-                                           return subscriber;
-                                       } );
-    }
-
-    private CompletionStage<Record> consumeNextRecord( RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder )
-    {
-        CompletableFuture<Record> recordConsumer = new CompletableFuture<>();
-        subscriber.setNextSignalConsumer( recordConsumer );
-        return recordConsumer.thenApply( record ->
-                                         {
-                                             resultHolder.getRequestedRecordsCounter().decrementAndGet();
-                                             return record;
-                                         } );
-    }
-
-    private CompletionStage<Record> consumeNextRecordOrCompletionSignal( RxBlockingSubscriber<Record> subscriber, RxResultHolder resultHolder )
-    {
-        return CompletableFuture.anyOf(
-                consumeNextRecord( subscriber, resultHolder ).toCompletableFuture(),
-                subscriber.getCompletionStage().toCompletableFuture()
-        ).thenApply( Record.class::cast );
+                                         return subscriber.next()
+                                                          .map( this::createResponse )
+                                                          .defaultIfEmpty( NullRecord.builder().build() );
+                                     } );
     }
 
     private long getFetchSize( RxResultHolder resultHolder )
@@ -138,7 +93,7 @@ public class ResultNext implements TestkitRequest
         return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
     }
 
-    private neo4j.org.testkit.backend.messages.responses.Record createResponse( Record record )
+    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record )
     {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
                                                                   .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
