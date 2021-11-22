@@ -18,33 +18,35 @@
  */
 package org.neo4j.docs.driver;
 // tag::config-custom-resolver-import[]
+
 import java.util.Arrays;
 import java.util.HashSet;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.net.ServerAddress;
 
-import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.SessionConfig.builder;
+import static org.neo4j.driver.Values.parameters;
+
 // end::config-custom-resolver-import[]
 public class ConfigCustomResolverExample implements AutoCloseable
 {
     private final Driver driver;
 
-    public ConfigCustomResolverExample( String virtualUri, ServerAddress... addresses )
+    public ConfigCustomResolverExample( String virtualUri, AuthToken authToken, ServerAddress... addresses )
     {
         Config config = Config.builder()
-                .withoutEncryption()
-                .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
-                .build();
+                              .withResolver( address -> new HashSet<>( Arrays.asList( addresses ) ) )
+                              .build();
 
-        driver = GraphDatabase.driver( virtualUri, AuthTokens.none(), config );
+        driver = GraphDatabase.driver( virtualUri, authToken, config );
     }
 
     // tag::config-custom-resolver[]

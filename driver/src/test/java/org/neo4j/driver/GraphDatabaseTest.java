@@ -49,11 +49,16 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.StubServer.INSECURE_CONFIG;
 
 class GraphDatabaseTest
 {
+    private static final Config INSECURE_CONFIG = Config.builder()
+                                                        .withoutEncryption()
+                                                        .withLogging( none() )
+                                                        .build();
+
     @Test
     void throwsWhenBoltSchemeUsedWithRoutingParams()
     {
