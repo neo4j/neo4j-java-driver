@@ -19,12 +19,8 @@
 package org.neo4j.driver.util.cc;
 
 import java.io.FileNotFoundException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.util.TestUtil;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
@@ -147,31 +142,6 @@ public class Cluster implements AutoCloseable
         waitForMembersToBeOnline();
     }
 
-    public void startOfflineMembers()
-    {
-        // copy offline members to avoid ConcurrentModificationException
-        Set<ClusterMember> currentlyOfflineMembers = new HashSet<>( offlineMembers );
-        for ( ClusterMember member : currentlyOfflineMembers )
-        {
-            startNoWait( member );
-        }
-        waitForMembersToBeOnline();
-    }
-
-    public void stop( ClusterMember member )
-    {
-        removeOfflineMember( member );
-        SharedCluster.stop( member );
-        waitForMembersToBeOnline();
-    }
-
-    public void kill( ClusterMember member )
-    {
-        removeOfflineMember( member );
-        SharedCluster.kill( member );
-        waitForMembersToBeOnline();
-    }
-
     public Driver getDirectDriver( ClusterMember member )
     {
         return clusterDrivers.getDriver( member );
@@ -217,15 +187,6 @@ public class Cluster implements AutoCloseable
             throw new IllegalArgumentException( "Cluster member is not offline: " + member );
         }
         members.add( member );
-    }
-
-    private void removeOfflineMember( ClusterMember member )
-    {
-        if ( !members.remove( member ) )
-        {
-            throw new IllegalArgumentException( "Unknown cluster member " + member );
-        }
-        offlineMembers.add( member );
     }
 
     private void startNoWait( ClusterMember member )
@@ -387,32 +348,6 @@ public class Cluster implements AutoCloseable
             addresses.add( member.getBoltAddress() );
         }
         return addresses;
-    }
-
-    private static BoltServerAddress extractBoltAddress( Record record )
-    {
-        List<Object> addresses = record.get( "addresses" ).asList();
-        String boltUriString = (String) addresses.get( 0 );
-        URI boltUri = URI.create( boltUriString );
-        return newBoltServerAddress( boltUri );
-    }
-
-    private static BoltServerAddress newBoltServerAddress( URI uri )
-    {
-        try
-        {
-            return new BoltServerAddress( InetAddress.getByName( uri.getHost() ).getHostAddress(), uri.getPort() );
-        }
-        catch ( UnknownHostException e )
-        {
-            throw new RuntimeException( "Unable to resolve host to IP in URI: '" + uri + "'" );
-        }
-    }
-
-    private static ClusterMemberRole extractRole( Record record )
-    {
-        String roleString = record.get( "role" ).asString();
-        return ClusterMemberRole.valueOf( roleString.toUpperCase() );
     }
 
     private static ClusterMember findByBoltAddress( BoltServerAddress boltAddress, Set<ClusterMember> members )
