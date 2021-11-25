@@ -100,7 +100,6 @@ public class ClusterExtension implements BeforeAllCallback, AfterEachCallback, A
     public void afterEach( ExtensionContext context )
     {
         Cluster cluster = getCluster();
-        cluster.startOfflineMembers();
         cluster.deleteData();
     }
 

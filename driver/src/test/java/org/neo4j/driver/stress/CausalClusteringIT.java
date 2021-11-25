@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -70,7 +68,6 @@ import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
-import org.neo4j.driver.net.ServerAddress;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.cc.Cluster;
 import org.neo4j.driver.util.cc.ClusterExtension;
@@ -326,140 +323,6 @@ public class CausalClusteringIT implements NestedQueries
         {
             ClientException e = assertThrows( ClientException.class, session::beginTransaction );
             assertThat( e.getMessage(), containsString( text ) );
-        }
-    }
-
-    @Test
-    void shouldHandleGracefulLeaderSwitch() throws Exception
-    {
-        Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
-        ServerAddress clusterAddress = ServerAddress.of( "cluster", 7687 );
-        URI clusterUri = URI.create( String.format( "neo4j://%s:%d", clusterAddress.host(), clusterAddress.port() ) );
-        Set<ServerAddress> coreAddresses = cluster.cores().stream()
-                                                  .map( ClusterMember::getBoltAddress )
-                                                  .collect( Collectors.toSet() );
-
-        Config config = Config.builder()
-                              .withLogging( none() )
-                              .withResolver( address -> address.equals( clusterAddress ) ? coreAddresses : Collections.singleton( address ) )
-                              .build();
-
-        try ( Driver driver = GraphDatabase.driver( clusterUri, clusterRule.getDefaultAuthToken(), config ) )
-        {
-            Session session1 = driver.session();
-            Transaction tx1 = session1.beginTransaction();
-
-            // gracefully stop current leader to force re-election
-            cluster.stop( leader );
-
-            assertThrows( (Class<? extends Exception>) SessionExpiredException.class,
-                          () -> tx1.run( "CREATE (person:Person {name: $name, title: $title})",
-                                         parameters( "name", "Webber", "title", "Mr" ) ) );
-
-            session1.close();
-
-            Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->
-            {
-                try ( Transaction tx = session.beginTransaction() )
-                {
-                    tx.run( "CREATE (person:Person {name: $name, title: $title})",
-                            parameters( "name", "Webber", "title", "Mr" ) );
-                    tx.commit();
-                }
-                return session.lastBookmark();
-            } );
-
-            try ( Session session2 = driver.session(
-                    builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmark ).build() );
-                  Transaction tx2 = session2.beginTransaction() )
-            {
-                Record record = tx2.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                tx2.commit();
-                assertEquals( 1, record.get( "count" ).asInt() );
-            }
-        }
-    }
-
-    @Test
-    void shouldNotServeWritesWhenMajorityOfCoresAreDead()
-    {
-        Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
-
-        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
-        {
-            Set<ClusterMember> cores = cluster.cores();
-            for ( ClusterMember follower : cluster.followers() )
-            {
-                cluster.stop( follower );
-            }
-            awaitLeaderToStepDown( cores );
-
-            // now we should be unable to write because majority of cores is down
-            for ( int i = 0; i < 10; i++ )
-            {
-                assertThrows( SessionExpiredException.class, () ->
-                {
-                    try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-                    {
-                        session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
-                    }
-                } );
-            }
-        }
-    }
-
-    @Test
-    void shouldServeReadsWhenMajorityOfCoresAreDead()
-    {
-        Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
-
-        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
-        {
-            Bookmark bookmark;
-            try ( Session session = driver.session() )
-            {
-                int writeResult = session.writeTransaction( tx ->
-                {
-                    Result result = tx.run( "CREATE (:Person {name: 'Star Lord'}) RETURN 42" );
-                    return result.single().get( 0 ).asInt();
-                } );
-
-                assertEquals( 42, writeResult );
-                bookmark = session.lastBookmark();
-            }
-
-            ensureNodeVisible( cluster, "Star Lord", bookmark );
-
-            Set<ClusterMember> cores = cluster.cores();
-            for ( ClusterMember follower : cluster.followers() )
-            {
-                cluster.stop( follower );
-            }
-            awaitLeaderToStepDown( cores );
-
-            // now we should be unable to write because majority of cores is down
-            assertThrows( SessionExpiredException.class, () ->
-            {
-                try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-                {
-                    session.run( "CREATE (p:Person {name: 'Gamora'})" ).consume();
-                }
-            } );
-
-            // but we should be able to read from the remaining core or read replicas
-            try ( Session session = driver.session() )
-            {
-                int count = session.readTransaction( tx ->
-                {
-                    Result result = tx.run( "MATCH (:Person {name: 'Star Lord'}) RETURN COUNT(*)" );
-                    return result.single().get( 0 ).asInt();
-                } );
-
-                assertEquals( 1, count );
-            }
         }
     }
 
