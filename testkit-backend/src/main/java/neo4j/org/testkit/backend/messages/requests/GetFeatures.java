@@ -49,7 +49,10 @@ public class GetFeatures implements TestkitRequest
             "Feature:Auth:Kerberos",
             "Feature:Auth:Custom",
             "Feature:Impersonation",
-            "Temporary:FastFailingDiscovery"
+            "Temporary:FastFailingDiscovery",
+            "Feature:TLS:1.1",
+            "Feature:TLS:1.2",
+            "Feature:API:SSLSchemes"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
