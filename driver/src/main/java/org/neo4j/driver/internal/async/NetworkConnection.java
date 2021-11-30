@@ -48,6 +48,7 @@ import org.neo4j.driver.internal.util.ServerVersion;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
+import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
 
 /**
  * This connection represents a simple network connection to a remote server. It wraps a channel obtained from a connection pool. The life cycle of this
@@ -189,10 +190,14 @@ public class NetworkConnection implements Connection
         if ( status.compareAndSet( Status.OPEN, Status.TERMINATED ) )
         {
             setTerminationReason( channel, reason );
-            channel.close();
-            channelPool.release( channel );
-            releaseFuture.complete( null );
-            metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
+            asCompletionStage( channel.close() )
+                    .exceptionally( throwable -> null )
+                    .thenCompose( ignored -> channelPool.release( channel ) )
+                    .whenComplete( ( ignored, throwable ) ->
+                                   {
+                                       releaseFuture.complete( null );
+                                       metricsListener.afterConnectionReleased( poolId( this.channel ), this.inUseEvent );
+                                   } );
         }
     }
 
