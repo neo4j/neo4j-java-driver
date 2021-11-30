@@ -19,6 +19,7 @@
 package org.neo4j.driver.util.cc;
 
 import java.io.FileNotFoundException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,6 +65,11 @@ public class Cluster implements AutoCloseable
     {
         waitForMembersToBeOnline( newMembers, clusterDrivers );
         return new Cluster( path, newMembers, clusterDrivers );
+    }
+
+    public URI getRoutingUri()
+    {
+        return randomOf( cores() ).getRoutingUri();
     }
 
     public Path getPath()

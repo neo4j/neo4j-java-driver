@@ -101,25 +101,11 @@ final class SharedCluster
         debug( "Cluster at `%s` stopped.", clusterInstance.getPath() );
     }
 
-    static void stop( ClusterMember member )
-    {
-        assertClusterExists();
-        ClusterControl.stopClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` stopped.", member.getPath() );
-    }
-
     static void kill()
     {
         assertClusterExists();
         ClusterControl.killCluster( clusterInstance.getPath() );
         debug( "Cluster at `%s` killed.", clusterInstance.getPath() );
-    }
-
-    static void kill( ClusterMember member )
-    {
-        assertClusterExists();
-        ClusterControl.killClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` killed.", member.getPath() );
     }
 
     private static Set<ClusterMember> parseStartCommandOutput( String output )
