@@ -59,7 +59,6 @@ import org.neo4j.driver.integration.NestedQueries;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
-import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
@@ -431,48 +430,6 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
-    {
-        Cluster cluster = clusterRule.getCluster();
-
-        FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
-
-        try ( Driver driver = driverFactory.newInstance( cluster.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                                                         RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
-        {
-            Session session1 = driver.session();
-            Transaction tx1 = session1.beginTransaction();
-            tx1.run( "CREATE (n:Node1 {name: 'Node1'})" ).consume();
-
-            Session session2 = driver.session();
-            Transaction tx2 = session2.beginTransaction();
-            tx2.run( "CREATE (n:Node2 {name: 'Node2'})" ).consume();
-
-            ServiceUnavailableException error = new ServiceUnavailableException( "Connection broke!" );
-            driverFactory.setNextRunFailure( error );
-            assertUnableToRunMoreQueriesInTx( tx2, error );
-
-            tx2.close();
-            tx1.commit();
-
-            try ( Session session3 = driver.session( builder().withBookmarks( session1.lastBookmark() ).build() ) )
-            {
-                // tx1 should not be terminated and should commit successfully
-                assertEquals( 1, countNodes( session3, "Node1", "name", "Node1" ) );
-                // tx2 should not commit because of a connection failure
-                assertEquals( 0, countNodes( session3, "Node2", "name", "Node2" ) );
-            }
-
-            // rediscovery should happen for the new write query
-            Bookmark session4Bookmark = createNodeAndGetBookmark( driver.session(), "Node3", "name", "Node3" );
-            try ( Session session5 = driver.session( builder().withBookmarks( session4Bookmark ).build() ) )
-            {
-                assertEquals( 1, countNodes( session5, "Node3", "name", "Node3" ) );
-            }
-        }
-    }
-
-    @Test
     void shouldKeepOperatingWhenConnectionsBreak() throws Exception
     {
         long testRunTimeMs = MINUTES.toMillis( 1 );
@@ -528,12 +485,6 @@ public class CausalClusteringIT implements NestedQueries
     {
         driver = createDriver( clusterRule.getCluster().leader().getRoutingUri() );
         assumeFalse( driver.supportsMultiDb() );
-    }
-
-    private static void assertUnableToRunMoreQueriesInTx(Transaction tx, ServiceUnavailableException cause )
-    {
-        SessionExpiredException e = assertThrows( SessionExpiredException.class, () -> tx.run( "CREATE (n:Node3 {name: 'Node3'})" ).consume() );
-        assertEquals( cause, e.getCause() );
     }
 
     private CompletionStage<List<RecordAndSummary>> combineCursors( ResultCursor cursor1,
