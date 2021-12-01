@@ -25,9 +25,11 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -43,6 +45,7 @@ import org.neo4j.driver.Logging;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.DatabaseNameUtil;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.pool.NettyChannelHealthChecker;
 import org.neo4j.driver.internal.async.pool.NettyChannelTracker;
@@ -85,7 +88,7 @@ class RoutingTableAndConnectionPoolTest
     private static final BoltServerAddress D = new BoltServerAddress( "localhost:30003" );
     private static final BoltServerAddress E = new BoltServerAddress( "localhost:30004" );
     private static final BoltServerAddress F = new BoltServerAddress( "localhost:30005" );
-    private static final List<BoltServerAddress> SERVERS = new LinkedList<>( Arrays.asList( null, A, B, C, D, E, F ) );
+    private static final List<BoltServerAddress> SERVERS = Collections.synchronizedList( new LinkedList<>( Arrays.asList( null, A, B, C, D, E, F ) ) );
 
     private static final String[] DATABASES = new String[]{"", SYSTEM_DATABASE_NAME, "my database"};
 
@@ -94,7 +97,7 @@ class RoutingTableAndConnectionPoolTest
     private final Logging logging = none();
 
     @Test
-    void shouldAddServerToRoutingTableAndConnectionPool() throws Throwable
+    void shouldAddServerToRoutingTableAndConnectionPool()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -114,7 +117,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldNotAddToRoutingTableWhenFailedWithRoutingError() throws Throwable
+    void shouldNotAddToRoutingTableWhenFailedWithRoutingError()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -133,7 +136,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldNotAddToRoutingTableWhenFailedWithProtocolError() throws Throwable
+    void shouldNotAddToRoutingTableWhenFailedWithProtocolError()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -152,7 +155,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldNotAddToRoutingTableWhenFailedWithSecurityError() throws Throwable
+    void shouldNotAddToRoutingTableWhenFailedWithSecurityError()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -171,7 +174,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldNotRemoveNewlyAddedRoutingTableEvenIfItIsExpired() throws Throwable
+    void shouldNotRemoveNewlyAddedRoutingTableEvenIfItIsExpired()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -194,7 +197,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldRemoveExpiredRoutingTableAndServers() throws Throwable
+    void shouldRemoveExpiredRoutingTableAndServers()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -219,7 +222,7 @@ class RoutingTableAndConnectionPoolTest
     }
 
     @Test
-    void shouldRemoveExpiredRoutingTableButNotServer() throws Throwable
+    void shouldRemoveExpiredRoutingTableButNotServer()
     {
         // Given
         ConnectionPool connectionPool = newConnectionPool();
@@ -256,7 +259,7 @@ class RoutingTableAndConnectionPoolTest
         acquireAndReleaseConnections( loadBalancer );
         Set<BoltServerAddress> servers = routingTables.allServers();
         BoltServerAddress openServer = null;
-        for( BoltServerAddress server: servers )
+        for ( BoltServerAddress server : servers )
         {
             if ( connectionPool.isOpen( server ) )
             {
@@ -268,6 +271,8 @@ class RoutingTableAndConnectionPoolTest
 
         // if we remove the open server from servers, then the connection pool should remove the server from the pool.
         SERVERS.remove( openServer );
+        // ensure rediscovery is necessary on subsequent interaction
+        Arrays.stream( DATABASES ).map( DatabaseNameUtil::database ).forEach( routingTables::remove );
         acquireAndReleaseConnections( loadBalancer );
 
         assertFalse( connectionPool.isOpen( openServer ) );
@@ -368,7 +373,11 @@ class RoutingTableAndConnectionPoolTest
             }
             if ( servers.size() == 0 )
             {
-                servers.add( A );
+                BoltServerAddress address = SERVERS.stream()
+                                                   .filter( Objects::nonNull )
+                                                   .findFirst()
+                                                   .orElseThrow( () -> new RuntimeException( "No non null server addresses are available" ) );
+                servers.add( address );
             }
             ClusterComposition composition = new ClusterComposition( clock.millis() + 1, servers, servers, servers );
             return CompletableFuture.completedFuture( new ClusterCompositionLookupResult( composition ) );
