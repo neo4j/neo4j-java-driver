@@ -37,7 +37,7 @@ class RoutingExamplesIT
     void testShouldRunConfigCustomResolverExample() throws Exception
     {
         // Given
-        URI uri = neo4j.getCluster().leader().getRoutingUri();
+        URI uri = neo4j.getCluster().getRoutingUri();
         try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "neo4j://x.example.com", neo4j.getDefaultAuthToken(),
                                                                                      ServerAddress.of( uri.getHost(), uri.getPort() ) ) )
         {

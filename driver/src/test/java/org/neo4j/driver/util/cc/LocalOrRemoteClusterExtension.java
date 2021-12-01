@@ -71,7 +71,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         {
             localClusterExtension = new ClusterExtension();
             localClusterExtension.beforeAll( context );
-            clusterUri = localClusterExtension.getCluster().leader().getRoutingUri();
+            clusterUri = localClusterExtension.getCluster().getRoutingUri();
         }
     }
 

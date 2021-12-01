@@ -116,7 +116,7 @@ public class CausalClusteringIT implements NestedQueries
     {
         if ( driver == null )
         {
-            driver = createDriver( clusterRule.getCluster().leader().getRoutingUri() );
+            driver = createDriver( clusterRule.getCluster().getRoutingUri() );
         }
 
         return driver.session( builder().withDefaultAccessMode( mode ).build() );
@@ -275,7 +275,7 @@ public class CausalClusteringIT implements NestedQueries
         FakeClock clock = new FakeClock();
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory( clock );
 
-        URI routingUri = cluster.leader().getRoutingUri();
+        URI routingUri = cluster.getRoutingUri();
         AuthToken auth = clusterRule.getDefaultAuthToken();
 
         try ( Driver driver = driverFactory.newInstance( routingUri, auth, RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() ) )
@@ -335,10 +335,9 @@ public class CausalClusteringIT implements NestedQueries
         String value = "Alice";
 
         Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
         executor = newExecutor();
 
-        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        try ( Driver driver = createDriver( cluster.getRoutingUri() ) )
         {
             List<Future<Bookmark>> futures = new ArrayList<>();
             for ( int i = 0; i < threadCount; i++ )
@@ -367,16 +366,18 @@ public class CausalClusteringIT implements NestedQueries
     void shouldNotReuseReadConnectionForWriteTransaction()
     {
         Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
 
-        try ( Driver driver = createDriver( leader.getRoutingUri() ) )
+        try ( Driver driver = createDriver( cluster.getRoutingUri() ) )
         {
             AsyncSession session = driver.asyncSession( builder().withDefaultAccessMode( AccessMode.READ ).build() );
 
             CompletionStage<List<RecordAndSummary>> resultsStage = session.runAsync( "RETURN 42" )
-                    .thenCompose( cursor1 ->
-                            session.writeTransactionAsync( tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" )
-                                    .thenCompose( cursor2 -> combineCursors( cursor2, cursor1 ) ) ) );
+                                                                          .thenCompose( cursor1 ->
+                                                                                                session.writeTransactionAsync(
+                                                                                                        tx -> tx.runAsync( "CREATE (:Node1) RETURN 42" )
+                                                                                                                .thenCompose(
+                                                                                                                        cursor2 -> combineCursors( cursor2,
+                                                                                                                                                   cursor1 ) ) ) );
 
             List<RecordAndSummary> results = await( resultsStage );
             assertEquals( 2, results.size() );
@@ -405,7 +406,6 @@ public class CausalClusteringIT implements NestedQueries
     void shouldRespectMaxConnectionPoolSizePerClusterMember()
     {
         Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
 
         Config config = Config.builder()
                 .withMaxConnectionPoolSize( 2 )
@@ -413,7 +413,7 @@ public class CausalClusteringIT implements NestedQueries
                 .withLogging( DEV_NULL_LOGGING )
                 .build();
 
-        try ( Driver driver = createDriver( leader.getRoutingUri(), config ) )
+        try ( Driver driver = createDriver( cluster.getRoutingUri(), config ) )
         {
             String database = "neo4j";
             Session writeSession1 =
@@ -443,11 +443,10 @@ public class CausalClusteringIT implements NestedQueries
     void shouldAllowExistingTransactionToCompleteAfterDifferentConnectionBreaks()
     {
         Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
 
         FailingConnectionDriverFactory driverFactory = new FailingConnectionDriverFactory();
 
-        try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
+        try ( Driver driver = driverFactory.newInstance( cluster.getRoutingUri(), clusterRule.getDefaultAuthToken(),
                                                          RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
         {
             Session session1 = driver.session();
@@ -486,10 +485,9 @@ public class CausalClusteringIT implements NestedQueries
     void shouldRediscoverWhenConnectionsToAllCoresBreak()
     {
         Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
 
         ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
-        try ( Driver driver = driverFactory.newInstance( leader.getRoutingUri(), clusterRule.getDefaultAuthToken(),
+        try ( Driver driver = driverFactory.newInstance( cluster.getRoutingUri(), clusterRule.getDefaultAuthToken(),
                                                          RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
         {
             String database = "neo4j";
@@ -556,7 +554,7 @@ public class CausalClusteringIT implements NestedQueries
                 .withMaxTransactionRetryTime( testRunTimeMs, MILLISECONDS )
                 .build();
 
-        try ( Driver driver = driverFactory.newInstance( cluster.leader().getRoutingUri(), clusterRule.getDefaultAuthToken(),
+        try ( Driver driver = driverFactory.newInstance( cluster.getRoutingUri(), clusterRule.getDefaultAuthToken(),
                                                          RoutingSettings.DEFAULT, RetrySettings.DEFAULT, config, SecurityPlanImpl.insecure() ) )
         {
             List<Future<?>> results = new ArrayList<>();
