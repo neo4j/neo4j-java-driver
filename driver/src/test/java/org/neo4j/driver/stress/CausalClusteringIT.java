@@ -27,8 +27,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -55,26 +53,20 @@ import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.integration.NestedQueries;
-import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FailingConnectionDriverFactory;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.util.ThrowingMessageEncoder;
 import org.neo4j.driver.internal.util.io.ChannelTrackingDriverFactory;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.cc.Cluster;
 import org.neo4j.driver.util.cc.ClusterExtension;
 import org.neo4j.driver.util.cc.ClusterMember;
-import org.neo4j.driver.util.cc.ClusterMemberRole;
-import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory;
-import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -96,7 +88,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
-import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V3;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.awaitAllFutures;
@@ -482,61 +473,6 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    void shouldRediscoverWhenConnectionsToAllCoresBreak()
-    {
-        Cluster cluster = clusterRule.getCluster();
-
-        ChannelTrackingDriverFactory driverFactory = new ChannelTrackingDriverFactory();
-        try ( Driver driver = driverFactory.newInstance( cluster.getRoutingUri(), clusterRule.getDefaultAuthToken(),
-                                                         RoutingSettings.DEFAULT, RetrySettings.DEFAULT, configWithoutLogging(), SecurityPlanImpl.insecure() ) )
-        {
-            String database = "neo4j";
-            try ( Session session = driver.session( builder().withDatabase( database ).build() ) )
-            {
-                createNode( session, "Person", "name", "Vision" );
-
-                // force driver to connect to every cluster member
-                for ( int i = 0; i < cluster.members().size(); i++ )
-                {
-                    assertEquals( 1, countNodes( session, "Person", "name", "Vision" ) );
-                }
-            }
-
-            // now driver should have connections towards every cluster member
-            // make all those connections throw and seem broken
-            makeAllChannelsFailToRunQueries( driverFactory, ServerVersion.version( driver ) );
-
-            // observe that connection towards writer is broken
-            try ( Session session = driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.WRITE ).build() ) )
-            {
-                SessionExpiredException e = assertThrows( SessionExpiredException.class,
-                                                          () -> runCreateNode( session, "Person", "name", "Vision" ).consume() );
-                assertEquals( "Disconnected", e.getCause().getMessage() );
-            }
-
-            // probe connections to all readers
-            int readersCount = cluster.followers().size() + cluster.readReplicas().size();
-            for ( int i = 0; i < readersCount; i++ )
-            {
-                try ( Session session = driver.session( builder().withDatabase( database ).withDefaultAccessMode( AccessMode.READ ).build() ) )
-                {
-                    runCountNodes( session, "Person", "name", "Vision" );
-                }
-                catch ( Throwable ignore )
-                {
-                }
-            }
-
-            try ( Session session = driver.session( builder().withDatabase( database ).build() ) )
-            {
-                updateNode( session, "Person", "name", "Vision", "Thanos" );
-                assertEquals( 0, countNodes( session, "Person", "name", "Vision" ) );
-                assertEquals( 1, countNodes( session, "Person", "name", "Thanos" ) );
-            }
-        }
-    }
-
-    @Test
     void shouldKeepOperatingWhenConnectionsBreak() throws Exception
     {
         long testRunTimeMs = MINUTES.toMillis( 1 );
@@ -672,52 +608,6 @@ public class CausalClusteringIT implements NestedQueries
         throw new TimeoutException( "Transaction did not succeed in time" );
     }
 
-    private void ensureNodeVisible( Cluster cluster, String name, Bookmark bookmark )
-    {
-        for ( ClusterMember member : cluster.members() )
-        {
-            int count = countNodesUsingDirectDriver( member, name, bookmark );
-            assertEquals( 1, count );
-        }
-    }
-
-    private int countNodesUsingDirectDriver( ClusterMember member, final String name, Bookmark bookmark )
-    {
-        Driver driver = clusterRule.getCluster().getDirectDriver( member );
-        try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() ) )
-        {
-            return session.readTransaction( tx ->
-            {
-                Result result = tx.run( "MATCH (:Person {name: $name}) RETURN count(*)",
-                        parameters( "name", name ) );
-                return result.single().get( 0 ).asInt();
-            } );
-        }
-    }
-
-    private void awaitLeaderToStepDown( Set<ClusterMember> cores )
-    {
-        long deadline = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
-        ClusterOverview overview = null;
-        do
-        {
-            for ( ClusterMember core : cores )
-            {
-                overview = fetchClusterOverview( core );
-                if ( overview != null )
-                {
-                    break;
-                }
-            }
-        }
-        while ( !isSingleFollowerWithReadReplicas( overview ) && System.currentTimeMillis() <= deadline );
-
-        if ( System.currentTimeMillis() > deadline )
-        {
-            throw new IllegalStateException( "Leader did not step down in " + DEFAULT_TIMEOUT_MS + "ms. Last seen cluster overview: " + overview );
-        }
-    }
-
     private Driver createDriver( URI boltUri )
     {
         return createDriver( boltUri, configWithoutLogging() );
@@ -731,45 +621,6 @@ public class CausalClusteringIT implements NestedQueries
     private Driver discoverDriver( List<URI> routingUris )
     {
         return GraphDatabase.routingDriver( routingUris, clusterRule.getDefaultAuthToken(), configWithoutLogging() );
-    }
-
-    private static ClusterOverview fetchClusterOverview( ClusterMember member )
-    {
-        int leaderCount = 0;
-        int followerCount = 0;
-        int readReplicaCount = 0;
-
-        Driver driver = clusterRule.getCluster().getDirectDriver( member );
-        try
-        {
-            final ClusterMemberRoleDiscovery discovery = ClusterMemberRoleDiscoveryFactory.newInstance( ServerVersion.version( driver ) );
-            final Map<BoltServerAddress,ClusterMemberRole> clusterOverview = discovery.findClusterOverview( driver );
-            for ( BoltServerAddress address : clusterOverview.keySet() )
-            {
-                ClusterMemberRole role = clusterOverview.get( address );
-                if ( role == ClusterMemberRole.LEADER )
-                {
-                    leaderCount++;
-                }
-                else if ( role == ClusterMemberRole.FOLLOWER )
-                {
-                    followerCount++;
-                }
-                else if ( role == ClusterMemberRole.READ_REPLICA )
-                {
-                    readReplicaCount++;
-                }
-                else
-                {
-                    throw new AssertionError( "Unknown role: " + role );
-                }
-            }
-            return new ClusterOverview( leaderCount, followerCount, readReplicaCount );
-        }
-        catch ( Neo4jException ignore )
-        {
-            return null;
-        }
     }
 
     private static void createNodesInDifferentThreads( int count, final Driver driver ) throws Exception
@@ -860,16 +711,6 @@ public class CausalClusteringIT implements NestedQueries
         } );
     }
 
-    private static void updateNode( Session session, String label, String property, String oldValue, String newValue )
-    {
-        session.writeTransaction( tx ->
-        {
-            tx.run( "MATCH (n: " + label + '{' + property + ": $oldValue}) SET n." + property + " = $newValue",
-                    parameters( "oldValue", oldValue, "newValue", newValue ) );
-            return null;
-        } );
-    }
-
     private static int countNodes( Session session, String label, String property, String value )
     {
         return session.readTransaction( tx -> runCountNodes( tx, label, property, value ) );
@@ -915,33 +756,6 @@ public class CausalClusteringIT implements NestedQueries
         return Executors.newCachedThreadPool( daemon( CausalClusteringIT.class.getSimpleName() + "-thread-" ) );
     }
 
-    private static boolean isSingleFollowerWithReadReplicas( ClusterOverview overview )
-    {
-        if ( overview == null )
-        {
-            return false;
-        }
-        return overview.leaderCount == 0 &&
-                overview.followerCount == 1 &&
-                overview.readReplicaCount == ClusterExtension.READ_REPLICA_COUNT;
-    }
-
-    private static void makeAllChannelsFailToRunQueries( ChannelTrackingDriverFactory driverFactory, ServerVersion dbVersion )
-    {
-        for ( Channel channel : driverFactory.channels() )
-        {
-            RuntimeException error = new ServiceUnavailableException( "Disconnected" );
-            if ( BOLT_V3.availableIn( dbVersion ) )
-            {
-                channel.pipeline().addLast( ThrowingMessageEncoder.forRunWithMetadataMessage( error ) );
-            }
-            else
-            {
-                channel.pipeline().addLast( ThrowingMessageEncoder.forRunMessage( error ) );
-            }
-        }
-    }
-
     private static class RecordAndSummary
     {
         final Record record;
@@ -951,30 +765,6 @@ public class CausalClusteringIT implements NestedQueries
         {
             this.record = record;
             this.summary = summary;
-        }
-    }
-
-    private static class ClusterOverview
-    {
-        final int leaderCount;
-        final int followerCount;
-        final int readReplicaCount;
-
-        ClusterOverview( int leaderCount, int followerCount, int readReplicaCount )
-        {
-            this.leaderCount = leaderCount;
-            this.followerCount = followerCount;
-            this.readReplicaCount = readReplicaCount;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ClusterOverview{" +
-                    "leaderCount=" + leaderCount +
-                    ", followerCount=" + followerCount +
-                    ", readReplicaCount=" + readReplicaCount +
-                    '}';
         }
     }
 }

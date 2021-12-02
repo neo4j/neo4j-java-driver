@@ -86,11 +86,6 @@ public class Neo4jSettings
         return settings;
     }
 
-    public Neo4jSettings updateWith( Neo4jSettings other )
-    {
-        return updateWith( other.settings, other.excludes );
-    }
-
     public Neo4jSettings updateWith( String key, String value )
     {
         return updateWith( map(key, value), excludes );

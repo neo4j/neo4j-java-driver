@@ -52,19 +52,9 @@ final class ClusterControl
         executeCommand( "neoctrl-cluster", "stop", path.toString() );
     }
 
-    static void stopClusterMember( Path path )
-    {
-        executeCommand( "neoctrl-stop", path.toString() );
-    }
-
     static void killCluster( Path path )
     {
         executeCommand( "neoctrl-cluster", "stop", "--kill", path.toString() );
-    }
-
-    static void killClusterMember( Path path )
-    {
-        executeCommand( "neoctrl-stop", "--kill", path.toString() );
     }
 
 }
