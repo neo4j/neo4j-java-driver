@@ -48,8 +48,6 @@ import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
@@ -70,7 +68,6 @@ import org.neo4j.driver.util.cc.ClusterMember;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -84,7 +81,6 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.driver.Logging.none;
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.InternalBookmark.parse;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Matchers.connectionAcquisitionTimeoutError;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
@@ -159,97 +155,6 @@ public class CausalClusteringIT implements NestedQueries
     }
 
     @Test
-    void sessionCreationShouldFailIfCallingDiscoveryProcedureOnEdgeServer()
-    {
-        assertRoutingNotAvailableOnReadReplica();
-        Cluster cluster = clusterRule.getCluster();
-
-        ClusterMember readReplica = cluster.anyReadReplica();
-        final Driver driver = createDriver( readReplica.getRoutingUri() );
-        ServiceUnavailableException e = assertThrows( ServiceUnavailableException.class, driver::verifyConnectivity );
-        assertThat( e.getMessage(), containsString( "Unable to connect to database" ) );
-    }
-
-    // Ensure that Bookmarks work with single instances using a driver created using a bolt[not+routing] URI.
-    @Test
-    void bookmarksShouldWorkWithDriverPinnedToSingleServer() throws Exception
-    {
-        Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
-
-        try ( Driver driver = createDriver( leader.getBoltUri() ) )
-        {
-            Bookmark bookmark = inExpirableSession( driver, Driver::session, session ->
-            {
-                try ( Transaction tx = session.beginTransaction() )
-                {
-                    tx.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Alistair" ) );
-                    tx.commit();
-                }
-
-                return session.lastBookmark();
-            } );
-
-            assertNotNull( bookmark );
-
-            try ( Session session = driver.session( builder().withBookmarks( bookmark ).build() );
-                  Transaction tx = session.beginTransaction() )
-            {
-                Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                assertEquals( 1, record.get( "count" ).asInt() );
-                tx.commit();
-            }
-        }
-    }
-
-    @Test
-    void shouldUseBookmarkFromAReadSessionInAWriteSession() throws Exception
-    {
-        Cluster cluster = clusterRule.getCluster();
-        ClusterMember leader = cluster.leader();
-
-        try ( Driver driver = createDriver( leader.getBoltUri() ) )
-        {
-            inExpirableSession( driver, createWritableSession( null ), session ->
-            {
-                session.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Jim" ) );
-                return null;
-            } );
-
-            final Bookmark bookmark;
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).build() ) )
-            {
-                try ( Transaction tx = session.beginTransaction() )
-                {
-                    tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                    tx.commit();
-                }
-
-                bookmark = session.lastBookmark();
-            }
-
-            assertNotNull( bookmark );
-
-            inExpirableSession( driver, createWritableSession( bookmark ), session ->
-            {
-                try ( Transaction tx = session.beginTransaction() )
-                {
-                    tx.run( "CREATE (p:Person {name: $name })", Values.parameters( "name", "Alistair" ) );
-                    tx.commit();
-                }
-
-                return null;
-            } );
-
-            try ( Session session = driver.session() )
-            {
-                Record record = session.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
-                assertEquals( 2, record.get( "count" ).asInt() );
-            }
-        }
-    }
-
-    @Test
     void shouldDropBrokenOldConnections() throws Exception
     {
         Cluster cluster = clusterRule.getCluster();
@@ -297,57 +202,6 @@ public class CausalClusteringIT implements NestedQueries
             for ( Channel oldChannel : oldChannels )
             {
                 assertFalse( oldChannel.isActive() );
-            }
-        }
-    }
-
-    @Test
-    void beginTransactionThrowsForInvalidBookmark()
-    {
-        final String text = "hi, this is an invalid bookmark";
-        Bookmark invalidBookmark = parse( text );
-        ClusterMember leader = clusterRule.getCluster().leader();
-
-        try ( Driver driver = createDriver( leader.getBoltUri() );
-              Session session = driver.session( builder().withBookmarks( invalidBookmark ).build() ) )
-        {
-            ClientException e = assertThrows( ClientException.class, session::beginTransaction );
-            assertThat( e.getMessage(), containsString( text ) );
-        }
-    }
-
-    @Test
-    void shouldAcceptMultipleBookmarks() throws Exception
-    {
-        int threadCount = 5;
-        String label = "Person";
-        String property = "name";
-        String value = "Alice";
-
-        Cluster cluster = clusterRule.getCluster();
-        executor = newExecutor();
-
-        try ( Driver driver = createDriver( cluster.getRoutingUri() ) )
-        {
-            List<Future<Bookmark>> futures = new ArrayList<>();
-            for ( int i = 0; i < threadCount; i++ )
-            {
-                futures.add( executor.submit( createNodeAndGetBookmark( driver, label, property, value ) ) );
-            }
-
-            List<Bookmark> bookmarks = new ArrayList<>();
-            for ( Future<Bookmark> future : futures )
-            {
-                bookmarks.add( future.get( 10, SECONDS ) );
-            }
-
-            executor.shutdown();
-            assertTrue( executor.awaitTermination( 5, SECONDS ) );
-
-            try ( Session session = driver.session( builder().withDefaultAccessMode( AccessMode.READ ).withBookmarks( bookmarks ).build() ) )
-            {
-                int count = countNodes( session, label, property, value );
-                assertEquals( count, threadCount );
             }
         }
     }
@@ -665,25 +519,6 @@ public class CausalClusteringIT implements NestedQueries
     private static int countNodes( Session session, String label, String property, String value )
     {
         return session.readTransaction( tx -> runCountNodes( tx, label, property, value ) );
-    }
-
-    private static Callable<Bookmark> createNodeAndGetBookmark( Driver driver, String label, String property,
-            String value )
-    {
-        return () -> createNodeAndGetBookmark( driver.session(), label, property, value );
-    }
-
-    private static Bookmark createNodeAndGetBookmark( Session session, String label, String property, String value )
-    {
-        try ( Session localSession = session )
-        {
-            localSession.writeTransaction( tx ->
-            {
-                runCreateNode( tx, label, property, value );
-                return null;
-            } );
-            return localSession.lastBookmark();
-        }
     }
 
     private static Result runCreateNode(QueryRunner queryRunner, String label, String property, String value )
