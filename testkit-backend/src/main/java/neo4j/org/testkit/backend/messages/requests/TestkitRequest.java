@@ -40,7 +40,7 @@ import java.util.concurrent.CompletionStage;
         @JsonSubTypes.Type( DomainNameResolutionCompleted.class ), @JsonSubTypes.Type( StartTest.class ),
         @JsonSubTypes.Type( TransactionRollback.class ), @JsonSubTypes.Type( GetFeatures.class ),
         @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class ),
-        @JsonSubTypes.Type( ResultList.class )
+        @JsonSubTypes.Type( ResultList.class ), @JsonSubTypes.Type( GetConnectionPoolMetrics.class )
 } )
 public interface TestkitRequest
 {

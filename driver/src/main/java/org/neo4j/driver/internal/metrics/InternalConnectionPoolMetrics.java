@@ -219,15 +219,20 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
         return this.acquired.get();
     }
 
-
     @Override
     public String toString()
     {
         return format( "%s=[created=%s, closed=%s, creating=%s, failedToCreate=%s, acquiring=%s, acquired=%s, " +
-                        "timedOutToAcquire=%s, inUse=%s, idle=%s, " +
-                        "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
-                id(), created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
-                timedOutToAcquire(), inUse(), idle(),
-                totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
+                       "timedOutToAcquire=%s, inUse=%s, idle=%s, " +
+                       "totalAcquisitionTime=%s, totalConnectionTime=%s, totalInUseTime=%s, totalInUseCount=%s]",
+                       id(), created(), closed(), creating(), failedToCreate(), acquiring(), acquired(),
+                       timedOutToAcquire(), inUse(), idle(),
+                       totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
+    }
+
+    // This method is for purposes testing only
+    public BoltServerAddress getAddress()
+    {
+        return address;
     }
 }

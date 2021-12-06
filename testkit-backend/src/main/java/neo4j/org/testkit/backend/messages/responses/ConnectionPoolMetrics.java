@@ -23,31 +23,21 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class Summary implements TestkitResponse
+public class ConnectionPoolMetrics implements TestkitResponse
 {
-    private SummaryBody data;
+    private final ConnectionPoolMetricsBody data;
 
     @Override
     public String testkitName()
     {
-        return "Summary";
+        return "ConnectionPoolMetrics";
     }
 
     @Getter
     @Builder
-    public static class SummaryBody
+    public static class ConnectionPoolMetricsBody
     {
-        private ServerInfo serverInfo;
-    }
-
-    @Getter
-    @Builder
-    public static class ServerInfo
-    {
-        private String address;
-
-        private String protocolVersion;
-
-        private String agent;
+        private int inUse;
+        private int idle;
     }
 }
