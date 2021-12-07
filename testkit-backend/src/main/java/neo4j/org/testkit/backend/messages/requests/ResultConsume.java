@@ -70,6 +70,7 @@ public class ResultConsume implements TestkitRequest
     private Summary createResponse( org.neo4j.driver.summary.ResultSummary summary )
     {
         Summary.ServerInfo serverInfo = Summary.ServerInfo.builder()
+                                                          .address( summary.server().address() )
                                                           .protocolVersion( summary.server().protocolVersion() )
                                                           .agent( summary.server().agent() )
                                                           .build();

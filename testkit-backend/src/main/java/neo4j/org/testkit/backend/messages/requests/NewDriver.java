@@ -107,6 +107,12 @@ public class NewDriver implements TestkitRequest
         RetrySettings retrySettings = Optional.ofNullable( data.maxTxRetryTimeMs )
                                               .map( RetrySettings::new )
                                               .orElse( RetrySettings.DEFAULT );
+        Optional.ofNullable( data.livenessCheckTimeoutMs )
+                .ifPresent( timeout -> configBuilder.withConnectionLivenessCheckTimeout( timeout, TimeUnit.MILLISECONDS ) );
+        Optional.ofNullable( data.maxConnectionPoolSize ).ifPresent( configBuilder::withMaxConnectionPoolSize );
+        Optional.ofNullable( data.connectionAcquisitionTimeoutMs )
+                .ifPresent( timeout -> configBuilder.withConnectionAcquisitionTimeout( timeout, TimeUnit.MILLISECONDS ) );
+        configBuilder.withDriverMetrics();
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
         try
@@ -254,6 +260,9 @@ public class NewDriver implements TestkitRequest
         private Long connectionTimeoutMs;
         private Integer fetchSize;
         private Long maxTxRetryTimeMs;
+        private Long livenessCheckTimeoutMs;
+        private Integer maxConnectionPoolSize;
+        private Long connectionAcquisitionTimeoutMs;
     }
 
     @RequiredArgsConstructor
