@@ -106,7 +106,7 @@ class SecuritySettingsTest
     void testThrowsOnUserCustomizedEncryption( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withoutEncryption()
+                .withEncryption()
                 .build();
 
         ClientException ex =
@@ -121,7 +121,7 @@ class SecuritySettingsTest
     void testThrowsOnUserCustomizedTrustConfiguration( String scheme )
     {
         SecuritySettings securitySettings = new SecuritySettings.SecuritySettingsBuilder()
-                .withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() )
+                .withTrustStrategy( Config.TrustStrategy.trustAllCertificates() )
                 .build();
 
         ClientException ex =
