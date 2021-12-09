@@ -21,6 +21,7 @@ package org.neo4j.driver.internal;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
+import java.util.Objects;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
@@ -59,7 +60,20 @@ public class SecuritySettings implements Serializable
 
     private boolean isCustomized()
     {
-        return this != DEFAULT;
+        return !(DEFAULT.encrypted() == this.encrypted() && DEFAULT.hasEqualTrustStrategy( this ));
+    }
+
+    private boolean hasEqualTrustStrategy( SecuritySettings other )
+    {
+        Config.TrustStrategy t1 = this.trustStrategy;
+        Config.TrustStrategy t2 = other.trustStrategy;
+        if ( t1 == t2 )
+        {
+            return true;
+        }
+
+        return t1.isHostnameVerificationEnabled() == t2.isHostnameVerificationEnabled() && t1.strategy() == t2.strategy() &&
+                Objects.equals( t1.certFile(), t2.certFile() ) && t1.revocationStrategy() == t2.revocationStrategy();
     }
 
     public SecurityPlan createSecurityPlan( String uriScheme )
