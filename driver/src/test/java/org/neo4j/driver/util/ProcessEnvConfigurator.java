@@ -60,7 +60,9 @@ public final class ProcessEnvConfigurator
      */
     private static String determineJavaHome()
     {
-        return System.getenv().getOrDefault( NEO4J_JAVA, System.getProperties().getProperty( "java.home" ) );
+        String javahome = System.getenv().getOrDefault( NEO4J_JAVA, System.getProperties().getProperty( "java.home" ) );
+        System.out.println("JAVA_HOME=".concat( javahome ));
+        return javahome;
     }
 
     private static String determineLocalPackage()
