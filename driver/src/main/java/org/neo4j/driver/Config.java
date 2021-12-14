@@ -30,7 +30,10 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
+import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Immutable;
 
@@ -699,11 +702,21 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * Enable the default driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
          * @return this builder.
          */
         public ConfigBuilder withDriverMetrics()
         {
+            return withDriverMetrics(new InternalMetricsProvider(Clock.SYSTEM, this.logging));
+        }
+
+        /**
+         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * @param provider which implementation of metrics to use
+         * @return this builder.
+         */
+        // TODO Figure out how a user configures a different metrics implementation
+        public ConfigBuilder withDriverMetrics(MetricsProvider provider) {
             this.isMetricsEnabled = true;
             return this;
         }
