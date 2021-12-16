@@ -26,8 +26,10 @@ import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 
 import org.neo4j.driver.AuthToken;
@@ -202,10 +204,9 @@ public class Neo4jRunner
             debug( "Server started." );
         } finally
         {
-            executeCommand( "Get-ChildItem", HOME_DIR );
-            executeCommand( "Get-ChildItem", HOME_DIR.concat( "\\logs" ) );
-            executeCommand( "get-content", HOME_DIR.concat( "\\logs\\neo4j.log" ) );
-            executeCommand( "get-content", HOME_DIR.concat( "\\logs\\debug.log" ) );
+            File targetHomeFile = new File( HOME_DIR );
+            System.out.println("Printing Files Names:");
+            Arrays.stream( Optional.ofNullable( targetHomeFile.list() ).orElseGet( () -> new String[]{} ) ).forEach( System.out::println );
         }
     }
 
