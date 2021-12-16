@@ -220,6 +220,15 @@ public class Neo4jRunner
                     line = in.readLine();
                 }
                 in.close();
+
+                BufferedReader in2 = new BufferedReader( new FileReader( HOME_DIR.concat( "/conf/neo4j.conf" ) ) );
+                String line2 = in2.readLine();
+                while ( line2 != null )
+                {
+                    System.out.println( line2 );
+                    line2= in2.readLine();
+                }
+                in2.close();
             }
             catch ( IOException ex )
             {
