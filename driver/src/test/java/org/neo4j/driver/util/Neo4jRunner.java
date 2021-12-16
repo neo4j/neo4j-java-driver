@@ -202,6 +202,8 @@ public class Neo4jRunner
             debug( "Server started." );
         } finally
         {
+            executeCommand( "Get-ChildItem", HOME_DIR );
+            executeCommand( "Get-ChildItem", HOME_DIR.concat( "\\logs" ) );
             executeCommand( "get-content", HOME_DIR.concat( "\\logs\\neo4j.log" ) );
             executeCommand( "get-content", HOME_DIR.concat( "\\logs\\debug.log" ) );
         }
