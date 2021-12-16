@@ -196,9 +196,15 @@ public class Neo4jRunner
 
     public void startNeo4j()
     {
-        debug( "Starting server..." );
-        executeCommand( "neoctrl-start", HOME_DIR, "-v" );
-        debug( "Server started." );
+        try {
+            debug( "Starting server..." );
+            executeCommand( "neoctrl-start", HOME_DIR, "-v" );
+            debug( "Server started." );
+        } finally
+        {
+            executeCommand( "get-content", HOME_DIR.concat( "\\logs\\neo4j.log" ) );
+            executeCommand( "get-content", HOME_DIR.concat( "\\logs\\debug.log" ) );
+        }
     }
 
     public synchronized void stopNeo4j()
