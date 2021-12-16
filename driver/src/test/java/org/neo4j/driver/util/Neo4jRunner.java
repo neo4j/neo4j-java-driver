@@ -18,8 +18,10 @@
  */
 package org.neo4j.driver.util;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -204,9 +206,25 @@ public class Neo4jRunner
             debug( "Server started." );
         } finally
         {
-            File targetHomeFile = new File( HOME_DIR );
-            System.out.println("Printing Files Names:");
+            File targetHomeFile = new File( HOME_DIR.concat( "/logs" ) );
+            System.out.println( "Printing Files Names:" );
             Arrays.stream( Optional.ofNullable( targetHomeFile.list() ).orElseGet( () -> new String[]{} ) ).forEach( System.out::println );
+
+            try
+            {
+                BufferedReader in = new BufferedReader( new FileReader( HOME_DIR.concat( "/logs/neo4j.log" ) ) );
+                String line = in.readLine();
+                while ( line != null )
+                {
+                    System.out.println( line );
+                    line = in.readLine();
+                }
+                in.close();
+            }
+            catch ( IOException ex )
+            {
+                System.out.println( "File not found" );
+            }
         }
     }
 
