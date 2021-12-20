@@ -54,13 +54,14 @@ public final class TemporalUtil
      * For example "Canada/East-Saskatchewan" will be returned as "Canada/Saskatchewan".
      * Other time zones are not working correctly in some Java versions
      */
-    private static final List<String> BLACKLISTED_ZONE_IDS = Arrays.asList(
+    private static final List<String> EXCLUDED_ZONE_IDS = Arrays.asList(
             "Canada/East-Saskatchewan",
             "Chile/EasterIsland",
             "Africa/Casablanca",
             "tzid",
             "Asia/Qostanay",
             "America/Santiago",// Can cause flakyness on windows, see https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
+            "US/Pacific-New", // Appeared out of nothing in windows, does not test reliable "org.neo4j.driver.exceptions.ClientException: Unable to construct ZonedDateTime value: `Unknown time-zone ID: US/Pacific-New`"
             "Pacific/Easter"
     );
 
@@ -128,7 +129,7 @@ public final class TemporalUtil
     {
         Set<String> availableZoneIds = ZoneId.getAvailableZoneIds()
                 .stream()
-                .filter( id -> !BLACKLISTED_ZONE_IDS.contains( id ) )
+                .filter( id -> !EXCLUDED_ZONE_IDS.contains( id ) )
                 .collect( toSet() );
 
         int randomIndex = random().nextInt( availableZoneIds.size() );
