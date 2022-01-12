@@ -52,18 +52,6 @@ class TransactionConfigTest
     }
 
     @Test
-    void shouldDisallowNullTimeout()
-    {
-        assertThrows( NullPointerException.class, () -> TransactionConfig.builder().withTimeout( null ) );
-    }
-
-    @Test
-    void shouldDisallowZeroTimeout()
-    {
-        assertThrows( IllegalArgumentException.class, () -> TransactionConfig.builder().withTimeout( Duration.ZERO ) );
-    }
-
-    @Test
     void shouldDisallowNegativeTimeout()
     {
         assertThrows( IllegalArgumentException.class, () -> TransactionConfig.builder().withTimeout( Duration.ofSeconds( -1 ) ) );
@@ -96,6 +84,26 @@ class TransactionConfigTest
                 .build();
 
         assertEquals( Duration.ofSeconds( 3 ), config.timeout() );
+    }
+
+    @Test
+    void shouldAllowDefaultTimeout()
+    {
+        TransactionConfig config = TransactionConfig.builder()
+                .withTimeout( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT )
+                .build();
+
+        assertNull( config.timeout() );
+    }
+
+    @Test
+    void shouldAllowZeroTimeout()
+    {
+        TransactionConfig config = TransactionConfig.builder()
+                .withTimeout( Duration.ZERO )
+                .build();
+
+        assertEquals( Duration.ZERO, config.timeout() );
     }
 
     @Test
