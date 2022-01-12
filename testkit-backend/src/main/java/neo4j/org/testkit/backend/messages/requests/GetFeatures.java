@@ -56,7 +56,8 @@ public class GetFeatures implements TestkitRequest
             "Feature:API:Liveness.Check",
             "Temporary:DriverMaxConnectionPoolSize",
             "Temporary:ConnectionAcquisitionTimeout",
-            "Temporary:GetConnectionPoolMetrics"
+            "Temporary:GetConnectionPoolMetrics",
+            "Temporary:CypherPathAndRelationship"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

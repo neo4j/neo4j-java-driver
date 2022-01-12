@@ -24,7 +24,9 @@ import neo4j.org.testkit.backend.messages.responses.serializer.TestkitBookmarkSe
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitListValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitMapValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitNodeValueSerializer;
+import neo4j.org.testkit.backend.messages.responses.serializer.TestkitPathValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRecordSerializer;
+import neo4j.org.testkit.backend.messages.responses.serializer.TestkitRelationshipValueSerializer;
 import neo4j.org.testkit.backend.messages.responses.serializer.TestkitValueSerializer;
 
 import java.util.List;
@@ -35,6 +37,8 @@ import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
 
 public class TestkitModule extends SimpleModule
 {
@@ -48,5 +52,7 @@ public class TestkitModule extends SimpleModule
         this.addSerializer( Record.class, new TestkitRecordSerializer() );
         this.addSerializer( MapValue.class, new TestkitMapValueSerializer() );
         this.addSerializer( Bookmark.class, new TestkitBookmarkSerializer() );
+        this.addSerializer( PathValue.class, new TestkitPathValueSerializer() );
+        this.addSerializer( RelationshipValue.class, new TestkitRelationshipValueSerializer() );
     }
 }
