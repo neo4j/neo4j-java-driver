@@ -183,26 +183,33 @@ public class TransactionConfig implements Serializable
         private Duration timeout;
         private Map<String,Object> metadata = emptyMap();
 
+        /**
+         * Value used to signal {@link #withTimeout(Duration)} to use the server-side configured default timeout.
+         */
+        public static final Duration SERVER_DEFAULT_TIMEOUT = null;
+
         private Builder()
         {
         }
 
         /**
          * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
+         * Use {@link #SERVER_DEFAULT_TIMEOUT SERVER_DEFAULT_TIMEOUT} (default) to rely on the server-side configured timeout.
          * <p>
          * This functionality allows to limit query/transaction execution time. Specified timeout overrides the default timeout configured in the database
          * using {@code dbms.transaction.timeout} setting.
          * <p>
-         * Provided value should not be {@code null} and should not represent a duration of zero or negative duration.
+         * Provided value should not represent a negative duration.
          *
          * @param timeout the timeout.
          * @return this builder.
          */
         public Builder withTimeout( Duration timeout )
         {
-            requireNonNull( timeout, "Transaction timeout should not be null" );
-            checkArgument( !timeout.isZero(), "Transaction timeout should not be zero" );
-            checkArgument( !timeout.isNegative(), "Transaction timeout should not be negative" );
+            if (timeout != null)
+            {
+                checkArgument( !timeout.isNegative(), "Transaction timeout should not be negative" );
+            }
 
             this.timeout = timeout;
             return this;

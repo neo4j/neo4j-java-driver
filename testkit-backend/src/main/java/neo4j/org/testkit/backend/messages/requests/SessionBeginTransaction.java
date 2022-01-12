@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
@@ -45,6 +46,30 @@ public class SessionBeginTransaction implements TestkitRequest
 {
     private SessionBeginTransactionBody data;
 
+    private void configureTimeout( TransactionConfig.Builder builder )
+    {
+        if ( data.getTimeoutPresent() )
+        {
+            try
+            {
+                if ( data.getTimeout() != null )
+                {
+                    builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+                }
+                else
+                {
+                    builder.withTimeout( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT );
+                }
+            }
+            catch ( IllegalArgumentException e )
+            {
+                CustomDriverError wrapped = new CustomDriverError();
+                wrapped.initCause( e );
+                throw wrapped;
+            }
+        }
+    }
+
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
@@ -53,10 +78,7 @@ public class SessionBeginTransaction implements TestkitRequest
         TransactionConfig.Builder builder = TransactionConfig.builder();
         Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-        if ( data.getTimeout() != null )
-        {
-            builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-        }
+        configureTimeout( builder );
 
         org.neo4j.driver.Transaction transaction = session.beginTransaction( builder.build() );
         return transaction( testkitState.addTransactionHolder( new TransactionHolder( sessionHolder, transaction ) ) );
@@ -72,10 +94,7 @@ public class SessionBeginTransaction implements TestkitRequest
                                              TransactionConfig.Builder builder = TransactionConfig.builder();
                                              Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-                                             if ( data.getTimeout() != null )
-                                             {
-                                                 builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-                                             }
+                                             configureTimeout( builder );
 
                                              return session.beginTransactionAsync( builder.build() ).thenApply( tx -> transaction(
                                                      testkitState.addAsyncTransactionHolder( new AsyncTransactionHolder( sessionHolder, tx ) ) ) );
@@ -92,10 +111,7 @@ public class SessionBeginTransaction implements TestkitRequest
                                          TransactionConfig.Builder builder = TransactionConfig.builder();
                                          Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
 
-                                         if ( data.getTimeout() != null )
-                                         {
-                                             builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
-                                         }
+                                         configureTimeout( builder );
 
                                          return Mono.fromDirect( session.beginTransaction( builder.build() ) )
                                                     .map( tx -> transaction(
@@ -108,12 +124,23 @@ public class SessionBeginTransaction implements TestkitRequest
         return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
     }
 
-    @Getter
-    @Setter
     public static class SessionBeginTransactionBody
     {
+        @Getter
+        @Setter
         private String sessionId;
+        @Getter
+        @Setter
         private Map<String,Object> txMeta;
+        @Getter
         private Integer timeout;
+        @Getter
+        private Boolean timeoutPresent = false;
+
+        public void setTimeout( Integer timeout )
+        {
+            this.timeout = timeout;
+            timeoutPresent = true;
+        }
     }
 }
