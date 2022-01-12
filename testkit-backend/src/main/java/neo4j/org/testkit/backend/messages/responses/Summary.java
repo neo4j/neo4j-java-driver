@@ -20,6 +20,12 @@ package neo4j.org.testkit.backend.messages.responses;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
+
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.driver.Value;
 
 @Getter
 @Builder
@@ -38,6 +44,24 @@ public class Summary implements TestkitResponse
     public static class SummaryBody
     {
         private ServerInfo serverInfo;
+
+        private Counters counters;
+
+        private Query query;
+
+        private String database;
+
+        private List<Notification> notifications;
+
+        private Plan plan;
+
+        private Profile profile;
+
+        private String queryType;
+
+        private Long resultAvailableAfter;
+
+        private Long resultConsumedAfter;
     }
 
     @Getter
@@ -49,5 +73,105 @@ public class Summary implements TestkitResponse
         private String protocolVersion;
 
         private String agent;
+    }
+
+    @Getter
+    @Builder
+    public static class Counters
+    {
+        private int constraintsAdded;
+
+        private int constraintsRemoved;
+
+        private boolean containsSystemUpdates;
+
+        private boolean containsUpdates;
+
+        private int indexesAdded;
+
+        private int indexesRemoved;
+
+        private int labelsAdded;
+
+        private int labelsRemoved;
+
+        private int nodesCreated;
+
+        private int nodesDeleted;
+
+        private int propertiesSet;
+
+        private int relationshipsCreated;
+
+        private int relationshipsDeleted;
+
+        private int systemUpdates;
+    }
+
+    @Getter
+    @Builder
+    public static class Query
+    {
+        private String text;
+
+        private Map<String,Value> parameters;
+    }
+
+    @Getter
+    @Builder
+    public static class Notification
+    {
+        private String code;
+
+        private String title;
+
+        private String description;
+
+        private InputPosition position;
+
+        private String severity;
+    }
+
+    @Getter
+    @Builder
+    public static class InputPosition
+    {
+        private int offset;
+
+        private int line;
+
+        private int column;
+    }
+
+    @Getter
+    @SuperBuilder
+    public static class Plan
+    {
+        private String operatorType;
+
+        private Map<String,Object> args;
+
+        private List<String> identifiers;
+
+        private List<Plan> children;
+    }
+
+    @Getter
+    @SuperBuilder
+    public static class Profile extends Plan
+    {
+        private long dbHits;
+
+        private long rows;
+
+        private boolean hasPageCacheStats;
+
+        private long pageCacheHits;
+
+        private long pageCacheMisses;
+
+        private double pageCacheHitRatio;
+
+        private long time;
     }
 }
