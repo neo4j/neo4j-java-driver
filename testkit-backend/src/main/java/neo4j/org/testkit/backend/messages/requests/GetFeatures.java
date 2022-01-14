@@ -58,7 +58,8 @@ public class GetFeatures implements TestkitRequest
             "Temporary:ConnectionAcquisitionTimeout",
             "Temporary:GetConnectionPoolMetrics",
             "Temporary:CypherPathAndRelationship",
-            "Temporary:FullSummary"
+            "Temporary:FullSummary",
+            "Temporary:ResultKeys"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
