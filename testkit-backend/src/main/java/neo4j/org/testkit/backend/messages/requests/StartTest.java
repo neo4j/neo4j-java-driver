@@ -35,13 +35,29 @@ import java.util.concurrent.CompletionStage;
 @Getter
 public class StartTest implements TestkitRequest
 {
+    private static final Map<String,String> COMMON_SKIP_PATTERN_TO_REASON = new HashMap<>();
     private static final Map<String,String> ASYNC_SKIP_PATTERN_TO_REASON = new HashMap<>();
     private static final Map<String,String> REACTIVE_SKIP_PATTERN_TO_REASON = new HashMap<>();
 
     static
     {
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_invalid_query_type$", "Does not report type exception" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_no_notifications$", "An empty list is returned when there are no notifications" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_no_notification_info$", "An empty list is returned when there are no notifications" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_notifications_without_position$", "Null value is provided when position is absent" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_multiple_notifications$", "Null value is provided when position is absent" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_not_contains_system_updates$", "Contains updates because value is over zero" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_not_contains_updates$", "Contains updates because value is over zero" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_profile$", "Missing stats are reported with 0 value" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_server_info$", "Address includes domain name" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_system_updates$", "Does not contain updates because value is zero" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_supports_multi_db$", "Database is None" );
+
+        ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", "Does not error as expected" );
 
+        REACTIVE_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         // Current limitations (require further investigation or bug fixing)
         String skipMessage = "Does not report RUN FAILURE";
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_write_successfully_on_leader_switch_using_tx_function$", skipMessage );
@@ -75,31 +91,26 @@ public class StartTest implements TestkitRequest
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
-        return RunTest.builder().build();
+        return createResponse( COMMON_SKIP_PATTERN_TO_REASON );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        TestkitResponse testkitResponse = ASYNC_SKIP_PATTERN_TO_REASON
-                .entrySet()
-                .stream()
-                .filter( entry -> data.getTestName().matches( entry.getKey() ) )
-                .findFirst()
-                .map( entry -> (TestkitResponse) SkipTest.builder()
-                                                         .data( SkipTest.SkipTestBody.builder()
-                                                                                     .reason( entry.getValue() )
-                                                                                     .build() )
-                                                         .build() )
-                .orElseGet( () -> RunTest.builder().build() );
-
+        TestkitResponse testkitResponse = createResponse( ASYNC_SKIP_PATTERN_TO_REASON );
         return CompletableFuture.completedFuture( testkitResponse );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        TestkitResponse testkitResponse = REACTIVE_SKIP_PATTERN_TO_REASON
+        TestkitResponse testkitResponse = createResponse( REACTIVE_SKIP_PATTERN_TO_REASON );
+        return Mono.fromCompletionStage( CompletableFuture.completedFuture( testkitResponse ) );
+    }
+
+    private TestkitResponse createResponse( Map<String,String> skipPatternToReason )
+    {
+        return skipPatternToReason
                 .entrySet()
                 .stream()
                 .filter( entry -> data.getTestName().matches( entry.getKey() ) )
@@ -110,8 +121,6 @@ public class StartTest implements TestkitRequest
                                                                                      .build() )
                                                          .build() )
                 .orElseGet( () -> RunTest.builder().build() );
-
-        return Mono.fromCompletionStage( CompletableFuture.completedFuture( testkitResponse ) );
     }
 
     @Setter
