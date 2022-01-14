@@ -63,9 +63,7 @@ public class SessionBeginTransaction implements TestkitRequest
             }
             catch ( IllegalArgumentException e )
             {
-                CustomDriverError wrapped = new CustomDriverError();
-                wrapped.initCause( e );
-                throw wrapped;
+                throw new CustomDriverError( e );
             }
         }
     }
@@ -124,17 +122,13 @@ public class SessionBeginTransaction implements TestkitRequest
         return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();
     }
 
+    @Getter
+    @Setter
     public static class SessionBeginTransactionBody
     {
-        @Getter
-        @Setter
         private String sessionId;
-        @Getter
-        @Setter
         private Map<String,Object> txMeta;
-        @Getter
         private Integer timeout;
-        @Getter
         private Boolean timeoutPresent = false;
 
         public void setTimeout( Integer timeout )

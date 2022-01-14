@@ -94,6 +94,7 @@ class TransactionConfigTest
                 .build();
 
         assertNull( config.timeout() );
+        assertEquals( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT,config.timeout() );
     }
 
     @Test

@@ -180,13 +180,13 @@ public class TransactionConfig implements Serializable
      */
     public static class Builder
     {
-        private Duration timeout;
-        private Map<String,Object> metadata = emptyMap();
-
         /**
          * Value used to signal {@link #withTimeout(Duration)} to use the server-side configured default timeout.
          */
         public static final Duration SERVER_DEFAULT_TIMEOUT = null;
+
+        private Duration timeout;
+        private Map<String,Object> metadata = emptyMap();
 
         private Builder()
         {
@@ -194,7 +194,7 @@ public class TransactionConfig implements Serializable
 
         /**
          * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
-         * Use {@link #SERVER_DEFAULT_TIMEOUT SERVER_DEFAULT_TIMEOUT} (default) to rely on the server-side configured timeout.
+         * Use {@link #SERVER_DEFAULT_TIMEOUT} (default) to rely on the server-side configured timeout.
          * <p>
          * This functionality allows to limit query/transaction execution time. Specified timeout overrides the default timeout configured in the database
          * using {@code dbms.transaction.timeout} setting.

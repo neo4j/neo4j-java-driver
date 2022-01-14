@@ -67,9 +67,7 @@ public class SessionRun implements TestkitRequest
             }
             catch ( IllegalArgumentException e )
             {
-                CustomDriverError wrapped = new CustomDriverError();
-                wrapped.initCause( e );
-                throw wrapped;
+                throw new CustomDriverError( e );
             }
         }
     }
@@ -144,25 +142,16 @@ public class SessionRun implements TestkitRequest
         return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
     }
 
+    @Setter
+    @Getter
     public static class SessionRunBody
     {
         @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
-        @Setter
-        @Getter
         private Map<String,Object> params;
-
-        @Setter
-        @Getter
         private String sessionId;
-        @Setter
-        @Getter
         private String cypher;
-        @Setter
-        @Getter
         private Map<String,Object> txMeta;
-        @Getter
         private Integer timeout;
-        @Getter
         private Boolean timeoutPresent = false;
 
         public void setTimeout( Integer timeout )
