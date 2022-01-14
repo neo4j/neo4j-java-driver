@@ -58,7 +58,7 @@ public class SessionBeginTransaction implements TestkitRequest
                 }
                 else
                 {
-                    builder.withTimeout( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT );
+                    builder.withDefaultTimeout();
                 }
             }
             catch ( IllegalArgumentException e )

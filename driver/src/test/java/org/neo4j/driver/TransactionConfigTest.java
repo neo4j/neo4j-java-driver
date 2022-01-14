@@ -24,10 +24,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyMap;
@@ -80,8 +80,8 @@ class TransactionConfigTest
     void shouldHaveTimeout()
     {
         TransactionConfig config = TransactionConfig.builder()
-                .withTimeout( Duration.ofSeconds( 3 ) )
-                .build();
+                                                    .withTimeout( Duration.ofSeconds( 3 ) )
+                                                    .build();
 
         assertEquals( Duration.ofSeconds( 3 ), config.timeout() );
     }
@@ -90,11 +90,11 @@ class TransactionConfigTest
     void shouldAllowDefaultTimeout()
     {
         TransactionConfig config = TransactionConfig.builder()
-                .withTimeout( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT )
-                .build();
+                                                    .withTimeout( Duration.ofSeconds( 3 ) )
+                                                    .withDefaultTimeout()
+                                                    .build();
 
         assertNull( config.timeout() );
-        assertEquals( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT,config.timeout() );
     }
 
     @Test

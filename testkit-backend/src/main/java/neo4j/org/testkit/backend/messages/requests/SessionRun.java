@@ -62,7 +62,7 @@ public class SessionRun implements TestkitRequest
                 }
                 else
                 {
-                    builder.withTimeout( TransactionConfig.Builder.SERVER_DEFAULT_TIMEOUT );
+                    builder.withDefaultTimeout();
                 }
             }
             catch ( IllegalArgumentException e )
@@ -159,6 +159,5 @@ public class SessionRun implements TestkitRequest
             this.timeout = timeout;
             timeoutPresent = true;
         }
-
     }
 }

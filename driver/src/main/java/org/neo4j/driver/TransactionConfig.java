@@ -180,11 +180,6 @@ public class TransactionConfig implements Serializable
      */
     public static class Builder
     {
-        /**
-         * Value used to signal {@link #withTimeout(Duration)} to use the server-side configured default timeout.
-         */
-        public static final Duration SERVER_DEFAULT_TIMEOUT = null;
-
         private Duration timeout;
         private Map<String,Object> metadata = emptyMap();
 
@@ -194,7 +189,7 @@ public class TransactionConfig implements Serializable
 
         /**
          * Set the transaction timeout. Transactions that execute longer than the configured timeout will be terminated by the database.
-         * Use {@link #SERVER_DEFAULT_TIMEOUT} (default) to rely on the server-side configured timeout.
+         * See also {@link #withDefaultTimeout}.
          * <p>
          * This functionality allows to limit query/transaction execution time. Specified timeout overrides the default timeout configured in the database
          * using {@code dbms.transaction.timeout} setting.
@@ -206,12 +201,23 @@ public class TransactionConfig implements Serializable
          */
         public Builder withTimeout( Duration timeout )
         {
-            if (timeout != null)
-            {
-                checkArgument( !timeout.isNegative(), "Transaction timeout should not be negative" );
-            }
+            requireNonNull( timeout, "Transaction timeout should not be null" );
+            checkArgument( !timeout.isNegative(), "Transaction timeout should not be negative" );
 
             this.timeout = timeout;
+            return this;
+        }
+
+        /**
+         * Set the transaction timeout to ths server-side configured default timeout. This is the default behaviour if neiter
+         * {@link #withTimeout} has not been called.
+         * See also {@link #withTimeout}.
+         *
+         * @return this builder.
+         */
+        public Builder withDefaultTimeout()
+        {
+            this.timeout = null;
             return this;
         }
 
