@@ -21,6 +21,8 @@ package neo4j.org.testkit.backend.messages.responses;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
 public class Result implements TestkitResponse
@@ -38,5 +40,7 @@ public class Result implements TestkitResponse
     public static class ResultBody
     {
         private String id;
+
+        private List<String> keys;
     }
 }
