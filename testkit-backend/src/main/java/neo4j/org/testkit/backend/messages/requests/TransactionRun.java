@@ -32,6 +32,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
@@ -50,7 +51,7 @@ public class TransactionRun implements TestkitRequest
         org.neo4j.driver.Result result = transactionHolder.getTransaction()
                                                           .run( data.getCypher(), data.getParams() != null ? data.getParams() : Collections.emptyMap() );
         String resultId = testkitState.addResultHolder( new ResultHolder( transactionHolder, result ) );
-        return createResponse( resultId );
+        return createResponse( resultId, result.keys() );
     }
 
     @Override
@@ -65,7 +66,7 @@ public class TransactionRun implements TestkitRequest
                                                                                                String resultId = testkitState.addAsyncResultHolder(
                                                                                                        new ResultCursorHolder( transactionHolder,
                                                                                                                                resultCursor ) );
-                                                                                               return createResponse( resultId );
+                                                                                               return createResponse( resultId, resultCursor.keys() );
                                                                                            } ) );
     }
 
@@ -81,13 +82,13 @@ public class TransactionRun implements TestkitRequest
                                          String resultId = testkitState.addRxResultHolder( new RxResultHolder( transactionHolder, result ) );
                                          // The keys() method causes RUN message exchange.
                                          // However, it does not currently report errors.
-                                         return Mono.fromDirect( result.keys() ).then( Mono.just( createResponse( resultId ) ) );
+                                         return Mono.fromDirect( result.keys() ).map( keys -> createResponse( resultId, keys ) );
                                      } );
     }
 
-    protected Result createResponse( String resultId )
+    protected Result createResponse( String resultId, List<String> keys )
     {
-        return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
+        return Result.builder().data( Result.ResultBody.builder().id( resultId ).keys( keys ).build() ).build();
     }
 
     @Setter

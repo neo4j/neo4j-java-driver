@@ -32,6 +32,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -63,7 +64,7 @@ public class SessionRun implements TestkitRequest
         org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
         String id = testkitState.addResultHolder( new ResultHolder( sessionHolder, result ) );
 
-        return createResponse( id );
+        return createResponse( id, result.keys() );
     }
 
     @Override
@@ -86,7 +87,7 @@ public class SessionRun implements TestkitRequest
                                                                        {
                                                                            String id = testkitState.addAsyncResultHolder(
                                                                                    new ResultCursorHolder( sessionHolder, resultCursor ) );
-                                                                           return createResponse( id );
+                                                                           return createResponse( id, resultCursor.keys() );
                                                                        } );
                                          } );
     }
@@ -111,13 +112,13 @@ public class SessionRun implements TestkitRequest
                                          // The keys() method causes RUN message exchange.
                                          // However, it does not currently report errors.
                                          return Mono.fromDirect( result.keys() )
-                                                    .map( ignored -> createResponse( id ) );
+                                                    .map( keys -> createResponse( id, keys ) );
                                      } );
     }
 
-    private Result createResponse( String resultId )
+    private Result createResponse( String resultId, List<String> keys )
     {
-        return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
+        return Result.builder().data( Result.ResultBody.builder().id( resultId ).keys( keys ).build() ).build();
     }
 
     @Setter
