@@ -53,6 +53,7 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_system_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_supports_multi_db$", "Database is None" );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^stub\\.bookmarks\\..*$", "New session returns initial bookmarks" );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", "Does not error as expected" );
