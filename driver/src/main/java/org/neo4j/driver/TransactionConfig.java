@@ -209,7 +209,7 @@ public class TransactionConfig implements Serializable
         }
 
         /**
-         * Set the transaction timeout to ths server-side configured default timeout. This is the default behaviour if neiter
+         * Set the transaction timeout to the server-side configured default timeout. This is the default behaviour if
          * {@link #withTimeout} has not been called.
          * See also {@link #withTimeout}.
          *
