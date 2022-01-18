@@ -21,11 +21,14 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.AbstractTransactionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import neo4j.org.testkit.backend.messages.responses.Transaction;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.async.AsyncTransaction;
 
 @Setter
 @Getter
@@ -43,13 +46,19 @@ public class TransactionClose implements TestkitRequest
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
-        throw new UnsupportedOperationException();
+        return testkitState.getAsyncTransactionHolder( data.getTxId() )
+                           .thenApply( AbstractTransactionHolder::getTransaction )
+                           .thenCompose( AsyncTransaction::closeAsync )
+                           .thenApply( ignored -> createResponse( data.getTxId() ) );
     }
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
-        throw new UnsupportedOperationException( "Operation not supported" );
+        return testkitState.getRxTransactionHolder( data.getTxId() )
+                           .map( AbstractTransactionHolder::getTransaction )
+                           .flatMap( tx -> Mono.fromDirect( tx.close() ) )
+                           .then( Mono.just( createResponse( data.getTxId() ) ) );
     }
 
     private Transaction createResponse( String txId )
