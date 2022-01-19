@@ -59,7 +59,7 @@ public interface ConnectionPoolMetrics
     /**
      * A counter to record how many connections have been successfully created with this pool since the pool is created.
      * This number increases every time when a connection is successfully created.
-     * @return The amount of connections have ever been created by this pool.
+     * @return The amount of connections has ever been created by this pool.
      */
     long created();
 

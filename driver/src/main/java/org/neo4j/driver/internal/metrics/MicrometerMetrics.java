@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MicrometerMetrics implements Metrics, MetricsListener {
 
     private final MeterRegistry meterRegistry;
-    private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
+    private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
 
     public MicrometerMetrics(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
@@ -46,52 +46,52 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
 
     @Override
     public void beforeCreating(String poolId, ListenerEvent creatingEvent) {
-        poolMetrics(poolId).beforeCreating(creatingEvent);
+        poolMetricsListener(poolId).beforeCreating(creatingEvent);
     }
 
     @Override
     public void afterCreated(String poolId, ListenerEvent creatingEvent) {
-        poolMetrics(poolId).afterCreated(creatingEvent);
+        poolMetricsListener(poolId).afterCreated(creatingEvent);
     }
 
     @Override
     public void afterFailedToCreate(String poolId) {
-        poolMetrics(poolId).afterFailedToCreate();
+        poolMetricsListener(poolId).afterFailedToCreate();
     }
 
     @Override
     public void afterClosed(String poolId) {
-        poolMetrics(poolId).afterClosed();
+        poolMetricsListener(poolId).afterClosed();
     }
 
     @Override
     public void beforeAcquiringOrCreating(String poolId, ListenerEvent acquireEvent) {
-        poolMetrics(poolId).beforeAcquiringOrCreating(acquireEvent);
+        poolMetricsListener(poolId).beforeAcquiringOrCreating(acquireEvent);
     }
 
     @Override
     public void afterAcquiringOrCreating(String poolId) {
-        poolMetrics(poolId).afterAcquiringOrCreating();
+        poolMetricsListener(poolId).afterAcquiringOrCreating();
     }
 
     @Override
     public void afterAcquiredOrCreated(String poolId, ListenerEvent acquireEvent) {
-        poolMetrics(poolId).afterAcquiredOrCreated(acquireEvent);
+        poolMetricsListener(poolId).afterAcquiredOrCreated(acquireEvent);
     }
 
     @Override
     public void afterTimedOutToAcquireOrCreate(String poolId) {
-        poolMetrics(poolId).afterTimedOutToAcquireOrCreate();
+        poolMetricsListener(poolId).afterTimedOutToAcquireOrCreate();
     }
 
     @Override
     public void afterConnectionCreated(String poolId, ListenerEvent inUseEvent) {
-        poolMetrics(poolId).acquired(inUseEvent);
+        poolMetricsListener(poolId).acquired(inUseEvent);
     }
 
     @Override
     public void afterConnectionReleased(String poolId, ListenerEvent inUseEvent) {
-        poolMetrics(poolId).released(inUseEvent);
+        poolMetricsListener(poolId).released(inUseEvent);
     }
 
     @Override
@@ -110,9 +110,9 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
         this.connectionPoolMetrics.remove(poolId);
     }
 
-    private ConnectionPoolMetricsListener poolMetrics( String poolId )
+    private ConnectionPoolMetricsListener poolMetricsListener(String poolId )
     {
-        InternalConnectionPoolMetrics poolMetrics = (InternalConnectionPoolMetrics) this.connectionPoolMetrics.get( poolId );
+        ConnectionPoolMetricsListener poolMetrics = (ConnectionPoolMetricsListener) this.connectionPoolMetrics.get( poolId );
         if ( poolMetrics == null )
         {
             return DEV_NULL_POOL_METRICS_LISTENER;

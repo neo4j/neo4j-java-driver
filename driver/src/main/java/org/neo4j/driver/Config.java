@@ -98,6 +98,7 @@ public class Config implements Serializable
     private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
     private final String userAgent;
+    private final MetricsProvider metricsProvider;
 
     private Config( ConfigBuilder builder )
     {
@@ -122,6 +123,7 @@ public class Config implements Serializable
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.isMetricsEnabled = builder.isMetricsEnabled;
+        this.metricsProvider = builder.metricsProvider;
     }
 
     /**
@@ -262,6 +264,8 @@ public class Config implements Serializable
         return isMetricsEnabled;
     }
 
+    public MetricsProvider metricsProvider() { return metricsProvider; }
+
     /**
      * @return the user_agent configured for this driver
      */
@@ -292,6 +296,7 @@ public class Config implements Serializable
         private boolean isMetricsEnabled = false;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
+        private MetricsProvider metricsProvider;
 
         private ConfigBuilder() {}
 
@@ -717,6 +722,7 @@ public class Config implements Serializable
          */
         // TODO Figure out how a user configures a different metrics implementation
         public ConfigBuilder withDriverMetrics(MetricsProvider provider) {
+            this.metricsProvider = provider;
             this.isMetricsEnabled = true;
             return this;
         }

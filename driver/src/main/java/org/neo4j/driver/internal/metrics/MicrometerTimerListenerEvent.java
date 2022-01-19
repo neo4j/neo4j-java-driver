@@ -42,6 +42,7 @@ public class MicrometerTimerListenerEvent implements ListenerEvent {
     @Override
     public long elapsed() {
         // Micrometer Timer Sample does not provide API to get elapsed time
+        // and it is not needed right now
         return 0;
     }
 }

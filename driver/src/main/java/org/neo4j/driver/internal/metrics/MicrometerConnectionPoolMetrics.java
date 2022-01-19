@@ -37,13 +37,18 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
 
     private final Counter closed;
 
-    // creating = created + failedToCreate
     private final AtomicInteger creating = new AtomicInteger();
     private final Counter failedToCreate;
+    private final Counter created;
 
     // acquiring = acquired + timedOutToAcquire + failedToAcquireDueToOtherFailures (which we do not keep track)
     private final AtomicInteger acquiring = new AtomicInteger();
     private final Counter timedOutToAcquire;
+    private final AtomicLong totalAcquisitionTime = new AtomicLong();
+    private final AtomicLong totalConnectionTime = new AtomicLong();
+    private final AtomicLong totalInUseTime = new AtomicLong();
+    private final Counter acquired;
+    private final Counter totalInUse;
 
     private final String id;
     private final MeterRegistry registry;
@@ -67,9 +72,15 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
 
         Gauge.builder(PREFIX + ".creating", creating, AtomicInteger::get).tags(this.tags).register(this.registry);
         Gauge.builder(PREFIX + ".acquiring", acquiring, AtomicInteger::get).tags(this.tags).register(this.registry);
+        Gauge.builder(PREFIX + ".inUse", this::inUse).tags(this.tags).register(this.registry);
+        Gauge.builder(PREFIX + ".idle", this::idle).tags(this.tags).register(this.registry);
+
         failedToCreate = Counter.builder(PREFIX + ".failed").tags(this.tags).register(this.registry);
         timedOutToAcquire = Counter.builder(PREFIX + ".acquisition.timeout").tags(this.tags).register(this.registry);
         closed = Counter.builder(PREFIX + ".closed").tags(this.tags).register(this.registry);
+        created = Counter.builder(PREFIX + ".created").tags(this.tags).register(this.registry);
+        acquired = Counter.builder(PREFIX + ".acquired").tags(this.tags).register(this.registry);
+        totalInUse = Counter.builder(PREFIX + ".inUse").tags(this.tags).register(this.registry);
     }
 
     @Override
@@ -90,8 +101,10 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     public void afterCreated( ListenerEvent connEvent )
     {
         creating.decrementAndGet();
+        created.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
-        sample.stop(Timer.builder(PREFIX + ".creation").tags(this.tags).register(this.registry));
+        long elapsed = sample.stop(Timer.builder(PREFIX + ".creation").tags(this.tags).register(this.registry));
+        totalConnectionTime.addAndGet( elapsed );
     }
 
     @Override
@@ -116,10 +129,12 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     @Override
     public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
     {
+        acquired.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
         // We can't time failed acquisitions currently
         // Same for creation Timer and in-use Timer
-        sample.stop(Timer.builder(PREFIX + ".acquisition").tags(this.tags).register(this.registry));
+        long elapsed = sample.stop(Timer.builder(PREFIX + ".acquisition").tags(this.tags).register(this.registry));
+        totalAcquisitionTime.addAndGet(elapsed);
     }
 
     @Override
@@ -138,8 +153,10 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     @Override
     public void released( ListenerEvent inUseEvent )
     {
+        totalInUse.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
-        sample.stop(Timer.builder(PREFIX + ".usage").tags(this.tags).register(registry));
+        long elapsed = sample.stop(Timer.builder(PREFIX + ".usage").tags(this.tags).register(registry));
+        totalInUseTime.addAndGet( elapsed );
     }
 
     @Override
@@ -150,66 +167,66 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     // no-ops below here
     @Override
     public int inUse() {
-        return 0;
+        return pool.inUseConnections(address);
     }
 
     @Override
     public int idle() {
-        return 0;
+        return pool.idleConnections(address);
     }
 
     @Override
     public int creating() {
-        return 0;
+        return creating.get();
     }
 
     @Override
     public long created() {
-        return 0;
+        return ((Double) created.count()).longValue();
     }
 
     @Override
     public long failedToCreate() {
-        return 0;
+        return ((Double) failedToCreate.count()).longValue();
     }
 
     @Override
     public long closed() {
-        return 0;
+        return ((Double) closed.count()).longValue();
     }
 
     @Override
     public int acquiring() {
-        return 0;
+        return acquiring.get();
     }
 
     @Override
     public long acquired() {
-        return 0;
+        return ((Double) acquired.count()).longValue();
     }
 
     @Override
     public long timedOutToAcquire() {
-        return 0;
+        return ((Double) timedOutToAcquire.count()).longValue();
     }
 
     @Override
     public long totalAcquisitionTime() {
-        return 0;
+        return totalAcquisitionTime.get();
     }
 
     @Override
     public long totalConnectionTime() {
-        return 0;
+        return totalConnectionTime.get();
     }
 
     @Override
     public long totalInUseTime() {
-        return 0;
+        return totalInUseTime.get();
     }
 
     @Override
     public long totalInUseCount() {
-        return 0;
+        return ((Double) totalInUse.count()).longValue();
     }
 }
