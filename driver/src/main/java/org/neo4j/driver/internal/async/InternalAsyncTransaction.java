@@ -45,7 +45,13 @@ public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implement
     }
 
     @Override
-    public CompletionStage<ResultCursor> runAsync(Query query)
+    public CompletionStage<Void> closeAsync()
+    {
+        return tx.closeAsync();
+    }
+
+    @Override
+    public CompletionStage<ResultCursor> runAsync( Query query )
     {
         return tx.runAsync( query );
     }
