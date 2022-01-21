@@ -49,7 +49,7 @@
     <logback-classic.version>1.2.8</logback-classic.version>
     <jackson.version>2.13.0</jackson.version>
     <lombok.version>1.18.22</lombok.version>
-    <svm.version>20.3.4</svm.version>
+    <svm.version>21.3.0</svm.version>
     <!-- To be overwritten by child projects -->
     <moduleName />
   </properties>
