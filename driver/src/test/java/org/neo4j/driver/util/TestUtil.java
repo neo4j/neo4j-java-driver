@@ -84,7 +84,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -519,7 +518,6 @@ public final class TestUtil
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( database( databaseName ) );
@@ -642,14 +640,6 @@ public final class TestUtil
     public static ArgumentMatcher<Message> beginMessageWithPredicate( Predicate<BeginMessage> predicate )
     {
         return message -> message instanceof BeginMessage && predicate.test( (BeginMessage) message );
-    }
-
-    /**
-     * Used in tests that expect a server version but the tests do not depend on server version to behave differently.
-     */
-    public static ServerVersion anyServerVersion()
-    {
-        return ServerVersion.v4_0_0;
     }
 
     public static void assertNoCircularReferences(Throwable ex)

@@ -26,17 +26,12 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
-import static org.neo4j.driver.internal.util.ServerVersion.fromBoltProtocolVersion;
 
 public class HelloResponseHandler implements ResponseHandler
 {
@@ -46,13 +41,11 @@ public class HelloResponseHandler implements ResponseHandler
 
     private final ChannelPromise connectionInitializedPromise;
     private final Channel channel;
-    private final BoltProtocolVersion protocolVersion;
 
-    public HelloResponseHandler( ChannelPromise connectionInitializedPromise, BoltProtocolVersion protocolVersion )
+    public HelloResponseHandler( ChannelPromise connectionInitializedPromise )
     {
         this.connectionInitializedPromise = connectionInitializedPromise;
         this.channel = connectionInitializedPromise.channel();
-        this.protocolVersion = protocolVersion;
     }
 
     @Override
@@ -60,19 +53,8 @@ public class HelloResponseHandler implements ResponseHandler
     {
         try
         {
-            Value serverValue = extractServer( metadata );
-            setServerAgent( channel, serverValue.asString() );
-
-            // From Server V4 extracting server from metadata in the success message is unreliable
-            // so we fix the Server version against the Bolt Protocol version for Server V4 and above.
-            if ( BoltProtocolV3.VERSION.equals( protocolVersion ) )
-            {
-                setServerVersion( channel, extractNeo4jServerVersion( metadata ) );
-            }
-            else
-            {
-                setServerVersion( channel, fromBoltProtocolVersion( protocolVersion ) );
-            }
+            String serverAgent = extractServer( metadata ).asString();
+            setServerAgent( channel, serverAgent );
 
             String connectionId = extractConnectionId( metadata );
             setConnectionId( channel, connectionId );

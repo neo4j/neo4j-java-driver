@@ -39,7 +39,6 @@ import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.StringValue;
 
 import static java.util.Arrays.asList;
@@ -414,7 +413,6 @@ class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( SingleDatabaseRoutingProcedureRunner runner,
                                                                                              Connection connection )
     {
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v3_5_0 );
         when( connection.protocol() ).thenReturn( BoltProtocolV3.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), runner, newMultiDBProcedureRunnerMock(),
                                                                newRouteMessageRoutingProcedureRunnerMock() );
@@ -423,7 +421,6 @@ class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner,
                                                                                              Connection connection )
     {
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
         when( connection.protocol() ).thenReturn( BoltProtocolV4.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( mock( Clock.class ), newProcedureRunnerMock(), runner,
                                                                newRouteMessageRoutingProcedureRunnerMock() );
@@ -432,7 +429,6 @@ class RoutingProcedureClusterCompositionProviderTest
     private static RoutingProcedureClusterCompositionProvider newClusterCompositionProvider( MultiDatabasesRoutingProcedureRunner runner, Connection connection,
                                                                                              Clock clock )
     {
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v4_0_0 );
         when( connection.protocol() ).thenReturn( BoltProtocolV4.INSTANCE );
         return new RoutingProcedureClusterCompositionProvider( clock, newProcedureRunnerMock(), runner, newRouteMessageRoutingProcedureRunnerMock() );
     }

@@ -28,8 +28,8 @@ import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
@@ -56,7 +56,7 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
     }
 
     @Override
-    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
+    Query procedureQuery( BoltProtocolVersion protocolVersion, DatabaseName databaseName )
     {
         HashMap<String,Value> map = new HashMap<>();
         map.put( ROUTING_CONTEXT, value( context.toMap() ) );

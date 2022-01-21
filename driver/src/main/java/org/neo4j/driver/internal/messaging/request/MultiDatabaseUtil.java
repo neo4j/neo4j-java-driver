@@ -24,7 +24,6 @@ import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 public final class MultiDatabaseUtil
 {
@@ -39,8 +38,7 @@ public final class MultiDatabaseUtil
 
     public static boolean supportsMultiDatabase( Connection connection )
     {
-        return connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_0_0 ) &&
-               connection.protocol().version().compareTo( BoltProtocolV4.VERSION ) >= 0;
+        return connection.protocol().version().compareTo( BoltProtocolV4.VERSION ) >= 0;
     }
 
     public static boolean supportsRouteMessage( Connection connection )

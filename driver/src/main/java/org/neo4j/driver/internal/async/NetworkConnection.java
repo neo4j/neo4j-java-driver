@@ -43,7 +43,6 @@ import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
@@ -61,7 +60,6 @@ public class NetworkConnection implements Connection
     private final InboundMessageDispatcher messageDispatcher;
     private final String serverAgent;
     private final BoltServerAddress serverAddress;
-    private final ServerVersion serverVersion;
     private final BoltProtocol protocol;
     private final ExtendedChannelPool channelPool;
     private final CompletableFuture<Void> releaseFuture;
@@ -81,7 +79,6 @@ public class NetworkConnection implements Connection
         this.messageDispatcher = ChannelAttributes.messageDispatcher( channel );
         this.serverAgent = ChannelAttributes.serverAgent( channel );
         this.serverAddress = ChannelAttributes.serverAddress( channel );
-        this.serverVersion = ChannelAttributes.serverVersion( channel );
         this.protocol = BoltProtocol.forChannel( channel );
         this.channelPool = channelPool;
         this.releaseFuture = new CompletableFuture<>();
@@ -211,12 +208,6 @@ public class NetworkConnection implements Connection
     public BoltServerAddress serverAddress()
     {
         return serverAddress;
-    }
-
-    @Override
-    public ServerVersion serverVersion()
-    {
-        return serverVersion;
     }
 
     @Override

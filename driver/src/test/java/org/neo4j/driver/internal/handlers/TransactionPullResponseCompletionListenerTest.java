@@ -39,7 +39,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.messaging.v3.BoltProtocolV3.METADATA_EXTRACTOR;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class TransactionPullResponseCompletionListenerTest
 {
@@ -63,7 +62,6 @@ class TransactionPullResponseCompletionListenerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );

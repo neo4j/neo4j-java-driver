@@ -43,11 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMessageDispatcher;
 import static org.neo4j.driver.internal.async.outbound.OutboundMessageHandler.NAME;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class InitResponseHandlerTest
 {
@@ -69,19 +67,6 @@ class InitResponseHandlerTest
     }
 
     @Test
-    void shouldSetServerVersionOnChannel()
-    {
-        ChannelPromise channelPromise = channel.newPromise();
-        InitResponseHandler handler = new InitResponseHandler( channelPromise );
-
-        Map<String,Value> metadata = singletonMap( "server", value( anyServerVersion().toString() ) );
-        handler.onSuccess( metadata );
-
-        assertTrue( channelPromise.isSuccess() );
-        assertEquals( anyServerVersion(), serverVersion( channel ) );
-    }
-
-    @Test
     void shouldFailToConnectWhenNoServerIdentifierIsProvided()
     {
         ChannelPromise channelPromise = channel.newPromise();
@@ -96,7 +81,7 @@ class InitResponseHandlerTest
     {
         InitResponseHandler handler = new InitResponseHandler( channel.newPromise() );
 
-        Map<String,Value> metadata = singletonMap( "server", value( anyServerVersion().toString() ) );
+        Map<String,Value> metadata = singletonMap( "server", value( "Neo4j/4.4.0" ) );
         handler.onSuccess( metadata );
 
         Map<String,Value> params = singletonMap( "array", value( new byte[]{1, 2, 3} ) );

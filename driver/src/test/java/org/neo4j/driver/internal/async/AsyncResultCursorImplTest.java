@@ -64,7 +64,6 @@ import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalDatabaseInfo.DEFAULT_DATABASE_INFO;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class AsyncResultCursorImplTest
@@ -90,7 +89,7 @@ class AsyncResultCursorImplTest
 
         ResultSummary summary = new InternalResultSummary(
                 new Query( "RETURN 42" ),
-                new InternalServerInfo( "Neo4j/4.2.5", BoltServerAddress.LOCAL_DEFAULT, anyServerVersion(), BoltProtocolV43.VERSION ),
+                new InternalServerInfo( "Neo4j/4.2.5", BoltServerAddress.LOCAL_DEFAULT, BoltProtocolV43.VERSION ),
                 DEFAULT_DATABASE_INFO, QueryType.SCHEMA_WRITE,
                 new InternalSummaryCounters( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0 ),
                 null, null, emptyList(), 42, 42

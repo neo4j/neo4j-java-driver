@@ -25,6 +25,8 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.messaging.BoltProtocol;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -101,6 +103,10 @@ abstract class AbstractRoutingProcedureRunnerTest
     static Connection connection( CompletionStage<Void> releaseStage )
     {
         Connection connection = mock( Connection.class );
+        BoltProtocol boltProtocol = mock( BoltProtocol.class );
+        BoltProtocolVersion protocolVersion = new BoltProtocolVersion( 4, 4 );
+        when( boltProtocol.version() ).thenReturn( protocolVersion );
+        when( connection.protocol() ).thenReturn( boltProtocol );
         when( connection.release() ).thenReturn( releaseStage );
         return connection;
     }

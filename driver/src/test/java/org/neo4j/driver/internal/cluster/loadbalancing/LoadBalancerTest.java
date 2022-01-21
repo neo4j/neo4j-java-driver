@@ -57,7 +57,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.FakeClock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -442,7 +441,6 @@ class LoadBalancerTest
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( address );
         when( connection.protocol() ).thenReturn( BoltProtocol.forVersion( BoltProtocolV42.VERSION ) );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.v4_1_0 );
         when( connection.release() ).thenReturn( completedWithNull() );
         return connection;
     }

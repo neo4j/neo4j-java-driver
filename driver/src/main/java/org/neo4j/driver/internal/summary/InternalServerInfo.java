@@ -22,21 +22,20 @@ import java.util.Objects;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.summary.ServerInfo;
 
 public class InternalServerInfo implements ServerInfo
 {
+    private static final String TO_STRING_FMT = "%s{address='%s'}";
+
     private final String agent;
     private final String address;
-    private final String version;
     private final String protocolVersion;
 
-    public InternalServerInfo( String agent, BoltServerAddress address, ServerVersion version, BoltProtocolVersion protocolVersion )
+    public InternalServerInfo( String agent, BoltServerAddress address, BoltProtocolVersion protocolVersion )
     {
         this.agent = agent;
         this.address = address.toString();
-        this.version = version.toString();
         this.protocolVersion = protocolVersion.toString();
     }
 
@@ -50,12 +49,6 @@ public class InternalServerInfo implements ServerInfo
     public String address()
     {
         return address;
-    }
-
-    @Override
-    public String version()
-    {
-        return version;
     }
 
     @Override
@@ -76,18 +69,18 @@ public class InternalServerInfo implements ServerInfo
             return false;
         }
         InternalServerInfo that = (InternalServerInfo) o;
-        return Objects.equals( address, that.address ) && Objects.equals( version, that.version );
+        return Objects.equals( address, that.address );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( address, version );
+        return Objects.hash( address );
     }
 
     @Override
     public String toString()
     {
-        return "InternalServerInfo{" + "address='" + address + '\'' + ", version='" + version + '\'' + '}';
+        return String.format( TO_STRING_FMT, this.getClass().getSimpleName(), address );
     }
 }

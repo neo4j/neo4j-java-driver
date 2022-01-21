@@ -101,7 +101,7 @@ public class MetadataExtractor
     public ResultSummary extractSummary(Query query, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo =
-                new InternalServerInfo( connection.serverAgent(), connection.serverAddress(), connection.serverVersion(), connection.protocol().version() );
+                new InternalServerInfo( connection.serverAgent(), connection.serverAddress(), connection.protocol().version() );
         DatabaseInfo dbInfo = extractDatabaseInfo( metadata );
         return new InternalResultSummary(query, serverInfo, dbInfo, extractQueryType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
                 extractProfiledPlan( metadata ), extractNotifications( metadata ), resultAvailableAfter,
@@ -131,26 +131,17 @@ public class MetadataExtractor
         return InternalBookmark.empty();
     }
 
-    public static ServerVersion extractNeo4jServerVersion( Map<String,Value> metadata )
-    {
-        Value serverValue = extractServer( metadata );
-        ServerVersion server = ServerVersion.version( serverValue.asString() );
-        if ( ServerVersion.NEO4J_PRODUCT.equalsIgnoreCase( server.product() ) )
-        {
-            return server;
-        }
-        else
-        {
-            throw new UntrustedServerException( "Server does not identify as a genuine Neo4j instance: '" + server.product() + "'" );
-        }
-    }
-
     public static Value extractServer( Map<String,Value> metadata )
     {
         Value versionValue = metadata.get( "server" );
         if ( versionValue == null || versionValue.isNull() )
         {
             throw new UntrustedServerException( "Server provides no product identifier" );
+        }
+        String serverAgent = versionValue.asString();
+        if ( !serverAgent.startsWith( "Neo4j/" ) )
+        {
+            throw new UntrustedServerException( "Server does not identify as a genuine Neo4j instance: '" + serverAgent + "'" );
         }
         return versionValue;
     }

@@ -41,7 +41,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.value;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class SessionPullResponseCompletionListenerTest
 {
@@ -128,7 +127,6 @@ class SessionPullResponseCompletionListenerTest
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return connection;

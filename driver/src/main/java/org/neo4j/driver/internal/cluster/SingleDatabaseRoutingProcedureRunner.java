@@ -33,9 +33,9 @@ import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.internal.BookmarkHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
@@ -61,7 +61,7 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser )
     {
         DirectConnection delegate = connection( connection );
-        Query procedure = procedureQuery( connection.serverVersion(), databaseName );
+        Query procedure = procedureQuery( connection.protocol().version(), databaseName );
         BookmarkHolder bookmarkHolder = bookmarkHolder( bookmark );
         return runProcedure( delegate, procedure, bookmarkHolder )
                 .thenCompose( records -> releaseConnection( delegate, records ) )
@@ -73,13 +73,13 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
         return new DirectConnection( connection, defaultDatabase(), AccessMode.WRITE, null );
     }
 
-    Query procedureQuery(ServerVersion serverVersion, DatabaseName databaseName )
+    Query procedureQuery( BoltProtocolVersion protocolVersion, DatabaseName databaseName )
     {
         if ( databaseName.databaseName().isPresent() )
         {
             throw new FatalDiscoveryException( String.format(
-                    "Refreshing routing table for multi-databases is not supported in server version lower than 4.0. " +
-                            "Current server version: %s. Database name: '%s'", serverVersion, databaseName.description() ) );
+                    "Refreshing routing table for multi-databases is not supported over Bolt protocol lower than 4.0. " +
+                    "Current protocol version: %s. Database name: '%s'", protocolVersion, databaseName.description() ) );
         }
         return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.toMap() ) );
     }
