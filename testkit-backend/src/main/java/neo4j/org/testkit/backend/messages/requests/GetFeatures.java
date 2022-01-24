@@ -67,6 +67,7 @@ public class GetFeatures implements TestkitRequest
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
+            "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll"
     ) );
 
@@ -74,6 +75,7 @@ public class GetFeatures implements TestkitRequest
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
+            "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll"
     ) );
 
