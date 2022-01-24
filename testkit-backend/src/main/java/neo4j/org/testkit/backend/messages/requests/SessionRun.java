@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.messages.requests;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
@@ -32,6 +33,7 @@ import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -49,6 +51,28 @@ public class SessionRun implements TestkitRequest
 {
     private SessionRunBody data;
 
+    private void configureTimeout( TransactionConfig.Builder builder )
+    {
+        if ( data.getTimeoutPresent() )
+        {
+            try
+            {
+                if ( data.getTimeout() != null )
+                {
+                    builder.withTimeout( Duration.ofMillis( data.getTimeout() ) );
+                }
+                else
+                {
+                    builder.withDefaultTimeout();
+                }
+            }
+            catch ( IllegalArgumentException e )
+            {
+                throw new CustomDriverError( e );
+            }
+        }
+    }
+
     @Override
     public TestkitResponse process( TestkitState testkitState )
     {
@@ -59,11 +83,11 @@ public class SessionRun implements TestkitRequest
                               .orElseGet( () -> new Query( data.cypher ) );
         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-        Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+        configureTimeout( transactionConfig );
         org.neo4j.driver.Result result = session.run( query, transactionConfig.build() );
         String id = testkitState.addResultHolder( new ResultHolder( sessionHolder, result ) );
 
-        return createResponse( id );
+        return createResponse( id, result.keys() );
     }
 
     @Override
@@ -78,15 +102,14 @@ public class SessionRun implements TestkitRequest
                                                                    .orElseGet( () -> new Query( data.cypher ) );
                                              TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
                                              Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-                                             Optional.ofNullable( data.getTimeout() )
-                                                     .ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+                                             configureTimeout( transactionConfig );
 
                                              return session.runAsync( query, transactionConfig.build() )
                                                            .thenApply( resultCursor ->
                                                                        {
                                                                            String id = testkitState.addAsyncResultHolder(
                                                                                    new ResultCursorHolder( sessionHolder, resultCursor ) );
-                                                                           return createResponse( id );
+                                                                           return createResponse( id, resultCursor.keys() );
                                                                        } );
                                          } );
     }
@@ -103,7 +126,7 @@ public class SessionRun implements TestkitRequest
                                                                .orElseGet( () -> new Query( data.cypher ) );
                                          TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
                                          Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
-                                         Optional.ofNullable( data.getTimeout() ).ifPresent( to -> transactionConfig.withTimeout( Duration.ofMillis( to ) ) );
+                                         configureTimeout( transactionConfig );
 
                                          RxResult result = session.run( query, transactionConfig.build() );
                                          String id = testkitState.addRxResultHolder( new RxResultHolder( sessionHolder, result ) );
@@ -111,13 +134,13 @@ public class SessionRun implements TestkitRequest
                                          // The keys() method causes RUN message exchange.
                                          // However, it does not currently report errors.
                                          return Mono.fromDirect( result.keys() )
-                                                    .map( ignored -> createResponse( id ) );
+                                                    .map( keys -> createResponse( id, keys ) );
                                      } );
     }
 
-    private Result createResponse( String resultId )
+    private Result createResponse( String resultId, List<String> keys )
     {
-        return Result.builder().data( Result.ResultBody.builder().id( resultId ).build() ).build();
+        return Result.builder().data( Result.ResultBody.builder().id( resultId ).keys( keys ).build() ).build();
     }
 
     @Setter
@@ -126,11 +149,16 @@ public class SessionRun implements TestkitRequest
     {
         @JsonDeserialize( using = TestkitCypherParamDeserializer.class )
         private Map<String,Object> params;
-
         private String sessionId;
         private String cypher;
         private Map<String,Object> txMeta;
         private Integer timeout;
+        private Boolean timeoutPresent = false;
 
+        public void setTimeout( Integer timeout )
+        {
+            this.timeout = timeout;
+            timeoutPresent = true;
+        }
     }
 }

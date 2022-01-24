@@ -16,31 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses;
+package neo4j.org.testkit.backend;
 
-import lombok.Builder;
-import lombok.Getter;
-
-import java.util.List;
-
-@Getter
-@Builder
-public class Result implements TestkitResponse
+public class CustomDriverError extends RuntimeException
 {
-    private ResultBody data;
-
-    @Override
-    public String testkitName()
+    public CustomDriverError( Throwable cause )
     {
-        return "Result";
-    }
-
-    @Getter
-    @Builder
-    public static class ResultBody
-    {
-        private String id;
-
-        private List<String> keys;
+        super( cause );
     }
 }

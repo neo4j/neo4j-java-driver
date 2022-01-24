@@ -76,7 +76,7 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
         return createEmptyPublisher( tx::rollbackAsync );
     }
 
-    Publisher<Void> close()
+    public Publisher<Void> close()
     {
         return close( false );
     }

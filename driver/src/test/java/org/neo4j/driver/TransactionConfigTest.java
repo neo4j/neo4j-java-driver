@@ -24,10 +24,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
-import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.TestUtil;
 
 import static java.util.Collections.emptyMap;
@@ -49,18 +49,6 @@ class TransactionConfigTest
     void emptyConfigShouldHaveNoMetadata()
     {
         assertEquals( emptyMap(), TransactionConfig.empty().metadata() );
-    }
-
-    @Test
-    void shouldDisallowNullTimeout()
-    {
-        assertThrows( NullPointerException.class, () -> TransactionConfig.builder().withTimeout( null ) );
-    }
-
-    @Test
-    void shouldDisallowZeroTimeout()
-    {
-        assertThrows( IllegalArgumentException.class, () -> TransactionConfig.builder().withTimeout( Duration.ZERO ) );
     }
 
     @Test
@@ -92,10 +80,31 @@ class TransactionConfigTest
     void shouldHaveTimeout()
     {
         TransactionConfig config = TransactionConfig.builder()
-                .withTimeout( Duration.ofSeconds( 3 ) )
-                .build();
+                                                    .withTimeout( Duration.ofSeconds( 3 ) )
+                                                    .build();
 
         assertEquals( Duration.ofSeconds( 3 ), config.timeout() );
+    }
+
+    @Test
+    void shouldAllowDefaultTimeout()
+    {
+        TransactionConfig config = TransactionConfig.builder()
+                                                    .withTimeout( Duration.ofSeconds( 3 ) )
+                                                    .withDefaultTimeout()
+                                                    .build();
+
+        assertNull( config.timeout() );
+    }
+
+    @Test
+    void shouldAllowZeroTimeout()
+    {
+        TransactionConfig config = TransactionConfig.builder()
+                .withTimeout( Duration.ZERO )
+                .build();
+
+        assertEquals( Duration.ZERO, config.timeout() );
     }
 
     @Test

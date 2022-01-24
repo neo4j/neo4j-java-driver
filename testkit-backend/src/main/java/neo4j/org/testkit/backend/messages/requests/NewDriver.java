@@ -242,7 +242,7 @@ public class NewDriver implements TestkitRequest
             String id = testkitState.newId();
             String errorType = e.getClass().getName();
             response = Optional.of(
-                    DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).errorType( errorType ).build() ).build()
+                    DriverError.builder().data( DriverError.DriverErrorBody.builder().id( id ).errorType( errorType ).msg( e.getMessage() ).build() ).build()
             );
         }
         return response;

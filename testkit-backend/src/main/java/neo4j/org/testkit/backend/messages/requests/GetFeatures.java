@@ -57,13 +57,15 @@ public class GetFeatures implements TestkitRequest
             "Temporary:DriverMaxConnectionPoolSize",
             "Temporary:ConnectionAcquisitionTimeout",
             "Temporary:GetConnectionPoolMetrics",
-            "Temporary:CypherPathAndRelationship"
+            "Temporary:CypherPathAndRelationship",
+            "Temporary:FullSummary",
+            "Temporary:ResultKeys",
+            "Temporary:TransactionClose"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
             "Feature:Bolt:3.0",
             "Optimization:PullPipelining",
-            "Temporary:TransactionClose",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
             "Optimization:ResultListFetchAll"

@@ -31,4 +31,16 @@
         <method>org.neo4j.driver.Logger getLog(java.lang.Class)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/async/AsyncTransaction</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage closeAsync()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxTransaction</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher close()</method>
+    </difference>
+
 </differences>
