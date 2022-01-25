@@ -55,7 +55,6 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_supports_multi_db$", "Database is None" );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
-        ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", "Does not error as expected" );
 
         REACTIVE_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         // Current limitations (require further investigation or bug fixing)
