@@ -71,7 +71,6 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -622,11 +621,6 @@ public final class TestUtil
         return sb.toString();
     }
 
-    public static ArgumentMatcher<Message> runMessageWithQueryMatcher( String query )
-    {
-        return message -> message instanceof RunMessage && Objects.equals( query, ((RunMessage) message).query() );
-    }
-
     public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher( String query )
     {
         return message -> message instanceof RunWithMetadataMessage && Objects.equals( query, ((RunWithMetadataMessage) message).query() );
@@ -663,16 +657,6 @@ public final class TestUtil
             }
             assertNoCircularReferences( suppressed, list );
         }
-    }
-
-    private static void setupSuccessfulPullAll( Connection connection, String query )
-    {
-        doAnswer( invocation ->
-        {
-            ResponseHandler handler = invocation.getArgument( 3 );
-            handler.onSuccess( emptyMap() );
-            return null;
-        } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( query ) ), any(), any(), any() );
     }
 
     private static void setupSuccessResponse( Connection connection, Class<? extends Message> messageType )

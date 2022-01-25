@@ -35,12 +35,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelAttributes;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FakeClock;
 
@@ -111,20 +112,23 @@ class NetworkConnectionTest
     void shouldWriteInEventLoopThread() throws Exception
     {
         testWriteInEventLoop( "WriteSingleMessage",
-                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER ) );
+                              connection -> connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), NO_OP_HANDLER ) );
 
         testWriteInEventLoop( "WriteMultipleMessages",
-                connection -> connection.write( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PULL_ALL, NO_OP_HANDLER ) );
+                              connection -> connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), NO_OP_HANDLER, PULL_ALL,
+                                                              NO_OP_HANDLER ) );
     }
 
     @Test
     void shouldWriteAndFlushInEventLoopThread() throws Exception
     {
         testWriteInEventLoop( "WriteAndFlushSingleMessage",
-                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER ) );
+                              connection -> connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
+                                                                      NO_OP_HANDLER ) );
 
         testWriteInEventLoop( "WriteAndFlushMultipleMessages",
-                connection -> connection.writeAndFlush( new RunMessage( "RETURN 1" ), NO_OP_HANDLER, PULL_ALL, NO_OP_HANDLER ) );
+                              connection -> connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), NO_OP_HANDLER,
+                                                                      PULL_ALL, NO_OP_HANDLER ) );
     }
 
     @Test
@@ -237,7 +241,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.write( new RunMessage( "RETURN 1" ), handler );
+        connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), handler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( handler ).onFailure( failureCaptor.capture() );
@@ -252,7 +256,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
+        connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -266,7 +270,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
+        connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), handler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( handler ).onFailure( failureCaptor.capture() );
@@ -281,7 +285,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.release();
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -295,7 +299,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.write( new RunMessage( "RETURN 1" ), handler );
+        connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), handler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( handler ).onFailure( failureCaptor.capture() );
@@ -310,7 +314,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.write( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
+        connection.write( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
@@ -324,7 +328,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), handler );
+        connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), handler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( handler ).onFailure( failureCaptor.capture() );
@@ -339,7 +343,7 @@ class NetworkConnectionTest
         NetworkConnection connection = newConnection( newChannel() );
 
         connection.terminateAndRelease( "42" );
-        connection.writeAndFlush( new RunMessage( "RETURN 1" ), runHandler, PULL_ALL, pullAllHandler );
+        connection.writeAndFlush( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 1" ) ), runHandler, PULL_ALL, pullAllHandler );
 
         ArgumentCaptor<IllegalStateException> failureCaptor = ArgumentCaptor.forClass( IllegalStateException.class );
         verify( runHandler ).onFailure( failureCaptor.capture() );
