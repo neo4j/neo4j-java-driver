@@ -43,7 +43,6 @@ import org.neo4j.driver.internal.handlers.NoOpResponseHandler;
 import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FakeClock;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.startsWith;
@@ -66,7 +65,6 @@ import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL
 import static org.neo4j.driver.internal.util.Iterables.single;
 import static org.neo4j.driver.util.DaemonThreadFactory.daemon;
 import static org.neo4j.driver.util.TestUtil.DEFAULT_TEST_PROTOCOL_VERSION;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class NetworkConnectionTest
 {
@@ -384,19 +382,6 @@ class NetworkConnectionTest
         connection.release();
 
         assertEquals( address, connection.serverAddress() );
-    }
-
-    @Test
-    void shouldReturnServerVersionWhenReleased()
-    {
-        EmbeddedChannel channel = newChannel();
-        ServerVersion version = anyServerVersion();
-        ChannelAttributes.setServerVersion( channel, version );
-
-        NetworkConnection connection = newConnection( channel );
-        connection.release();
-
-        assertEquals( version, connection.serverVersion() );
     }
 
     @Test

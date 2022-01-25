@@ -207,12 +207,6 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public ServerVersion serverVersion()
-        {
-            return delegate.serverVersion();
-        }
-
-        @Override
         public BoltProtocol protocol()
         {
             return delegate.protocol();

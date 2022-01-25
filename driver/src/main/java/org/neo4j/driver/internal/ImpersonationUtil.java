@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.messaging.v44.BoltProtocolV44;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 public class ImpersonationUtil
 {
@@ -40,7 +39,6 @@ public class ImpersonationUtil
 
     private static boolean supportsImpersonation( Connection connection )
     {
-        return connection.serverVersion().greaterThanOrEqual( ServerVersion.v4_4_0 ) &&
-               connection.protocol().version().compareTo( BoltProtocolV44.VERSION ) >= 0;
+        return connection.protocol().version().compareTo( BoltProtocolV44.VERSION ) >= 0;
     }
 }

@@ -91,7 +91,7 @@ public class BoltProtocolV3 implements BoltProtocol
             message = new HelloMessage( userAgent, ( ( InternalAuthToken ) authToken ).toMap(), null );
         }
 
-        HelloResponseHandler handler = new HelloResponseHandler( channelInitializedPromise, version() );
+        HelloResponseHandler handler = new HelloResponseHandler( channelInitializedPromise );
 
         messageDispatcher( channel ).enqueue( handler );
         channel.writeAndFlush( message, channel.voidPromise() );

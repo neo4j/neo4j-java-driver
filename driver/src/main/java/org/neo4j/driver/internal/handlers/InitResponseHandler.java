@@ -19,18 +19,15 @@
 package org.neo4j.driver.internal.handlers;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 
 import java.util.Map;
 
-import org.neo4j.driver.internal.async.outbound.OutboundMessageHandler;
-import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.UntrustedServerException;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
+import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
 
 public class InitResponseHandler implements ResponseHandler
 {
@@ -48,8 +45,13 @@ public class InitResponseHandler implements ResponseHandler
     {
         try
         {
-            ServerVersion serverVersion = extractNeo4jServerVersion( metadata );
-            setServerVersion( channel, serverVersion );
+            String serverAgent = extractServer( metadata ).asString();
+
+            if ( !serverAgent.startsWith( "Neo4j/" ) )
+            {
+                throw new UntrustedServerException( "Server does not identify as a genuine Neo4j instance: '" + serverAgent + "'" );
+            }
+
             connectionInitializedPromise.setSuccess();
         }
         catch ( Throwable error )

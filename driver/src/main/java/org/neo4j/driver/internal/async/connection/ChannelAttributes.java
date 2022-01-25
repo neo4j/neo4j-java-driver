@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static io.netty.util.AttributeKey.newInstance;
 
@@ -37,7 +36,6 @@ public final class ChannelAttributes
     private static final AttributeKey<BoltProtocolVersion> PROTOCOL_VERSION = newInstance( "protocolVersion" );
     private static final AttributeKey<String> SERVER_AGENT = newInstance( "serverAgent" );
     private static final AttributeKey<BoltServerAddress> ADDRESS = newInstance( "serverAddress" );
-    private static final AttributeKey<ServerVersion> SERVER_VERSION = newInstance( "serverVersion" );
     private static final AttributeKey<Long> CREATION_TIMESTAMP = newInstance( "creationTimestamp" );
     private static final AttributeKey<Long> LAST_USED_TIMESTAMP = newInstance( "lastUsedTimestamp" );
     private static final AttributeKey<InboundMessageDispatcher> MESSAGE_DISPATCHER = newInstance( "messageDispatcher" );
@@ -99,16 +97,6 @@ public final class ChannelAttributes
     public static void setServerAddress( Channel channel, BoltServerAddress address )
     {
         setOnce( channel, ADDRESS, address );
-    }
-
-    public static ServerVersion serverVersion( Channel channel )
-    {
-        return get( channel, SERVER_VERSION );
-    }
-
-    public static void setServerVersion( Channel channel, ServerVersion version )
-    {
-        setOnce( channel, SERVER_VERSION, version );
     }
 
     public static long creationTimestamp( Channel channel )

@@ -30,11 +30,11 @@ import java.net.URL;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.types.TypeSystem;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
@@ -152,15 +152,15 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
 
     public void ensureProcedures( String jarName ) throws IOException
     {
-        // These procedures was written against 3.x API.
+        // These procedures were written against 3.x API.
         // As graph database service API is totally changed since 4.0. These procedures are no long valid.
-        assumeTrue( version().lessThan( ServerVersion.v4_0_0 ) );
+        assumeTrue( getMajorVersion() < 4 );
         File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
         if ( !procedureJar.exists() )
         {
             FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
             debug( "Added a new procedure `%s`", jarName );
-            runner.forceToRestart(); // needs to force to restart as no configuration changed
+            runner.forceToRestart(); // needs to force restart as no configuration changed
         }
     }
 
@@ -174,9 +174,14 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
         runner.stopNeo4j();
     }
 
-    public ServerVersion version()
+    public int getMajorVersion()
     {
-        return ServerVersion.version( driver() );
+        try ( Session session = driver().session() )
+        {
+            String protocolVersion = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().protocolVersion() );
+            String[] versions = protocolVersion.split( "\\." );
+            return Integer.parseInt( versions[0] );
+        }
     }
 
     public void dumpLogs()

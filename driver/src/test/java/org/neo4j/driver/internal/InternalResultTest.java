@@ -60,7 +60,6 @@ import static org.neo4j.driver.Records.column;
 import static org.neo4j.driver.Values.ofString;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class InternalResultTest
 {
@@ -360,7 +359,6 @@ class InternalResultTest
         Query query = new Query( "<unknown>" );
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( anyServerVersion() );
         when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         PullAllResponseHandler pullAllHandler =
