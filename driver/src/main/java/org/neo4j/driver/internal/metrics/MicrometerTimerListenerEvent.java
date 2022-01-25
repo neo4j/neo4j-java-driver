@@ -21,28 +21,25 @@ package org.neo4j.driver.internal.metrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 
-public class MicrometerTimerListenerEvent implements ListenerEvent {
-
+public class MicrometerTimerListenerEvent implements ListenerEvent<Timer.Sample>
+{
     private final MeterRegistry meterRegistry;
     private Timer.Sample sample;
 
-    public MicrometerTimerListenerEvent(MeterRegistry meterRegistry) {
+    public MicrometerTimerListenerEvent( MeterRegistry meterRegistry )
+    {
         this.meterRegistry = meterRegistry;
     }
 
     @Override
-    public void start() {
-        this.sample = Timer.start(this.meterRegistry);
-    }
-
-    public Timer.Sample getSample() {
-        return this.sample;
+    public void start()
+    {
+        this.sample = Timer.start( this.meterRegistry );
     }
 
     @Override
-    public long elapsed() {
-        // Micrometer Timer Sample does not provide API to get elapsed time
-        // and it is not needed right now
-        return 0;
+    public Timer.Sample getSample()
+    {
+        return this.sample;
     }
 }

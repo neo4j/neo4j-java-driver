@@ -19,30 +19,33 @@
 package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
+
 import org.neo4j.driver.Metrics;
 
-public class MicrometerMetricsProvider implements MetricsProvider {
-
-    private final MeterRegistry meterRegistry;
+public class MicrometerMetricsProvider implements MetricsProvider
+{
     private final MicrometerMetrics metrics;
 
-    public MicrometerMetricsProvider(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-        this.metrics = new MicrometerMetrics(this.meterRegistry);
+    public MicrometerMetricsProvider( MeterRegistry meterRegistry )
+    {
+        this.metrics = new MicrometerMetrics( meterRegistry );
     }
 
     @Override
-    public Metrics metrics() {
+    public Metrics metrics()
+    {
         return this.metrics;
     }
 
     @Override
-    public MetricsListener metricsListener() {
+    public MetricsListener metricsListener()
+    {
         return this.metrics;
     }
 
     @Override
-    public boolean isMetricsEnabled() {
+    public boolean isMetricsEnabled()
+    {
         return true;
     }
 }

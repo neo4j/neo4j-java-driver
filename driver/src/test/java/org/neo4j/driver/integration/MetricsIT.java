@@ -25,8 +25,12 @@ import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.neo4j.driver.*;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
+
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -34,8 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.driver.Values.parameters;
 
 @ParallelizableIT
-class MetricsIT {
-
+class MetricsIT
+{
     @RegisterExtension
     static final DatabaseExtension neo4j = new DatabaseExtension();
 
@@ -45,7 +49,7 @@ class MetricsIT {
     @BeforeEach
     void createDriver()
     {
-        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.builder().withDriverMetrics(new MicrometerMetricsProvider(meterRegistry)).build() );
+        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.builder().withMicrometerDriverMetrics( meterRegistry ).build() );
     }
 
     @AfterEach
@@ -59,28 +63,28 @@ class MetricsIT {
     {
         Result result = createNodesInNewSession( 12 );
         // assert in use
-        Timer acquisitionTimer = meterRegistry.get("neo4j.driver.connections.acquisition").timer();
-        Timer creationTimer = meterRegistry.get("neo4j.driver.connections.creation").timer();
-        Timer usageTimer = meterRegistry.get("neo4j.driver.connections.usage").timer();
-        assertEquals(1, acquisitionTimer.count());
-        assertEquals(1, creationTimer.count());
-        assertEquals(0, usageTimer.count());
+        Timer acquisitionTimer = meterRegistry.get( "neo4j.driver.connections.acquisition" ).timer();
+        Timer creationTimer = meterRegistry.get( "neo4j.driver.connections.creation" ).timer();
+        Timer usageTimer = meterRegistry.get( "neo4j.driver.connections.usage" ).timer();
+        assertEquals( 1, acquisitionTimer.count() );
+        assertEquals( 1, creationTimer.count() );
+        assertEquals( 0, usageTimer.count() );
 
         result.consume();
         // assert released
-        assertEquals(1, acquisitionTimer.count());
-        assertEquals(1, creationTimer.count());
-        assertEquals(1, usageTimer.count());
+        assertEquals( 1, acquisitionTimer.count() );
+        assertEquals( 1, creationTimer.count() );
+        assertEquals( 1, usageTimer.count() );
     }
 
-    private Result createNodesInNewSession(int nodesToCreate )
+    private Result createNodesInNewSession( int nodesToCreate )
     {
         return createNodes( nodesToCreate, driver.session() );
     }
 
-    private Result createNodes(int nodesToCreate, QueryRunner queryRunner)
+    private Result createNodes( int nodesToCreate, QueryRunner queryRunner )
     {
         return queryRunner.run( "UNWIND range(1, $nodesToCreate) AS i CREATE (n {index: i}) RETURN n",
-                parameters( "nodesToCreate", nodesToCreate ) );
+                                parameters( "nodesToCreate", nodesToCreate ) );
     }
 }

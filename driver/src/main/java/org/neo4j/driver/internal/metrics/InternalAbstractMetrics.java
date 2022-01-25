@@ -32,13 +32,13 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
     {
 
         @Override
-        public void beforeCreating( String poolId, ListenerEvent creatingEvent )
+        public void beforeCreating( String poolId, ListenerEvent<?> creatingEvent )
         {
 
         }
 
         @Override
-        public void afterCreated( String poolId, ListenerEvent creatingEvent )
+        public void afterCreated( String poolId, ListenerEvent<?> creatingEvent )
         {
 
         }
@@ -56,7 +56,7 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent )
+        public void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent )
         {
 
         }
@@ -68,7 +68,7 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent )
+        public void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent )
         {
 
         }
@@ -80,19 +80,19 @@ public abstract class InternalAbstractMetrics implements Metrics, MetricsListene
         }
 
         @Override
-        public void afterConnectionCreated( String poolId, ListenerEvent inUseEvent )
+        public void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent )
         {
 
         }
 
         @Override
-        public void afterConnectionReleased( String poolId, ListenerEvent inUseEvent )
+        public void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent )
         {
 
         }
 
         @Override
-        public ListenerEvent createListenerEvent()
+        public ListenerEvent<?> createListenerEvent()
         {
             return ListenerEvent.DEV_NULL_LISTENER_EVENT;
         }

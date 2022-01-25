@@ -44,6 +44,7 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -118,7 +119,9 @@ public class DriverFactory
     {
         if( config.isMetricsEnabled() )
         {
-            return config.metricsProvider();
+            return config.meterRegistry()
+                         .<MetricsProvider>map( MicrometerMetricsProvider::new )
+                         .orElseGet( () -> new InternalMetricsProvider( Clock.SYSTEM, config.logging() ) );
         }
         else
         {

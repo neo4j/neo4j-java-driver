@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.jupiter.api.Test;
@@ -25,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AuthToken;
@@ -41,6 +44,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -169,6 +173,22 @@ class DriverFactoryTest
         // Then
         assertThat( provider.isMetricsEnabled(), is( true ) );
         assertThat( provider instanceof InternalMetricsProvider, is( true ) );
+    }
+
+    @Test
+    void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled()
+    {
+        // Given
+        MeterRegistry registry = new SimpleMeterRegistry();
+        Config config = mock( Config.class );
+        when( config.isMetricsEnabled() ).thenReturn( true );
+        when( config.meterRegistry() ).thenReturn( Optional.of( registry ) );
+        when( config.logging() ).thenReturn( Logging.none() );
+        // When
+        MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        // Then
+        assertThat( provider.isMetricsEnabled(), is( true ) );
+        assertThat( provider instanceof MicrometerMetricsProvider, is( true ) );
     }
 
     @ParameterizedTest

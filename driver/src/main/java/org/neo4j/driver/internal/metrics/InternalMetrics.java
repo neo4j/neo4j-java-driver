@@ -61,13 +61,13 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void beforeCreating( String poolId, ListenerEvent creatingEvent )
+    public void beforeCreating( String poolId, ListenerEvent<?> creatingEvent )
     {
         poolMetrics( poolId ).beforeCreating( creatingEvent );
     }
 
     @Override
-    public void afterCreated( String poolId, ListenerEvent creatingEvent )
+    public void afterCreated( String poolId, ListenerEvent<?> creatingEvent )
     {
         poolMetrics( poolId ).afterCreated( creatingEvent );
     }
@@ -85,7 +85,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent )
+    public void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent )
     {
         poolMetrics( poolId ).beforeAcquiringOrCreating( acquireEvent );
     }
@@ -97,19 +97,19 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent )
+    public void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent )
     {
         poolMetrics( poolId ).afterAcquiredOrCreated( acquireEvent );
     }
 
     @Override
-    public void afterConnectionCreated( String poolId, ListenerEvent inUseEvent )
+    public void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent )
     {
         poolMetrics( poolId ).acquired( inUseEvent );
     }
 
     @Override
-    public void afterConnectionReleased( String poolId, ListenerEvent inUseEvent )
+    public void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent )
     {
         poolMetrics( poolId ).released( inUseEvent );
     }
@@ -121,7 +121,7 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public ListenerEvent createListenerEvent()
+    public ListenerEvent<?> createListenerEvent()
     {
         return new TimeRecorderListenerEvent( clock );
     }

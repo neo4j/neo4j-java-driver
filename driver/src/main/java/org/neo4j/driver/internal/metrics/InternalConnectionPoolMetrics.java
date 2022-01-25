@@ -63,7 +63,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeCreating( ListenerEvent connEvent )
+    public void beforeCreating( ListenerEvent<?> connEvent )
     {
         creating.incrementAndGet();
         connEvent.start();
@@ -77,13 +77,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterCreated( ListenerEvent connEvent )
+    public void afterCreated( ListenerEvent<?> connEvent )
     {
         created.incrementAndGet();
         creating.decrementAndGet();
-        long elapsed = connEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) connEvent).getSample();
 
-        totalConnectionTime.addAndGet( elapsed );
+        totalConnectionTime.addAndGet( sample );
     }
 
     @Override
@@ -93,7 +93,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent acquireEvent )
+    public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
     {
         acquireEvent.start();
         acquiring.incrementAndGet();
@@ -106,12 +106,12 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
+    public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
     {
         acquired.incrementAndGet();
-        long elapsed = acquireEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) acquireEvent).getSample();
 
-        totalAcquisitionTime.addAndGet( elapsed );
+        totalAcquisitionTime.addAndGet( sample );
     }
 
     @Override
@@ -121,18 +121,18 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void acquired( ListenerEvent inUseEvent )
+    public void acquired( ListenerEvent<?> inUseEvent )
     {
         inUseEvent.start();
     }
 
     @Override
-    public void released( ListenerEvent inUseEvent )
+    public void released( ListenerEvent<?> inUseEvent )
     {
         totalInUseCount.incrementAndGet();
-        long elapsed = inUseEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) inUseEvent).getSample();
 
-        totalInUseTime.addAndGet( elapsed );
+        totalInUseTime.addAndGet( sample );
     }
 
     @Override

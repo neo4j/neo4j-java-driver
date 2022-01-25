@@ -30,8 +30,9 @@ import org.neo4j.driver.util.Experimental;
 public interface ConnectionPoolMetrics
 {
     /**
-     * An unique id that identifies this pool metrics.
-     * @return An unique name
+     * A unique id that identifies this pool metrics.
+     *
+     * @return A unique name
      */
     String id();
 

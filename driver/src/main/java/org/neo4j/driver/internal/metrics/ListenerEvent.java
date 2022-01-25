@@ -18,9 +18,9 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-public interface ListenerEvent
+public interface ListenerEvent<T>
 {
-    ListenerEvent DEV_NULL_LISTENER_EVENT = new ListenerEvent()
+    ListenerEvent<Long> DEV_NULL_LISTENER_EVENT = new ListenerEvent<Long>()
     {
         @Override
         public void start()
@@ -28,13 +28,14 @@ public interface ListenerEvent
         }
 
         @Override
-        public long elapsed()
+        public Long getSample()
         {
-            return 0;
+            return 0L;
         }
     };
 
     void start();
-    long elapsed();
+
+    T getSample();
 }
 

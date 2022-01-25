@@ -18,10 +18,13 @@
  */
 package org.neo4j.driver;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 import java.io.File;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -30,11 +33,9 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
-import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
 import static java.lang.String.format;
@@ -98,7 +99,7 @@ public class Config implements Serializable
     private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
     private final String userAgent;
-    private final MetricsProvider metricsProvider;
+    private final MeterRegistry meterRegistry;
 
     private Config( ConfigBuilder builder )
     {
@@ -123,7 +124,7 @@ public class Config implements Serializable
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.isMetricsEnabled = builder.isMetricsEnabled;
-        this.metricsProvider = builder.metricsProvider;
+        this.meterRegistry = builder.meterRegistry;
     }
 
     /**
@@ -264,7 +265,10 @@ public class Config implements Serializable
         return isMetricsEnabled;
     }
 
-    public MetricsProvider metricsProvider() { return metricsProvider; }
+    public Optional<MeterRegistry> meterRegistry()
+    {
+        return Optional.ofNullable( meterRegistry );
+    }
 
     /**
      * @return the user_agent configured for this driver
@@ -296,7 +300,7 @@ public class Config implements Serializable
         private boolean isMetricsEnabled = false;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
-        private MetricsProvider metricsProvider;
+        private MeterRegistry meterRegistry;
 
         private ConfigBuilder() {}
 
@@ -712,17 +716,22 @@ public class Config implements Serializable
          */
         public ConfigBuilder withDriverMetrics()
         {
-            return withDriverMetrics(new InternalMetricsProvider(Clock.SYSTEM, this.logging));
+            this.isMetricsEnabled = true;
+            return this;
         }
 
         /**
          * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
-         * @param provider which implementation of metrics to use
+         * <p>
+         * You must have Micrometer on classpath to use this option.
+         *
+         * @param meterRegistry meter registry to register metrics with
          * @return this builder.
          */
-        // TODO Figure out how a user configures a different metrics implementation
-        public ConfigBuilder withDriverMetrics(MetricsProvider provider) {
-            this.metricsProvider = provider;
+        @Experimental
+        public ConfigBuilder withMicrometerDriverMetrics( MeterRegistry meterRegistry )
+        {
+            this.meterRegistry = Objects.requireNonNull( meterRegistry, "meterRegistry" );
             this.isMetricsEnabled = true;
             return this;
         }

@@ -20,25 +20,27 @@ package org.neo4j.driver.internal.metrics;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.NetworkConnection;
 import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
-import org.neo4j.driver.Config;
 
 public interface MetricsListener
 {
     /**
      * Before creating a netty channel.
-     * @param poolId the id of the pool where the netty channel lives.
+     *
+     * @param poolId        the id of the pool where the netty channel lives.
      * @param creatingEvent a connection listener event registered when a connection is creating.
      */
-    void beforeCreating( String poolId, ListenerEvent creatingEvent );
+    void beforeCreating( String poolId, ListenerEvent<?> creatingEvent );
 
     /**
      * After a netty channel is created successfully.
+     *
      * @param poolId the id of the pool where the netty channel lives.
      */
-    void afterCreated( String poolId, ListenerEvent creatingEvent );
+    void afterCreated( String poolId, ListenerEvent<?> creatingEvent );
 
     /**
      * After a netty channel is created with a failure.
@@ -54,10 +56,11 @@ public interface MetricsListener
 
     /**
      * Before acquiring or creating a new netty channel from pool.
-     * @param poolId the id of the pool where the netty channel lives.
+     *
+     * @param poolId       the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void beforeAcquiringOrCreating( String poolId, ListenerEvent acquireEvent );
+    void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent );
 
     /**
      * After acquiring or creating a new netty channel from pool regardless it is successful or not.
@@ -67,10 +70,11 @@ public interface MetricsListener
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param poolId the id of the pool where the netty channel lives.
+     *
+     * @param poolId       the id of the pool where the netty channel lives.
      * @param acquireEvent a pool listener event registered in pool for this acquire event.
      */
-    void afterAcquiredOrCreated( String poolId, ListenerEvent acquireEvent );
+    void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent );
 
     /**
      * After we failed to acquire a connection from pool within maximum connection acquisition timeout set by
@@ -81,19 +85,21 @@ public interface MetricsListener
 
     /**
      * After acquiring or creating a new netty channel from pool successfully.
-     * @param poolId the id of the pool where the netty channel lives.
+     *
+     * @param poolId     the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when created.
      */
-    void afterConnectionCreated( String poolId, ListenerEvent inUseEvent );
+    void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent );
 
     /**
      * After releasing a netty channel back to pool successfully.
-     * @param poolId the id of the pool where the netty channel lives.
+     *
+     * @param poolId     the id of the pool where the netty channel lives.
      * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when destroyed.
      */
-    void afterConnectionReleased( String poolId, ListenerEvent inUseEvent );
+    void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent );
 
-    ListenerEvent createListenerEvent();
+    ListenerEvent<?> createListenerEvent();
 
     void putPoolMetrics( String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool );
 

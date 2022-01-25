@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -362,6 +365,38 @@ class ConfigTest
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( "" ).build() );
     }
 
+    @Test
+    void shouldNotHaveMeterRegistryByDefault()
+    {
+        Config config = Config.builder().build();
+        Optional<MeterRegistry> meterRegistryOpt = config.meterRegistry();
+
+        assertFalse( meterRegistryOpt.isPresent() );
+        assertFalse( config.isMetricsEnabled() );
+    }
+
+    @Test
+    void shouldNotAcceptNullMeterRegistry()
+    {
+        Config.ConfigBuilder builder = Config.builder();
+        assertThrows( NullPointerException.class, () -> builder.withMicrometerDriverMetrics( null ) );
+    }
+
+    @Test
+    void shouldSetMeterRegistry()
+    {
+        MeterRegistry registry = new SimpleMeterRegistry();
+
+        Config config = Config.builder()
+                              .withMicrometerDriverMetrics( registry )
+                              .build();
+        Optional<MeterRegistry> meterRegistryOpt = config.meterRegistry();
+
+        assertTrue( meterRegistryOpt.isPresent() );
+        assertEquals( registry, meterRegistryOpt.get() );
+        assertTrue( config.isMetricsEnabled() );
+    }
+
     @Nested
     class SerializationTest
     {
@@ -370,7 +405,7 @@ class ConfigTest
         void shouldSerialize() throws Exception
         {
             Config config = Config.builder()
-                    .withMaxConnectionPoolSize( 123 )
+                                  .withMaxConnectionPoolSize( 123 )
                     .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
                     .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
                     .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )

@@ -19,98 +19,119 @@
 package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MicrometerMetrics implements Metrics, MetricsListener {
+import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
+public class MicrometerMetrics implements Metrics, MetricsListener
+{
     private final MeterRegistry meterRegistry;
-    private final Map<String, ConnectionPoolMetrics> connectionPoolMetrics;
+    private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
 
-    public MicrometerMetrics(MeterRegistry meterRegistry) {
+    public MicrometerMetrics( MeterRegistry meterRegistry )
+    {
         this.meterRegistry = meterRegistry;
         this.connectionPoolMetrics = new ConcurrentHashMap<>();
     }
 
     @Override
-    public Collection<ConnectionPoolMetrics> connectionPoolMetrics() {
-        return Collections.unmodifiableCollection(this.connectionPoolMetrics.values());
+    public Collection<ConnectionPoolMetrics> connectionPoolMetrics()
+    {
+        return Collections.unmodifiableCollection( this.connectionPoolMetrics.values() );
     }
 
     @Override
-    public void beforeCreating(String poolId, ListenerEvent creatingEvent) {
-        poolMetricsListener(poolId).beforeCreating(creatingEvent);
+    public void beforeCreating( String poolId, ListenerEvent<?> creatingEvent )
+    {
+        poolMetricsListener( poolId ).beforeCreating( creatingEvent );
     }
 
     @Override
-    public void afterCreated(String poolId, ListenerEvent creatingEvent) {
-        poolMetricsListener(poolId).afterCreated(creatingEvent);
+    public void afterCreated( String poolId, ListenerEvent<?> creatingEvent )
+    {
+        poolMetricsListener( poolId ).afterCreated( creatingEvent );
     }
 
     @Override
-    public void afterFailedToCreate(String poolId) {
-        poolMetricsListener(poolId).afterFailedToCreate();
+    public void afterFailedToCreate( String poolId )
+    {
+        poolMetricsListener( poolId ).afterFailedToCreate();
     }
 
     @Override
-    public void afterClosed(String poolId) {
-        poolMetricsListener(poolId).afterClosed();
+    public void afterClosed( String poolId )
+    {
+        poolMetricsListener( poolId ).afterClosed();
     }
 
     @Override
-    public void beforeAcquiringOrCreating(String poolId, ListenerEvent acquireEvent) {
-        poolMetricsListener(poolId).beforeAcquiringOrCreating(acquireEvent);
+    public void beforeAcquiringOrCreating( String poolId, ListenerEvent<?> acquireEvent )
+    {
+        poolMetricsListener( poolId ).beforeAcquiringOrCreating( acquireEvent );
     }
 
     @Override
-    public void afterAcquiringOrCreating(String poolId) {
-        poolMetricsListener(poolId).afterAcquiringOrCreating();
+    public void afterAcquiringOrCreating( String poolId )
+    {
+        poolMetricsListener( poolId ).afterAcquiringOrCreating();
     }
 
     @Override
-    public void afterAcquiredOrCreated(String poolId, ListenerEvent acquireEvent) {
-        poolMetricsListener(poolId).afterAcquiredOrCreated(acquireEvent);
+    public void afterAcquiredOrCreated( String poolId, ListenerEvent<?> acquireEvent )
+    {
+        poolMetricsListener( poolId ).afterAcquiredOrCreated( acquireEvent );
     }
 
     @Override
-    public void afterTimedOutToAcquireOrCreate(String poolId) {
-        poolMetricsListener(poolId).afterTimedOutToAcquireOrCreate();
+    public void afterTimedOutToAcquireOrCreate( String poolId )
+    {
+        poolMetricsListener( poolId ).afterTimedOutToAcquireOrCreate();
     }
 
     @Override
-    public void afterConnectionCreated(String poolId, ListenerEvent inUseEvent) {
-        poolMetricsListener(poolId).acquired(inUseEvent);
+    public void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent )
+    {
+        poolMetricsListener( poolId ).acquired( inUseEvent );
     }
 
     @Override
-    public void afterConnectionReleased(String poolId, ListenerEvent inUseEvent) {
-        poolMetricsListener(poolId).released(inUseEvent);
+    public void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent )
+    {
+        poolMetricsListener( poolId ).released( inUseEvent );
     }
 
     @Override
-    public ListenerEvent createListenerEvent() {
-        return new MicrometerTimerListenerEvent(this.meterRegistry);
+    public ListenerEvent<?> createListenerEvent()
+    {
+        return new MicrometerTimerListenerEvent( this.meterRegistry );
     }
 
     @Override
-    public void putPoolMetrics(String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool) {
-        this.connectionPoolMetrics.put(poolId, new MicrometerConnectionPoolMetrics(poolId, address, connectionPool, this.meterRegistry));
+    public void putPoolMetrics( String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool )
+    {
+        this.connectionPoolMetrics.put( poolId, new MicrometerConnectionPoolMetrics( poolId, address, connectionPool, this.meterRegistry ) );
+    }
+
+    // For testing purposes only
+    void putPoolMetrics( String poolId, ConnectionPoolMetrics poolMetrics )
+    {
+        this.connectionPoolMetrics.put( poolId, poolMetrics );
     }
 
     @Override
-    public void removePoolMetrics(String poolId) {
-        // TODO should we unregister metrics registered for this poolId?
-        this.connectionPoolMetrics.remove(poolId);
+    public void removePoolMetrics( String poolId )
+    {
+        this.connectionPoolMetrics.remove( poolId );
     }
 
-    private ConnectionPoolMetricsListener poolMetricsListener(String poolId )
+    private ConnectionPoolMetricsListener poolMetricsListener( String poolId )
     {
         ConnectionPoolMetricsListener poolMetrics = (ConnectionPoolMetricsListener) this.connectionPoolMetrics.get( poolId );
         if ( poolMetrics == null )
@@ -123,12 +144,12 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
     ConnectionPoolMetricsListener DEV_NULL_POOL_METRICS_LISTENER = new ConnectionPoolMetricsListener()
     {
         @Override
-        public void beforeCreating( ListenerEvent listenerEvent )
+        public void beforeCreating( ListenerEvent<?> listenerEvent )
         {
         }
 
         @Override
-        public void afterCreated( ListenerEvent listenerEvent )
+        public void afterCreated( ListenerEvent<?> listenerEvent )
         {
         }
 
@@ -143,7 +164,7 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
         }
 
         @Override
-        public void beforeAcquiringOrCreating( ListenerEvent acquireEvent )
+        public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
         {
         }
 
@@ -153,7 +174,7 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
         }
 
         @Override
-        public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
+        public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
         {
         }
 
@@ -163,12 +184,12 @@ public class MicrometerMetrics implements Metrics, MetricsListener {
         }
 
         @Override
-        public void acquired( ListenerEvent inUseEvent )
+        public void acquired( ListenerEvent<?> inUseEvent )
         {
         }
 
         @Override
-        public void released( ListenerEvent inUseEvent )
+        public void released( ListenerEvent<?> inUseEvent )
         {
         }
     };
