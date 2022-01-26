@@ -20,9 +20,10 @@ package org.neo4j.driver.internal.messaging.encode;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.internal.messaging.ValuePacker;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
+import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -44,6 +45,6 @@ class ResetMessageEncoderTest
     @Test
     void shouldFailToEncodeWrongMessage()
     {
-        assertThrows( IllegalArgumentException.class, () -> encoder.encode( new RunMessage( "RETURN 2" ), packer ) );
+        assertThrows( IllegalArgumentException.class, () -> encoder.encode( RunWithMetadataMessage.unmanagedTxRunMessage( new Query( "RETURN 2" ) ), packer ) );
     }
 }
