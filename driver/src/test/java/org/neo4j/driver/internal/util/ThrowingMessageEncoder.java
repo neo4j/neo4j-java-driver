@@ -23,10 +23,6 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
-import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
-
 public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
 {
     private final RuntimeException error;
@@ -42,20 +38,5 @@ public class ThrowingMessageEncoder<T> extends MessageToMessageEncoder<T>
     {
         ctx.pipeline().remove( this );
         throw error;
-    }
-
-    public static ThrowingMessageEncoder<RunMessage> forRunMessage( RuntimeException error )
-    {
-        return new ThrowingMessageEncoder<>( RunMessage.class, error );
-    }
-
-    public static ThrowingMessageEncoder<RunWithMetadataMessage> forRunWithMetadataMessage( RuntimeException error )
-    {
-        return new ThrowingMessageEncoder<>( RunWithMetadataMessage.class, error );
-    }
-
-    public static ThrowingMessageEncoder<ResetMessage> forResetMessage( RuntimeException error )
-    {
-        return new ThrowingMessageEncoder<>( ResetMessage.class, error );
     }
 }

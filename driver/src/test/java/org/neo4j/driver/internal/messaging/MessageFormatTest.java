@@ -21,13 +21,11 @@ package org.neo4j.driver.internal.messaging;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.EncoderException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
@@ -36,7 +34,6 @@ import org.neo4j.driver.internal.async.connection.ChannelPipelineBuilderImpl;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.async.outbound.ChunkAwareByteBufOutput;
 import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
@@ -47,9 +44,6 @@ import org.neo4j.driver.internal.util.messaging.KnowledgeableMessageFormat;
 import org.neo4j.driver.internal.util.messaging.MemorizingInboundMessageDispatcher;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonMap;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -206,17 +200,4 @@ class MessageFormatTest
 
         return Unpooled.wrappedBuffer( packedMessages );
     }
-
-    private void expectIOExceptionWithMessage( Value value, String errorMessage )
-    {
-        Map<String,Value> metadata = singletonMap( "relationship", value );
-        InitMessage message = new InitMessage( "Hello", metadata );
-        EmbeddedChannel channel = newEmbeddedChannel();
-
-        EncoderException error = assertThrows( EncoderException.class, () -> pack( message, channel ) );
-        Throwable cause = error.getCause();
-        assertThat( cause, instanceOf( IOException.class ) );
-        assertThat( cause.getMessage(), equalTo( errorMessage ) );
-    }
-
 }
