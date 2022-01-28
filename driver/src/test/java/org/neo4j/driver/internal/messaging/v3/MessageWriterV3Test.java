@@ -34,8 +34,6 @@ import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.HelloMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.packstream.PackOutput;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.util.messaging.AbstractMessageWriterTestBase;
@@ -119,10 +117,6 @@ class MessageWriterV3Test extends AbstractMessageWriterTestBase
     @Override
     protected Stream<Message> unsupportedMessages()
     {
-        return Stream.of(
-                // Bolt V1 and V2 messages
-                new InitMessage( "Apa", emptyMap() ),
-                new RunMessage( "RETURN 1" )
-        );
+        return Stream.empty();
     }
 }

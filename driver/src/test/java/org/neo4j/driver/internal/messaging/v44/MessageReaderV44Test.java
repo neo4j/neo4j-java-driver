@@ -35,7 +35,6 @@ import org.neo4j.driver.internal.InternalPoint3D;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageFormat;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
@@ -101,8 +100,7 @@ public class MessageReaderV44Test extends AbstractMessageReaderTestBase
     protected Stream<Message> unsupportedMessages()
     {
         return Stream.of(
-                DiscardAllMessage.DISCARD_ALL,
-                new RunMessage( "RETURN 42" )
+                DiscardAllMessage.DISCARD_ALL
         );
     }
 
