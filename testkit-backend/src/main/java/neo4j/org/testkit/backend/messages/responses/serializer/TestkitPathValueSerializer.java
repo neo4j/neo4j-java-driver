@@ -23,41 +23,37 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
-import java.util.function.Function;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.MapValue;
 import org.neo4j.driver.internal.value.NodeValue;
-import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.types.Node;
+import org.neo4j.driver.internal.value.PathValue;
+import org.neo4j.driver.internal.value.RelationshipValue;
+import org.neo4j.driver.types.Path;
 
 import static neo4j.org.testkit.backend.messages.responses.serializer.GenUtils.cypherObject;
 
-public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
+public class TestkitPathValueSerializer extends StdSerializer<PathValue>
 {
-    public TestkitNodeValueSerializer()
+    public TestkitPathValueSerializer()
     {
-        super( NodeValue.class );
+        super( PathValue.class );
     }
 
     @Override
-    public void serialize( NodeValue nodeValue, JsonGenerator gen, SerializerProvider serializerProvider ) throws IOException
+    public void serialize( PathValue pathValue, JsonGenerator gen, SerializerProvider provider ) throws IOException
     {
-
-        cypherObject( gen, "Node", () ->
+        cypherObject( gen, "Path", () ->
         {
-            Node node = nodeValue.asNode();
-            gen.writeObjectField( "id", new IntegerValue( node.id() ) );
-
-            StringValue[] labels = StreamSupport.stream( node.labels().spliterator(), false )
-                                                .map( StringValue::new )
-                                                .toArray( StringValue[]::new );
-
-            gen.writeObjectField( "labels", new ListValue( labels ) );
-            gen.writeObjectField( "props", new MapValue( node.asMap( Function.identity() ) ) );
-
+            Path path = pathValue.asPath();
+            NodeValue[] nodes = StreamSupport.stream( path.nodes().spliterator(), false )
+                                             .map( NodeValue::new )
+                                             .toArray( NodeValue[]::new );
+            gen.writeObjectField( "nodes", new ListValue( nodes ) );
+            RelationshipValue[] relationships = StreamSupport.stream( path.relationships().spliterator(), false )
+                                                             .map( RelationshipValue::new )
+                                                             .toArray( RelationshipValue[]::new );
+            gen.writeObjectField( "relationships", new ListValue( relationships ) );
         } );
     }
 }

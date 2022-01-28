@@ -29,10 +29,10 @@ import java.util.List;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.summary.ResultSummary;
+import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -230,7 +230,6 @@ class RxResultIT
                 .assertNext( summary -> {
                     assertThat( summary.query().text(), equalTo( "INVALID" ) );
                     assertNotNull( summary.server().address() );
-                    assertNotNull( summary.server().version() );
                 } ).verifyComplete();
     }
 

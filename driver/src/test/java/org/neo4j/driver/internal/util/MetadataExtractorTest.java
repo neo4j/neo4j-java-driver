@@ -60,14 +60,11 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.Values.values;
 import static org.neo4j.driver.internal.summary.InternalSummaryCounters.EMPTY_STATS;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractDatabaseInfo;
-import static org.neo4j.driver.internal.util.MetadataExtractor.extractNeo4jServerVersion;
 import static org.neo4j.driver.internal.util.MetadataExtractor.extractServer;
-import static org.neo4j.driver.internal.util.ServerVersion.v4_0_0;
 import static org.neo4j.driver.summary.QueryType.READ_ONLY;
 import static org.neo4j.driver.summary.QueryType.READ_WRITE;
 import static org.neo4j.driver.summary.QueryType.SCHEMA_WRITE;
 import static org.neo4j.driver.summary.QueryType.WRITE_ONLY;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 
 class MetadataExtractorTest
 {
@@ -126,14 +123,13 @@ class MetadataExtractorTest
     }
 
     @Test
-    void shouldBuildResultSummaryWithServerInfo()
+    void shouldBuildResultSummaryWithServerAddress()
     {
-        Connection connection = connectionMock( new BoltServerAddress( "server:42" ), v4_0_0 );
+        Connection connection = connectionMock( new BoltServerAddress( "server:42" ) );
 
         ResultSummary summary = extractor.extractSummary( query(), connection, 42, emptyMap() );
 
         assertEquals( "server:42", summary.server().address() );
-        assertEquals( "Neo4j/4.0.0", summary.server().version() );
     }
 
     @Test
@@ -406,16 +402,6 @@ class MetadataExtractorTest
     }
 
     @Test
-    void shouldExtractServerVersion()
-    {
-        Map<String,Value> metadata = singletonMap( "server", value( "Neo4j/3.5.0" ) );
-
-        ServerVersion version = extractNeo4jServerVersion( metadata );
-
-        assertEquals( ServerVersion.v3_5_0, version );
-    }
-
-    @Test
     void shouldExtractServer()
     {
         String agent = "Neo4j/3.5.0";
@@ -468,14 +454,14 @@ class MetadataExtractorTest
     @Test
     void shouldFailToExtractServerVersionWhenMetadataDoesNotContainIt()
     {
-        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", Values.NULL ) ) );
-        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", null ) ) );
+        assertThrows( UntrustedServerException.class, () -> extractServer( singletonMap( "server", Values.NULL ) ) );
+        assertThrows( UntrustedServerException.class, () -> extractServer( singletonMap( "server", null ) ) );
     }
 
     @Test
     void shouldFailToExtractServerVersionFromNonNeo4jProduct()
     {
-        assertThrows( UntrustedServerException.class, () -> extractNeo4jServerVersion( singletonMap( "server", value( "NotNeo4j/1.2.3" ) ) ) );
+        assertThrows( UntrustedServerException.class, () -> extractServer( singletonMap( "server", value( "NotNeo4j/1.2.3" ) ) ) );
     }
 
     private ResultSummary createWithQueryType( Value typeValue )
@@ -491,14 +477,13 @@ class MetadataExtractorTest
 
     private static Connection connectionMock()
     {
-        return connectionMock( BoltServerAddress.LOCAL_DEFAULT, anyServerVersion() );
+        return connectionMock( BoltServerAddress.LOCAL_DEFAULT );
     }
 
-    private static Connection connectionMock( BoltServerAddress address, ServerVersion version )
+    private static Connection connectionMock( BoltServerAddress address )
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( address );
-        when( connection.serverVersion() ).thenReturn( version );
         when( connection.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( connection.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return connection;

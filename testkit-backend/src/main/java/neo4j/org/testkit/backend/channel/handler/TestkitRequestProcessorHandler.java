@@ -21,6 +21,7 @@ package neo4j.org.testkit.backend.channel.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
@@ -134,6 +135,20 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         }
         else if ( isConnectionPoolClosedException( throwable ) || throwable instanceof UntrustedServerException )
         {
+            String id = testkitState.newId();
+            return DriverError.builder()
+                              .data(
+                                      DriverError.DriverErrorBody.builder()
+                                                                 .id( id )
+                                                                 .errorType( throwable.getClass().getName() )
+                                                                 .msg( throwable.getMessage() )
+                                                                 .build()
+                              )
+                              .build();
+        }
+        else if ( throwable instanceof CustomDriverError )
+        {
+            throwable = throwable.getCause();
             String id = testkitState.newId();
             return DriverError.builder()
                               .data(

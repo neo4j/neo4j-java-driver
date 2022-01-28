@@ -131,6 +131,7 @@ Make sure to run build for the whole project and not just for `testkit-tests` mo
 - `mvn clean verify -DskipTests -P testkit-tests` - skips all project tests and runs Testkit tests.
 - `mvn clean verify -DskipTests -DtestkitArgs='--tests STUB_TESTS'` - skips all project tests and runs Testkit stub tests.
 - `mvn clean verify -DskipITs -DtestkitArgs='--tests STUB_TESTS'` - skips all integration tests and runs Testkit stub tests.
+- `mvn clean verify -DskipTests -DtestkitArgs='--run-only-selected tests.neo4j.test_session_run.TestSessionRun.test_can_return_path --configs 4.4-enterprise-neo4j'` - skips all project tests and runs selected Testkit test on specific configuration.
 
 If you interrupt Maven build, you have to remove Testkit containers manually.
 

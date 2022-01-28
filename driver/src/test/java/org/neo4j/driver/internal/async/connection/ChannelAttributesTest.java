@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -39,7 +38,6 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.messa
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.protocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAgent;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setConnectionReadTimeout;
@@ -49,10 +47,8 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMe
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAgent;
-import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setTerminationReason;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.terminationReason;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 class ChannelAttributesTest
 {
@@ -168,22 +164,6 @@ class ChannelAttributesTest
         setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) );
 
         assertThrows( IllegalStateException.class, () -> setMessageDispatcher( channel, mock( InboundMessageDispatcher.class ) ) );
-    }
-
-    @Test
-    void shouldSetAndGetServerVersion()
-    {
-        ServerVersion version = version( "Neo4j/3.2.1" );
-        setServerVersion( channel, version );
-        assertEquals( version, serverVersion( channel ) );
-    }
-
-    @Test
-    void shouldFailToSetServerVersionTwice()
-    {
-        setServerVersion( channel, version( "Neo4j/3.2.2" ) );
-
-        assertThrows( IllegalStateException.class, () -> setServerVersion( channel, version( "Neo4j/3.2.3" ) ) );
     }
 
     @Test

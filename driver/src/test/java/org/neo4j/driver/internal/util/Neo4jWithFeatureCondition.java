@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.lang.reflect.AnnotatedElement;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
@@ -70,8 +72,19 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
         Driver driver = getSharedNeo4jDriver();
         if ( driver != null )
         {
-            ServerVersion version = ServerVersion.version( driver );
-            return createResult( version, feature, negated );
+            try ( Session session = driver.session() )
+            {
+                String agent = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().agent() );
+                Pattern pattern = Pattern.compile( "^Neo4j/(\\d+)\\.(\\d+)\\.(\\d+)$" );
+                Matcher matcher = pattern.matcher( agent );
+                if ( !matcher.matches() )
+                {
+                    throw new IllegalStateException( String.format( "Unexpected server agent value %s", agent ) );
+                }
+                Neo4jFeature.Version version = new Neo4jFeature.Version( Integer.parseInt( matcher.group( 1 ) ), Integer.parseInt( matcher.group( 2 ) ),
+                                                                         Integer.parseInt( matcher.group( 3 ) ) );
+                return createResult( version, feature, negated );
+            }
         }
         return ENABLED_UNKNOWN_DB_VERSION;
     }
@@ -96,7 +109,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
         return ENABLED_UNKNOWN_DB_VERSION;
     }
 
-    private static ConditionEvaluationResult createResult( ServerVersion version, Neo4jFeature feature, boolean negated )
+    private static ConditionEvaluationResult createResult( Neo4jFeature.Version version, Neo4jFeature feature, boolean negated )
     {
         if ( feature.availableIn( version ) )
         {

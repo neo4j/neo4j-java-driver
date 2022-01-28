@@ -28,7 +28,6 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 /**
  * This is a connection used by {@link DirectConnectionProvider} to connect to a remote database.
@@ -123,12 +122,6 @@ public class DirectConnection implements Connection
     public BoltServerAddress serverAddress()
     {
         return delegate.serverAddress();
-    }
-
-    @Override
-    public ServerVersion serverVersion()
-    {
-        return delegate.serverVersion();
     }
 
     @Override

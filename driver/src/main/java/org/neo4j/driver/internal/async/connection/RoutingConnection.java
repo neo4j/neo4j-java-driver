@@ -29,7 +29,6 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 /**
  * A connection used by the routing driver.
@@ -121,12 +120,6 @@ public class RoutingConnection implements Connection
     public BoltServerAddress serverAddress()
     {
         return delegate.serverAddress();
-    }
-
-    @Override
-    public ServerVersion serverVersion()
-    {
-        return delegate.serverVersion();
     }
 
     @Override

@@ -23,9 +23,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.QueryRunner;
+import org.neo4j.driver.Session;
 
 /**
  * Logical container for an atomic unit of work.
@@ -90,4 +90,12 @@ public interface AsyncTransaction extends AsyncQueryRunner
      * be completed exceptionally when rollback fails.
      */
     CompletionStage<Void> rollbackAsync();
+
+    /**
+     * Close the transaction. If the transaction has been {@link #commitAsync() committed} or {@link #rollbackAsync() rolled back}, the close is optional and no
+     * operation is performed. Otherwise, the transaction will be rolled back by default by this method.
+     *
+     * @return new {@link CompletionStage} that gets completed with {@code null} when close is successful, otherwise it gets completed exceptionally.
+     */
+    CompletionStage<Void> closeAsync();
 }

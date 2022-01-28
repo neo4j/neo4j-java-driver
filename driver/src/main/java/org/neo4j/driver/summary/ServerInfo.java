@@ -31,16 +31,6 @@ public interface ServerInfo
     String address();
 
     /**
-     * Returns a string telling which version of the server the query was executed. Supported since neo4j 3.1.
-     *
-     * @return The server version.
-     * @deprecated in 4.3, please use {@link ServerInfo#agent()}, {@link ServerInfo#protocolVersion()}, or call the <i>dbms.components</i> procedure instead.
-     * <b>Method might be removed in the next major release.</b>
-     */
-    @Deprecated
-    String version();
-
-    /**
      * Returns Bolt protocol version with which the remote server communicates. This is returned as a string in format X.Y where X is the major version and Y is
      * the minor version.
      *

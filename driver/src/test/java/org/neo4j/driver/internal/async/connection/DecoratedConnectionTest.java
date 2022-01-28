@@ -29,7 +29,6 @@ import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ResponseHandler;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.net.ServerAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -180,18 +179,6 @@ class DecoratedConnectionTest
 
         assertSame( address, connection.serverAddress() );
         verify( mockConnection ).serverAddress();
-    }
-
-    @Test
-    void shouldDelegateServerVersion()
-    {
-        ServerVersion version = ServerVersion.version( "Neo4j/3.5.3" );
-        Connection mockConnection = mock( Connection.class );
-        when( mockConnection.serverVersion() ).thenReturn( version );
-        DirectConnection connection = newConnection( mockConnection );
-
-        assertSame( version, connection.serverVersion() );
-        verify( mockConnection ).serverVersion();
     }
 
     @Test

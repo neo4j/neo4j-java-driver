@@ -25,7 +25,6 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.lang.String.format;
 
@@ -54,8 +53,6 @@ public interface Connection
     String serverAgent();
 
     BoltServerAddress serverAddress();
-
-    ServerVersion serverVersion();
 
     BoltProtocol protocol();
 

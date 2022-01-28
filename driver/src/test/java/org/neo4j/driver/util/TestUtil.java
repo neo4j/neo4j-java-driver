@@ -71,7 +71,6 @@ import org.neo4j.driver.internal.messaging.request.BeginMessage;
 import org.neo4j.driver.internal.messaging.request.CommitMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.request.RollbackMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.request.RunWithMetadataMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
 import org.neo4j.driver.internal.messaging.v4.BoltProtocolV4;
@@ -84,7 +83,6 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
-import org.neo4j.driver.internal.util.ServerVersion;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -519,7 +517,6 @@ public final class TestUtil
     {
         Connection connection = mock( Connection.class );
         when( connection.serverAddress() ).thenReturn( BoltServerAddress.LOCAL_DEFAULT );
-        when( connection.serverVersion() ).thenReturn( ServerVersion.vInDev );
         when( connection.protocol() ).thenReturn( protocol );
         when( connection.mode() ).thenReturn( mode );
         when( connection.databaseName() ).thenReturn( database( databaseName ) );
@@ -624,11 +621,6 @@ public final class TestUtil
         return sb.toString();
     }
 
-    public static ArgumentMatcher<Message> runMessageWithQueryMatcher( String query )
-    {
-        return message -> message instanceof RunMessage && Objects.equals( query, ((RunMessage) message).query() );
-    }
-
     public static ArgumentMatcher<Message> runWithMetaMessageWithQueryMatcher( String query )
     {
         return message -> message instanceof RunWithMetadataMessage && Objects.equals( query, ((RunWithMetadataMessage) message).query() );
@@ -642,14 +634,6 @@ public final class TestUtil
     public static ArgumentMatcher<Message> beginMessageWithPredicate( Predicate<BeginMessage> predicate )
     {
         return message -> message instanceof BeginMessage && predicate.test( (BeginMessage) message );
-    }
-
-    /**
-     * Used in tests that expect a server version but the tests do not depend on server version to behave differently.
-     */
-    public static ServerVersion anyServerVersion()
-    {
-        return ServerVersion.v4_0_0;
     }
 
     public static void assertNoCircularReferences(Throwable ex)
@@ -673,16 +657,6 @@ public final class TestUtil
             }
             assertNoCircularReferences( suppressed, list );
         }
-    }
-
-    private static void setupSuccessfulPullAll( Connection connection, String query )
-    {
-        doAnswer( invocation ->
-        {
-            ResponseHandler handler = invocation.getArgument( 3 );
-            handler.onSuccess( emptyMap() );
-            return null;
-        } ).when( connection ).writeAndFlush( argThat( runMessageWithQueryMatcher( query ) ), any(), any(), any() );
     }
 
     private static void setupSuccessResponse( Connection connection, Class<? extends Message> messageType )

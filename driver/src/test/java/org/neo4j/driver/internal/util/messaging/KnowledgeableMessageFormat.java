@@ -26,15 +26,11 @@ import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.common.CommonValuePacker;
 import org.neo4j.driver.internal.messaging.common.CommonValueUnpacker;
 import org.neo4j.driver.internal.messaging.encode.DiscardAllMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.InitMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.PullAllMessageEncoder;
 import org.neo4j.driver.internal.messaging.encode.ResetMessageEncoder;
-import org.neo4j.driver.internal.messaging.encode.RunMessageEncoder;
 import org.neo4j.driver.internal.messaging.request.DiscardAllMessage;
-import org.neo4j.driver.internal.messaging.request.InitMessage;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.messaging.request.ResetMessage;
-import org.neo4j.driver.internal.messaging.request.RunMessage;
 import org.neo4j.driver.internal.messaging.response.FailureMessage;
 import org.neo4j.driver.internal.messaging.response.IgnoredMessage;
 import org.neo4j.driver.internal.messaging.response.RecordMessage;
@@ -73,10 +69,8 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
             Map<Byte,MessageEncoder> result = Iterables.newHashMapWithSize( 10 );
             // request message encoders
             result.put( DiscardAllMessage.SIGNATURE, new DiscardAllMessageEncoder() );
-            result.put( InitMessage.SIGNATURE, new InitMessageEncoder() );
             result.put( PullAllMessage.SIGNATURE, new PullAllMessageEncoder() );
             result.put( ResetMessage.SIGNATURE, new ResetMessageEncoder() );
-            result.put( RunMessage.SIGNATURE, new RunMessageEncoder() );
             // response message encoders
             result.put( FailureMessage.SIGNATURE, new FailureMessageEncoder() );
             result.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );

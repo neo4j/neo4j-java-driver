@@ -711,7 +711,8 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable the default driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * Enable driver metrics backed by internal basic implementation. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         *
          * @return this builder.
          */
         public ConfigBuilder withDriverMetrics()
@@ -721,11 +722,12 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * Enable driver metrics backed by Micrometer instrumentation. The metrics can be obtained afterwards via Micrometer means and {@link
+         * Driver#metrics()}.
          * <p>
          * You must have Micrometer on classpath to use this option.
          *
-         * @param meterRegistry meter registry to register metrics with
+         * @param meterRegistry meter registry to register metrics with.
          * @return this builder.
          */
         @Experimental

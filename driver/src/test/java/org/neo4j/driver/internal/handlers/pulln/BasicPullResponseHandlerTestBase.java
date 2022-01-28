@@ -33,7 +33,6 @@ import org.neo4j.driver.internal.messaging.request.DiscardMessage;
 import org.neo4j.driver.internal.messaging.request.PullMessage;
 import org.neo4j.driver.internal.messaging.v43.BoltProtocolV43;
 import org.neo4j.driver.internal.spi.Connection;
-import org.neo4j.driver.internal.util.ServerVersion;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.summary.ResultSummary;
 
@@ -241,7 +240,6 @@ abstract class BasicPullResponseHandlerTestBase
     {
         Connection conn = mock( Connection.class );
         when( conn.serverAddress() ).thenReturn( mock( BoltServerAddress.class ) );
-        when( conn.serverVersion() ).thenReturn( mock( ServerVersion.class ) );
         when( conn.protocol() ).thenReturn( BoltProtocolV43.INSTANCE );
         when( conn.serverAgent() ).thenReturn( "Neo4j/4.2.5" );
         return conn;

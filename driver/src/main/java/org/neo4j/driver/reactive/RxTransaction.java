@@ -41,11 +41,19 @@ public interface RxTransaction extends RxQueryRunner
     <T> Publisher<T> commit();
 
     /**
-     * Rolls back the transaction.
-     * It completes without publishing anything if transaction is rolled back successfully.
-     * Otherwise, errors when there is any error to roll back.
+     * Rolls back the transaction. It completes without publishing anything if transaction is rolled back successfully. Otherwise, errors when there is any
+     * error to roll back.
+     *
      * @param <T> makes it easier to be chained after other publishers.
      * @return an empty publisher.
      */
     <T> Publisher<T> rollback();
+
+    /**
+     * Close the transaction. If the transaction has been {@link #commit() committed} or {@link #rollback() rolled back}, the close is optional and no operation
+     * is performed. Otherwise, the transaction will be rolled back by default by this method.
+     *
+     * @return new {@link Publisher} that gets completed when close is successful, otherwise an error is signalled.
+     */
+    Publisher<Void> close();
 }

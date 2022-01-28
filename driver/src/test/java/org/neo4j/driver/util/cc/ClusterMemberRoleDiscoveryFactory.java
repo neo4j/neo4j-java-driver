@@ -32,7 +32,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.util.ServerVersion;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 
 import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.Values.parameters;
@@ -40,9 +40,9 @@ import static org.neo4j.driver.internal.util.Iterables.single;
 
 public class ClusterMemberRoleDiscoveryFactory
 {
-    public static ClusterMemberRoleDiscovery newInstance( ServerVersion version )
+    public static ClusterMemberRoleDiscovery newInstance( BoltProtocolVersion version )
     {
-        if ( version.greaterThanOrEqual( ServerVersion.v4_0_0 ) )
+        if ( version.getMajorVersion() >= 4 )
         {
             return new SimpleClusterMemberRoleDiscovery();
         }

@@ -18,18 +18,22 @@
  */
 package org.neo4j.driver.util.cc;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.util.cc.ClusterMemberRoleDiscoveryFactory.ClusterMemberRoleDiscovery;
 
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.util.ServerVersion.version;
 
 public class ClusterDrivers implements AutoCloseable
 {
@@ -50,7 +54,13 @@ public class ClusterDrivers implements AutoCloseable
         final Driver driver = membersWithDrivers.computeIfAbsent( member, this::createDriver );
         if ( discovery == null )
         {
-            discovery = ClusterMemberRoleDiscoveryFactory.newInstance( version( driver ) );
+            try ( Session session = driver.session() )
+            {
+                String version = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().protocolVersion() );
+                List<Integer> versionParts = Arrays.stream( version.split( "\\." ) ).map( Integer::parseInt ).collect( Collectors.toList() );
+                BoltProtocolVersion protocolVersion = new BoltProtocolVersion( versionParts.get( 0 ), versionParts.get( 1 ) );
+                discovery = ClusterMemberRoleDiscoveryFactory.newInstance( protocolVersion );
+            }
         }
         return driver;
     }

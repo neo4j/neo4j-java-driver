@@ -92,7 +92,6 @@ import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
-import static org.neo4j.driver.util.TestUtil.anyServerVersion;
 import static org.neo4j.driver.util.TestUtil.await;
 import static org.neo4j.driver.util.TestUtil.connectionMock;
 
@@ -143,7 +142,7 @@ public final class BoltProtocolV4Test
         assertFalse( promise.isDone() );
 
         Map<String,Value> metadata = new HashMap<>();
-        metadata.put( "server", value( anyServerVersion().toString() ) );
+        metadata.put( "server", value( "Neo4j/4.0.0" ) );
         metadata.put( "connection_id", value( "bolt-42" ) );
 
         messageDispatcher.handleSuccessMessage( metadata );
