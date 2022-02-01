@@ -115,13 +115,6 @@ final class SharedCluster
         debug( "Cluster at `%s` killed.", clusterInstance.getPath() );
     }
 
-    static void kill( ClusterMember member )
-    {
-        assertClusterExists();
-        ClusterControl.killClusterMember( member.getPath() );
-        debug( "Cluster member at `%s` killed.", member.getPath() );
-    }
-
     private static Set<ClusterMember> parseStartCommandOutput( String output )
     {
         Set<ClusterMember> result = new HashSet<>();
