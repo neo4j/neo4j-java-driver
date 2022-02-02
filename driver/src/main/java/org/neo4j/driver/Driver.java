@@ -148,11 +148,10 @@ public interface Driver extends AutoCloseable
 
     /**
      * Returns the driver metrics if metrics reporting is enabled via {@link Config.ConfigBuilder#withDriverMetrics()}.
-     * Otherwise a {@link ClientException} will be thrown.
+     * Otherwise, a {@link ClientException} will be thrown.
      * @return the driver metrics if enabled.
      * @throws ClientException if the driver metrics reporting is not enabled.
      */
-    @Experimental
     Metrics metrics();
 
     /**
@@ -160,7 +159,6 @@ public interface Driver extends AutoCloseable
      *
      * @return true if the metrics reporting is enabled.
      */
-    @Experimental
     boolean isMetricsEnabled();
 
     /**

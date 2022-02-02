@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.metrics.ListenerEvent;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setPoolId;

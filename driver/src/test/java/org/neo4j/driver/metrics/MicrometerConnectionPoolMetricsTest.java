@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -25,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -43,6 +45,10 @@ class MicrometerConnectionPoolMetricsTest
     BoltServerAddress address;
     ConnectionPool pool;
     MeterRegistry registry;
+    AtomicInteger inUse = new AtomicInteger(0);
+    IntSupplier inUseSupplier = inUse::get;
+    AtomicInteger idle = new AtomicInteger(0);
+    IntSupplier idleSupplier = idle::get;
 
     @BeforeEach
     void beforeEach()
@@ -50,7 +56,7 @@ class MicrometerConnectionPoolMetricsTest
         address = new BoltServerAddress( "host", "127.0.0.1", 7687 );
         pool = mock( ConnectionPool.class );
         registry = new SimpleMeterRegistry();
-        metrics = new MicrometerConnectionPoolMetrics( ID, address, pool, registry );
+        metrics = new MicrometerConnectionPoolMetrics( ID, address, inUseSupplier, idleSupplier, registry );
     }
 
     @Test
@@ -214,39 +220,49 @@ class MicrometerConnectionPoolMetricsTest
     }
 
     @Test
-    void shouldDelegateToPoolOnInUse()
+    void shouldUseInUseSupplier()
     {
-        // GIVEN
-        int expected = 5;
-        given( pool.inUseConnections( address ) ).willReturn( expected );
-        ConnectionPoolMetrics expectedMetrics = mock( ConnectionPoolMetrics.class );
-        given( expectedMetrics.inUse() ).willReturn( expected );
+        try
+        {
+            // GIVEN
+            int expected = 5;
+            inUse.compareAndSet( 0, expected );
+            ConnectionPoolMetrics expectedMetrics = mock( ConnectionPoolMetrics.class );
+            given( expectedMetrics.inUse() ).willReturn( expected );
 
-        // WHEN
-        int actual = metrics.inUse();
+            // WHEN
+            int actual = metrics.inUse();
 
-        // THEN
-        assertEquals( expected, actual );
-        then( pool ).should().inUseConnections( address );
-        verifyMetrics( expectedMetrics, metrics );
+            // THEN
+            assertEquals( expected, actual );
+            verifyMetrics( expectedMetrics, metrics );
+        } finally
+        {
+            inUse.set( 0 );
+        }
     }
 
     @Test
-    void shouldDelegateToPoolOnIdle()
+    void shouldUseIdleSupplier()
     {
-        // GIVEN
-        int expected = 5;
-        given( pool.idleConnections( address ) ).willReturn( expected );
-        ConnectionPoolMetrics expectedMetrics = mock( ConnectionPoolMetrics.class );
-        given( expectedMetrics.idle() ).willReturn( expected );
+        try
+        {
+            // GIVEN
+            int expected = 5;
+            idle.compareAndSet( 0, expected );
+            ConnectionPoolMetrics expectedMetrics = mock( ConnectionPoolMetrics.class );
+            given( expectedMetrics.idle() ).willReturn( expected );
 
-        // WHEN
-        int actual = metrics.idle();
+            // WHEN
+            int actual = metrics.idle();
 
-        // THEN
-        assertEquals( expected, actual );
-        then( pool ).should().idleConnections( address );
-        verifyMetrics( expectedMetrics, metrics );
+            // THEN
+            assertEquals( expected, actual );
+            verifyMetrics( expectedMetrics, metrics );
+        } finally
+        {
+            idle.set( 0 );
+        }
     }
 
     void verifyMetrics( ConnectionPoolMetrics expected, ConnectionPoolMetrics actual )

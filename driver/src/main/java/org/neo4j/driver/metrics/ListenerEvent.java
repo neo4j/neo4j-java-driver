@@ -16,30 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.internal.util.Clock;
-
-final class TimeRecorderListenerEvent implements ListenerEvent<Long>
+public interface ListenerEvent<T>
 {
-    private final Clock clock;
-    private long startTime;
+    void start();
 
-    TimeRecorderListenerEvent( Clock clock )
-    {
-        this.clock = clock;
-    }
-
-    @Override
-    public void start()
-    {
-        startTime = clock.millis();
-    }
-
-    @Override
-    public Long getSample()
-    {
-        return clock.millis() - startTime;
-    }
+    T getSample();
 }
+

@@ -39,6 +39,7 @@ import org.neo4j.driver.internal.DefaultDomainNameResolver;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -57,7 +58,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -156,7 +156,7 @@ class NettyChannelPoolIT
     @Test
     void shouldTrackActiveChannels() throws Exception
     {
-        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING );
+        NettyChannelTracker tracker = new NettyChannelTracker( DevNullMetricsListener.INSTANCE, new ImmediateSchedulingEventExecutor(), DEV_NULL_LOGGING );
 
         poolHandler = tracker;
         pool = newPool( neo4j.authToken() );

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.util.FakeClock;
 
 import static java.util.Arrays.asList;
@@ -41,7 +42,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 
 class ConnectionPoolImplTest
 {
@@ -144,7 +144,7 @@ class ConnectionPoolImplTest
 
     private static TestConnectionPool newConnectionPool( NettyChannelTracker nettyChannelTracker, NettyChannelHealthChecker nettyChannelHealthChecker )
     {
-        return new TestConnectionPool( mock( Bootstrap.class ), nettyChannelTracker, nettyChannelHealthChecker, newSettings(), DEV_NULL_METRICS,
+        return new TestConnectionPool( mock( Bootstrap.class ), nettyChannelTracker, nettyChannelHealthChecker, newSettings(), DevNullMetricsListener.INSTANCE,
                                        DEV_NULL_LOGGING,
                                        new FakeClock(), true );
     }

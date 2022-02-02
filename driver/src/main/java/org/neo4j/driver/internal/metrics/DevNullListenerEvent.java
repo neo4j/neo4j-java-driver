@@ -18,24 +18,20 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-public interface ListenerEvent<T>
+import org.neo4j.driver.metrics.ListenerEvent;
+
+enum DevNullListenerEvent implements ListenerEvent<Long>
 {
-    ListenerEvent<Long> DEV_NULL_LISTENER_EVENT = new ListenerEvent<Long>()
+    INSTANCE;
+
+    @Override
+    public void start()
     {
-        @Override
-        public void start()
-        {
-        }
+    }
 
-        @Override
-        public Long getSample()
-        {
-            return 0L;
-        }
-    };
-
-    void start();
-
-    T getSample();
+    @Override
+    public Long getSample()
+    {
+        return 0L;
+    }
 }
-

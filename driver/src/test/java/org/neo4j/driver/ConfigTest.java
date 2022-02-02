@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -369,7 +367,7 @@ class ConfigTest
     void shouldNotHaveMeterRegistryByDefault()
     {
         Config config = Config.builder().build();
-        Optional<MeterRegistry> meterRegistryOpt = config.meterRegistry();
+        Optional<MetricsAdapter> meterRegistryOpt = config.metricsAdapter();
 
         assertFalse( meterRegistryOpt.isPresent() );
         assertFalse( config.isMetricsEnabled() );
@@ -379,21 +377,21 @@ class ConfigTest
     void shouldNotAcceptNullMeterRegistry()
     {
         Config.ConfigBuilder builder = Config.builder();
-        assertThrows( NullPointerException.class, () -> builder.withMicrometerDriverMetrics( null ) );
+        assertThrows( NullPointerException.class, () -> builder.withMetricsAdapter( null ) );
     }
 
     @Test
-    void shouldSetMeterRegistry()
+    void shouldSetMetricsAdapter()
     {
-        MeterRegistry registry = new SimpleMeterRegistry();
+        MetricsAdapter adapter = mock(MetricsAdapter.class);
 
         Config config = Config.builder()
-                              .withMicrometerDriverMetrics( registry )
+                              .withMetricsAdapter( adapter )
                               .build();
-        Optional<MeterRegistry> meterRegistryOpt = config.meterRegistry();
+        Optional<MetricsAdapter> meterRegistryOpt = config.metricsAdapter();
 
         assertTrue( meterRegistryOpt.isPresent() );
-        assertEquals( registry, meterRegistryOpt.get() );
+        assertEquals( adapter, meterRegistryOpt.get() );
         assertTrue( config.isMetricsEnabled() );
     }
 
@@ -470,6 +468,23 @@ class ConfigTest
                     throw new RuntimeException( e );
                 }
             } );
+        }
+
+        // No point in trying to make the adapter implementations serializable
+        @Test
+        void shouldNotTryToSerializeMetricsAdapter() throws IOException, ClassNotFoundException
+        {
+            Config config = Config.builder()
+                    .withMetricsAdapter( mock(MetricsAdapter.class) )
+                    .build();
+
+            assertTrue( config.metricsAdapter().isPresent() );
+            assertTrue( config.isMetricsEnabled() );
+
+            Config verify = TestUtil.serializeAndReadBack( config, Config.class );
+
+            assertFalse( verify.metricsAdapter().isPresent() );
+            assertTrue( verify.isMetricsEnabled() );
         }
 
         @ParameterizedTest

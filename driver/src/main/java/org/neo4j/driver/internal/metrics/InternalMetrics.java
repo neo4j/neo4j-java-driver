@@ -22,19 +22,22 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
+import org.neo4j.driver.metrics.ListenerEvent;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.metrics.MetricsListener;
 import org.neo4j.driver.internal.util.Clock;
+import org.neo4j.driver.metrics.ConnectionPoolMetricsListener;
+import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
-import static org.neo4j.driver.internal.metrics.ConnectionPoolMetricsListener.DEV_NULL_POOL_METRICS_LISTENER;
 
-public class InternalMetrics extends InternalAbstractMetrics
+final class InternalMetrics implements Metrics, MetricsListener
 {
     private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
     private final Clock clock;
@@ -49,9 +52,9 @@ public class InternalMetrics extends InternalAbstractMetrics
     }
 
     @Override
-    public void putPoolMetrics( String poolId, BoltServerAddress serverAddress, ConnectionPoolImpl pool )
+    public void registerPoolMetrics( String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier )
     {
-        this.connectionPoolMetrics.put( poolId, new InternalConnectionPoolMetrics( poolId, serverAddress, pool ) );
+        this.connectionPoolMetrics.put( poolId, new InternalConnectionPoolMetrics( poolId, serverAddress, inUseSupplier, idleSupplier ) );
     }
 
     @Override
@@ -144,7 +147,7 @@ public class InternalMetrics extends InternalAbstractMetrics
         if ( poolMetrics == null )
         {
             log.warn( format( "Failed to find pool metrics with id `%s` in %s.", poolId, this.connectionPoolMetrics ) );
-            return DEV_NULL_POOL_METRICS_LISTENER;
+            return DevNullPoolMetricsListener.INSTANCE;
         }
         return poolMetrics;
     }

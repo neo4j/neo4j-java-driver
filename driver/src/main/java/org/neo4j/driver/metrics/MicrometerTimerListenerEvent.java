@@ -16,30 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.internal.util.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
-final class TimeRecorderListenerEvent implements ListenerEvent<Long>
+final class MicrometerTimerListenerEvent implements ListenerEvent<Timer.Sample>
 {
-    private final Clock clock;
-    private long startTime;
+    private final MeterRegistry meterRegistry;
+    private Timer.Sample sample;
 
-    TimeRecorderListenerEvent( Clock clock )
+    public MicrometerTimerListenerEvent( MeterRegistry meterRegistry )
     {
-        this.clock = clock;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
     public void start()
     {
-        startTime = clock.millis();
+        this.sample = Timer.start( this.meterRegistry );
     }
 
     @Override
-    public Long getSample()
+    public Timer.Sample getSample()
     {
-        return clock.millis() - startTime;
+        return this.sample;
     }
 }

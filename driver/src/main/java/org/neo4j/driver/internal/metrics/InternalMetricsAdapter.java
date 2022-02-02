@@ -19,14 +19,16 @@
 package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.metrics.MetricsListener;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.Metrics;
 
-public class InternalMetricsProvider implements MetricsProvider
+public final class InternalMetricsAdapter implements MetricsAdapter
 {
     private final InternalMetrics metrics;
 
-    public InternalMetricsProvider( Clock clock, Logging logging )
+    public InternalMetricsAdapter( Clock clock, Logging logging )
     {
         this.metrics = new InternalMetrics( clock, logging );
     }
@@ -41,11 +43,5 @@ public class InternalMetricsProvider implements MetricsProvider
     public MetricsListener metricsListener()
     {
         return metrics;
-    }
-
-    @Override
-    public boolean isMetricsEnabled()
-    {
-        return true;
     }
 }

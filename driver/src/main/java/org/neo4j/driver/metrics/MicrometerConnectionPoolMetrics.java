@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -28,14 +28,15 @@ import io.micrometer.core.instrument.Timer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;
 
-public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics
+final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsListener, ConnectionPoolMetrics
 {
     public static final String PREFIX = "neo4j.driver.connections";
     public static final String IN_USE = PREFIX + ".in.use";
@@ -52,8 +53,8 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     public static final String USAGE = PREFIX + ".usage";
     public static final String RELEASED = PREFIX + ".released";
 
-    private final BoltServerAddress address;
-    private final ConnectionPool pool;
+    private final IntSupplier inUseSupplier;
+    private final IntSupplier idleSupplier;
 
     private final String id;
 
@@ -69,23 +70,25 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     private final Timer totalInUseTimer;
     private final Counter released;
 
-    MicrometerConnectionPoolMetrics( String poolId, BoltServerAddress address, ConnectionPool pool, MeterRegistry registry )
+    MicrometerConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier, MeterRegistry registry )
     {
-        this( poolId, address, pool, registry, Tags.empty() );
+        this( poolId, address, inUseSupplier, idleSupplier, registry, Tags.empty() );
     }
 
-    MicrometerConnectionPoolMetrics( String poolId, BoltServerAddress address, ConnectionPool pool, MeterRegistry registry, Iterable<Tag> initialTags )
+    MicrometerConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier, MeterRegistry registry, Iterable<Tag> initialTags )
     {
         Objects.requireNonNull( poolId );
         Objects.requireNonNull( address );
-        Objects.requireNonNull( pool );
+        Objects.requireNonNull( inUseSupplier );
+        Objects.requireNonNull( idleSupplier );
         Objects.requireNonNull( registry );
 
         this.id = poolId;
-        this.address = address;
-        this.pool = pool;
+        this.inUseSupplier = inUseSupplier;
+        this.idleSupplier = idleSupplier;
+        String host = address instanceof BoltServerAddress ? ((BoltServerAddress) address).connectionHost() : address.host();
         Iterable<Tag> tags = Tags.concat( initialTags,
-                                          "address", String.format( "%s:%d", address.connectionHost(), address.port() ) );
+                                          "address", String.format( "%s:%d", host, address.port() ) );
 
         Gauge.builder( IN_USE, this::inUse ).tags( tags ).register( registry );
         Gauge.builder( IDLE, this::idle ).tags( tags ).register( registry );
@@ -181,13 +184,13 @@ public class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsLis
     @Override
     public int inUse()
     {
-        return pool.inUseConnections( address );
+        return inUseSupplier.getAsInt();
     }
 
     @Override
     public int idle()
     {
-        return pool.idleConnections( address );
+        return idleSupplier.getAsInt();
     }
 
     @Override

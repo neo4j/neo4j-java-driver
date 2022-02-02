@@ -30,7 +30,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -67,19 +67,19 @@ class CustomSecurityPlanTest
         List<SecurityPlan> capturedSecurityPlans = new ArrayList<>();
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsAdapter metricsAdapter, Config config )
         {
             capturedSecurityPlans.add( securityPlan );
-            return super.createDriver( securityPlan, sessionFactory, metricsProvider, config );
+            return super.createDriver( securityPlan, sessionFactory, metricsAdapter, config );
         }
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
+                                                       MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup,
                                                        RoutingContext routingContext )
         {
             capturedSecurityPlans.add( securityPlan );
-            return super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext );
+            return super.createConnectionPool( authToken, securityPlan, bootstrap, metricsAdapter, config, ownsEventLoopGroup, routingContext );
         }
     }
 }

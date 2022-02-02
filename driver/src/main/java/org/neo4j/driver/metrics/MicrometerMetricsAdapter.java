@@ -16,30 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.internal.util.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
 
-final class TimeRecorderListenerEvent implements ListenerEvent<Long>
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.MetricsAdapter;
+
+/**
+ * An adapter to bridge between the driver metrics and a Micrometer {@link MeterRegistry meter registry}.
+ */
+public final class MicrometerMetricsAdapter implements MetricsAdapter
 {
-    private final Clock clock;
-    private long startTime;
+    private final MicrometerMetrics metrics;
 
-    TimeRecorderListenerEvent( Clock clock )
+    public MicrometerMetricsAdapter( MeterRegistry meterRegistry )
     {
-        this.clock = clock;
+        this.metrics = new MicrometerMetrics( meterRegistry );
     }
 
     @Override
-    public void start()
+    public Metrics metrics()
     {
-        startTime = clock.millis();
+        return this.metrics;
     }
 
     @Override
-    public Long getSample()
+    public MetricsListener metricsListener()
     {
-        return clock.millis() - startTime;
+        return this.metrics;
     }
 }

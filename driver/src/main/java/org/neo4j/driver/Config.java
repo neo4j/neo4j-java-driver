@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver;
 
-import io.micrometer.core.instrument.MeterRegistry;
-
 import java.io.File;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -34,6 +32,8 @@ import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.retry.RetrySettings;
+import org.neo4j.driver.internal.metrics.DevNullMetricsAdapter;
+import org.neo4j.driver.metrics.MicrometerMetricsAdapter;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
@@ -99,7 +99,7 @@ public class Config implements Serializable
     private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
     private final String userAgent;
-    private final MeterRegistry meterRegistry;
+    private final transient MetricsAdapter metricsAdapter;
 
     private Config( ConfigBuilder builder )
     {
@@ -124,7 +124,7 @@ public class Config implements Serializable
 
         this.eventLoopThreads = builder.eventLoopThreads;
         this.isMetricsEnabled = builder.isMetricsEnabled;
-        this.meterRegistry = builder.meterRegistry;
+        this.metricsAdapter = builder.metricsAdapter;
     }
 
     /**
@@ -265,9 +265,9 @@ public class Config implements Serializable
         return isMetricsEnabled;
     }
 
-    public Optional<MeterRegistry> meterRegistry()
+    public Optional<MetricsAdapter> metricsAdapter()
     {
-        return Optional.ofNullable( meterRegistry );
+        return Optional.ofNullable( metricsAdapter );
     }
 
     /**
@@ -297,10 +297,10 @@ public class Config implements Serializable
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
+        private MetricsAdapter metricsAdapter;
         private boolean isMetricsEnabled = false;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
-        private MeterRegistry meterRegistry;
 
         private ConfigBuilder() {}
 
@@ -717,25 +717,7 @@ public class Config implements Serializable
          */
         public ConfigBuilder withDriverMetrics()
         {
-            this.isMetricsEnabled = true;
-            return this;
-        }
-
-        /**
-         * Enable driver metrics backed by Micrometer instrumentation. The metrics can be obtained afterwards via Micrometer means and {@link
-         * Driver#metrics()}.
-         * <p>
-         * You must have Micrometer on classpath to use this option.
-         *
-         * @param meterRegistry meter registry to register metrics with.
-         * @return this builder.
-         */
-        @Experimental
-        public ConfigBuilder withMicrometerDriverMetrics( MeterRegistry meterRegistry )
-        {
-            this.meterRegistry = Objects.requireNonNull( meterRegistry, "meterRegistry" );
-            this.isMetricsEnabled = true;
-            return this;
+            return withMetricsEnabled( true );
         }
 
         /**
@@ -744,7 +726,34 @@ public class Config implements Serializable
          */
         public ConfigBuilder withoutDriverMetrics()
         {
-            this.isMetricsEnabled = false;
+            return withMetricsEnabled( false );
+        }
+
+        private ConfigBuilder withMetricsEnabled( boolean enabled )
+        {
+            this.isMetricsEnabled = enabled;
+            this.metricsAdapter = null;
+            return this;
+        }
+
+        /**
+         * Enable driver metrics backed by a different metrics provider.
+         * <p>
+         * We offer an implementation based on <a href="https://micrometer.io">Micrometer</a>.
+         * The metrics can be obtained afterwards via Micrometer means and {@link Driver#metrics()}.
+         * You must have Micrometer on classpath to use the provided {@link MicrometerMetricsAdapter}.
+         * <p>
+         * This configuration setting is <strong>not</strong> serialiable. If metrics had been enabled in a configuration
+         * that was serialized inbetween usage, it will default to the internal adapter.
+         *
+         * @param metricsAdapter the metrics provider to use. Use {@literal null} to disable metrics again.
+         * @return this builder.
+         */
+        @Experimental
+        public ConfigBuilder withMetricsAdapter( MetricsAdapter metricsAdapter )
+        {
+            this.metricsAdapter = Objects.requireNonNull( metricsAdapter, "metricsAdapter" );
+            this.isMetricsEnabled = this.metricsAdapter != DevNullMetricsAdapter.INSTANCE;
             return this;
         }
 

@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -24,13 +24,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
+import org.neo4j.driver.internal.metrics.DevNullPoolMetricsListener;
+import org.neo4j.driver.net.ServerAddress;
 
-public class MicrometerMetrics implements Metrics, MetricsListener
+final class MicrometerMetrics implements Metrics, MetricsListener
 {
     private final MeterRegistry meterRegistry;
     private final Map<String,ConnectionPoolMetrics> connectionPoolMetrics;
@@ -114,9 +115,9 @@ public class MicrometerMetrics implements Metrics, MetricsListener
     }
 
     @Override
-    public void putPoolMetrics( String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool )
+    public void registerPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier )
     {
-        this.connectionPoolMetrics.put( poolId, new MicrometerConnectionPoolMetrics( poolId, address, connectionPool, this.meterRegistry ) );
+        this.connectionPoolMetrics.put( poolId, new MicrometerConnectionPoolMetrics( poolId, address, inUseSupplier, idleSupplier, this.meterRegistry ) );
     }
 
     // For testing purposes only
@@ -136,61 +137,8 @@ public class MicrometerMetrics implements Metrics, MetricsListener
         ConnectionPoolMetricsListener poolMetrics = (ConnectionPoolMetricsListener) this.connectionPoolMetrics.get( poolId );
         if ( poolMetrics == null )
         {
-            return DEV_NULL_POOL_METRICS_LISTENER;
+            return DevNullPoolMetricsListener.INSTANCE;
         }
         return poolMetrics;
     }
-
-    ConnectionPoolMetricsListener DEV_NULL_POOL_METRICS_LISTENER = new ConnectionPoolMetricsListener()
-    {
-        @Override
-        public void beforeCreating( ListenerEvent<?> listenerEvent )
-        {
-        }
-
-        @Override
-        public void afterCreated( ListenerEvent<?> listenerEvent )
-        {
-        }
-
-        @Override
-        public void afterFailedToCreate()
-        {
-        }
-
-        @Override
-        public void afterClosed()
-        {
-        }
-
-        @Override
-        public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
-        {
-        }
-
-        @Override
-        public void afterAcquiringOrCreating()
-        {
-        }
-
-        @Override
-        public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
-        {
-        }
-
-        @Override
-        public void afterTimedOutToAcquireOrCreate()
-        {
-        }
-
-        @Override
-        public void acquired( ListenerEvent<?> inUseEvent )
-        {
-        }
-
-        @Override
-        public void released( ListenerEvent<?> inUseEvent )
-        {
-        }
-    };
 }

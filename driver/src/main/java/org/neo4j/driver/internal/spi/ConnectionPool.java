@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.internal.BoltServerAddress;
+import org.neo4j.driver.net.ServerAddress;
 
 public interface ConnectionPool
 {
@@ -31,9 +32,9 @@ public interface ConnectionPool
 
     void retainAll( Set<BoltServerAddress> addressesToRetain );
 
-    int inUseConnections( BoltServerAddress address );
+    int inUseConnections( ServerAddress address );
 
-    int idleConnections( BoltServerAddress address );
+    int idleConnections( ServerAddress address );
 
     CompletionStage<Void> close();
 

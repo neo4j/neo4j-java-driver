@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,15 +26,15 @@ import org.neo4j.driver.Metrics;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class MicrometerMetricsProviderTest
+class MicrometerMetricsAdapterTest
 {
-    MicrometerMetricsProvider provider;
+    MicrometerMetricsAdapter provider;
     MeterRegistry registry;
 
     @BeforeEach
     void beforeEach()
     {
-        provider = new MicrometerMetricsProvider( registry );
+        provider = new MicrometerMetricsAdapter( registry );
     }
 
     @Test
@@ -55,15 +55,5 @@ class MicrometerMetricsProviderTest
 
         // THEN
         assertTrue( listener instanceof MicrometerMetrics );
-    }
-
-    @Test
-    void shouldReportMetricsEnabled()
-    {
-        // GIVEN & WHEN
-        boolean metricsEnabled = provider.isMetricsEnabled();
-
-        // THEN
-        assertTrue( metricsEnabled );
     }
 }

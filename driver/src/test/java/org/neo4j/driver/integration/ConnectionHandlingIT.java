@@ -53,7 +53,8 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
@@ -81,7 +82,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.driver.Values.parameters;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.internal.util.Neo4jFeature.BOLT_V4;
 import static org.neo4j.driver.util.TestUtil.await;
 
@@ -474,7 +474,7 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsProvider ignored, Config config, boolean ownsEventLoopGroup,
+                                                       MetricsAdapter ignored, Config config, boolean ownsEventLoopGroup,
                                                        RoutingContext routingContext )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, "test", 1000 );
@@ -496,7 +496,7 @@ class ConnectionHandlingIT
         MemorizingConnectionPool( ChannelConnector connector, Bootstrap bootstrap, PoolSettings settings,
                 Logging logging, Clock clock, boolean ownsEventLoopGroup )
         {
-            super( connector, bootstrap, settings, DEV_NULL_METRICS, logging, clock, ownsEventLoopGroup );
+            super( connector, bootstrap, settings, DevNullMetricsListener.INSTANCE, logging, clock, ownsEventLoopGroup );
         }
 
         void startMemorizing()

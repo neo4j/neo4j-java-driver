@@ -16,14 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.Config;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.NetworkConnection;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
+import org.neo4j.driver.net.ServerAddress;
 
 public interface MetricsListener
 {
@@ -87,7 +86,7 @@ public interface MetricsListener
      * After acquiring or creating a new netty channel from pool successfully.
      *
      * @param poolId     the id of the pool where the netty channel lives.
-     * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when created.
+     * @param inUseEvent a connection listener event fired from the newly created connection.
      */
     void afterConnectionCreated( String poolId, ListenerEvent<?> inUseEvent );
 
@@ -95,13 +94,13 @@ public interface MetricsListener
      * After releasing a netty channel back to pool successfully.
      *
      * @param poolId     the id of the pool where the netty channel lives.
-     * @param inUseEvent a connection listener registered with a {@link NetworkConnection} when destroyed.
+     * @param inUseEvent a connection listener event fired from the connection being released.
      */
     void afterConnectionReleased( String poolId, ListenerEvent<?> inUseEvent );
 
     ListenerEvent<?> createListenerEvent();
 
-    void putPoolMetrics( String poolId, BoltServerAddress address, ConnectionPoolImpl connectionPool );
+    void registerPoolMetrics( String poolId, ServerAddress serverAddress, IntSupplier inUseSupplier, IntSupplier idleSupplier );
 
     void removePoolMetrics( String poolId );
 }

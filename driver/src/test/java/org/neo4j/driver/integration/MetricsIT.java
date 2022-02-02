@@ -31,6 +31,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.metrics.MicrometerMetricsAdapter;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -49,7 +50,8 @@ class MetricsIT
     @BeforeEach
     void createDriver()
     {
-        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(), Config.builder().withMicrometerDriverMetrics( meterRegistry ).build() );
+        driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
+                Config.builder().withMetricsAdapter( new MicrometerMetricsAdapter( meterRegistry ) ).build() );
     }
 
     @AfterEach

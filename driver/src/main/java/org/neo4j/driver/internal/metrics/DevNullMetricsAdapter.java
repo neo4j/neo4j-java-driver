@@ -18,28 +18,27 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
+import org.neo4j.driver.Metrics;
+import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.metrics.MetricsListener;
+import org.neo4j.driver.exceptions.ClientException;
 
-public class MicrometerTimerListenerEvent implements ListenerEvent<Timer.Sample>
+public enum DevNullMetricsAdapter implements MetricsAdapter
 {
-    private final MeterRegistry meterRegistry;
-    private Timer.Sample sample;
+    INSTANCE;
 
-    public MicrometerTimerListenerEvent( MeterRegistry meterRegistry )
+    @Override
+    public Metrics metrics()
     {
-        this.meterRegistry = meterRegistry;
+        // To outside users, we forbid access to the metrics API
+        throw new ClientException(
+                "Driver metrics not enabled. To access driver metrics, " + "you need to enabled driver metrics in the driver's configuration." );
     }
 
     @Override
-    public void start()
+    public MetricsListener metricsListener()
     {
-        this.sample = Timer.start( this.meterRegistry );
-    }
-
-    @Override
-    public Timer.Sample getSample()
-    {
-        return this.sample;
+        // Internally we can still register callbacks to this empty metrics listener.
+        return DevNullMetricsListener.INSTANCE;
     }
 }

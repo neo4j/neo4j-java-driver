@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -28,7 +28,6 @@ import java.util.Collection;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -226,7 +225,7 @@ class MicrometerMetricsTest
         int size = metrics.connectionPoolMetrics().size();
 
         // WHEN
-        metrics.putPoolMetrics( ID, BoltServerAddress.LOCAL_DEFAULT, mock( ConnectionPoolImpl.class ) );
+        metrics.registerPoolMetrics( ID, BoltServerAddress.LOCAL_DEFAULT, () -> 23, () -> 42 );
 
         // THEN
         assertEquals( size + 1, metrics.connectionPoolMetrics().size() );

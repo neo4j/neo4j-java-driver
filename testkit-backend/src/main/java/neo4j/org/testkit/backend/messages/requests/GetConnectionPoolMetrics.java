@@ -26,12 +26,14 @@ import neo4j.org.testkit.backend.messages.responses.ConnectionPoolMetrics;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.metrics.InternalConnectionPoolMetrics;
+import org.neo4j.driver.net.ServerAddress;
 
 @Getter
 @Setter
@@ -63,11 +65,20 @@ public class GetConnectionPoolMetrics implements TestkitRequest
         Metrics metrics = driverHolder.getDriver().metrics();
         org.neo4j.driver.ConnectionPoolMetrics poolMetrics =
                 metrics.connectionPoolMetrics().stream()
-                       .map( InternalConnectionPoolMetrics.class::cast )
                        .filter( pm ->
                                 {
-                                    BoltServerAddress address = new BoltServerAddress( data.getAddress() );
-                                    BoltServerAddress poolAddress = pm.getAddress();
+                                    // Brute forcing the access via reflections avoid having the InternalConnectionPoolMetrics a public class
+                                    ServerAddress poolAddress;
+                                    try
+                                    {
+                                        Method m = pm.getClass().getDeclaredMethod("getAddress");
+                                        poolAddress = (ServerAddress) m.invoke( pm );
+                                    }
+                                    catch ( NoSuchMethodException | IllegalAccessException | InvocationTargetException e )
+                                    {
+                                        return false;
+                                    }
+                                    ServerAddress address = new BoltServerAddress( data.getAddress() );
                                     return address.host().equals( poolAddress.host() ) && address.port() == poolAddress.port();
                                 } )
                        .findFirst()
