@@ -125,7 +125,6 @@
         <artifactId>micrometer-core</artifactId>
         <version>${micrometer.version}</version>
         <scope>provided</scope>
-        <optional>true</optional>
       </dependency>
 
       <!-- Test dependencies -->
