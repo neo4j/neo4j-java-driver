@@ -737,10 +737,10 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable driver metrics with chosen {@link MetricsAdapter}.
+         * Enable driver metrics with given {@link MetricsAdapter}.
          * <p>
-         * We offer an implementation based on <a href="https://micrometer.io">Micrometer</a>. The metrics can be obtained afterwards via Micrometer means and
-         * {@link Driver#metrics()}. Micrometer must be on classpath when using this option.
+         * {@link MetricsAdapter#MICROMETER} enables implementation based on <a href="https://micrometer.io">Micrometer</a>. The metrics can be obtained
+         * afterwards via Micrometer means and {@link Driver#metrics()}. Micrometer must be on classpath when using this option.
          * <p>
          *
          * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics.
