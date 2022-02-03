@@ -19,8 +19,7 @@
 package org.neo4j.driver;
 
 /**
- * Defines which metrics consumer to use: Should metrics be consumed and exposed via the drivers default consumer or
- * provided with one of the external facades.
+ * Defines which metrics consumer to use: Should metrics be consumed and exposed via driver's default consumer or provided with one of the external facades.
  */
 public enum MetricsAdapter
 {
@@ -35,7 +34,7 @@ public enum MetricsAdapter
     DEFAULT,
 
     /**
-     * Consumes and publishes metrics via Micrometer. Make sure you put Micrometer on the classpath before using this option.
+     * Consumes and publishes metrics via Micrometer. Ensure that Micrometer is on classpath when using this option.
      */
     MICROMETER
 }
