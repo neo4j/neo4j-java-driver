@@ -727,11 +727,11 @@ public class Config implements Serializable
         {
             if ( !enabled )
             {
-                this.metricsAdapter = MetricsAdapter.DEV_NULL;
+                withMetricsAdapter( MetricsAdapter.DEV_NULL );
             }
             else if ( this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL )
             {
-                this.metricsAdapter = MetricsAdapter.DEFAULT;
+                withMetricsAdapter( MetricsAdapter.DEFAULT );
             }
             return this;
         }
