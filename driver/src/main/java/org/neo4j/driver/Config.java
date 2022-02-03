@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -31,8 +30,6 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
-import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
@@ -740,14 +737,13 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable driver metrics backed by a different metrics provider.
+         * Enable driver metrics with chosen {@link MetricsAdapter}.
          * <p>
-         * We offer an implementation based on <a href="https://micrometer.io">Micrometer</a>.
-         * The metrics can be obtained afterwards via Micrometer means and {@link Driver#metrics()}.
-         * You must have Micrometer on classpath to use the provided {@link MicrometerMetricsProvider}.
+         * We offer an implementation based on <a href="https://micrometer.io">Micrometer</a>. The metrics can be obtained afterwards via Micrometer means and
+         * {@link Driver#metrics()}. Micrometer must be on classpath when using this option.
          * <p>
          *
-         * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics again.
+         * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics.
          * @return this builder.
          */
         @Experimental
