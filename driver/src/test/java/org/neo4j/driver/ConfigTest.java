@@ -37,7 +37,6 @@ import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.TestUtil;
 
@@ -395,30 +394,28 @@ class ConfigTest
     @Nested
     class SerializationTest
     {
-
         @Test
         void shouldSerialize() throws Exception
         {
             Config config = Config.builder()
                                   .withMaxConnectionPoolSize( 123 )
-                    .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
-                    .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
-                    .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
-                    .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
-                    .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
-                    .withFetchSize( 9876L )
-                    .withEventLoopThreads( 4 )
-                    .withoutEncryption()
-                    .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" )) )
-                    .withUserAgent( "user-agent" )
-                    .withDriverMetrics()
-                    .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
-                    .withLeakedSessionsLogging()
-                    .withMetricsAdapter( MetricsAdapter.MICROMETER )
-                    .build();
+                                  .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
+                                  .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
+                                  .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
+                                  .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
+                                  .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
+                                  .withFetchSize( 9876L )
+                                  .withEventLoopThreads( 4 )
+                                  .withoutEncryption()
+                                  .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" ) ) )
+                                  .withUserAgent( "user-agent" )
+                                  .withDriverMetrics()
+                                  .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
+                                  .withLeakedSessionsLogging()
+                                  .withMetricsAdapter( MetricsAdapter.MICROMETER )
+                                  .build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );
-
 
             assertEquals( config.maxConnectionPoolSize(), verify.maxConnectionPoolSize() );
             assertEquals( config.connectionTimeoutMillis(), verify.connectionTimeoutMillis() );
@@ -445,7 +442,6 @@ class ConfigTest
         @Test
         void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException
         {
-
             Config config = Config.builder().withLogging( Logging.javaUtilLogging( Level.ALL ) ).build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );
