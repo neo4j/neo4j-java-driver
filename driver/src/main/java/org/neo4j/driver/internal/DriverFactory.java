@@ -43,8 +43,10 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalanci
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
-import org.neo4j.driver.internal.metrics.DevNullMetricsAdapter;
-import org.neo4j.driver.internal.metrics.InternalMetricsAdapter;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -94,15 +96,15 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        MetricsAdapter metricsAdapter = getOrCreateMetricsProvider( config, createClock() );
-        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsAdapter, config,
+        MetricsProvider metricsProvider = getOrCreateMetricsProvider( config, createClock() );
+        ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config,
                                                               ownsEventLoopGroup, newRoutingSettings.routingContext() );
 
-        return createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsAdapter, config );
+        return createDriver( uri, securityPlan, address, connectionPool, eventExecutorGroup, newRoutingSettings, retryLogic, metricsProvider, config );
     }
 
     protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
     {
         Clock clock = createClock();
         ConnectionSettings settings = new ConnectionSettings( authToken, config.userAgent(), config.connectionTimeoutMillis() );
@@ -111,19 +113,27 @@ public class DriverFactory
                 config.connectionAcquisitionTimeoutMillis(), config.maxConnectionLifetimeMillis(),
                 config.idleTimeBeforeConnectionTest()
         );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsAdapter.metricsListener(), config.logging(), clock, ownsEventLoopGroup );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsProvider.metricsListener(), config.logging(), clock, ownsEventLoopGroup );
     }
 
-    protected static MetricsAdapter getOrCreateMetricsProvider( Config config, Clock clock )
+    protected static MetricsProvider getOrCreateMetricsProvider( Config config, Clock clock )
     {
-        if ( config.isMetricsEnabled() )
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        // This can actually only happen when someone mocks the config
+        if ( metricsAdapter == null )
         {
-            return config.metricsAdapter().orElseGet( () -> new InternalMetricsAdapter( clock, config.logging() ) );
+            metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
         }
-        else
+        switch ( metricsAdapter )
         {
-            return DevNullMetricsAdapter.INSTANCE;
+        case DEV_NULL:
+            return DevNullMetricsProvider.INSTANCE;
+        case DEFAULT:
+            return new InternalMetricsProvider( clock, config.logging() );
+        case MICROMETER:
+            return MicrometerMetricsProvider.forGlobalRegistry();
         }
+        throw new IllegalStateException( "Unknown or unsupported MetricsAdapter: " + metricsAdapter );
     }
 
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,
@@ -134,7 +144,7 @@ public class DriverFactory
 
     private InternalDriver createDriver( URI uri, SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
                                          EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
-                                         MetricsAdapter metricsAdapter, Config config )
+                                         MetricsProvider metricsProvider, Config config )
     {
         try
         {
@@ -142,12 +152,12 @@ public class DriverFactory
 
             if ( isRoutingScheme( scheme ) )
             {
-                return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metricsAdapter, config );
+                return createRoutingDriver( securityPlan, address, connectionPool, eventExecutorGroup, routingSettings, retryLogic, metricsProvider, config );
             }
             else
             {
                 assertNoRoutingContext( uri, routingSettings );
-                return createDirectDriver( securityPlan, address, connectionPool, retryLogic, metricsAdapter, config );
+                return createDirectDriver( securityPlan, address, connectionPool, retryLogic, metricsProvider, config );
             }
         }
         catch ( Throwable driverError )
@@ -164,11 +174,11 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected InternalDriver createDirectDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool, RetryLogic retryLogic,
-            MetricsAdapter metricsAdapter, Config config )
+            MetricsProvider metricsProvider, Config config )
     {
         ConnectionProvider connectionProvider = new DirectConnectionProvider( address, connectionPool );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsAdapter, config );
+        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsProvider, config );
         Logger log = config.logging().getLog( getClass() );
         log.info( "Direct driver instance %s created for server address %s", driver.hashCode(), address );
         return driver;
@@ -180,12 +190,12 @@ public class DriverFactory
      * <b>This method is protected only for testing</b>
      */
     protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-            EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsAdapter metricsAdapter, Config config )
+            EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
     {
         ConnectionProvider connectionProvider = createLoadBalancer( address, connectionPool, eventExecutorGroup,
                 config, routingSettings );
         SessionFactory sessionFactory = createSessionFactory( connectionProvider, retryLogic, config );
-        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsAdapter, config );
+        InternalDriver driver = createDriver( securityPlan, sessionFactory, metricsProvider, config );
         Logger log = config.logging().getLog( getClass() );
         log.info( "Routing driver instance %s created for server address %s", driver.hashCode(), address );
         return driver;
@@ -196,9 +206,9 @@ public class DriverFactory
      * <p>
      * <b>This method is protected only for testing</b>
      */
-    protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsAdapter metricsAdapter, Config config )
+    protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
     {
-        return new InternalDriver( securityPlan, sessionFactory, metricsAdapter, config.logging() );
+        return new InternalDriver( securityPlan, sessionFactory, metricsProvider, config.logging() );
     }
 
     /**

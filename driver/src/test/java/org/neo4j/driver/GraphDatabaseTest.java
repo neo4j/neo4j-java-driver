@@ -33,6 +33,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.InternalDriver;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -220,7 +221,7 @@ class GraphDatabaseTest
         @Override
         protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
                                                       EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic,
-                                                      MetricsAdapter metricsAdapter, Config config )
+                                                      MetricsProvider metricsProvider, Config config )
         {
             return driverIterator.next();
         }

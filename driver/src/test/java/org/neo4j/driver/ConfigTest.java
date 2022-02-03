@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -38,6 +37,7 @@ import org.neo4j.driver.internal.logging.ConsoleLogging;
 import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.internal.logging.JULogging;
 import org.neo4j.driver.internal.logging.Slf4jLogging;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.TestUtil;
 
@@ -367,9 +367,9 @@ class ConfigTest
     void shouldNotHaveMeterRegistryByDefault()
     {
         Config config = Config.builder().build();
-        Optional<MetricsAdapter> meterRegistryOpt = config.metricsAdapter();
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
 
-        assertFalse( meterRegistryOpt.isPresent() );
+        assertEquals( MetricsAdapter.DEV_NULL, metricsAdapter );
         assertFalse( config.isMetricsEnabled() );
     }
 
@@ -383,15 +383,12 @@ class ConfigTest
     @Test
     void shouldSetMetricsAdapter()
     {
-        MetricsAdapter adapter = mock(MetricsAdapter.class);
-
         Config config = Config.builder()
-                              .withMetricsAdapter( adapter )
+                              .withMetricsAdapter( MetricsAdapter.DEFAULT )
                               .build();
-        Optional<MetricsAdapter> meterRegistryOpt = config.metricsAdapter();
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
 
-        assertTrue( meterRegistryOpt.isPresent() );
-        assertEquals( adapter, meterRegistryOpt.get() );
+        assertEquals( MetricsAdapter.DEFAULT, metricsAdapter );
         assertTrue( config.isMetricsEnabled() );
     }
 
@@ -417,6 +414,7 @@ class ConfigTest
                     .withDriverMetrics()
                     .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
                     .withLeakedSessionsLogging()
+                    .withMetricsAdapter( MetricsAdapter.MICROMETER )
                     .build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );
@@ -439,6 +437,7 @@ class ConfigTest
             assertEquals( config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy() );
             assertEquals( config.userAgent(), verify.userAgent() );
             assertEquals( config.isMetricsEnabled(), verify.isMetricsEnabled() );
+            assertEquals( config.metricsAdapter(), verify.metricsAdapter() );
             assertEquals( config.routingSettings().routingTablePurgeDelayMs(), verify.routingSettings().routingTablePurgeDelayMs() );
             assertEquals( config.logLeakedSessions(), verify.logLeakedSessions() );
         }
@@ -468,23 +467,6 @@ class ConfigTest
                     throw new RuntimeException( e );
                 }
             } );
-        }
-
-        // No point in trying to make the adapter implementations serializable
-        @Test
-        void shouldNotTryToSerializeMetricsAdapter() throws IOException, ClassNotFoundException
-        {
-            Config config = Config.builder()
-                    .withMetricsAdapter( mock(MetricsAdapter.class) )
-                    .build();
-
-            assertTrue( config.metricsAdapter().isPresent() );
-            assertTrue( config.isMetricsEnabled() );
-
-            Config verify = TestUtil.serializeAndReadBack( config, Config.class );
-
-            assertFalse( verify.metricsAdapter().isPresent() );
-            assertTrue( verify.isMetricsEnabled() );
         }
 
         @ParameterizedTest

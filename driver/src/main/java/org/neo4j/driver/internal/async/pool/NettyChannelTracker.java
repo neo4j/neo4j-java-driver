@@ -35,8 +35,8 @@ import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.net.ServerAddress;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;

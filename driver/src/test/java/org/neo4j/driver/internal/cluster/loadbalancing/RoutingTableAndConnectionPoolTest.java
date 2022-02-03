@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;

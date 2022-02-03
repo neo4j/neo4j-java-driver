@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
 
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.async.NetworkConnection;
-import org.neo4j.driver.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 

@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.metrics.ListenerEvent;
-
 enum DevNullListenerEvent implements ListenerEvent<Long>
 {
     INSTANCE;

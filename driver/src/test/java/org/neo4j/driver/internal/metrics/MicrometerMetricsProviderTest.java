@@ -16,38 +16,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.metrics;
+package org.neo4j.driver.internal.metrics;
 
-import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import org.neo4j.driver.Metrics;
 
-class MicrometerTimerListenerEventTest
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class MicrometerMetricsProviderTest
 {
-    MicrometerTimerListenerEvent event;
+    MetricsProvider provider;
 
     @BeforeEach
     void beforeEach()
     {
-        event = new MicrometerTimerListenerEvent( new SimpleMeterRegistry() );
+        provider = MicrometerMetricsProvider.forGlobalRegistry();
     }
 
     @Test
-    void shouldCreateTimerSampleOnStartAndReturnOnGetSample()
+    void shouldReturnMicrometerMetricsOnMetrics()
     {
-        // GIVEN
-        Timer.Sample initialSample = event.getSample();
-
-        // WHEN
-        event.start();
+        // GIVEN & WHEN
+        Metrics metrics = provider.metrics();
 
         // THEN
-        Timer.Sample sample = event.getSample();
-        assertNull( initialSample );
-        assertNotNull( sample );
+        assertTrue( metrics instanceof MicrometerMetrics );
+    }
+
+    @Test
+    void shouldReturnMicrometerMetricsOnMetricsListener()
+    {
+        // GIVEN & WHEN
+        MetricsListener listener = provider.metricsListener();
+
+        // THEN
+        assertTrue( listener instanceof MicrometerMetrics );
     }
 }

@@ -29,9 +29,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.QueryRunner;
 import org.neo4j.driver.Result;
-import org.neo4j.driver.metrics.MicrometerMetricsAdapter;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -51,7 +52,7 @@ class MetricsIT
     void createDriver()
     {
         driver = GraphDatabase.driver( neo4j.uri(), neo4j.authToken(),
-                Config.builder().withMetricsAdapter( new MicrometerMetricsAdapter( meterRegistry ) ).build() );
+                Config.builder().withMetricsAdapter( MetricsAdapter.MICROMETER ).build() );
     }
 
     @AfterEach

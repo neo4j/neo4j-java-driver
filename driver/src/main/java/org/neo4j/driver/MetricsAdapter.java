@@ -18,20 +18,24 @@
  */
 package org.neo4j.driver;
 
-import org.neo4j.driver.metrics.MetricsListener;
-
 /**
- * An adapter that can collect driver metrics via a {@link MetricsListener} and publishes them via a {@link Metrics} instance.
+ * Defines which metrics consumer to use: Should metrics be consumed and exposed via the drivers default consumer or
+ * provided with one of the external facades.
  */
-public interface MetricsAdapter
+public enum MetricsAdapter
 {
     /**
-     * @return The actual metrics type to use
+     * Disables metrics.
      */
-    Metrics metrics();
+    DEV_NULL,
 
     /**
-     * @return A listener that will be notified on certain events so that it can collect metrics about them.
+     * Consumes and publishes metrics via the driver itself.
      */
-    MetricsListener metricsListener();
+    DEFAULT,
+
+    /**
+     * Consumes and publishes metrics via Micrometer. Make sure you put Micrometer on the classpath before using this option.
+     */
+    MICROMETER
 }

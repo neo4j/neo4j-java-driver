@@ -34,6 +34,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -41,10 +42,10 @@ import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
-import org.neo4j.driver.internal.metrics.DevNullMetricsAdapter;
-import org.neo4j.driver.internal.metrics.InternalMetricsAdapter;
-import org.neo4j.driver.MetricsAdapter;
-import org.neo4j.driver.metrics.MicrometerMetricsAdapter;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -156,9 +157,9 @@ class DriverFactoryTest
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( false );
         // When
-        MetricsAdapter provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
         // Then
-        assertThat( provider, is(equalTo( DevNullMetricsAdapter.INSTANCE ) ) );
+        assertThat( provider, is(equalTo( DevNullMetricsProvider.INSTANCE ) ) );
     }
 
     @Test
@@ -169,9 +170,9 @@ class DriverFactoryTest
         when( config.isMetricsEnabled() ).thenReturn( true );
         when( config.logging() ).thenReturn( Logging.none() );
         // When
-        MetricsAdapter provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
         // Then
-        assertThat( provider instanceof InternalMetricsAdapter, is( true ) );
+        assertThat( provider instanceof InternalMetricsProvider, is( true ) );
     }
 
     @Test
@@ -180,12 +181,12 @@ class DriverFactoryTest
         // Given
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( true );
-        when( config.metricsAdapter() ).thenReturn( Optional.of( new MicrometerMetricsAdapter( new SimpleMeterRegistry() ) ) );
+        when( config.metricsAdapter() ).thenReturn( MetricsAdapter.MICROMETER );
         when( config.logging() ).thenReturn( Logging.none() );
         // When
-        MetricsAdapter provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
         // Then
-        assertThat( provider instanceof MicrometerMetricsAdapter, is( true ) );
+        assertThat( provider instanceof MicrometerMetricsProvider, is( true ) );
     }
 
     @ParameterizedTest
@@ -239,21 +240,21 @@ class DriverFactoryTest
         }
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsAdapter metricsAdapter, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             throw new UnsupportedOperationException( "Can't create direct driver" );
         }
 
         @Override
         protected InternalDriver createRoutingDriver( SecurityPlan securityPlan, BoltServerAddress address, ConnectionPool connectionPool,
-                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsAdapter metricsAdapter, Config config )
+                EventExecutorGroup eventExecutorGroup, RoutingSettings routingSettings, RetryLogic retryLogic, MetricsProvider metricsProvider, Config config )
         {
             throw new UnsupportedOperationException( "Can't create routing driver" );
         }
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup,
+                                                       MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup,
                                                        RoutingContext routingContext )
         {
             return connectionPool;
@@ -265,7 +266,7 @@ class DriverFactoryTest
         SessionFactory capturedSessionFactory;
 
         @Override
-        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsAdapter metricsAdapter, Config config )
+        protected InternalDriver createDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Config config )
         {
             InternalDriver driver = mock( InternalDriver.class );
             when( driver.verifyConnectivityAsync() ).thenReturn( completedWithNull() );
@@ -290,7 +291,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
         {
             return connectionPoolMock();
         }
@@ -313,7 +314,7 @@ class DriverFactoryTest
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
+                MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
         {
             return connectionPoolMock();
         }

@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.metrics.ListenerEvent;
 import org.neo4j.driver.internal.util.Clock;
 
 final class TimeRecorderListenerEvent implements ListenerEvent<Long>

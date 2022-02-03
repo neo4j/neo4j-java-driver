@@ -53,7 +53,7 @@ import org.neo4j.driver.internal.async.pool.ConnectionPoolImpl;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -474,7 +474,7 @@ class ConnectionHandlingIT
 
         @Override
         protected ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-                                                       MetricsAdapter ignored, Config config, boolean ownsEventLoopGroup,
+                                                       MetricsProvider ignored, Config config, boolean ownsEventLoopGroup,
                                                        RoutingContext routingContext )
         {
             ConnectionSettings connectionSettings = new ConnectionSettings( authToken, "test", 1000 );

@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.metrics.MetricsListener;
+import org.neo4j.driver.internal.metrics.ListenerEvent;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.Clock;
 

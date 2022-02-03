@@ -25,13 +25,13 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
-import org.neo4j.driver.internal.metrics.DevNullMetricsAdapter;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
@@ -48,13 +48,13 @@ public class InternalDriver implements Driver
     private final Logger log;
 
     private AtomicBoolean closed = new AtomicBoolean( false );
-    private final MetricsAdapter metricsAdapter;
+    private final MetricsProvider metricsProvider;
 
-    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsAdapter metricsAdapter, Logging logging )
+    InternalDriver( SecurityPlan securityPlan, SessionFactory sessionFactory, MetricsProvider metricsProvider, Logging logging )
     {
         this.securityPlan = securityPlan;
         this.sessionFactory = sessionFactory;
-        this.metricsAdapter = metricsAdapter;
+        this.metricsProvider = metricsProvider;
         this.log = logging.getLog( getClass() );
     }
 
@@ -97,13 +97,13 @@ public class InternalDriver implements Driver
     @Override
     public Metrics metrics()
     {
-        return metricsAdapter.metrics();
+        return metricsProvider.metrics();
     }
 
     @Override
     public boolean isMetricsEnabled()
     {
-        return metricsAdapter != DevNullMetricsAdapter.INSTANCE;
+        return metricsProvider != DevNullMetricsProvider.INSTANCE;
     }
 
     @Override

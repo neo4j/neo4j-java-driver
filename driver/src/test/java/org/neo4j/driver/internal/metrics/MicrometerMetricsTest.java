@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.metrics;
+package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -48,8 +48,8 @@ class MicrometerMetricsTest
     {
         registry = new SimpleMeterRegistry();
         metrics = new MicrometerMetrics( registry );
-        poolMetrics = mock( ConnectionPoolMetrics.class, Mockito.withSettings().extraInterfaces( ConnectionPoolMetricsListener.class ) );
-        poolMetricsListener = (ConnectionPoolMetricsListener) poolMetrics;
+        poolMetricsListener = mock( ConnectionPoolMetricsListener.class, Mockito.withSettings().extraInterfaces( ConnectionPoolMetrics.class ) );
+        poolMetrics = (ConnectionPoolMetrics) poolMetricsListener;
     }
 
     @Test

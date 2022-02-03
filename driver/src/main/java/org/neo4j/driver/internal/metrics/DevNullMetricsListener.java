@@ -20,8 +20,6 @@ package org.neo4j.driver.internal.metrics;
 
 import java.util.function.IntSupplier;
 
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.metrics.MetricsListener;
 import org.neo4j.driver.net.ServerAddress;
 
 public enum DevNullMetricsListener implements MetricsListener

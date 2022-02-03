@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.metrics;
+package org.neo4j.driver.internal.metrics;
 
-public interface ConnectionPoolMetricsListener
+interface ConnectionPoolMetricsListener
 {
     /**
      * Invoked before a connection is creating.

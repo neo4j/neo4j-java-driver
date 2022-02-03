@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.metrics.ListenerEvent;
-import org.neo4j.driver.metrics.ConnectionPoolMetricsListener;
 import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;

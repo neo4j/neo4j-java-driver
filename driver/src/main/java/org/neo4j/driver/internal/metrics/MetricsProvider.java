@@ -16,34 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.metrics;
-
-import io.micrometer.core.instrument.MeterRegistry;
+package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 
 /**
- * An adapter to bridge between the driver metrics and a Micrometer {@link MeterRegistry meter registry}.
+ * An adapter that can collect driver metrics via a {@link MetricsListener} and publishes them via a {@link Metrics} instance.
  */
-public final class MicrometerMetricsAdapter implements MetricsAdapter
+public interface MetricsProvider
 {
-    private final MicrometerMetrics metrics;
+    /**
+     * @return The actual metrics type to use
+     */
+    Metrics metrics();
 
-    public MicrometerMetricsAdapter( MeterRegistry meterRegistry )
-    {
-        this.metrics = new MicrometerMetrics( meterRegistry );
-    }
-
-    @Override
-    public Metrics metrics()
-    {
-        return this.metrics;
-    }
-
-    @Override
-    public MetricsListener metricsListener()
-    {
-        return this.metrics;
-    }
+    /**
+     * @return A listener that will be notified on certain events so that it can collect metrics about them.
+     */
+    MetricsListener metricsListener();
 }

@@ -18,30 +18,25 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.MetricsAdapter;
-import org.neo4j.driver.metrics.MetricsListener;
-import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.Metrics;
+import org.neo4j.driver.exceptions.ClientException;
 
-public final class InternalMetricsAdapter implements MetricsAdapter
+public enum DevNullMetricsProvider implements MetricsProvider
 {
-    private final InternalMetrics metrics;
-
-    public InternalMetricsAdapter( Clock clock, Logging logging )
-    {
-        this.metrics = new InternalMetrics( clock, logging );
-    }
+    INSTANCE;
 
     @Override
     public Metrics metrics()
     {
-        return metrics;
+        // To outside users, we forbid access to the metrics API
+        throw new ClientException(
+                "Driver metrics not enabled. To access driver metrics, " + "you need to enabled driver metrics in the driver's configuration." );
     }
 
     @Override
     public MetricsListener metricsListener()
     {
-        return metrics;
+        // Internally we can still register callbacks to this empty metrics listener.
+        return DevNullMetricsListener.INSTANCE;
     }
 }

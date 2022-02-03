@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.metrics;
+package org.neo4j.driver.internal.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -28,7 +28,6 @@ import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.metrics.DevNullPoolMetricsListener;
 import org.neo4j.driver.net.ServerAddress;
 
 final class MicrometerMetrics implements Metrics, MetricsListener

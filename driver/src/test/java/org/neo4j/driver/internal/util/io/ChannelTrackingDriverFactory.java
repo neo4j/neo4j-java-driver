@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.driver.MetricsAdapter;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.ConnectionSettings;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
@@ -75,9 +75,9 @@ public class ChannelTrackingDriverFactory extends DriverFactoryWithClock
 
     @Override
     protected final ConnectionPool createConnectionPool( AuthToken authToken, SecurityPlan securityPlan, Bootstrap bootstrap,
-            MetricsAdapter metricsAdapter, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
+            MetricsProvider metricsProvider, Config config, boolean ownsEventLoopGroup, RoutingContext routingContext )
     {
-        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsAdapter, config, ownsEventLoopGroup, routingContext );
+        pool = super.createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config, ownsEventLoopGroup, routingContext );
         return pool;
     }
 

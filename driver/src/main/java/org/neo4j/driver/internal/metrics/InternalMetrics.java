@@ -25,13 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.metrics.ListenerEvent;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.metrics.MetricsListener;
 import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.metrics.ConnectionPoolMetricsListener;
 import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;

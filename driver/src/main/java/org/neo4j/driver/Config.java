@@ -31,9 +31,9 @@ import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.async.pool.PoolSettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetrySettings;
-import org.neo4j.driver.internal.metrics.DevNullMetricsAdapter;
-import org.neo4j.driver.metrics.MicrometerMetricsAdapter;
 import org.neo4j.driver.net.ServerAddressResolver;
 import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
@@ -96,10 +96,9 @@ public class Config implements Serializable
     private final RetrySettings retrySettings;
     private final ServerAddressResolver resolver;
 
-    private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
     private final String userAgent;
-    private final transient MetricsAdapter metricsAdapter;
+    private final MetricsAdapter metricsAdapter;
 
     private Config( ConfigBuilder builder )
     {
@@ -123,7 +122,6 @@ public class Config implements Serializable
         this.fetchSize = builder.fetchSize;
 
         this.eventLoopThreads = builder.eventLoopThreads;
-        this.isMetricsEnabled = builder.isMetricsEnabled;
         this.metricsAdapter = builder.metricsAdapter;
     }
 
@@ -262,12 +260,12 @@ public class Config implements Serializable
      */
     public boolean isMetricsEnabled()
     {
-        return isMetricsEnabled;
+        return this.metricsAdapter != MetricsAdapter.DEV_NULL;
     }
 
-    public Optional<MetricsAdapter> metricsAdapter()
+    public MetricsAdapter metricsAdapter()
     {
-        return Optional.ofNullable( metricsAdapter );
+        return this.metricsAdapter;
     }
 
     /**
@@ -297,8 +295,7 @@ public class Config implements Serializable
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
-        private MetricsAdapter metricsAdapter;
-        private boolean isMetricsEnabled = false;
+        private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
 
@@ -731,8 +728,14 @@ public class Config implements Serializable
 
         private ConfigBuilder withMetricsEnabled( boolean enabled )
         {
-            this.isMetricsEnabled = enabled;
-            this.metricsAdapter = null;
+            if ( !enabled )
+            {
+                this.metricsAdapter = MetricsAdapter.DEV_NULL;
+            }
+            else if ( this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL )
+            {
+                this.metricsAdapter = MetricsAdapter.DEFAULT;
+            }
             return this;
         }
 
@@ -741,19 +744,16 @@ public class Config implements Serializable
          * <p>
          * We offer an implementation based on <a href="https://micrometer.io">Micrometer</a>.
          * The metrics can be obtained afterwards via Micrometer means and {@link Driver#metrics()}.
-         * You must have Micrometer on classpath to use the provided {@link MicrometerMetricsAdapter}.
+         * You must have Micrometer on classpath to use the provided {@link MicrometerMetricsProvider}.
          * <p>
-         * This configuration setting is <strong>not</strong> serialiable. If metrics had been enabled in a configuration
-         * that was serialized inbetween usage, it will default to the internal adapter.
          *
-         * @param metricsAdapter the metrics provider to use. Use {@literal null} to disable metrics again.
+         * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics again.
          * @return this builder.
          */
         @Experimental
         public ConfigBuilder withMetricsAdapter( MetricsAdapter metricsAdapter )
         {
             this.metricsAdapter = Objects.requireNonNull( metricsAdapter, "metricsAdapter" );
-            this.isMetricsEnabled = this.metricsAdapter != DevNullMetricsAdapter.INSTANCE;
             return this;
         }
 
