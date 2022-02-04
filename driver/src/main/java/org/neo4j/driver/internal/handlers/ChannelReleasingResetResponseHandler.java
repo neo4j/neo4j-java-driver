@@ -28,6 +28,8 @@ import org.neo4j.driver.internal.async.pool.ExtendedChannelPool;
 import org.neo4j.driver.internal.util.Clock;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setLastUsedTimestamp;
+import static org.neo4j.driver.internal.util.Futures.asCompletionStage;
+import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
 public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
 {
@@ -47,18 +49,20 @@ public class ChannelReleasingResetResponseHandler extends ResetResponseHandler
     @Override
     protected void resetCompleted( CompletableFuture<Void> completionFuture, boolean success )
     {
+        CompletionStage<Void> closureStage;
         if ( success )
         {
             // update the last-used timestamp before returning the channel back to the pool
             setLastUsedTimestamp( channel, clock.millis() );
+            closureStage = completedWithNull();
         }
         else
         {
             // close the channel before returning it back to the pool if RESET failed
-            channel.close();
+            closureStage = asCompletionStage( channel.close() );
         }
-
-        CompletionStage<Void> released = pool.release( channel );
-        released.whenComplete( ( ignore, error ) -> completionFuture.complete( null ) );
+        closureStage.exceptionally( throwable -> null )
+                    .thenCompose( ignored -> pool.release( channel ) )
+                    .whenComplete( ( ignore, error ) -> completionFuture.complete( null ) );
     }
 }
