@@ -95,6 +95,6 @@ public enum DevNullMetricsListener implements MetricsListener
     @Override
     public String toString()
     {
-        return "Driver metrics are not available when they are not enabled.";
+        return "Driver metrics are not available if they are not enabled.";
     }
 }
