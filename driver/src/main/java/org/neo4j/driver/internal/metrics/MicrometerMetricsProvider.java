@@ -23,7 +23,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.neo4j.driver.Metrics;
 
 /**
- * An adapter to bridge between the driver metrics and a Micrometer {@link MeterRegistry meter registry}.
+ * An adapter to bridge between driver metrics and Micrometer {@link MeterRegistry meter registry}.
  */
 public final class MicrometerMetricsProvider implements MetricsProvider
 {
