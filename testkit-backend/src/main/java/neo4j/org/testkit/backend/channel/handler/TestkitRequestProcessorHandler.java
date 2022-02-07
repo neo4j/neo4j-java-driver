@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import neo4j.org.testkit.backend.CustomDriverError;
+import neo4j.org.testkit.backend.FrontendError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.BackendError;
@@ -159,6 +160,10 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                                                                  .build()
                               )
                               .build();
+        }
+        else if ( throwable instanceof FrontendError )
+        {
+            return neo4j.org.testkit.backend.messages.responses.FrontendError.builder().build();
         }
         else
         {
