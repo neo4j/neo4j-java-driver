@@ -30,7 +30,7 @@ public enum DevNullMetricsProvider implements MetricsProvider
     {
         // To outside users, we forbid access to the metrics API
         throw new ClientException(
-                "Driver metrics not enabled. To access driver metrics, " + "you need to enabled driver metrics in the driver's configuration." );
+                "Driver metrics are not enabled. You need to enable driver metrics in driver configuration in order to access them." );
     }
 
     @Override
