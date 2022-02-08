@@ -20,19 +20,17 @@ package org.neo4j.driver.types;
 
 import java.util.List;
 import java.util.Map;
-
-import org.neo4j.driver.Value;
 import java.util.function.Function;
 
+import org.neo4j.driver.Value;
+
 /**
- * Provides methods to access the value of an underlying unordered map by key.
- * When calling the methods, a user need to provides a default value, which will be given back if no match found by
- * the key provided.
- * The default value also servers the purpose of specifying the return type of the value found in map by key.
- * If the type of the value found A differs from the type of the default value B, a cast from A to B would happen
- * automatically. Note: Error might arise if the cast from A to B is not possible.
+ * Provides methods to access the value of an underlying unordered map by key. When calling the methods, a user need to provides a default value, which will be
+ * given back if no match found by the key provided. The default value also servers the purpose of specifying the return type of the value found in map by key.
+ * If the type of the value found A differs from the type of the default value B, a cast from A to B would happen automatically. Note: Error might arise if the
+ * cast from A to B is not possible.
  */
-public interface MapAccessorWithDefaultValue
+public interface MapAccessorWithDefaultValue extends MapAccessor
 {
     /**
      * Retrieve the value with the given key.
