@@ -23,39 +23,25 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class RoutingSettings
 {
     public static final long STALE_ROUTING_TABLE_PURGE_DELAY_MS = SECONDS.toMillis( 30 );
-    public static final RoutingSettings DEFAULT = new RoutingSettings( 1, SECONDS.toMillis( 5 ), STALE_ROUTING_TABLE_PURGE_DELAY_MS );
+    public static final RoutingSettings DEFAULT = new RoutingSettings( STALE_ROUTING_TABLE_PURGE_DELAY_MS );
 
-    private final int maxRoutingFailures;
-    private final long retryTimeoutDelay;
     private final RoutingContext routingContext;
     private final long routingTablePurgeDelayMs;
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, long routingTablePurgeDelayMs )
+    public RoutingSettings( long routingTablePurgeDelayMs )
     {
-        this( maxRoutingFailures, retryTimeoutDelay, routingTablePurgeDelayMs, RoutingContext.EMPTY );
+        this( routingTablePurgeDelayMs, RoutingContext.EMPTY );
     }
 
-    public RoutingSettings( int maxRoutingFailures, long retryTimeoutDelay, long routingTablePurgeDelayMs, RoutingContext routingContext )
+    public RoutingSettings( long routingTablePurgeDelayMs, RoutingContext routingContext )
     {
-        this.maxRoutingFailures = maxRoutingFailures;
-        this.retryTimeoutDelay = retryTimeoutDelay;
         this.routingContext = routingContext;
         this.routingTablePurgeDelayMs = routingTablePurgeDelayMs;
     }
 
     public RoutingSettings withRoutingContext( RoutingContext newRoutingContext )
     {
-        return new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, routingTablePurgeDelayMs, newRoutingContext );
-    }
-
-    public int maxRoutingFailures()
-    {
-        return maxRoutingFailures;
-    }
-
-    public long retryTimeoutDelay()
-    {
-        return retryTimeoutDelay;
+        return new RoutingSettings( routingTablePurgeDelayMs, newRoutingContext );
     }
 
     public RoutingContext routingContext()

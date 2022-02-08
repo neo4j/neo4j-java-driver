@@ -83,8 +83,6 @@ public class Config implements Serializable
 
     private final SecuritySettings securitySettings;
 
-    private final int routingFailureLimit;
-    private final long routingRetryDelayMillis;
     private final long fetchSize;
     private final long routingTablePurgeDelayMillis;
 
@@ -109,8 +107,6 @@ public class Config implements Serializable
 
         this.securitySettings = builder.securitySettingsBuilder.build();
 
-        this.routingFailureLimit = builder.routingFailureLimit;
-        this.routingRetryDelayMillis = builder.routingRetryDelayMillis;
         this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
         this.routingTablePurgeDelayMillis = builder.routingTablePurgeDelayMillis;
         this.retrySettings = builder.retrySettings;
@@ -233,7 +229,7 @@ public class Config implements Serializable
 
     RoutingSettings routingSettings()
     {
-        return new RoutingSettings( routingFailureLimit, routingRetryDelayMillis, routingTablePurgeDelayMillis );
+        return new RoutingSettings( routingTablePurgeDelayMillis );
     }
 
     RetrySettings retrySettings()
@@ -280,8 +276,6 @@ public class Config implements Serializable
         private long connectionAcquisitionTimeoutMillis = PoolSettings.DEFAULT_CONNECTION_ACQUISITION_TIMEOUT;
         private String userAgent = format( "neo4j-java/%s", driverVersion() );
         private final SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
-        private int routingFailureLimit = RoutingSettings.DEFAULT.maxRoutingFailures();
-        private long routingRetryDelayMillis = RoutingSettings.DEFAULT.retryTimeoutDelay();
         private long routingTablePurgeDelayMillis = RoutingSettings.DEFAULT.routingTablePurgeDelayMs();
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
@@ -484,86 +478,6 @@ public class Config implements Serializable
         public ConfigBuilder withTrustStrategy( TrustStrategy trustStrategy )
         {
             securitySettingsBuilder.withTrustStrategy( trustStrategy );
-            return this;
-        }
-
-        /**
-         * Specify how many times the client should attempt to reconnect to the routing servers before declaring the
-         * cluster unavailable.
-         * <p>
-         * The routing servers are tried in order. If connecting any of them fails, they are all retried after
-         * {@linkplain #withRoutingRetryDelay a delay}. This process of retrying all servers is then repeated for the
-         * number of times specified here before considering the cluster unavailable.
-         * <p>
-         * The default value of this parameter is {@code 1}, which means that the the driver will not re-attempt to
-         * connect to the cluster when connecting has failed to each individual server in the list of routers. This
-         * default value is sensible under this assumption that if the attempt to connect fails for all servers, then
-         * the entire cluster is down, or the client is disconnected from the network, and retrying to connect will
-         * not bring it back up, in which case it is better to report the failure sooner.
-         *
-         * @param routingFailureLimit
-         *         the number of times to retry each server in the list of routing servers
-         * @return this builder
-         * @deprecated in 1.2 because driver memorizes seed URI used during construction and falls back to it at
-         * runtime when all other known router servers failed to respond. Driver is also able to perform DNS lookup
-         * for the seed URI during rediscovery. This means updates of cluster members will be picked up if they are
-         * reflected in a DNS record. This configuration allowed driver to retry rediscovery procedure and postpone
-         * failure. Currently there exists a better way of doing retries via
-         * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}.
-         * <b>Method will be removed in the next major release.</b>
-         */
-        @Deprecated
-        public ConfigBuilder withRoutingFailureLimit( int routingFailureLimit )
-        {
-            if ( routingFailureLimit < 1 )
-            {
-                throw new IllegalArgumentException(
-                        "The failure limit may not be smaller than 1, but was: " + routingFailureLimit );
-            }
-            this.routingFailureLimit = routingFailureLimit;
-            return this;
-        }
-
-        /**
-         * Specify how long to wait before retrying to connect to a routing server.
-         * <p>
-         * When connecting to all routing servers fail, connecting will be retried after the delay specified here.
-         * The delay is measured from when the first attempt to connect was made, so that the delay time specifies a
-         * retry interval.
-         * <p>
-         * For each {@linkplain #withRoutingFailureLimit retry attempt} the delay time will be doubled. The time
-         * specified here is the base time, i.e. the time to wait before the first retry. If that attempt (on all
-         * servers) also fails, the delay before the next retry will be double the time specified here, and the next
-         * attempt after that will be double that, et.c. So if, for example, the delay specified here is
-         * {@code 5 SECONDS}, then after attempting to connect to each server fails reconnecting will be attempted
-         * 5 seconds after the first connection attempt to the first server. If that attempt also fails to connect to
-         * all servers, the next attempt will start 10 seconds after the second attempt started.
-         * <p>
-         * The default value of this parameter is {@code 5 SECONDS}.
-         *
-         * @param delay
-         *         the amount of time between attempts to reconnect to the same server
-         * @param unit
-         *         the unit in which the duration is given
-         * @return this builder
-         * @deprecated in 1.2 because driver memorizes seed URI used during construction and falls back to it at
-         * runtime when all other known router servers failed to respond. Driver is also able to perform DNS lookup
-         * for the seed URI during rediscovery. This means updates of cluster members will be picked up if they are
-         * reflected in a DNS record. This configuration allowed driver to retry rediscovery procedure and postpone
-         * failure. Currently there exists a better way of doing retries via
-         * {@link Session#readTransaction(TransactionWork)} and {@link Session#writeTransaction(TransactionWork)}.
-         * <b>Method will be removed in the next major release.</b>
-         */
-        @Deprecated
-        public ConfigBuilder withRoutingRetryDelay( long delay, TimeUnit unit )
-        {
-            long routingRetryDelayMillis = unit.toMillis( delay );
-            if ( routingRetryDelayMillis < 0 )
-            {
-                throw new IllegalArgumentException( String.format(
-                        "The retry delay may not be smaller than 0, but was %d %s.", delay, unit ) );
-            }
-            this.routingRetryDelayMillis = routingRetryDelayMillis;
             return this;
         }
 

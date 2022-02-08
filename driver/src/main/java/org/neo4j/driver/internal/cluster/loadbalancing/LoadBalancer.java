@@ -67,7 +67,6 @@ public class LoadBalancer implements ConnectionProvider
             "Failed to obtain connection towards %s server. Known routing table is: %s";
     private static final String CONNECTION_ACQUISITION_ATTEMPT_FAILURE_MESSAGE =
             "Failed to obtain a connection towards address %s, will try other addresses if available. Complete failure is reported separately from this entry.";
-    private static final BoltServerAddress[] BOLT_SERVER_ADDRESSES_EMPTY_ARRAY = new BoltServerAddress[0];
     private final ConnectionPool connectionPool;
     private final RoutingTableRegistry routingTables;
     private final LoadBalancingStrategy loadBalancingStrategy;
@@ -79,7 +78,7 @@ public class LoadBalancer implements ConnectionProvider
                          EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging,
                          LoadBalancingStrategy loadBalancingStrategy, ServerAddressResolver resolver, DomainNameResolver domainNameResolver )
     {
-        this( connectionPool, createRediscovery( eventExecutorGroup, initialRouter, resolver, settings, clock, logging, requireNonNull( domainNameResolver ) ),
+        this( connectionPool, createRediscovery( initialRouter, resolver, settings, clock, logging, requireNonNull( domainNameResolver ) ),
               settings, loadBalancingStrategy, eventExecutorGroup, clock, logging );
     }
 
@@ -272,11 +271,11 @@ public class LoadBalancer implements ConnectionProvider
         return new RoutingTableRegistryImpl( connectionPool, rediscovery, clock, logging, settings.routingTablePurgeDelayMs() );
     }
 
-    private static Rediscovery createRediscovery( EventExecutorGroup eventExecutorGroup, BoltServerAddress initialRouter, ServerAddressResolver resolver,
+    private static Rediscovery createRediscovery( BoltServerAddress initialRouter, ServerAddressResolver resolver,
                                                   RoutingSettings settings, Clock clock, Logging logging, DomainNameResolver domainNameResolver )
     {
         ClusterCompositionProvider clusterCompositionProvider = new RoutingProcedureClusterCompositionProvider( clock, settings.routingContext() );
-        return new RediscoveryImpl( initialRouter, settings, clusterCompositionProvider, eventExecutorGroup, resolver, logging, domainNameResolver );
+        return new RediscoveryImpl( initialRouter, clusterCompositionProvider, resolver, logging, domainNameResolver );
     }
 
     private static RuntimeException unknownMode( AccessMode mode )
