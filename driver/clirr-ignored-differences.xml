@@ -61,4 +61,10 @@
         <method>java.lang.Iterable values()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>void reset()</method>
+    </difference>
+
 </differences>

@@ -102,7 +102,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldDelegateRun( Function<RxSession, RxResult> runReturnOne ) throws Throwable
+    void shouldDelegateRun( Function<RxSession,RxResult> runReturnOne )
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -124,7 +124,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldReleaseConnectionIfFailedToRun( Function<RxSession, RxResult> runReturnOne ) throws Throwable
+    void shouldReleaseConnectionIfFailedToRun( Function<RxSession,RxResult> runReturnOne )
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -150,7 +150,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allBeginTxMethods" )
-    void shouldDelegateBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx ) throws Throwable
+    void shouldDelegateBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx )
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -169,7 +169,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allBeginTxMethods" )
-    void shouldReleaseConnectionIfFailedToBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx ) throws Throwable
+    void shouldReleaseConnectionIfFailedToBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx )
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -194,7 +194,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allRunTxMethods" )
-    void shouldDelegateRunTx( Function<RxSession,Publisher<String>> runTx ) throws Throwable
+    void shouldDelegateRunTx( Function<RxSession,Publisher<String>> runTx )
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -215,7 +215,7 @@ class InternalRxSessionTest
     }
 
     @Test
-    void shouldRetryOnError() throws Throwable
+    void shouldRetryOnError()
     {
         // Given
         int retryCount = 2;
@@ -242,7 +242,7 @@ class InternalRxSessionTest
     }
 
     @Test
-    void shouldObtainResultIfRetrySucceed() throws Throwable
+    void shouldObtainResultIfRetrySucceed()
     {
         // Given
         int retryCount = 2;
@@ -279,7 +279,7 @@ class InternalRxSessionTest
     }
 
     @Test
-    void shouldDelegateBookmark() throws Throwable
+    void shouldDelegateBookmark()
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -294,24 +294,7 @@ class InternalRxSessionTest
     }
 
     @Test
-    void shouldDelegateReset() throws Throwable
-    {
-        // Given
-        NetworkSession session = mock( NetworkSession.class );
-        when( session.resetAsync() ).thenReturn( completedWithNull() );
-        InternalRxSession rxSession = new InternalRxSession( session );
-
-        // When
-        Publisher<Void> mono = rxSession.reset();
-
-        // Then
-        StepVerifier.create( mono ).verifyComplete();
-        verify( session ).resetAsync();
-        verifyNoMoreInteractions( session );
-    }
-
-    @Test
-    void shouldDelegateClose() throws Throwable
+    void shouldDelegateClose()
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
