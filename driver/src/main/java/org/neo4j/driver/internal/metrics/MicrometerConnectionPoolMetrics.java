@@ -270,7 +270,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
                        totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 
-    private long toLong( Counter counter )
+    private long count( Counter counter )
     {
         return (long) counter.count();
     }
