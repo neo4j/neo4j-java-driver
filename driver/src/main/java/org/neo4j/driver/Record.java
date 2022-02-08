@@ -19,13 +19,10 @@
 package org.neo4j.driver;
 
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.types.MapAccessorWithDefaultValue;
-import java.util.function.Function;
 import org.neo4j.driver.util.Immutable;
 import org.neo4j.driver.util.Pair;
 
@@ -49,6 +46,7 @@ public interface Record extends MapAccessorWithDefaultValue
      *
      * @return all field keys in order
      */
+    @Override
     List<String> keys();
 
     /**
@@ -56,15 +54,8 @@ public interface Record extends MapAccessorWithDefaultValue
      *
      * @return all field keys in order
      */
+    @Override
     List<Value> values();
-
-    /**
-     * Check if the list of keys contains the given key
-     *
-     * @param key the key
-     * @return {@code true} if this map keys contains the given key otherwise {@code false}
-     */
-    boolean containsKey( String key );
 
     /**
      * Retrieve the index of the field with the given key
@@ -76,15 +67,6 @@ public interface Record extends MapAccessorWithDefaultValue
     int index( String key );
 
     /**
-     * Retrieve the value of the property with the given key
-     *
-     * @param key the key of the property
-     * @return the property's value or a {@link NullValue} if no such key exists
-     * @throws NoSuchRecordException if the associated underlying record is not available
-     */
-    Value get( String key );
-
-    /**
      * Retrieve the value at the given field index
      *
      * @param index the index of the value
@@ -94,39 +76,10 @@ public interface Record extends MapAccessorWithDefaultValue
     Value get( int index );
 
     /**
-     * Retrieve the number of fields in this record
-     *
-     * @return the number of fields in this record
-     */
-    int size();
-
-    /**
-     * Return this record as a map, where each value has been converted to a default
-     * java object using {@link Value#asObject()}.
-     *
-     * This is equivalent to calling {@link #asMap(Function)} with {@link Values#ofObject()}.
-     *
-     * @return this record as a map
-     */
-    Map<String, Object> asMap();
-
-    /**
-     * Return this record as a map, where each value has been converted using the provided
-     * mapping function. You can find a library of common mapping functions in {@link Values}.
-     *
-     * @see Values for a long list of built-in conversion functions
-     * @param mapper the mapping function
-     * @param <T> the type to convert to
-     * @return this record as a map
-     */
-    <T> Map<String, T> asMap( Function<Value, T> mapper );
-
-    /**
      * Retrieve all record fields
      *
      * @return all fields in key order
      * @throws NoSuchRecordException if the associated underlying record is not available
      */
     List<Pair<String, Value>> fields();
-
 }
