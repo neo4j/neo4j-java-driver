@@ -61,7 +61,8 @@ public class GetFeatures implements TestkitRequest
             "Temporary:FullSummary",
             "Temporary:ResultKeys",
             "Temporary:TransactionClose",
-            "Optimization:EagerTransactionBegin"
+            "Optimization:EagerTransactionBegin",
+            "Feature:API:Driver.IsEncrypted"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
