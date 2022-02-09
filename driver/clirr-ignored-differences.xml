@@ -67,4 +67,16 @@
         <method>void reset()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withRoutingFailureLimit(int)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withRoutingRetryDelay(long, java.util.concurrent.TimeUnit)</method>
+    </difference>
+
 </differences>

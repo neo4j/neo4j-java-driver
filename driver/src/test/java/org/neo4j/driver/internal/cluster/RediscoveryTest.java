@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -433,56 +432,18 @@ class RediscoveryTest
     }
 
     @Test
-    void shouldRetryConfiguredNumberOfTimesWithDelay()
-    {
-        int maxRoutingFailures = 3;
-        long retryTimeoutDelay = 15;
-        ClusterComposition expectedComposition =
-                new ClusterComposition( 42, asOrderedSet( A, C ), asOrderedSet( B, D ), asOrderedSet( A, E ), null );
-
-        Map<BoltServerAddress,Object> responsesByAddress = new HashMap<>();
-        responsesByAddress.put( A, new ServiceUnavailableException( "Hi!" ) );
-        responsesByAddress.put( B, new ServiceUnavailableException( "Hi!" ) );
-        responsesByAddress.put( E, expectedComposition );
-
-        ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
-        ServerAddressResolver resolver = mock( ServerAddressResolver.class );
-        when( resolver.resolve( A ) ).thenReturn( asOrderedSet( A ) )
-                                     .thenReturn( asOrderedSet( A ) )
-                .thenReturn( asOrderedSet( E ) );
-
-        ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
-        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
-        Rediscovery rediscovery =
-                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, DEV_NULL_LOGGING,
-                                     DefaultDomainNameResolver.getInstance() );
-        RoutingTable table = routingTableMock( A, B );
-
-        ClusterComposition actualComposition = await( rediscovery.lookupClusterComposition( table, pool, empty(), null ) ).getClusterComposition();
-
-        assertEquals( expectedComposition, actualComposition );
-        verify( table, times( maxRoutingFailures ) ).forget( A );
-        verify( table, times( maxRoutingFailures ) ).forget( B );
-        assertEquals( asList( retryTimeoutDelay, retryTimeoutDelay * 2 ), eventExecutor.scheduleDelays() );
-    }
-
-    @Test
     void shouldNotLogWhenSingleRetryAttemptFails()
     {
-        int maxRoutingFailures = 1;
-        long retryTimeoutDelay = 10;
-
         Map<BoltServerAddress,Object> responsesByAddress = singletonMap( A, new ServiceUnavailableException( "Hi!" ) );
         ClusterCompositionProvider compositionProvider = compositionProviderMock( responsesByAddress );
         ServerAddressResolver resolver = resolverMock( A, A );
 
         ImmediateSchedulingEventExecutor eventExecutor = new ImmediateSchedulingEventExecutor();
-        RoutingSettings settings = new RoutingSettings( maxRoutingFailures, retryTimeoutDelay, 0 );
         Logging logging = mock( Logging.class );
         Logger logger = mock( Logger.class );
         when( logging.getLog( any( Class.class ) ) ).thenReturn( logger );
         Rediscovery rediscovery =
-                new RediscoveryImpl( A, settings, compositionProvider, eventExecutor, resolver, logging, DefaultDomainNameResolver.getInstance() );
+                new RediscoveryImpl( A, compositionProvider, resolver, logging, DefaultDomainNameResolver.getInstance() );
         RoutingTable table = routingTableMock( A );
 
         ServiceUnavailableException e =
@@ -502,7 +463,7 @@ class RediscoveryTest
         DomainNameResolver domainNameResolver = mock( DomainNameResolver.class );
         InetAddress localhost = InetAddress.getLocalHost();
         when( domainNameResolver.resolve( A.host() ) ).thenReturn( new InetAddress[]{localhost} );
-        Rediscovery rediscovery = new RediscoveryImpl( A, null, null, null, resolver, DEV_NULL_LOGGING, domainNameResolver );
+        Rediscovery rediscovery = new RediscoveryImpl( A, null, resolver, DEV_NULL_LOGGING, domainNameResolver );
 
         List<BoltServerAddress> addresses = rediscovery.resolve();
 
@@ -521,8 +482,7 @@ class RediscoveryTest
     private Rediscovery newRediscovery( BoltServerAddress initialRouter, ClusterCompositionProvider compositionProvider,
                                         ServerAddressResolver resolver, Logging logging )
     {
-        RoutingSettings settings = new RoutingSettings( 1, 0, 0 );
-        return new RediscoveryImpl( initialRouter, settings, compositionProvider, GlobalEventExecutor.INSTANCE, resolver, logging,
+        return new RediscoveryImpl( initialRouter, compositionProvider, resolver, logging,
                                     DefaultDomainNameResolver.getInstance() );
     }
 
