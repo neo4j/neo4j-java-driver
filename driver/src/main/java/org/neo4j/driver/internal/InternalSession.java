@@ -130,13 +130,6 @@ public class InternalSession extends AbstractQueryRunner implements Session
         return session.lastBookmark();
     }
 
-    @Override
-    @SuppressWarnings( "deprecation" )
-    public void reset()
-    {
-        Futures.blockingGet( session.resetAsync(), () -> terminateConnectionOnThreadInterrupt( "Thread interrupted while resetting the session" ) );
-    }
-
     private <T> T transaction( AccessMode mode, TransactionWork<T> work, TransactionConfig config )
     {
         // use different code path compared to async so that work is executed in the caller thread
