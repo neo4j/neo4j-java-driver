@@ -60,7 +60,8 @@ public class GetFeatures implements TestkitRequest
             "Temporary:CypherPathAndRelationship",
             "Temporary:FullSummary",
             "Temporary:ResultKeys",
-            "Temporary:TransactionClose"
+            "Temporary:TransactionClose",
+            "Optimization:EagerTransactionBegin"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
