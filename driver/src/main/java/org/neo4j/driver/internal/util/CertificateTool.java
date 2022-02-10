@@ -32,6 +32,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * A tool used to save, load certs, etc.
@@ -106,35 +107,39 @@ public final class CertificateTool
     /**
      * Load the certificates written in X.509 format in a file to a key store.
      *
-     * @param certFile
+     * @param certFiles
      * @param keyStore
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static void loadX509Cert( File certFile, KeyStore keyStore ) throws GeneralSecurityException, IOException
+    public static void loadX509Cert( List<File> certFiles, KeyStore keyStore ) throws GeneralSecurityException, IOException
     {
-        try ( BufferedInputStream inputStream = new BufferedInputStream( new FileInputStream( certFile ) ) )
+        int certCount = 0; // The files might contain multiple certs
+        for ( File certFile : certFiles )
         {
-            CertificateFactory certFactory = CertificateFactory.getInstance( "X.509" );
-
-            int certCount = 0; // The file might contain multiple certs
-            while ( inputStream.available() > 0 )
+            try ( BufferedInputStream inputStream = new BufferedInputStream( new FileInputStream( certFile ) ) )
             {
-                try
+                CertificateFactory certFactory = CertificateFactory.getInstance( "X.509" );
+
+                while ( inputStream.available() > 0 )
                 {
-                    Certificate cert = certFactory.generateCertificate( inputStream );
-                    certCount++;
-                    loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
-                }
-                catch ( CertificateException e )
-                {
-                    if ( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
+                    try
                     {
-                        // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
-                        // second cert, at which point we fail
-                        return;
+                        Certificate cert = certFactory.generateCertificate( inputStream );
+                        certCount++;
+                        loadX509Cert( cert, "neo4j.javadriver.trustedcert." + certCount, keyStore );
                     }
-                    throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(), e );
+                    catch ( CertificateException e )
+                    {
+                        if ( e.getCause() != null && e.getCause().getMessage().equals( "Empty input" ) )
+                        {
+                            // This happens if there is whitespace at the end of the certificate - we load one cert, and then try and load a
+                            // second cert, at which point we fail
+                            return;
+                        }
+                        throw new IOException( "Failed to load certificate from `" + certFile.getAbsolutePath() + "`: " + certCount + " : " + e.getMessage(),
+                                               e );
+                    }
                 }
             }
         }
