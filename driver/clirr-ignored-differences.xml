@@ -55,4 +55,11 @@
         <method>java.lang.Iterable values()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Config$TrustStrategy</className>
+        <differenceType>7005</differenceType>
+        <method>org.neo4j.driver.Config$TrustStrategy trustCustomCertificateSignedBy(java.io.File)</method>
+        <to>org.neo4j.driver.Config$TrustStrategy trustCustomCertificateSignedBy(java.io.File[])</to>
+    </difference>
+
 </differences>

@@ -80,7 +80,7 @@ class ConfigTest
 
         // Then
         assertEquals( authConfig.strategy(), Config.TrustStrategy.Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES );
-        assertEquals( trustedCert.getAbsolutePath(), authConfig.certFile().getAbsolutePath() );
+        assertEquals( trustedCert.getAbsolutePath(), authConfig.certFiles().get( 0 ).getAbsolutePath() );
     }
 
     @Test
@@ -401,7 +401,7 @@ class ConfigTest
             assertEquals( config.eventLoopThreads(), verify.eventLoopThreads() );
             assertEquals( config.encrypted(), verify.encrypted() );
             assertEquals( config.trustStrategy().strategy(), verify.trustStrategy().strategy() );
-            assertEquals( config.trustStrategy().certFile(), verify.trustStrategy().certFile() );
+            assertEquals( config.trustStrategy().certFiles(), verify.trustStrategy().certFiles() );
             assertEquals( config.trustStrategy().isHostnameVerificationEnabled(), verify.trustStrategy().isHostnameVerificationEnabled() );
             assertEquals( config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy() );
             assertEquals( config.userAgent(), verify.userAgent() );
