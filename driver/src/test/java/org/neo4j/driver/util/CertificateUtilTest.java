@@ -24,6 +24,7 @@ import java.io.File;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.Enumeration;
 
 import org.neo4j.driver.internal.util.CertificateTool;
@@ -52,7 +53,7 @@ public class CertificateUtilTest
         keyStore.load( null, null );
 
         // When
-        CertificateTool.loadX509Cert( certFile, keyStore );
+        CertificateTool.loadX509Cert( Collections.singletonList( certFile ), keyStore );
 
         // Then
         Enumeration<String> aliases = keyStore.aliases();

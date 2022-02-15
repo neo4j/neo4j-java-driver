@@ -21,6 +21,10 @@ package org.neo4j.driver;
 import java.io.File;
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -463,7 +467,7 @@ public class Config implements Serializable
 
         /**
          * Specify how to determine the authenticity of an encryption certificate provided by the Neo4j instance we are connecting to. This defaults to {@link
-         * TrustStrategy#trustSystemCertificates()}. See {@link TrustStrategy#trustCustomCertificateSignedBy(File)} for using certificate signatures instead to
+         * TrustStrategy#trustSystemCertificates()}. See {@link TrustStrategy#trustCustomCertificateSignedBy(File...)} for using certificate signatures instead to
          * verify trust.
          * <p>
          * This is an important setting to understand, because unless we know that the remote server we have an encrypted connection to is really Neo4j, there
@@ -712,19 +716,20 @@ public class Config implements Serializable
         }
 
         private final Strategy strategy;
-        private final File certFile;
+        private final List<File> certFiles;
         private boolean hostnameVerificationEnabled = true;
         private RevocationStrategy revocationStrategy = RevocationStrategy.NO_CHECKS;
 
         private TrustStrategy( Strategy strategy )
         {
-            this( strategy, null );
+            this( strategy, Collections.emptyList() );
         }
 
-        private TrustStrategy( Strategy strategy, File certFile )
+        private TrustStrategy( Strategy strategy, List<File> certFiles )
         {
+            Objects.requireNonNull( certFiles, "certFiles can't be null" );
             this.strategy = strategy;
-            this.certFile = certFile;
+            this.certFiles = Collections.unmodifiableList( new ArrayList<>( certFiles ) );
         }
 
         /**
@@ -741,10 +746,22 @@ public class Config implements Serializable
          * Return the configured certificate file.
          *
          * @return configured certificate or {@code null} if trust strategy does not require a certificate.
+         * @deprecated superseded by {@link TrustStrategy#certFiles()}
          */
+        @Deprecated
         public File certFile()
         {
-            return certFile;
+            return certFiles.isEmpty() ? null : certFiles.get( 0 );
+        }
+
+        /**
+         * Return the configured certificate files.
+         *
+         * @return configured certificate files or empty list if trust strategy does not require certificates.
+         */
+        public List<File> certFiles()
+        {
+            return certFiles;
         }
 
         /**
@@ -780,18 +797,18 @@ public class Config implements Serializable
         }
 
         /**
-         * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted.
-         * The file specified should contain one or more trusted X.509 certificates.
+         * Only encrypted connections to Neo4j instances with certificates signed by a trusted certificate will be accepted. The file(s) specified should
+         * contain one or more trusted X.509 certificates.
          * <p>
-         * The certificate(s) in the file must be encoded using PEM encoding, meaning the certificates in the file should be encoded using Base64,
-         * and each certificate is bounded at the beginning by "-----BEGIN CERTIFICATE-----", and bounded at the end by "-----END CERTIFICATE-----".
+         * The certificate(s) in the file(s) must be encoded using PEM encoding, meaning the certificates in the file(s) should be encoded using Base64, and
+         * each certificate is bounded at the beginning by "-----BEGIN CERTIFICATE-----", and bounded at the end by "-----END CERTIFICATE-----".
          *
-         * @param certFile the trusted certificate file
+         * @param certFiles the trusted certificate files
          * @return an authentication config
          */
-        public static TrustStrategy trustCustomCertificateSignedBy( File certFile )
+        public static TrustStrategy trustCustomCertificateSignedBy( File... certFiles )
         {
-            return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, certFile );
+            return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, Arrays.asList( certFiles ) );
         }
 
         /**

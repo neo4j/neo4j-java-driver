@@ -53,12 +53,15 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_system_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_supports_multi_db$", "Database is None" );
+        String skipMessage = "This test expects hostname verification to be turned off when all certificates are trusted";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_trusted_ca_wrong_hostname$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_untrusted_ca_wrong_hostname$", skipMessage );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
 
         REACTIVE_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         // Current limitations (require further investigation or bug fixing)
-        String skipMessage = "Does not report RUN FAILURE";
+        skipMessage = "Does not report RUN FAILURE";
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.Routing[^.]+\\.test_should_write_successfully_on_leader_switch_using_tx_function$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestDisconnects\\.test_disconnect_after_hello$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestDisconnects\\.test_disconnect_session_on_run$", skipMessage );

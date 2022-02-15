@@ -27,6 +27,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.List;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -53,31 +55,31 @@ public class SecurityPlanImpl implements SecurityPlan
         return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
-    public static SecurityPlan forCustomCASignedCertificates( File certFile, boolean requiresHostnameVerification,
+    public static SecurityPlan forCustomCASignedCertificates( List<File> certFiles, boolean requiresHostnameVerification,
                                                               RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
-        SSLContext sslContext = configureSSLContext( certFile, revocationStrategy );
+        SSLContext sslContext = configureSSLContext( certFiles, revocationStrategy );
         return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
     public static SecurityPlan forSystemCASignedCertificates( boolean requiresHostnameVerification, RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
-        SSLContext sslContext = configureSSLContext( null, revocationStrategy );
+        SSLContext sslContext = configureSSLContext( Collections.emptyList(), revocationStrategy );
         return new SecurityPlanImpl( true, sslContext, requiresHostnameVerification, revocationStrategy );
     }
 
-    private static SSLContext configureSSLContext( File customCertFile, RevocationStrategy revocationStrategy )
+    private static SSLContext configureSSLContext( List<File> customCertFiles, RevocationStrategy revocationStrategy )
             throws GeneralSecurityException, IOException
     {
         KeyStore trustedKeyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
         trustedKeyStore.load( null, null );
 
-        if ( customCertFile != null )
+        if ( !customCertFiles.isEmpty() )
         {
-            // A certificate file is specified so we will load the certificates in the file
-            loadX509Cert( customCertFile, trustedKeyStore );
+            // Certificate files are specified, so we will load the certificates in the file
+            loadX509Cert( customCertFiles, trustedKeyStore );
         }
         else
         {

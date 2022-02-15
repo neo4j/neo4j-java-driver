@@ -21,7 +21,6 @@ package org.neo4j.driver.internal;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.GeneralSecurityException;
-import java.util.Objects;
 
 import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.ClientException;
@@ -73,7 +72,7 @@ public class SecuritySettings implements Serializable
         }
 
         return t1.isHostnameVerificationEnabled() == t2.isHostnameVerificationEnabled() && t1.strategy() == t2.strategy() &&
-                Objects.equals( t1.certFile(), t2.certFile() ) && t1.revocationStrategy() == t2.revocationStrategy();
+               t1.certFiles().equals( t2.certFiles() ) && t1.revocationStrategy() == t2.revocationStrategy();
     }
 
     public SecurityPlan createSecurityPlan( String uriScheme )
@@ -131,7 +130,7 @@ public class SecuritySettings implements Serializable
             switch ( trustStrategy.strategy() )
             {
             case TRUST_CUSTOM_CA_SIGNED_CERTIFICATES:
-                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFile(), hostnameVerificationEnabled, revocationStrategy );
+                return SecurityPlanImpl.forCustomCASignedCertificates( trustStrategy.certFiles(), hostnameVerificationEnabled, revocationStrategy );
             case TRUST_SYSTEM_CA_SIGNED_CERTIFICATES:
                 return SecurityPlanImpl.forSystemCASignedCertificates( hostnameVerificationEnabled, revocationStrategy );
             case TRUST_ALL_CERTIFICATES:
