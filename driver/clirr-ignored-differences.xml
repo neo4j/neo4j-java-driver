@@ -49,4 +49,41 @@
         <method>java.lang.String version()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Record</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Iterable keys()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Record</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Iterable values()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7002</differenceType>
+        <method>void reset()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withRoutingFailureLimit(int)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$ConfigBuilder</className>
+        <differenceType>7002</differenceType>
+        <method>org.neo4j.driver.Config$ConfigBuilder withRoutingRetryDelay(long, java.util.concurrent.TimeUnit)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Config$TrustStrategy</className>
+        <differenceType>7005</differenceType>
+        <method>org.neo4j.driver.Config$TrustStrategy trustCustomCertificateSignedBy(java.io.File)</method>
+        <to>org.neo4j.driver.Config$TrustStrategy trustCustomCertificateSignedBy(java.io.File[])</to>
+    </difference>
+
 </differences>

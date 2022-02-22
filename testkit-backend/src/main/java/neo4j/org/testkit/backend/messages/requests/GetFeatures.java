@@ -52,6 +52,7 @@ public class GetFeatures implements TestkitRequest
             "Temporary:FastFailingDiscovery",
             "Feature:TLS:1.1",
             "Feature:TLS:1.2",
+            "Feature:TLS:1.3",
             "Feature:API:SSLSchemes",
             "Feature:API:Liveness.Check",
             "Temporary:DriverMaxConnectionPoolSize",
@@ -60,7 +61,11 @@ public class GetFeatures implements TestkitRequest
             "Temporary:CypherPathAndRelationship",
             "Temporary:FullSummary",
             "Temporary:ResultKeys",
-            "Temporary:TransactionClose"
+            "Temporary:TransactionClose",
+            "Optimization:EagerTransactionBegin",
+            "Feature:API:Driver.IsEncrypted",
+            "Feature:API:SSLConfig",
+            "Detail:DefaultSecurityConfigValueEquality"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

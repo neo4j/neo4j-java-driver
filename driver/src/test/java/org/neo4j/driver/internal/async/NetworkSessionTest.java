@@ -202,15 +202,6 @@ class NetworkSessionTest
         inOrder.verify( connection, atLeastOnce() ).release();
     }
 
-    @SuppressWarnings( "deprecation" )
-    @Test
-    void resetDoesNothingWhenNoTransactionAndNoConnection()
-    {
-        await( session.resetAsync() );
-
-        verify( connectionProvider, never() ).acquireConnection( any( ConnectionContext.class ) );
-    }
-
     @Test
     void closeWithoutConnection()
     {
@@ -330,23 +321,6 @@ class NetworkSessionTest
     }
 
     @Test
-    void connectionShouldBeResetAfterSessionReset()
-    {
-        String query = "RETURN 1";
-        setupSuccessfulRunAndPull( connection, query );
-
-        run( session, query );
-
-        InOrder connectionInOrder = inOrder( connection );
-        connectionInOrder.verify( connection, never() ).reset();
-        connectionInOrder.verify( connection ).release();
-
-        await( session.resetAsync() );
-        connectionInOrder.verify( connection ).reset();
-        connectionInOrder.verify( connection, never() ).release();
-    }
-
-    @Test
     void shouldHaveEmptyLastBookmarkInitially()
     {
         assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
@@ -450,19 +424,6 @@ class NetworkSessionTest
 
         verify( connectionProvider, times( 2 ) ).acquireConnection( any( ConnectionContext.class ) );
         verifyBeginTx( connection );
-    }
-
-    @Test
-    void shouldMarkTransactionAsTerminatedAndThenResetConnectionOnReset()
-    {
-        UnmanagedTransaction tx = beginTransaction( session );
-
-        assertTrue( tx.isOpen() );
-        verify( connection, never() ).reset();
-
-        await( session.resetAsync() );
-
-        verify( connection ).reset();
     }
 
     private static ResultCursor run(NetworkSession session, String query )

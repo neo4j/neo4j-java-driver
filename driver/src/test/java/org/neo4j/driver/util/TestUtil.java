@@ -47,9 +47,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import org.neo4j.driver.AccessMode;
@@ -90,7 +88,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -157,14 +154,6 @@ public final class TestUtil
     public static <T> T await( CompletableFuture<T> future )
     {
         return await( (Future<T>) future );
-    }
-
-    public static void awaitAllFutures( List<Future<?>> futures )
-    {
-        for ( Future<?> future : futures )
-        {
-            await( future );
-        }
     }
 
     public static <T, U extends Future<T>> T await( U future )
@@ -564,50 +553,6 @@ public final class TestUtil
 
             thread.interrupt();
         } );
-    }
-
-    public static int activeQueryCount( Driver driver )
-    {
-        return activeQueryNames( driver ).size();
-    }
-
-    public static List<String> activeQueryNames( Driver driver )
-    {
-        try ( Session session = driver.session() )
-        {
-            return session.run( "CALL dbms.listQueries() YIELD query RETURN query" )
-                    .list()
-                    .stream()
-                    .map( record -> record.get( 0 ).asString() )
-                    .filter( query -> !query.contains( "dbms.listQueries" ) ) // do not include listQueries procedure
-                    .collect( toList() );
-        }
-    }
-
-    public static void awaitCondition( BooleanSupplier condition )
-    {
-        awaitCondition( condition, DEFAULT_WAIT_TIME_MS, MILLISECONDS );
-    }
-
-    public static void awaitCondition( BooleanSupplier condition, long value, TimeUnit unit )
-    {
-        long deadline = System.currentTimeMillis() + unit.toMillis( value );
-        while ( !condition.getAsBoolean() )
-        {
-            if ( System.currentTimeMillis() > deadline )
-            {
-                fail( "Condition was not met in time" );
-            }
-            try
-            {
-                MILLISECONDS.sleep( 100 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                fail( "Interrupted while waiting" );
-            }
-        }
     }
 
     public static String randomString( int size )

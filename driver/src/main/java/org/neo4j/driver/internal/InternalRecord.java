@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
@@ -68,7 +69,13 @@ public class InternalRecord extends InternalMapAccessorWithDefaultValue implemen
     }
 
     @Override
-    public List<Pair<String, Value>> fields()
+    public <T> Iterable<T> values( Function<Value,T> mapFunction )
+    {
+        return values().stream().map( mapFunction ).collect( Collectors.toList() );
+    }
+
+    @Override
+    public List<Pair<String,Value>> fields()
     {
         return Extract.fields( this, ofValue() );
     }

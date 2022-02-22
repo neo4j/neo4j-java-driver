@@ -18,8 +18,6 @@
  */
 package org.neo4j.driver.internal.cluster;
 
-import io.netty.util.concurrent.EventExecutorGroup;
-
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -29,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logger;
@@ -67,22 +64,18 @@ public class RediscoveryImpl implements Rediscovery
     private static final String INVALID_BOOKMARK_MIXTURE_CODE = "Neo.ClientError.Transaction.InvalidBookmarkMixture";
 
     private final BoltServerAddress initialRouter;
-    private final RoutingSettings settings;
     private final Logger log;
     private final ClusterCompositionProvider provider;
     private final ServerAddressResolver resolver;
-    private final EventExecutorGroup eventExecutorGroup;
     private final DomainNameResolver domainNameResolver;
 
-    public RediscoveryImpl( BoltServerAddress initialRouter, RoutingSettings settings, ClusterCompositionProvider provider,
-                            EventExecutorGroup eventExecutorGroup, ServerAddressResolver resolver, Logging logging, DomainNameResolver domainNameResolver )
+    public RediscoveryImpl( BoltServerAddress initialRouter, ClusterCompositionProvider provider, ServerAddressResolver resolver, Logging logging,
+                            DomainNameResolver domainNameResolver )
     {
         this.initialRouter = initialRouter;
-        this.settings = settings;
         this.log = logging.getLog( getClass() );
         this.provider = provider;
         this.resolver = resolver;
-        this.eventExecutorGroup = eventExecutorGroup;
         this.domainNameResolver = requireNonNull( domainNameResolver );
     }
 
@@ -101,13 +94,12 @@ public class RediscoveryImpl implements Rediscovery
         CompletableFuture<ClusterCompositionLookupResult> result = new CompletableFuture<>();
         // if we failed discovery, we will chain all errors into this one.
         ServiceUnavailableException baseError = new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) );
-        lookupClusterComposition( routingTable, connectionPool, 0, 0, result, bookmark, impersonatedUser, baseError );
+        lookupClusterComposition( routingTable, connectionPool, result, bookmark, impersonatedUser, baseError );
         return result;
     }
 
-    private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool, int failures, long previousDelay,
-                                           CompletableFuture<ClusterCompositionLookupResult> result, Bookmark bookmark, String impersonatedUser,
-                                           Throwable baseError )
+    private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool, CompletableFuture<ClusterCompositionLookupResult> result,
+                                           Bookmark bookmark, String impersonatedUser, Throwable baseError )
     {
         lookup( routingTable, pool, bookmark, impersonatedUser, baseError )
                 .whenComplete(
@@ -124,22 +116,7 @@ public class RediscoveryImpl implements Rediscovery
                             }
                             else
                             {
-                                int newFailures = failures + 1;
-                                if ( newFailures >= settings.maxRoutingFailures() )
-                                {
-                                    // now we throw our saved error out
-                                    result.completeExceptionally( baseError );
-                                }
-                                else
-                                {
-                                    long nextDelay = Math.max( settings.retryTimeoutDelay(), previousDelay * 2 );
-                                    log.info( "Unable to fetch new routing table, will try again in " + nextDelay + "ms" );
-                                    eventExecutorGroup.next().schedule(
-                                            () -> lookupClusterComposition( routingTable, pool, newFailures, nextDelay, result, bookmark, impersonatedUser,
-                                                                            baseError ),
-                                            nextDelay, TimeUnit.MILLISECONDS
-                                    );
-                                }
+                                result.completeExceptionally( baseError );
                             }
                         } );
     }

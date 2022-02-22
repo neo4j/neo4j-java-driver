@@ -196,11 +196,6 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
         return session.lastBookmark();
     }
 
-    public Publisher<Void> reset()
-    {
-        return createEmptyPublisher( session::resetAsync );
-    }
-
     @Override
     public <T> Publisher<T> close()
     {

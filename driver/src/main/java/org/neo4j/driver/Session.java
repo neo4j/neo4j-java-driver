@@ -223,23 +223,6 @@ public interface Session extends Resource, QueryRunner
     Bookmark lastBookmark();
 
     /**
-     * Reset the current session. This sends an immediate RESET signal to the server which both interrupts
-     * any query that is currently executing and ignores any subsequently queued queries. Following
-     * the reset, the current transaction will have been rolled back and any outstanding failures will
-     * have been acknowledged.
-     *
-     * @deprecated This method should not be used and violates the expected usage pattern of {@link Session} objects.
-     * They are expected to be not thread-safe and should not be shared between thread. However this method is only
-     * useful when {@link Session} object is passed to another monitoring thread that calls it when appropriate.
-     * It is not useful when {@link Session} is used in a single thread because in this case {@link #close()}
-     * can be used. Since version 3.1, Neo4j database allows users to specify maximum transaction execution time and
-     * contains procedures to list and terminate running queries. These functions should be used instead of calling
-     * this method.
-     */
-    @Deprecated
-    void reset();
-
-    /**
      * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is
      * very low cost.
      */
