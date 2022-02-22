@@ -75,6 +75,7 @@ public class Neo4jWithFeatureCondition implements ExecutionCondition
             try ( Session session = driver.session() )
             {
                 String agent = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().agent() );
+                System.out.println( "SERVER AGENT: " + agent );
                 Pattern pattern = Pattern.compile( "^Neo4j/(\\d+)\\.(\\d+)\\.(\\d+)$" );
                 Matcher matcher = pattern.matcher( agent );
                 if ( !matcher.matches() )

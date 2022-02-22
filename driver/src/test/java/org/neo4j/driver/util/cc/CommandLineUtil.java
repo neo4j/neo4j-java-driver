@@ -86,8 +86,6 @@ public class CommandLineUtil
         int exitCode = process.waitFor();
         String stdOut = get( stdOutFuture );
         String stdErr = get( stdErrFuture );
-        System.out.println( "stdOut: " + stdOut );
-        System.out.println( "stdErr: " + stdErr );
         if ( exitCode != 0 )
         {
             throw new CommandLineException( "Non-zero exit code\nSTDOUT:\n" + stdOut + "\nSTDERR:\n" + stdErr );
