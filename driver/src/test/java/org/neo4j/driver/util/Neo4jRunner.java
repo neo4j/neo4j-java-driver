@@ -188,10 +188,9 @@ public class Neo4jRunner
             String tempHomeDir = executeCommand( commands ).trim();
             debug( "Downloaded server at `%s`, now renaming to `%s`.", tempHomeDir, HOME_DIR );
 
-            executeCommand( "neoctrl-set-initial-password", PASSWORD );
-
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
+            executeCommand( "neoctrl-set-initial-password", PASSWORD, HOME_DIR );
         }
     }
 
