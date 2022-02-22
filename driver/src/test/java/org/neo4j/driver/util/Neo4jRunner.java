@@ -190,13 +190,14 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
-            executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
+            String createUserOut = executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
+            System.out.println( "CREATE USER OUT: " + createUserOut );
         }
     }
 
     public void startNeo4j()
     {
-        
+
         debug( "Starting server..." );
         executeCommand( "neoctrl-start", HOME_DIR, "-v" );
         debug( "Server started." );
