@@ -196,7 +196,6 @@ public class Neo4jRunner
 
     public void startNeo4j()
     {
-
         debug( "Starting server..." );
         executeCommand( "neoctrl-start", HOME_DIR, "-v" );
         debug( "Server started." );
