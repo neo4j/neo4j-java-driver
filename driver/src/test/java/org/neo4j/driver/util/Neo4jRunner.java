@@ -190,7 +190,7 @@ public class Neo4jRunner
 
             moveFile( new File( tempHomeDir ), targetHomeFile );
             debug( "Installed server at `%s`.", HOME_DIR );
-            executeCommand( "neoctrl-create-user", HOME_DIR, USER, PASSWORD );
+            executeCommand( "neoctrl-set-initial-password", PASSWORD, HOME_DIR );
         }
     }
 
