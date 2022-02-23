@@ -42,7 +42,7 @@
     <rxjava.version>2.2.21</rxjava.version>
     <slf4j-api.version>1.7.35</slf4j-api.version>
     <hamcrest-junit.version>2.0.0.0</hamcrest-junit.version>
-    <mockito-core.version>2.28.2</mockito-core.version>
+    <mockito-core.version>4.3.1</mockito-core.version>
     <junit.version>5.8.2</junit.version>
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>

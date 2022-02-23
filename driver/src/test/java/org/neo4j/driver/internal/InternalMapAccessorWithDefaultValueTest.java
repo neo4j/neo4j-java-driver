@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.value.BooleanValue;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -36,9 +39,6 @@ import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
@@ -115,8 +115,8 @@ class InternalMapAccessorWithDefaultValueTest
         Record record = createRecord();
 
         // IntegerValue.asObject returns Long
-        assertThat( record.get( "IntegerValue", (Object) 3 ), equalTo( (Object) new Long( 11 ) ) );
-        assertThat( record.get( wrongKey, (Object) 3 ), equalTo( (Object) new Integer( 3 ) ) );
+        assertThat( record.get( "IntegerValue", (Object) 3 ), equalTo( 11L ) );
+        assertThat( record.get( wrongKey, (Object) 3 ), equalTo( 3 ) );
     }
 
     @Test
@@ -125,8 +125,8 @@ class InternalMapAccessorWithDefaultValueTest
         Record record = createRecord();
 
         // IntegerValue.asNumber returns Long
-        assertThat( record.get( "IntegerValue", (Number) 3 ), equalTo( (Object) new Long( 11 ) ) );
-        assertThat( record.get( wrongKey, (Number) 3 ), equalTo( (Object) new Integer( 3 ) ) );
+        assertThat( record.get( "IntegerValue", (Number) 3 ), equalTo( (Object) 11L ) );
+        assertThat( record.get( wrongKey, (Number) 3 ), equalTo( (Object) 3 ) );
     }
 
     @Test
