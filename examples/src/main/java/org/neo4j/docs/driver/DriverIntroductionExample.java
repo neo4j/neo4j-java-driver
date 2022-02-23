@@ -20,16 +20,21 @@ package org.neo4j.docs.driver;
 
 // tag::driver-introduction-example-import[]
 
-import org.neo4j.driver.*;
-import org.neo4j.driver.exceptions.Neo4jException;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.neo4j.driver.Config.TrustStrategy.trustAllCertificates;
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logging;
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.exceptions.Neo4jException;
 // end::driver-introduction-example-import[]
 
 // tag::driver-introduction-example[]
@@ -61,17 +66,19 @@ public class DriverIntroductionExample implements AutoCloseable {
         params.put("person2_name", person2Name);
         params.put("knows_from", knowsFrom );
 
-        try (Session session = driver.session()) {
+        try (Session session = driver.session())
+        {
             // Write transactions allow the driver to handle retries and transient errors
-            Record record = session.writeTransaction(tx -> {
-                Result result = tx.run(createFriendshipQuery, params);
-                return result.single();
-            });
-            System.out.println(String.format("Created friendship between: %s, %s from %s",
-                    record.get("p1").get("name").asString(),
-                    record.get("p2").get("name").asString(),
-                    record.get("k").get("from").asString()));
-        // You should capture any errors along with the query and data for traceability
+            Record record = session.writeTransaction( tx ->
+                                                      {
+                                                          Result result = tx.run( createFriendshipQuery, params );
+                                                          return result.single();
+                                                      } );
+            System.out.println( String.format( "Created friendship between: %s, %s from %s",
+                                               record.get( "p1" ).get( "name" ).asString(),
+                                               record.get( "p2" ).get( "name" ).asString(),
+                                               record.get( "k" ).get( "from" ).asString() ) );
+            // You should capture any errors along with the query and data for traceability
         } catch (Neo4jException ex) {
             LOGGER.log(Level.SEVERE, createFriendshipQuery + " raised an exception", ex);
             throw ex;

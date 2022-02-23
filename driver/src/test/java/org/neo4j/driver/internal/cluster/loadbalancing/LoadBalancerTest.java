@@ -385,8 +385,11 @@ class LoadBalancerTest
                 new LoadBalancer( connectionPool, routingTables, rediscovery, new LeastConnectedLoadBalancingStrategy( connectionPool, DEV_NULL_LOGGING ),
                                   GlobalEventExecutor.INSTANCE, DEV_NULL_LOGGING );
         ConnectionContext context = mock( ConnectionContext.class );
-        CompletableFuture<DatabaseName> databaseNameFuture =
-                spy( completed ? CompletableFuture.completedFuture( DatabaseNameUtil.systemDatabase() ) : new CompletableFuture<>() );
+        CompletableFuture<DatabaseName> databaseNameFuture = spy( new CompletableFuture<>() );
+        if ( completed )
+        {
+            databaseNameFuture.complete( DatabaseNameUtil.systemDatabase() );
+        }
         when( context.databaseNameFuture() ).thenReturn( databaseNameFuture );
         when( context.mode() ).thenReturn( WRITE );
 
