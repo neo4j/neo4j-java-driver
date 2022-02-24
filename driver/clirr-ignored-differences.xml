@@ -43,4 +43,16 @@
         <method>org.reactivestreams.Publisher close()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Record</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Iterable keys()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Record</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Iterable values()</method>
+    </difference>
+
 </differences>
