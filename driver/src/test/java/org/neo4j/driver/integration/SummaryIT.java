@@ -26,8 +26,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.EnabledOnNeo4jWith;
@@ -35,8 +35,8 @@ import org.neo4j.driver.internal.util.Neo4jFeature;
 import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
-import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.QueryType;
+import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
@@ -125,12 +125,12 @@ class SummaryIT
         assertTrue( session.run( "CREATE (n {magic: 42})" ).consume().counters().containsUpdates() );
         assertThat( session.run( "MATCH (n:ALabel) REMOVE n:ALabel " ).consume().counters().labelsRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE INDEX ON :ALabel(prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP INDEX ON :ALabel(prop)" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
+        assertThat( session.run( "CREATE INDEX superIndex FOR (n:ALabel) ON (n.prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
+        assertThat( session.run( "DROP INDEX superIndex" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
+        assertThat( session.run( "CREATE CONSTRAINT restrictedConstraint ON (book:Book) ASSERT book.isbn IS UNIQUE" )
                 .consume().counters().constraintsAdded(), equalTo( 1 ) );
-        assertThat( session.run( "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" )
+        assertThat( session.run( "DROP CONSTRAINT restrictedConstraint" )
                 .consume().counters().constraintsRemoved(), equalTo( 1 ) );
     }
 

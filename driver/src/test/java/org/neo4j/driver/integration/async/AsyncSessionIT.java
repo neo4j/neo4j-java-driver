@@ -700,7 +700,7 @@ class AsyncSessionIT
     @Test
     void shouldNotPropagateRunFailureWhenClosed()
     {
-        session.runAsync( "RETURN 10 / 0" );
+        session.runAsync( "RETURN 1 * \"x\"" );
 
         await( session.closeAsync() );
     }
@@ -708,9 +708,9 @@ class AsyncSessionIT
     @Test
     void shouldPropagateRunFailureImmediately()
     {
-        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN 10 / 0" ) ) );
+        ClientException e = assertThrows( ClientException.class, () -> await( session.runAsync( "RETURN 1 * \"x\"" ) ) );
 
-        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        assertThat( e.getMessage(), containsString( "Type mismatch" ) );
     }
 
     @Test
