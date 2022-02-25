@@ -23,20 +23,20 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.CompletionException;
 
-import org.neo4j.driver.internal.RoutingErrorHandler;
-import org.neo4j.driver.internal.spi.ResponseHandler;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.internal.RoutingErrorHandler;
+import org.neo4j.driver.internal.spi.ResponseHandler;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 
 class RoutingResponseHandlerTest
@@ -50,7 +50,7 @@ class RoutingResponseHandlerTest
         Throwable handledError = handle( new CompletionException( error ), errorHandler );
 
         assertEquals( error, handledError );
-        verifyZeroInteractions( errorHandler );
+        verifyNoInteractions( errorHandler );
     }
 
     @Test
@@ -86,7 +86,7 @@ class RoutingResponseHandlerTest
         Throwable handledError = handle( error, errorHandler );
 
         assertEquals( error, handledError );
-        verifyZeroInteractions( errorHandler );
+        verifyNoInteractions( errorHandler );
     }
 
     @Test
@@ -122,7 +122,7 @@ class RoutingResponseHandlerTest
         Throwable handledError = handle( error, errorHandler, AccessMode.READ );
 
         assertEquals( error, handledError );
-        verifyZeroInteractions( errorHandler );
+        verifyNoInteractions( errorHandler );
     }
 
     @Test
@@ -158,7 +158,7 @@ class RoutingResponseHandlerTest
 
         assertThat( handledError, instanceOf( ClientException.class ) );
         assertEquals( "Write queries cannot be performed in READ access mode.", handledError.getMessage() );
-        verifyZeroInteractions( errorHandler );
+        verifyNoInteractions( errorHandler );
     }
 
     private void testWriteFailureWithWriteAccessMode( String code )
