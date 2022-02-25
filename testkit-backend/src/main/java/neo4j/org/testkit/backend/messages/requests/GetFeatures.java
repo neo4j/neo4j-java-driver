@@ -52,6 +52,7 @@ public class GetFeatures implements TestkitRequest
             "Temporary:FastFailingDiscovery",
             "Feature:TLS:1.1",
             "Feature:TLS:1.2",
+            "Feature:TLS:1.3",
             "Feature:API:SSLSchemes",
             "Feature:API:Liveness.Check",
             "Temporary:DriverMaxConnectionPoolSize",
