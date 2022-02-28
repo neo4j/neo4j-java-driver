@@ -155,17 +155,17 @@ class ErrorIT
     void shouldHandleFailureAtRunTime()
     {
         String label = UUID.randomUUID().toString();  // avoid clashes with other tests
-
+        String query = "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE";
         // given
         Transaction tx = session.beginTransaction();
-        tx.run( "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE" );
+        tx.run( query );
         tx.commit();
 
         // and
         Transaction anotherTx = session.beginTransaction();
 
         // then expect
-        ClientException e = assertThrows( ClientException.class, () -> anotherTx.run( "CREATE INDEX ON :`" + label + "`(name)" ) );
+        ClientException e = assertThrows( ClientException.class, () -> anotherTx.run( query ) );
         anotherTx.rollback();
         assertThat( e.getMessage(), containsString( label ) );
         assertThat( e.getMessage(), containsString( "name" ) );

@@ -770,9 +770,9 @@ class SessionIT
     {
         try ( Session session = neo4j.driver().session() )
         {
-            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 1 * \"x\"" ) );
 
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            assertThat( e.getMessage(), containsString( "Type mismatch" ) );
         }
     }
 
@@ -804,9 +804,10 @@ class SessionIT
         {
             session.run( "CREATE ()" );
             session.run( "CREATE ()" );
-            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
 
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 1 * \"x\"" ) );
+
+            assertThat( e.getMessage(), containsString( "Type mismatch" ) );
         }
     }
 
@@ -817,8 +818,8 @@ class SessionIT
         {
             session.run( "CREATE ()" );
             session.run( "CREATE ()" );
-            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 10 / 0" ) );
-            assertThat( e.getMessage(), containsString( "/ by zero" ) );
+            ClientException e = assertThrows( ClientException.class, () -> session.run( "RETURN 1 * \"x\"" ) );
+            assertThat( e.getMessage(), containsString( "Type mismatch" ) );
             session.run( "CREATE ()" );
         }
     }

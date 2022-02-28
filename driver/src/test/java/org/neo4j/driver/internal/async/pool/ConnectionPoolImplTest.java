@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.authorizationStateListener;
@@ -57,7 +57,7 @@ class ConnectionPoolImplTest
 
         pool.retainAll( singleton( LOCAL_DEFAULT ) );
 
-        verifyZeroInteractions( nettyChannelTracker );
+        verifyNoInteractions( nettyChannelTracker );
     }
 
     @Test

@@ -664,7 +664,7 @@ class AsyncTransactionIT
 
         tx.runAsync( "CREATE (:TestNode)" );
         tx.runAsync( "CREATE (:TestNode)" );
-        tx.runAsync( "RETURN 10 / 0" );
+        tx.runAsync( "RETURN 1 * \"x\"" );
         tx.runAsync( "CREATE (:TestNode)" );
 
         ClientException e = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
@@ -690,10 +690,10 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        ClientException runException = assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 42 / 0" ) ) );
+        ClientException runException = assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 1 * \"x\"" ) ) );
 
         ClientException commitException = assertThrows( ClientException.class, () -> await( tx.commitAsync() ) );
-        assertThat( runException.getMessage(), containsString( "/ by zero" ) );
+        assertThat( runException.getMessage(), containsString( "Type mismatch" ) );
         assertNoCircularReferences( commitException );
         assertThat( commitException.getMessage(), containsString( "Transaction can't be committed" ) );
     }
@@ -713,7 +713,7 @@ class AsyncTransactionIT
     {
         AsyncTransaction tx = await( session.beginTransactionAsync() );
 
-        assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 42 / 0" ) ) );
+        assertThrows( ClientException.class, () -> await( tx.runAsync( "RETURN 1 * \"x\"" ) ) );
 
         await( tx.rollbackAsync() );
     }
