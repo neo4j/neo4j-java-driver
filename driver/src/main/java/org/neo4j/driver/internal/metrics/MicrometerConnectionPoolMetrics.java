@@ -202,19 +202,19 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long created()
     {
-        return toLong( created );
+        return count( created );
     }
 
     @Override
     public long failedToCreate()
     {
-        return toLong( failedToCreate );
+        return count( failedToCreate );
     }
 
     @Override
     public long closed()
     {
-        return toLong( closed );
+        return count( closed );
     }
 
     @Override
@@ -226,13 +226,13 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long acquired()
     {
-        return toLong( acquired );
+        return count( acquired );
     }
 
     @Override
     public long timedOutToAcquire()
     {
-        return toLong( timedOutToAcquire );
+        return count( timedOutToAcquire );
     }
 
     @Override
@@ -256,7 +256,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long totalInUseCount()
     {
-        return toLong( released );
+        return count( released );
     }
 
     @Override
