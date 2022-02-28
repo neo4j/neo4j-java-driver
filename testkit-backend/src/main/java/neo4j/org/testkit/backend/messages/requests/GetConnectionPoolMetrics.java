@@ -72,6 +72,7 @@ public class GetConnectionPoolMetrics implements TestkitRequest
                                     try
                                     {
                                         Method m = pm.getClass().getDeclaredMethod("getAddress");
+                                        m.setAccessible( true );
                                         poolAddress = (ServerAddress) m.invoke( pm );
                                     }
                                     catch ( NoSuchMethodException | IllegalAccessException | InvocationTargetException e )

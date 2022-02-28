@@ -233,7 +233,7 @@ final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Conn
                        totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 
-    // This method is for purposes testing only
+    // This method is for testing purposes only
     public ServerAddress getAddress()
     {
         return address;
