@@ -103,7 +103,7 @@ class InternalDriverTest
         ClientException error = assertThrows( ClientException.class, driver::metrics );
 
         // Then
-        assertTrue( error.getMessage().contains( "Driver metrics not enabled." ) );
+        assertTrue( error.getMessage().contains( "Driver metrics are not enabled." ) );
     }
 
     @Test
