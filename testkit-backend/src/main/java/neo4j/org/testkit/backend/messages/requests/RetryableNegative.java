@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.FrontendError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
@@ -44,7 +45,7 @@ public class RetryableNegative implements TestkitRequest
         }
         else
         {
-            throwable = new RuntimeException( "Error from client in retryable tx" );
+            throwable = new FrontendError();
         }
         sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
         return null;
@@ -64,7 +65,7 @@ public class RetryableNegative implements TestkitRequest
                                        }
                                        else
                                        {
-                                           throwable = new RuntimeException( "Error from client in retryable tx" );
+                                           throwable = new FrontendError();
                                        }
                                        sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
                                        return null;
@@ -85,7 +86,7 @@ public class RetryableNegative implements TestkitRequest
                                        }
                                        else
                                        {
-                                           throwable = new RuntimeException( "Error from client in retryable tx" );
+                                           throwable = new FrontendError();
                                        }
                                        sessionHolder.getTxWorkFuture().completeExceptionally( throwable );
                                        return null;
