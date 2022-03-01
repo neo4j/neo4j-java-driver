@@ -254,7 +254,7 @@ class ConnectionHandlingIT
     {
         try ( Session session = driver.session() )
         {
-            session.run( "CREATE CONSTRAINT ON (book:Library) ASSERT exists(book.isbn)" );
+            session.run( "CREATE CONSTRAINT FOR (book:Library) REQUIRE book.isbn IS NOT NULL" );
         }
 
         Connection connection1 = connectionPool.lastAcquiredConnectionSpy;

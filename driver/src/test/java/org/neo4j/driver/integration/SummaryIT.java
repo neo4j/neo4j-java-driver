@@ -128,7 +128,7 @@ class SummaryIT
         assertThat( session.run( "CREATE INDEX superIndex FOR (n:ALabel) ON (n.prop)" ).consume().counters().indexesAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP INDEX superIndex" ).consume().counters().indexesRemoved(), equalTo( 1 ) );
 
-        assertThat( session.run( "CREATE CONSTRAINT restrictedConstraint ON (book:Book) ASSERT book.isbn IS UNIQUE" )
+        assertThat( session.run( "CREATE CONSTRAINT restrictedConstraint FOR (book:Book) REQUIRE book.isbn IS UNIQUE" )
                 .consume().counters().constraintsAdded(), equalTo( 1 ) );
         assertThat( session.run( "DROP CONSTRAINT restrictedConstraint" )
                 .consume().counters().constraintsRemoved(), equalTo( 1 ) );
@@ -152,7 +152,7 @@ class SummaryIT
         assertThat( session.run("MATCH (n) RETURN 1").consume().queryType(), equalTo( QueryType.READ_ONLY ));
         assertThat( session.run("CREATE (n)").consume().queryType(), equalTo( QueryType.WRITE_ONLY ));
         assertThat( session.run("CREATE (n) RETURN (n)").consume().queryType(), equalTo( QueryType.READ_WRITE ));
-        assertThat( session.run("CREATE INDEX ON :User(p)").consume().queryType(), equalTo( QueryType.SCHEMA_WRITE ));
+        assertThat( session.run("CREATE INDEX FOR (n:User) ON n.p").consume().queryType(), equalTo( QueryType.SCHEMA_WRITE ));
     }
 
     @Test
