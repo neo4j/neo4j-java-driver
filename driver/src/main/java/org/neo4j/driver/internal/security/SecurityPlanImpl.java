@@ -21,7 +21,9 @@ package org.neo4j.driver.internal.security;
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.PKIXBuilderParameters;
@@ -84,14 +86,37 @@ public class SecurityPlanImpl implements SecurityPlan
             loadSystemCertificates( trustedKeyStore );
         }
 
-        // Configure certificate revocation checking (X509CertSelector() selects all certificates)
-        PKIXBuilderParameters pkixBuilderParameters = new PKIXBuilderParameters( trustedKeyStore, new X509CertSelector() );
+        PKIXBuilderParameters pkixBuilderParameters = configurePKIXBuilderParameters( trustedKeyStore, revocationStrategy );
 
-        // sets checking of stapled ocsp response
-        pkixBuilderParameters.setRevocationEnabled( requiresRevocationChecking( revocationStrategy ) );
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+
+        if ( pkixBuilderParameters == null )
+        {
+            trustManagerFactory.init( trustedKeyStore );
+        }
+        else
+        {
+            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
+        }
+
+        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
+
+        return sslContext;
+    }
+
+    private static PKIXBuilderParameters configurePKIXBuilderParameters( KeyStore trustedKeyStore, RevocationStrategy revocationStrategy ) throws InvalidAlgorithmParameterException, KeyStoreException
+    {
+        PKIXBuilderParameters pkixBuilderParameters = null;
 
         if ( requiresRevocationChecking( revocationStrategy ) )
         {
+            // Configure certificate revocation checking (X509CertSelector() selects all certificates)
+            pkixBuilderParameters = new PKIXBuilderParameters( trustedKeyStore, new X509CertSelector() );
+
+            // sets checking of stapled ocsp response
+            pkixBuilderParameters.setRevocationEnabled( true );
+
             // enables status_request extension in client hello
             System.setProperty( "jdk.tls.client.enableStatusRequestExtension", "true" );
 
@@ -101,14 +126,7 @@ public class SecurityPlanImpl implements SecurityPlan
                 Security.setProperty( "ocsp.enable", "true" );
             }
         }
-
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        trustManagerFactory.init( new CertPathTrustManagerParameters( pkixBuilderParameters ) );
-        sslContext.init( new KeyManager[0], trustManagerFactory.getTrustManagers(), null );
-
-        return sslContext;
+        return pkixBuilderParameters;
     }
 
     private static void loadSystemCertificates( KeyStore trustedKeyStore ) throws GeneralSecurityException, IOException
