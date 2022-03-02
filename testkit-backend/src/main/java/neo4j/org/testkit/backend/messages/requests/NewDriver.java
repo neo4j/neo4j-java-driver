@@ -31,10 +31,14 @@ import neo4j.org.testkit.backend.messages.responses.TestkitCallback;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -117,7 +121,8 @@ public class NewDriver implements TestkitRequest
         Config config = configBuilder.build();
         try
         {
-            driver = driver( URI.create( data.uri ), authToken, config, retrySettings, domainNameResolver, testkitState, id );
+            driver = driver( URI.create( data.uri ), authToken, config, retrySettings, domainNameResolver, configureSecuritySettingsBuilder(), testkitState,
+                             id );
         }
         catch ( RuntimeException e )
         {
@@ -223,11 +228,9 @@ public class NewDriver implements TestkitRequest
     }
 
     private org.neo4j.driver.Driver driver( URI uri, AuthToken authToken, Config config, RetrySettings retrySettings, DomainNameResolver domainNameResolver,
-                                            TestkitState testkitState,
-                                            String driverId )
+                                            SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder, TestkitState testkitState, String driverId )
     {
         RoutingSettings routingSettings = RoutingSettings.DEFAULT;
-        SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
         SecuritySettings securitySettings = securitySettingsBuilder.build();
         SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
         return new DriverFactoryWithDomainNameResolver( domainNameResolver, testkitState, driverId )
@@ -248,6 +251,41 @@ public class NewDriver implements TestkitRequest
         return response;
     }
 
+    private SecuritySettings.SecuritySettingsBuilder configureSecuritySettingsBuilder()
+    {
+        SecuritySettings.SecuritySettingsBuilder securitySettingsBuilder = new SecuritySettings.SecuritySettingsBuilder();
+        if ( data.encrypted )
+        {
+            securitySettingsBuilder.withEncryption();
+        }
+        else
+        {
+            securitySettingsBuilder.withoutEncryption();
+        }
+
+        if ( data.trustedCertificates != null )
+        {
+            if ( !data.trustedCertificates.isEmpty() )
+            {
+                File[] certs = data.trustedCertificates.stream()
+                                                       .map( cert -> "/usr/local/share/custom-ca-certificates/" + cert )
+                                                       .map( Paths::get )
+                                                       .map( Path::toFile )
+                                                       .toArray( File[]::new );
+                securitySettingsBuilder.withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( certs ) );
+            }
+            else
+            {
+                securitySettingsBuilder.withTrustStrategy( Config.TrustStrategy.trustAllCertificates() );
+            }
+        }
+        else
+        {
+            securitySettingsBuilder.withTrustStrategy( Config.TrustStrategy.trustSystemCertificates() );
+        }
+        return securitySettingsBuilder;
+    }
+
     @Setter
     @Getter
     public static class NewDriverBody
@@ -263,6 +301,8 @@ public class NewDriver implements TestkitRequest
         private Long livenessCheckTimeoutMs;
         private Integer maxConnectionPoolSize;
         private Long connectionAcquisitionTimeoutMs;
+        private boolean encrypted;
+        private List<String> trustedCertificates;
     }
 
     @RequiredArgsConstructor

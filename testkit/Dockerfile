@@ -13,4 +13,5 @@ ENV PATH=$JAVA_HOME/bin:$PATH
 # Assumes Linux Debian based image.
 # JAVA_HOME needed by update-ca-certificates hook to update Java with changed system CAs.
 COPY CAs/* /usr/local/share/ca-certificates/
+COPY CustomCAs/* /usr/local/share/custom-ca-certificates/
 RUN update-ca-certificates
