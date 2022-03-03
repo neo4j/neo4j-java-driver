@@ -63,6 +63,7 @@ public class GetFeatures implements TestkitRequest
             "Temporary:ResultKeys",
             "Temporary:TransactionClose",
             "Optimization:EagerTransactionBegin",
+            "Feature:API:Driver.IsEncrypted",
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality"
     ) );
