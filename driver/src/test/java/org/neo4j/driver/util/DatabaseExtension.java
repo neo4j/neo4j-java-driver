@@ -164,7 +164,8 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
     {
         try ( Session session = driver().session() )
         {
-            String protocolVersion = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().protocolVersion() );
+            String protocolVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
+                                                                            "RETURN versions[0] AS version" ).single().get( "version" ).asString() );
             String[] versions = protocolVersion.split( "\\." );
             int major = parseInt( versions[0] );
             int minor = parseInt( versions[1] );
