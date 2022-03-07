@@ -275,7 +275,7 @@ class MicrometerConnectionPoolMetricsTest
         assertEquals( expected.creating(), actual.creating() );
         assertEquals( expected.creating(), registry.get( MicrometerConnectionPoolMetrics.CREATING ).gauge().value() );
         assertEquals( expected.created(), actual.created() );
-        assertEquals( expected.created(), registry.get( MicrometerConnectionPoolMetrics.CREATED ).counter().count() );
+        assertEquals( expected.created(), registry.get( MicrometerConnectionPoolMetrics.CREATION ).timer().count() );
         assertEquals( expected.failedToCreate(), actual.failedToCreate() );
         assertEquals( expected.failedToCreate(), registry.get( MicrometerConnectionPoolMetrics.FAILED ).counter().count() );
         assertEquals( expected.closed(), actual.closed() );
@@ -283,7 +283,7 @@ class MicrometerConnectionPoolMetricsTest
         assertEquals( expected.acquiring(), actual.acquiring() );
         assertEquals( expected.acquiring(), registry.get( MicrometerConnectionPoolMetrics.ACQUIRING ).gauge().value() );
         assertEquals( expected.acquired(), actual.acquired() );
-        assertEquals( expected.acquired(), registry.get( MicrometerConnectionPoolMetrics.ACQUIRED ).counter().count() );
+        assertEquals( expected.acquired(), registry.get( MicrometerConnectionPoolMetrics.ACQUISITION ).timer().count() );
         assertEquals( expected.timedOutToAcquire(), actual.timedOutToAcquire() );
         assertEquals( expected.timedOutToAcquire(), registry.get( MicrometerConnectionPoolMetrics.ACQUISITION_TIMEOUT ).counter().count() );
         assertEquals( expected.totalAcquisitionTime(), actual.totalAcquisitionTime() );
@@ -295,6 +295,6 @@ class MicrometerConnectionPoolMetricsTest
         assertEquals( expected.totalInUseTime(), actual.totalInUseTime() );
         assertEquals( expected.totalInUseTime(), (long) registry.get( MicrometerConnectionPoolMetrics.USAGE ).timer().totalTime( TimeUnit.MILLISECONDS ) );
         assertEquals( expected.totalInUseCount(), actual.totalInUseCount() );
-        assertEquals( expected.totalInUseCount(), registry.get( MicrometerConnectionPoolMetrics.RELEASED ).counter().count() );
+        assertEquals( expected.totalInUseCount(), registry.get( MicrometerConnectionPoolMetrics.USAGE ).timer().count() );
     }
 }

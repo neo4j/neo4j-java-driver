@@ -42,16 +42,13 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     public static final String IN_USE = PREFIX + ".in.use";
     public static final String IDLE = PREFIX + ".idle";
     public static final String CREATING = PREFIX + ".creating";
-    public static final String CREATED = PREFIX + ".created";
     public static final String FAILED = PREFIX + ".failed";
     public static final String CLOSED = PREFIX + ".closed";
     public static final String ACQUIRING = PREFIX + ".acquiring";
-    public static final String ACQUIRED = PREFIX + ".acquired";
     public static final String ACQUISITION_TIMEOUT = PREFIX + ".acquisition.timeout";
     public static final String ACQUISITION = PREFIX + ".acquisition";
     public static final String CREATION = PREFIX + ".creation";
     public static final String USAGE = PREFIX + ".usage";
-    public static final String RELEASED = PREFIX + ".released";
 
     private final IntSupplier inUseSupplier;
     private final IntSupplier idleSupplier;
@@ -59,16 +56,13 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     private final String id;
 
     private final AtomicInteger creating = new AtomicInteger();
-    private final Counter created;
     private final Counter failedToCreate;
     private final Counter closed;
     private final AtomicInteger acquiring = new AtomicInteger();
-    private final Counter acquired;
     private final Counter timedOutToAcquire;
     private final Timer totalAcquisitionTimer;
     private final Timer totalConnectionTimer;
     private final Timer totalInUseTimer;
-    private final Counter released;
 
     MicrometerConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier, MeterRegistry registry )
     {
@@ -93,16 +87,13 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
         Gauge.builder( IN_USE, this::inUse ).tags( tags ).register( registry );
         Gauge.builder( IDLE, this::idle ).tags( tags ).register( registry );
         Gauge.builder( CREATING, creating, AtomicInteger::get ).tags( tags ).register( registry );
-        created = Counter.builder( CREATED ).tags( tags ).register( registry );
         failedToCreate = Counter.builder( FAILED ).tags( tags ).register( registry );
         closed = Counter.builder( CLOSED ).tags( tags ).register( registry );
         Gauge.builder( ACQUIRING, acquiring, AtomicInteger::get ).tags( tags ).register( registry );
-        acquired = Counter.builder( ACQUIRED ).tags( tags ).register( registry );
         timedOutToAcquire = Counter.builder( ACQUISITION_TIMEOUT ).tags( tags ).register( registry );
         totalAcquisitionTimer = Timer.builder( ACQUISITION ).tags( tags ).register( registry );
         totalConnectionTimer = Timer.builder( CREATION ).tags( tags ).register( registry );
         totalInUseTimer = Timer.builder( USAGE ).tags( tags ).register( registry );
-        released = Counter.builder( RELEASED ).tags( tags ).register( registry );
     }
 
     @Override
@@ -123,7 +114,6 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     public void afterCreated( ListenerEvent<?> connEvent )
     {
         creating.decrementAndGet();
-        created.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) connEvent).getSample();
         sample.stop( totalConnectionTimer );
     }
@@ -150,7 +140,6 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
     {
-        acquired.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) acquireEvent).getSample();
         sample.stop( totalAcquisitionTimer );
     }
@@ -170,7 +159,6 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public void released( ListenerEvent<?> inUseEvent )
     {
-        released.increment();
         Timer.Sample sample = ((MicrometerTimerListenerEvent) inUseEvent).getSample();
         sample.stop( totalInUseTimer );
     }
@@ -202,7 +190,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long created()
     {
-        return count( created );
+        return totalConnectionTimer.count();
     }
 
     @Override
@@ -226,7 +214,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long acquired()
     {
-        return count( acquired );
+        return totalAcquisitionTimer.count();
     }
 
     @Override
@@ -256,7 +244,7 @@ final class MicrometerConnectionPoolMetrics implements ConnectionPoolMetricsList
     @Override
     public long totalInUseCount()
     {
-        return count( released );
+        return totalInUseTimer.count();
     }
 
     @Override
