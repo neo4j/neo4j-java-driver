@@ -21,17 +21,18 @@ package org.neo4j.driver.internal.metrics;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntSupplier;
 
 import org.neo4j.driver.ConnectionPoolMetrics;
-import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.spi.ConnectionPool;
+import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;
 
-public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
+final class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, ConnectionPoolMetricsListener
 {
-    private final BoltServerAddress address;
-    private final ConnectionPool pool;
+    private final ServerAddress address;
+    private final IntSupplier inUseSupplier;
+    private final IntSupplier idleSupplier;
 
     private final AtomicLong closed = new AtomicLong();
 
@@ -52,18 +53,20 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     private final AtomicLong totalInUseCount = new AtomicLong();
     private final String id;
 
-    InternalConnectionPoolMetrics( String poolId, BoltServerAddress address, ConnectionPool pool )
+    InternalConnectionPoolMetrics( String poolId, ServerAddress address, IntSupplier inUseSupplier, IntSupplier idleSupplier )
     {
         Objects.requireNonNull( address );
-        Objects.requireNonNull( pool );
+        Objects.requireNonNull( inUseSupplier );
+        Objects.requireNonNull( idleSupplier );
 
         this.id = poolId;
         this.address = address;
-        this.pool = pool;
+        this.inUseSupplier = inUseSupplier;
+        this.idleSupplier = idleSupplier;
     }
 
     @Override
-    public void beforeCreating( ListenerEvent connEvent )
+    public void beforeCreating( ListenerEvent<?> connEvent )
     {
         creating.incrementAndGet();
         connEvent.start();
@@ -77,13 +80,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterCreated( ListenerEvent connEvent )
+    public void afterCreated( ListenerEvent<?> connEvent )
     {
         created.incrementAndGet();
         creating.decrementAndGet();
-        long elapsed = connEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) connEvent).getSample();
 
-        totalConnectionTime.addAndGet( elapsed );
+        totalConnectionTime.addAndGet( sample );
     }
 
     @Override
@@ -93,7 +96,7 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void beforeAcquiringOrCreating( ListenerEvent acquireEvent )
+    public void beforeAcquiringOrCreating( ListenerEvent<?> acquireEvent )
     {
         acquireEvent.start();
         acquiring.incrementAndGet();
@@ -106,12 +109,12 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void afterAcquiredOrCreated( ListenerEvent acquireEvent )
+    public void afterAcquiredOrCreated( ListenerEvent<?> acquireEvent )
     {
         acquired.incrementAndGet();
-        long elapsed = acquireEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) acquireEvent).getSample();
 
-        totalAcquisitionTime.addAndGet( elapsed );
+        totalAcquisitionTime.addAndGet( sample );
     }
 
     @Override
@@ -121,18 +124,18 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     }
 
     @Override
-    public void acquired( ListenerEvent inUseEvent )
+    public void acquired( ListenerEvent<?> inUseEvent )
     {
         inUseEvent.start();
     }
 
     @Override
-    public void released( ListenerEvent inUseEvent )
+    public void released( ListenerEvent<?> inUseEvent )
     {
         totalInUseCount.incrementAndGet();
-        long elapsed = inUseEvent.elapsed();
+        long sample = ((TimeRecorderListenerEvent) inUseEvent).getSample();
 
-        totalInUseTime.addAndGet( elapsed );
+        totalInUseTime.addAndGet( sample );
     }
 
     @Override
@@ -144,13 +147,13 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
     @Override
     public int inUse()
     {
-        return pool.inUseConnections( address );
+        return inUseSupplier.getAsInt();
     }
 
     @Override
     public int idle()
     {
-        return pool.idleConnections( address );
+        return idleSupplier.getAsInt();
     }
 
     @Override
@@ -230,8 +233,8 @@ public class InternalConnectionPoolMetrics implements ConnectionPoolMetrics, Con
                        totalAcquisitionTime(), totalConnectionTime(), totalInUseTime(), totalInUseCount() );
     }
 
-    // This method is for purposes testing only
-    public BoltServerAddress getAddress()
+    // This method is for testing purposes only
+    public ServerAddress getAddress()
     {
         return address;
     }

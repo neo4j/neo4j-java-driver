@@ -30,8 +30,9 @@ import org.neo4j.driver.util.Experimental;
 public interface ConnectionPoolMetrics
 {
     /**
-     * An unique id that identifies this pool metrics.
-     * @return An unique name
+     * A unique id that identifies this pool metrics.
+     *
+     * @return A unique name
      */
     String id();
 
@@ -57,9 +58,9 @@ public interface ConnectionPoolMetrics
     int creating();
 
     /**
-     * A counter to record how many connections have been successfully created with this pool since the pool is created.
+     * A counter to record how many connections have been successfully created with this pool since the pool was created.
      * This number increases every time when a connection is successfully created.
-     * @return The amount of connections have ever been created by this pool.
+     * @return The amount of connections that have ever been created by this pool.
      */
     long created();
 

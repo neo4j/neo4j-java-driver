@@ -31,6 +31,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
@@ -42,8 +43,10 @@ import org.neo4j.driver.internal.cluster.loadbalancing.LeastConnectedLoadBalanci
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancingStrategy;
 import org.neo4j.driver.internal.logging.NettyLogging;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.ExponentialBackoffRetryLogic;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
@@ -56,7 +59,6 @@ import org.neo4j.driver.net.ServerAddressResolver;
 
 import static org.neo4j.driver.internal.Scheme.isRoutingScheme;
 import static org.neo4j.driver.internal.cluster.IdentityResolver.IDENTITY_RESOLVER;
-import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.ErrorUtil.addSuppressed;
 
 public class DriverFactory
@@ -94,7 +96,7 @@ public class DriverFactory
         EventExecutorGroup eventExecutorGroup = bootstrap.config().group();
         RetryLogic retryLogic = createRetryLogic( retrySettings, eventExecutorGroup, config.logging() );
 
-        MetricsProvider metricsProvider = createDriverMetrics( config, createClock() );
+        MetricsProvider metricsProvider = getOrCreateMetricsProvider( config, createClock() );
         ConnectionPool connectionPool = createConnectionPool( authToken, securityPlan, bootstrap, metricsProvider, config,
                                                               ownsEventLoopGroup, newRoutingSettings.routingContext() );
 
@@ -114,16 +116,24 @@ public class DriverFactory
         return new ConnectionPoolImpl( connector, bootstrap, poolSettings, metricsProvider.metricsListener(), config.logging(), clock, ownsEventLoopGroup );
     }
 
-    protected static MetricsProvider createDriverMetrics( Config config, Clock clock )
+    protected static MetricsProvider getOrCreateMetricsProvider( Config config, Clock clock )
     {
-        if( config.isMetricsEnabled() )
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
+        // This can actually only happen when someone mocks the config
+        if ( metricsAdapter == null )
         {
+            metricsAdapter = config.isMetricsEnabled() ? MetricsAdapter.DEFAULT : MetricsAdapter.DEV_NULL;
+        }
+        switch ( metricsAdapter )
+        {
+        case DEV_NULL:
+            return DevNullMetricsProvider.INSTANCE;
+        case DEFAULT:
             return new InternalMetricsProvider( clock, config.logging() );
+        case MICROMETER:
+            return MicrometerMetricsProvider.forGlobalRegistry();
         }
-        else
-        {
-            return METRICS_DISABLED_PROVIDER;
-        }
+        throw new IllegalStateException( "Unknown or unsupported MetricsAdapter: " + metricsAdapter );
     }
 
     protected ChannelConnector createConnector( ConnectionSettings settings, SecurityPlan securityPlan,

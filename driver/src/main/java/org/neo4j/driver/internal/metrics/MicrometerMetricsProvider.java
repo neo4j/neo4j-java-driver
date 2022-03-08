@@ -18,28 +18,41 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.util.Clock;
+import io.micrometer.core.instrument.MeterRegistry;
+
 import org.neo4j.driver.Metrics;
 
-public final class InternalMetricsProvider implements MetricsProvider
+/**
+ * An adapter to bridge between driver metrics and Micrometer {@link MeterRegistry meter registry}.
+ */
+public final class MicrometerMetricsProvider implements MetricsProvider
 {
-    private final InternalMetrics metrics;
+    private final MicrometerMetrics metrics;
 
-    public InternalMetricsProvider( Clock clock, Logging logging )
+    public static MetricsProvider forGlobalRegistry()
     {
-        this.metrics = new InternalMetrics( clock, logging );
+        return of( io.micrometer.core.instrument.Metrics.globalRegistry );
+    }
+
+    public static MetricsProvider of( MeterRegistry meterRegistry )
+    {
+        return new MicrometerMetricsProvider( meterRegistry );
+    }
+
+    private MicrometerMetricsProvider( MeterRegistry meterRegistry )
+    {
+        this.metrics = new MicrometerMetrics( meterRegistry );
     }
 
     @Override
     public Metrics metrics()
     {
-        return metrics;
+        return this.metrics;
     }
 
     @Override
     public MetricsListener metricsListener()
     {
-        return metrics;
+        return this.metrics;
     }
 }

@@ -18,28 +18,28 @@
  */
 package org.neo4j.driver.internal.metrics;
 
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Metrics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
-public final class InternalMetricsProvider implements MetricsProvider
+final class MicrometerTimerListenerEvent implements ListenerEvent<Timer.Sample>
 {
-    private final InternalMetrics metrics;
+    private final MeterRegistry meterRegistry;
+    private Timer.Sample sample;
 
-    public InternalMetricsProvider( Clock clock, Logging logging )
+    public MicrometerTimerListenerEvent( MeterRegistry meterRegistry )
     {
-        this.metrics = new InternalMetrics( clock, logging );
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
-    public Metrics metrics()
+    public void start()
     {
-        return metrics;
+        this.sample = Timer.start( this.meterRegistry );
     }
 
     @Override
-    public MetricsListener metricsListener()
+    public Timer.Sample getSample()
     {
-        return metrics;
+        return this.sample;
     }
 }
