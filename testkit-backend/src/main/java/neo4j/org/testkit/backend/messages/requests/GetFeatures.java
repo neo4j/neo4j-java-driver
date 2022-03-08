@@ -36,7 +36,6 @@ import java.util.concurrent.CompletionStage;
 public class GetFeatures implements TestkitRequest
 {
     private static final Set<String> COMMON_FEATURES = new HashSet<>( Arrays.asList(
-            "Feature:Bolt:4.0",
             "Feature:Bolt:4.1",
             "Feature:Bolt:4.2",
             "Feature:Bolt:4.3",
