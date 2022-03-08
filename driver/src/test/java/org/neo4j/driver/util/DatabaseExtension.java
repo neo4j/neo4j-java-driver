@@ -164,9 +164,9 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
     {
         try ( Session session = driver().session() )
         {
-            String protocolVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
+            String neo4jVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
                                                                             "RETURN versions[0] AS version" ).single().get( "version" ).asString() );
-            String[] versions = protocolVersion.split( "\\." );
+            String[] versions = neo4jVersion.split( "\\." );
             int major = parseInt( versions[0] );
             int minor = parseInt( versions[1] );
             return  major <= 4 && minor <= 3;
