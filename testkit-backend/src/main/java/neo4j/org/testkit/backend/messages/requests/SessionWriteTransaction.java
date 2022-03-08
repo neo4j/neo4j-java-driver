@@ -123,6 +123,10 @@ public class SessionWriteTransaction implements TestkitRequest
                 {
                     workThrowable = workThrowable.getCause();
                 }
+                if ( workThrowable instanceof FrontendError )
+                {
+                    throw (FrontendError) workThrowable;
+                }
                 if ( workThrowable instanceof Neo4jException )
                 {
                     throw (Neo4jException) workThrowable;
