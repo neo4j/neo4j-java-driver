@@ -36,6 +36,7 @@ import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.net.ServerAddressResolver;
+import org.neo4j.driver.util.Experimental;
 import org.neo4j.driver.util.Immutable;
 
 import static java.lang.String.format;
@@ -94,9 +95,9 @@ public class Config implements Serializable
     private final RetrySettings retrySettings;
     private final ServerAddressResolver resolver;
 
-    private final boolean isMetricsEnabled;
     private final int eventLoopThreads;
     private final String userAgent;
+    private final MetricsAdapter metricsAdapter;
 
     private Config( ConfigBuilder builder )
     {
@@ -118,7 +119,7 @@ public class Config implements Serializable
         this.fetchSize = builder.fetchSize;
 
         this.eventLoopThreads = builder.eventLoopThreads;
-        this.isMetricsEnabled = builder.isMetricsEnabled;
+        this.metricsAdapter = builder.metricsAdapter;
     }
 
     /**
@@ -256,7 +257,12 @@ public class Config implements Serializable
      */
     public boolean isMetricsEnabled()
     {
-        return isMetricsEnabled;
+        return this.metricsAdapter != MetricsAdapter.DEV_NULL;
+    }
+
+    public MetricsAdapter metricsAdapter()
+    {
+        return this.metricsAdapter;
     }
 
     /**
@@ -284,7 +290,7 @@ public class Config implements Serializable
         private int connectionTimeoutMillis = (int) TimeUnit.SECONDS.toMillis( 30 );
         private RetrySettings retrySettings = RetrySettings.DEFAULT;
         private ServerAddressResolver resolver;
-        private boolean isMetricsEnabled = false;
+        private MetricsAdapter metricsAdapter = MetricsAdapter.DEV_NULL;
         private long fetchSize = FetchSizeUtil.DEFAULT_FETCH_SIZE;
         private int eventLoopThreads = 0;
 
@@ -617,13 +623,13 @@ public class Config implements Serializable
         }
 
         /**
-         * Enable driver metrics. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         * Enable driver metrics backed by internal basic implementation. The metrics can be obtained afterwards via {@link Driver#metrics()}.
+         *
          * @return this builder.
          */
         public ConfigBuilder withDriverMetrics()
         {
-            this.isMetricsEnabled = true;
-            return this;
+            return withMetricsEnabled( true );
         }
 
         /**
@@ -632,7 +638,36 @@ public class Config implements Serializable
          */
         public ConfigBuilder withoutDriverMetrics()
         {
-            this.isMetricsEnabled = false;
+            return withMetricsEnabled( false );
+        }
+
+        private ConfigBuilder withMetricsEnabled( boolean enabled )
+        {
+            if ( !enabled )
+            {
+                withMetricsAdapter( MetricsAdapter.DEV_NULL );
+            }
+            else if ( this.metricsAdapter == null || this.metricsAdapter == MetricsAdapter.DEV_NULL )
+            {
+                withMetricsAdapter( MetricsAdapter.DEFAULT );
+            }
+            return this;
+        }
+
+        /**
+         * Enable driver metrics with given {@link MetricsAdapter}.
+         * <p>
+         * {@link MetricsAdapter#MICROMETER} enables implementation based on <a href="https://micrometer.io">Micrometer</a>. The metrics can be obtained
+         * afterwards via Micrometer means and {@link Driver#metrics()}. Micrometer must be on classpath when using this option.
+         * <p>
+         *
+         * @param metricsAdapter the metrics adapter to use. Use {@link MetricsAdapter#DEV_NULL} to disable metrics.
+         * @return this builder.
+         */
+        @Experimental
+        public ConfigBuilder withMetricsAdapter( MetricsAdapter metricsAdapter )
+        {
+            this.metricsAdapter = Objects.requireNonNull( metricsAdapter, "metricsAdapter" );
             return this;
         }
 

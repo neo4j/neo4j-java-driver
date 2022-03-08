@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AuthToken;
@@ -32,6 +34,7 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.MetricsAdapter;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.internal.async.LeakLoggingNetworkSession;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -39,8 +42,10 @@ import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.cluster.loadbalancing.LoadBalancer;
+import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
 import org.neo4j.driver.internal.metrics.InternalMetricsProvider;
 import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.metrics.MicrometerMetricsProvider;
 import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.SecurityPlan;
@@ -51,6 +56,7 @@ import org.neo4j.driver.internal.spi.ConnectionProvider;
 import org.neo4j.driver.internal.util.Clock;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -64,7 +70,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Config.defaultConfig;
-import static org.neo4j.driver.internal.metrics.MetricsProvider.METRICS_DISABLED_PROVIDER;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.internal.util.Matchers.clusterDriver;
@@ -152,9 +157,9 @@ class DriverFactoryTest
         Config config = mock( Config.class );
         when( config.isMetricsEnabled() ).thenReturn( false );
         // When
-        MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
         // Then
-        assertThat( provider, is( METRICS_DISABLED_PROVIDER ) );
+        assertThat( provider, is(equalTo( DevNullMetricsProvider.INSTANCE ) ) );
     }
 
     @Test
@@ -165,10 +170,23 @@ class DriverFactoryTest
         when( config.isMetricsEnabled() ).thenReturn( true );
         when( config.logging() ).thenReturn( Logging.none() );
         // When
-        MetricsProvider provider = DriverFactory.createDriverMetrics( config, Clock.SYSTEM );
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
         // Then
-        assertThat( provider.isMetricsEnabled(), is( true ) );
         assertThat( provider instanceof InternalMetricsProvider, is( true ) );
+    }
+
+    @Test
+    void shouldCreateMicrometerDriverMetricsIfMonitoringEnabled()
+    {
+        // Given
+        Config config = mock( Config.class );
+        when( config.isMetricsEnabled() ).thenReturn( true );
+        when( config.metricsAdapter() ).thenReturn( MetricsAdapter.MICROMETER );
+        when( config.logging() ).thenReturn( Logging.none() );
+        // When
+        MetricsProvider provider = DriverFactory.getOrCreateMetricsProvider( config, Clock.SYSTEM );
+        // Then
+        assertThat( provider instanceof MicrometerMetricsProvider, is( true ) );
     }
 
     @ParameterizedTest

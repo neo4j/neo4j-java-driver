@@ -19,39 +19,19 @@
 package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.exceptions.ClientException;
 
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
-
+/**
+ * An adapter that collects driver metrics via {@link MetricsListener} and publishes them via {@link Metrics} instance.
+ */
 public interface MetricsProvider
 {
-    MetricsProvider METRICS_DISABLED_PROVIDER = new MetricsProvider()
-    {
-        @Override
-        public Metrics metrics()
-        {
-            // To outside users, we forbidden their access to the metrics API
-            throw new ClientException( "Driver metrics not enabled. To access driver metrics, " +
-                    "you need to enabled driver metrics in the driver's configuration." );
-        }
-
-        @Override
-        public MetricsListener metricsListener()
-        {
-            // Internally we can still register callbacks to this empty metrics listener.
-            return DEV_NULL_METRICS;
-        }
-
-        @Override
-        public boolean isMetricsEnabled()
-        {
-            return false;
-        }
-    };
-
+    /**
+     * @return The actual metrics type to use
+     */
     Metrics metrics();
 
+    /**
+     * @return A listener that will be notified on certain events so that it can collect metrics about them.
+     */
     MetricsListener metricsListener();
-
-    boolean isMetricsEnabled();
 }

@@ -50,6 +50,7 @@
     <jackson.version>2.13.1</jackson.version>
     <lombok.version>1.18.22</lombok.version>
     <svm.version>21.3.1</svm.version>
+    <micrometer.version>1.8.2</micrometer.version>
     <!-- To be overwritten by child projects -->
     <moduleName />
   </properties>
@@ -118,6 +119,12 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-core</artifactId>
+        <version>${micrometer.version}</version>
+        <scope>provided</scope>
       </dependency>
 
       <!-- Test dependencies -->

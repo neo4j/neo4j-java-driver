@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.async.connection.BootstrapFactory;
 import org.neo4j.driver.internal.async.connection.ChannelConnector;
 import org.neo4j.driver.internal.async.connection.ChannelConnectorImpl;
 import org.neo4j.driver.internal.cluster.RoutingContext;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.security.SecurityPlanImpl;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.util.FakeClock;
@@ -50,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.util.TestUtil.await;
 
 @ParallelizableIT
@@ -151,7 +151,7 @@ class ConnectionPoolImplIT
                                                                DEV_NULL_LOGGING, clock, RoutingContext.EMPTY, DefaultDomainNameResolver.getInstance() );
         PoolSettings poolSettings = newSettings();
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
-        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DEV_NULL_METRICS, DEV_NULL_LOGGING, clock, true );
+        return new ConnectionPoolImpl( connector, bootstrap, poolSettings, DevNullMetricsListener.INSTANCE, DEV_NULL_LOGGING, clock, true );
     }
     private static PoolSettings newSettings()
     {
