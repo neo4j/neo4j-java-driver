@@ -838,11 +838,16 @@ public class Config implements Serializable
          * The certificate(s) in the file(s) must be encoded using PEM encoding, meaning the certificates in the file(s) should be encoded using Base64, and
          * each certificate is bounded at the beginning by "-----BEGIN CERTIFICATE-----", and bounded at the end by "-----END CERTIFICATE-----".
          *
-         * @param certFiles the trusted certificate files
+         * @param certFiles the trusted certificate files, it must not be {@code null} or empty
          * @return an authentication config
          */
         public static TrustStrategy trustCustomCertificateSignedBy( File... certFiles )
         {
+            Objects.requireNonNull( certFiles, "certFiles can't be null" );
+            if ( certFiles.length == 0 )
+            {
+                throw new IllegalArgumentException( "certFiles can't be empty" );
+            }
             return new TrustStrategy( Strategy.TRUST_CUSTOM_CA_SIGNED_CERTIFICATES, Arrays.asList( certFiles ) );
         }
 
