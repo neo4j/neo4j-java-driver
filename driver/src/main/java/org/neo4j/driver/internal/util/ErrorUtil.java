@@ -35,6 +35,7 @@ import org.neo4j.driver.exceptions.SecurityException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TokenExpiredException;
 import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.exceptions.TrulyTransientException;
 
 public final class ErrorUtil
 {
@@ -100,7 +101,19 @@ public final class ErrorUtil
                 }
             }
         case "TransientError":
-            return new TransientException( code, message );
+            // Retries should not happen when transaction was explicitly terminated by the user.
+            // Termination of transaction might result in two different error codes depending on where it was
+            // terminated. These are really client errors but classification on the server is not entirely correct and
+            // they are classified as transient.
+            if ( "Neo.TransientError.Transaction.Terminated".equals( code ) ||
+                 "Neo.TransientError.Transaction.LockClientStopped".equals( code ) )
+            {
+                return new TransientException( code, message );
+            }
+            else
+            {
+                return new TrulyTransientException( code, message );
+            }
         default:
             return new DatabaseException( code, message );
         }
