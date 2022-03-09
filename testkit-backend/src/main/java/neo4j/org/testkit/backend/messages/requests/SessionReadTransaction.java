@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
+import neo4j.org.testkit.backend.FrontendError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
@@ -123,10 +124,11 @@ public class SessionReadTransaction implements TestkitRequest
                 {
                     throw (Neo4jException) workThrowable;
                 }
-                else
+                if ( workThrowable instanceof FrontendError )
                 {
-                    throw new RuntimeException( "Unexpected exception occurred in transaction work function", workThrowable );
+                    throw (FrontendError) workThrowable;
                 }
+                throw new RuntimeException( "Unexpected exception occurred in transaction work function", workThrowable );
             }
         };
     }
