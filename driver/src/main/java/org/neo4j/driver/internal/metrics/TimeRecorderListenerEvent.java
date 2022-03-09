@@ -20,10 +20,10 @@ package org.neo4j.driver.internal.metrics;
 
 import org.neo4j.driver.internal.util.Clock;
 
-public class TimeRecorderListenerEvent implements ListenerEvent
+final class TimeRecorderListenerEvent implements ListenerEvent<Long>
 {
-    private long startTime;
     private final Clock clock;
+    private long startTime;
 
     TimeRecorderListenerEvent( Clock clock )
     {
@@ -37,7 +37,7 @@ public class TimeRecorderListenerEvent implements ListenerEvent
     }
 
     @Override
-    public long elapsed()
+    public Long getSample()
     {
         return clock.millis() - startTime;
     }

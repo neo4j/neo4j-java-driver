@@ -27,16 +27,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Config;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DriverFactory;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.messaging.Message;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.spi.ResponseHandler;
+import org.neo4j.driver.net.ServerAddress;
 
 public class FailingConnectionDriverFactory extends DriverFactory
 {
@@ -82,13 +83,13 @@ public class FailingConnectionDriverFactory extends DriverFactory
         }
 
         @Override
-        public int inUseConnections( BoltServerAddress address )
+        public int inUseConnections( ServerAddress address )
         {
             return delegate.inUseConnections( address );
         }
 
         @Override
-        public int idleConnections( BoltServerAddress address )
+        public int idleConnections( ServerAddress address )
         {
             return delegate.idleConnections( address );
         }

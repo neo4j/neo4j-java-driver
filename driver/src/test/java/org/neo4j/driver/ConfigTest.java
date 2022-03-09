@@ -362,32 +362,60 @@ class ConfigTest
         assertThrows( IllegalArgumentException.class, () -> Config.builder().withUserAgent( "" ).build() );
     }
 
+    @Test
+    void shouldNotHaveMeterRegistryByDefault()
+    {
+        Config config = Config.builder().build();
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
+
+        assertEquals( MetricsAdapter.DEV_NULL, metricsAdapter );
+        assertFalse( config.isMetricsEnabled() );
+    }
+
+    @Test
+    void shouldNotAcceptNullMeterRegistry()
+    {
+        Config.ConfigBuilder builder = Config.builder();
+        assertThrows( NullPointerException.class, () -> builder.withMetricsAdapter( null ) );
+    }
+
+    @Test
+    void shouldSetMetricsAdapter()
+    {
+        Config config = Config.builder()
+                              .withMetricsAdapter( MetricsAdapter.DEFAULT )
+                              .build();
+        MetricsAdapter metricsAdapter = config.metricsAdapter();
+
+        assertEquals( MetricsAdapter.DEFAULT, metricsAdapter );
+        assertTrue( config.isMetricsEnabled() );
+    }
+
     @Nested
     class SerializationTest
     {
-
         @Test
         void shouldSerialize() throws Exception
         {
             Config config = Config.builder()
-                    .withMaxConnectionPoolSize( 123 )
-                    .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
-                    .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
-                    .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
-                    .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
-                    .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
-                    .withFetchSize( 9876L )
-                    .withEventLoopThreads( 4 )
-                    .withoutEncryption()
-                    .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" )) )
-                    .withUserAgent( "user-agent" )
-                    .withDriverMetrics()
-                    .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
-                    .withLeakedSessionsLogging()
-                    .build();
+                                  .withMaxConnectionPoolSize( 123 )
+                                  .withConnectionTimeout( 6543L, TimeUnit.MILLISECONDS )
+                                  .withConnectionAcquisitionTimeout( 5432L, TimeUnit.MILLISECONDS )
+                                  .withConnectionLivenessCheckTimeout( 4321L, TimeUnit.MILLISECONDS )
+                                  .withMaxConnectionLifetime( 4711, TimeUnit.MILLISECONDS )
+                                  .withMaxTransactionRetryTime( 3210L, TimeUnit.MILLISECONDS )
+                                  .withFetchSize( 9876L )
+                                  .withEventLoopThreads( 4 )
+                                  .withoutEncryption()
+                                  .withTrustStrategy( Config.TrustStrategy.trustCustomCertificateSignedBy( new File( "doesntMatter" ) ) )
+                                  .withUserAgent( "user-agent" )
+                                  .withDriverMetrics()
+                                  .withRoutingTablePurgeDelay( 50000, TimeUnit.MILLISECONDS )
+                                  .withLeakedSessionsLogging()
+                                  .withMetricsAdapter( MetricsAdapter.MICROMETER )
+                                  .build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );
-
 
             assertEquals( config.maxConnectionPoolSize(), verify.maxConnectionPoolSize() );
             assertEquals( config.connectionTimeoutMillis(), verify.connectionTimeoutMillis() );
@@ -406,6 +434,7 @@ class ConfigTest
             assertEquals( config.trustStrategy().revocationStrategy(), verify.trustStrategy().revocationStrategy() );
             assertEquals( config.userAgent(), verify.userAgent() );
             assertEquals( config.isMetricsEnabled(), verify.isMetricsEnabled() );
+            assertEquals( config.metricsAdapter(), verify.metricsAdapter() );
             assertEquals( config.routingSettings().routingTablePurgeDelayMs(), verify.routingSettings().routingTablePurgeDelayMs() );
             assertEquals( config.logLeakedSessions(), verify.logLeakedSessions() );
         }
@@ -413,7 +442,6 @@ class ConfigTest
         @Test
         void shouldSerializeSerializableLogging() throws IOException, ClassNotFoundException
         {
-
             Config config = Config.builder().withLogging( Logging.javaUtilLogging( Level.ALL ) ).build();
 
             Config verify = TestUtil.serializeAndReadBack( config, Config.class );

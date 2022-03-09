@@ -37,6 +37,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
 import org.neo4j.driver.internal.metrics.ListenerEvent;
 import org.neo4j.driver.internal.metrics.MetricsListener;
+import org.neo4j.driver.net.ServerAddress;
 
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.poolId;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.serverAddress;
@@ -46,8 +47,8 @@ public class NettyChannelTracker implements ChannelPoolHandler
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Lock read = lock.readLock();
     private final Lock write = lock.writeLock();
-    private final Map<BoltServerAddress,Integer> addressToInUseChannelCount = new HashMap<>();
-    private final Map<BoltServerAddress,Integer> addressToIdleChannelCount = new HashMap<>();
+    private final Map<ServerAddress,Integer> addressToInUseChannelCount = new HashMap<>();
+    private final Map<ServerAddress,Integer> addressToIdleChannelCount = new HashMap<>();
     private final Logger log;
     private final MetricsListener metricsListener;
     private final ChannelFutureListener closeListener = future -> channelClosed( future.channel() );
@@ -152,12 +153,12 @@ public class NettyChannelTracker implements ChannelPoolHandler
         metricsListener.afterClosed( poolId( channel ) );
     }
 
-    public int inUseChannelCount( BoltServerAddress address )
+    public int inUseChannelCount( ServerAddress address )
     {
         return retrieveInReadLock( () -> addressToInUseChannelCount.getOrDefault( address, 0 ) );
     }
 
-    public int idleChannelCount( BoltServerAddress address )
+    public int idleChannelCount( ServerAddress address )
     {
         return retrieveInReadLock( () -> addressToIdleChannelCount.getOrDefault( address, 0 ) );
     }
@@ -213,9 +214,9 @@ public class NettyChannelTracker implements ChannelPoolHandler
         addressToIdleChannelCount.put( address, count - 1 );
     }
 
-    private void increment( Channel channel, Map<BoltServerAddress,Integer> countMap )
+    private void increment( Channel channel, Map<ServerAddress,Integer> countMap )
     {
-        BoltServerAddress address = serverAddress( channel );
+        ServerAddress address = serverAddress( channel );
         Integer count = countMap.computeIfAbsent( address, k -> 0 );
         countMap.put( address, count + 1 );
     }

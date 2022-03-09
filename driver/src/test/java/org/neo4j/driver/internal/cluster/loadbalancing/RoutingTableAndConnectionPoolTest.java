@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -57,7 +58,7 @@ import org.neo4j.driver.internal.cluster.Rediscovery;
 import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
-import org.neo4j.driver.internal.metrics.InternalAbstractMetrics;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -77,7 +78,6 @@ import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.cluster.RediscoveryUtil.contextWithDatabase;
 import static org.neo4j.driver.internal.cluster.RoutingSettings.STALE_ROUTING_TABLE_PURGE_DELAY_MS;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 import static org.neo4j.driver.util.TestUtil.await;
 
 class RoutingTableAndConnectionPoolTest
@@ -323,7 +323,7 @@ class RoutingTableAndConnectionPoolTest
 
     private ConnectionPool newConnectionPool()
     {
-        InternalAbstractMetrics metrics = DEV_NULL_METRICS;
+        MetricsListener metrics = DevNullMetricsListener.INSTANCE;
         PoolSettings poolSettings = new PoolSettings( 10, 5000, -1, -1 );
         Bootstrap bootstrap = BootstrapFactory.newBootstrap( 1 );
         NettyChannelTracker channelTracker = new NettyChannelTracker( metrics, bootstrap.config().group().next(), logging );

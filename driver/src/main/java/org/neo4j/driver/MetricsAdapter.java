@@ -16,30 +16,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.internal.metrics;
+package org.neo4j.driver;
 
-import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.util.Clock;
-import org.neo4j.driver.Metrics;
-
-public final class InternalMetricsProvider implements MetricsProvider
+/**
+ * Defines which metrics consumer to use: Should metrics be consumed and exposed via driver's default consumer or provided with one of the external facades.
+ */
+public enum MetricsAdapter
 {
-    private final InternalMetrics metrics;
+    /**
+     * Disables metrics.
+     */
+    DEV_NULL,
 
-    public InternalMetricsProvider( Clock clock, Logging logging )
-    {
-        this.metrics = new InternalMetrics( clock, logging );
-    }
+    /**
+     * Consumes and publishes metrics via the driver itself.
+     */
+    DEFAULT,
 
-    @Override
-    public Metrics metrics()
-    {
-        return metrics;
-    }
-
-    @Override
-    public MetricsListener metricsListener()
-    {
-        return metrics;
-    }
+    /**
+     * Consumes and publishes metrics via Micrometer. Ensure that Micrometer is on classpath when using this option.
+     */
+    MICROMETER
 }

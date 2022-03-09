@@ -28,6 +28,7 @@ import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
 import org.neo4j.driver.internal.messaging.request.GoodbyeMessage;
 import org.neo4j.driver.internal.messaging.v3.BoltProtocolV3;
+import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,12 +42,11 @@ import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setMe
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setProtocolVersion;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setServerAddress;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
-import static org.neo4j.driver.internal.metrics.InternalAbstractMetrics.DEV_NULL_METRICS;
 
 class NettyChannelTrackerTest
 {
     private final BoltServerAddress address = BoltServerAddress.LOCAL_DEFAULT;
-    private final NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, mock( ChannelGroup.class ), DEV_NULL_LOGGING );
+    private final NettyChannelTracker tracker = new NettyChannelTracker( DevNullMetricsListener.INSTANCE, mock( ChannelGroup.class ), DEV_NULL_LOGGING );
 
     @Test
     void shouldIncrementIdleCountWhenChannelCreated()
@@ -194,7 +194,7 @@ class NettyChannelTrackerTest
         Channel channel = newChannel();
         Channel anotherChannel = newChannel();
         ChannelGroup group = mock( ChannelGroup.class );
-        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
+        NettyChannelTracker tracker = new NettyChannelTracker( DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING );
 
         tracker.channelCreated( channel, null );
         tracker.channelCreated( anotherChannel, null );
@@ -211,7 +211,7 @@ class NettyChannelTrackerTest
         ChannelGroup group = mock( ChannelGroup.class );
         when( group.iterator() ).thenReturn( new Arrays.Iterator<>( new Channel[]{channel, anotherChannel} ) );
 
-        NettyChannelTracker tracker = new NettyChannelTracker( DEV_NULL_METRICS, group, DEV_NULL_LOGGING );
+        NettyChannelTracker tracker = new NettyChannelTracker( DevNullMetricsListener.INSTANCE, group, DEV_NULL_LOGGING );
 
         tracker.prepareToCloseChannels();
 

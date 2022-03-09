@@ -47,6 +47,7 @@ import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.net.ServerAddress;
 
 import static java.lang.String.format;
 import static org.neo4j.driver.internal.async.connection.ChannelAttributes.setAuthorizationStateListener;
@@ -159,13 +160,13 @@ public class ConnectionPoolImpl implements ConnectionPool
     }
 
     @Override
-    public int inUseConnections( BoltServerAddress address )
+    public int inUseConnections( ServerAddress address )
     {
         return nettyChannelTracker.inUseChannelCount( address );
     }
 
     @Override
-    public int idleConnections( BoltServerAddress address )
+    public int idleConnections( ServerAddress address )
     {
         return nettyChannelTracker.idleChannelCount( address );
     }
@@ -284,8 +285,8 @@ public class ConnectionPoolImpl implements ConnectionPool
                                       if ( pool == null )
                                       {
                                           pool = newPool( address );
-                                          // before the connection pool is added I can add the metrics for the pool.
-                                          metricsListener.putPoolMetrics( pool.id(), address, this );
+                                          // before the connection pool is added I can register the metrics for the pool.
+                                          metricsListener.registerPoolMetrics( pool.id(), address, () -> this.inUseConnections( address ), () -> this.idleConnections( address ) );
                                           addressToPool.put( address, pool );
                                       }
                                       return pool;
