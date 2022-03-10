@@ -58,6 +58,11 @@ public class StartTest implements TestkitRequest
         String skipMessage = "This test expects hostname verification to be turned off when all certificates are trusted";
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_trusted_ca_wrong_hostname$", skipMessage );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_untrusted_ca_wrong_hostname$", skipMessage );
+        skipMessage = "Driver handles connection acquisition timeout differently";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_handshake_time.*$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
+                                           skipMessage );
+
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
 
         REACTIVE_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
