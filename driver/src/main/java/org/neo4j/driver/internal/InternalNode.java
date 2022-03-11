@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.types.Node;
-import org.neo4j.driver.Value;
 
 /**
  * {@link Node} implementation that directly contains labels and properties.
@@ -35,12 +35,12 @@ public class InternalNode extends InternalEntity implements Node
 
     public InternalNode( long id )
     {
-        this( id, Collections.<String>emptyList(), Collections.<String,Value>emptyMap() );
+        this( id, String.valueOf( id ), Collections.emptyList(), Collections.emptyMap() );
     }
 
-    public InternalNode( long id, Collection<String> labels, Map<String, Value> properties )
+    public InternalNode( long id, String elementId, Collection<String> labels, Map<String,Value> properties )
     {
-        super( id, properties );
+        super( id, elementId, properties );
         this.labels = labels;
     }
 

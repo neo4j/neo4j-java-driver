@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalRelationship;
@@ -35,18 +36,18 @@ import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.value.NodeValue;
 import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
-import org.neo4j.driver.Value;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.driver.Values.value;
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 
 class TypeSystemTest
 {
     private final InternalNode node = new InternalNode( 42L );
-    private final InternalRelationship relationship = new InternalRelationship( 42L, 42L, 43L, "T" );
+    private final InternalRelationship relationship =
+            new InternalRelationship( 42L, String.valueOf( 42L ), 42L, String.valueOf( 42L ), 43L, String.valueOf( 43L ), "T" );
 
     private Value integerValue = value( 13 );
     private Value floatValue = value( 13.1 );

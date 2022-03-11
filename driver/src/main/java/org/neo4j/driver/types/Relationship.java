@@ -26,15 +26,35 @@ public interface Relationship extends Entity
 {
     /**
      * Id of the node where this relationship starts.
+     *
      * @return the node id
+     * @deprecated superseded by {@link #startNodeElementId()}
      */
+    @Deprecated
     long startNodeId();
 
     /**
-     * Id of the node where this relationship ends.
+     * Id of the node where this relationship starts.
+     *
      * @return the node id
      */
+    String startNodeElementId();
+
+    /**
+     * Id of the node where this relationship ends.
+     *
+     * @return the node id
+     * @deprecated superseded by {@link #endNodeElementId()}
+     */
+    @Deprecated
     long endNodeId();
+
+    /**
+     * Id of the node where this relationship ends.
+     *
+     * @return the node id
+     */
+    String endNodeElementId();
 
     /**
      * Return the <em>type</em> of this relationship.

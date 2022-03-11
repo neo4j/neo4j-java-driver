@@ -24,9 +24,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
-import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -68,7 +68,7 @@ class InternalNodeTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 1 ) );
         props.put( "k2", value( 2 ) );
-        return new InternalNode( 42L, Collections.singletonList( "L" ), props );
+        return new InternalNode( 42L, String.valueOf( 42L ), Collections.singletonList( "L" ), props );
     }
 
 }

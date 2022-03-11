@@ -28,12 +28,22 @@ import org.neo4j.driver.util.Immutable;
 public interface Entity extends MapAccessor
 {
     /**
-     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they
-     * were found in, but may be re-used for other entities after that. As such, if you want a public identity to use
-     * for your entities, attaching an explicit 'id' property or similar persistent and unique identifier is a better
-     * choice.
+     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they were found in, but may be re-used for other
+     * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and
+     * unique identifier is a better choice.
+     *
+     * @return the id of this entity
+     * @deprecated superseded by {@link #elementId()}
+     */
+    @Deprecated
+    long id();
+
+    /**
+     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they were found in, but may be re-used for other
+     * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and
+     * unique identifier is a better choice.
      *
      * @return the id of this entity
      */
-    long id();
+    String elementId();
 }

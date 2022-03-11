@@ -50,6 +50,7 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
         {
             Node node = nodeValue.asNode();
             gen.writeObjectField( "id", new IntegerValue( node.id() ) );
+            gen.writeObjectField( "elementId", new StringValue( node.elementId() ) );
 
             StringValue[] labels = StreamSupport.stream( node.labels().spliterator(), false )
                                                 .map( StringValue::new )
@@ -57,7 +58,6 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
 
             gen.writeObjectField( "labels", new ListValue( labels ) );
             gen.writeObjectField( "props", new MapValue( node.asMap( Function.identity() ) ) );
-
         } );
     }
 }

@@ -86,4 +86,22 @@
         <to>org.neo4j.driver.Config$TrustStrategy trustCustomCertificateSignedBy(java.io.File[])</to>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/types/Entity</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String elementId()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/Relationship</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String endNodeElementId()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/types/Relationship</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String startNodeElementId()</method>
+    </difference>
+
 </differences>
