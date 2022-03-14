@@ -18,7 +18,6 @@
  */
 package org.neo4j.driver.v1.stress;
 
-import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -623,7 +623,7 @@ abstract class AbstractStressTestBase<C extends AbstractContext>
     private static class LoggerNameTrackingLogging implements Logging
     {
         private final Logging consoleLogging = Logging.console( Level.FINE );
-        private final Set<String> acquiredLoggerNames = new ConcurrentSet<>();
+        private final Set<String> acquiredLoggerNames = ConcurrentHashMap.newKeySet();
 
         @Override
         public Logger getLog( String name )

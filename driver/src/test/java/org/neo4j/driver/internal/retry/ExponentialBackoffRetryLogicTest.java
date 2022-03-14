@@ -52,7 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
@@ -646,7 +646,7 @@ class ExponentialBackoffRetryLogicTest
                     throw new RuntimeException( "Fatal blocking" );
                 } ) );
         assertEquals( "Fatal blocking", error.getMessage() );
-        verifyZeroInteractions( logger );
+        verifyNoInteractions( logger );
     }
 
     @Test
@@ -662,7 +662,7 @@ class ExponentialBackoffRetryLogicTest
                 await( logic.retryAsync( () -> failedFuture( new RuntimeException( "Fatal async" ) ) ) ) );
 
         assertEquals( "Fatal async", error.getMessage() );
-        verifyZeroInteractions( logger );
+        verifyNoInteractions( logger );
     }
 
     @Test

@@ -39,7 +39,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.BoltServerAddress.LOCAL_DEFAULT;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
@@ -59,7 +59,7 @@ class ConnectionPoolImplTest
 
         pool.retainAll( singleton( LOCAL_DEFAULT ) );
 
-        verifyZeroInteractions( nettyChannelTracker );
+        verifyNoInteractions( nettyChannelTracker );
     }
 
     @Test
