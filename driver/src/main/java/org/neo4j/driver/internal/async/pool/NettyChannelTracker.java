@@ -90,7 +90,7 @@ public class NettyChannelTracker implements ChannelPoolHandler
         log.debug( "Channel [%s] created. Local address: %s, remote address: %s",
                 channel.id(), channel.localAddress(), channel.remoteAddress() );
 
-        incrementInUse( channel );
+        incrementIdle( channel ); // when it is created, we count it as idle as it has not been acquired out of the pool
         metricsListener.afterCreated( serverAddress( channel ), creatingEvent );
 
         allChannels.add( channel );

@@ -123,7 +123,7 @@ class ConnectionPoolImplIT
                 assertThrows( ServiceUnavailableException.class, () -> await( pool.acquire( neo4j.address() ) ) );
         assertThat( error.getMessage(), containsString( "closed while acquiring a connection" ) );
         assertThat( error.getCause(), instanceOf( IllegalStateException.class ) );
-        assertThat( error.getCause().getMessage(), containsString( "FixedChannelPooled was closed" ) );
+        assertThat( error.getCause().getMessage(), containsString( "FixedChannelPool was closed" ) );
     }
 
     private ConnectionPoolImpl newPool() throws Exception
