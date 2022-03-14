@@ -59,7 +59,9 @@ public final class TemporalUtil
             "Chile/EasterIsland",
             "Africa/Casablanca",
             "tzid",
-            "Asia/Qostanay"
+            "Asia/Qostanay",
+            "America/Nuuk",
+            "US/Pacific-New"
     );
 
     private TemporalUtil()
