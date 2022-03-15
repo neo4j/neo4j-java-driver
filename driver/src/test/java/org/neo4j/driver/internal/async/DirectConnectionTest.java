@@ -23,7 +23,6 @@ import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.pool.ChannelPool;
-import io.netty.util.internal.ConcurrentSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -616,7 +616,7 @@ class DirectConnectionTest
     private static class ThreadTrackingInboundMessageDispatcher extends InboundMessageDispatcher
     {
 
-        final Set<String> queueThreadNames = new ConcurrentSet<>();
+        final Set<String> queueThreadNames = ConcurrentHashMap.newKeySet();
         ThreadTrackingInboundMessageDispatcher( Channel channel )
         {
             super( channel, DEV_NULL_LOGGING );
