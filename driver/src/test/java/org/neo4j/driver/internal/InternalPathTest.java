@@ -40,11 +40,11 @@ class InternalPathTest
     {
         return new InternalPath(
                 new InternalNode( 1 ),
-                new InternalRelationship( -1, 1, 2, "KNOWS" ),
+                new InternalRelationship( -1, String.valueOf( -1 ), 1, String.valueOf( 1 ), 2, String.valueOf( 2 ), "KNOWS" ),
                 new InternalNode( 2 ),
-                new InternalRelationship( -2, 3, 2, "KNOWS" ),
+                new InternalRelationship( -2, String.valueOf( -2 ), 3, String.valueOf( 3 ), 2, String.valueOf( 2 ), "KNOWS" ),
                 new InternalNode( 3 ),
-                new InternalRelationship( -3, 3, 4, "KNOWS" ),
+                new InternalRelationship( -3, String.valueOf( -3 ), 3, String.valueOf( 3 ), 4, String.valueOf( 4 ), "KNOWS" ),
                 new InternalNode( 4 )
         );
     }
@@ -82,17 +82,17 @@ class InternalPathTest
         MatcherAssert.assertThat( segments, equalTo( Arrays.asList( (Path.Segment)
                                 new InternalPath.SelfContainedSegment(
                                         new InternalNode( 1 ),
-                                        new InternalRelationship( -1, 1, 2, "KNOWS" ),
+                                        new InternalRelationship( -1, String.valueOf( -1 ), 1, String.valueOf( 1 ), 2, String.valueOf( 2 ), "KNOWS" ),
                                         new InternalNode( 2 )
                                 ),
                         new InternalPath.SelfContainedSegment(
                                 new InternalNode( 2 ),
-                                new InternalRelationship( -2, 3, 2, "KNOWS" ),
+                                new InternalRelationship( -2, String.valueOf( -2 ), 3, String.valueOf( 3 ), 2, String.valueOf( 2 ), "KNOWS" ),
                                 new InternalNode( 3 )
                         ),
                         new InternalPath.SelfContainedSegment(
                                 new InternalNode( 3 ),
-                                new InternalRelationship( -3, 3, 4, "KNOWS" ),
+                                new InternalRelationship( -3, String.valueOf( -3 ), 3, String.valueOf( 3 ), 4, String.valueOf( 4 ), "KNOWS" ),
                                 new InternalNode( 4 )
                         )
                 )
@@ -127,9 +127,12 @@ class InternalPathTest
 
         // Then
         assertThat( segments, equalTo( Arrays.asList( (Relationship)
-                new InternalRelationship( -1, 1, 2, "KNOWS" ),
-                new InternalRelationship( -2, 3, 2, "KNOWS" ),
-                new InternalRelationship( -3, 3, 4, "KNOWS" ) ) ) );
+                                                              new InternalRelationship( -1, String.valueOf( -1 ), 1, String.valueOf( 1 ), 2,
+                                                                                        String.valueOf( 2 ), "KNOWS" ),
+                                                      new InternalRelationship( -2, String.valueOf( -2 ), 3, String.valueOf( 3 ), 2, String.valueOf( 2 ),
+                                                                                "KNOWS" ),
+                                                      new InternalRelationship( -3, String.valueOf( -3 ), 3, String.valueOf( 3 ), 4, String.valueOf( 4 ),
+                                                                                "KNOWS" ) ) ) );
     }
 
     @Test
@@ -142,9 +145,9 @@ class InternalPathTest
     void shouldNotBeAbleToCreatePathWithEvenNumberOfEntities()
     {
         assertThrows( IllegalArgumentException.class,
-                () -> new InternalPath(
-                        new InternalNode( 1 ),
-                        new InternalRelationship( 2, 3, 4, "KNOWS" ) ) );
+                      () -> new InternalPath(
+                              new InternalNode( 1 ),
+                              new InternalRelationship( 2, String.valueOf( 2 ), 3, String.valueOf( 3 ), 4, String.valueOf( 4 ), "KNOWS" ) ) );
     }
 
     @Test
@@ -160,7 +163,7 @@ class InternalPathTest
         assertThrows( IllegalArgumentException.class,
                 () -> new InternalPath(
                         new InternalNode( 1 ),
-                        new InternalRelationship( 2, 1, 3, "KNOWS" ),
+                        new InternalRelationship( 2, String.valueOf( 2 ), 1, String.valueOf( 1 ), 3, String.valueOf( 3 ), "KNOWS" ),
                         new InternalNode( 4 ) ) );
     }
 
@@ -170,7 +173,7 @@ class InternalPathTest
         assertThrows( IllegalArgumentException.class,
                 () -> new InternalPath(
                         new InternalNode( 1 ),
-                        new InternalRelationship( 2, 3, 4, "KNOWS" ),
+                        new InternalRelationship( 2, String.valueOf( 2 ), 3, String.valueOf( 3 ), 4, String.valueOf( 4 ), "KNOWS" ),
                         new InternalNode( 3 ) ) );
     }
 

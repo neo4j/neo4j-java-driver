@@ -19,25 +19,27 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
+import java.util.function.Function;
 
+import org.neo4j.driver.Value;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.util.Extract;
 import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.internal.value.MapValue;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.Values;
 import org.neo4j.driver.types.Entity;
-import java.util.function.Function;
 
 import static org.neo4j.driver.Values.ofObject;
 
 public abstract class InternalEntity implements Entity, AsValue
 {
     private final long id;
+    private final String elementId;
     private final Map<String,Value> properties;
 
-    public InternalEntity( long id, Map<String, Value> properties )
+    public InternalEntity( long id, String elementId, Map<String,Value> properties )
     {
         this.id = id;
+        this.elementId = elementId;
         this.properties = properties;
     }
 
@@ -45,6 +47,12 @@ public abstract class InternalEntity implements Entity, AsValue
     public long id()
     {
         return id;
+    }
+
+    @Override
+    public String elementId()
+    {
+        return elementId;
     }
 
     @Override

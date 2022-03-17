@@ -21,9 +21,9 @@ package org.neo4j.driver.internal;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.types.Relationship;
-import org.neo4j.driver.Value;
 
 /**
  * {@link Relationship} implementation that directly contains type and properties.
@@ -31,20 +31,24 @@ import org.neo4j.driver.Value;
 public class InternalRelationship extends InternalEntity implements Relationship
 {
     private long start;
+    private String startElementId;
     private long end;
+    private String endElementId;
     private final String type;
 
-    public InternalRelationship( long id, long start, long end, String type )
+    public InternalRelationship( long id, String elementId, long start, String startElementId, long end, String endElementId, String type )
     {
-        this( id, start, end, type, Collections.<String,Value>emptyMap() );
+        this( id, elementId, start, startElementId, end, endElementId, type, Collections.emptyMap() );
     }
 
-    public InternalRelationship( long id, long start, long end, String type,
-                                 Map<String, Value> properties )
+    public InternalRelationship( long id, String elementId, long start, String startElementId, long end, String endElementId, String type,
+                                 Map<String,Value> properties )
     {
-        super( id, properties );
+        super( id, elementId, properties );
         this.start = start;
+        this.startElementId = startElementId;
         this.end = end;
+        this.endElementId = endElementId;
         this.type = type;
     }
 
@@ -54,11 +58,15 @@ public class InternalRelationship extends InternalEntity implements Relationship
         return type().equals( relationshipType );
     }
 
-    /** Modify the start/end identities of this relationship */
-    public void setStartAndEnd( long start, long end )
+    /**
+     * Modify the start/end identities of this relationship
+     */
+    public void setStartAndEnd( long start, String startElementId, long end, String endElementId )
     {
         this.start = start;
+        this.startElementId = startElementId;
         this.end = end;
+        this.endElementId = endElementId;
     }
 
     @Override
@@ -68,9 +76,21 @@ public class InternalRelationship extends InternalEntity implements Relationship
     }
 
     @Override
+    public String startNodeElementId()
+    {
+        return startElementId;
+    }
+
+    @Override
     public long endNodeId()
     {
         return end;
+    }
+
+    @Override
+    public String endNodeElementId()
+    {
+        return endElementId;
     }
 
     @Override

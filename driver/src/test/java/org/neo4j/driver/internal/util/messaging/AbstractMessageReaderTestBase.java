@@ -88,7 +88,7 @@ public abstract class AbstractMessageReaderTestBase
                                                   dynamicTest( message.toString(), () -> testUnsupportedMessageReading( message ) ) );
     }
 
-    private void testUnsupportedMessageReading( Message message ) throws IOException
+    private void testUnsupportedMessageReading( Message message )
     {
         assertThrows( IOException.class, () -> testMessageReading( message ) );
     }
@@ -110,16 +110,21 @@ public abstract class AbstractMessageReaderTestBase
         return handler;
     }
 
-    private static PackInput newInputWith( Message message ) throws IOException
+    private PackInput newInputWith( Message message ) throws IOException
     {
         ByteBuf buffer = Unpooled.buffer();
 
-        MessageFormat messageFormat = new KnowledgeableMessageFormat();
+        MessageFormat messageFormat = new KnowledgeableMessageFormat( isElementIdEnabled() );
         MessageFormat.Writer writer = messageFormat.newWriter( new ByteBufOutput( buffer ) );
         writer.write( message );
 
         ByteBufInput input = new ByteBufInput();
         input.start( buffer );
         return input;
+    }
+
+    protected boolean isElementIdEnabled()
+    {
+        return false;
     }
 }

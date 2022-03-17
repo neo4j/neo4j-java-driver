@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Value;
-import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -68,7 +68,7 @@ class InternalRelationshipTest
         props.put( "k1", value( 1 ) );
         props.put( "k2", value( 2 ) );
 
-        return new InternalRelationship(1L, 0L, 1L, "T", props );
+        return new InternalRelationship( 1L, String.valueOf( 1L ), 0L, String.valueOf( 0L ), 1L, String.valueOf( 1L ), "T", props );
     }
 
 }

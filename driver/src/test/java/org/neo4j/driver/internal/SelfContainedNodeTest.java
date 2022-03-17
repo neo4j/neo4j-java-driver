@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.types.Node;
 
 import static java.util.Collections.singletonList;
@@ -36,8 +36,8 @@ class SelfContainedNodeTest
 {
     private Node adamTheNode()
     {
-        return new InternalNode( 1, singletonList( "Person" ),
-                parameters( "name", Values.value( "Adam" ) ).asMap( ofValue()) );
+        return new InternalNode( 1, String.valueOf( 1 ), singletonList( "Person" ),
+                                 parameters( "name", Values.value( "Adam" ) ).asMap( ofValue() ) );
     }
 
     @Test

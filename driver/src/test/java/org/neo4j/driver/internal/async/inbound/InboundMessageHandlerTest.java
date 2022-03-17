@@ -67,7 +67,7 @@ class InboundMessageHandlerTest
     {
         channel = new EmbeddedChannel();
         messageDispatcher = new InboundMessageDispatcher( channel, DEV_NULL_LOGGING );
-        writer = new MessageToByteBufWriter( new KnowledgeableMessageFormat() );
+        writer = new MessageToByteBufWriter( new KnowledgeableMessageFormat( false ) );
         ChannelAttributes.setMessageDispatcher( channel, messageDispatcher );
 
         InboundMessageHandler handler = new InboundMessageHandler( new MessageFormatV3(), DEV_NULL_LOGGING );

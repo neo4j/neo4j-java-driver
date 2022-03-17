@@ -47,8 +47,11 @@ public class TestkitRelationshipValueSerializer extends StdSerializer<Relationsh
         {
             Relationship relationship = relationshipValue.asRelationship();
             gen.writeObjectField( "id", new IntegerValue( relationship.id() ) );
+            gen.writeObjectField( "elementId", new StringValue( relationship.elementId() ) );
             gen.writeObjectField( "startNodeId", new IntegerValue( relationship.startNodeId() ) );
+            gen.writeObjectField( "startNodeElementId", new StringValue( relationship.startNodeElementId() ) );
             gen.writeObjectField( "endNodeId", new IntegerValue( relationship.endNodeId() ) );
+            gen.writeObjectField( "endNodeElementId", new StringValue( relationship.endNodeElementId() ) );
             gen.writeObjectField( "type", new StringValue( relationship.type() ) );
             gen.writeObjectField( "props", new MapValue( relationship.asMap( Function.identity() ) ) );
         } );

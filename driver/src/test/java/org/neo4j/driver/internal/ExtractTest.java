@@ -29,10 +29,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.driver.internal.util.Extract;
-import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.internal.util.Iterables;
 import org.neo4j.driver.util.Pair;
 
 import static java.util.Arrays.asList;
@@ -127,7 +127,7 @@ class ExtractTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
         props.put( "k2", value( 42 ) );
-        InternalNode node = new InternalNode( 42L, Collections.singletonList( "L" ), props );
+        InternalNode node = new InternalNode( 42L, String.valueOf( 42L ), Collections.singletonList( "L" ), props );
 
         // WHEN
         Iterable<Pair<String,Integer>> properties = Extract.properties( node, Value::asInt );
@@ -181,7 +181,11 @@ class ExtractTest
     void shouldFailToExtractMapOfValuesFromUnsupportedValues()
     {
         assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalNode( 1 ) ) ) );
-        assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalRelationship( 1, 1, 1, "HI" ) ) ) );
+        assertThrows( ClientException.class,
+                      () -> Extract.mapOfValues(
+                              singletonMap( "key",
+                                            new InternalRelationship( 1, String.valueOf( 1 ), 1, String.valueOf( 1 ),
+                                                                      1, String.valueOf( 1 ), "HI" ) ) ) );
         assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalPath( new InternalNode( 1 ) ) ) ) );
     }
 }

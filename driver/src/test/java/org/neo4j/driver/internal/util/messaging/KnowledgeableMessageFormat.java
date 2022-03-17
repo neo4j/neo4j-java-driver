@@ -51,17 +51,24 @@ import org.neo4j.driver.types.Relationship;
  */
 public class KnowledgeableMessageFormat extends MessageFormatV3
 {
+    private final boolean elementIdEnabled;
+
+    public KnowledgeableMessageFormat( boolean elementIdEnabled )
+    {
+        this.elementIdEnabled = elementIdEnabled;
+    }
+
     @Override
     public Writer newWriter( PackOutput output )
     {
-        return new KnowledgeableMessageWriter( output );
+        return new KnowledgeableMessageWriter( output, elementIdEnabled );
     }
 
     private static class KnowledgeableMessageWriter extends AbstractMessageWriter
     {
-        KnowledgeableMessageWriter( PackOutput output )
+        KnowledgeableMessageWriter( PackOutput output, boolean enableElementId )
         {
-            super( new KnowledgeableValuePacker( output ), buildEncoders() );
+            super( new KnowledgeableValuePacker( output, enableElementId ), buildEncoders() );
         }
 
         static Map<Byte,MessageEncoder> buildEncoders()
@@ -82,9 +89,12 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
 
     private static class KnowledgeableValuePacker extends CommonValuePacker
     {
-        KnowledgeableValuePacker( PackOutput output )
+        private final boolean elementIdEnabled;
+
+        KnowledgeableValuePacker( PackOutput output, boolean elementIdEnabled )
         {
             super( output );
+            this.elementIdEnabled = elementIdEnabled;
         }
 
         @Override
@@ -143,10 +153,14 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
             packer.packListHeader( relIdx.size() );
             for ( Relationship rel : relIdx.keySet() )
             {
-                packer.packStructHeader( 3, CommonValueUnpacker.UNBOUND_RELATIONSHIP );
+                packer.packStructHeader( elementIdEnabled ? 4 : 3, CommonValueUnpacker.UNBOUND_RELATIONSHIP );
                 packer.pack( rel.id() );
                 packer.pack( rel.type() );
                 packProperties( rel );
+                if ( elementIdEnabled )
+                {
+                    packer.pack( rel.elementId() );
+                }
             }
 
             // Sequence
@@ -164,7 +178,7 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
 
         private void packRelationship( Relationship rel ) throws IOException
         {
-            packer.packStructHeader( 5, CommonValueUnpacker.RELATIONSHIP );
+            packer.packStructHeader( elementIdEnabled ? 8 : 5, CommonValueUnpacker.RELATIONSHIP );
             packer.pack( rel.id() );
             packer.pack( rel.startNodeId() );
             packer.pack( rel.endNodeId() );
@@ -172,11 +186,18 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
             packer.pack( rel.type() );
 
             packProperties( rel );
+
+            if ( elementIdEnabled )
+            {
+                packer.pack( rel.elementId() );
+                packer.pack( rel.startNodeElementId() );
+                packer.pack( rel.endNodeElementId() );
+            }
         }
 
         private void packNode( Node node ) throws IOException
         {
-            packer.packStructHeader( CommonValueUnpacker.NODE_FIELDS, CommonValueUnpacker.NODE );
+            packer.packStructHeader( elementIdEnabled ? 4 : 3, CommonValueUnpacker.NODE );
             packer.pack( node.id() );
 
             Iterable<String> labels = node.labels();
@@ -187,6 +208,11 @@ public class KnowledgeableMessageFormat extends MessageFormatV3
             }
 
             packProperties( node );
+
+            if ( elementIdEnabled )
+            {
+                packer.pack( node.elementId() );
+            }
         }
 
         private void packProperties( Entity entity ) throws IOException

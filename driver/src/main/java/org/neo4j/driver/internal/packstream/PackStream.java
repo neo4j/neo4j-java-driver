@@ -439,7 +439,8 @@ public class PackStream
                 case LIST_8: return unpackUINT8();
                 case LIST_16: return unpackUINT16();
                 case LIST_32: return unpackUINT32();
-                default: throw new Unexpected( "Expected a list, but got: " + toHexString( markerByte & 0xFF ));
+            default:
+                throw new Unexpected( "Expected a list, but got: " + toHexString( markerByte & 0xFF ) );
             }
         }
 
@@ -449,27 +450,66 @@ public class PackStream
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
-            if ( markerHighNibble == TINY_MAP ) { return markerLowNibble; }
-            switch(markerByte)
+            if ( markerHighNibble == TINY_MAP )
             {
-                case MAP_8: return unpackUINT8();
-                case MAP_16: return unpackUINT16();
-                case MAP_32: return unpackUINT32();
-                default: throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ));
+                return markerLowNibble;
+            }
+            switch ( markerByte )
+            {
+            case MAP_8:
+                return unpackUINT8();
+            case MAP_16:
+                return unpackUINT16();
+            case MAP_32:
+                return unpackUINT32();
+            default:
+                throw new Unexpected( "Expected a map, but got: " + toHexString( markerByte ) );
+            }
+        }
+
+        public Long unpackLongOrDefaultOnNull( long defaultValue ) throws IOException
+        {
+            final byte markerByte = in.readByte();
+            if ( markerByte >= MINUS_2_TO_THE_4 )
+            {
+                return (long) markerByte;
+            }
+            switch ( markerByte )
+            {
+            case INT_8:
+                return (long) in.readByte();
+            case INT_16:
+                return (long) in.readShort();
+            case INT_32:
+                return (long) in.readInt();
+            case INT_64:
+                return in.readLong();
+            case NULL:
+                return defaultValue;
+            default:
+                throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ) );
             }
         }
 
         public long unpackLong() throws IOException
         {
             final byte markerByte = in.readByte();
-            if ( markerByte >= MINUS_2_TO_THE_4) { return markerByte; }
-            switch(markerByte)
+            if ( markerByte >= MINUS_2_TO_THE_4 )
             {
-                case INT_8:   return in.readByte();
-                case INT_16:  return in.readShort();
-                case INT_32:  return in.readInt();
-                case INT_64:  return in.readLong();
-                default: throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ));
+                return markerByte;
+            }
+            switch ( markerByte )
+            {
+            case INT_8:
+                return in.readByte();
+            case INT_16:
+                return in.readShort();
+            case INT_32:
+                return in.readInt();
+            case INT_64:
+                return in.readLong();
+            default:
+                throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ) );
             }
         }
 

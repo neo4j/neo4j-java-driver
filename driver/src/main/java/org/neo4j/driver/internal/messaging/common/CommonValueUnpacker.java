@@ -91,7 +91,8 @@ public class CommonValueUnpacker implements ValueUnpacker
     public static final byte UNBOUND_RELATIONSHIP = 'r';
     public static final byte PATH = 'P';
 
-    public static final int NODE_FIELDS = 3;
+    private static final int NODE_FIELDS = 3;
+    private static final int RELATIONSHIP_FIELDS = 5;
 
     protected final PackStream.Unpacker unpacker;
 
@@ -141,7 +142,7 @@ public class CommonValueUnpacker implements ValueUnpacker
         return values;
     }
 
-    private Value unpack() throws IOException
+    protected Value unpack() throws IOException
     {
         PackType type = unpacker.peekNextType();
         switch ( type )
@@ -182,7 +183,7 @@ public class CommonValueUnpacker implements ValueUnpacker
         throw new IOException( "Unknown value type: " + type );
     }
 
-    protected Value unpackStruct( long size, byte type ) throws IOException
+    private Value unpackStruct( long size, byte type ) throws IOException
     {
         switch ( type )
         {
@@ -214,11 +215,11 @@ public class CommonValueUnpacker implements ValueUnpacker
             ensureCorrectStructSize( TypeConstructor.POINT, POINT_3D_STRUCT_SIZE, size );
             return unpackPoint3D();
         case NODE:
-            ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, size );
+            ensureCorrectStructSize( TypeConstructor.NODE, getNodeFields(), size );
             InternalNode adapted = unpackNode();
             return new NodeValue( adapted );
         case RELATIONSHIP:
-            ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 5, size );
+            ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, getRelationshipFields(), size );
             return unpackRelationship();
         case PATH:
             ensureCorrectStructSize( TypeConstructor.PATH, 3, size );
@@ -228,7 +229,7 @@ public class CommonValueUnpacker implements ValueUnpacker
         }
     }
 
-    private Value unpackRelationship() throws IOException
+    protected Value unpackRelationship() throws IOException
     {
         long urn = unpacker.unpackLong();
         long startUrn = unpacker.unpackLong();
@@ -236,11 +237,12 @@ public class CommonValueUnpacker implements ValueUnpacker
         String relType = unpacker.unpackString();
         Map<String,Value> props = unpackMap();
 
-        InternalRelationship adapted = new InternalRelationship( urn, startUrn, endUrn, relType, props );
+        InternalRelationship adapted =
+                new InternalRelationship( urn, String.valueOf( urn ), startUrn, String.valueOf( startUrn ), endUrn, String.valueOf( endUrn ), relType, props );
         return new RelationshipValue( adapted );
     }
 
-    private InternalNode unpackNode() throws IOException
+    protected InternalNode unpackNode() throws IOException
     {
         long urn = unpacker.unpackLong();
 
@@ -258,16 +260,16 @@ public class CommonValueUnpacker implements ValueUnpacker
             props.put( key, unpack() );
         }
 
-        return new InternalNode( urn, labels, props );
+        return new InternalNode( urn, String.valueOf( urn ), labels, props );
     }
 
-    private Value unpackPath() throws IOException
+    protected Value unpackPath() throws IOException
     {
         // List of unique nodes
         Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
         for ( int i = 0; i < uniqNodes.length; i++ )
         {
-            ensureCorrectStructSize( TypeConstructor.NODE, NODE_FIELDS, unpacker.unpackStructHeader() );
+            ensureCorrectStructSize( TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader() );
             ensureCorrectStructSignature( "NODE", NODE, unpacker.unpackStructSignature() );
             uniqNodes[i] = unpackNode();
         }
@@ -281,7 +283,7 @@ public class CommonValueUnpacker implements ValueUnpacker
             long id = unpacker.unpackLong();
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
-            uniqRels[i] = new InternalRelationship( id, -1, -1, relType, props );
+            uniqRels[i] = new InternalRelationship( id, String.valueOf( id ), -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props );
         }
 
         // Path sequence
@@ -303,12 +305,12 @@ public class CommonValueUnpacker implements ValueUnpacker
             if ( relIdx < 0 )
             {
                 rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                rel.setStartAndEnd( nextNode.id(), prevNode.id() );
+                rel.setStartAndEnd( nextNode.id(), String.valueOf( nextNode.id() ), prevNode.id(), String.valueOf( prevNode.id() ) );
             }
             else
             {
                 rel = uniqRels[relIdx - 1];
-                rel.setStartAndEnd( prevNode.id(), nextNode.id() );
+                rel.setStartAndEnd( prevNode.id(), String.valueOf( prevNode.id() ), nextNode.id(), String.valueOf( nextNode.id() ) );
             }
 
             nodes[i + 1] = nextNode;
@@ -330,7 +332,7 @@ public class CommonValueUnpacker implements ValueUnpacker
         }
     }
 
-    private void ensureCorrectStructSignature( String structName, byte expected, byte actual )
+    protected void ensureCorrectStructSignature( String structName, byte expected, byte actual )
     {
         if ( expected != actual )
         {
@@ -417,6 +419,14 @@ public class CommonValueUnpacker implements ValueUnpacker
         LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
         return ZonedDateTime.of( localDateTime, zoneId );
     }
+
+    protected int getNodeFields()
+    {
+        return NODE_FIELDS;
+    }
+
+    protected int getRelationshipFields()
+    {
+        return RELATIONSHIP_FIELDS;
+    }
 }
-
-

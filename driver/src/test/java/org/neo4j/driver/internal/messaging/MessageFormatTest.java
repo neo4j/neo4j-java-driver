@@ -23,7 +23,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -125,7 +124,7 @@ class MessageFormatTest
 
     private void assertSerializes( Message message ) throws Throwable
     {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat( false ) );
 
         ByteBuf packed = pack( message, channel );
         Message unpackedMessage = unpack( packed, channel );
@@ -188,15 +187,15 @@ class MessageFormatTest
         assertEquals( message, unpackedMessage );
     }
 
-    private ByteBuf knowledgeablePack( Message message ) throws IOException
+    private ByteBuf knowledgeablePack( Message message )
     {
-        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat() );
+        EmbeddedChannel channel = newEmbeddedChannel( new KnowledgeableMessageFormat( false ) );
         assertTrue( channel.writeOutbound( message ) );
 
         ByteBuf[] packedMessages = channel.outboundMessages()
-                .stream()
-                .map( msg -> (ByteBuf) msg )
-                .toArray( ByteBuf[]::new );
+                                          .stream()
+                                          .map( msg -> (ByteBuf) msg )
+                                          .toArray( ByteBuf[]::new );
 
         return Unpooled.wrappedBuffer( packedMessages );
     }

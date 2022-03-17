@@ -40,6 +40,7 @@ public class GetFeatures implements TestkitRequest
             "Feature:Bolt:4.2",
             "Feature:Bolt:4.3",
             "Feature:Bolt:4.4",
+            "Feature:Bolt:5.0",
             "AuthorizationExpiredTreatment",
             "ConfHint:connection.recv_timeout_seconds",
             "Temporary:DriverFetchSize",
