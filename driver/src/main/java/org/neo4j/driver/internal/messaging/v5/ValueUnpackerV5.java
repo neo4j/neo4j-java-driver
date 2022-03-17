@@ -40,6 +40,9 @@ import org.neo4j.driver.types.Relationship;
 
 public class ValueUnpackerV5 extends CommonValueUnpacker
 {
+    private static final int NODE_FIELDS = 4;
+    private static final int RELATIONSHIP_FIELDS = 8;
+
     public ValueUnpackerV5( PackInput input )
     {
         super( input );
@@ -48,13 +51,13 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
     @Override
     protected int getNodeFields()
     {
-        return 4;
+        return NODE_FIELDS;
     }
 
     @Override
     protected int getRelationshipFields()
     {
-        return 8;
+        return RELATIONSHIP_FIELDS;
     }
 
     @Override

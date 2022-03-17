@@ -91,7 +91,8 @@ public class CommonValueUnpacker implements ValueUnpacker
     public static final byte UNBOUND_RELATIONSHIP = 'r';
     public static final byte PATH = 'P';
 
-    public static final int NODE_FIELDS = 3;
+    private static final int NODE_FIELDS = 3;
+    private static final int RELATIONSHIP_FIELDS = 5;
 
     protected final PackStream.Unpacker unpacker;
 
@@ -426,6 +427,6 @@ public class CommonValueUnpacker implements ValueUnpacker
 
     protected int getRelationshipFields()
     {
-        return 5;
+        return RELATIONSHIP_FIELDS;
     }
 }

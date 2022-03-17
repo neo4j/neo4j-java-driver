@@ -32,16 +32,18 @@ public interface Entity extends MapAccessor
      * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and
      * unique identifier is a better choice.
      *
-     * @return the id of this entity
+     * @return the id of this entity, please note that negative values are considered to be invalid and may be returned when storage engine can only provide the
+     * {@link #elementId()}
      * @deprecated superseded by {@link #elementId()}
      */
     @Deprecated
     long id();
 
     /**
-     * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they were found in, but may be re-used for other
-     * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and
-     * unique identifier is a better choice.
+     * A unique id for this Entity.
+     * <p>
+     * It is recommended to attach an explicit 'id' property or similar persistent and unique identifier if you want a public identity to use for your
+     * entities.
      *
      * @return the id of this entity
      */
