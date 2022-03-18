@@ -65,7 +65,8 @@ public class GetFeatures implements TestkitRequest
             "Feature:API:ConnectionAcquisitionTimeout",
             "Feature:API:Driver.IsEncrypted",
             "Feature:API:SSLConfig",
-            "Detail:DefaultSecurityConfigValueEquality"
+            "Detail:DefaultSecurityConfigValueEquality",
+            "Detail:ThrowOnMissingId"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(

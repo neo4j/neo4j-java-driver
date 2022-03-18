@@ -26,6 +26,8 @@ public interface Relationship extends Entity
 {
     /**
      * Id of the node where this relationship starts.
+     * <p>
+     * Please note that depending on server configuration numeric id might not be available and accessing it will result in {@link IllegalStateException}.
      *
      * @return the node id
      * @deprecated superseded by {@link #startNodeElementId()}
@@ -42,6 +44,8 @@ public interface Relationship extends Entity
 
     /**
      * Id of the node where this relationship ends.
+     * <p>
+     * Please note that depending on server configuration numeric id might not be available and accessing it will result in {@link IllegalStateException}.
      *
      * @return the node id
      * @deprecated superseded by {@link #endNodeElementId()}

@@ -20,80 +20,18 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.RxBufferedSubscriber;
-import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
-import neo4j.org.testkit.backend.messages.responses.NullRecord;
-import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import reactor.core.publisher.Mono;
-
-import java.util.concurrent.CompletionStage;
+import neo4j.org.testkit.backend.messages.AbstractResultNext;
 
 import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
 
 @Setter
 @Getter
-public class ResultNext implements TestkitRequest
+public class ResultNext extends AbstractResultNext
 {
     private ResultNextBody data;
 
     @Override
-    public TestkitResponse process( TestkitState testkitState )
-    {
-        try
-        {
-            Result result = testkitState.getResultHolder( data.getResultId() ).getResult();
-            return createResponse( result.next() );
-        }
-        catch ( NoSuchRecordException ignored )
-        {
-            return NullRecord.builder().build();
-        }
-    }
-
-    @Override
-    public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
-    {
-        return testkitState.getAsyncResultHolder( data.getResultId() )
-                           .thenCompose( resultCursorHolder -> resultCursorHolder.getResult().nextAsync() )
-                           .thenApply( this::createResponseNullSafe );
-    }
-
-    @Override
-    public Mono<TestkitResponse> processRx( TestkitState testkitState )
-    {
-        return testkitState.getRxResultHolder( data.getResultId() )
-                           .flatMap( resultHolder ->
-                                     {
-                                         RxBufferedSubscriber<Record> subscriber =
-                                                 resultHolder.getSubscriber()
-                                                             .orElseGet( () ->
-                                                                         {
-                                                                             RxBufferedSubscriber<Record> subscriberInstance =
-                                                                                     new RxBufferedSubscriber<>(
-                                                                                             getFetchSize( resultHolder ) );
-                                                                             resultHolder.setSubscriber( subscriberInstance );
-                                                                             resultHolder.getResult().records()
-                                                                                         .subscribe( subscriberInstance );
-                                                                             return subscriberInstance;
-                                                                         } );
-                                         return subscriber.next()
-                                                          .map( this::createResponse )
-                                                          .defaultIfEmpty( NullRecord.builder().build() );
-                                     } );
-    }
-
-    private long getFetchSize( RxResultHolder resultHolder )
-    {
-        long fetchSize = resultHolder.getSessionHolder().getConfig()
-                                     .fetchSize()
-                                     .orElse( resultHolder.getSessionHolder().getDriverHolder().getConfig().fetchSize() );
-        return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
-    }
-
-    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record )
+    protected neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record )
     {
         return neo4j.org.testkit.backend.messages.responses.Record.builder()
                                                                   .data( neo4j.org.testkit.backend.messages.responses.Record.RecordBody.builder()
@@ -102,9 +40,10 @@ public class ResultNext implements TestkitRequest
                                                                   .build();
     }
 
-    private neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponseNullSafe( Record record )
+    @Override
+    protected String getResultId()
     {
-        return record != null ? createResponse( record ) : NullRecord.builder().build();
+        return data.getResultId();
     }
 
     @Setter

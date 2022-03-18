@@ -237,8 +237,8 @@ public class CommonValueUnpacker implements ValueUnpacker
         String relType = unpacker.unpackString();
         Map<String,Value> props = unpackMap();
 
-        InternalRelationship adapted =
-                new InternalRelationship( urn, String.valueOf( urn ), startUrn, String.valueOf( startUrn ), endUrn, String.valueOf( endUrn ), relType, props );
+        InternalRelationship adapted = new InternalRelationship( urn, String.valueOf( urn ), startUrn, String.valueOf( startUrn ), endUrn,
+                                                                 String.valueOf( endUrn ), relType, props, true );
         return new RelationshipValue( adapted );
     }
 
@@ -260,7 +260,7 @@ public class CommonValueUnpacker implements ValueUnpacker
             props.put( key, unpack() );
         }
 
-        return new InternalNode( urn, String.valueOf( urn ), labels, props );
+        return new InternalNode( urn, String.valueOf( urn ), labels, props, true );
     }
 
     protected Value unpackPath() throws IOException
@@ -283,7 +283,7 @@ public class CommonValueUnpacker implements ValueUnpacker
             long id = unpacker.unpackLong();
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
-            uniqRels[i] = new InternalRelationship( id, String.valueOf( id ), -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props );
+            uniqRels[i] = new InternalRelationship( id, String.valueOf( id ), -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props, true );
         }
 
         // Path sequence

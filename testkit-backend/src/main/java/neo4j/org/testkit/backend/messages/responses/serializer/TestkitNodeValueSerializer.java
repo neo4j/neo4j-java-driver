@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -49,7 +50,7 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
         cypherObject( gen, "Node", () ->
         {
             Node node = nodeValue.asNode();
-            gen.writeObjectField( "id", new IntegerValue( node.id() ) );
+            gen.writeObjectField( "id", new IntegerValue( getId( node::id ) ) );
             gen.writeObjectField( "elementId", new StringValue( node.elementId() ) );
 
             StringValue[] labels = StreamSupport.stream( node.labels().spliterator(), false )
@@ -59,5 +60,17 @@ public class TestkitNodeValueSerializer extends StdSerializer<NodeValue>
             gen.writeObjectField( "labels", new ListValue( labels ) );
             gen.writeObjectField( "props", new MapValue( node.asMap( Function.identity() ) ) );
         } );
+    }
+
+    private long getId( Supplier<Long> supplier )
+    {
+        try
+        {
+            return supplier.get();
+        }
+        catch ( IllegalStateException e )
+        {
+            return -1;
+        }
     }
 }

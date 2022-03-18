@@ -35,12 +35,17 @@ public class InternalNode extends InternalEntity implements Node
 
     public InternalNode( long id )
     {
-        this( id, String.valueOf( id ), Collections.emptyList(), Collections.emptyMap() );
+        this( id, Collections.emptyList(), Collections.emptyMap() );
     }
 
-    public InternalNode( long id, String elementId, Collection<String> labels, Map<String,Value> properties )
+    public InternalNode( long id, Collection<String> labels, Map<String,Value> properties )
     {
-        super( id, elementId, properties );
+        this( id, String.valueOf( id ), labels, properties, true );
+    }
+
+    public InternalNode( long id, String elementId, Collection<String> labels, Map<String,Value> properties, boolean numericIdAvailable )
+    {
+        super( id, elementId, properties, numericIdAvailable );
         this.labels = labels;
     }
 

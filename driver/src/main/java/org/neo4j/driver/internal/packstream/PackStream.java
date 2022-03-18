@@ -467,7 +467,7 @@ public class PackStream
             }
         }
 
-        public Long unpackLongOrDefaultOnNull( long defaultValue ) throws IOException
+        public Long unpackLongOrNull() throws IOException
         {
             final byte markerByte = in.readByte();
             if ( markerByte >= MINUS_2_TO_THE_4 )
@@ -485,7 +485,7 @@ public class PackStream
             case INT_64:
                 return in.readLong();
             case NULL:
-                return defaultValue;
+                return null;
             default:
                 throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ) );
             }
