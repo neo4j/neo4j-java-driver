@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.messaging.request.PullAllMessage;
 import org.neo4j.driver.internal.spi.Connection;
@@ -92,12 +93,27 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     public synchronized void onSuccess( Map<String,Value> metadata )
     {
         finished = true;
-        summary = extractResultSummary( metadata );
+        Neo4jException exception = null;
+        try
+        {
+            summary = extractResultSummary( metadata );
+        }
+        catch ( Neo4jException e )
+        {
+            exception = e;
+        }
 
-        completionListener.afterSuccess( metadata );
+        if ( exception == null )
+        {
+            completionListener.afterSuccess( metadata );
 
-        completeRecordFuture( null );
-        completeFailureFuture( null );
+            completeRecordFuture( null );
+            completeFailureFuture( null );
+        }
+        else
+        {
+            onFailure( exception );
+        }
     }
 
     @Override
@@ -335,7 +351,7 @@ public class LegacyPullAllResponseHandler implements PullAllResponseHandler
     private ResultSummary extractResultSummary( Map<String,Value> metadata )
     {
         long resultAvailableAfter = runResponseHandler.resultAvailableAfter();
-        return metadataExtractor.extractSummary(query, connection, resultAvailableAfter, metadata );
+        return metadataExtractor.extractSummary( query, connection, resultAvailableAfter, metadata );
     }
 
     private void enableAutoRead()

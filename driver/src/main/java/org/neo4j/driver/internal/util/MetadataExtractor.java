@@ -21,10 +21,12 @@ package org.neo4j.driver.internal.util;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.spi.Connection;
@@ -49,6 +51,9 @@ import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 public class MetadataExtractor
 {
     public static final int ABSENT_QUERY_ID = -1;
+    private static final String UNEXPECTED_TYPE_MSG_FMT = "Unexpected query type '%s', consider updating the driver";
+    private static final Function<String,ProtocolException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
+            ( type ) -> new ProtocolException( String.format( UNEXPECTED_TYPE_MSG_FMT, type ) );
     private final String resultAvailableAfterMetadataKey;
     private final String resultConsumedAfterMetadataKey;
 
@@ -98,14 +103,14 @@ public class MetadataExtractor
         return -1;
     }
 
-    public ResultSummary extractSummary(Query query, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
+    public ResultSummary extractSummary( Query query, Connection connection, long resultAvailableAfter, Map<String,Value> metadata )
     {
         ServerInfo serverInfo =
                 new InternalServerInfo( connection.serverAgent(), connection.serverAddress(), connection.protocol().version() );
         DatabaseInfo dbInfo = extractDatabaseInfo( metadata );
-        return new InternalResultSummary(query, serverInfo, dbInfo, extractQueryType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
-                extractProfiledPlan( metadata ), extractNotifications( metadata ), resultAvailableAfter,
-                extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
+        return new InternalResultSummary( query, serverInfo, dbInfo, extractQueryType( metadata ), extractCounters( metadata ), extractPlan( metadata ),
+                                          extractProfiledPlan( metadata ), extractNotifications( metadata ), resultAvailableAfter,
+                                          extractResultConsumedAfter( metadata, resultConsumedAfterMetadataKey ) );
     }
 
     public static DatabaseInfo extractDatabaseInfo( Map<String,Value> metadata )
@@ -151,7 +156,7 @@ public class MetadataExtractor
         Value typeValue = metadata.get( "type" );
         if ( typeValue != null )
         {
-            return QueryType.fromCode( typeValue.asString() );
+            return QueryType.fromCode( typeValue.asString(), UNEXPECTED_TYPE_EXCEPTION_SUPPLIER );
         }
         return null;
     }
