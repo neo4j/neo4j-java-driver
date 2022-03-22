@@ -113,6 +113,12 @@ public class AsyncResultCursorImpl implements AsyncResultCursor
     }
 
     @Override
+    public CompletionStage<Boolean> isOpenAsync()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public CompletionStage<Throwable> discardAllFailureAsync()
     {
         // runError has priority over other errors and is expected to have been reported to user by now

@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal.reactive;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -46,7 +48,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Values.values;
@@ -191,6 +196,23 @@ class InternalRxResultTest
         StepVerifier.create( Flux.from( rxResult.records() ) ).expectErrorMatches( isEqual( error ) ).verify();
         StepVerifier.create( Mono.from( rxResult.consume() ) )
                     .assertNext( summary -> assertThat( summary, instanceOf( ResultSummary.class ) ) ).verifyComplete();
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldDelegateIsOpen( boolean expectedState )
+    {
+        // Given
+        RxResultCursor cursor = mock( RxResultCursor.class );
+        given( cursor.isDone() ).willReturn( !expectedState );
+        RxResult result = new InternalRxResult( () -> CompletableFuture.completedFuture( cursor ) );
+
+        // When
+        Boolean actualState = Mono.from( result.isOpen() ).block();
+
+        // Then
+        assertEquals( expectedState, actualState );
+        then( cursor ).should().isDone();
     }
 
     private InternalRxResult newRxResult( PullResponseHandler pullHandler )

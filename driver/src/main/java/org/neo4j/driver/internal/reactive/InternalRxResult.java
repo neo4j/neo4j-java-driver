@@ -154,6 +154,13 @@ public class InternalRxResult implements RxResult
         } ) );
     }
 
+    @Override
+    public Publisher<Boolean> isOpen()
+    {
+        return Mono.fromCompletionStage( getCursorFuture() )
+                   .map( cursor -> !cursor.isDone() );
+    }
+
     // For testing purpose
     Supplier<CompletionStage<RxResultCursor>> cursorFutureSupplier()
     {

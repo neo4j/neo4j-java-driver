@@ -100,7 +100,7 @@ public class InternalResult implements Result
     }
 
     @Override
-    public <T> List<T> list( Function<Record, T> mapFunction )
+    public <T> List<T> list( Function<Record,T> mapFunction )
     {
         return blockingGet( cursor.listAsync( mapFunction ) );
     }
@@ -109,6 +109,12 @@ public class InternalResult implements Result
     public ResultSummary consume()
     {
         return blockingGet( cursor.consumeAsync() );
+    }
+
+    @Override
+    public boolean isOpen()
+    {
+        return blockingGet( cursor.isOpenAsync() );
     }
 
     @Override

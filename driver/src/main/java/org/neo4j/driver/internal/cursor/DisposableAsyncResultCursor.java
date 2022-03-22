@@ -91,6 +91,12 @@ public class DisposableAsyncResultCursor implements AsyncResultCursor
     }
 
     @Override
+    public CompletionStage<Boolean> isOpenAsync()
+    {
+        return CompletableFuture.completedFuture( !isDisposed() );
+    }
+
+    @Override
     public CompletionStage<Throwable> discardAllFailureAsync()
     {
         isDisposed = true;

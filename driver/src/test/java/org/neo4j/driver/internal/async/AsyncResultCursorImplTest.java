@@ -401,12 +401,22 @@ class AsyncResultCursorImplTest
         assertEquals( error, e );
     }
 
-    private static AsyncResultCursorImpl newCursor(PullAllResponseHandler pullAllHandler )
+    @Test
+    void shouldThrowOnIsOpenAsync()
+    {
+        // GIVEN
+        AsyncResultCursorImpl cursor = new AsyncResultCursorImpl( null, null, null );
+
+        // WHEN & THEN
+        assertThrows( UnsupportedOperationException.class, cursor::isOpenAsync );
+    }
+
+    private static AsyncResultCursorImpl newCursor( PullAllResponseHandler pullAllHandler )
     {
         return new AsyncResultCursorImpl( null, newRunResponseHandler(), pullAllHandler );
     }
 
-    private static AsyncResultCursorImpl newCursor(RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
+    private static AsyncResultCursorImpl newCursor( RunResponseHandler runHandler, PullAllResponseHandler pullAllHandler )
     {
         return new AsyncResultCursorImpl( null, runHandler, pullAllHandler );
     }

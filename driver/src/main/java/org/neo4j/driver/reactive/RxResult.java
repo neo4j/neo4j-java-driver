@@ -18,13 +18,13 @@
  */
 package org.neo4j.driver.reactive;
 
-import org.neo4j.driver.Query;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.List;
 
+import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
@@ -108,4 +108,16 @@ public interface RxResult
      * @return a cold publisher of result summary which only arrives after all records.
      */
     Publisher<ResultSummary> consume();
+
+    /**
+     * Determine if result is open.
+     * <p>
+     * Result is considered to be open if it has not been consumed ({@link #consume()}) and its creator object (e.g. session or transaction) has not been closed
+     * (including committed or rolled back).
+     * <p>
+     * Attempts to access data on closed result will produce {@link ResultConsumedException}.
+     *
+     * @return a publisher emitting {@code true} if result is open and {@code false} otherwise.
+     */
+    Publisher<Boolean> isOpen();
 }
