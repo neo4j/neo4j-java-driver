@@ -32,7 +32,8 @@ import static org.neo4j.driver.Values.ofObject;
 
 public abstract class InternalEntity implements Entity, AsValue
 {
-    public static final String INVALID_ID_ERROR = "Numeric id is not available, please use string based element id alternative";
+    public static final String INVALID_ID_ERROR =
+            "Numeric id is not available with this server deployment, please use the new string based element id alternative";
 
     private final long id;
     private final String elementId;
