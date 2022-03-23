@@ -62,7 +62,6 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_handshake_time.*$", skipMessage );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
                                            skipMessage );
-        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_managed_tx_raises_tx_managed_exec", "Requires investigation" );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
 
