@@ -36,15 +36,20 @@ public class InternalRelationship extends InternalEntity implements Relationship
     private String endElementId;
     private final String type;
 
-    public InternalRelationship( long id, String elementId, long start, String startElementId, long end, String endElementId, String type )
+    public InternalRelationship( long id, long start, long end, String type )
     {
-        this( id, elementId, start, startElementId, end, endElementId, type, Collections.emptyMap() );
+        this( id, start, end, type, Collections.emptyMap() );
+    }
+
+    public InternalRelationship( long id, long start, long end, String type, Map<String,Value> properties )
+    {
+        this( id, String.valueOf( id ), start, String.valueOf( start ), end, String.valueOf( end ), type, properties, true );
     }
 
     public InternalRelationship( long id, String elementId, long start, String startElementId, long end, String endElementId, String type,
-                                 Map<String,Value> properties )
+                                 Map<String,Value> properties, boolean numericIdAvailable )
     {
-        super( id, elementId, properties );
+        super( id, elementId, properties, numericIdAvailable );
         this.start = start;
         this.startElementId = startElementId;
         this.end = end;
@@ -72,6 +77,7 @@ public class InternalRelationship extends InternalEntity implements Relationship
     @Override
     public long startNodeId()
     {
+        assertNumericIdAvailable();
         return start;
     }
 
@@ -84,6 +90,7 @@ public class InternalRelationship extends InternalEntity implements Relationship
     @Override
     public long endNodeId()
     {
+        assertNumericIdAvailable();
         return end;
     }
 

@@ -63,7 +63,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
     @Override
     protected InternalNode unpackNode() throws IOException
     {
-        long urn = unpacker.unpackLongOrDefaultOnNull( -1 );
+        Long urn = unpacker.unpackLongOrNull();
 
         int numLabels = (int) unpacker.unpackListHeader();
         List<String> labels = new ArrayList<>( numLabels );
@@ -81,14 +81,14 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
 
         String elementId = unpacker.unpackString();
 
-        return new InternalNode( urn, elementId, labels, props );
+        return urn == null ? new InternalNode( -1, elementId, labels, props, false ) : new InternalNode( urn, elementId, labels, props, true );
     }
 
     @Override
     protected Value unpackPath() throws IOException
     {
         // List of unique nodes
-        Node[] uniqNodes = new Node[(int) unpacker.unpackListHeader()];
+        InternalNode[] uniqNodes = new InternalNode[(int) unpacker.unpackListHeader()];
         for ( int i = 0; i < uniqNodes.length; i++ )
         {
             ensureCorrectStructSize( TypeConstructor.NODE, getNodeFields(), unpacker.unpackStructHeader() );
@@ -102,11 +102,13 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
         {
             ensureCorrectStructSize( TypeConstructor.RELATIONSHIP, 4, unpacker.unpackStructHeader() );
             ensureCorrectStructSignature( "UNBOUND_RELATIONSHIP", UNBOUND_RELATIONSHIP, unpacker.unpackStructSignature() );
-            Long id = unpacker.unpackLongOrDefaultOnNull( -1 );
+            Long id = unpacker.unpackLongOrNull();
             String relType = unpacker.unpackString();
             Map<String,Value> props = unpackMap();
             String elementId = unpacker.unpackString();
-            uniqRels[i] = new InternalRelationship( id, elementId, -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props );
+            uniqRels[i] = id == null
+                          ? new InternalRelationship( -1, elementId, -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props, false )
+                          : new InternalRelationship( id, elementId, -1, String.valueOf( -1 ), -1, String.valueOf( -1 ), relType, props, true );
         }
 
         // Path sequence
@@ -117,7 +119,7 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
         Node[] nodes = new Node[segments.length + 1];
         Relationship[] rels = new Relationship[segments.length];
 
-        Node prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
+        InternalNode prevNode = uniqNodes[0], nextNode; // Start node is always 0, and isn't encoded in the sequence
         nodes[0] = prevNode;
         InternalRelationship rel;
         for ( int i = 0; i < segments.length; i++ )
@@ -128,12 +130,12 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
             if ( relIdx < 0 )
             {
                 rel = uniqRels[(-relIdx) - 1]; // -1 because rel idx are 1-indexed
-                rel.setStartAndEnd( nextNode.id(), nextNode.elementId(), prevNode.id(), prevNode.elementId() );
+                setStartAndEnd( rel, nextNode, prevNode );
             }
             else
             {
                 rel = uniqRels[relIdx - 1];
-                rel.setStartAndEnd( prevNode.id(), prevNode.elementId(), nextNode.id(), nextNode.elementId() );
+                setStartAndEnd( rel, prevNode, nextNode );
             }
 
             nodes[i + 1] = nextNode;
@@ -144,19 +146,33 @@ public class ValueUnpackerV5 extends CommonValueUnpacker
         return new PathValue( new InternalPath( Arrays.asList( segments ), Arrays.asList( nodes ), Arrays.asList( rels ) ) );
     }
 
+    private void setStartAndEnd( InternalRelationship rel, InternalNode start, InternalNode end )
+    {
+        if ( rel.isNumericIdAvailable() && start.isNumericIdAvailable() && end.isNumericIdAvailable() )
+        {
+            rel.setStartAndEnd( start.id(), start.elementId(), end.id(), end.elementId() );
+        }
+        else
+        {
+            rel.setStartAndEnd( -1, start.elementId(), -1, end.elementId() );
+        }
+    }
+
     @Override
     protected Value unpackRelationship() throws IOException
     {
-        long urn = unpacker.unpackLongOrDefaultOnNull( -1 );
-        long startUrn = unpacker.unpackLongOrDefaultOnNull( -1 );
-        long endUrn = unpacker.unpackLongOrDefaultOnNull( -1 );
+        Long urn = unpacker.unpackLongOrNull();
+        Long startUrn = unpacker.unpackLongOrNull();
+        Long endUrn = unpacker.unpackLongOrNull();
         String relType = unpacker.unpackString();
         Map<String,Value> props = unpackMap();
         String elementId = unpacker.unpackString();
         String startElementId = unpacker.unpackString();
         String endElementId = unpacker.unpackString();
 
-        InternalRelationship adapted = new InternalRelationship( urn, elementId, startUrn, startElementId, endUrn, endElementId, relType, props );
+        InternalRelationship adapted = urn == null
+                                       ? new InternalRelationship( -1, elementId, -1, startElementId, -1, endElementId, relType, props, false )
+                                       : new InternalRelationship( urn, elementId, startUrn, startElementId, endUrn, endElementId, relType, props, true );
         return new RelationshipValue( adapted );
     }
 }

@@ -127,7 +127,7 @@ class ExtractTest
         Map<String,Value> props = new HashMap<>();
         props.put( "k1", value( 43 ) );
         props.put( "k2", value( 42 ) );
-        InternalNode node = new InternalNode( 42L, String.valueOf( 42L ), Collections.singletonList( "L" ), props );
+        InternalNode node = new InternalNode( 42L, Collections.singletonList( "L" ), props );
 
         // WHEN
         Iterable<Pair<String,Integer>> properties = Extract.properties( node, Value::asInt );
@@ -143,7 +143,7 @@ class ExtractTest
     void testFields()
     {
         // GIVEN
-        InternalRecord record = new InternalRecord( Arrays.asList( "k1" ), new Value[]{value( 42 )} );
+        InternalRecord record = new InternalRecord( singletonList( "k1" ), new Value[]{value( 42 )} );
         // WHEN
         List<Pair<String,Integer>> fields = Extract.fields( record, Value::asInt );
 
@@ -181,11 +181,7 @@ class ExtractTest
     void shouldFailToExtractMapOfValuesFromUnsupportedValues()
     {
         assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalNode( 1 ) ) ) );
-        assertThrows( ClientException.class,
-                      () -> Extract.mapOfValues(
-                              singletonMap( "key",
-                                            new InternalRelationship( 1, String.valueOf( 1 ), 1, String.valueOf( 1 ),
-                                                                      1, String.valueOf( 1 ), "HI" ) ) ) );
+        assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalRelationship( 1, 1, 1, "HI" ) ) ) );
         assertThrows( ClientException.class, () -> Extract.mapOfValues( singletonMap( "key", new InternalPath( new InternalNode( 1 ) ) ) ) );
     }
 }

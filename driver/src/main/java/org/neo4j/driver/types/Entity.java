@@ -31,9 +31,10 @@ public interface Entity extends MapAccessor
      * A unique id for this Entity. Ids are guaranteed to remain stable for the duration of the session they were found in, but may be re-used for other
      * entities after that. As such, if you want a public identity to use for your entities, attaching an explicit 'id' property or similar persistent and
      * unique identifier is a better choice.
+     * <p>
+     * Please note that depending on server configuration numeric id might not be available and accessing it will result in {@link IllegalStateException}.
      *
-     * @return the id of this entity, please note that negative values are considered to be invalid and may be returned when storage engine can only provide the
-     * {@link #elementId()}
+     * @return the id of this entity
      * @deprecated superseded by {@link #elementId()}
      */
     @Deprecated

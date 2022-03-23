@@ -41,7 +41,8 @@ import java.util.concurrent.CompletionStage;
         @JsonSubTypes.Type( TransactionRollback.class ), @JsonSubTypes.Type( GetFeatures.class ),
         @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class ),
         @JsonSubTypes.Type( ResultList.class ), @JsonSubTypes.Type( GetConnectionPoolMetrics.class ),
-        @JsonSubTypes.Type( ResultPeek.class ), @JsonSubTypes.Type( CheckDriverIsEncrypted.class )
+        @JsonSubTypes.Type( ResultPeek.class ), @JsonSubTypes.Type( CheckDriverIsEncrypted.class ),
+        @JsonSubTypes.Type( CypherTypeField.class )
 } )
 public interface TestkitRequest
 {

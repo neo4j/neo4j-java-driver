@@ -32,20 +32,26 @@ import static org.neo4j.driver.Values.ofObject;
 
 public abstract class InternalEntity implements Entity, AsValue
 {
+    public static final String INVALID_ID_ERROR =
+            "Numeric id is not available with this server deployment, please use the new string based element id alternative";
+
     private final long id;
     private final String elementId;
     private final Map<String,Value> properties;
+    private final boolean numericIdAvailable;
 
-    public InternalEntity( long id, String elementId, Map<String,Value> properties )
+    public InternalEntity( long id, String elementId, Map<String,Value> properties, boolean numericIdAvailable )
     {
         this.id = id;
         this.elementId = elementId;
         this.properties = properties;
+        this.numericIdAvailable = numericIdAvailable;
     }
 
     @Override
     public long id()
     {
+        assertNumericIdAvailable();
         return id;
     }
 
@@ -141,5 +147,18 @@ public abstract class InternalEntity implements Entity, AsValue
     public <T> Iterable<T> values( Function<Value,T> mapFunction )
     {
         return Iterables.map( properties.values(), mapFunction );
+    }
+
+    protected void assertNumericIdAvailable()
+    {
+        if ( !numericIdAvailable )
+        {
+            throw new IllegalStateException( INVALID_ID_ERROR );
+        }
+    }
+
+    public boolean isNumericIdAvailable()
+    {
+        return numericIdAvailable;
     }
 }

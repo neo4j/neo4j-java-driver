@@ -36,8 +36,7 @@ class SelfContainedNodeTest
 {
     private Node adamTheNode()
     {
-        return new InternalNode( 1, String.valueOf( 1 ), singletonList( "Person" ),
-                                 parameters( "name", Values.value( "Adam" ) ).asMap( ofValue() ) );
+        return new InternalNode( 1, singletonList( "Person" ), parameters( "name", Values.value( "Adam" ) ).asMap( ofValue() ) );
     }
 
     @Test

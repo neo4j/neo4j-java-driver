@@ -71,7 +71,7 @@ class TransactionConfigTest
 
         assertThrows( ClientException.class,
                       () -> TransactionConfig.builder().withMetadata(
-                              singletonMap( "key", new InternalRelationship( 1, String.valueOf( 1 ), 1, String.valueOf( 1 ), 1, String.valueOf( 1 ), "" ) ) ) );
+                              singletonMap( "key", new InternalRelationship( 1, 1, 1, "" ) ) ) );
 
         assertThrows( ClientException.class,
                 () -> TransactionConfig.builder().withMetadata( singletonMap( "key", new InternalPath( new InternalNode( 1 ) ) ) ) );
