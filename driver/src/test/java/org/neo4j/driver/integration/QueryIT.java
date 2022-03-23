@@ -18,13 +18,9 @@
  */
 package org.neo4j.driver.integration;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.function.Executable;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -34,13 +30,13 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.util.ParallelizableIT;
 import org.neo4j.driver.util.SessionExtension;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.util.TestUtil.assertNoCircularReferences;
@@ -186,7 +182,7 @@ class QueryIT
     void shouldFailForIllegalQueries()
     {
         assertThrows( IllegalArgumentException.class, () -> session.run( (String) null ) );
-        assertThrows( IllegalArgumentException.class, () -> session.run( "" ) );
+        assertThrows( ClientException.class, () -> session.run( "" ) );
     }
 
     @Test
