@@ -125,4 +125,38 @@ class DisposableAsyncResultCursorTest
         then( delegate ).should().mapSuccessfulRunCompletionAsync();
         assertSame( error, actual );
     }
+
+    @Test
+    void shouldBeOpenOnCreation()
+    {
+        assertTrue( await( cursor.isOpenAsync() ) );
+    }
+
+    @Test
+    void shouldCloseOnConsume()
+    {
+        // Given
+        boolean initialState = await( cursor.isOpenAsync() );
+
+        // When
+        await( cursor.consumeAsync() );
+
+        // Then
+        assertTrue( initialState );
+        assertFalse( await( cursor.isOpenAsync() ) );
+    }
+
+    @Test
+    void shouldCloseOnDiscardAll()
+    {
+        // Given
+        boolean initialState = await( cursor.isOpenAsync() );
+
+        // When
+        await( cursor.discardAllFailureAsync() );
+
+        // Then
+        assertTrue( initialState );
+        assertFalse( await( cursor.isOpenAsync() ) );
+    }
 }

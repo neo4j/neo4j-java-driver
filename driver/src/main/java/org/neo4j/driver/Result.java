@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Resource;
 
@@ -140,12 +141,24 @@ public interface Result extends Iterator<Record>
 
     /**
      * Return the result summary.
-     *
+     * <p>
      * If the records in the result is not fully consumed, then calling this method will exhausts the result.
-     *
+     * <p>
      * If you want to access unconsumed records after summary, you shall use {@link Result#list()} to buffer all records into memory before summary.
      *
      * @return a summary for the whole query result.
      */
     ResultSummary consume();
+
+    /**
+     * Determine if result is open.
+     * <p>
+     * Result is considered to be open if it has not been consumed ({@link #consume()}) and its creator object (e.g. session or transaction) has not been closed
+     * (including committed or rolled back).
+     * <p>
+     * Attempts to access data on closed result will produce {@link ResultConsumedException}.
+     *
+     * @return {@code true} if result is open and {@code false} otherwise.
+     */
+    boolean isOpen();
 }

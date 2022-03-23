@@ -29,6 +29,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Records;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.exceptions.NoSuchRecordException;
+import org.neo4j.driver.exceptions.ResultConsumedException;
 import org.neo4j.driver.summary.ResultSummary;
 
 /**
@@ -154,4 +155,16 @@ public interface ResultCursor
      * completed exceptionally if query execution or provided function fails.
      */
     <T> CompletionStage<List<T>> listAsync( Function<Record,T> mapFunction );
+
+    /**
+     * Determine if result is open.
+     * <p>
+     * Result is considered to be open if it has not been consumed ({@link #consumeAsync()}) and its creator object (e.g. session or transaction) has not been
+     * closed (including committed or rolled back).
+     * <p>
+     * Attempts to access data on closed result will produce {@link ResultConsumedException}.
+     *
+     * @return a {@link CompletionStage} completed with {@code true} if result is open and {@code false} otherwise.
+     */
+    CompletionStage<Boolean> isOpenAsync();
 }

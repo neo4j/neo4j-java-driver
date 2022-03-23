@@ -19,6 +19,8 @@
 package org.neo4j.driver.internal;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,10 +52,13 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.Records.column;
@@ -351,7 +356,24 @@ class InternalResultTest
         assertThrows( NoSuchRecordException.class, result::peek );
     }
 
-    private Result createResult(int numberOfRecords )
+    @ParameterizedTest
+    @ValueSource( booleans = {true, false} )
+    void shouldDelegateIsOpen( boolean expectedState )
+    {
+        // GIVEN
+        AsyncResultCursor cursor = mock( AsyncResultCursor.class );
+        given( cursor.isOpenAsync() ).willReturn( CompletableFuture.completedFuture( expectedState ) );
+        Result result = new InternalResult( null, cursor );
+
+        // WHEN
+        boolean actualState = result.isOpen();
+
+        // THEN
+        assertEquals( expectedState, actualState );
+        then( cursor ).should().isOpenAsync();
+    }
+
+    private Result createResult( int numberOfRecords )
     {
         RunResponseHandler runHandler = new RunResponseHandler( new CompletableFuture<>(), BoltProtocolV3.METADATA_EXTRACTOR, mock( Connection.class ), null );
         runHandler.onSuccess( singletonMap( "fields", value( Arrays.asList( "k1", "k2" ) ) ) );

@@ -104,4 +104,22 @@
         <method>java.lang.String startNodeElementId()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Result</className>
+        <differenceType>7012</differenceType>
+        <method>boolean isOpen()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/ResultCursor</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage isOpenAsync()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxResult</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher isOpen()</method>
+    </difference>
+
 </differences>
