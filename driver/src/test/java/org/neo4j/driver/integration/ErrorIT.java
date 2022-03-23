@@ -155,7 +155,17 @@ class ErrorIT
     void shouldHandleFailureAtRunTime()
     {
         String label = UUID.randomUUID().toString();  // avoid clashes with other tests
-        String query = "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE";
+        String query;
+
+        if ( session.isNeo4j43OrEarlier() )
+        {
+            query = "CREATE CONSTRAINT ON (a:`" + label + "`) ASSERT a.name IS UNIQUE";
+        }
+        else
+        {
+            query = "CREATE CONSTRAINT FOR (a:`" + label + "`) REQUIRE a.name IS UNIQUE";
+        }
+
         // given
         Transaction tx = session.beginTransaction();
         tx.run( query );

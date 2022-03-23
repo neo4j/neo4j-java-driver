@@ -34,7 +34,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.types.TypeSystem;
 
-import static org.junit.Assume.assumeTrue;
+import static java.lang.Integer.parseInt;
 import static org.neo4j.driver.util.Neo4jRunner.DEFAULT_AUTH_TOKEN;
 import static org.neo4j.driver.util.Neo4jRunner.HOME_DIR;
 import static org.neo4j.driver.util.Neo4jRunner.debug;
@@ -150,20 +150,6 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
         return new File( HOME_DIR, DEFAULT_TLS_KEY_PATH );
     }
 
-    public void ensureProcedures( String jarName ) throws IOException
-    {
-        // These procedures were written against 3.x API.
-        // As graph database service API is totally changed since 4.0. These procedures are no long valid.
-        assumeTrue( getMajorVersion() < 4 );
-        File procedureJar = new File( HOME_DIR, "plugins/" + jarName );
-        if ( !procedureJar.exists() )
-        {
-            FileTools.copyFile( new File( TEST_RESOURCE_FOLDER_PATH, jarName ), procedureJar );
-            debug( "Added a new procedure `%s`", jarName );
-            runner.forceToRestart(); // needs to force restart as no configuration changed
-        }
-    }
-
     public void startDb()
     {
         runner.startNeo4j();
@@ -174,13 +160,16 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
         runner.stopNeo4j();
     }
 
-    public int getMajorVersion()
+    public boolean isNeo4j43OrEarlier()
     {
         try ( Session session = driver().session() )
         {
-            String protocolVersion = session.readTransaction( tx -> tx.run( "RETURN 1" ).consume().server().protocolVersion() );
-            String[] versions = protocolVersion.split( "\\." );
-            return Integer.parseInt( versions[0] );
+            String neo4jVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
+                                                                            "RETURN versions[0] AS version" ).single().get( "version" ).asString() );
+            String[] versions = neo4jVersion.split( "\\." );
+            int major = parseInt( versions[0] );
+            int minor = parseInt( versions[1] );
+            return  major <= 4 && minor <= 3;
         }
     }
 
