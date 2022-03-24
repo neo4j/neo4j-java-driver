@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.util.Resource;
@@ -87,67 +88,169 @@ public interface Session extends Resource, QueryRunner
      * @param work the {@link TransactionWork} to be applied to a new read transaction.
      * @param <T> the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
+     * @deprecated superseded by {@link #executeRead(TransactionCallback)}.
      */
+    @Deprecated
     <T> T readTransaction( TransactionWork<T> work );
 
     /**
-     * Execute a unit of work in a managed {@link AccessMode#READ read} transaction
-     * with the specified {@link TransactionConfig configuration}.
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
      * <p>
-     * This transaction will automatically be committed unless an exception is
-     * thrown during query execution or by the user code.
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via
-     * {@link Transaction#commit()}).
+     * The provided unit of work should not return {@link Result} object.
      *
-     * @param work the {@link TransactionWork} to be applied to a new read transaction.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
+     * @param callback the callback representing the unit of work.
+     * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
+    default <T> T executeRead( TransactionCallback<T> callback )
+    {
+        return executeRead( callback, TransactionConfig.empty() );
+    }
+
+    /**
+     * Execute a unit of work in a managed {@link AccessMode#READ read} transaction with the specified {@link TransactionConfig configuration}.
+     * <p>
+     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
+     * <p>
+     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
+     *
+     * @param work   the {@link TransactionWork} to be applied to a new read transaction.
+     * @param config configuration for all transactions started to execute the unit of work.
+     * @param <T>    the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     * @deprecated superseded by {@link #executeRead(TransactionCallback, TransactionConfig)}.
+     */
+    @Deprecated
     <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     *
+     * @param callback the callback representing the unit of work.
+     * @param config   the transaction configuration for the managed transaction.
+     * @param <T>      the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     */
+    <T> T executeRead( TransactionCallback<T> callback, TransactionConfig config );
 
     /**
      * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction.
      * <p>
-     * This transaction will automatically be committed unless an exception is
-     * thrown during query execution or by the user code.
+     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via
-     * {@link Transaction#commit()}).
+     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
      *
      * @param work the {@link TransactionWork} to be applied to a new write transaction.
-     * @param <T> the return type of the given unit of work.
+     * @param <T>  the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
+     * @deprecated superseded by {@link #executeWrite(TransactionCallback)}.
      */
+    @Deprecated
     <T> T writeTransaction( TransactionWork<T> work );
 
     /**
-     * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction
-     * with the specified {@link TransactionConfig configuration}.
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
      * <p>
-     * This transaction will automatically be committed unless an exception is
-     * thrown during query execution or by the user code.
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via
-     * {@link Transaction#commit()}).
+     * The provided unit of work should not return {@link Result} object.
      *
-     * @param work the {@link TransactionWork} to be applied to a new write transaction.
-     * @param config configuration for all transactions started to execute the unit of work.
-     * @param <T> the return type of the given unit of work.
+     * @param callback the callback representing the unit of work.
+     * @param <T>      the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      */
+    default <T> T executeWrite( TransactionCallback<T> callback )
+    {
+        return executeWrite( callback, TransactionConfig.empty() );
+    }
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     *
+     * @param contextConsumer the consumer representing the unit of work.
+     */
+    default void executeWriteWithoutResult( Consumer<TransactionContext> contextConsumer )
+    {
+        executeWrite( tc ->
+                      {
+                          contextConsumer.accept( tc );
+                          return null;
+                      } );
+    }
+
+    /**
+     * Execute a unit of work in a managed {@link AccessMode#WRITE write} transaction with the specified {@link TransactionConfig configuration}.
+     * <p>
+     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
+     * <p>
+     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
+     *
+     * @param work   the {@link TransactionWork} to be applied to a new write transaction.
+     * @param config configuration for all transactions started to execute the unit of work.
+     * @param <T>    the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     * @deprecated superseded by {@link #executeWrite(TransactionCallback, TransactionConfig)}.
+     */
+    @Deprecated
     <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
-     * Run a query in a managed auto-commit transaction with the specified
-     * {@link TransactionConfig configuration}, and return a result stream.
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
      *
-     * @param query text of a Neo4j query.
+     * @param callback the callback representing the unit of work.
+     * @param config   the transaction configuration for the managed transaction.
+     * @param <T>      the return type of the given unit of work.
+     * @return a result as returned by the given unit of work.
+     */
+    <T> T executeWrite( TransactionCallback<T> callback, TransactionConfig config );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     *
+     * @param contextConsumer the consumer representing the unit of work.
+     * @param config          the transaction configuration for the managed transaction.
+     */
+    default void executeWriteWithoutResult( Consumer<TransactionContext> contextConsumer, TransactionConfig config )
+    {
+        executeWrite( tc ->
+                      {
+                          contextConsumer.accept( tc );
+                          return null;
+                      }, config );
+    }
+
+    /**
+     * Run a query in a managed auto-commit transaction with the specified {@link TransactionConfig configuration}, and return a result stream.
+     *
+     * @param query  text of a Neo4j query.
      * @param config configuration for the new transaction.
      * @return a stream of result values and associated metadata.
      */
-    Result run(String query, TransactionConfig config );
+    Result run( String query, TransactionConfig config );
 
     /**
      * Run a query with parameters in a managed auto-commit transaction with the

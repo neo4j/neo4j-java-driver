@@ -26,6 +26,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -42,20 +44,25 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.RxTransactionCallback;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -308,5 +315,55 @@ class InternalRxSessionTest
         StepVerifier.create( mono ).verifyComplete();
         verify( session ).closeAsync();
         verifyNoMoreInteractions( session );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "executeVariations" )
+    void shouldDelegateExecuteReadToRetryLogic( ExecuteVariation executeVariation )
+    {
+        // GIVEN
+        NetworkSession networkSession = mock( NetworkSession.class );
+        RxSession session = new InternalRxSession( networkSession );
+        RetryLogic logic = mock( RetryLogic.class );
+        String expected = "";
+        given( networkSession.retryLogic() ).willReturn( logic );
+        RxTransactionCallback<Publisher<String>> tc = ( ignored ) -> Mono.justOrEmpty( expected );
+        given( logic.<String>retryRx( any() ) ).willReturn( tc.execute( null ) );
+        TransactionConfig config = TransactionConfig.builder().build();
+
+        // WHEN
+        Publisher<String> actual = executeVariation.readOnly ?
+                                   (
+                                           executeVariation.explicitTxConfig ? session.executeRead( tc, config ) : session.executeRead( tc )
+                                   ) : (
+                                           executeVariation.explicitTxConfig ? session.executeWrite( tc, config ) : session.executeWrite( tc )
+                                   );
+
+        // THEN
+        assertEquals( expected, Mono.from( actual ).block() );
+        then( networkSession ).should().retryLogic();
+        then( logic ).should().retryRx( any() );
+    }
+
+    static List<ExecuteVariation> executeVariations()
+    {
+        return Arrays.asList(
+                new ExecuteVariation( false, false ),
+                new ExecuteVariation( false, true ),
+                new ExecuteVariation( true, false ),
+                new ExecuteVariation( true, true )
+        );
+    }
+
+    private static class ExecuteVariation
+    {
+        private final boolean readOnly;
+        private final boolean explicitTxConfig;
+
+        private ExecuteVariation( boolean readOnly, boolean explicitTxConfig )
+        {
+            this.readOnly = readOnly;
+            this.explicitTxConfig = explicitTxConfig;
+        }
     }
 }

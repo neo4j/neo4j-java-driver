@@ -24,7 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -35,6 +39,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -59,6 +64,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -132,7 +139,7 @@ class InternalAsyncSessionTest
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<ResultCursor>> runReturnOne ) throws Throwable
+    void shouldFlushOnRun( Function<AsyncSession,CompletionStage<ResultCursor>> runReturnOne )
     {
         setupSuccessfulRunAndPull( connection );
 
@@ -143,7 +150,7 @@ class InternalAsyncSessionTest
 
     @ParameterizedTest
     @MethodSource( "allBeginTxMethods" )
-    void shouldDelegateBeginTx( Function<AsyncSession,CompletionStage<AsyncTransaction>> beginTx ) throws Throwable
+    void shouldDelegateBeginTx( Function<AsyncSession,CompletionStage<AsyncTransaction>> beginTx )
     {
         AsyncTransaction tx = await( beginTx.apply( asyncSession ) );
 
@@ -153,7 +160,7 @@ class InternalAsyncSessionTest
 
     @ParameterizedTest
     @MethodSource( "allRunTxMethods" )
-    void txRunShouldBeginAndCommitTx( Function<AsyncSession,CompletionStage<String>> runTx ) throws Throwable
+    void txRunShouldBeginAndCommitTx( Function<AsyncSession,CompletionStage<String>> runTx )
     {
         String string = await( runTx.apply( asyncSession ) );
 
@@ -224,21 +231,48 @@ class InternalAsyncSessionTest
         testTxIsRetriedUntilFailureWhenCommitFails( WRITE );
     }
 
-
     @Test
-    void shouldCloseSession() throws Throwable
+    void shouldCloseSession()
     {
-        await ( asyncSession.closeAsync() );
+        await( asyncSession.closeAsync() );
         assertFalse( this.session.isOpen() );
     }
 
     @Test
-    void shouldReturnBookmark() throws Throwable
+    void shouldReturnBookmark()
     {
         session = newSession( connectionProvider, InternalBookmark.parse( "Bookmark1" ) );
         asyncSession = new InternalAsyncSession( session );
 
-        assertThat( asyncSession.lastBookmark(), equalTo( session.lastBookmark() ));
+        assertThat( asyncSession.lastBookmark(), equalTo( session.lastBookmark() ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "executeVariations" )
+    void shouldDelegateExecuteReadToRetryLogic( ExecuteVariation executeVariation ) throws ExecutionException, InterruptedException
+    {
+        // GIVEN
+        NetworkSession networkSession = mock( NetworkSession.class );
+        AsyncSession session = new InternalAsyncSession( networkSession );
+        RetryLogic logic = mock( RetryLogic.class );
+        String expected = "";
+        given( networkSession.retryLogic() ).willReturn( logic );
+        AsyncTransactionCallback<CompletionStage<String>> tc = ( ignored ) -> CompletableFuture.completedFuture( expected );
+        given( logic.<String>retryAsync( any() ) ).willReturn( tc.execute( null ) );
+        TransactionConfig config = TransactionConfig.builder().build();
+
+        // WHEN
+        CompletionStage<String> actual = executeVariation.readOnly ?
+                                         (
+                                                 executeVariation.explicitTxConfig ? session.executeReadAsync( tc, config ) : session.executeReadAsync( tc )
+                                         ) : (
+                                                 executeVariation.explicitTxConfig ? session.executeWriteAsync( tc, config ) : session.executeWriteAsync( tc )
+                                         );
+
+        // THEN
+        assertEquals( expected, actual.toCompletableFuture().get() );
+        then( networkSession ).should().retryLogic();
+        then( logic ).should().retryAsync( any() );
     }
 
     private void testTxRollbackWhenThrows( AccessMode transactionMode )
@@ -389,6 +423,28 @@ class InternalAsyncSessionTest
                 throw errorSupplier.get();
             }
             return completedFuture( result );
+        }
+    }
+
+    static List<ExecuteVariation> executeVariations()
+    {
+        return Arrays.asList(
+                new ExecuteVariation( false, false ),
+                new ExecuteVariation( false, true ),
+                new ExecuteVariation( true, false ),
+                new ExecuteVariation( true, true )
+        );
+    }
+
+    private static class ExecuteVariation
+    {
+        private final boolean readOnly;
+        private final boolean explicitTxConfig;
+
+        private ExecuteVariation( boolean readOnly, boolean explicitTxConfig )
+        {
+            this.readOnly = readOnly;
+            this.explicitTxConfig = explicitTxConfig;
         }
     }
 }

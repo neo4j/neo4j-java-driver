@@ -35,6 +35,7 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.RxTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
@@ -116,6 +117,12 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     }
 
     @Override
+    public <T> Publisher<T> executeRead( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config )
+    {
+        return readTransaction( tx -> callback.execute( new DelegatingRxTransactionContext( tx ) ), config );
+    }
+
+    @Override
     public <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work )
     {
         return writeTransaction( work, TransactionConfig.empty() );
@@ -127,6 +134,12 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
         return runTransaction( AccessMode.WRITE, work, config );
     }
 
+    @Override
+    public <T> Publisher<T> executeWrite( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config )
+    {
+        return writeTransaction( tx -> callback.execute( new DelegatingRxTransactionContext( tx ) ), config );
+    }
+
     private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
         Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute,
@@ -135,7 +148,7 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     }
 
     @Override
-    public RxResult run(String query, TransactionConfig config )
+    public RxResult run( String query, TransactionConfig config )
     {
         return run( new Query( query ), config );
     }

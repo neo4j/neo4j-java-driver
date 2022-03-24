@@ -25,11 +25,12 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
-import org.neo4j.driver.Bookmark;
 
 /**
  * Provides a context of work for database interactions.
@@ -133,8 +134,30 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
      * unit of work. Stage can be completed exceptionally if given work or commit fails.
+     * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback)}.
      */
+    @Deprecated
     <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     * <p>
+     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
+     * different thread.
+     *
+     * @param callback the callback representing the unit of work.
+     * @param <T>      the return type of the given unit of work.
+     * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
+     */
+    default <T> CompletionStage<T> executeReadAsync( AsyncTransactionCallback<CompletionStage<T>> callback )
+    {
+        return executeReadAsync( callback, TransactionConfig.empty() );
+    }
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#READ read} asynchronous transaction with
@@ -158,8 +181,28 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
      * unit of work. Stage can be completed exceptionally if given work or commit fails.
+     * @deprecated superseded by {@link #executeReadAsync(AsyncTransactionCallback, TransactionConfig)}.
      */
+    @Deprecated
     <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     * <p>
+     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
+     * different thread.
+     *
+     * @param callback the callback representing the unit of work.
+     * @param config   configuration for all transactions started to execute the unit of work.
+     * @param <T>      the return type of the given unit of work.
+     * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
+     */
+    <T> CompletionStage<T> executeReadAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config );
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction.
@@ -181,8 +224,30 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
      * unit of work. Stage can be completed exceptionally if given work or commit fails.
+     * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback)}.
      */
+    @Deprecated
     <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     * <p>
+     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
+     * different thread.
+     *
+     * @param callback the callback representing the unit of work.
+     * @param <T>      the return type of the given unit of work.
+     * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
+     */
+    default <T> CompletionStage<T> executeWriteAsync( AsyncTransactionCallback<CompletionStage<T>> callback )
+    {
+        return executeWriteAsync( callback, TransactionConfig.empty() );
+    }
 
     /**
      * Execute given unit of asynchronous work in a  {@link AccessMode#WRITE write} asynchronous transaction with
@@ -206,8 +271,28 @@ public interface AsyncSession extends AsyncQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link CompletionStage completion stage} completed with the same result as returned by the given
      * unit of work. Stage can be completed exceptionally if given work or commit fails.
+     * @deprecated superseded by {@link #executeWriteAsync(AsyncTransactionCallback, TransactionConfig)}.
      */
+    @Deprecated
     <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
+
+    /**
+     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * <p>
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
+     * will result in rollback attempt.
+     * <p>
+     * The provided unit of work should not return {@link Result} object.
+     * <p>
+     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
+     * different thread.
+     *
+     * @param callback the callback representing the unit of work.
+     * @param config   configuration for all transactions started to execute the unit of work.
+     * @param <T>      the return type of the given unit of work.
+     * @return a completion stage that completes successfully with the result of the unit of work on success or completes exceptionally otherwise.
+     */
+    <T> CompletionStage<T> executeWriteAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config );
 
     /**
      * Run a query asynchronously in an auto-commit transaction with the specified {@link TransactionConfig configuration} and return a

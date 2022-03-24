@@ -26,6 +26,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.ResultCursor;
@@ -113,6 +114,12 @@ public class InternalSession extends AbstractQueryRunner implements Session
     }
 
     @Override
+    public <T> T executeRead( TransactionCallback<T> callback, TransactionConfig config )
+    {
+        return readTransaction( tx -> callback.execute( new DelegatingTransactionContext( tx ) ), config );
+    }
+
+    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return writeTransaction( work, TransactionConfig.empty() );
@@ -122,6 +129,12 @@ public class InternalSession extends AbstractQueryRunner implements Session
     public <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config )
     {
         return transaction( AccessMode.WRITE, work, config );
+    }
+
+    @Override
+    public <T> T executeWrite( TransactionCallback<T> callback, TransactionConfig config )
+    {
+        return writeTransaction( tx -> callback.execute( new DelegatingTransactionContext( tx ) ), config );
     }
 
     @Override

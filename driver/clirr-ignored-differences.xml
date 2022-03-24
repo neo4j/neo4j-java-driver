@@ -122,4 +122,150 @@
         <method>org.reactivestreams.Publisher isOpen()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeRead(org.neo4j.driver.TransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeRead(org.neo4j.driver.TransactionCallback, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>void executeReadWithoutResult(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>void executeReadWithoutResult(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeWrite(org.neo4j.driver.TransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.Object executeWrite(org.neo4j.driver.TransactionCallback, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>void executeWriteWithoutResult(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>void executeWriteWithoutResult(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeReadAsync(org.neo4j.driver.async.AsyncTransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeReadAsync(org.neo4j.driver.async.AsyncTransactionCallback, org.neo4j.driver.TransactionConfig)
+        </method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeReadWithoutResultAsync(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeReadWithoutResultAsync(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeWriteAsync(org.neo4j.driver.async.AsyncTransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeWriteAsync(org.neo4j.driver.async.AsyncTransactionCallback, org.neo4j.driver.TransactionConfig)
+        </method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeWriteWithoutResultAsync(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage executeWriteWithoutResultAsync(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeRead(org.neo4j.driver.reactive.RxTransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeRead(org.neo4j.driver.reactive.RxTransactionCallback, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeReadWithoutResult(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeReadWithoutResult(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeWrite(org.neo4j.driver.reactive.RxTransactionCallback)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeWrite(org.neo4j.driver.reactive.RxTransactionCallback, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeWriteWithoutResult(java.util.function.Consumer)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxSession</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher executeWriteWithoutResult(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
+    </difference>
+
 </differences>
