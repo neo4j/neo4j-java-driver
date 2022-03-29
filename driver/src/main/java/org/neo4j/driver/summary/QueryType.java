@@ -18,10 +18,14 @@
  */
 package org.neo4j.driver.summary;
 
+import java.util.function.Function;
+
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.exceptions.Neo4jException;
 
 /**
  * The type of query executed.
+ *
  * @since 1.0
  */
 public enum QueryType
@@ -31,7 +35,16 @@ public enum QueryType
     WRITE_ONLY,
     SCHEMA_WRITE;
 
-    public static QueryType fromCode(String type )
+    private static final String UNEXPECTED_TYPE_MSG_FMT = "Unknown query type: `%s`.";
+    private static final Function<String,ClientException> UNEXPECTED_TYPE_EXCEPTION_SUPPLIER =
+            ( type ) -> new ClientException( String.format( UNEXPECTED_TYPE_MSG_FMT, type ) );
+
+    public static QueryType fromCode( String type )
+    {
+        return fromCode( type, UNEXPECTED_TYPE_EXCEPTION_SUPPLIER );
+    }
+
+    public static QueryType fromCode( String type, Function<String,? extends Neo4jException> exceptionFunction )
     {
         switch ( type )
         {
@@ -44,7 +57,14 @@ public enum QueryType
         case "s":
             return QueryType.SCHEMA_WRITE;
         default:
-            throw new ClientException( "Unknown query type: `" + type + "`." );
+            if ( exceptionFunction != null )
+            {
+                throw exceptionFunction.apply( type );
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }
