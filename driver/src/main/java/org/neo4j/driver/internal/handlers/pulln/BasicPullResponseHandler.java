@@ -24,6 +24,7 @@ import java.util.function.BiConsumer;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.handlers.PullResponseCompletionListener;
 import org.neo4j.driver.internal.handlers.RunResponseHandler;
@@ -112,9 +113,18 @@ public class BasicPullResponseHandler implements PullResponseHandler
     protected void completeWithSuccess( Map<String,Value> metadata )
     {
         completionListener.afterSuccess( metadata );
-        ResultSummary summary = extractResultSummary( metadata );
-
-        complete( summary, null );
+        ResultSummary summary;
+        Neo4jException exception = null;
+        try
+        {
+            summary = extractResultSummary( metadata );
+        }
+        catch ( Neo4jException e )
+        {
+            summary = extractResultSummary( emptyMap() );
+            exception = e;
+        }
+        complete( summary, exception );
     }
 
     protected void successHasMore()

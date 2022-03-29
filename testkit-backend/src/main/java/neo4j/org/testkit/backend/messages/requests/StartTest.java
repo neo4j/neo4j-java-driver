@@ -41,7 +41,6 @@ public class StartTest implements TestkitRequest
 
     static
     {
-        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_invalid_query_type$", "Does not report type exception" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_no_notifications$", "An empty list is returned when there are no notifications" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_no_notification_info$", "An empty list is returned when there are no notifications" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_notifications_without_position$", "Null value is provided when position is absent" );
