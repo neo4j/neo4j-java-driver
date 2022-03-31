@@ -160,21 +160,29 @@ public class DatabaseExtension implements BeforeEachCallback, AfterAllCallback
         runner.stopNeo4j();
     }
 
+    public boolean isNeo4j44OrEarlier()
+    {
+        return isNeo4jVersionOrEarlier( 4, 4 );
+    }
+
     public boolean isNeo4j43OrEarlier()
     {
-        try ( Session session = driver().session() )
-        {
-            String neo4jVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
-                                                                            "RETURN versions[0] AS version" ).single().get( "version" ).asString() );
-            String[] versions = neo4jVersion.split( "\\." );
-            int major = parseInt( versions[0] );
-            int minor = parseInt( versions[1] );
-            return  major <= 4 && minor <= 3;
-        }
+        return isNeo4jVersionOrEarlier( 4, 3 );
     }
 
     public void dumpLogs()
     {
         runner.dumpDebugLog();
+    }
+
+    private boolean isNeo4jVersionOrEarlier( int major, int minor )
+    {
+        try ( Session session = driver().session() )
+        {
+            String neo4jVersion = session.readTransaction( tx -> tx.run( "CALL dbms.components() YIELD versions " +
+                                                                         "RETURN versions[0] AS version" ).single().get( "version" ).asString() );
+            String[] versions = neo4jVersion.split( "\\." );
+            return parseInt( versions[0] ) <= major && parseInt( versions[1] ) <= minor;
+        }
     }
 }
