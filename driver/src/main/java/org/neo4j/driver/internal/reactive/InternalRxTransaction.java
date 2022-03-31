@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.reactive;
 
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -79,6 +80,12 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
     public Publisher<Void> close()
     {
         return close( false );
+    }
+
+    @Override
+    public Publisher<Boolean> isOpen()
+    {
+        return Mono.just( tx.isOpen() );
     }
 
     Publisher<Void> close( boolean commit )

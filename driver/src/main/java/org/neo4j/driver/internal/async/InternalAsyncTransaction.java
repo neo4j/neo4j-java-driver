@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Query;
@@ -48,6 +49,12 @@ public class InternalAsyncTransaction extends AsyncAbstractQueryRunner implement
     public CompletionStage<Void> closeAsync()
     {
         return tx.closeAsync();
+    }
+
+    @Override
+    public CompletionStage<Boolean> isOpenAsync()
+    {
+        return CompletableFuture.completedFuture( isOpen() );
     }
 
     @Override
