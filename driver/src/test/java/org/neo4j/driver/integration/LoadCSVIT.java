@@ -25,8 +25,8 @@ import java.io.IOException;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.Neo4jSettings;
 import org.neo4j.driver.util.ParallelizableIT;
@@ -51,15 +51,25 @@ class LoadCSVIT
             String csvFileUrl = createLocalIrisData( session );
 
             // When
-            Result result = session.run(
-                    "USING PERIODIC COMMIT 40\n" +
-                    "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
-                    "MATCH (c:Class {name: l.class_name})\n" +
-                    "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
+            String query = neo4j.isNeo4j44OrEarlier() ?
+                           "USING PERIODIC COMMIT 40\n" +
+                           "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
+                           "MATCH (c:Class {name: l.class_name})\n" +
+                           "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
 
-                    "CREATE (c)<-[:HAS_CLASS]-(s) " +
-                    "RETURN count(*) AS c",
-                    parameters( "csvFileUrl", csvFileUrl ) );
+                           "CREATE (c)<-[:HAS_CLASS]-(s) " +
+                           "RETURN count(*) AS c"
+                                                      :
+                           "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
+                           "CALL {\n" +
+                           "WITH l\n" +
+                           "MATCH (c:Class {name: l.class_name})\n" +
+                           "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l.petal_length, petal_width: l.petal_width})\n" +
+                           "CREATE (c)<-[:HAS_CLASS]-(s)" +
+                           "} IN TRANSACTIONS\n" +
+                           "RETURN count(*) AS c";
+
+            Result result = session.run( query, parameters( "csvFileUrl", csvFileUrl ) );
 
             // Then
             assertThat( result.next().get( "c" ).asInt(), equalTo( 150 ) );
