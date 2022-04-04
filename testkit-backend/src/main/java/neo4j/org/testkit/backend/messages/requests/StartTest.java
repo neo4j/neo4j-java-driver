@@ -55,6 +55,12 @@ public class StartTest implements TestkitRequest
         String skipMessage = "This test expects hostname verification to be turned off when all certificates are trusted";
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_trusted_ca_wrong_hostname$", skipMessage );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_untrusted_ca_wrong_hostname$", skipMessage );
+        skipMessage = "This test needs updating to implement expected behaviour";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestAuthenticationSchemes\\.test_custom_scheme_empty$", skipMessage );
+        skipMessage = "Driver does not implement optimization for qid in explicit transaction";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
         ASYNC_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_should_reject_server_using_verify_connectivity_bolt_3x0$", "Does not error as expected" );
