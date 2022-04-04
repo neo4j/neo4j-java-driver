@@ -66,7 +66,8 @@ public class GetFeatures implements TestkitRequest
             "Feature:API:Driver.IsEncrypted",
             "Feature:API:SSLConfig",
             "Detail:DefaultSecurityConfigValueEquality",
-            "Detail:ThrowOnMissingId"
+            "Detail:ThrowOnMissingId",
+            "Optimization:ImplicitDefaultArguments"
     ) );
 
     private static final Set<String> SYNC_FEATURES = new HashSet<>( Arrays.asList(
