@@ -143,7 +143,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
      * or more statements to be run.
      * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception thrown by the unit of work will
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
      * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
@@ -190,7 +190,7 @@ public interface AsyncSession extends AsyncQueryRunner
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception thrown by the unit of work
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work
      * will result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
      * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
@@ -234,7 +234,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
      * one or more statements to be run.
      * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception thrown by the unit of work will
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
      * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
      * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
@@ -281,7 +281,7 @@ public interface AsyncSession extends AsyncQueryRunner
     /**
      * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception thrown by the unit of work
+     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work
      * will result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
      * <p>
      * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
