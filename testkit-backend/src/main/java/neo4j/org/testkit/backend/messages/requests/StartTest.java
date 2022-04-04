@@ -61,6 +61,12 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_encompass_the_handshake_time.*$", skipMessage );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestConnectionAcquisitionTimeoutMs\\.test_should_fail_when_acquisition_timeout_is_reached_first.*$",
                                            skipMessage );
+        skipMessage = "This test needs updating to implement expected behaviour";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestAuthenticationSchemes\\.test_custom_scheme_empty$", skipMessage );
+        skipMessage = "Driver does not implement optimization for qid in explicit transaction";
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query$", skipMessage );
+        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestOptimizations\\.test_uses_implicit_default_arguments_multi_query_nested$", skipMessage );
 
         ASYNC_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
 
