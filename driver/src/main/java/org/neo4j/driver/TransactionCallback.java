@@ -19,14 +19,14 @@
 package org.neo4j.driver;
 
 /**
- * Callback that executes operations against a given {@link TransactionContext}.
+ * Callback that executes operations in a given {@link TransactionContext}.
  *
  * @param <T> the return type of this work.
  */
 public interface TransactionCallback<T>
 {
     /**
-     * Executes all given operations against the same transaction context.
+     * Executes all given operations in the same transaction context.
      *
      * @param context the transaction context to use.
      * @return result object or {@code null} if none.
