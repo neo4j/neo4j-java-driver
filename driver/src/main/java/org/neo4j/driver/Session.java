@@ -79,14 +79,12 @@ public interface Session extends Resource, QueryRunner
     /**
      * Execute a unit of work in a managed {@link AccessMode#READ read} transaction.
      * <p>
-     * This transaction will automatically be committed unless an exception is
-     * thrown during query execution or by the user code.
+     * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via
-     * {@link Transaction#commit()}).
+     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
      *
      * @param work the {@link TransactionWork} to be applied to a new read transaction.
-     * @param <T> the return type of the given unit of work.
+     * @param <T>  the return type of the given unit of work.
      * @return a result as returned by the given unit of work.
      * @deprecated superseded by {@link #executeRead(TransactionCallback)}.
      */
@@ -94,12 +92,12 @@ public interface Session extends Resource, QueryRunner
     <T> T readTransaction( TransactionWork<T> work );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param callback the callback representing the unit of work.
      * @param <T>      the return type of the given unit of work.
@@ -115,7 +113,7 @@ public interface Session extends Resource, QueryRunner
      * <p>
      * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
+     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
      *
      * @param work   the {@link TransactionWork} to be applied to a new read transaction.
      * @param config configuration for all transactions started to execute the unit of work.
@@ -127,12 +125,12 @@ public interface Session extends Resource, QueryRunner
     <T> T readTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param callback the callback representing the unit of work.
      * @param config   the transaction configuration for the managed transaction.
@@ -146,7 +144,7 @@ public interface Session extends Resource, QueryRunner
      * <p>
      * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
+     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
      *
      * @param work the {@link TransactionWork} to be applied to a new write transaction.
      * @param <T>  the return type of the given unit of work.
@@ -157,12 +155,12 @@ public interface Session extends Resource, QueryRunner
     <T> T writeTransaction( TransactionWork<T> work );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param callback the callback representing the unit of work.
      * @param <T>      the return type of the given unit of work.
@@ -174,12 +172,12 @@ public interface Session extends Resource, QueryRunner
     }
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param contextConsumer the consumer representing the unit of work.
      */
@@ -197,7 +195,7 @@ public interface Session extends Resource, QueryRunner
      * <p>
      * This transaction will automatically be committed unless an exception is thrown during query execution or by the user code.
      * <p>
-     * Managed transactions should not generally be explicitly committed (via {@link Transaction#commit()}).
+     * Managed transactions should not be explicitly committed (via {@link Transaction#commit()}).
      *
      * @param work   the {@link TransactionWork} to be applied to a new write transaction.
      * @param config configuration for all transactions started to execute the unit of work.
@@ -209,12 +207,12 @@ public interface Session extends Resource, QueryRunner
     <T> T writeTransaction( TransactionWork<T> work, TransactionConfig config );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param callback the callback representing the unit of work.
      * @param config   the transaction configuration for the managed transaction.
@@ -224,12 +222,12 @@ public interface Session extends Resource, QueryRunner
     <T> T executeWrite( TransactionCallback<T> callback, TransactionConfig config );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      *
      * @param contextConsumer the consumer representing the unit of work.
      * @param config          the transaction configuration for the managed transaction.

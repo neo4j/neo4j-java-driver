@@ -140,12 +140,13 @@ public interface AsyncSession extends AsyncQueryRunner
     <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
+     * or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
@@ -187,12 +188,12 @@ public interface AsyncSession extends AsyncQueryRunner
     <T> CompletionStage<T> readTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#READ read} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
@@ -230,12 +231,12 @@ public interface AsyncSession extends AsyncQueryRunner
     <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
@@ -277,12 +278,12 @@ public interface AsyncSession extends AsyncQueryRunner
     <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config );
 
     /**
-     * Execute a unit of work as a single managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour.
+     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
      * <p>
      * The driver will attempt committing the transaction when the provided unit of work completes successfully. A user initiated failure of the unit of work
-     * will result in rollback attempt.
+     * will result in a rollback attempt.
      * <p>
-     * The provided unit of work should not return {@link Result} object.
+     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
      * <p>
      * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
      * different thread.
