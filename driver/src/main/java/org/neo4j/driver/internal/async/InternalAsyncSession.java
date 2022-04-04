@@ -28,6 +28,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransaction;
+import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.internal.util.Futures;
@@ -100,6 +101,12 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     }
 
     @Override
+    public <T> CompletionStage<T> executeReadAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config )
+    {
+        return readTransactionAsync( tx -> callback.execute( new DelegatingAsyncTransactionContext( tx ) ), config );
+    }
+
+    @Override
     public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work )
     {
         return writeTransactionAsync( work, TransactionConfig.empty() );
@@ -109,6 +116,12 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     public <T> CompletionStage<T> writeTransactionAsync( AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
         return transactionAsync( AccessMode.WRITE, work, config );
+    }
+
+    @Override
+    public <T> CompletionStage<T> executeWriteAsync( AsyncTransactionCallback<CompletionStage<T>> callback, TransactionConfig config )
+    {
+        return writeTransactionAsync( tx -> callback.execute( new DelegatingAsyncTransactionContext( tx ) ), config );
     }
 
     @Override

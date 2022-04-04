@@ -16,24 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.reactive;
+package org.neo4j.driver;
 
 /**
- * Callback that executes operations against a given {@link RxTransaction}. To be used with {@link RxSession#readTransaction(RxTransactionWork)} and {@link
- * RxSession#writeTransaction(RxTransactionWork)} methods.
- *
- * @param <T> the return type of this work.
- * @since 4.0
- * @deprecated superseded by {@link RxTransactionCallback}.
+ * A context for running queries within transaction.
  */
-@Deprecated
-public interface RxTransactionWork<T>
+public interface TransactionContext extends SimpleQueryRunner
 {
-    /**
-     * Executes all given operations against the same transaction.
-     *
-     * @param tx the transaction to use.
-     * @return some result object or {@code null} if none.
-     */
-    T execute( RxTransaction tx );
 }

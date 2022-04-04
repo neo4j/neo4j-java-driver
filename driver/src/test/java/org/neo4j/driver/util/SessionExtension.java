@@ -30,6 +30,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
+import org.neo4j.driver.TransactionCallback;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.Value;
@@ -95,6 +96,12 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    public <T> T executeRead( TransactionCallback<T> callback, TransactionConfig config )
+    {
+        return realSession.executeRead( callback, config );
+    }
+
+    @Override
     public <T> T writeTransaction( TransactionWork<T> work )
     {
         return realSession.writeTransaction( work );
@@ -107,15 +114,21 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    public <T> T executeWrite( TransactionCallback<T> callback, TransactionConfig config )
+    {
+        return realSession.executeWrite( callback, config );
+    }
+
+    @Override
     public Bookmark lastBookmark()
     {
         return realSession.lastBookmark();
     }
 
     @Override
-    public Result run(String query, Map<String,Object> parameters)
+    public Result run( String query, Map<String,Object> parameters )
     {
-        return realSession.run(query, parameters);
+        return realSession.run( query, parameters );
     }
 
     @Override

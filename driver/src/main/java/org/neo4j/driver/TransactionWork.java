@@ -19,12 +19,13 @@
 package org.neo4j.driver;
 
 /**
- * Callback that executes operations against a given {@link Transaction}.
- * To be used with {@link Session#readTransaction(TransactionWork)} and
- * {@link Session#writeTransaction(TransactionWork)} methods.
+ * Callback that executes operations against a given {@link Transaction}. To be used with {@link Session#readTransaction(TransactionWork)} and {@link
+ * Session#writeTransaction(TransactionWork)} methods.
  *
  * @param <T> the return type of this work.
+ * @deprecated superseded by {@link TransactionCallback}.
  */
+@Deprecated
 public interface TransactionWork<T>
 {
     /**

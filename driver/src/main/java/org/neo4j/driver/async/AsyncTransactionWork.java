@@ -19,13 +19,14 @@
 package org.neo4j.driver.async;
 
 /**
- * Callback that executes operations against a given {@link AsyncTransaction}.
- * To be used with {@link AsyncSession#readTransactionAsync(AsyncTransactionWork)} and
- * {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork)} (AsyncTransactionWork)} methods.
+ * Callback that executes operations against a given {@link AsyncTransaction}. To be used with {@link AsyncSession#readTransactionAsync(AsyncTransactionWork)}
+ * and {@link AsyncSession#writeTransactionAsync(AsyncTransactionWork)} (AsyncTransactionWork)} methods.
  *
  * @param <T> the return type of this work.
  * @since 4.0
+ * @deprecated superseded by {@link AsyncTransactionCallback}.
  */
+@Deprecated
 public interface AsyncTransactionWork<T>
 {
     /**
