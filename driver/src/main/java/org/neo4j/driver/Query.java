@@ -25,10 +25,10 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.Immutable;
 
 import static java.lang.String.format;
-import static org.neo4j.driver.Values.ofValue;
-import static org.neo4j.driver.Values.value;
 import static org.neo4j.driver.internal.util.Iterables.newHashMapWithSize;
 import static org.neo4j.driver.internal.util.Preconditions.checkArgument;
+import static org.neo4j.driver.Values.ofValue;
+import static org.neo4j.driver.Values.value;
 
 /**
  * The components of a Cypher query, containing the query text and parameter map.
@@ -201,6 +201,7 @@ public class Query
     private static String validateQueryText(String query )
     {
         checkArgument( query != null, "Cypher query text should not be null" );
+        checkArgument( !query.isEmpty(), "Cypher query text should not be an empty string" );
         return query;
     }
 }

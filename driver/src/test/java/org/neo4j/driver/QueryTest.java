@@ -25,7 +25,6 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.driver.Values.parameters;
 
@@ -122,12 +121,8 @@ class QueryTest
     }
 
     @Test
-    void shouldAcceptEmptyQuery()
+    void shouldProhibitEmptyQuery()
     {
-        // when
-        Query query = new Query( "" );
-
-        // then
-        assertNotNull( query );
+        assertThrows( IllegalArgumentException.class, () -> new Query( "" ) );
     }
 }
