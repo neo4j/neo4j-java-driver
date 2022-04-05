@@ -98,7 +98,7 @@ class InternalRxResultTest
         RxResult rxResult = newRxResult( cursor );
 
         List<String> keys = Arrays.asList( "one", "two", "three" );
-        when( cursor.keys() ).thenReturn( keys );
+        when( cursor.keys() ).thenReturn( Mono.just( keys ) );
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ) )
@@ -127,7 +127,7 @@ class InternalRxResultTest
         RxResult rxResult = newRxResult( cursor );
 
         List<String> keys = Arrays.asList( "one", "two", "three" );
-        when( cursor.keys() ).thenReturn( keys );
+        when( cursor.keys() ).thenReturn( Mono.just( keys ) );
 
         // When & Then
         StepVerifier.create( Flux.from( rxResult.keys() ).limitRate( 1 ).take( 1 ) )

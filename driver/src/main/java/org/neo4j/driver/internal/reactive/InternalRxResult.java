@@ -50,8 +50,9 @@ public class InternalRxResult implements RxResult
     @Override
     public Publisher<List<String>> keys()
     {
-        return Mono.defer( () -> Mono.fromCompletionStage( getCursorFuture() ).map( RxResultCursor::keys )
-                .onErrorMap( Futures::completionExceptionCause ) );
+        return Mono.defer( () -> Mono.fromCompletionStage( getCursorFuture() )
+                                     .flatMap( RxResultCursor::keys )
+                                     .onErrorMap( Futures::completionExceptionCause ) );
     }
 
     @Override

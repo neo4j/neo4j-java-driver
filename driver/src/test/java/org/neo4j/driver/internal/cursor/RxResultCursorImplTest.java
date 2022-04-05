@@ -83,7 +83,7 @@ class RxResultCursorImplTest
 
         // When
         RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
-        List<String> actual = cursor.keys();
+        List<String> actual = cursor.keys().block();
 
         // Then
         assertEquals( expected, actual );
@@ -103,14 +103,14 @@ class RxResultCursorImplTest
         RxResultCursor cursor = new RxResultCursorImpl( runHandler, pullHandler );
 
         // Then
-        List<String> actual = cursor.keys();
+        List<String> actual = cursor.keys().block();
         assertEquals( expected, actual );
 
         // Many times
-        actual = cursor.keys();
+        actual = cursor.keys().block();
         assertEquals( expected, actual );
 
-        actual = cursor.keys();
+        actual = cursor.keys().block();
         assertEquals( expected, actual );
     }
 

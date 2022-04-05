@@ -36,7 +36,6 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.util.DatabaseExtension;
 import org.neo4j.driver.util.ParallelizableIT;
 
-import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -219,18 +218,24 @@ class RxResultIT
         Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
-        StepVerifier.create( keys ).expectNext( emptyList() ).verifyComplete();
+        StepVerifier.create( keys ).expectErrorSatisfies( error ->
+                                                          {
+                                                              assertThat( error, instanceOf( ClientException.class ) );
+                                                              assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                                                          } ).verify();
 
-        StepVerifier.create( records ).expectErrorSatisfies( error -> {
-            assertThat( error, instanceOf( ClientException.class ) );
-            assertThat( error.getMessage(), containsString( "Invalid input" ) );
-        } ).verify();
+        StepVerifier.create( records ).expectErrorSatisfies( error ->
+                                                             {
+                                                                 assertThat( error, instanceOf( ClientException.class ) );
+                                                                 assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                                                             } ).verify();
 
         StepVerifier.create( summaryMono )
-                .assertNext( summary -> {
-                    assertThat( summary.query().text(), equalTo( "INVALID" ) );
-                    assertNotNull( summary.server().address() );
-                } ).verifyComplete();
+                    .assertNext( summary ->
+                                 {
+                                     assertThat( summary.query().text(), equalTo( "INVALID" ) );
+                                     assertNotNull( summary.server().address() );
+                                 } ).verifyComplete();
     }
 
 
@@ -246,18 +251,25 @@ class RxResultIT
         Mono<ResultSummary> summaryMono = Mono.from( result.consume() );
 
         // Then
-        StepVerifier.create( keys ).expectNext( emptyList() ).verifyComplete();
+        StepVerifier.create( keys ).expectErrorSatisfies( error ->
+                                                          {
+                                                              assertThat( error, instanceOf( ClientException.class ) );
+                                                              assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                                                          } ).verify();
+        ;
 
-        StepVerifier.create( summaryMono ).expectErrorSatisfies( error -> {
-            assertThat( error, instanceOf( ClientException.class ) );
-            assertThat( error.getMessage(), containsString( "Invalid input" ) );
-        } ).verify();
+        StepVerifier.create( summaryMono ).expectErrorSatisfies( error ->
+                                                                 {
+                                                                     assertThat( error, instanceOf( ClientException.class ) );
+                                                                     assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                                                                 } ).verify();
 
         // The error stick with the summary forever
-        StepVerifier.create( summaryMono ).expectErrorSatisfies( error -> {
-            assertThat( error, instanceOf( ClientException.class ) );
-            assertThat( error.getMessage(), containsString( "Invalid input" ) );
-        } ).verify();
+        StepVerifier.create( summaryMono ).expectErrorSatisfies( error ->
+                                                                 {
+                                                                     assertThat( error, instanceOf( ClientException.class ) );
+                                                                     assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                                                                 } ).verify();
     }
 
     @Test
@@ -423,15 +435,29 @@ class RxResultIT
     }
 
     @Test
-    void keysShouldNotReportRunError()
+    void keysShouldReportRunError()
     {
         // Given
         RxSession session = neo4j.driver().rxSession();
         RxResult result = session.run( "Invalid" );
 
         // When
-        StepVerifier.create( Flux.from( result.keys() ) ).expectNext( EMPTY_LIST ).verifyComplete();
-        StepVerifier.create( Flux.from( result.keys() ) ).expectNext( EMPTY_LIST ).verifyComplete();
+        StepVerifier.create( Flux.from( result.keys() ) )
+                    .expectErrorSatisfies(
+                            error ->
+                            {
+                                assertThat( error, instanceOf( ClientException.class ) );
+                                assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                            } ).verify();
+        ;
+        StepVerifier.create( Flux.from( result.keys() ) )
+                    .expectErrorSatisfies(
+                            error ->
+                            {
+                                assertThat( error, instanceOf( ClientException.class ) );
+                                assertThat( error.getMessage(), containsString( "Invalid input" ) );
+                            } ).verify();
+        ;
     }
 
     @Test

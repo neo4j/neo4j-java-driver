@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cursor;
 
 import org.reactivestreams.Subscription;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -30,7 +31,7 @@ import org.neo4j.driver.summary.ResultSummary;
 
 public interface RxResultCursor extends Subscription, FailableCursor
 {
-    List<String> keys();
+    Mono<List<String>> keys();
 
     void installRecordConsumer( BiConsumer<Record,Throwable> recordConsumer );
 

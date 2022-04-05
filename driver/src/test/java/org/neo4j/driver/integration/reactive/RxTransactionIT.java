@@ -741,11 +741,21 @@ class RxTransactionIT
     }
 
     @Test
+    void shouldPropagateRunFailureOnKeys()
+    {
+        RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
+        RxResult result = tx.run( "RETURN 42 / 0" );
+
+        ClientException e = assertThrows( ClientException.class, () -> await( result.keys() ) );
+        assertThat( e.getMessage(), containsString( "/ by zero" ) );
+        assertCanRollback( tx );
+    }
+
+    @Test
     void shouldPropagateRunFailureOnRecord()
     {
         RxTransaction tx = await( Mono.from( session.beginTransaction() ) );
         RxResult result = tx.run( "RETURN 42 / 0" );
-        await( result.keys() ); // always returns keys
 
         ClientException e = assertThrows( ClientException.class, () -> await( result.records() ) );
         assertThat( e.getMessage(), containsString( "/ by zero" ) );

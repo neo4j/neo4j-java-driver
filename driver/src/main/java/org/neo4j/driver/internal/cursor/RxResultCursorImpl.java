@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.cursor;
 
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -43,6 +45,7 @@ public class RxResultCursorImpl implements RxResultCursor
     private final PullResponseHandler pullHandler;
     private final Throwable runResponseError;
     private final CompletableFuture<ResultSummary> summaryFuture = new CompletableFuture<>();
+    private boolean runResponseErrorExposed;
     private boolean summaryFutureExposed;
     private boolean resultConsumed;
     private RecordConsumerStatus consumerStatus = NOT_INSTALLED;
@@ -64,9 +67,21 @@ public class RxResultCursorImpl implements RxResultCursor
     }
 
     @Override
-    public List<String> keys()
+    public Mono<List<String>> keys()
     {
-        return runHandler.queryKeys().keys();
+        return Mono.create(
+                sink ->
+                {
+                    if ( runResponseError != null )
+                    {
+                        runResponseErrorExposed = true;
+                        sink.error( runResponseError );
+                    }
+                    else
+                    {
+                        sink.success( runHandler.queryKeys().keys() );
+                    }
+                } );
     }
 
     @Override
@@ -108,7 +123,7 @@ public class RxResultCursorImpl implements RxResultCursor
     {
         // calling this method will enforce discarding record stream and finish running cypher query
         return summaryStage().thenApply( summary -> (Throwable) null )
-                             .exceptionally( throwable -> summaryFutureExposed ? null : throwable );
+                             .exceptionally( throwable -> runResponseErrorExposed || summaryFutureExposed ? null : throwable );
     }
 
     @Override
