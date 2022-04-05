@@ -98,4 +98,11 @@ public interface AsyncTransaction extends AsyncQueryRunner
      * @return new {@link CompletionStage} that gets completed with {@code null} when close is successful, otherwise it gets completed exceptionally.
      */
     CompletionStage<Void> closeAsync();
+
+    /**
+     * Determine if transaction is open.
+     *
+     * @return a {@link CompletionStage} completed with {@code true} if transaction is open and {@code false} otherwise.
+     */
+    CompletionStage<Boolean> isOpenAsync();
 }

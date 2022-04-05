@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -42,8 +43,11 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -138,5 +142,22 @@ class InternalAsyncTransactionTest
 
         verify( connection ).release();
         assertFalse( tx.isOpen() );
+    }
+
+    @Test
+    void shouldDelegateIsOpenAsync() throws ExecutionException, InterruptedException
+    {
+        // GIVEN
+        UnmanagedTransaction utx = mock( UnmanagedTransaction.class );
+        boolean expected = false;
+        given( utx.isOpen() ).willReturn( expected );
+        tx = new InternalAsyncTransaction( utx );
+
+        // WHEN
+        boolean actual = tx.isOpenAsync().toCompletableFuture().get();
+
+        // THEN
+        assertEquals( expected, actual );
+        then( utx ).should().isOpen();
     }
 }

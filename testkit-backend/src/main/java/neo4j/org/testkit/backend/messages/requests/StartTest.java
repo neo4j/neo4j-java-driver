@@ -52,8 +52,6 @@ public class StartTest implements TestkitRequest
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_system_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_partial_summary_contains_updates$", "Does not contain updates because value is zero" );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_supports_multi_db$", "Database is None" );
-        COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.test_managed_tx_raises_tx_managed_exec$",
-                                           "Driver (still) allows explicit managing of managed transaction" );
         String skipMessage = "This test expects hostname verification to be turned off when all certificates are trusted";
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_trusted_ca_wrong_hostname$", skipMessage );
         COMMON_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTrustAllCertsConfig\\.test_untrusted_ca_wrong_hostname$", skipMessage );

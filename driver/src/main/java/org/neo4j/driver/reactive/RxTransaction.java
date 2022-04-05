@@ -56,4 +56,11 @@ public interface RxTransaction extends RxQueryRunner
      * @return new {@link Publisher} that gets completed when close is successful, otherwise an error is signalled.
      */
     Publisher<Void> close();
+
+    /**
+     * Determine if transaction is open.
+     *
+     * @return a publisher emitting {@code true} if transaction is open and {@code false} otherwise.
+     */
+    Publisher<Boolean> isOpen();
 }

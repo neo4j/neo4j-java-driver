@@ -47,6 +47,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -162,5 +164,19 @@ class InternalRxTransactionTest
         StepVerifier.create( publisher ).verifyComplete();
 
         verify( tx ).closeAsync( false );
+    }
+
+    @Test
+    void shouldDelegateIsOpenAsync()
+    {
+        // GIVEN
+        UnmanagedTransaction utx = mock( UnmanagedTransaction.class );
+        boolean expected = false;
+        given( utx.isOpen() ).willReturn( expected );
+        RxTransaction tx = new InternalRxTransaction( utx );
+
+        // WHEN & THEN
+        StepVerifier.create( tx.isOpen() ).expectNext( expected ).expectComplete().verify();
+        then( utx ).should().isOpen();
     }
 }

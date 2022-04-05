@@ -268,4 +268,16 @@
         <method>org.reactivestreams.Publisher executeWriteWithoutResult(java.util.function.Consumer, org.neo4j.driver.TransactionConfig)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/async/AsyncTransaction</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.concurrent.CompletionStage isOpenAsync()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxTransaction</className>
+        <differenceType>7012</differenceType>
+        <method>org.reactivestreams.Publisher isOpen()</method>
+    </difference>
+
 </differences>
