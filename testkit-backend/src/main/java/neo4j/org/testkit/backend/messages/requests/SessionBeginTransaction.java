@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
@@ -38,6 +39,7 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 
 @Setter
@@ -114,6 +116,24 @@ public class SessionBeginTransaction implements TestkitRequest
                                          return Mono.fromDirect( session.beginTransaction( builder.build() ) )
                                                     .map( tx -> transaction(
                                                             testkitState.addRxTransactionHolder( new RxTransactionHolder( sessionHolder, tx ) ) ) );
+                                     } );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder ->
+                                     {
+                                         ReactiveSession session = sessionHolder.getSession();
+                                         TransactionConfig.Builder builder = TransactionConfig.builder();
+                                         Optional.ofNullable( data.txMeta ).ifPresent( builder::withMetadata );
+
+                                         configureTimeout( builder );
+
+                                         return Mono.fromDirect( session.beginTransaction( builder.build() ) )
+                                                    .map( tx -> transaction(
+                                                            testkitState.addReactiveTransactionHolder( new ReactiveTransactionHolder( sessionHolder, tx ) ) ) );
                                      } );
     }
 

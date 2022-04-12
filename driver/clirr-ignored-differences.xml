@@ -280,4 +280,28 @@
         <method>org.reactivestreams.Publisher isOpen()</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.reactive.ReactiveSession reactiveSession()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Driver</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.reactive.ReactiveSession reactiveSession(org.neo4j.driver.SessionConfig)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxQueryRunner</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.Value parameters(org.neo4j.driver.Record)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/reactive/RxQueryRunner</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.Value parameters(java.util.Map)</method>
+    </difference>
+
 </differences>

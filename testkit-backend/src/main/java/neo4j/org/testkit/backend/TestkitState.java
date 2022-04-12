@@ -22,6 +22,9 @@ import lombok.Getter;
 import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
+import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
+import neo4j.org.testkit.backend.holder.ReactiveSessionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -56,12 +59,15 @@ public class TestkitState
     private final Map<String,SessionHolder> sessionIdToSessionHolder = new HashMap<>();
     private final Map<String,AsyncSessionHolder> sessionIdToAsyncSessionHolder = new HashMap<>();
     private final Map<String,RxSessionHolder> sessionIdToRxSessionHolder = new HashMap<>();
+    private final Map<String,ReactiveSessionHolder> sessionIdToReactiveSessionHolder = new HashMap<>();
     private final Map<String,ResultHolder> resultIdToResultHolder = new HashMap<>();
     private final Map<String,ResultCursorHolder> resultIdToResultCursorHolder = new HashMap<>();
     private final Map<String,RxResultHolder> resultIdToRxResultHolder = new HashMap<>();
+    private final Map<String,ReactiveResultHolder> resultIdToReactiveResultHolder = new HashMap<>();
     private final Map<String,TransactionHolder> transactionIdToTransactionHolder = new HashMap<>();
     private final Map<String,AsyncTransactionHolder> transactionIdToAsyncTransactionHolder = new HashMap<>();
     private final Map<String,RxTransactionHolder> transactionIdToRxTransactionHolder = new HashMap<>();
+    private final Map<String,ReactiveTransactionHolder> transactionIdToReactiveTransactionHolder = new HashMap<>();
     @Getter
     private final Map<String,Neo4jException> errors = new HashMap<>();
     private final AtomicInteger idGenerator = new AtomicInteger( 0 );
@@ -120,6 +126,16 @@ public class TestkitState
         return getRx( id, sessionIdToRxSessionHolder, SESSION_NOT_FOUND_MESSAGE );
     }
 
+    public String addReactiveSessionHolder( ReactiveSessionHolder sessionHolder )
+    {
+        return add( sessionHolder, sessionIdToReactiveSessionHolder );
+    }
+
+    public Mono<ReactiveSessionHolder> getReactiveSessionHolder( String id )
+    {
+        return getRx( id, sessionIdToReactiveSessionHolder, SESSION_NOT_FOUND_MESSAGE );
+    }
+
     public String addTransactionHolder( TransactionHolder transactionHolder )
     {
         return add( transactionHolder, transactionIdToTransactionHolder );
@@ -150,6 +166,16 @@ public class TestkitState
         return getRx( id, transactionIdToRxTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE );
     }
 
+    public String addReactiveTransactionHolder( ReactiveTransactionHolder transactionHolder )
+    {
+        return add( transactionHolder, transactionIdToReactiveTransactionHolder );
+    }
+
+    public Mono<ReactiveTransactionHolder> getReactiveTransactionHolder( String id )
+    {
+        return getRx( id, transactionIdToReactiveTransactionHolder, TRANSACTION_NOT_FOUND_MESSAGE );
+    }
+
     public String addResultHolder( ResultHolder resultHolder )
     {
         return add( resultHolder, resultIdToResultHolder );
@@ -178,6 +204,16 @@ public class TestkitState
     public Mono<RxResultHolder> getRxResultHolder( String id )
     {
         return getRx( id, resultIdToRxResultHolder, RESULT_NOT_FOUND_MESSAGE );
+    }
+
+    public String addReactiveResultHolder( ReactiveResultHolder resultHolder )
+    {
+        return add( resultHolder, resultIdToReactiveResultHolder );
+    }
+
+    public Mono<ReactiveResultHolder> getReactiveResultHolder( String id )
+    {
+        return getRx( id, resultIdToReactiveResultHolder, RESULT_NOT_FOUND_MESSAGE );
     }
 
     private <T> String add( T value, Map<String,T> idToT )

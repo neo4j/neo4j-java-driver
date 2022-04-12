@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.CustomDriverError;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -42,6 +43,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 
@@ -135,6 +137,30 @@ public class SessionRun implements TestkitRequest
                                          // However, it does not currently report errors.
                                          return Mono.fromDirect( result.keys() )
                                                     .map( keys -> createResponse( id, keys ) );
+                                     } );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder ->
+                                     {
+                                         ReactiveSession session = sessionHolder.getSession();
+                                         Query query = Optional.ofNullable( data.params )
+                                                               .map( params -> new Query( data.cypher, data.params ) )
+                                                               .orElseGet( () -> new Query( data.cypher ) );
+                                         TransactionConfig.Builder transactionConfig = TransactionConfig.builder();
+                                         Optional.ofNullable( data.getTxMeta() ).ifPresent( transactionConfig::withMetadata );
+                                         configureTimeout( transactionConfig );
+
+                                         return Mono.fromDirect( session.run( query, transactionConfig.build() ) )
+                                                    .map( result ->
+                                                          {
+                                                              String id =
+                                                                      testkitState.addReactiveResultHolder( new ReactiveResultHolder( sessionHolder, result ) );
+                                                              return createResponse( id, result.keys() );
+                                                          } );
                                      } );
     }
 

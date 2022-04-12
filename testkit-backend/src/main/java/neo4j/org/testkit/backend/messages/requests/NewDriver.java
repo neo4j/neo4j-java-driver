@@ -117,6 +117,7 @@ public class NewDriver implements TestkitRequest
         Optional.ofNullable( data.connectionAcquisitionTimeoutMs )
                 .ifPresent( timeout -> configBuilder.withConnectionAcquisitionTimeout( timeout, TimeUnit.MILLISECONDS ) );
         configBuilder.withDriverMetrics();
+//        configBuilder.withLogging( Logging.console( Level.FINE ) );
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
         try
@@ -140,6 +141,12 @@ public class NewDriver implements TestkitRequest
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        return processReactive( testkitState );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
     {
         return Mono.fromCompletionStage( processAsync( testkitState ) );
     }

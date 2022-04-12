@@ -56,6 +56,12 @@ public class ResultList implements TestkitRequest
         throw new UnsupportedOperationException( "Operation not supported" );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
+    }
+
     private RecordList createResponse( List<org.neo4j.driver.Record> records )
     {
         List<Record.RecordBody> mappedRecords = records.stream()

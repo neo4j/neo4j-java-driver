@@ -18,9 +18,6 @@
  */
 package org.neo4j.driver.internal.reactive;
 
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
-
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Query;
@@ -30,31 +27,29 @@ import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 
-import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-
-public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTransaction
+public class InternalRxTransaction extends AbstractReactiveTransaction implements RxTransaction
 {
-    private final UnmanagedTransaction tx;
-
     public InternalRxTransaction( UnmanagedTransaction tx )
     {
-        this.tx = tx;
+        super( tx );
     }
 
     @Override
-    public RxResult run(Query query)
+    public RxResult run( Query query )
     {
-        return new InternalRxResult( () -> {
-            CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
-            tx.runRx(query).whenComplete( (cursor, completionError ) -> {
-                if ( cursor != null )
-                {
-                    cursorFuture.complete( cursor );
-                }
-                else
-                {
-                    // We failed to create a result cursor so we cannot rely on result cursor to handle failure.
-                    // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
+        return new InternalRxResult( () ->
+                                     {
+                                         CompletableFuture<RxResultCursor> cursorFuture = new CompletableFuture<>();
+                                         tx.runRx( query ).whenComplete( ( cursor, completionError ) ->
+                                                                         {
+                                                                             if ( cursor != null )
+                                                                             {
+                                                                                 cursorFuture.complete( cursor );
+                                                                             }
+                                                                             else
+                                                                             {
+                                                                                 // We failed to create a result cursor so we cannot rely on result cursor to handle failure.
+                                                                                 // The logic here shall be the same as `TransactionPullResponseHandler#afterFailure` as that is where cursor handling failure
                     // This is optional as tx still holds a reference to all cursor futures and they will be clean up properly in commit
                     Throwable error = Futures.completionExceptionCause( completionError );
                     tx.markTerminated( error );
@@ -63,33 +58,5 @@ public class InternalRxTransaction extends AbstractRxQueryRunner implements RxTr
             } );
             return cursorFuture;
         } );
-    }
-
-    @Override
-    public <T> Publisher<T> commit()
-    {
-        return createEmptyPublisher( tx::commitAsync );
-    }
-
-    @Override
-    public <T> Publisher<T> rollback()
-    {
-        return createEmptyPublisher( tx::rollbackAsync );
-    }
-
-    public Publisher<Void> close()
-    {
-        return close( false );
-    }
-
-    @Override
-    public Publisher<Boolean> isOpen()
-    {
-        return Mono.just( tx.isOpen() );
-    }
-
-    Publisher<Void> close( boolean commit )
-    {
-        return createEmptyPublisher( () -> tx.closeAsync( commit ) );
     }
 }

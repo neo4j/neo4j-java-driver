@@ -24,18 +24,18 @@ import org.neo4j.driver.Transaction;
 
 /**
  * Same as {@link Transaction} except this reactive transaction exposes a reactive API.
+ *
  * @see Transaction
- * @see RxSession
+ * @see ReactiveSession
  * @see Publisher
- * @since 4.0
+ * @since 5.0
  */
-@Deprecated
-public interface RxTransaction extends RxQueryRunner
+public interface ReactiveTransaction extends ReactiveQueryRunner
 {
     /**
-     * Commits the transaction.
-     * It completes without publishing anything if transaction is committed successfully.
-     * Otherwise, errors when there is any error to commit.
+     * Commits the transaction. It completes without publishing anything if transaction is committed successfully. Otherwise, errors when there is any error to
+     * commit.
+     *
      * @param <T> makes it easier to be chained after other publishers.
      * @return an empty publisher.
      */

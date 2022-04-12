@@ -55,8 +55,11 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
         case ASYNC:
             processorImpl = TestkitRequest::processAsync;
             break;
-        case REACTIVE:
+        case REACTIVE_LEGACY:
             processorImpl = ( request, state ) -> request.processRx( state ).toFuture();
+            break;
+        case REACTIVE:
+            processorImpl = ( request, state ) -> request.processReactive( state ).toFuture();
             break;
         default:
             processorImpl = TestkitRequestProcessorHandler::wrapSyncRequest;
@@ -85,6 +88,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                                                                             {
                                                                                 if ( throwable != null )
                                                                                 {
+//                                                                                    throwable.printStackTrace();
                                                                                     ctx.writeAndFlush( createErrorResponse( throwable ) );
                                                                                 }
                                                                                 else if ( response != null )
@@ -190,6 +194,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
     {
         SYNC,
         ASYNC,
+        REACTIVE_LEGACY,
         REACTIVE
     }
 }

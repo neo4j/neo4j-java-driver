@@ -20,17 +20,16 @@ package neo4j.org.testkit.backend.messages.requests;
 
 import lombok.Getter;
 import lombok.Setter;
-import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
-import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.exceptions.NoSuchRecordException;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletionStage;
+
+import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
 
 @Setter
 @Getter
@@ -62,6 +61,12 @@ public class ResultPeek implements TestkitRequest
 
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
+    {
+        throw new UnsupportedOperationException( "Operation not supported" );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
     {
         throw new UnsupportedOperationException( "Operation not supported" );
     }
