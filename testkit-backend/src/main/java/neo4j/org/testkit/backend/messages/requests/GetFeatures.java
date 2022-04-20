@@ -66,7 +66,8 @@ public class GetFeatures implements TestkitRequest
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
-            "Optimization:ResultListFetchAll"
+            "Optimization:ResultListFetchAll",
+            "Feature:API:Result.Single"
     ) );
 
     private static final Set<String> ASYNC_FEATURES = new HashSet<>( Arrays.asList(
@@ -74,7 +75,8 @@ public class GetFeatures implements TestkitRequest
             "Optimization:PullPipelining",
             "Feature:API:Result.List",
             "Feature:API:Result.Peek",
-            "Optimization:ResultListFetchAll"
+            "Optimization:ResultListFetchAll",
+            "Feature:API:Result.Single"
     ) );
 
     @Override
