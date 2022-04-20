@@ -47,7 +47,7 @@
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.2.11</logback-classic.version>
-    <jackson.version>2.13.2</jackson.version>
+    <jackson.version>2.13.2.1</jackson.version>
     <lombok.version>1.18.22</lombok.version>
     <svm.version>21.3.1</svm.version>
     <micrometer.version>1.8.3</micrometer.version>
