@@ -20,6 +20,7 @@ package neo4j.org.testkit.backend.messages;
 
 import neo4j.org.testkit.backend.RxBufferedSubscriber;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
 import neo4j.org.testkit.backend.messages.requests.TestkitRequest;
 import neo4j.org.testkit.backend.messages.responses.NullRecord;
@@ -80,6 +81,30 @@ public abstract class AbstractResultNext implements TestkitRequest
                                      } );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveResultHolder( getResultId() )
+                           .flatMap( resultHolder ->
+                                     {
+                                         RxBufferedSubscriber<Record> subscriber =
+                                                 resultHolder.getSubscriber()
+                                                             .orElseGet( () ->
+                                                                         {
+                                                                             RxBufferedSubscriber<Record> subscriberInstance =
+                                                                                     new RxBufferedSubscriber<>(
+                                                                                             getFetchSize( resultHolder ) );
+                                                                             resultHolder.setSubscriber( subscriberInstance );
+                                                                             resultHolder.getResult().records()
+                                                                                         .subscribe( subscriberInstance );
+                                                                             return subscriberInstance;
+                                                                         } );
+                                         return subscriber.next()
+                                                          .map( this::createResponse )
+                                                          .defaultIfEmpty( NullRecord.builder().build() );
+                                     } );
+    }
+
     protected abstract neo4j.org.testkit.backend.messages.responses.TestkitResponse createResponse( Record record );
 
     protected abstract String getResultId();
@@ -90,6 +115,14 @@ public abstract class AbstractResultNext implements TestkitRequest
     }
 
     private long getFetchSize( RxResultHolder resultHolder )
+    {
+        long fetchSize = resultHolder.getSessionHolder().getConfig()
+                                     .fetchSize()
+                                     .orElse( resultHolder.getSessionHolder().getDriverHolder().getConfig().fetchSize() );
+        return fetchSize == -1 ? Long.MAX_VALUE : fetchSize;
+    }
+
+    private long getFetchSize( ReactiveResultHolder resultHolder )
     {
         long fetchSize = resultHolder.getSessionHolder().getConfig()
                                      .fetchSize()

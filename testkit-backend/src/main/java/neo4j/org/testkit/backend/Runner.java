@@ -40,6 +40,10 @@ public class Runner
         {
             backendMode = TestkitRequestProcessorHandler.BackendMode.ASYNC;
         }
+        else if ( "reactive-legacy".equals( modeArg ) )
+        {
+            backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE_LEGACY;
+        }
         else if ( "reactive".equals( modeArg ) )
         {
             backendMode = TestkitRequestProcessorHandler.BackendMode.REACTIVE;

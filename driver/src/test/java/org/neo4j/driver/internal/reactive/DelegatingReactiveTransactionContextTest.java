@@ -20,6 +20,8 @@ package org.neo4j.driver.internal.reactive;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Map;
@@ -27,24 +29,24 @@ import java.util.Map;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
-public class DelegatingRxTransactionContextTest
+public class DelegatingReactiveTransactionContextTest
 {
-    RxTransaction transaction;
-    DelegatingRxTransactionContext context;
+    ReactiveTransaction transaction;
+    DelegatingReactiveTransactionContext context;
 
     @BeforeEach
     void beforeEach()
     {
-        transaction = mock( RxTransaction.class );
-        context = new DelegatingRxTransactionContext( transaction );
+        transaction = mock( ReactiveTransaction.class );
+        context = new DelegatingReactiveTransactionContext( transaction );
     }
 
     @Test
@@ -53,11 +55,12 @@ public class DelegatingRxTransactionContextTest
         // GIVEN
         String query = "something";
         Value params = mock( Value.class );
-        RxResult expected = mock( RxResult.class );
+        Publisher<ReactiveResult> expected = Mono.empty();
         given( transaction.run( query, params ) ).willReturn( expected );
 
         // WHEN
-        RxResult actual = context.run( query, params );
+        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
+        Publisher<ReactiveResult> actual = context.run( query, params );
 
         // THEN
         assertEquals( expected, actual );
@@ -70,11 +73,12 @@ public class DelegatingRxTransactionContextTest
         // GIVEN
         String query = "something";
         Map<String,Object> params = Collections.emptyMap();
-        RxResult expected = mock( RxResult.class );
+        Publisher<ReactiveResult> expected = Mono.empty();
         given( transaction.run( query, params ) ).willReturn( expected );
 
         // WHEN
-        RxResult actual = context.run( query, params );
+        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
+        Publisher<ReactiveResult> actual = context.run( query, params );
 
         // THEN
         assertEquals( expected, actual );
@@ -87,11 +91,12 @@ public class DelegatingRxTransactionContextTest
         // GIVEN
         String query = "something";
         Record params = mock( Record.class );
-        RxResult expected = mock( RxResult.class );
+        Publisher<ReactiveResult> expected = Mono.empty();
         given( transaction.run( query, params ) ).willReturn( expected );
 
         // WHEN
-        RxResult actual = context.run( query, params );
+        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
+        Publisher<ReactiveResult> actual = context.run( query, params );
 
         // THEN
         assertEquals( expected, actual );
@@ -103,11 +108,12 @@ public class DelegatingRxTransactionContextTest
     {
         // GIVEN
         String query = "something";
-        RxResult expected = mock( RxResult.class );
+        Publisher<ReactiveResult> expected = Mono.empty();
         given( transaction.run( query ) ).willReturn( expected );
 
         // WHEN
-        RxResult actual = context.run( query );
+        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
+        Publisher<ReactiveResult> actual = context.run( query );
 
         // THEN
         assertEquals( expected, actual );
@@ -119,11 +125,12 @@ public class DelegatingRxTransactionContextTest
     {
         // GIVEN
         Query query = mock( Query.class );
-        RxResult expected = mock( RxResult.class );
+        Publisher<ReactiveResult> expected = Mono.empty();
         given( transaction.run( query ) ).willReturn( expected );
 
         // WHEN
-        RxResult actual = context.run( query );
+        @SuppressWarnings( "ReactiveStreamsUnusedPublisher" )
+        Publisher<ReactiveResult> actual = context.run( query );
 
         // THEN
         assertEquals( expected, actual );

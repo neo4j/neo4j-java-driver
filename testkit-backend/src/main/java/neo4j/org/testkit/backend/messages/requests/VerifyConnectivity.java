@@ -54,6 +54,12 @@ public class VerifyConnectivity implements TestkitRequest
     @Override
     public Mono<TestkitResponse> processRx( TestkitState testkitState )
     {
+        return processReactive( testkitState );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
         return Mono.fromCompletionStage( processAsync( testkitState ) );
     }
 

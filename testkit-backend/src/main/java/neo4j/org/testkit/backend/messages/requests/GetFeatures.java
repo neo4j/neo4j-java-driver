@@ -99,6 +99,12 @@ public class GetFeatures implements TestkitRequest
         return Mono.just( createResponse( COMMON_FEATURES ) );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return Mono.just( createResponse( COMMON_FEATURES ) );
+    }
+
     private FeatureList createResponse( Set<String> features )
     {
         return FeatureList.builder().data( FeatureList.FeatureListBody.builder().features( features ).build() ).build();

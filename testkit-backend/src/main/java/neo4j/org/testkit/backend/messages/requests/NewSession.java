@@ -23,6 +23,7 @@ import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncSessionHolder;
 import neo4j.org.testkit.backend.holder.DriverHolder;
+import neo4j.org.testkit.backend.holder.ReactiveSessionHolder;
 import neo4j.org.testkit.backend.holder.RxSessionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.messages.responses.Session;
@@ -66,6 +67,12 @@ public class NewSession implements TestkitRequest
         return Mono.just( createSessionStateAndResponse( testkitState, this::createRxSessionState, testkitState::addRxSessionHolder ) );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return Mono.just( createSessionStateAndResponse( testkitState, this::createReactiveSessionState, testkitState::addReactiveSessionHolder ) );
+    }
+
     protected <T> TestkitResponse createSessionStateAndResponse( TestkitState testkitState, BiFunction<DriverHolder,SessionConfig,T> sessionStateProducer,
                                                                  Function<T,String> addSessionHolder )
     {
@@ -105,6 +112,11 @@ public class NewSession implements TestkitRequest
     private RxSessionHolder createRxSessionState( DriverHolder driverHolder, SessionConfig sessionConfig )
     {
         return new RxSessionHolder( driverHolder, driverHolder.getDriver().rxSession( sessionConfig ), sessionConfig );
+    }
+
+    private ReactiveSessionHolder createReactiveSessionState( DriverHolder driverHolder, SessionConfig sessionConfig )
+    {
+        return new ReactiveSessionHolder( driverHolder, driverHolder.getDriver().reactiveSession( sessionConfig ), sessionConfig );
     }
 
     @Setter

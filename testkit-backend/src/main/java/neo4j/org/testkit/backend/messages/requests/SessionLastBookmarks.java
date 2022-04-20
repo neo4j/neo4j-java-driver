@@ -60,6 +60,14 @@ public class SessionLastBookmarks implements TestkitRequest
                            .map( this::createResponse );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveSessionHolder( data.getSessionId() )
+                           .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .map( this::createResponse );
+    }
+
     private Bookmarks createResponse( Bookmark bookmark )
     {
         return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();

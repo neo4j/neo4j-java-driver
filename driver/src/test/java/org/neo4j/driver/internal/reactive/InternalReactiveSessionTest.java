@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.reactive;
 
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -26,9 +27,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -42,20 +44,24 @@ import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursorImpl;
+import org.neo4j.driver.internal.retry.RetryLogic;
 import org.neo4j.driver.internal.util.FixedRetryLogic;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxTransaction;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveSession;
+import org.neo4j.driver.reactive.ReactiveTransaction;
+import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,16 +71,16 @@ import static org.neo4j.driver.TransactionConfig.empty;
 import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 
-class InternalRxSessionTest
+public class InternalReactiveSessionTest
 {
-    private static Stream<Function<RxSession, RxResult>> allSessionRunMethods()
+    private static Stream<Function<ReactiveSession,Publisher<ReactiveResult>>> allSessionRunMethods()
     {
         return Stream.of(
                 rxSession -> rxSession.run( "RETURN 1" ),
                 rxSession -> rxSession.run( "RETURN $x", parameters( "x", 1 ) ),
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ) ),
                 rxSession -> rxSession.run( "RETURN $x",
-                        new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
+                                            new InternalRecord( singletonList( "x" ), new Value[]{new IntegerValue( 1 )} ) ),
                 rxSession -> rxSession.run( new Query( "RETURN $x", parameters( "x", 1 ) ) ),
                 rxSession -> rxSession.run( new Query( "RETURN $x", parameters( "x", 1 ) ), empty() ),
                 rxSession -> rxSession.run( "RETURN $x", singletonMap( "x", 1 ), empty() ),
@@ -82,27 +88,17 @@ class InternalRxSessionTest
         );
     }
 
-    private static Stream<Function<RxSession,Publisher<RxTransaction>>> allBeginTxMethods()
+    private static Stream<Function<ReactiveSession,Publisher<ReactiveTransaction>>> allBeginTxMethods()
     {
         return Stream.of(
-                rxSession -> rxSession.beginTransaction(),
+                ReactiveSession::beginTransaction,
                 rxSession -> rxSession.beginTransaction( TransactionConfig.empty() )
-        );
-    }
-
-    private static Stream<Function<RxSession,Publisher<String>>> allRunTxMethods()
-    {
-        return Stream.of(
-                rxSession -> rxSession.readTransaction( tx -> Flux.just( "a" ) ),
-                rxSession -> rxSession.writeTransaction( tx -> Flux.just( "a" ) ),
-                rxSession -> rxSession.readTransaction( tx -> Flux.just( "a" ), empty() ),
-                rxSession -> rxSession.writeTransaction( tx -> Flux.just( "a" ), empty() )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldDelegateRun( Function<RxSession,RxResult> runReturnOne )
+    void shouldDelegateRun( Function<ReactiveSession,Publisher<ReactiveResult>> runReturnOne )
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
@@ -110,21 +106,19 @@ class InternalRxSessionTest
 
         // Run succeeded with a cursor
         when( session.runRx( any( Query.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( cursor ) );
-        InternalRxSession rxSession = new InternalRxSession( session );
+        InternalReactiveSession rxSession = new InternalReactiveSession( session );
 
         // When
-        RxResult result = runReturnOne.apply( rxSession );
-        // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        Publisher<ReactiveResult> result = runReturnOne.apply( rxSession );
 
         // Then
         verify( session ).runRx( any( Query.class ), any( TransactionConfig.class ) );
-        assertThat( Futures.getNow( cursorFuture ), equalTo( cursor ) );
+        StepVerifier.create( result ).expectNextCount( 1 ).verifyComplete();
     }
 
     @ParameterizedTest
     @MethodSource( "allSessionRunMethods" )
-    void shouldReleaseConnectionIfFailedToRun( Function<RxSession,RxResult> runReturnOne )
+    void shouldReleaseConnectionIfFailedToRun( Function<ReactiveSession,Publisher<ReactiveResult>> runReturnOne )
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -134,33 +128,30 @@ class InternalRxSessionTest
         when( session.runRx( any( Query.class ), any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
         when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
-        InternalRxSession rxSession = new InternalRxSession( session );
+        InternalReactiveSession rxSession = new InternalReactiveSession( session );
 
         // When
-        RxResult result = runReturnOne.apply( rxSession );
-        // Execute the run
-        CompletionStage<RxResultCursor> cursorFuture = ((InternalRxResult) result).cursorFutureSupplier().get();
+        Publisher<ReactiveResult> result = runReturnOne.apply( rxSession );
 
         // Then
+        StepVerifier.create( result ).expectErrorMatches( t -> error == t ).verify();
         verify( session ).runRx( any( Query.class ), any( TransactionConfig.class ) );
-        RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( cursorFuture ) );
-        assertThat( t.getCause(), equalTo( error ) );
         verify( session ).releaseConnectionAsync();
     }
 
     @ParameterizedTest
     @MethodSource( "allBeginTxMethods" )
-    void shouldDelegateBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx )
+    void shouldDelegateBeginTx( Function<ReactiveSession,Publisher<ReactiveTransaction>> beginTx )
     {
         // Given
         NetworkSession session = mock( NetworkSession.class );
         UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
 
         when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
-        InternalRxSession rxSession = new InternalRxSession( session );
+        InternalReactiveSession rxSession = new InternalReactiveSession( session );
 
         // When
-        Publisher<RxTransaction> rxTx = beginTx.apply( rxSession );
+        Publisher<ReactiveTransaction> rxTx = beginTx.apply( rxSession );
         StepVerifier.create( Mono.from( rxTx ) ).expectNextCount( 1 ).verifyComplete();
 
         // Then
@@ -169,7 +160,7 @@ class InternalRxSessionTest
 
     @ParameterizedTest
     @MethodSource( "allBeginTxMethods" )
-    void shouldReleaseConnectionIfFailedToBeginTx( Function<RxSession,Publisher<RxTransaction>> beginTx )
+    void shouldReleaseConnectionIfFailedToBeginTx( Function<ReactiveSession,Publisher<ReactiveTransaction>> beginTx )
     {
         // Given
         Throwable error = new RuntimeException( "Hi there" );
@@ -179,39 +170,17 @@ class InternalRxSessionTest
         when( session.beginTransactionAsync( any( TransactionConfig.class ) ) ).thenReturn( Futures.failedFuture( error ) );
         when( session.releaseConnectionAsync() ).thenReturn( Futures.completedWithNull() );
 
-        InternalRxSession rxSession = new InternalRxSession( session );
+        InternalReactiveSession rxSession = new InternalReactiveSession( session );
 
         // When
-        Publisher<RxTransaction> rxTx = beginTx.apply( rxSession );
-        CompletableFuture<RxTransaction> txFuture = Mono.from( rxTx ).toFuture();
+        Publisher<ReactiveTransaction> rxTx = beginTx.apply( rxSession );
+        CompletableFuture<ReactiveTransaction> txFuture = Mono.from( rxTx ).toFuture();
 
         // Then
         verify( session ).beginTransactionAsync( any( TransactionConfig.class ) );
         RuntimeException t = assertThrows( CompletionException.class, () -> Futures.getNow( txFuture ) );
-        assertThat( t.getCause(), equalTo( error ) );
+        MatcherAssert.assertThat( t.getCause(), equalTo( error ) );
         verify( session ).releaseConnectionAsync();
-    }
-
-    @ParameterizedTest
-    @MethodSource( "allRunTxMethods" )
-    void shouldDelegateRunTx( Function<RxSession,Publisher<String>> runTx )
-    {
-        // Given
-        NetworkSession session = mock( NetworkSession.class );
-        UnmanagedTransaction tx = mock( UnmanagedTransaction.class );
-        when( tx.closeAsync( true ) ).thenReturn( completedWithNull() );
-
-        when( session.beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) ) ).thenReturn( completedFuture( tx ) );
-        when( session.retryLogic() ).thenReturn( new FixedRetryLogic( 1 ) );
-        InternalRxSession rxSession = new InternalRxSession( session );
-
-        // When
-        Publisher<String> strings = runTx.apply( rxSession );
-        StepVerifier.create( Flux.from( strings ) ).expectNext( "a" ).verifyComplete();
-
-        // Then
-        verify( session ).beginTransactionAsync( any( AccessMode.class ), any( TransactionConfig.class ) );
-        verify( tx ).closeAsync( true );
     }
 
     @Test
@@ -308,5 +277,55 @@ class InternalRxSessionTest
         StepVerifier.create( mono ).verifyComplete();
         verify( session ).closeAsync();
         verifyNoMoreInteractions( session );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "executeVariations" )
+    void shouldDelegateExecuteReadToRetryLogic( ExecuteVariation executeVariation )
+    {
+        // GIVEN
+        NetworkSession networkSession = mock( NetworkSession.class );
+        ReactiveSession session = new InternalReactiveSession( networkSession );
+        RetryLogic logic = mock( RetryLogic.class );
+        String expected = "";
+        given( networkSession.retryLogic() ).willReturn( logic );
+        ReactiveTransactionCallback<Publisher<String>> tc = ( ignored ) -> Mono.justOrEmpty( expected );
+        given( logic.<String>retryRx( any() ) ).willReturn( tc.execute( null ) );
+        TransactionConfig config = TransactionConfig.builder().build();
+
+        // WHEN
+        Publisher<String> actual = executeVariation.readOnly ?
+                                   (
+                                           executeVariation.explicitTxConfig ? session.executeRead( tc, config ) : session.executeRead( tc )
+                                   ) : (
+                                           executeVariation.explicitTxConfig ? session.executeWrite( tc, config ) : session.executeWrite( tc )
+                                   );
+
+        // THEN
+        assertEquals( expected, Mono.from( actual ).block() );
+        then( networkSession ).should().retryLogic();
+        then( logic ).should().retryRx( any() );
+    }
+
+    static List<ExecuteVariation> executeVariations()
+    {
+        return Arrays.asList(
+                new ExecuteVariation( false, false ),
+                new ExecuteVariation( false, true ),
+                new ExecuteVariation( true, false ),
+                new ExecuteVariation( true, true )
+        );
+    }
+
+    private static class ExecuteVariation
+    {
+        private final boolean readOnly;
+        private final boolean explicitTxConfig;
+
+        private ExecuteVariation( boolean readOnly, boolean explicitTxConfig )
+        {
+            this.readOnly = readOnly;
+            this.explicitTxConfig = explicitTxConfig;
+        }
     }
 }

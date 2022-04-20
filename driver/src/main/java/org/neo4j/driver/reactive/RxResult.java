@@ -41,6 +41,7 @@ import org.neo4j.driver.summary.ResultSummary;
  * @see Subscription
  * @since 4.0
  */
+@Deprecated
 public interface RxResult
 {
     /**

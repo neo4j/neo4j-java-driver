@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.TestkitState;
+import neo4j.org.testkit.backend.holder.ReactiveResultHolder;
 import neo4j.org.testkit.backend.holder.ResultCursorHolder;
 import neo4j.org.testkit.backend.holder.ResultHolder;
 import neo4j.org.testkit.backend.holder.RxResultHolder;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
+import org.neo4j.driver.reactive.ReactiveTransaction;
 import org.neo4j.driver.reactive.RxResult;
 
 @Setter
@@ -83,6 +85,25 @@ public class TransactionRun implements TestkitRequest
                                          // The keys() method causes RUN message exchange.
                                          // However, it does not currently report errors.
                                          return Mono.fromDirect( result.keys() ).map( keys -> createResponse( resultId, keys ) );
+                                     } );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveTransactionHolder( data.getTxId() )
+                           .flatMap( transactionHolder ->
+                                     {
+                                         ReactiveTransaction tx = transactionHolder.getTransaction();
+                                         Map<String,Object> params = data.getParams() != null ? data.getParams() : Collections.emptyMap();
+
+                                         return Mono.fromDirect( tx.run( data.getCypher(), params ) )
+                                                    .map( result ->
+                                                          {
+                                                              String id = testkitState.addReactiveResultHolder(
+                                                                      new ReactiveResultHolder( transactionHolder, result ) );
+                                                              return createResponse( id, result.keys() );
+                                                          } );
                                      } );
     }
 

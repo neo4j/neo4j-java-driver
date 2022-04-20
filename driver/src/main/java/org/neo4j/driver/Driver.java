@@ -22,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.exceptions.ClientException;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 import org.neo4j.driver.util.Experimental;
@@ -90,27 +91,57 @@ public interface Driver extends AutoCloseable
     Session session( SessionConfig sessionConfig );
 
     /**
-     * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * Create a new general purpose {@link RxSession} with default {@link SessionConfig session configuration}. The {@link RxSession} provides a reactive way to
+     * run queries and process results.
      * <p>
      * Alias to {@link #rxSession(SessionConfig)}}.
      *
      * @return a new {@link RxSession} object.
+     * @deprecated superseded by {@link #reactiveSession()}.
      */
-    RxSession rxSession();
+    @Deprecated
+    default RxSession rxSession()
+    {
+        return rxSession( SessionConfig.defaultConfig() );
+    }
 
     /**
-     * Create a new {@link RxSession} with a specified {@link SessionConfig session configuration}.
-     * Use {@link SessionConfig#forDatabase(String)} to obtain a general purpose session configuration for the specified database.
-     * The {@link RxSession} provides a reactive way to run queries and process results.
+     * Create a new {@link RxSession} with a specified {@link SessionConfig session configuration}. Use {@link SessionConfig#forDatabase(String)} to obtain a
+     * general purpose session configuration for the specified database. The {@link RxSession} provides a reactive way to run queries and process results.
+     *
      * @param sessionConfig used to customize the session.
      * @return a new {@link RxSession} object.
+     * @deprecated superseded by {@link #reactiveSession(SessionConfig)}.
      */
+    @Deprecated
     RxSession rxSession( SessionConfig sessionConfig );
 
     /**
-     * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}.
-     * The {@link AsyncSession} provides an asynchronous way to run queries and process results.
+     * Create a new general purpose {@link ReactiveSession} with default {@link SessionConfig session configuration}. The {@link ReactiveSession} provides a
+     * reactive way to run queries and process results.
+     * <p>
+     * Alias to {@link #rxSession(SessionConfig)}}.
+     *
+     * @return a new {@link ReactiveSession} object.
+     */
+    default ReactiveSession reactiveSession()
+    {
+        return reactiveSession( SessionConfig.defaultConfig() );
+    }
+
+    /**
+     * Create a new {@link ReactiveSession} with a specified {@link SessionConfig session configuration}. Use {@link SessionConfig#forDatabase(String)} to
+     * obtain a general purpose session configuration for the specified database. The {@link ReactiveSession} provides a reactive way to run queries and process
+     * results.
+     *
+     * @param sessionConfig used to customize the session.
+     * @return a new {@link ReactiveSession} object.
+     */
+    ReactiveSession reactiveSession( SessionConfig sessionConfig );
+
+    /**
+     * Create a new general purpose {@link AsyncSession} with default {@link SessionConfig session configuration}. The {@link AsyncSession} provides an
+     * asynchronous way to run queries and process results.
      * <p>
      * Alias to {@link #asyncSession(SessionConfig)}}.
      *

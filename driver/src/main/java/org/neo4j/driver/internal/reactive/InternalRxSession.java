@@ -19,7 +19,6 @@
 package org.neo4j.driver.internal.reactive;
 
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,78 +29,33 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.TransactionNestingException;
 import org.neo4j.driver.internal.async.NetworkSession;
+import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.util.Futures;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxTransaction;
-import org.neo4j.driver.reactive.RxTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
 
 import static org.neo4j.driver.internal.reactive.RxUtils.createEmptyPublisher;
-import static org.neo4j.driver.internal.reactive.RxUtils.createSingleItemPublisher;
 
-public class InternalRxSession extends AbstractRxQueryRunner implements RxSession
+public class InternalRxSession extends AbstractReactiveSession<RxTransaction> implements RxSession
 {
-    private final NetworkSession session;
-
     public InternalRxSession( NetworkSession session )
     {
-        // RxSession accept a network session as input.
-        // The network session different from async session that it provides ways to both run for Rx and Async
-        // Note: Blocking result could just build on top of async result. However Rx result cannot just build on top of async result.
-        this.session = session;
+        super( session );
     }
 
     @Override
-    public Publisher<RxTransaction> beginTransaction()
+    RxTransaction createTransaction( UnmanagedTransaction unmanagedTransaction )
     {
-        return beginTransaction( TransactionConfig.empty() );
+        return new InternalRxTransaction( unmanagedTransaction );
     }
 
     @Override
-    public Publisher<RxTransaction> beginTransaction( TransactionConfig config )
+    Publisher<Void> closeTransaction( RxTransaction transaction, boolean commit )
     {
-        return createSingleItemPublisher(
-                () ->
-                {
-                    CompletableFuture<RxTransaction> txFuture = new CompletableFuture<>();
-                    session.beginTransactionAsync( config ).whenComplete(
-                            ( tx, completionError ) ->
-                            {
-                                if ( tx != null )
-                                {
-                                    txFuture.complete( new InternalRxTransaction( tx ) );
-                                }
-                                else
-                                {
-                                    releaseConnectionBeforeReturning( txFuture, completionError );
-                                }
-                            } );
-                    return txFuture;
-                }, () -> new IllegalStateException( "Unexpected condition, begin transaction call has completed successfully with transaction being null" ) );
-    }
-
-    private Publisher<InternalRxTransaction> beginTransaction( AccessMode mode, TransactionConfig config )
-    {
-        return createSingleItemPublisher(
-                () ->
-                {
-                    CompletableFuture<InternalRxTransaction> txFuture = new CompletableFuture<>();
-                    session.beginTransactionAsync( mode, config ).whenComplete(
-                            ( tx, completionError ) ->
-                            {
-                                if ( tx != null )
-                                {
-                                    txFuture.complete( new InternalRxTransaction( tx ) );
-                                }
-                                else
-                                {
-                                    releaseConnectionBeforeReturning( txFuture, completionError );
-                                }
-                            } );
-                    return txFuture;
-                }, () -> new IllegalStateException( "Unexpected condition, begin transaction call has completed successfully with transaction being null" ) );
+        return ((InternalRxTransaction) transaction).close( commit );
     }
 
     @Override
@@ -113,13 +67,7 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     @Override
     public <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
-        return runTransaction( AccessMode.READ, work, config );
-    }
-
-    @Override
-    public <T> Publisher<T> executeRead( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config )
-    {
-        return readTransaction( tx -> callback.execute( new DelegatingRxTransactionContext( tx ) ), config );
+        return runTransaction( AccessMode.READ, work::execute, config );
     }
 
     @Override
@@ -131,20 +79,7 @@ public class InternalRxSession extends AbstractRxQueryRunner implements RxSessio
     @Override
     public <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
     {
-        return runTransaction( AccessMode.WRITE, work, config );
-    }
-
-    @Override
-    public <T> Publisher<T> executeWrite( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config )
-    {
-        return writeTransaction( tx -> callback.execute( new DelegatingRxTransactionContext( tx ) ), config );
-    }
-
-    private <T> Publisher<T> runTransaction( AccessMode mode, RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config )
-    {
-        Flux<T> repeatableWork = Flux.usingWhen( beginTransaction( mode, config ), work::execute,
-                                                 tx -> tx.close( true ), ( tx, error ) -> tx.close(), InternalRxTransaction::close );
-        return session.retryLogic().retryRx( repeatableWork );
+        return runTransaction( AccessMode.WRITE, work::execute, config );
     }
 
     @Override

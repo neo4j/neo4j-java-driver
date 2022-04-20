@@ -55,6 +55,14 @@ public class TransactionRollback implements TestkitRequest
                            .then( Mono.just( createResponse( data.getTxId() ) ) );
     }
 
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveTransactionHolder( data.getTxId() )
+                           .flatMap( tx -> Mono.fromDirect( tx.getTransaction().rollback() ) )
+                           .then( Mono.just( createResponse( data.getTxId() ) ) );
+    }
+
     private Transaction createResponse( String txId )
     {
         return Transaction.builder().data( Transaction.TransactionBody.builder().id( txId ).build() ).build();

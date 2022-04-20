@@ -51,4 +51,6 @@ public interface TestkitRequest
     CompletionStage<TestkitResponse> processAsync( TestkitState testkitState );
 
     Mono<TestkitResponse> processRx( TestkitState testkitState );
+
+    Mono<TestkitResponse> processReactive( TestkitState testkitState );
 }

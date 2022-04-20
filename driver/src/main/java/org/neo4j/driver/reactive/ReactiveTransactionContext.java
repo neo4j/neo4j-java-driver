@@ -20,7 +20,9 @@ package org.neo4j.driver.reactive;
 
 /**
  * A context for running queries within transaction.
+ *
+ * @since 5.0
  */
-public interface RxTransactionContext extends RxQueryRunner
+public interface ReactiveTransactionContext extends ReactiveQueryRunner
 {
 }

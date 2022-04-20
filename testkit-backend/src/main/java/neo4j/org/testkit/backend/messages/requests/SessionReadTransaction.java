@@ -21,8 +21,10 @@ package neo4j.org.testkit.backend.messages.requests;
 import lombok.Getter;
 import lombok.Setter;
 import neo4j.org.testkit.backend.FrontendError;
+import neo4j.org.testkit.backend.ReactiveTransactionContextAdapter;
 import neo4j.org.testkit.backend.TestkitState;
 import neo4j.org.testkit.backend.holder.AsyncTransactionHolder;
+import neo4j.org.testkit.backend.holder.ReactiveTransactionHolder;
 import neo4j.org.testkit.backend.holder.RxTransactionHolder;
 import neo4j.org.testkit.backend.holder.SessionHolder;
 import neo4j.org.testkit.backend.holder.TransactionHolder;
@@ -41,6 +43,7 @@ import org.neo4j.driver.TransactionWork;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.reactive.ReactiveTransactionCallback;
 import org.neo4j.driver.reactive.RxTransactionWork;
 
 @Setter
@@ -96,6 +99,27 @@ public class SessionReadTransaction implements TestkitRequest
                                          };
 
                                          return Mono.fromDirect( sessionHolder.getSession().readTransaction( workWrapper ) );
+                                     } )
+                           .then( Mono.just( retryableDone() ) );
+    }
+
+    @Override
+    public Mono<TestkitResponse> processReactive( TestkitState testkitState )
+    {
+        return testkitState.getReactiveSessionHolder( data.getSessionId() )
+                           .flatMap( sessionHolder ->
+                                     {
+                                         ReactiveTransactionCallback<Publisher<Void>> workWrapper = tx ->
+                                         {
+                                             String txId = testkitState.addReactiveTransactionHolder(
+                                                     new ReactiveTransactionHolder( sessionHolder, new ReactiveTransactionContextAdapter( tx ) ) );
+                                             testkitState.getResponseWriter().accept( retryableTry( txId ) );
+                                             CompletableFuture<Void> tryResult = new CompletableFuture<>();
+                                             sessionHolder.setTxWorkFuture( tryResult );
+                                             return Mono.fromCompletionStage( tryResult );
+                                         };
+
+                                         return Mono.fromDirect( sessionHolder.getSession().executeRead( workWrapper ) );
                                      } )
                            .then( Mono.just( retryableDone() ) );
     }

@@ -37,4 +37,6 @@ public interface RxResultCursor extends Subscription, FailableCursor
     CompletionStage<ResultSummary> summaryAsync();
 
     boolean isDone();
+
+    Throwable getRunError();
 }

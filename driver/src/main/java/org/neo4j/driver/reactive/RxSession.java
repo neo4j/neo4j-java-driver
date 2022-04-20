@@ -22,12 +22,10 @@ import org.reactivestreams.Publisher;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.Values;
@@ -40,19 +38,21 @@ import org.neo4j.driver.Values;
  * @see Publisher
  * @since 4.0
  */
+@Deprecated
 public interface RxSession extends RxQueryRunner
 {
     /**
-     * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em>. At
-     * most one transaction may exist in a session at any point in time. To
-     * maintain multiple concurrent transactions, use multiple concurrent
-     * sessions.
+     * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em>. At most one transaction may exist in a session at any point in time. To maintain
+     * multiple concurrent transactions, use multiple concurrent sessions.
      * <p>
      * It by default is executed in a Network IO thread, as a result no blocking operation is allowed in this thread.
      *
      * @return a new {@link RxTransaction}
      */
-    Publisher<RxTransaction> beginTransaction();
+    default Publisher<RxTransaction> beginTransaction()
+    {
+        return beginTransaction( TransactionConfig.empty() );
+    }
 
     /**
      * Begin a new <em>unmanaged {@linkplain RxTransaction transaction}</em> with the specified {@link TransactionConfig configuration}.
@@ -83,32 +83,9 @@ public interface RxSession extends RxQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeRead(RxTransactionCallback)}.
      *
      */
-    @Deprecated
     <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work );
-
-    /**
-     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one
-     * or more statements to be run.
-     * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
-     * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
-     * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
-     * <p>
-     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
-     * different thread.
-     *
-     * @param callback the callback representing the unit of work.
-     * @param <T>      the return type of the given unit of work.
-     * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
-     */
-    default <T> Publisher<T> executeRead( RxTransactionCallback<? extends Publisher<T>> callback )
-    {
-        return executeRead( callback, TransactionConfig.empty() );
-    }
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#READ read} reactive transaction with
@@ -129,28 +106,8 @@ public interface RxSession extends RxQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeRead(RxTransactionCallback, TransactionConfig)}.
      */
-    @Deprecated
     <T> Publisher<T> readTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
-
-    /**
-     * Execute a unit of work as a single, managed transaction with {@link AccessMode#READ read} access mode and retry behaviour. The transaction allows for one or more statements to be run.
-     * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work
-     * will result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
-     * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
-     * <p>
-     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
-     * different thread.
-     *
-     * @param callback the callback representing the unit of work.
-     * @param config   configuration for all transactions started to execute the unit of work.
-     * @param <T>      the return type of the given unit of work.
-     * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
-     */
-    <T> Publisher<T> executeRead( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config );
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction.
@@ -169,31 +126,8 @@ public interface RxSession extends RxQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeWrite(RxTransactionCallback)}.
      */
-    @Deprecated
     <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work );
-
-    /**
-     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for
-     * one or more statements to be run.
-     * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work will
-     * result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
-     * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
-     * <p>
-     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
-     * different thread.
-     *
-     * @param callback the callback representing the unit of work.
-     * @param <T>      the return type of the given unit of work.
-     * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
-     */
-    default <T> Publisher<T> executeWrite( RxTransactionCallback<? extends Publisher<T>> callback )
-    {
-        return executeWrite( callback, TransactionConfig.empty() );
-    }
 
     /**
      * Execute given unit of reactive work in a {@link AccessMode#WRITE write} reactive transaction with
@@ -214,28 +148,8 @@ public interface RxSession extends RxQueryRunner
      * @param <T> the return type of the given unit of work.
      * @return a {@link Publisher publisher} completed with the same result as returned by the given unit of work.
      * publisher can be completed exceptionally if given work or commit fails.
-     * @deprecated superseded by {@link #executeWrite(RxTransactionCallback, TransactionConfig)}.
      */
-    @Deprecated
     <T> Publisher<T> writeTransaction( RxTransactionWork<? extends Publisher<T>> work, TransactionConfig config );
-
-    /**
-     * Execute a unit of work as a single, managed transaction with {@link AccessMode#WRITE write} access mode and retry behaviour. The transaction allows for one or more statements to be run.
-     * <p>
-     * The driver will attempt committing the transaction when the provided unit of work completes successfully. Any exception emitted by the unit of work
-     * will result in a rollback attempt and abortion of execution unless exception is considered to be valid for retry attempt by the driver.
-     * <p>
-     * The provided unit of work should not return {@link Result} object as it won't be valid outside the scope of the transaction.
-     * <p>
-     * It is prohibited to block the thread completing the returned {@link CompletionStage}. Please avoid blocking operations or hand processing over to a
-     * different thread.
-     *
-     * @param callback the callback representing the unit of work.
-     * @param config   configuration for all transactions started to execute the unit of work.
-     * @param <T>      the return type of the given unit of work.
-     * @return a publisher that emits the result of the unit of work and success signals on success or error otherwise.
-     */
-    <T> Publisher<T> executeWrite( RxTransactionCallback<? extends Publisher<T>> callback, TransactionConfig config );
 
     /**
      * Run a query with parameters in an auto-commit transaction with specified {@link TransactionConfig} and return a reactive result stream. The query is not

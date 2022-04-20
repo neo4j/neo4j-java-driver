@@ -25,17 +25,19 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.internal.metrics.MetricsProvider;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
 import org.neo4j.driver.internal.async.InternalAsyncSession;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.metrics.DevNullMetricsProvider;
+import org.neo4j.driver.internal.metrics.MetricsProvider;
+import org.neo4j.driver.internal.reactive.InternalReactiveSession;
 import org.neo4j.driver.internal.reactive.InternalRxSession;
 import org.neo4j.driver.internal.security.SecurityPlan;
 import org.neo4j.driver.internal.types.InternalTypeSystem;
 import org.neo4j.driver.internal.util.Futures;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.types.TypeSystem;
 
@@ -71,15 +73,15 @@ public class InternalDriver implements Driver
     }
 
     @Override
-    public RxSession rxSession()
-    {
-        return new InternalRxSession( newSession( SessionConfig.defaultConfig() ) );
-    }
-
-    @Override
     public RxSession rxSession( SessionConfig sessionConfig )
     {
         return new InternalRxSession( newSession( sessionConfig ) );
+    }
+
+    @Override
+    public ReactiveSession reactiveSession( SessionConfig sessionConfig )
+    {
+        return new InternalReactiveSession( newSession( sessionConfig ) );
     }
 
     @Override

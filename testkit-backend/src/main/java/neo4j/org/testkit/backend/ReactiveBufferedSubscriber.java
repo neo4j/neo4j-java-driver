@@ -16,20 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver.reactive;
+package neo4j.org.testkit.backend;
 
-/**
- * Callback that executes operations against a given {@link RxTransactionContext}.
- *
- * @param <T> the return type of this work.
- */
-public interface RxTransactionCallback<T>
+public class ReactiveBufferedSubscriber
 {
-    /**
-     * Executes all given operations against the same transaction context.
-     *
-     * @param context the transaction context to use.
-     * @return result object or {@code null} if none.
-     */
-    T execute( RxTransactionContext context );
 }

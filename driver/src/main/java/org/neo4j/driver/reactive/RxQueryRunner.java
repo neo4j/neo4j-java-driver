@@ -24,6 +24,8 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
+import org.neo4j.driver.internal.util.Extract;
+import org.neo4j.driver.internal.value.MapValue;
 
 /**
  * Common interface for components that can execute Neo4j queries using Reactive API.
@@ -31,6 +33,7 @@ import org.neo4j.driver.Values;
  * @see RxTransaction
  * @since 4.0
  */
+@Deprecated
 public interface RxQueryRunner
 {
     /**
@@ -54,7 +57,10 @@ public interface RxQueryRunner
      * @param parameters input parameters, should be a map Value, see {@link Values#parameters(Object...)}.
      * @return a reactive result.
      */
-    RxResult run(String query, Value parameters );
+    default RxResult run( String query, Value parameters )
+    {
+        return run( new Query( query, parameters ) );
+    }
 
     /**
      * Register running of a query and return a reactive result stream.
@@ -74,7 +80,10 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String query, Map<String,Object> parameters );
+    default RxResult run( String query, Map<String,Object> parameters )
+    {
+        return run( query, parameters( parameters ) );
+    }
 
     /**
      * Register running of a query and return a reactive result stream.
@@ -93,25 +102,43 @@ public interface RxQueryRunner
      * @param parameters input data for the query
      * @return a reactive result.
      */
-    RxResult run(String query, Record parameters );
+    default RxResult run( String query, Record parameters )
+    {
+        return run( query, parameters( parameters ) );
+    }
 
     /**
-     * Register running of a query and return a reactive result stream.
-     * The query is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the query.
+     * Register running of a query and return a reactive result stream. The query is not executed when the reactive result is returned. Instead, the publishers
+     * in the result will actually start the execution of the query.
      *
      * @param query text of a Neo4j query
      * @return a reactive result.
      */
-    RxResult run(String query );
+    default RxResult run( String query )
+    {
+        return run( new Query( query ) );
+    }
 
     /**
-     * Register running of a query and return a reactive result stream.
-     * The query is not executed when the reactive result is returned.
-     * Instead, the publishers in the result will actually start the execution of the query.
+     * Register running of a query and return a reactive result stream. The query is not executed when the reactive result is returned. Instead, the publishers
+     * in the result will actually start the execution of the query.
      *
      * @param query a Neo4j query
      * @return a reactive result.
      */
-    RxResult run(Query query);
+    RxResult run( Query query );
+
+    static Value parameters( Record record )
+    {
+        return record == null ? Values.EmptyMap : parameters( record.asMap() );
+    }
+
+    static Value parameters( Map<String,Object> map )
+    {
+        if ( map == null || map.isEmpty() )
+        {
+            return Values.EmptyMap;
+        }
+        return new MapValue( Extract.mapOfValues( map ) );
+    }
 }
