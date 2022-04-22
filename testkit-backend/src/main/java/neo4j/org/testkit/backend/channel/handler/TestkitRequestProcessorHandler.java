@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 
 import org.neo4j.driver.exceptions.Neo4jException;
+import org.neo4j.driver.exceptions.NoSuchRecordException;
 import org.neo4j.driver.exceptions.UntrustedServerException;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 
@@ -138,7 +139,7 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                                                                 .build() )
                               .build();
         }
-        else if ( isConnectionPoolClosedException( throwable ) || throwable instanceof UntrustedServerException )
+        else if ( isConnectionPoolClosedException( throwable ) || throwable instanceof UntrustedServerException || throwable instanceof NoSuchRecordException )
         {
             String id = testkitState.newId();
             return DriverError.builder()

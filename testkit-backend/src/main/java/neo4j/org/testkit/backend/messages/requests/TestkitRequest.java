@@ -42,7 +42,7 @@ import java.util.concurrent.CompletionStage;
         @JsonSubTypes.Type( GetRoutingTable.class ), @JsonSubTypes.Type( TransactionClose.class ),
         @JsonSubTypes.Type( ResultList.class ), @JsonSubTypes.Type( GetConnectionPoolMetrics.class ),
         @JsonSubTypes.Type( ResultPeek.class ), @JsonSubTypes.Type( CheckDriverIsEncrypted.class ),
-        @JsonSubTypes.Type( CypherTypeField.class )
+        @JsonSubTypes.Type( CypherTypeField.class ), @JsonSubTypes.Type( ResultSingle.class )
 } )
 public interface TestkitRequest
 {
