@@ -117,7 +117,7 @@ public class RoutingTableRegistryImpl implements RoutingTableRegistry
                         databaseNameStage = databaseNameFuture;
 
                         ClusterRoutingTable routingTable = new ClusterRoutingTable( DatabaseNameUtil.defaultDatabase(), clock );
-                        rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark(), impersonatedUser )
+                        rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmarks(), impersonatedUser )
                                    .thenCompose(
                                            compositionLookupResult ->
                                            {

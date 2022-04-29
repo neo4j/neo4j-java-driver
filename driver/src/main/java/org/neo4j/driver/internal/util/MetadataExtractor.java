@@ -129,11 +129,9 @@ public class MetadataExtractor
     public static Bookmark extractBookmarks( Map<String,Value> metadata )
     {
         Value bookmarkValue = metadata.get( "bookmark" );
-        if ( bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType( TYPE_SYSTEM.STRING() ) )
-        {
-            return InternalBookmark.parse( bookmarkValue.asString() );
-        }
-        return InternalBookmark.empty();
+        return bookmarkValue != null && !bookmarkValue.isNull() && bookmarkValue.hasType( TYPE_SYSTEM.STRING() )
+               ? InternalBookmark.parse( bookmarkValue.asString() )
+               : InternalBookmark.empty();
     }
 
     public static Value extractServer( Map<String,Value> metadata )

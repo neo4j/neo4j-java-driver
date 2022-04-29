@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.request;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -34,15 +35,15 @@ public class BeginMessage extends MessageWithMetadata
 {
     public static final byte SIGNATURE = 0x11;
 
-    public BeginMessage( Bookmark bookmark, TransactionConfig config, DatabaseName databaseName, AccessMode mode, String impersonatedUser )
+    public BeginMessage( Set<Bookmark> bookmarks, TransactionConfig config, DatabaseName databaseName, AccessMode mode, String impersonatedUser )
     {
-        this( bookmark, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser );
+        this( bookmarks, config.timeout(), config.metadata(), mode, databaseName, impersonatedUser );
     }
 
-    public BeginMessage( Bookmark bookmark, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, DatabaseName databaseName,
+    public BeginMessage( Set<Bookmark> bookmarks, Duration txTimeout, Map<String,Value> txMetadata, AccessMode mode, DatabaseName databaseName,
                          String impersonatedUser )
     {
-        super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser ) );
+        super( buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser ) );
     }
 
     @Override

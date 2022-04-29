@@ -88,7 +88,7 @@ public class RoutingTableHandlerImpl implements RoutingTableHandler
             CompletableFuture<RoutingTable> resultFuture = new CompletableFuture<>();
             refreshRoutingTableFuture = resultFuture;
 
-            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmark(), null )
+            rediscovery.lookupClusterComposition( routingTable, connectionPool, context.rediscoveryBookmarks(), null )
                        .whenComplete( ( composition, completionError ) ->
                                       {
                                           Throwable error = Futures.completionExceptionCause( completionError );

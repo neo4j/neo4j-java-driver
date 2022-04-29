@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -119,14 +120,14 @@ class RouteMessageRoutingProcedureRunnerTest
     }
 
     private void verifyMessageWasWrittenAndFlushed( Connection connection, CompletableFuture<Map<String,Value>> completableFuture,
-                                                    RoutingContext routingContext, Bookmark bookmark, DatabaseName databaseName )
+                                                    RoutingContext routingContext, Set<Bookmark> bookmarks, DatabaseName databaseName )
     {
         Map<String,Value> context = routingContext.toMap()
                                                   .entrySet()
                                                   .stream()
                                                   .collect( Collectors.toMap( Map.Entry::getKey, entry -> Values.value( entry.getValue() ) ) );
 
-        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmark, databaseName.databaseName().orElse( null ), null ) ),
+        verify( connection ).writeAndFlush( eq( new RouteMessage( context, bookmarks, databaseName.databaseName().orElse( null ), null ) ),
                                             eq( new RouteMessageResponseHandler( completableFuture ) ) );
     }
 

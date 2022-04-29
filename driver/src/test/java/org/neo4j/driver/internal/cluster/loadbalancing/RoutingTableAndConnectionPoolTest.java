@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
 import org.neo4j.driver.exceptions.ProtocolException;
 import org.neo4j.driver.internal.BoltServerAddress;
@@ -59,6 +58,7 @@ import org.neo4j.driver.internal.cluster.RoutingTable;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistry;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl;
 import org.neo4j.driver.internal.metrics.DevNullMetricsListener;
+import org.neo4j.driver.internal.metrics.MetricsListener;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
 import org.neo4j.driver.internal.util.Clock;
@@ -365,7 +365,7 @@ class RoutingTableAndConnectionPoolTest
     {
         @Override
         public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                         Bookmark bookmark, String impersonatedUser )
+                                                                                         Set<Bookmark> bookmarks, String impersonatedUser )
         {
             // when looking up a new routing table, we return a valid random routing table back
             Set<BoltServerAddress> servers = new HashSet<>();

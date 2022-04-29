@@ -23,6 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -232,12 +235,12 @@ class NetworkSessionTest
         when( connection.protocol() ).thenReturn( protocol );
 
         UnmanagedTransaction tx = beginTransaction( session );
-        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
-        Bookmark bookmark = (InternalBookmark) session.lastBookmark();
-        assertTrue( bookmark.isEmpty() );
+        assertThat( session.lastBookmarks(), instanceOf( Set.class ) );
+        Set<Bookmark> bookmarks = session.lastBookmarks();
+        assertTrue( bookmarks.isEmpty() );
 
         await( tx.commitAsync() );
-        assertEquals( bookmarkAfterCommit, session.lastBookmark() );
+        assertEquals( Collections.singleton( bookmarkAfterCommit ), session.lastBookmarks() );
     }
 
     @Test
@@ -259,8 +262,8 @@ class NetworkSessionTest
     @Test
     void bookmarkIsPropagatedFromSession()
     {
-        Bookmark bookmark = InternalBookmark.parse( "Bookmarks" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "Bookmarks" ) );
+        NetworkSession session = newSession( connectionProvider, bookmarks );
 
         UnmanagedTransaction tx = beginTransaction( session );
         assertNotNull( tx );
@@ -282,13 +285,13 @@ class NetworkSessionTest
 
         UnmanagedTransaction tx1 = beginTransaction( session );
         await( tx1.commitAsync() );
-        assertEquals( bookmark1, session.lastBookmark() );
+        assertEquals( Collections.singleton( bookmark1 ), session.lastBookmarks() );
 
         UnmanagedTransaction tx2 = beginTransaction( session );
         verifyBeginTx( connection, 2 );
         await( tx2.commitAsync() );
 
-        assertEquals( bookmark2, session.lastBookmark() );
+        assertEquals( Collections.singleton( bookmark2 ), session.lastBookmarks() );
     }
 
     @Test
@@ -315,17 +318,16 @@ class NetworkSessionTest
     @Test
     void testPassingNoBookmarkShouldRetainBookmark()
     {
-        NetworkSession session = newSession( connectionProvider, InternalBookmark.parse( "X" ) );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "X" ) );
+        NetworkSession session = newSession( connectionProvider, bookmarks );
         beginTransaction( session );
-        assertThat( session.lastBookmark(), equalTo( InternalBookmark.parse( "X" ) ) );
+        assertThat( session.lastBookmarks(), equalTo( bookmarks ) );
     }
 
     @Test
-    void shouldHaveEmptyLastBookmarkInitially()
+    void shouldHaveEmptyLastBookmarksInitially()
     {
-        assertThat( session.lastBookmark(), instanceOf( InternalBookmark.class ) );
-        Bookmark bookmark = (InternalBookmark) session.lastBookmark();
-        assertTrue( bookmark.isEmpty() );
+        assertTrue( session.lastBookmarks().isEmpty() );
     }
 
     @Test
@@ -371,8 +373,8 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx42" ) );
+        NetworkSession session = newSession( connectionProvider, bookmarks );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
         assertEquals( error, e );
@@ -397,8 +399,8 @@ class NetworkSessionTest
         when( connectionProvider.acquireConnection( any( ConnectionContext.class ) ) )
                 .thenReturn( completedFuture( connection1 ) ).thenReturn( completedFuture( connection2 ) );
 
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
-        NetworkSession session = newSession( connectionProvider, bookmark );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx42" ) );
+        NetworkSession session = newSession( connectionProvider, bookmarks );
 
         Exception e = assertThrows( Exception.class, () -> beginTransaction( session ) );
         assertEquals( error, e );

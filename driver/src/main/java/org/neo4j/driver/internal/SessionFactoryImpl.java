@@ -18,10 +18,14 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Logging;
 import org.neo4j.driver.SessionConfig;
@@ -50,10 +54,38 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public NetworkSession newInstance( SessionConfig sessionConfig )
     {
-        BookmarkHolder bookmarkHolder = new DefaultBookmarkHolder( InternalBookmark.from( sessionConfig.bookmarks() ) );
+        BookmarksHolder bookmarksHolder = new DefaultBookmarksHolder( toDistinctSet( sessionConfig.bookmarks() ) );
         return createSession( connectionProvider, retryLogic, parseDatabaseName( sessionConfig ),
-                              sessionConfig.defaultAccessMode(), bookmarkHolder, parseFetchSize( sessionConfig ),
+                              sessionConfig.defaultAccessMode(), bookmarksHolder, parseFetchSize( sessionConfig ),
                               sessionConfig.impersonatedUser().orElse( null ), logging );
+    }
+
+    private Set<Bookmark> toDistinctSet( Iterable<Bookmark> bookmarks )
+    {
+        Set<Bookmark> set = new HashSet<>();
+        if ( bookmarks != null )
+        {
+            for ( Bookmark bookmark : bookmarks )
+            {
+                if ( bookmark != null )
+                {
+                    Set<String> values = bookmark.values();
+                    int size = values.size();
+                    if ( size == 1 )
+                    {
+                        set.add( bookmark );
+                    }
+                    else if ( size > 1 )
+                    {
+                        for ( String value : values )
+                        {
+                            set.add( Bookmark.from( value ) );
+                        }
+                    }
+                }
+            }
+        }
+        return Collections.unmodifiableSet( set );
     }
 
     private long parseFetchSize( SessionConfig sessionConfig )
@@ -64,8 +96,8 @@ public class SessionFactoryImpl implements SessionFactory
     private DatabaseName parseDatabaseName( SessionConfig sessionConfig )
     {
         return sessionConfig.database()
-                .flatMap( name -> Optional.of( DatabaseNameUtil.database( name ) ) )
-                .orElse( DatabaseNameUtil.defaultDatabase() );
+                            .flatMap( name -> Optional.of( DatabaseNameUtil.database( name ) ) )
+                            .orElse( DatabaseNameUtil.defaultDatabase() );
     }
 
     @Override
@@ -99,10 +131,10 @@ public class SessionFactoryImpl implements SessionFactory
     }
 
     private NetworkSession createSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-                                          BookmarkHolder bookmarkHolder, long fetchSize, String impersonatedUser, Logging logging )
+                                          BookmarksHolder bookmarksHolder, long fetchSize, String impersonatedUser, Logging logging )
     {
         return leakedSessionsLoggingEnabled
-               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, impersonatedUser, fetchSize, logging )
-               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarkHolder, impersonatedUser, fetchSize, logging );
+               ? new LeakLoggingNetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, impersonatedUser, fetchSize, logging )
+               : new NetworkSession( connectionProvider, retryLogic, databaseName, mode, bookmarksHolder, impersonatedUser, fetchSize, logging );
     }
 }

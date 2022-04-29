@@ -18,7 +18,9 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -31,6 +33,7 @@ import org.neo4j.driver.async.AsyncTransaction;
 import org.neo4j.driver.async.AsyncTransactionCallback;
 import org.neo4j.driver.async.AsyncTransactionWork;
 import org.neo4j.driver.async.ResultCursor;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.util.Futures;
 
 import static java.util.Collections.emptyMap;
@@ -127,29 +130,38 @@ public class InternalAsyncSession extends AsyncAbstractQueryRunner implements As
     @Override
     public Bookmark lastBookmark()
     {
-        return session.lastBookmark();
+        return InternalBookmark.from( session.lastBookmarks() );
+    }
+
+    @Override
+    public Set<Bookmark> lastBookmarks()
+    {
+        return new HashSet<>( session.lastBookmarks() );
     }
 
     private <T> CompletionStage<T> transactionAsync( AccessMode mode, AsyncTransactionWork<CompletionStage<T>> work, TransactionConfig config )
     {
-        return session.retryLogic().retryAsync( () -> {
-            CompletableFuture<T> resultFuture = new CompletableFuture<>();
-            CompletionStage<UnmanagedTransaction> txFuture = session.beginTransactionAsync( mode, config );
+        return session.retryLogic().retryAsync( () ->
+                                                {
+                                                    CompletableFuture<T> resultFuture = new CompletableFuture<>();
+                                                    CompletionStage<UnmanagedTransaction> txFuture = session.beginTransactionAsync( mode, config );
 
-            txFuture.whenComplete( ( tx, completionError ) -> {
-                Throwable error = Futures.completionExceptionCause( completionError );
-                if ( error != null )
-                {
-                    resultFuture.completeExceptionally( error );
-                }
-                else
-                {
-                    executeWork( resultFuture, tx, work );
-                }
-            } );
+                                                    txFuture.whenComplete(
+                                                            ( tx, completionError ) ->
+                                                            {
+                                                                Throwable error = Futures.completionExceptionCause( completionError );
+                                                                if ( error != null )
+                                                                {
+                                                                    resultFuture.completeExceptionally( error );
+                                                                }
+                                                                else
+                                                                {
+                                                                    executeWork( resultFuture, tx, work );
+                                                                }
+                                                            } );
 
-            return resultFuture;
-        } );
+                                                    return resultFuture;
+                                                } );
     }
 
     private <T> void executeWork(CompletableFuture<T> resultFuture, UnmanagedTransaction tx, AsyncTransactionWork<CompletionStage<T>> work )

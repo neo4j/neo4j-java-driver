@@ -26,7 +26,9 @@ import neo4j.org.testkit.backend.messages.responses.Bookmarks;
 import neo4j.org.testkit.backend.messages.responses.TestkitResponse;
 import reactor.core.publisher.Mono;
 
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.Bookmark;
 
@@ -40,15 +42,14 @@ public class SessionLastBookmarks implements TestkitRequest
     public TestkitResponse process( TestkitState testkitState )
     {
         SessionHolder sessionHolder = testkitState.getSessionHolder( data.getSessionId() );
-        Bookmark bookmark = sessionHolder.getSession().lastBookmark();
-        return createResponse( bookmark );
+        return createResponse( sessionHolder.getSession().lastBookmarks() );
     }
 
     @Override
     public CompletionStage<TestkitResponse> processAsync( TestkitState testkitState )
     {
         return testkitState.getAsyncSessionHolder( data.getSessionId() )
-                           .thenApply( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .thenApply( sessionHolder -> sessionHolder.getSession().lastBookmarks() )
                            .thenApply( this::createResponse );
     }
 
@@ -57,6 +58,7 @@ public class SessionLastBookmarks implements TestkitRequest
     {
         return testkitState.getRxSessionHolder( data.getSessionId() )
                            .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .map( bookmark -> bookmark.values().stream().map( Bookmark::from ).collect( Collectors.toSet() ) )
                            .map( this::createResponse );
     }
 
@@ -64,13 +66,17 @@ public class SessionLastBookmarks implements TestkitRequest
     public Mono<TestkitResponse> processReactive( TestkitState testkitState )
     {
         return testkitState.getReactiveSessionHolder( data.getSessionId() )
-                           .map( sessionHolder -> sessionHolder.getSession().lastBookmark() )
+                           .map( sessionHolder -> sessionHolder.getSession().lastBookmarks() )
                            .map( this::createResponse );
     }
 
-    private Bookmarks createResponse( Bookmark bookmark )
+    private Bookmarks createResponse( Set<Bookmark> bookmarks )
     {
-        return Bookmarks.builder().data( Bookmarks.BookmarksBody.builder().bookmarks( bookmark ).build() ).build();
+        return Bookmarks.builder()
+                        .data( Bookmarks.BookmarksBody.builder()
+                                                      .bookmarks( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) )
+                                                      .build() )
+                        .build();
     }
 
     @Setter

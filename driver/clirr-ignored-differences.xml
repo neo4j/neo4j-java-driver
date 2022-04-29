@@ -304,4 +304,28 @@
         <method>org.neo4j.driver.Value parameters(java.util.Map)</method>
     </difference>
 
+    <difference>
+        <className>org/neo4j/driver/Bookmark</className>
+        <differenceType>7012</differenceType>
+        <method>org.neo4j.driver.Bookmark from(java.lang.String)</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Bookmark</className>
+        <differenceType>7012</differenceType>
+        <method>java.lang.String value()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/Session</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Set lastBookmarks()</method>
+    </difference>
+
+    <difference>
+        <className>org/neo4j/driver/async/AsyncSession</className>
+        <differenceType>7012</differenceType>
+        <method>java.util.Set lastBookmarks()</method>
+    </difference>
+
 </differences>

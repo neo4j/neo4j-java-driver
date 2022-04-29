@@ -32,7 +32,6 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.spi.Connection;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -278,7 +277,7 @@ class RoutingTableHandlerTest
         Rediscovery rediscovery = mock( RediscoveryImpl.class );
         Set<BoltServerAddress> noServers = Collections.emptySet();
         ClusterComposition clusterComposition = new ClusterComposition( 1, noServers, noServers, noServers, null );
-        when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ), any( InternalBookmark.class ), any() ) )
+        when( rediscovery.lookupClusterComposition( any( RoutingTable.class ), any( ConnectionPool.class ), any( Set.class ), any() ) )
                 .thenReturn( completedFuture( new ClusterCompositionLookupResult( clusterComposition ) ) );
         return rediscovery;
     }

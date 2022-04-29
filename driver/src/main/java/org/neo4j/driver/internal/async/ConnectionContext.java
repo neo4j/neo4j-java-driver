@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -37,7 +38,7 @@ public interface ConnectionContext
 
     AccessMode mode();
 
-    Bookmark rediscoveryBookmark();
+    Set<Bookmark> rediscoveryBookmarks();
 
     String impersonatedUser();
 }

@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -32,7 +33,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.TransactionNestingException;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.ImpersonationUtil;
@@ -56,7 +57,7 @@ public class NetworkSession
     private final RetryLogic retryLogic;
     protected final Logger log;
 
-    private final BookmarkHolder bookmarkHolder;
+    private final BookmarksHolder bookmarksHolder;
     private final long fetchSize;
     private volatile CompletionStage<UnmanagedTransaction> transactionStage = completedWithNull();
     private volatile CompletionStage<Connection> connectionStage = completedWithNull();
@@ -65,17 +66,17 @@ public class NetworkSession
     private final AtomicBoolean open = new AtomicBoolean( true );
 
     public NetworkSession( ConnectionProvider connectionProvider, RetryLogic retryLogic, DatabaseName databaseName, AccessMode mode,
-                           BookmarkHolder bookmarkHolder, String impersonatedUser, long fetchSize, Logging logging )
+                           BookmarksHolder bookmarksHolder, String impersonatedUser, long fetchSize, Logging logging )
     {
         this.connectionProvider = connectionProvider;
         this.mode = mode;
         this.retryLogic = retryLogic;
         this.log = new PrefixedLogger( "[" + hashCode() + "]", logging.getLog( getClass() ) );
-        this.bookmarkHolder = bookmarkHolder;
+        this.bookmarksHolder = bookmarksHolder;
         CompletableFuture<DatabaseName> databaseNameFuture = databaseName.databaseName()
                                                                          .map( ignored -> CompletableFuture.completedFuture( databaseName ) )
                                                                          .orElse( new CompletableFuture<>() );
-        this.connectionContext = new NetworkSessionConnectionContext( databaseNameFuture, bookmarkHolder.getBookmark(), impersonatedUser );
+        this.connectionContext = new NetworkSessionConnectionContext( databaseNameFuture, bookmarksHolder.getBookmarks(), impersonatedUser );
         this.fetchSize = fetchSize;
     }
 
@@ -111,10 +112,10 @@ public class NetworkSession
                 .thenCompose( ignore -> acquireConnection( mode ) )
                 .thenApply( connection -> ImpersonationUtil.ensureImpersonationSupport( connection, connection.impersonatedUser() ) )
                 .thenCompose( connection ->
-                {
-                    UnmanagedTransaction tx = new UnmanagedTransaction( connection, bookmarkHolder, fetchSize );
-                    return tx.beginAsync( bookmarkHolder.getBookmark(), config );
-                } );
+                              {
+                                  UnmanagedTransaction tx = new UnmanagedTransaction( connection, bookmarksHolder, fetchSize );
+                                  return tx.beginAsync( bookmarksHolder.getBookmarks(), config );
+                              } );
 
         // update the reference to the only known transaction
         CompletionStage<UnmanagedTransaction> currentTransactionStage = transactionStage;
@@ -140,9 +141,9 @@ public class NetworkSession
         return retryLogic;
     }
 
-    public Bookmark lastBookmark()
+    public Set<Bookmark> lastBookmarks()
     {
-        return bookmarkHolder.getBookmark();
+        return bookmarksHolder.getBookmarks();
     }
 
     public CompletionStage<Void> releaseConnectionAsync()
@@ -219,7 +220,7 @@ public class NetworkSession
                             {
                                 ResultCursorFactory factory = connection
                                         .protocol()
-                                        .runInAutoCommitTransaction( connection, query, bookmarkHolder, config, fetchSize );
+                                        .runInAutoCommitTransaction( connection, query, bookmarksHolder, config, fetchSize );
                                 return completedFuture( factory );
                             }
                             catch ( Throwable e )
@@ -338,16 +339,16 @@ public class NetworkSession
         private final CompletableFuture<DatabaseName> databaseNameFuture;
         private AccessMode mode;
 
-        // This bookmark is only used for rediscovery.
-        // It has to be the initial bookmark given at the creation of the session.
-        // As only that bookmark could carry extra system bookmarks
-        private final Bookmark rediscoveryBookmark;
+        // These bookmarks are only used for rediscovery.
+        // They have to be the initial bookmarks given at the creation of the session.
+        // As only those bookmarks could carry extra system bookmarks
+        private final Set<Bookmark> rediscoveryBookmarks;
         private final String impersonatedUser;
 
-        private NetworkSessionConnectionContext( CompletableFuture<DatabaseName> databaseNameFuture, Bookmark bookmark, String impersonatedUser )
+        private NetworkSessionConnectionContext( CompletableFuture<DatabaseName> databaseNameFuture, Set<Bookmark> bookmarks, String impersonatedUser )
         {
             this.databaseNameFuture = databaseNameFuture;
-            this.rediscoveryBookmark = bookmark;
+            this.rediscoveryBookmarks = bookmarks;
             this.impersonatedUser = impersonatedUser;
         }
 
@@ -370,9 +371,9 @@ public class NetworkSession
         }
 
         @Override
-        public Bookmark rediscoveryBookmark()
+        public Set<Bookmark> rediscoveryBookmarks()
         {
-            return rediscoveryBookmark;
+            return rediscoveryBookmarks;
         }
 
         @Override

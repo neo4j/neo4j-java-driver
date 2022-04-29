@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -140,7 +141,13 @@ public class InternalSession extends AbstractQueryRunner implements Session
     @Override
     public Bookmark lastBookmark()
     {
-        return session.lastBookmark();
+        return InternalBookmark.from( session.lastBookmarks() );
+    }
+
+    @Override
+    public Set<Bookmark> lastBookmarks()
+    {
+        return session.lastBookmarks();
     }
 
     private <T> T transaction( AccessMode mode, TransactionWork<T> work, TransactionConfig config )
@@ -149,19 +156,21 @@ public class InternalSession extends AbstractQueryRunner implements Session
         // caller thread will also be the one who sleeps between retries;
         // it is unsafe to execute retries in the event loop threads because this can cause a deadlock
         // event loop thread will bock and wait for itself to read some data
-        return session.retryLogic().retry( () -> {
-            try ( Transaction tx = beginTransaction( mode, config ) )
-            {
-
-                T result = work.execute( tx );
-                if ( tx.isOpen() )
+        return session.retryLogic().retry(
+                () ->
                 {
-                    // commit tx if a user has not explicitly committed or rolled back the transaction
-                    tx.commit();
-                }
-                return result;
-            }
-        } );
+                    try ( Transaction tx = beginTransaction( mode, config ) )
+                    {
+
+                        T result = work.execute( tx );
+                        if ( tx.isOpen() )
+                        {
+                            // commit tx if a user has not explicitly committed or rolled back the transaction
+                            tx.commit();
+                        }
+                        return result;
+                    }
+                } );
     }
 
     private Transaction beginTransaction( AccessMode mode, TransactionConfig config )

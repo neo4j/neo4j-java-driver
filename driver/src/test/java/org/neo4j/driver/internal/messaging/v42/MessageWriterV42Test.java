@@ -97,26 +97,28 @@ class MessageWriterV42Test extends AbstractMessageWriterTestBase
                 // Bolt V3 messages
                 new HelloMessage( "MyDriver/1.2.3", ((InternalAuthToken) basic( "neo4j", "neo4j" )).toMap(), Collections.emptyMap() ),
                 GOODBYE,
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), READ,
+                new BeginMessage( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ) ), ofSeconds( 5 ),
+                                  singletonMap( "key", value( 42 ) ), READ,
                                   defaultDatabase(), null ),
-                new BeginMessage( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), WRITE,
+                new BeginMessage( Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx123" ) ), ofSeconds( 5 ),
+                                  singletonMap( "key", value( 42 ) ), WRITE,
                                   database( "foo" ), null ),
                 COMMIT,
                 ROLLBACK,
 
                 RESET,
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), defaultDatabase(), READ,
-                                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ), null ),
+                                        Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ), null ),
                 autoCommitTxRunMessage( new Query( "RETURN 1" ), ofSeconds( 5 ), singletonMap( "key", value( 42 ) ), database( "foo" ), WRITE,
-                                        InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ), null ),
+                                        Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx1" ) ), null ),
                 unmanagedTxRunMessage( new Query( "RETURN 1" ) ),
 
                 // Bolt V3 messages with struct values
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
-                                        defaultDatabase(), READ, InternalBookmark.empty(), null ),
+                                        defaultDatabase(), READ, Collections.emptySet(), null ),
                 autoCommitTxRunMessage( new Query( "RETURN $x", singletonMap( "x", value( ZonedDateTime.now() ) ) ), ofSeconds( 1 ), emptyMap(),
                                         database( "foo" ),
-                                        WRITE, InternalBookmark.empty(), null ),
+                                        WRITE, Collections.emptySet(), null ),
                 unmanagedTxRunMessage( new Query( "RETURN $x", singletonMap( "x", point( 42, 1, 2, 3 ) ) ) )
         );
     }

@@ -118,6 +118,12 @@ public final class InternalBookmark implements Bookmark, Serializable
     }
 
     @Override
+    public String value()
+    {
+        return values.isEmpty() ? null : values.iterator().next();
+    }
+
+    @Override
     public Set<String> values()
     {
         return Collections.unmodifiableSet( values );

@@ -18,29 +18,28 @@
  */
 package org.neo4j.driver.internal;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.driver.Bookmark;
 
-/**
- * @since 2.0
- */
-public class ReadOnlyBookmarkHolder implements BookmarkHolder
+public interface BookmarksHolder
 {
-    private final Bookmark bookmark;
+    Set<Bookmark> getBookmarks();
 
-    public ReadOnlyBookmarkHolder( Bookmark bookmark )
-    {
-        this.bookmark = bookmark;
-    }
+    void setBookmark( Bookmark bookmark );
 
-    @Override
-    public Bookmark getBookmark()
+    BookmarksHolder NO_OP = new BookmarksHolder()
     {
-        return bookmark;
-    }
+        @Override
+        public Set<Bookmark> getBookmarks()
+        {
+            return Collections.emptySet();
+        }
 
-    @Override
-    public void setBookmark( Bookmark bookmark )
-    {
-        // NO_OP
-    }
+        @Override
+        public void setBookmark( Bookmark bookmark )
+        {
+        }
+    };
 }

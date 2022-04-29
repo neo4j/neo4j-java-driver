@@ -19,6 +19,7 @@
 package org.neo4j.driver.async;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -389,7 +390,15 @@ public interface AsyncSession extends AsyncQueryRunner
      *
      * @return a reference to a previous transaction
      */
+    @Deprecated
     Bookmark lastBookmark();
+
+    /**
+     * Return an immutable set of bookmarks known by this session.
+     *
+     * @return the set of bookmarks.
+     */
+    Set<Bookmark> lastBookmarks();
 
     /**
      * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is

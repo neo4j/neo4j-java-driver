@@ -51,35 +51,35 @@ class InternalBookmarkTest
     }
 
     @Test
-    void shouldSetToEmptyForNullBookmark() throws Throwable
+    void shouldSetToEmptyForNullBookmark()
     {
         Bookmark bookmark = InternalBookmark.from( null );
         assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
-    void shouldSetToEmptyForEmptyBookmarkIterator() throws Throwable
+    void shouldSetToEmptyForEmptyBookmarkIterator()
     {
         Bookmark bookmark = InternalBookmark.from( emptyList() );
         assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
-    void shouldSetToEmptyForNullBookmarkList() throws Throwable
+    void shouldSetToEmptyForNullBookmarkList()
     {
         Bookmark bookmark = InternalBookmark.from( singletonList( null ) );
         assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
-    void shouldIgnoreNullAndEmptyInBookmarkList() throws Throwable
+    void shouldIgnoreNullAndEmptyInBookmarkList()
     {
         Bookmark bookmark = InternalBookmark.from( Arrays.asList( InternalBookmark.empty(), null, null ) );
         assertEquals( InternalBookmark.empty(), bookmark );
     }
 
     @Test
-    void shouldReserveBookmarkValuesCorrectly() throws Throwable
+    void shouldReserveBookmarkValuesCorrectly()
     {
         Bookmark one = parse( "one" );
         Bookmark two = parse( "two" );
@@ -157,7 +157,7 @@ class InternalBookmarkTest
     }
 
     @Test
-    void valueShouldBeReadOnly() throws Throwable
+    void valueShouldBeReadOnly()
     {
         Bookmark bookmark = InternalBookmark.parse( asSet( "first", "second" ) );
         Set<String> values = bookmark.values();

@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
@@ -30,7 +31,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
@@ -58,12 +59,12 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
     }
 
     @Override
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser )
     {
         DirectConnection delegate = connection( connection );
         Query procedure = procedureQuery( connection.protocol().version(), databaseName );
-        BookmarkHolder bookmarkHolder = bookmarkHolder( bookmark );
-        return runProcedure( delegate, procedure, bookmarkHolder )
+        BookmarksHolder bookmarksHolder = bookmarksHolder( bookmarks );
+        return runProcedure( delegate, procedure, bookmarksHolder )
                 .thenCompose( records -> releaseConnection( delegate, records ) )
                 .handle( ( records, error ) -> processProcedureResponse( procedure, records, error ) );
     }
@@ -84,15 +85,15 @@ public class SingleDatabaseRoutingProcedureRunner implements RoutingProcedureRun
         return new Query( GET_ROUTING_TABLE, parameters( ROUTING_CONTEXT, context.toMap() ) );
     }
 
-    BookmarkHolder bookmarkHolder( Bookmark ignored )
+    BookmarksHolder bookmarksHolder( Set<Bookmark> ignored )
     {
-        return BookmarkHolder.NO_OP;
+        return BookmarksHolder.NO_OP;
     }
 
-    CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
+    CompletionStage<List<Record>> runProcedure( Connection connection, Query procedure, BookmarksHolder bookmarksHolder )
     {
         return connection.protocol()
-                         .runInAutoCommitTransaction( connection, procedure, bookmarkHolder, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE )
+                         .runInAutoCommitTransaction( connection, procedure, bookmarksHolder, TransactionConfig.empty(), UNLIMITED_FETCH_SIZE )
                          .asyncResult().thenCompose( ResultCursor::listAsync );
     }
 

@@ -25,9 +25,12 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -50,7 +53,8 @@ public class TransactionMetadataBuilderTest
     @EnumSource( AccessMode.class )
     void shouldHaveCorrectMetadata( AccessMode mode )
     {
-        Bookmark bookmark = InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) );
+        Set<Bookmark> bookmarks =
+                Collections.singleton( InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );
@@ -59,10 +63,10 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmark, null );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
         expectedMetadata.put( "tx_timeout", value( 7000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )
@@ -77,7 +81,8 @@ public class TransactionMetadataBuilderTest
     @ValueSource( strings = {"", "foo", "data"} )
     void shouldHaveCorrectMetadataForDatabaseName( String databaseName )
     {
-        Bookmark bookmark = InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) );
+        Set<Bookmark> bookmarks =
+                Collections.singleton( InternalBookmark.parse( new HashSet<>( asList( "neo4j:bookmark:v1:tx11", "neo4j:bookmark:v1:tx52" ) ) ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "foo", value( "bar" ) );
@@ -86,10 +91,10 @@ public class TransactionMetadataBuilderTest
 
         Duration txTimeout = Duration.ofSeconds( 7 );
 
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, database( databaseName ), WRITE, bookmark, null );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, database( databaseName ), WRITE, bookmarks, null );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
         expectedMetadata.put( "tx_timeout", value( 7000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         expectedMetadata.put( "db", value( databaseName ) );
@@ -100,7 +105,7 @@ public class TransactionMetadataBuilderTest
     @Test
     void shouldNotHaveMetadataForDatabaseNameWhenIsNull()
     {
-        Map<String,Value> metadata = buildMetadata( null, null, defaultDatabase(), WRITE, null, null );
+        Map<String,Value> metadata = buildMetadata( null, null, defaultDatabase(), WRITE, Collections.emptySet(), null );
         assertTrue( metadata.isEmpty() );
     }
 }

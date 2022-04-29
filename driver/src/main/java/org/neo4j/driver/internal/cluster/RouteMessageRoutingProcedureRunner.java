@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.cluster;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -66,12 +67,12 @@ public class RouteMessageRoutingProcedureRunner implements RoutingProcedureRunne
     }
 
     @Override
-    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser )
+    public CompletionStage<RoutingProcedureResponse> run( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks, String impersonatedUser )
     {
         CompletableFuture<Map<String,Value>> completableFuture = createCompletableFuture.get();
 
         DirectConnection directConnection = toDirectConnection( connection, databaseName, impersonatedUser );
-        directConnection.writeAndFlush( new RouteMessage( routingContext, bookmark, databaseName.databaseName().orElse( null ), impersonatedUser ),
+        directConnection.writeAndFlush( new RouteMessage( routingContext, bookmarks, databaseName.databaseName().orElse( null ), impersonatedUser ),
                                         new RouteMessageResponseHandler( completableFuture ) );
         return completableFuture
                 .thenApply( routingTable -> new RoutingProcedureResponse( getQuery( databaseName ), singletonList( toRecord( routingTable ) ) ) )

@@ -21,6 +21,7 @@ package org.neo4j.driver.reactive;
 import org.reactivestreams.Publisher;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
@@ -230,12 +231,11 @@ public interface ReactiveSession extends ReactiveQueryRunner
     Publisher<ReactiveResult> run( Query query, TransactionConfig config );
 
     /**
-     * Return the bookmark received following the last completed query within this session. The last completed query can be run in a {@linkplain
-     * ReactiveTransaction transaction} started using {@linkplain #beginTransaction() beginTransaction} or directly via {@link #run(Query) run}.
+     * Return an immutable set of bookmarks known by this session.
      *
-     * @return a reference to a previous transaction.
+     * @return the set of bookmarks.
      */
-    Bookmark lastBookmark();
+    Set<Bookmark> lastBookmarks();
 
     /**
      * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is very low cost.

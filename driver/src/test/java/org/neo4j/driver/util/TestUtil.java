@@ -37,6 +37,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -58,7 +59,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.BoltServerAddress;
-import org.neo4j.driver.internal.DefaultBookmarkHolder;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.connection.EventLoopGroupFactory;
 import org.neo4j.driver.internal.handlers.BeginTxResponseHandler;
@@ -101,7 +102,6 @@ import static org.neo4j.driver.SessionConfig.builder;
 import static org.neo4j.driver.SessionConfig.forDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.handlers.pulln.FetchSizeUtil.UNLIMITED_FETCH_SIZE;
 import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
@@ -282,35 +282,35 @@ public final class TestUtil
         }
     }
 
-    public static NetworkSession newSession( ConnectionProvider connectionProvider, Bookmark x )
+    public static NetworkSession newSession( ConnectionProvider connectionProvider, Set<Bookmark> bookmarks )
     {
-        return newSession( connectionProvider, WRITE, x );
+        return newSession( connectionProvider, WRITE, bookmarks );
     }
 
-    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Bookmark x )
+    private static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode, Set<Bookmark> bookmarks )
     {
-        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), x );
+        return newSession( connectionProvider, mode, new FixedRetryLogic( 0 ), bookmarks );
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode )
     {
-        return newSession( connectionProvider, mode, empty() );
+        return newSession( connectionProvider, mode, Collections.emptySet() );
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, RetryLogic logic )
     {
-        return newSession( connectionProvider, WRITE, logic, empty() );
+        return newSession( connectionProvider, WRITE, logic, Collections.emptySet() );
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider )
     {
-        return newSession( connectionProvider, WRITE, empty() );
+        return newSession( connectionProvider, WRITE, Collections.emptySet() );
     }
 
     public static NetworkSession newSession( ConnectionProvider connectionProvider, AccessMode mode,
-                                             RetryLogic retryLogic, Bookmark bookmark )
+                                             RetryLogic retryLogic, Set<Bookmark> bookmarks )
     {
-        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarkHolder( bookmark ), null, UNLIMITED_FETCH_SIZE,
+        return new NetworkSession( connectionProvider, retryLogic, defaultDatabase(), mode, new DefaultBookmarksHolder( bookmarks ), null, UNLIMITED_FETCH_SIZE,
                                    DEV_NULL_LOGGING );
     }
 

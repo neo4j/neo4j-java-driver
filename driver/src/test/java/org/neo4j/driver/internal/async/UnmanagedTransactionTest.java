@@ -24,6 +24,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +39,7 @@ import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-import org.neo4j.driver.internal.DefaultBookmarkHolder;
+import org.neo4j.driver.internal.DefaultBookmarksHolder;
 import org.neo4j.driver.internal.FailableCursor;
 import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -131,7 +133,7 @@ class UnmanagedTransactionTest
     {
         Connection connection = connectionMock();
 
-        beginTx( connection, InternalBookmark.empty() );
+        beginTx( connection, Collections.emptySet() );
 
         verifyBeginTx( connection );
         verify( connection, never() ).writeAndFlush( any(), any(), any(), any() );
@@ -140,10 +142,10 @@ class UnmanagedTransactionTest
     @Test
     void shouldFlushWhenBookmarkGiven()
     {
-        Bookmark bookmark = InternalBookmark.parse( "hi, I'm bookmark" );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "hi, I'm bookmark" ) );
         Connection connection = connectionMock();
 
-        beginTx( connection, bookmark );
+        beginTx( connection, bookmarks );
 
         verifyBeginTx( connection );
         verify( connection, never() ).write( any(), any(), any(), any() );
@@ -183,12 +185,12 @@ class UnmanagedTransactionTest
     {
         RuntimeException error = new RuntimeException( "Wrong bookmark!" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( error ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
-        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
 
         assertEquals( error, e );
         verify( connection ).release();
@@ -198,12 +200,12 @@ class UnmanagedTransactionTest
     void shouldNotReleaseConnectionWhenBeginSucceeds()
     {
         Connection connection = connectionWithBegin( handler -> handler.onSuccess( emptyMap() ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
-        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        await( tx.beginAsync( bookmark, txConfig ) );
+        await( tx.beginAsync( bookmarks, txConfig ) );
 
         verify( connection, never() ).release();
     }
@@ -212,7 +214,7 @@ class UnmanagedTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndCommitted()
     {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated( null );
 
@@ -228,7 +230,7 @@ class UnmanagedTransactionTest
         Connection connection = connectionMock();
         ClientException terminationCause = new ClientException( "Custom exception" );
         ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( terminationCause );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
 
         tx.markTerminated( terminationCause );
 
@@ -243,7 +245,7 @@ class UnmanagedTransactionTest
         Connection connection = connectionMock();
         ClientException terminationCause = new ClientException( "Custom exception" );
         ResultCursorsHolder resultCursorsHolder = mockResultCursorWith( new ClientException( "Cursor error" ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE, resultCursorsHolder );
 
         tx.markTerminated( terminationCause );
 
@@ -260,7 +262,7 @@ class UnmanagedTransactionTest
     {
         Connection connection = connectionMock();
         ClientException terminationCause = new ClientException( "Custom exception" );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated( terminationCause );
 
@@ -274,7 +276,7 @@ class UnmanagedTransactionTest
     void shouldReleaseConnectionWhenTerminatedAndRolledBack()
     {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         tx.markTerminated( null );
         await( tx.rollbackAsync() );
@@ -286,7 +288,7 @@ class UnmanagedTransactionTest
     void shouldReleaseConnectionWhenClose() throws Throwable
     {
         Connection connection = connectionMock();
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         await( tx.closeAsync() );
 
@@ -298,11 +300,12 @@ class UnmanagedTransactionTest
     {
         AuthorizationExpiredException exception = new AuthorizationExpiredException( "code", "message" );
         Connection connection = connectionWithBegin( handler -> handler.onFailure( exception ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
-        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
         TransactionConfig txConfig = TransactionConfig.empty();
 
-        AuthorizationExpiredException actualException = assertThrows( AuthorizationExpiredException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+        AuthorizationExpiredException actualException =
+                assertThrows( AuthorizationExpiredException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
 
         assertSame( exception, actualException );
         verify( connection ).terminateAndRelease( AuthorizationExpiredException.DESCRIPTION );
@@ -313,12 +316,12 @@ class UnmanagedTransactionTest
     void shouldReleaseConnectionOnConnectionReadTimeoutExceptionFailure()
     {
         Connection connection = connectionWithBegin( handler -> handler.onFailure( ConnectionReadTimeoutException.INSTANCE ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
-        Bookmark bookmark = InternalBookmark.parse( "SomeBookmark" );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "SomeBookmark" ) );
         TransactionConfig txConfig = TransactionConfig.empty();
 
         ConnectionReadTimeoutException actualException =
-                assertThrows( ConnectionReadTimeoutException.class, () -> await( tx.beginAsync( bookmark, txConfig ) ) );
+                assertThrows( ConnectionReadTimeoutException.class, () -> await( tx.beginAsync( bookmarks, txConfig ) ) );
 
         assertSame( ConnectionReadTimeoutException.INSTANCE, actualException );
         verify( connection ).terminateAndRelease( ConnectionReadTimeoutException.INSTANCE.getMessage() );
@@ -346,7 +349,7 @@ class UnmanagedTransactionTest
         BoltProtocol protocol = mock( BoltProtocol.class );
         given( connection.protocol() ).willReturn( protocol );
         given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) ).willReturn( new CompletableFuture<>() );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         CompletionStage<Void> initialStage = mapTransactionAction( initialAction, tx ).get();
         CompletionStage<Void> similarStage = mapTransactionAction( similarAction, tx ).get();
@@ -390,7 +393,7 @@ class UnmanagedTransactionTest
         given( connection.protocol() ).willReturn( protocol );
         given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
                 .willReturn( protocolActionCompleted ? completedFuture( null ) : new CompletableFuture<>() );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         CompletionStage<Void> originalActionStage = mapTransactionAction( initialAction, tx ).get();
         CompletionStage<Void> conflictingActionStage = mapTransactionAction( conflictingAction, tx ).get();
@@ -434,7 +437,7 @@ class UnmanagedTransactionTest
         given( connection.protocol() ).willReturn( protocol );
         given( protocolCommit ? protocol.commitTransaction( connection ) : protocol.rollbackTransaction( connection ) )
                 .willReturn( completedFuture( null ) );
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
 
         CompletionStage<Void> originalActionStage = mapTransactionAction( originalAction, tx ).get();
         CompletionStage<Void> closeStage = commitOnClose != null ? tx.closeAsync( commitOnClose ) : tx.closeAsync();
@@ -454,13 +457,13 @@ class UnmanagedTransactionTest
 
     private static UnmanagedTransaction beginTx( Connection connection )
     {
-        return beginTx( connection, InternalBookmark.empty() );
+        return beginTx( connection, Collections.emptySet() );
     }
 
-    private static UnmanagedTransaction beginTx( Connection connection, Bookmark initialBookmark )
+    private static UnmanagedTransaction beginTx( Connection connection, Set<Bookmark> initialBookmarks )
     {
-        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarkHolder(), UNLIMITED_FETCH_SIZE );
-        return await( tx.beginAsync( initialBookmark, TransactionConfig.empty() ) );
+        UnmanagedTransaction tx = new UnmanagedTransaction( connection, new DefaultBookmarksHolder(), UNLIMITED_FETCH_SIZE );
+        return await( tx.beginAsync( initialBookmarks, TransactionConfig.empty() ) );
     }
 
     private static Connection connectionWithBegin( Consumer<ResponseHandler> beginBehaviour )
