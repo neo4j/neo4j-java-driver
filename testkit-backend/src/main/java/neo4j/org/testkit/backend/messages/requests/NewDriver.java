@@ -117,7 +117,6 @@ public class NewDriver implements TestkitRequest
         Optional.ofNullable( data.connectionAcquisitionTimeoutMs )
                 .ifPresent( timeout -> configBuilder.withConnectionAcquisitionTimeout( timeout, TimeUnit.MILLISECONDS ) );
         configBuilder.withDriverMetrics();
-//        configBuilder.withLogging( Logging.console( Level.FINE ) );
         org.neo4j.driver.Driver driver;
         Config config = configBuilder.build();
         try

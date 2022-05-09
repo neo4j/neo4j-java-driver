@@ -97,17 +97,19 @@ public class StartTest implements TestkitRequest
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestRoutingConnectionRecvTimeout\\.test_timeout_managed_tx_retry$", skipMessage );
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTxRun\\.test_broken_transaction_should_not_break_session$", skipMessage );
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestTxRun\\.test_does_not_update_last_bookmark_on_failure$", skipMessage );
-        skipMessage = "Does not support multiple concurrent result streams on session level";
-        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage );
-        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage );
         skipMessage = "The expects run failure to be reported immediately on run method";
         REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put(
                 "^.*\\.Routing[^.]+\\.test_should_fail_when_writing_on_unexpectedly_interrupting_writer_on_run_using_tx_run$", skipMessage );
+        skipMessage = "Does not support multiple concurrent result streams on session level";
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage );
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage );
+        REACTIVE_LEGACY_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_nested$", skipMessage );
 
         REACTIVE_SKIP_PATTERN_TO_REASON.putAll( COMMON_SKIP_PATTERN_TO_REASON );
 
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_iteration_nested$", skipMessage );
         REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestSessionRun\\.test_partial_iteration$", skipMessage );
+        REACTIVE_SKIP_PATTERN_TO_REASON.put( "^.*\\.TestIterationSessionRun\\.test_nested$", skipMessage );
     }
 
     private StartTestBody data;
