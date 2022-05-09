@@ -19,27 +19,37 @@
 package org.neo4j.docs.driver;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URI;
+import java.util.Optional;
 
+import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.net.ServerAddress;
-import org.neo4j.driver.util.cc.ClusterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Testcontainers( disabledWithoutDocker = true )
 class RoutingExamplesIT
 {
-    @RegisterExtension
-    static final ClusterExtension neo4j = new ClusterExtension();
+    private static final String NEO4J_VERSION = Optional.ofNullable( System.getenv( "NEO4J_VERSION" ) )
+                                                        .orElse( "4.4" );
+
+    @Container
+    private static final Neo4jContainer<?> NEO4J_CONTAINER = new Neo4jContainer<>( String.format( "neo4j:%s-enterprise", NEO4J_VERSION ) )
+            .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" )
+            .withAdminPassword( null );
 
     @Test
     void testShouldRunConfigCustomResolverExample() throws Exception
     {
         // Given
-        URI uri = neo4j.getCluster().getRoutingUri();
-        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( "neo4j://x.example.com", neo4j.getDefaultAuthToken(),
-                                                                                     ServerAddress.of( uri.getHost(), uri.getPort() ) ) )
+        URI boltUri = URI.create( NEO4J_CONTAINER.getBoltUrl() );
+        String neo4jUrl = String.format( "neo4j://%s:%d", boltUri.getHost(), boltUri.getPort() );
+        try ( ConfigCustomResolverExample example = new ConfigCustomResolverExample( neo4jUrl, AuthTokens.none(),
+                                                                                     ServerAddress.of( boltUri.getHost(), boltUri.getPort() ) ) )
         {
             // Then
             assertTrue( example.canConnect() );

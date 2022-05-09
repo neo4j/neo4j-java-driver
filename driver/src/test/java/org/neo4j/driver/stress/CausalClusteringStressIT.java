@@ -19,6 +19,7 @@
 package org.neo4j.driver.stress;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.util.cc.LocalOrRemoteClusterExtension;
 
+@Testcontainers( disabledWithoutDocker = true )
 class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringStressIT.Context>
 {
     @RegisterExtension
@@ -85,12 +87,6 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
     }
 
     @Override
-    void dumpLogs()
-    {
-        clusterRule.dumpClusterLogs();
-    }
-
-    @Override
     List<BlockingCommand<Context>> createTestSpecificBlockingCommands()
     {
         return Arrays.asList(
@@ -112,5 +108,4 @@ class CausalClusteringStressIT extends AbstractStressTestBase<CausalClusteringSt
             return leaderSwitches.get();
         }
     }
-
 }

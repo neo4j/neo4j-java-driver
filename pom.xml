@@ -51,6 +51,7 @@
     <lombok.version>1.18.22</lombok.version>
     <svm.version>21.3.1</svm.version>
     <micrometer.version>1.8.3</micrometer.version>
+    <testcontainers.version>1.17.1</testcontainers.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
   </properties>
@@ -169,6 +170,13 @@
         <artifactId>logback-classic</artifactId>
         <version>${logback-classic.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->
