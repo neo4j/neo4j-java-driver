@@ -40,7 +40,9 @@ import static org.neo4j.driver.Values.parameters;
 class LoadCSVIT
 {
     @RegisterExtension
-    static final DatabaseExtension neo4j = new DatabaseExtension( Neo4jSettings.TEST_SETTINGS.without( Neo4jSettings.IMPORT_DIR ) );
+    static final DatabaseExtension neo4j = new DatabaseExtension( Neo4jSettings.TEST_SETTINGS
+                                                                          .without( Neo4jSettings.IMPORT_DIR )
+                                                                          .without( Neo4jSettings.SERVER_IMPORT_DIR ) );
 
     @Test
     void shouldLoadCSV() throws Throwable
