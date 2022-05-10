@@ -22,8 +22,10 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.testcontainers.containers.Neo4jContainer;
 
 import java.net.URI;
+import java.util.Optional;
 
 import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
@@ -37,7 +39,7 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     private static final String CLUSTER_URI_SYSTEM_PROPERTY_NAME = "externalClusterUri";
     private static final String NEO4J_USER_PASSWORD_PROPERTY_NAME = "neo4jUserPassword";
 
-    private ClusterExtension localClusterExtension;
+    private Neo4jContainer<?> neo4jContainer;
     private URI clusterUri;
 
     public LocalOrRemoteClusterExtension()
@@ -56,36 +58,33 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
         {
             return AuthTokens.basic( "neo4j", neo4jUserPasswordFromSystemProperty() );
         }
-        return localClusterExtension.getDefaultAuthToken();
+        return AuthTokens.basic( "neo4j", neo4jContainer.getAdminPassword() );
     }
 
     @Override
-    public void beforeAll( ExtensionContext context ) throws Exception
+    public void beforeAll( ExtensionContext context )
     {
         if ( remoteClusterExists() )
         {
             clusterUri = remoteClusterUriFromSystemProperty();
-            deleteDataInRemoteCluster();
+            cleanDb();
         }
         else
         {
-            localClusterExtension = new ClusterExtension();
-            localClusterExtension.beforeAll( context );
-            clusterUri = localClusterExtension.getCluster().getRoutingUri();
+            String neo4JVersion = Optional.ofNullable( System.getenv( "NEO4J_VERSION" ) )
+                                          .orElse( "4.4" );
+            neo4jContainer = new Neo4jContainer<>( String.format( "neo4j:%s-enterprise", neo4JVersion ) )
+                    .withEnv( "NEO4J_ACCEPT_LICENSE_AGREEMENT", "yes" );
+            neo4jContainer.start();
+
+            clusterUri = URI.create( neo4jContainer.getBoltUrl().replace( "bolt://", "neo4j://" ) );
         }
     }
 
     @Override
     public void afterEach( ExtensionContext context )
     {
-        if ( remoteClusterExists() )
-        {
-            deleteDataInRemoteCluster();
-        }
-        else
-        {
-            localClusterExtension.afterEach( context );
-        }
+        cleanDb();
     }
 
     @Override
@@ -93,19 +92,11 @@ public class LocalOrRemoteClusterExtension implements BeforeAllCallback, AfterEa
     {
         if ( !remoteClusterExists() )
         {
-            localClusterExtension.afterAll( context );
+            neo4jContainer.stop();
         }
     }
 
-    public void dumpClusterLogs()
-    {
-        if ( localClusterExtension != null )
-        {
-            localClusterExtension.getCluster().dumpClusterDebugLog();
-        }
-    }
-
-    private void deleteDataInRemoteCluster()
+    private void cleanDb()
     {
         Config.ConfigBuilder builder = Config.builder();
         builder.withEventLoopThreads( 1 );
