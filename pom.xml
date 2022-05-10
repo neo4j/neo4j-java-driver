@@ -47,10 +47,11 @@
     <jarchivelib.version>1.2.0</jarchivelib.version>
     <bouncycastle-jdk15on.version>1.70</bouncycastle-jdk15on.version>
     <logback-classic.version>1.2.11</logback-classic.version>
-    <jackson.version>2.13.3</jackson.version>
-    <lombok.version>1.18.24</lombok.version>
-    <svm.version>21.3.2.1</svm.version>
-    <micrometer.version>1.9.1</micrometer.version>
+    <jackson.version>2.13.2</jackson.version>
+    <lombok.version>1.18.22</lombok.version>
+    <svm.version>21.3.1</svm.version>
+    <micrometer.version>1.8.3</micrometer.version>
+    <testcontainers.version>1.17.1</testcontainers.version>
     <build-resources.version>4.4.8</build-resources.version>
     <!-- To be overwritten by child projects -->
     <moduleName/>
@@ -172,6 +173,13 @@
         <artifactId>logback-classic</artifactId>
         <version>${logback-classic.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- Testkit Backend Dependencies -->
