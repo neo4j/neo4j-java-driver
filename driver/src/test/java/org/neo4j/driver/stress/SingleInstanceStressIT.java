@@ -145,10 +145,4 @@ class SingleInstanceStressIT extends AbstractStressTestBase<SingleInstanceStress
     static class Context extends AbstractContext
     {
     }
-
-    @Override
-    void dumpLogs()
-    {
-        neo4j.dumpLogs();
-    }
 }

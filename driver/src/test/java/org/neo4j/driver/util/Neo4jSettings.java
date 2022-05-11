@@ -30,7 +30,9 @@ public class Neo4jSettings
 {
     public static final String DATA_DIR = "dbms.directories.data";
     public static final String IMPORT_DIR = "dbms.directories.import";
-    public static final String LISTEN_ADDR = "dbms.connectors.default_listen_address";
+    // 5.0
+    public static final String SERVER_IMPORT_DIR = "server.directories.import";
+    public static final String LISTEN_ADDR = "dbms.default_listen_address";
     public static final String IPV6_ENABLED_ADDR = "::";
     public static final String BOLT_TLS_LEVEL = "dbms.connector.bolt.tls_level";
 
