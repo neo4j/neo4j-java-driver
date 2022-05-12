@@ -28,6 +28,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.TransactionNestingException;
+import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.NetworkSession;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
@@ -141,7 +142,7 @@ public class InternalRxSession extends AbstractReactiveSession<RxTransaction> im
     @Override
     public Bookmark lastBookmark()
     {
-        return session.lastBookmark();
+        return InternalBookmark.from( session.lastBookmarks() );
     }
 
     @Override

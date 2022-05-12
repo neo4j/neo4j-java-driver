@@ -24,8 +24,11 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -56,7 +59,7 @@ class RunWithMetadataMessageEncoderTest
     {
         Map<String,Value> params = singletonMap( "answer", value( 42 ) );
 
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx999" );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx999" ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "key1", value( "value1" ) );
@@ -66,7 +69,7 @@ class RunWithMetadataMessageEncoderTest
         Duration txTimeout = Duration.ofMillis( 42 );
 
         Query query = new Query( "RETURN $answer", value( params ) );
-        encoder.encode( autoCommitTxRunMessage( query, txTimeout, txMetadata, defaultDatabase(), mode, bookmark, null ), packer );
+        encoder.encode( autoCommitTxRunMessage( query, txTimeout, txMetadata, defaultDatabase(), mode, bookmarks, null ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 3, RunWithMetadataMessage.SIGNATURE );
@@ -74,7 +77,7 @@ class RunWithMetadataMessageEncoderTest
         order.verify( packer ).pack( params );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
         expectedMetadata.put( "tx_timeout", value( 42 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )

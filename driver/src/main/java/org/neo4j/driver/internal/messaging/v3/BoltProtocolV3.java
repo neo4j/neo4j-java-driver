@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.v3;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -28,7 +29,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.async.inbound.InboundMessageDispatcher;
@@ -110,7 +111,7 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config )
+    public CompletionStage<Void> beginTransaction( Connection connection, Set<Bookmark> bookmarks, TransactionConfig config )
     {
         try
         {
@@ -122,7 +123,7 @@ public class BoltProtocolV3 implements BoltProtocol
         }
 
         CompletableFuture<Void> beginTxFuture = new CompletableFuture<>();
-        BeginMessage beginMessage = new BeginMessage( bookmark, config, connection.databaseName(), connection.mode(), connection.impersonatedUser() );
+        BeginMessage beginMessage = new BeginMessage( bookmarks, config, connection.databaseName(), connection.mode(), connection.impersonatedUser() );
         connection.writeAndFlush( beginMessage, new BeginTxResponseHandler( beginTxFuture ) );
         return beginTxFuture;
     }
@@ -144,29 +145,29 @@ public class BoltProtocolV3 implements BoltProtocol
     }
 
     @Override
-    public ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarkHolder bookmarkHolder,
+    public ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarksHolder bookmarksHolder,
                                                            TransactionConfig config, long fetchSize )
     {
         verifyDatabaseNameBeforeTransaction( connection.databaseName() );
         RunWithMetadataMessage runMessage =
-                autoCommitTxRunMessage( query, config, connection.databaseName(), connection.mode(), bookmarkHolder.getBookmark(),
+                autoCommitTxRunMessage( query, config, connection.databaseName(), connection.mode(), bookmarksHolder.getBookmarks(),
                                         connection.impersonatedUser() );
-        return buildResultCursorFactory( connection, query, bookmarkHolder, null, runMessage, fetchSize );
+        return buildResultCursorFactory( connection, query, bookmarksHolder, null, runMessage, fetchSize );
     }
 
     @Override
     public ResultCursorFactory runInUnmanagedTransaction( Connection connection, Query query, UnmanagedTransaction tx, long fetchSize )
     {
         RunWithMetadataMessage runMessage = unmanagedTxRunMessage( query );
-        return buildResultCursorFactory( connection, query, BookmarkHolder.NO_OP, tx, runMessage, fetchSize );
+        return buildResultCursorFactory( connection, query, BookmarksHolder.NO_OP, tx, runMessage, fetchSize );
     }
 
-    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarkHolder bookmarkHolder,
+    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarksHolder bookmarksHolder,
                                                             UnmanagedTransaction tx, RunWithMetadataMessage runMessage, long ignored )
     {
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = new RunResponseHandler( runFuture, METADATA_EXTRACTOR, connection, tx );
-        PullAllResponseHandler pullHandler = newBoltV3PullAllHandler( query, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullHandler = newBoltV3PullAllHandler( query, runHandler, connection, bookmarksHolder, tx );
 
         return new AsyncResultCursorOnlyFactory( connection, runMessage, runHandler, runFuture, pullHandler );
     }

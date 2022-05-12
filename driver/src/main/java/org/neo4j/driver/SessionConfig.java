@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.driver.async.AsyncSession;
+import org.neo4j.driver.reactive.ReactiveSession;
 import org.neo4j.driver.reactive.RxSession;
 
 import static java.util.Objects.requireNonNull;
@@ -186,14 +187,12 @@ public class SessionConfig implements Serializable
         /**
          * Set the initial bookmarks to be used in a session.
          * <p>
-         * First transaction in a session will ensure that server hosting is at least as up-to-date as the
-         * latest transaction referenced by the supplied bookmarks.
-         * The bookmarks can be obtained via {@link Session#lastBookmark()}, {@link AsyncSession#lastBookmark()},
-         * and/or {@link RxSession#lastBookmark()}.
+         * First transaction in a session will ensure that server hosting is at least as up-to-date as the latest transaction referenced by the supplied
+         * bookmarks. The bookmarks can be obtained via {@link Session#lastBookmarks()}, {@link AsyncSession#lastBookmarks()}, and/or {@link
+         * ReactiveSession#lastBookmarks()}.
          *
-         * @param bookmarks a series of initial bookmarks.
-         * Both {@code null} value and empty array
-         * are permitted, and indicate that the bookmarks do not exist or are unknown.
+         * @param bookmarks a series of initial bookmarks. Both {@code null} value and empty array are permitted, and indicate that the bookmarks do not exist
+         *                  or are unknown.
          * @return this builder.
          */
         public Builder withBookmarks( Bookmark... bookmarks )
@@ -210,14 +209,22 @@ public class SessionConfig implements Serializable
         }
 
         /**
-         * Set the initial bookmarks to be used in a session.
-         * First transaction in a session will ensure that server hosting is at least as up-to-date as the
-         * latest transaction referenced by the supplied bookmarks.
-         * The bookmarks can be obtained via {@link Session#lastBookmark()}, {@link AsyncSession#lastBookmark()},
-         * and/or {@link RxSession#lastBookmark()}.
+         * Set the initial bookmarks to be used in a session. First transaction in a session will ensure that server hosting is at least as up-to-date as the
+         * latest transaction referenced by the supplied bookmarks. The bookmarks can be obtained via {@link Session#lastBookmarks()}, {@link
+         * AsyncSession#lastBookmarks()}, and/or {@link ReactiveSession#lastBookmarks()}.
+         * <p>
+         * Multiple immutable sets of bookmarks may be joined in the following way:
+         * <pre>
+         * {@code
+         * Set<Bookmark> bookmarks = new HashSet<>();
+         * bookmarks.addAll( session1.lastBookmarks() );
+         * bookmarks.addAll( session2.lastBookmarks() );
+         * bookmarks.addAll( session3.lastBookmarks() );
+         * }
+         * </pre>
          *
-         * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable
-         * are permitted, and indicate that the bookmarks do not exist or are unknown.
+         * @param bookmarks initial references to some previous transactions. Both {@code null} value and empty iterable are permitted, and indicate that the
+         *                  bookmarks do not exist or are unknown.
          * @return this builder
          */
         public Builder withBookmarks( Iterable<Bookmark> bookmarks )

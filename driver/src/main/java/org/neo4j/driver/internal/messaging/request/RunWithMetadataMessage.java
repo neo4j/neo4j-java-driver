@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging.request;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
@@ -41,15 +42,15 @@ public class RunWithMetadataMessage extends MessageWithMetadata
     private final Map<String,Value> parameters;
 
     public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, TransactionConfig config, DatabaseName databaseName, AccessMode mode,
-                                                                 Bookmark bookmark, String impersonatedUser )
+                                                                 Set<Bookmark> bookmarks, String impersonatedUser )
     {
-        return autoCommitTxRunMessage( query, config.timeout(), config.metadata(), databaseName, mode, bookmark, impersonatedUser );
+        return autoCommitTxRunMessage( query, config.timeout(), config.metadata(), databaseName, mode, bookmarks, impersonatedUser );
     }
 
     public static RunWithMetadataMessage autoCommitTxRunMessage( Query query, Duration txTimeout, Map<String,Value> txMetadata, DatabaseName databaseName,
-                                                                 AccessMode mode, Bookmark bookmark, String impersonatedUser )
+                                                                 AccessMode mode, Set<Bookmark> bookmarks, String impersonatedUser )
     {
-        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmark, impersonatedUser );
+        Map<String,Value> metadata = buildMetadata( txTimeout, txMetadata, databaseName, mode, bookmarks, impersonatedUser );
         return new RunWithMetadataMessage( query.text(), query.parameters().asMap( ofValue() ), metadata );
     }
 

@@ -21,7 +21,7 @@ package org.neo4j.driver.internal.messaging.v4;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.Query;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -51,14 +51,14 @@ public class BoltProtocolV4 extends BoltProtocolV3
     }
 
     @Override
-    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarkHolder bookmarkHolder,
+    protected ResultCursorFactory buildResultCursorFactory( Connection connection, Query query, BookmarksHolder bookmarksHolder,
                                                             UnmanagedTransaction tx, RunWithMetadataMessage runMessage, long fetchSize )
     {
         CompletableFuture<Void> runFuture = new CompletableFuture<>();
         RunResponseHandler runHandler = new RunResponseHandler( runFuture, METADATA_EXTRACTOR, connection, tx );
 
-        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( query, runHandler, connection, bookmarkHolder, tx, fetchSize );
-        PullResponseHandler pullHandler = newBoltV4BasicPullHandler( query, runHandler, connection, bookmarkHolder, tx );
+        PullAllResponseHandler pullAllHandler = newBoltV4AutoPullHandler( query, runHandler, connection, bookmarksHolder, tx, fetchSize );
+        PullResponseHandler pullHandler = newBoltV4BasicPullHandler( query, runHandler, connection, bookmarksHolder, tx );
 
         return new ResultCursorFactoryImpl( connection, runMessage, runHandler, runFuture, pullHandler, pullAllHandler );
     }

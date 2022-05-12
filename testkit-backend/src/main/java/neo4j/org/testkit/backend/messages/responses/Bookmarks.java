@@ -21,7 +21,7 @@ package neo4j.org.testkit.backend.messages.responses;
 import lombok.Builder;
 import lombok.Getter;
 
-import org.neo4j.driver.Bookmark;
+import java.util.Set;
 
 @Getter
 @Builder
@@ -39,6 +39,6 @@ public class Bookmarks implements TestkitResponse
     @Builder
     public static class BookmarksBody
     {
-        private Bookmark bookmarks;
+        private Set<String> bookmarks;
     }
 }

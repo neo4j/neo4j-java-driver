@@ -18,6 +18,8 @@
  */
 package org.neo4j.driver.internal.async;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.driver.AccessMode;
@@ -27,24 +29,23 @@ import org.neo4j.driver.internal.spi.Connection;
 
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
 import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
 
 /**
  * A {@link Connection} shall fulfil this {@link ImmutableConnectionContext} when acquired from a connection provider.
  */
 public class ImmutableConnectionContext implements ConnectionContext
 {
-    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), empty(), AccessMode.READ );
-    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), empty(), AccessMode.READ );
+    private static final ConnectionContext SINGLE_DB_CONTEXT = new ImmutableConnectionContext( defaultDatabase(), Collections.emptySet(), AccessMode.READ );
+    private static final ConnectionContext MULTI_DB_CONTEXT = new ImmutableConnectionContext( systemDatabase(), Collections.emptySet(), AccessMode.READ );
 
     private final CompletableFuture<DatabaseName> databaseNameFuture;
     private final AccessMode mode;
-    private final Bookmark rediscoveryBookmark;
+    private final Set<Bookmark> rediscoveryBookmarks;
 
-    public ImmutableConnectionContext( DatabaseName databaseName, Bookmark bookmark, AccessMode mode )
+    public ImmutableConnectionContext( DatabaseName databaseName, Set<Bookmark> bookmarks, AccessMode mode )
     {
         this.databaseNameFuture = CompletableFuture.completedFuture( databaseName );
-        this.rediscoveryBookmark = bookmark;
+        this.rediscoveryBookmarks = bookmarks;
         this.mode = mode;
     }
 
@@ -61,9 +62,9 @@ public class ImmutableConnectionContext implements ConnectionContext
     }
 
     @Override
-    public Bookmark rediscoveryBookmark()
+    public Set<Bookmark> rediscoveryBookmarks()
     {
-        return rediscoveryBookmark;
+        return rediscoveryBookmarks;
     }
 
     @Override

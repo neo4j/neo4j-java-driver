@@ -19,8 +19,8 @@
 package org.neo4j.driver.internal.messaging.encode;
 
 import java.io.IOException;
-import java.util.Collections;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
 import org.neo4j.driver.internal.messaging.ValuePacker;
@@ -41,7 +41,7 @@ public class RouteMessageEncoder implements MessageEncoder
         RouteMessage routeMessage = (RouteMessage) message;
         packer.packStructHeader( 3, message.signature() );
         packer.pack( routeMessage.getRoutingContext() );
-        packer.pack( routeMessage.getBookmark().isPresent() ? value( routeMessage.getBookmark().get().values() ) : value( Collections.emptyList() ) );
+        packer.pack( value( routeMessage.getBookmarks().stream().map( Bookmark::value ) ) );
         packer.pack( routeMessage.getDatabaseName() );
     }
 }

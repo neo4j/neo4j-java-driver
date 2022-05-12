@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.messaging;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AuthToken;
@@ -30,8 +31,7 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.exceptions.ClientException;
-import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.async.UnmanagedTransaction;
 import org.neo4j.driver.internal.cluster.RoutingContext;
 import org.neo4j.driver.internal.cursor.ResultCursorFactory;
@@ -75,11 +75,11 @@ public interface BoltProtocol
      * Begin an unmanaged transaction.
      *
      * @param connection the connection to use.
-     * @param bookmark the bookmarks. Never null, should be {@link InternalBookmark#empty()} when absent.
-     * @param config the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
+     * @param bookmarks  the bookmarks. Never null, should be empty when there are no bookmarks.
+     * @param config     the transaction configuration. Never null, should be {@link TransactionConfig#empty()} when absent.
      * @return a completion stage completed when transaction is started or completed exceptionally when there was a failure.
      */
-    CompletionStage<Void> beginTransaction( Connection connection, Bookmark bookmark, TransactionConfig config );
+    CompletionStage<Void> beginTransaction( Connection connection, Set<Bookmark> bookmarks, TransactionConfig config );
 
     /**
      * Commit the unmanaged transaction.
@@ -100,14 +100,14 @@ public interface BoltProtocol
     /**
      * Execute the given query in an auto-commit transaction, i.e. {@link Session#run(Query)}.
      *
-     * @param connection     the network connection to use.
-     * @param query          the cypher to execute.
-     * @param bookmarkHolder the bookmarksHolder that keeps track of the current bookmark and can be updated with a new bookmark.
-     * @param config         the transaction config for the implicitly started auto-commit transaction.
-     * @param fetchSize      the record fetch size for PULL message.
+     * @param connection      the network connection to use.
+     * @param query           the cypher to execute.
+     * @param bookmarksHolder the bookmarksHolder that keeps track of the current bookmarks and can be updated with a new bookmark.
+     * @param config          the transaction config for the implicitly started auto-commit transaction.
+     * @param fetchSize       the record fetch size for PULL message.
      * @return stage with cursor.
      */
-    ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarkHolder bookmarkHolder, TransactionConfig config,
+    ResultCursorFactory runInAutoCommitTransaction( Connection connection, Query query, BookmarksHolder bookmarksHolder, TransactionConfig config,
                                                     long fetchSize );
 
     /**

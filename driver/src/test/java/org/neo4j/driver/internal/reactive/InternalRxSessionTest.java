@@ -289,7 +289,22 @@ class InternalRxSessionTest
         rxSession.lastBookmark();
 
         // Then
-        verify( session ).lastBookmark();
+        verify( session ).lastBookmarks();
+        verifyNoMoreInteractions( session );
+    }
+
+    @Test
+    void shouldDelegateBookmarks()
+    {
+        // Given
+        NetworkSession session = mock( NetworkSession.class );
+        InternalRxSession rxSession = new InternalRxSession( session );
+
+        // When
+        rxSession.lastBookmarks();
+
+        // Then
+        verify( session ).lastBookmarks();
         verifyNoMoreInteractions( session );
     }
 

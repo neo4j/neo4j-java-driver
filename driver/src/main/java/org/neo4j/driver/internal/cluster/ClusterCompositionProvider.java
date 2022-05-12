@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Bookmark;
@@ -26,5 +27,6 @@ import org.neo4j.driver.internal.spi.Connection;
 
 public interface ClusterCompositionProvider
 {
-    CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark, String impersonatedUser );
+    CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks,
+                                                               String impersonatedUser );
 }

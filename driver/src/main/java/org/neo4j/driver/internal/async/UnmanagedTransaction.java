@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.async;
 
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -30,13 +31,12 @@ import java.util.function.Function;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
-import org.neo4j.driver.Session;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.async.ResultCursor;
 import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ConnectionReadTimeoutException;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.cursor.AsyncResultCursor;
 import org.neo4j.driver.internal.cursor.RxResultCursor;
 import org.neo4j.driver.internal.messaging.BoltProtocol;
@@ -59,7 +59,7 @@ public class UnmanagedTransaction
         ACTIVE,
 
         /**
-         * This transaction has been terminated either because of explicit {@link Session#reset()} or because of a fatal connection error.
+         * This transaction has been terminated either because of a fatal connection error.
          */
         TERMINATED,
 
@@ -84,7 +84,7 @@ public class UnmanagedTransaction
 
     private final Connection connection;
     private final BoltProtocol protocol;
-    private final BookmarkHolder bookmarkHolder;
+    private final BookmarksHolder bookmarksHolder;
     private final ResultCursorsHolder resultCursors;
     private final long fetchSize;
     private final Lock lock = new ReentrantLock();
@@ -93,23 +93,23 @@ public class UnmanagedTransaction
     private CompletableFuture<Void> rollbackFuture;
     private Throwable causeOfTermination;
 
-    public UnmanagedTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize )
+    public UnmanagedTransaction( Connection connection, BookmarksHolder bookmarksHolder, long fetchSize )
     {
-        this( connection, bookmarkHolder, fetchSize, new ResultCursorsHolder() );
+        this( connection, bookmarksHolder, fetchSize, new ResultCursorsHolder() );
     }
 
-    protected UnmanagedTransaction( Connection connection, BookmarkHolder bookmarkHolder, long fetchSize, ResultCursorsHolder resultCursors )
+    protected UnmanagedTransaction( Connection connection, BookmarksHolder bookmarksHolder, long fetchSize, ResultCursorsHolder resultCursors )
     {
         this.connection = connection;
         this.protocol = connection.protocol();
-        this.bookmarkHolder = bookmarkHolder;
+        this.bookmarksHolder = bookmarksHolder;
         this.resultCursors = resultCursors;
         this.fetchSize = fetchSize;
     }
 
-    public CompletionStage<UnmanagedTransaction> beginAsync( Bookmark initialBookmark, TransactionConfig config )
+    public CompletionStage<UnmanagedTransaction> beginAsync( Set<Bookmark> initialBookmarks, TransactionConfig config )
     {
-        return protocol.beginTransaction( connection, initialBookmark, config )
+        return protocol.beginTransaction( connection, initialBookmarks, config )
                        .handle( ( ignore, beginError ) ->
                                 {
                                     if ( beginError != null )
@@ -240,7 +240,7 @@ public class UnmanagedTransaction
                                                    cursorFailure != causeOfTermination ? causeOfTermination : null )
                             : null
         );
-        return exception != null ? failedFuture( exception ) : protocol.commitTransaction( connection ).thenAccept( bookmarkHolder::setBookmark );
+        return exception != null ? failedFuture( exception ) : protocol.commitTransaction( connection ).thenAccept( bookmarksHolder::setBookmark );
     }
 
     private CompletionStage<Void> doRollbackAsync()

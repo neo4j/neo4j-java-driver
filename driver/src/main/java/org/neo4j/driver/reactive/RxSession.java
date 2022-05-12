@@ -226,11 +226,12 @@ public interface RxSession extends RxQueryRunner
     RxResult run(Query query, TransactionConfig config );
 
     /**
-     * Return the bookmark received following the last completed query within this session.
-     * The last completed query can be run in a {@linkplain RxTransaction transaction}
-     * started using {@linkplain #beginTransaction() beginTransaction} or directly via {@link #run(Query) run}.
+     * Return the last bookmark of this session.
+     * <p>
+     * When no new bookmark is received, the initial bookmarks are returned as a composite {@link Bookmark} containing all initial bookmarks. This may happen
+     * when no work has been done using the session. If no initial bookmarks have been provided, an empty {@link Bookmark} is returned.
      *
-     * @return a reference to a previous transaction.
+     * @return the last bookmark.
      */
     Bookmark lastBookmark();
 

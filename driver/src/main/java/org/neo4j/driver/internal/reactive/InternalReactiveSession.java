@@ -21,9 +21,12 @@ package org.neo4j.driver.internal.reactive;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.AccessMode;
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.TransactionConfig;
 import org.neo4j.driver.internal.async.NetworkSession;
@@ -106,5 +109,11 @@ public class InternalReactiveSession extends AbstractReactiveSession<ReactiveTra
                                  return publisher;
                              } )
                    .map( InternalReactiveResult::new );
+    }
+
+    @Override
+    public Set<Bookmark> lastBookmarks()
+    {
+        return new HashSet<>( session.lastBookmarks() );
     }
 }

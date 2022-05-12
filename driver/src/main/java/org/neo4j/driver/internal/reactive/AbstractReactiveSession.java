@@ -21,6 +21,7 @@ package org.neo4j.driver.internal.reactive;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -124,9 +125,9 @@ abstract class AbstractReactiveSession<S>
         }
     }
 
-    public Bookmark lastBookmark()
+    public Set<Bookmark> lastBookmarks()
     {
-        return session.lastBookmark();
+        return session.lastBookmarks();
     }
 
     public <T> Publisher<T> close()

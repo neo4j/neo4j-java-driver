@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.internal.BoltServerAddress;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 import org.neo4j.driver.internal.cluster.RoutingTableRegistryImpl.RoutingTableHandlerFactory;
 import org.neo4j.driver.internal.spi.ConnectionPool;
@@ -98,7 +98,7 @@ class RoutingTableRegistryImplTest
 
         // When
         DatabaseName database = database( databaseName );
-        routingTables.ensureRoutingTable( new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ ) );
+        routingTables.ensureRoutingTable( new ImmutableConnectionContext( database, Collections.emptySet(), AccessMode.READ ) );
 
         // Then
         assertTrue( map.containsKey( database ) );
@@ -117,7 +117,7 @@ class RoutingTableRegistryImplTest
 
         RoutingTableHandlerFactory factory = mockedHandlerFactory();
         RoutingTableRegistryImpl routingTables = newRoutingTables( map, factory );
-        ImmutableConnectionContext context = new ImmutableConnectionContext( database, InternalBookmark.empty(), AccessMode.READ );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( database, Collections.emptySet(), AccessMode.READ );
 
         // When
         RoutingTableHandler actual = await( routingTables.ensureRoutingTable( context ) );
@@ -138,7 +138,7 @@ class RoutingTableRegistryImplTest
         RoutingTableHandlerFactory factory = mockedHandlerFactory( handler );
         RoutingTableRegistryImpl routingTables = new RoutingTableRegistryImpl( map, factory, null, null, null, DEV_NULL_LOGGING );
 
-        ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
+        ImmutableConnectionContext context = new ImmutableConnectionContext( defaultDatabase(), Collections.emptySet(), mode );
         // When
         routingTables.ensureRoutingTable( context );
 

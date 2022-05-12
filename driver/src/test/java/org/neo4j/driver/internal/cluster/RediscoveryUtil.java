@@ -18,8 +18,9 @@
  */
 package org.neo4j.driver.internal.cluster;
 
+import java.util.Collections;
+
 import org.neo4j.driver.AccessMode;
-import org.neo4j.driver.internal.InternalBookmark;
 import org.neo4j.driver.internal.async.ConnectionContext;
 import org.neo4j.driver.internal.async.ImmutableConnectionContext;
 
@@ -30,11 +31,11 @@ public class RediscoveryUtil
 {
     public static ConnectionContext contextWithDatabase( String databaseName )
     {
-        return new ImmutableConnectionContext( database( databaseName ), InternalBookmark.empty(), AccessMode.WRITE );
+        return new ImmutableConnectionContext( database( databaseName ), Collections.emptySet(), AccessMode.WRITE );
     }
 
     public static ConnectionContext contextWithMode( AccessMode mode )
     {
-        return new ImmutableConnectionContext( defaultDatabase(), InternalBookmark.empty(), mode );
+        return new ImmutableConnectionContext( defaultDatabase(), Collections.emptySet(), mode );
     }
 }

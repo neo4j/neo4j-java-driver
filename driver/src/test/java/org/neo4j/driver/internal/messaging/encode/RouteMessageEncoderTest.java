@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ class RouteMessageEncoderTest
     {
         Map<String, Value> routingContext = getRoutingContext();
 
-        encoder.encode( new RouteMessage( getRoutingContext(), null, databaseName, null ), packer );
+        encoder.encode( new RouteMessage( getRoutingContext(), Collections.emptySet(), databaseName, null ), packer );
 
         InOrder inOrder = inOrder( packer );
 
@@ -72,13 +73,13 @@ class RouteMessageEncoderTest
         Map<String, Value> routingContext = getRoutingContext();
         Bookmark bookmark = InternalBookmark.parse( "somebookmark" );
 
-        encoder.encode( new RouteMessage( getRoutingContext(), bookmark, databaseName, null ), packer );
+        encoder.encode( new RouteMessage( getRoutingContext(), Collections.singleton( bookmark ), databaseName, null ), packer );
 
         InOrder inOrder = inOrder( packer );
 
         inOrder.verify( packer ).packStructHeader( 3, (byte) 0x66 );
         inOrder.verify( packer ).pack( routingContext );
-        inOrder.verify( packer ).pack( value( bookmark.values() ) );
+        inOrder.verify( packer ).pack( value( Collections.singleton( bookmark.value() ) ) );
         inOrder.verify( packer ).pack( databaseName );
     }
 

@@ -16,36 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package neo4j.org.testkit.backend.messages.responses.serializer;
+package org.neo4j.driver.internal;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.driver.Bookmark;
 
-public class TestkitBookmarkSerializer extends StdSerializer<Bookmark>
+/**
+ * @since 2.0
+ */
+public class ReadOnlyBookmarksHolder implements BookmarksHolder
 {
-    public TestkitBookmarkSerializer()
+    private final Set<Bookmark> bookmarks;
+
+    public ReadOnlyBookmarksHolder( Set<Bookmark> bookmarks )
     {
-        super( Bookmark.class );
+        this.bookmarks = bookmarks;
     }
 
     @Override
-    public void serialize( Bookmark value, JsonGenerator gen, SerializerProvider provider ) throws IOException
+    public Set<Bookmark> getBookmarks()
     {
-        gen.writeStartArray();
+        return bookmarks;
+    }
 
-        Set<String> bookmarks = value.values();
-
-        for ( String bm : bookmarks )
-        {
-            gen.writeString( bm );
-        }
-
-        gen.writeEndArray();
+    @Override
+    public void setBookmark( Bookmark bookmark )
+    {
+        // NO_OP
     }
 }

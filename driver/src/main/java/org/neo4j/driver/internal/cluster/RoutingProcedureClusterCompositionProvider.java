@@ -19,6 +19,7 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
@@ -61,7 +62,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
     }
 
     @Override
-    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Bookmark bookmark,
+    public CompletionStage<ClusterComposition> getClusterComposition( Connection connection, DatabaseName databaseName, Set<Bookmark> bookmarks,
                                                                       String impersonatedUser )
     {
         RoutingProcedureRunner runner;
@@ -79,7 +80,7 @@ public class RoutingProcedureClusterCompositionProvider implements ClusterCompos
             runner = singleDatabaseRoutingProcedureRunner;
         }
 
-        return runner.run( connection, databaseName, bookmark, impersonatedUser )
+        return runner.run( connection, databaseName, bookmarks, impersonatedUser )
                      .thenApply( this::processRoutingResponse );
     }
 

@@ -25,6 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -241,10 +242,10 @@ class InternalAsyncSessionTest
     @Test
     void shouldReturnBookmark()
     {
-        session = newSession( connectionProvider, InternalBookmark.parse( "Bookmark1" ) );
+        session = newSession( connectionProvider, Collections.singleton( InternalBookmark.parse( "Bookmark1" ) ) );
         asyncSession = new InternalAsyncSession( session );
 
-        assertThat( asyncSession.lastBookmark(), equalTo( session.lastBookmark() ) );
+        assertThat( asyncSession.lastBookmarks(), equalTo( session.lastBookmarks() ) );
     }
 
     @ParameterizedTest

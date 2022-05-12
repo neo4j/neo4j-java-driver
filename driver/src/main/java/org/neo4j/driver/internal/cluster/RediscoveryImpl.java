@@ -89,19 +89,19 @@ public class RediscoveryImpl implements Rediscovery
      */
     @Override
     public CompletionStage<ClusterCompositionLookupResult> lookupClusterComposition( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                     Bookmark bookmark, String impersonatedUser )
+                                                                                     Set<Bookmark> bookmarks, String impersonatedUser )
     {
         CompletableFuture<ClusterCompositionLookupResult> result = new CompletableFuture<>();
         // if we failed discovery, we will chain all errors into this one.
         ServiceUnavailableException baseError = new ServiceUnavailableException( String.format( NO_ROUTERS_AVAILABLE, routingTable.database().description() ) );
-        lookupClusterComposition( routingTable, connectionPool, result, bookmark, impersonatedUser, baseError );
+        lookupClusterComposition( routingTable, connectionPool, result, bookmarks, impersonatedUser, baseError );
         return result;
     }
 
     private void lookupClusterComposition( RoutingTable routingTable, ConnectionPool pool, CompletableFuture<ClusterCompositionLookupResult> result,
-                                           Bookmark bookmark, String impersonatedUser, Throwable baseError )
+                                           Set<Bookmark> bookmarks, String impersonatedUser, Throwable baseError )
     {
-        lookup( routingTable, pool, bookmark, impersonatedUser, baseError )
+        lookup( routingTable, pool, bookmarks, impersonatedUser, baseError )
                 .whenComplete(
                         ( compositionLookupResult, completionError ) ->
                         {
@@ -121,29 +121,29 @@ public class RediscoveryImpl implements Rediscovery
                         } );
     }
 
-    private CompletionStage<ClusterCompositionLookupResult> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Bookmark bookmark,
+    private CompletionStage<ClusterCompositionLookupResult> lookup( RoutingTable routingTable, ConnectionPool connectionPool, Set<Bookmark> bookmarks,
                                                                     String impersonatedUser, Throwable baseError )
     {
         CompletionStage<ClusterCompositionLookupResult> compositionStage;
 
         if ( routingTable.preferInitialRouter() )
         {
-            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmark, impersonatedUser, baseError );
+            compositionStage = lookupOnInitialRouterThenOnKnownRouters( routingTable, connectionPool, bookmarks, impersonatedUser, baseError );
         }
         else
         {
-            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmark, impersonatedUser, baseError );
+            compositionStage = lookupOnKnownRoutersThenOnInitialRouter( routingTable, connectionPool, bookmarks, impersonatedUser, baseError );
         }
 
         return compositionStage;
     }
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRoutersThenOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                                     Bookmark bookmark, String impersonatedUser,
+                                                                                                     Set<Bookmark> bookmarks, String impersonatedUser,
                                                                                                      Throwable baseError )
     {
         Set<BoltServerAddress> seenServers = new HashSet<>();
-        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError )
+        return lookupOnKnownRouters( routingTable, connectionPool, seenServers, bookmarks, impersonatedUser, baseError )
                 .thenCompose(
                         compositionLookupResult ->
                         {
@@ -152,16 +152,16 @@ public class RediscoveryImpl implements Rediscovery
                                 return completedFuture(
                                         compositionLookupResult );
                             }
-                            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError );
+                            return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmarks, impersonatedUser, baseError );
                         } );
     }
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouterThenOnKnownRouters( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                                     Bookmark bookmark, String impersonatedUser,
+                                                                                                     Set<Bookmark> bookmarks, String impersonatedUser,
                                                                                                      Throwable baseError )
     {
         Set<BoltServerAddress> seenServers = emptySet();
-        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError )
+        return lookupOnInitialRouter( routingTable, connectionPool, seenServers, bookmarks, impersonatedUser, baseError )
                 .thenCompose(
                         compositionLookupResult ->
                         {
@@ -170,12 +170,12 @@ public class RediscoveryImpl implements Rediscovery
                                 return completedFuture(
                                         compositionLookupResult );
                             }
-                            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmark, impersonatedUser, baseError );
+                            return lookupOnKnownRouters( routingTable, connectionPool, new HashSet<>(), bookmarks, impersonatedUser, baseError );
                         } );
     }
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnKnownRouters( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                  Set<BoltServerAddress> seenServers, Bookmark bookmark,
+                                                                                  Set<BoltServerAddress> seenServers, Set<Bookmark> bookmarks,
                                                                                   String impersonatedUser, Throwable baseError )
     {
         CompletableFuture<ClusterComposition> result = completedWithNull();
@@ -191,7 +191,7 @@ public class RediscoveryImpl implements Rediscovery
                                 }
                                 else
                                 {
-                                    return lookupOnRouter( address, true, routingTable, connectionPool, seenServers, bookmark, impersonatedUser, baseError );
+                                    return lookupOnRouter( address, true, routingTable, connectionPool, seenServers, bookmarks, impersonatedUser, baseError );
                                 }
                             } );
         }
@@ -199,7 +199,7 @@ public class RediscoveryImpl implements Rediscovery
     }
 
     private CompletionStage<ClusterCompositionLookupResult> lookupOnInitialRouter( RoutingTable routingTable, ConnectionPool connectionPool,
-                                                                                   Set<BoltServerAddress> seenServers, Bookmark bookmark,
+                                                                                   Set<BoltServerAddress> seenServers, Set<Bookmark> bookmarks,
                                                                                    String impersonatedUser, Throwable baseError )
     {
         List<BoltServerAddress> resolvedRouters;
@@ -224,14 +224,14 @@ public class RediscoveryImpl implements Rediscovery
                         {
                             return completedFuture( composition );
                         }
-                        return lookupOnRouter( address, false, routingTable, connectionPool, null, bookmark, impersonatedUser, baseError );
+                        return lookupOnRouter( address, false, routingTable, connectionPool, null, bookmarks, impersonatedUser, baseError );
                     } );
         }
         return result.thenApply( composition -> composition != null ? new ClusterCompositionLookupResult( composition, resolvedRouterSet ) : null );
     }
 
     private CompletionStage<ClusterComposition> lookupOnRouter( BoltServerAddress routerAddress, boolean resolveAddress, RoutingTable routingTable,
-                                                                ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Bookmark bookmark,
+                                                                ConnectionPool connectionPool, Set<BoltServerAddress> seenServers, Set<Bookmark> bookmarks,
                                                                 String impersonatedUser, Throwable baseError )
     {
         CompletableFuture<BoltServerAddress> addressFuture = CompletableFuture.completedFuture( routerAddress );
@@ -241,7 +241,7 @@ public class RediscoveryImpl implements Rediscovery
                 .thenApply( address -> addAndReturn( seenServers, address ) )
                 .thenCompose( connectionPool::acquire )
                 .thenApply( connection -> ImpersonationUtil.ensureImpersonationSupport( connection, impersonatedUser ) )
-                .thenCompose( connection -> provider.getClusterComposition( connection, routingTable.database(), bookmark, impersonatedUser ) )
+                .thenCompose( connection -> provider.getClusterComposition( connection, routingTable.database(), bookmarks, impersonatedUser ) )
                 .handle( ( response, error ) ->
                          {
                              Throwable cause = Futures.completionExceptionCause( error );

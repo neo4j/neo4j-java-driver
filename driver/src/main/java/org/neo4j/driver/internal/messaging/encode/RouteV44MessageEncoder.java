@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.messaging.Message;
 import org.neo4j.driver.internal.messaging.MessageEncoder;
@@ -43,7 +44,7 @@ public class RouteV44MessageEncoder implements MessageEncoder
         RouteMessage routeMessage = (RouteMessage) message;
         packer.packStructHeader( 3, message.signature() );
         packer.pack( routeMessage.getRoutingContext() );
-        packer.pack( routeMessage.getBookmark().isPresent() ? value( routeMessage.getBookmark().get().values() ) : value( Collections.emptyList() ) );
+        packer.pack( value( routeMessage.getBookmarks().stream().map( Bookmark::value ) ) );
 
         Map<String,Value> params;
         if ( routeMessage.getImpersonatedUser() != null && routeMessage.getDatabaseName() == null )

@@ -26,8 +26,11 @@ import org.mockito.InOrder;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.driver.AccessMode;
@@ -54,7 +57,7 @@ class BeginMessageEncoderTest
     @MethodSource( "arguments" )
     void shouldEncodeBeginMessage( AccessMode mode, String impersonatedUser ) throws Exception
     {
-        Bookmark bookmark = InternalBookmark.parse( "neo4j:bookmark:v1:tx42" );
+        Set<Bookmark> bookmarks = Collections.singleton( InternalBookmark.parse( "neo4j:bookmark:v1:tx42" ) );
 
         Map<String,Value> txMetadata = new HashMap<>();
         txMetadata.put( "hello", value( "world" ) );
@@ -62,13 +65,13 @@ class BeginMessageEncoderTest
 
         Duration txTimeout = Duration.ofSeconds( 1 );
 
-        encoder.encode( new BeginMessage( bookmark, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser ), packer );
+        encoder.encode( new BeginMessage( bookmarks, txTimeout, txMetadata, mode, defaultDatabase(), impersonatedUser ), packer );
 
         InOrder order = inOrder( packer );
         order.verify( packer ).packStructHeader( 1, BeginMessage.SIGNATURE );
 
         Map<String,Value> expectedMetadata = new HashMap<>();
-        expectedMetadata.put( "bookmarks", value( bookmark.values() ) );
+        expectedMetadata.put( "bookmarks", value( bookmarks.stream().map( Bookmark::value ).collect( Collectors.toSet() ) ) );
         expectedMetadata.put( "tx_timeout", value( 1000 ) );
         expectedMetadata.put( "tx_metadata", value( txMetadata ) );
         if ( mode == READ )

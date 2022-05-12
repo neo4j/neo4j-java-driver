@@ -20,6 +20,7 @@ package org.neo4j.driver.internal.cluster;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -37,7 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.util.Futures.completedWithNull;
 import static org.neo4j.driver.internal.util.Futures.failedFuture;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -50,7 +50,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         ClientException error = new ClientException( "Hi" );
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), Collections.emptySet(), null ) );
 
         assertFalse( response.isSuccess() );
         assertEquals( error, response.error() );
@@ -62,7 +62,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         Exception error = new Exception( "Hi" );
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY, failedFuture( error ) );
 
-        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), empty(), null ) ) );
+        Exception e = assertThrows( Exception.class, () -> await( runner.run( connection(), defaultDatabase(), Collections.emptySet(), null ) ) );
         assertEquals( error, e );
     }
 
@@ -72,7 +72,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         SingleDatabaseRoutingProcedureRunner runner = singleDatabaseRoutingProcedureRunner( RoutingContext.EMPTY );
 
         Connection connection = connection();
-        RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection, defaultDatabase(), Collections.emptySet(), null ) );
 
         assertTrue( response.isSuccess() );
         verify( connection ).release();
@@ -86,7 +86,7 @@ abstract class AbstractRoutingProcedureRunnerTest
         RuntimeException releaseError = new RuntimeException( "Release failed" );
         Connection connection = connection( failedFuture( releaseError ) );
 
-        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, defaultDatabase(), empty(), null ) ) );
+        RuntimeException e = assertThrows( RuntimeException.class, () -> await( runner.run( connection, defaultDatabase(), Collections.emptySet(), null ) ) );
         assertEquals( releaseError, e );
         verify( connection ).release();
     }

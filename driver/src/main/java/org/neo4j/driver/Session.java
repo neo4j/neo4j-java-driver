@@ -19,6 +19,7 @@
 package org.neo4j.driver;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.neo4j.driver.async.AsyncSession;
@@ -317,18 +318,28 @@ public interface Session extends Resource, QueryRunner
     Result run(Query query, TransactionConfig config );
 
     /**
-     * Return the bookmark received following the last completed
-     * {@linkplain Transaction transaction}. If no bookmark was received
-     * or if this transaction was rolled back, the bookmark value will
-     * be null.
+     * Return the last bookmark of this session.
+     * <p>
+     * When no new bookmark is received, the initial bookmarks are returned as a composite {@link Bookmark} containing all initial bookmarks. This may happen
+     * when no work has been done using the session. If no initial bookmarks have been provided, an empty {@link Bookmark} is returned.
      *
-     * @return a reference to a previous transaction
+     * @return the last bookmark.
      */
+    @Deprecated
     Bookmark lastBookmark();
 
     /**
-     * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is
-     * very low cost.
+     * Return a set of last bookmarks.
+     * <p>
+     * When no new bookmark is received, the initial bookmarks are returned. This may happen when no work has been done using the session. Multivalued {@link
+     * Bookmark} instances will be mapped to distinct {@link Bookmark} instances. If no initial bookmarks have been provided, an empty set is returned.
+     *
+     * @return the immutable set of last bookmarks.
+     */
+    Set<Bookmark> lastBookmarks();
+
+    /**
+     * Signal that you are done using this session. In the default driver usage, closing and accessing sessions is very low cost.
      */
     @Override
     void close();

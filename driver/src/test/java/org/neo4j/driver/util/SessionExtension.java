@@ -22,7 +22,11 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
@@ -126,15 +130,35 @@ public class SessionExtension extends DatabaseExtension implements Session, Befo
     }
 
     @Override
+    public Set<Bookmark> lastBookmarks()
+    {
+        Bookmark bookmark = lastBookmark();
+        if ( bookmark == null || bookmark.isEmpty() )
+        {
+            return Collections.emptySet();
+        }
+        else if ( bookmark.values().size() == 1 )
+        {
+            return Collections.singleton( bookmark );
+        }
+        else
+        {
+            return bookmark.values().stream()
+                           .map( Bookmark::from )
+                           .collect( Collectors.toCollection( HashSet::new ) );
+        }
+    }
+
+    @Override
     public Result run( String query, Map<String,Object> parameters )
     {
         return realSession.run( query, parameters );
     }
 
     @Override
-    public Result run(String query, Value parameters )
+    public Result run( String query, Value parameters )
     {
-        return realSession.run(query, parameters );
+        return realSession.run( query, parameters );
     }
 
     @Override

@@ -23,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -33,7 +34,7 @@ import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.FatalDiscoveryException;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static java.util.Collections.EMPTY_MAP;
@@ -49,7 +50,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.defaultDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.ROUTING_CONTEXT;
 import static org.neo4j.driver.util.TestUtil.await;
@@ -60,12 +60,12 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldCallGetRoutingTableWithEmptyMap()
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), Collections.emptySet(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
-        assertThat( runner.bookmarkHolder, equalTo( BookmarkHolder.NO_OP ) );
+        assertThat( runner.bookmarksHolder, equalTo( BookmarksHolder.NO_OP ) );
         assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
@@ -80,12 +80,12 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext( uri );
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
-        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), defaultDatabase(), Collections.emptySet(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
-        assertThat( runner.bookmarkHolder, equalTo( BookmarkHolder.NO_OP ) );
+        assertThat( runner.bookmarksHolder, equalTo( BookmarksHolder.NO_OP ) );
         assertThat( runner.connection.databaseName(), equalTo( defaultDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.WRITE ) );
 
@@ -99,7 +99,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldErrorWhenDatabaseIsNotAbsent( String db ) throws Throwable
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), empty(), null ) ) );
+        assertThrows( FatalDiscoveryException.class, () -> await( runner.run( connection(), database( db ), Collections.emptySet(), null ) ) );
     }
 
     SingleDatabaseRoutingProcedureRunner singleDatabaseRoutingProcedureRunner( RoutingContext context )
@@ -128,7 +128,7 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
         private Query procedure;
-        private BookmarkHolder bookmarkHolder;
+        private BookmarksHolder bookmarksHolder;
 
         TestRoutingProcedureRunner( RoutingContext context )
         {
@@ -142,11 +142,11 @@ class SingleDatabaseRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
+        CompletionStage<List<Record>> runProcedure( Connection connection, Query procedure, BookmarksHolder bookmarksHolder )
         {
             this.connection = connection;
             this.procedure = procedure;
-            this.bookmarkHolder = bookmarkHolder;
+            this.bookmarksHolder = bookmarksHolder;
             return runProcedureResult;
         }
     }

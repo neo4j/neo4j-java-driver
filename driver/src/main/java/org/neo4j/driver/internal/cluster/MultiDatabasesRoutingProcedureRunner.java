@@ -19,14 +19,15 @@
 package org.neo4j.driver.internal.cluster;
 
 import java.util.HashMap;
+import java.util.Set;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.BookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
 import org.neo4j.driver.internal.DatabaseName;
-import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
+import org.neo4j.driver.internal.ReadOnlyBookmarksHolder;
 import org.neo4j.driver.internal.async.connection.DirectConnection;
 import org.neo4j.driver.internal.messaging.BoltProtocolVersion;
 import org.neo4j.driver.internal.spi.Connection;
@@ -50,9 +51,9 @@ public class MultiDatabasesRoutingProcedureRunner extends SingleDatabaseRoutingP
     }
 
     @Override
-    BookmarkHolder bookmarkHolder( Bookmark bookmark )
+    BookmarksHolder bookmarksHolder( Set<Bookmark> bookmarks )
     {
-        return new ReadOnlyBookmarkHolder( bookmark );
+        return new ReadOnlyBookmarksHolder( bookmarks );
     }
 
     @Override

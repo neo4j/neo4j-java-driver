@@ -22,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -30,8 +31,8 @@ import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.BookmarkHolder;
-import org.neo4j.driver.internal.ReadOnlyBookmarkHolder;
+import org.neo4j.driver.internal.BookmarksHolder;
+import org.neo4j.driver.internal.ReadOnlyBookmarksHolder;
 import org.neo4j.driver.internal.spi.Connection;
 
 import static java.util.Collections.EMPTY_MAP;
@@ -47,7 +48,6 @@ import static org.neo4j.driver.Values.parameters;
 import static org.neo4j.driver.internal.DatabaseNameUtil.SYSTEM_DATABASE_NAME;
 import static org.neo4j.driver.internal.DatabaseNameUtil.database;
 import static org.neo4j.driver.internal.DatabaseNameUtil.systemDatabase;
-import static org.neo4j.driver.internal.InternalBookmark.empty;
 import static org.neo4j.driver.internal.cluster.MultiDatabasesRoutingProcedureRunner.DATABASE_NAME;
 import static org.neo4j.driver.internal.cluster.MultiDatabasesRoutingProcedureRunner.MULTI_DB_GET_ROUTING_TABLE;
 import static org.neo4j.driver.internal.cluster.SingleDatabaseRoutingProcedureRunner.ROUTING_CONTEXT;
@@ -60,12 +60,12 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
     void shouldCallGetRoutingTableWithEmptyMapOnSystemDatabaseForDatabase( String db )
     {
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( RoutingContext.EMPTY );
-        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), Collections.emptySet(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
-        assertThat( runner.bookmarkHolder, instanceOf( ReadOnlyBookmarkHolder.class ) );
+        assertThat( runner.bookmarksHolder, instanceOf( ReadOnlyBookmarksHolder.class ) );
         assertThat( runner.connection.databaseName(), equalTo( systemDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.READ ) );
 
@@ -81,12 +81,12 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         RoutingContext context = new RoutingContext( uri );
 
         TestRoutingProcedureRunner runner = new TestRoutingProcedureRunner( context );
-        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), empty(), null ) );
+        RoutingProcedureResponse response = await( runner.run( connection(), database( db ), Collections.emptySet(), null ) );
 
         assertTrue( response.isSuccess() );
         assertEquals( 1, response.records().size() );
 
-        assertThat( runner.bookmarkHolder, instanceOf( ReadOnlyBookmarkHolder.class ) );
+        assertThat( runner.bookmarksHolder, instanceOf( ReadOnlyBookmarksHolder.class ) );
         assertThat( runner.connection.databaseName(), equalTo( systemDatabase() ) );
         assertThat( runner.connection.mode(), equalTo( AccessMode.READ ) );
 
@@ -118,7 +118,7 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         final CompletionStage<List<Record>> runProcedureResult;
         private Connection connection;
         private Query procedure;
-        private BookmarkHolder bookmarkHolder;
+        private BookmarksHolder bookmarksHolder;
 
         TestRoutingProcedureRunner( RoutingContext context )
         {
@@ -132,11 +132,11 @@ class MultiDatabasesRoutingProcedureRunnerTest extends AbstractRoutingProcedureR
         }
 
         @Override
-        CompletionStage<List<Record>> runProcedure(Connection connection, Query procedure, BookmarkHolder bookmarkHolder )
+        CompletionStage<List<Record>> runProcedure( Connection connection, Query procedure, BookmarksHolder bookmarksHolder )
         {
             this.connection = connection;
             this.procedure = procedure;
-            this.bookmarkHolder = bookmarkHolder;
+            this.bookmarksHolder = bookmarksHolder;
             return runProcedureResult;
         }
     }
