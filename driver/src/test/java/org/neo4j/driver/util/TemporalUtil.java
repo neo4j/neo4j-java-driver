@@ -63,7 +63,8 @@ public final class TemporalUtil
             "America/Santiago",// Can cause flakyness on windows, see https://stackoverflow.com/questions/37533796/java-calendar-returns-wrong-hour-in-ms-windows-for-america-santiago-zone.
             "US/Pacific-New", // Appeared out of nothing in windows, does not test reliable "org.neo4j.driver.exceptions.ClientException: Unable to construct ZonedDateTime value: `Unknown time-zone ID: US/Pacific-New`"
             "Pacific/Easter",
-            "Pacific/Kanton"
+            "Pacific/Kanton",
+            "Asia/Gaza"
     );
 
     private TemporalUtil()
