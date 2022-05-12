@@ -386,7 +386,7 @@ public interface AsyncSession extends AsyncQueryRunner
      * Return the last bookmark of this session.
      * <p>
      * When no new bookmark is received, the initial bookmarks are returned as a composite {@link Bookmark} containing all initial bookmarks. This may happen
-     * when no work has been done using the session. If no initial bookmarks have been provided, {@code null} is returned.
+     * when no work has been done using the session. If no initial bookmarks have been provided, an empty {@link Bookmark} is returned.
      *
      * @return the last bookmark.
      */
