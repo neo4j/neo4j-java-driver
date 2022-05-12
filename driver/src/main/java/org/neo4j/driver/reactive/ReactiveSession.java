@@ -231,9 +231,12 @@ public interface ReactiveSession extends ReactiveQueryRunner
     Publisher<ReactiveResult> run( Query query, TransactionConfig config );
 
     /**
-     * Return an immutable set of bookmarks known by this session.
+     * Return a set of last bookmarks.
+     * <p>
+     * When no new bookmark is received, the initial bookmarks are returned. This may happen when no work has been done using the session. Multivalued {@link
+     * Bookmark} instances will be mapped to distinct {@link Bookmark} instances. If no initial bookmarks have been provided, an empty set is returned.
      *
-     * @return the set of bookmarks.
+     * @return the immutable set of last bookmarks.
      */
     Set<Bookmark> lastBookmarks();
 
