@@ -36,7 +36,6 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {
         String testkitMessage = (String) msg;
-        System.out.println( testkitMessage );
         TestkitRequest testkitRequest;
         try
         {
@@ -54,7 +53,6 @@ public class TestkitRequestResponseMapperHandler extends ChannelDuplexHandler
     {
         TestkitResponse testkitResponse = (TestkitResponse) msg;
         String responseStr = objectMapper.writeValueAsString( testkitResponse );
-        System.out.println( responseStr );
         ctx.writeAndFlush( responseStr, promise );
     }
 

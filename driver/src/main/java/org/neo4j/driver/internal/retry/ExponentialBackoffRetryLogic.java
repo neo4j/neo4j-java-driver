@@ -38,15 +38,11 @@ import java.util.function.Supplier;
 
 import org.neo4j.driver.Logger;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.exceptions.AuthorizationExpiredException;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.Neo4jException;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
-import org.neo4j.driver.exceptions.SessionExpiredException;
-import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.driver.exceptions.RetryableException;
 import org.neo4j.driver.internal.util.Clock;
 import org.neo4j.driver.internal.util.Futures;
-import org.neo4j.driver.util.Experimental;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -148,14 +144,7 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
 
     protected boolean canRetryOn( Throwable error )
     {
-        return isRetryable( error );
-    }
-
-    @Experimental
-    public static boolean isRetryable( Throwable error )
-    {
-        return error instanceof SessionExpiredException || error instanceof ServiceUnavailableException || error instanceof AuthorizationExpiredException ||
-               isTransientError( error );
+        return error instanceof RetryableException;
     }
 
     /**
@@ -349,25 +338,6 @@ public class ExponentialBackoffRetryLogic implements RetryLogic
         {
             throw new IllegalArgumentException( "Clock should not be null" );
         }
-    }
-
-    private static boolean isTransientError( Throwable error )
-    {
-        if ( error instanceof TransientException )
-        {
-            String code = ((TransientException) error).code();
-            // Retries should not happen when transaction was explicitly terminated by the user.
-            // Termination of transaction might result in two different error codes depending on where it was
-            // terminated. These are really client errors but classification on the server is not entirely correct and
-            // they are classified as transient.
-            if ( "Neo.TransientError.Transaction.Terminated".equals( code ) ||
-                 "Neo.TransientError.Transaction.LockClientStopped".equals( code ) )
-            {
-                return false;
-            }
-            return true;
-        }
-        return false;
     }
 
     private static List<Throwable> recordError( Throwable error, List<Throwable> errors )

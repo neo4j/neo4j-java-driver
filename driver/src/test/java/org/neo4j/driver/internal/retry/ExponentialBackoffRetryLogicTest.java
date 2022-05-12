@@ -471,7 +471,7 @@ class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic logic = newRetryLogic( 1, 13, 1, 0, clock );
 
         Supplier<Void> workMock = newWorkMock();
-        TransientException error = new TransientException( "Neo.TransientError.Transaction.Terminated", "" );
+        ClientException error = new ClientException( "Neo.ClientError.Transaction.Terminated", "" );
         when( workMock.get() ).thenThrow( error ).thenReturn( null );
 
         Exception e = assertThrows( Exception.class, () -> logic.retry( workMock ) );
@@ -489,7 +489,7 @@ class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 13, 1, 0, clock );
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        TransientException error = new TransientException( "Neo.TransientError.Transaction.Terminated", "" );
+        ClientException error = new ClientException( "Neo.ClientError.Transaction.Terminated", "" );
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
         Exception e = assertThrows( Exception.class, () -> await( retryLogic.retryAsync( workMock ) ) );
@@ -506,7 +506,7 @@ class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic logic = newRetryLogic( 1, 13, 1, 0, clock );
 
         Supplier<Void> workMock = newWorkMock();
-        TransientException error = new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" );
+        ClientException error = new ClientException( "Neo.ClientError.Transaction.LockClientStopped", "" );
         when( workMock.get() ).thenThrow( error ).thenReturn( null );
 
         Exception e = assertThrows( Exception.class, () -> logic.retry( workMock ) );
@@ -524,7 +524,7 @@ class ExponentialBackoffRetryLogicTest
         ExponentialBackoffRetryLogic retryLogic = newRetryLogic( 1, 15, 1, 0, clock );
 
         Supplier<CompletionStage<Object>> workMock = newWorkMock();
-        TransientException error = new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" );
+        ClientException error = new ClientException( "Neo.ClientError.Transaction.LockClientStopped", "" );
         when( workMock.get() ).thenReturn( failedFuture( error ) );
 
         Exception e = assertThrows( Exception.class, () -> await( retryLogic.retryAsync( workMock ) ) );
@@ -1437,8 +1437,8 @@ class ExponentialBackoffRetryLogicTest
     {
         return Stream.of(
                 new IllegalStateException(),
-                new TransientException( "Neo.TransientError.Transaction.Terminated", "" ),
-                new TransientException( "Neo.TransientError.Transaction.LockClientStopped", "" )
+                new ClientException( "Neo.ClientError.Transaction.Terminated", "" ),
+                new ClientException( "Neo.ClientError.Transaction.LockClientStopped", "" )
         );
     }
 }
