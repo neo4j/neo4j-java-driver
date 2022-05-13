@@ -189,4 +189,30 @@ class ErrorUtilTest
         assertEquals( code, error.code() );
         assertEquals( message, error.getMessage() );
     }
+
+    @Test
+    void shouldMapTransientTransactionTerminatedToClientException()
+    {
+        String code = "Neo.TransientError.Transaction.Terminated";
+        String message = "message";
+
+        Neo4jException error = newNeo4jError( code, message );
+
+        assertThat( error, instanceOf( ClientException.class ) );
+        assertEquals( "Neo.ClientError.Transaction.Terminated", error.code() );
+        assertEquals( message, error.getMessage() );
+    }
+
+    @Test
+    void shouldMapTransientTransactionLockClientStoppedToClientException()
+    {
+        String code = "Neo.TransientError.Transaction.LockClientStopped";
+        String message = "message";
+
+        Neo4jException error = newNeo4jError( code, message );
+
+        assertThat( error, instanceOf( ClientException.class ) );
+        assertEquals( "Neo.ClientError.Transaction.LockClientStopped", error.code() );
+        assertEquals( message, error.getMessage() );
+    }
 }

@@ -100,7 +100,20 @@ public final class ErrorUtil
                 }
             }
         case "TransientError":
-            return new TransientException( code, message );
+            // Since 5.0 these 2 errors have been moved to ClientError class.
+            // This mapping is required if driver is connection to earlier server versions.
+            if ( "Neo.TransientError.Transaction.Terminated".equals( code ) )
+            {
+                return new ClientException( "Neo.ClientError.Transaction.Terminated", message );
+            }
+            else if ( "Neo.TransientError.Transaction.LockClientStopped".equals( code ) )
+            {
+                return new ClientException( "Neo.ClientError.Transaction.LockClientStopped", message );
+            }
+            else
+            {
+                return new TransientException( code, message );
+            }
         default:
             return new DatabaseException( code, message );
         }

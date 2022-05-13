@@ -19,20 +19,10 @@
 package org.neo4j.driver.exceptions;
 
 /**
- * A <em>SessionExpiredException</em> indicates that the session can no longer satisfy the criteria under which it was acquired, e.g. a server no longer accepts
- * write requests. A new session needs to be acquired from the driver and all actions taken on the expired session must be replayed.
- *
- * @since 1.1
+ * A marker interface for retryable exceptions.
+ * <p>
+ * This indicates whether an operation that resulted in retryable exception is worth retrying.
  */
-public class SessionExpiredException extends Neo4jException implements RetryableException
+public interface RetryableException
 {
-    public SessionExpiredException( String message )
-    {
-        super( message );
-    }
-
-    public SessionExpiredException( String message, Throwable throwable )
-    {
-        super( message, throwable );
-    }
 }
