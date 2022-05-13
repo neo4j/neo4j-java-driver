@@ -89,7 +89,6 @@ public class TestkitRequestProcessorHandler extends ChannelInboundHandlerAdapter
                                                                             {
                                                                                 if ( throwable != null )
                                                                                 {
-//                                                                                    throwable.printStackTrace();
                                                                                     ctx.writeAndFlush( createErrorResponse( throwable ) );
                                                                                 }
                                                                                 else if ( response != null )
