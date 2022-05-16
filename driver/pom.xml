@@ -66,6 +66,10 @@
       <artifactId>junit-jupiter</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.junit.support</groupId>
+      <artifactId>testng-engine</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
     </dependency>
@@ -91,6 +95,10 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>neo4j</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams-tck</artifactId>
     </dependency>
   </dependencies>
 
