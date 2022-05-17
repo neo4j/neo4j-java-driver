@@ -9,10 +9,10 @@
     <version>5.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>neo4j-java-driver-slim</artifactId>
+  <artifactId>neo4j-java-driver</artifactId>
 
   <packaging>jar</packaging>
-  <name>Neo4j Java Driver (Slim package)</name>
+  <name>Neo4j Java Driver</name>
   <description>Access to the Neo4j graph database through Java</description>
 
   <properties>
