@@ -25,7 +25,7 @@
     <parallelizable.it.forkCount>1C</parallelizable.it.forkCount>
     <!-- All tests tagged are to be executed in parallel -->
     <parallelizable.it.tags>parallelizableIT</parallelizable.it.tags>
-    <surefire.and.failsafe.version>2.22.1</surefire.and.failsafe.version>
+    <surefire.and.failsafe.version>3.0.0-M6</surefire.and.failsafe.version>
     <!-- Skip deployment by default for everything in this project. -->
     <maven.deploy.skip>true</maven.deploy.skip>
 
