@@ -24,31 +24,25 @@ import org.reactivestreams.tck.TestEnvironment;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.reactive.RxResult;
-import org.neo4j.driver.reactive.RxSession;
-
-import static org.neo4j.driver.Values.parameters;
+import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.reactive.ReactiveSession;
 
 @Testcontainers( disabledWithoutDocker = true )
-public class RxResultRecordPublisherVerificationIT extends PublisherVerification<Record>
+public class ReactiveResultPublisherVerificationIT extends PublisherVerification<ReactiveResult>
 {
     private final Neo4jManager NEO4J = new Neo4jManager();
-    private final static long MAX_NUMBER_OF_RECORDS = 30000;
-
     private static final Duration TIMEOUT = Duration.ofSeconds( 10 );
     private static final Duration TIMEOUT_FOR_NO_SIGNALS = Duration.ofSeconds( 1 );
     private static final Duration PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS = Duration.ofSeconds( 1 );
 
-    private final static String QUERY = "UNWIND RANGE(1, $numberOfRecords) AS n RETURN 'String Number' + n";
-
     private Driver driver;
 
-    public RxResultRecordPublisherVerificationIT()
+    public ReactiveResultPublisherVerificationIT()
     {
         super( new TestEnvironment( TIMEOUT.toMillis(), TIMEOUT_FOR_NO_SIGNALS.toMillis() ),
                PUBLISHER_REFERENCE_CLEANUP_TIMEOUT_MILLIS.toMillis() );
@@ -71,22 +65,21 @@ public class RxResultRecordPublisherVerificationIT extends PublisherVerification
     @Override
     public long maxElementsFromPublisher()
     {
-        return MAX_NUMBER_OF_RECORDS;
+        return 1;
     }
 
     @Override
-    public Publisher<Record> createPublisher( long elements )
+    public Publisher<ReactiveResult> createPublisher( long elements )
     {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run( QUERY, parameters( "numberOfRecords", elements ) );
-        return result.records();
+        ReactiveSession session = driver.reactiveSession();
+        return Mono.fromDirect( session.run( "RETURN 1" ) );
     }
 
     @Override
-    public Publisher<Record> createFailedPublisher()
+    public Publisher<ReactiveResult> createFailedPublisher()
     {
-        RxSession session = driver.rxSession();
-        RxResult result = session.run( "INVALID" );
-        return result.records();
+        ReactiveSession session = driver.reactiveSession();
+        // Please note that this publisher fails on run stage.
+        return Mono.fromDirect( session.run( "RETURN 5/0" ) );
     }
 }
